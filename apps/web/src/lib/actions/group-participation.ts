@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionParticipantRow, ActionRow } from "@/types/database";
+import type { ActionRow } from "@/types/database";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 
 export type JoinableActionItem = Pick<
   ActionRow,
@@ -18,6 +19,15 @@ export type JoinableActionItem = Pick<
   groupJoinEnabled: boolean;
 };
 
+export type JoinableActionHistoryItem = Omit<JoinableActionItem, "joined" | "joinedAt"> & {
+  joined: true;
+  joinedAt: string;
+};
+
+type ActionParticipantActionRow = {
+  action_id: string;
+};
+
 type ActionPreviewRow = Pick<
   ActionRow,
   | "id"
@@ -29,18 +39,21 @@ type ActionPreviewRow = Pick<
   | "status"
   | "notes"
 >;
+const ACTION_PREVIEW_COLUMNS =
+  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes";
+const ACTION_PARTICIPATION_COLUMNS = "status, notes";
 
 async function loadActionParticipantsForActions(
   supabase: SupabaseClient,
   actionIds: string[],
-): Promise<ActionParticipantRow[]> {
+): Promise<ActionParticipantActionRow[]> {
   if (actionIds.length === 0) {
     return [];
   }
 
   const result = await supabase
     .from("action_participants")
-    .select("id, created_at, updated_at, action_id, user_id")
+    .select("action_id")
     .in("action_id", actionIds)
     .order("created_at", { ascending: true });
 
@@ -48,7 +61,7 @@ async function loadActionParticipantsForActions(
     throw new Error(result.error.message);
   }
 
-  return (result.data ?? []) as ActionParticipantRow[];
+  return (result.data ?? []) as ActionParticipantActionRow[];
 }
 
 export async function loadJoinableActions(
@@ -60,43 +73,31 @@ export async function loadJoinableActions(
   },
 ): Promise<JoinableActionItem[]> {
   const fetchLimit = Math.max(params.limit * 4, params.limit);
-  const actionsResult = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes",
-    )
-    .eq("status", "approved")
-    .order("action_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(fetchLimit);
-
-  if (actionsResult.error) {
-    throw new Error(actionsResult.error.message);
-  }
-
-  const actions = (actionsResult.data ?? []) as ActionPreviewRow[];
+  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+    query
+      .select(ACTION_PREVIEW_COLUMNS)
+      .eq("status", "approved")
+      .order("action_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit),
+  );
   if (actions.length === 0) {
     return [];
   }
 
   let orderedActions = actions;
   if (params.actionId) {
-    const focusedActionResult = await supabase
-      .from("actions")
-      .select(
-        "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes",
-      )
-      .eq("id", params.actionId)
-      .eq("status", "approved")
-      .maybeSingle();
+    const focusedAction = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
+      query
+        .select(ACTION_PREVIEW_COLUMNS)
+        .eq("id", params.actionId)
+        .eq("status", "approved")
+        .maybeSingle(),
+    );
 
-    if (focusedActionResult.error) {
-      throw new Error(focusedActionResult.error.message);
-    }
-
-    if (focusedActionResult.data) {
+    if (focusedAction) {
       orderedActions = [
-        focusedActionResult.data as ActionPreviewRow,
+        focusedAction,
         ...actions.filter((action) => action.id !== params.actionId),
       ].slice(0, fetchLimit);
     }
@@ -155,6 +156,74 @@ export async function loadJoinableActions(
   }));
 }
 
+export async function loadUserParticipationHistory(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    limit: number;
+  },
+): Promise<JoinableActionHistoryItem[]> {
+  if (params.limit <= 0) {
+    return [];
+  }
+
+  const participationResult = await supabase
+    .from("action_participants")
+    .select("action_id, created_at")
+    .eq("user_id", params.userId)
+    .order("created_at", { ascending: false })
+    .limit(params.limit);
+
+  if (participationResult.error) {
+    throw new Error(participationResult.error.message);
+  }
+
+  const participationRows = (participationResult.data ?? []) as Array<{
+    action_id: string;
+    created_at: string;
+  }>;
+
+  if (participationRows.length === 0) {
+    return [];
+  }
+
+  const actionIds = [...new Set(participationRows.map((row) => row.action_id))];
+  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+    query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds),
+  );
+  const actionById = new Map(
+    actions.map((action) => [action.id, action] as const),
+  );
+
+  const participantRows = await loadActionParticipantsForActions(supabase, actionIds);
+
+  const participantCounts = new Map<string, number>();
+  for (const row of participantRows) {
+    participantCounts.set(
+      row.action_id,
+      (participantCounts.get(row.action_id) ?? 0) + 1,
+    );
+  }
+
+  return participationRows.flatMap((participation) => {
+    const action = actionById.get(participation.action_id);
+    if (!action) {
+      return [];
+    }
+
+    const metadata = extractActionMetadataFromNotes(action.notes);
+    return [
+      {
+        ...action,
+        participantsCount: participantCounts.get(action.id) ?? 0,
+        joined: true,
+        joinedAt: participation.created_at,
+        groupJoinEnabled: metadata.groupJoinEnabled,
+      } satisfies JoinableActionHistoryItem,
+    ];
+  });
+}
+
 export async function joinActionParticipation(
   supabase: SupabaseClient,
   params: { actionId: string; userId: string },
@@ -163,23 +232,18 @@ export async function joinActionParticipation(
   joinedAt: string;
   participantsCount: number;
 }> {
-  const actionResult = await supabase
-    .from("actions")
-    .select("id, status, notes")
-    .eq("id", params.actionId)
-    .maybeSingle();
+  const actionResult = await runSingleActionQuery<{
+    status: "pending" | "approved" | "rejected";
+    notes: string | null;
+  }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
-  if (actionResult.error) {
-    throw new Error(actionResult.error.message);
-  }
-
-  if (!actionResult.data) {
+  if (!actionResult) {
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;
   }
 
-  if (actionResult.data.status !== "approved") {
+  if (actionResult.status !== "approved") {
     const validationError = new Error(
       "L'action doit être validée par un admin avant de rejoindre son formulaire.",
     );
@@ -187,10 +251,10 @@ export async function joinActionParticipation(
     throw validationError;
   }
 
-  const actionMetadata = extractActionMetadataFromNotes(actionResult.data.notes);
+  const actionMetadata = extractActionMetadataFromNotes(actionResult.notes);
   if (actionMetadata.groupJoinEnabled === false) {
     const validationError = new Error(
-      "L'organisateur n'a pas ouvert ce formulaire de groupe.",
+      "L'organisateur n'a pas ouvert ce formulaire.",
     );
     validationError.name = "ValidationError";
     throw validationError;
@@ -198,7 +262,7 @@ export async function joinActionParticipation(
 
   const existingResult = await supabase
     .from("action_participants")
-    .select("id, created_at, action_id, user_id")
+    .select("created_at")
     .eq("action_id", params.actionId)
     .eq("user_id", params.userId)
     .maybeSingle();
@@ -237,7 +301,7 @@ export async function joinActionParticipation(
     if (insertedResult.error.code === "23505") {
       const duplicateResult = await supabase
         .from("action_participants")
-        .select("id, created_at, action_id, user_id")
+        .select("created_at")
         .eq("action_id", params.actionId)
         .eq("user_id", params.userId)
         .maybeSingle();

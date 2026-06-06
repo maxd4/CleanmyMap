@@ -147,7 +147,7 @@ const services = [
         key: "resendEmailsSent",
         label: "Resend - emails",
         unitLabel: "emails / mois",
-        referenceMonthlyQuantity: 2_500,
+        referenceMonthlyQuantity: 3_000,
         quantityPerMonth: 1_200,
         estimatedKgCo2eProxy: 0.024,
       }),
@@ -277,6 +277,7 @@ const githubStats = {
   htmlUrl: "https://github.com/maxd4/CleanmyMap",
   isPrivate: false,
   defaultBranch: "main",
+  workflowRunsCount30d: 18,
   dependabotOpenAlertsCount: 0,
   codeScanningWarningCount: 32,
   actionsQuotaLabel: "Repo public: runners standards gratuits et illimités",
@@ -336,12 +337,17 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Supabase - stockage");
     expect(markup).toContain("Repo public");
     expect(markup).toContain("runners standards gratuits et illimités");
+    expect(markup).toContain("Runs GitHub Actions sur 30 jours: 18");
     expect(markup).toContain("Dependabot: 0");
     expect(markup).toContain("Warnings: 32");
     expect(markup).toContain("Ouvrir le repo GitHub");
     expect(markup).toContain("Plans payants");
     expect(markup).toContain("Services suivis");
     expect(markup).toContain("Services proches d&#x27;une limite");
+    expect(markup).toContain("Emails envoyés: 1 200 / 3 000");
+    expect(markup).toContain("Emails reçus: NA");
+    expect(markup).toContain("Marketing: 1 000 contacts");
+    expect(markup).toContain("Marketing: broadcasts illimités");
     expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
     expect(markup).toContain("Taille base de données: 0,5 GB");
     expect(markup).toContain("Egress: 5 GB");

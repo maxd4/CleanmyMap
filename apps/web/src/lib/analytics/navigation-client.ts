@@ -18,11 +18,12 @@ type CtaClickPayload = {
 };
 
 function capture(eventName: string, payload: Record<string, unknown>): void {
-  const posthog = initPostHogClient();
-  if (!posthog) {
-    return;
-  }
-  posthog.capture(eventName, payload);
+  void initPostHogClient().then((posthog) => {
+    if (!posthog) {
+      return;
+    }
+    posthog.capture(eventName, payload);
+  });
 }
 
 export function trackNavigationClick(payload: NavClickPayload): void {

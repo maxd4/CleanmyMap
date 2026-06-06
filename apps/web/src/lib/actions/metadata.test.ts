@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   appendActionMetadataToNotes,
   extractActionMetadataFromNotes,
+  setActionGroupJoinEnabledInNotes,
 } from "./metadata";
 
 describe("action metadata notes", () => {
@@ -60,5 +61,18 @@ describe("action metadata notes", () => {
       "Observation locale\n[google-sheet-sync]",
     );
     expect(parsed.cleanNotes).toBe("Observation locale");
+  });
+
+  it("toggles the persisted group join flag in-place", () => {
+    const closedNotes = appendActionMetadataToNotes("Observation terrain", {
+      submissionMode: "complete",
+      groupJoinEnabled: false,
+    });
+    const reopenedNotes = setActionGroupJoinEnabledInNotes(closedNotes, true);
+    const parsed = extractActionMetadataFromNotes(reopenedNotes);
+
+    expect(parsed.cleanNotes).toBe("Observation terrain");
+    expect(parsed.submissionMode).toBe("complete");
+    expect(parsed.groupJoinEnabled).toBe(true);
   });
 });

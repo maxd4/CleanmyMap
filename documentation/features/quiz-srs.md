@@ -2,6 +2,8 @@
 
 Ce document décrit l'algorithme et les paramètres du système de répétition espacée implémenté pour le Quiz Environnemental de CleanMyMap.
 
+La qualité de la banque de questions est un prérequis du SRS: une question trop facile ne mesure pas la compréhension et ne doit pas être compensée artificiellement par l'algorithme. Pour les règles d'écriture des questions, voir [quiz-authoring-guide.md](./quiz-authoring-guide.md).
+
 ## Algorithme
 
 L'algorithme est une variante simplifiée de **SM-2** (SuperMemo-2), conçu pour optimiser la mémorisation à long terme en adaptant les intervalles de révision selon la performance de l'utilisateur.

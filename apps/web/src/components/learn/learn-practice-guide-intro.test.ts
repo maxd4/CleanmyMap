@@ -31,7 +31,7 @@ describe("LearnPracticeGuideIntro", () => {
     expect(markup).toContain("Lecture rapide");
     expect(markup).toContain("Tri, composte, comportements");
     expect(markup).toContain("Séquence");
-    expect(markup).toContain("Préparer");
+    expect(markup).toContain("Repérer");
     expect(markup).toContain("Rester lisible");
     expect(markup).toContain("Clore proprement");
     expect(markup).toContain("Séquence utile");

@@ -187,7 +187,7 @@ describe("environmental impact project signals", () => {
     expect(signals.siteInput.aiCalls).toBe(2);
     expect(signals.userInput.aiCalls).toBe(1);
     expect(signals.infrastructureInput.usage?.monthlyPageViews).toBe(2);
-    expect(signals.infrastructureInput.usage?.monthlyEmailsSent).toBe(1);
+    expect(signals.infrastructureInput.usage?.monthlyEmailsSent).toBe(2);
     expect(signals.infrastructureInput.usage?.monthlyPdfExports).toBe(1);
     expect(signals.infrastructureInput.usage?.monthlyRealtimeEvents).toBeGreaterThan(0);
     expect(signals.codexUsage?.weekCount).toBe(0);
@@ -198,7 +198,7 @@ describe("environmental impact project signals", () => {
     expect(signals.signalBreakdown?.community.events).toBe(1);
     expect(signals.signalBreakdown?.community.notifications).toBe(2);
     expect(signals.signalBreakdown?.community.unreadNotifications).toBe(1);
-    expect(signals.signalBreakdown?.communication.emailsSent).toBe(2);
+    expect(signals.signalBreakdown?.communication.emailsSent).toBe(3);
     expect(signals.signalBreakdown?.communication.pdfExports).toBe(1);
     expect(signals.highlights.some((item) => item.label === "Pages vues CleanMyMap")).toBe(true);
     expect(signals.highlights.some((item) => item.label === "Événements communauté")).toBe(true);
@@ -206,5 +206,51 @@ describe("environmental impact project signals", () => {
     expect(signals.highlights.some((item) => item.label === "Routes distinctes")).toBe(true);
     expect(signals.notes[0]).toContain("tables opérationnelles CleanMyMap");
     expect(signals.notes.some((note) => note.includes("page_view"))).toBe(true);
+  });
+
+  it("uses GitHub Actions runs as a direct monthly deployment source when available", () => {
+    const now = new Date();
+    const rows = {
+      profiles: [],
+      actions: [],
+      spots: [],
+      funnelEvents: [],
+      progressionEvents: [],
+      reports: [],
+      trainingExamples: [],
+      serviceEmails: [],
+      communityEvents: [],
+      eventRsvps: [],
+      appNotifications: [],
+    };
+
+    const signals = buildEnvironmentalImpactProjectSignals(
+      rows,
+      {
+        generatedAt: now.toISOString(),
+        userId: null,
+      },
+      [],
+      {
+        fullName: "maxd4/CleanmyMap",
+        htmlUrl: "https://github.com/maxd4/CleanmyMap",
+        isPrivate: false,
+        defaultBranch: "main",
+        workflowRunsCount30d: 27,
+        dependabotOpenAlertsCount: 0,
+        codeScanningWarningCount: 0,
+        actionsQuotaLabel: "Repo public: runners standards gratuits et illimités",
+        actionsNotes: [],
+        source: "api",
+      },
+    );
+
+    expect(signals.infrastructureInput.usage?.monthlyDeployments).toBe(27);
+    expect(
+      signals.highlights.some((item) => item.label === "GitHub Actions runs"),
+    ).toBe(true);
+    expect(
+      signals.notes.some((note) => note.includes("GitHub Actions runs sur 30 jours: 27")),
+    ).toBe(true);
   });
 });

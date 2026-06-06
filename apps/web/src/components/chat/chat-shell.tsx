@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
@@ -16,10 +17,15 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   canAccessChatChannel,
   extractZoneContextFromMetadata,
+  getChatChannelDefinition,
   type ChatChannelType,
   CHAT_CHANNEL_ORDER,
 } from "@/lib/chat/channels";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
+import {
+  getDiscussionTopic,
+  getDiscussionTopics,
+} from "./discussion-guidance";
 import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
@@ -36,7 +42,6 @@ import {
 } from "./ui/chat-feed-states";
 import {
   CHANNEL_VISUALS,
-  formatRecentActivityLabel,
   getChannelPlaceholder,
   getChannelTitle,
   getClerkArrondissement,
@@ -53,6 +58,7 @@ type ChatShellProps = {
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialMessage?: string;
+  tone?: "light" | "dark";
 };
 
 export function ChatShell({
@@ -61,7 +67,9 @@ export function ChatShell({
   initialZoneName,
   initialRecipient,
   initialMessage,
+  tone = "dark",
 }: ChatShellProps) {
+  const isLight = tone === "light";
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { locale } = useSitePreferences();
@@ -101,6 +109,8 @@ export function ChatShell({
     setIsRecipientPickerOpen,
     selectedZone,
     isBugReportChannel,
+    activeTopicId,
+    setActiveTopicId,
     fileInputRef,
     scrollRef,
     submitLockRef,
@@ -265,6 +275,18 @@ export function ChatShell({
     () => selectedRecipient?.display_name ?? selectedRecipient?.handle ?? null,
     [selectedRecipient?.display_name, selectedRecipient?.handle],
   );
+  const activeChannelDefinition = useMemo(
+    () => getChatChannelDefinition(activeChannelType),
+    [activeChannelType],
+  );
+  const activeTopic = useMemo(
+    () => getDiscussionTopic(activeChannelType, activeTopicId),
+    [activeChannelType, activeTopicId],
+  );
+  const channelTopics = useMemo(
+    () => getDiscussionTopics(activeChannelType),
+    [activeChannelType],
+  );
   const discussionGuidance = useMemo(
     () =>
       getEmptyStateCopy(
@@ -272,17 +294,44 @@ export function ChatShell({
         locale,
         recipientLabel,
         territoryLabel,
+        activeTopicId,
       ),
-    [activeChannelType, locale, recipientLabel, territoryLabel],
+    [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
   );
+  const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">("message");
 
-  const lastMessageAt = messages[messages.length - 1]?.created_at ?? null;
+  const communityAnnouncementAvatars = useMemo(() => {
+    if (activeChannelType !== "community") {
+      return [];
+    }
+
+    const seen = new Set<string>();
+    return messages
+      .map((messageItem) => messageItem.sender)
+      .filter((sender) => {
+        if (seen.has(sender.handle)) {
+          return false;
+        }
+        seen.add(sender.handle);
+        return true;
+      })
+      .slice(0, 4);
+  }, [activeChannelType, messages]);
+
   const metaItems: ChatMetaItem[] = useMemo(
     () => [
       {
         label: locale === "fr" ? "Canal" : "Channel",
         value: getChannelTitle(activeChannelType),
       },
+      ...(activeTopic
+        ? [
+            {
+              label: locale === "fr" ? "Salon" : "Topic",
+              value: activeTopic.label,
+            },
+          ]
+        : []),
       {
         label: locale === "fr" ? "Audience" : "Audience",
         value: discussionGuidance.audienceLabel,
@@ -298,6 +347,7 @@ export function ChatShell({
     ],
     [
       activeChannelType,
+      activeTopic,
       discussionGuidance.audienceLabel,
       discussionGuidance.visibilityLabel,
       locale,
@@ -434,6 +484,7 @@ export function ChatShell({
       if (!isAvailable) {
         return;
       }
+      setComposerMode("message");
       setActiveChannelType(channelType);
     },
     [
@@ -442,9 +493,44 @@ export function ChatShell({
       hasGreaterParisZone,
       effectiveZone,
       territoryFocus,
+      setComposerMode,
       setActiveChannelType,
     ],
   );
+
+  const sidebarTopics = useMemo(
+    () =>
+      channelTopics.map((topic) => ({
+        ...topic,
+        active: topic.id === activeTopicId,
+        onSelect: () => setActiveTopicId(topic.id),
+      })),
+    [activeTopicId, channelTopics, setActiveTopicId],
+  );
+
+  const sidebarTopicSectionTitle = useMemo(() => {
+    if (activeChannelType === "community") {
+      return locale === "fr" ? "Salons proposés" : "Suggested rooms";
+    }
+    if (activeChannelType === "territory") {
+      return locale === "fr" ? "Salons de zone" : "Area rooms";
+    }
+    return null;
+  }, [activeChannelType, locale]);
+
+  const sidebarTopicSectionDescription = useMemo(() => {
+    if (activeChannelType === "community") {
+      return locale === "fr"
+        ? "Raccourcis thématiques sans créer de nouveau canal."
+        : "Thematic shortcuts without creating new channels.";
+    }
+    if (activeChannelType === "territory") {
+      return locale === "fr"
+        ? "Points locaux et coordination de voisinage."
+        : "Local points and nearby coordination.";
+    }
+    return null;
+  }, [activeChannelType, locale]);
 
   const handleViewModeChange = useCallback(
     (mode: "messages" | "graph") => {
@@ -507,22 +593,67 @@ export function ChatShell({
   );
 
   return (
-    <div className="flex flex-col h-[750px] rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl relative bg-slate-900/40 backdrop-blur-3xl">
+    <div className={`flex flex-col h-[750px] rounded-[3rem] overflow-hidden shadow-2xl relative backdrop-blur-3xl ${isLight ? "border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,251,253,0.98)_0%,rgba(255,244,248,0.94)_100%)]" : "border border-white/10 bg-slate-900/40"}`}>
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar
           channels={sidebarChannels}
           currentChannelType={activeChannelType}
           onSelectChannel={handleSelectChannel}
+          onSelectTopic={(topicId) => setActiveTopicId(topicId)}
+          topicSectionTitle={sidebarTopicSectionTitle}
+          topicSectionDescription={sidebarTopicSectionDescription}
+          topics={sidebarTopics}
+          tone={isLight ? "light" : "dark"}
         />
-        <div className="flex-1 flex flex-col relative bg-white/5 dark:bg-slate-950/20">
+        <div className={`flex-1 flex flex-col relative ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
+          {activeChannelType === "community" && isLight ? (
+            <div className="px-4 pt-4 sm:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] border border-rose-100/70 bg-[linear-gradient(90deg,rgba(255,244,248,0.98)_0%,rgba(255,255,255,0.95)_100%)] px-5 py-4 shadow-sm">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+                    <span className="text-xl">📣</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500">
+                      {activeTopic?.label ?? "Relais actif"}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-600">
+                      {activeTopic?.description ?? "Une annonce est en cours de relai dans ce salon."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {communityAnnouncementAvatars.map((sender, index) => (
+                    <div
+                      key={sender.handle}
+                      className={`h-8 w-8 overflow-hidden rounded-full border border-white shadow-sm ${index > 0 ? "-ml-2" : ""}`}
+                      title={sender.display_name}
+                    >
+                      <Image
+                        src={sender.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender.display_name)}`}
+                        alt={sender.display_name}
+                        className="h-full w-full object-cover"
+                        width={32}
+                        height={32}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-100 bg-white text-[10px] font-black text-rose-500 shadow-sm">
+                    +{Math.max(0, messages.length - communityAnnouncementAvatars.length)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {activeChannelType === "community" ? (
-            <div className="border-b border-emerald-200/12 bg-emerald-500/5 px-4 py-3 sm:px-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-emerald-200/12 bg-[rgba(5,34,20,0.32)] px-4 py-3">
+            <div className={`border-b px-4 py-3 sm:px-5 ${isLight ? "border-rose-100/70 bg-transparent" : "border-emerald-200/12 bg-emerald-500/5"}`}>
+              <div className={`flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border px-4 py-3 ${isLight ? "border-rose-100 bg-white/90 shadow-sm" : "border-emerald-200/12 bg-[rgba(5,34,20,0.32)]"}`}>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200/70">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${isLight ? "text-rose-500" : "text-emerald-200/70"}`}>
                     Parrainage
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white/90">
+                  <p className={`mt-1 text-sm font-semibold ${isLight ? "text-slate-600" : "text-white/90"}`}>
                     Invitez un ami depuis votre profil et conservez la chaîne de
                     filiation.
                   </p>
@@ -543,7 +674,7 @@ export function ChatShell({
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
-            activeChannelDescription=""
+            activeChannelDescription={discussionGuidance.cardSummary || activeChannelDefinition.description}
             activeChannelIcon={ActiveChannelIcon}
             activeChannelAccentClass={activeChannelVisual.accentClass}
             metaItems={metaItems}
@@ -556,10 +687,40 @@ export function ChatShell({
             onToggleHandleEditor={handleToggleHandleEditor}
             onHandleChange={handleHandleChange}
             onConfirmHandle={handleUpdateHandle}
+            tone={isLight ? "light" : "dark"}
+            showControls={!isLight}
           />
 
+          {activeChannelType === "community" ? (
+            <div className="px-6 pt-5">
+              <div className={`rounded-[2rem] border p-5 shadow-sm ${isLight ? "border-rose-100 bg-white" : "border-rose-200/10 bg-rose-500/5"}`}>
+                <div className="flex items-start gap-4">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isLight ? "bg-rose-50 text-rose-500" : "bg-rose-500/10 text-rose-400"}`}>
+                    <span className="text-xl">📣</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-black ${isLight ? "text-slate-900" : "text-slate-100"}`}>
+                      Annonce en cours de relai
+                    </p>
+                    <p className={`mt-1 text-sm leading-relaxed ${isLight ? "text-slate-600" : "text-slate-300"}`}>
+                      {activeTopic?.starterPrompt ||
+                        "Besoin de diffuser : appel à bénévoles pour le nettoyage des berges samedi 18 mai à 9h."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleStarterPrompt(activeTopic?.starterPrompt || discussionGuidance.starterPrompts[0] || "")}
+                      className={`mt-4 inline-flex items-center rounded-full border px-4 py-2 text-xs font-black uppercase tracking-widest transition ${isLight ? "border-rose-200 bg-white text-rose-600 hover:bg-rose-50" : "border-rose-300/20 bg-white/5 text-rose-300 hover:bg-white/10"}`}
+                    >
+                      Voir les détails
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {isBugReportChannel ? (
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
               <FeedbackSection
                 pagePath={pathname}
                 source="feedback_discussion"
@@ -573,11 +734,11 @@ export function ChatShell({
             <>
               <div
                 ref={scrollRef}
-                className="flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar"
+                className={`flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar ${isLight ? "bg-transparent" : ""}`}
               >
-                {feedState === "loading" && <ChatLoadingState />}
+                {feedState === "loading" && <ChatLoadingState tone={isLight ? "light" : "dark"} />}
                 {feedState === "degraded" && (
-                  <ChatDegradedState error={messagesError} />
+                  <ChatDegradedState error={messagesError} tone={isLight ? "light" : "dark"} />
                 )}
                 {feedState === "empty" && (
                   <ChatEmptyState
@@ -587,26 +748,27 @@ export function ChatShell({
                     selectedRecipientId={selectedRecipient?.id}
                     onStarterPrompt={handleStarterPrompt}
                     onOpenRecipientPicker={() => setIsRecipientPickerOpen(true)}
+                    tone={isLight ? "light" : "dark"}
                   />
                 )}
                 {messages.map((msg) => (
-                  <ChatMessageItem key={msg.id} message={msg} userId={userId} />
+                  <ChatMessageItem key={msg.id} message={msg} userId={userId} tone={isLight ? "light" : "dark"} />
                 ))}
               </div>
 
               {feedState !== "degraded" && feedState !== "empty" ? (
                 <div className="px-6 pb-4">
-                  <div className="flex items-center gap-3 rounded-[1.5rem] border border-white/5 bg-white/5 px-4 py-3 shadow-sm dark:bg-slate-900/40">
-                    <span className="rounded-full bg-violet-500/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-400">
+                  <div className={`flex items-center gap-3 rounded-[1.5rem] px-4 py-3 shadow-sm ${isLight ? "border border-rose-100 bg-white/90" : "border border-white/5 bg-white/5 dark:bg-slate-900/40"}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-600" : "bg-violet-500/20 text-violet-400"}`}>
                       {discussionGuidance.channelGoal}
                     </span>
-                    <p className="min-w-0 text-xs text-slate-400">
+                    <p className={`min-w-0 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                       {discussionGuidance.composerHint}
                     </p>
                     {isLive && (
-                      <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      <div className={`ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/20"}`}>
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${isLight ? "text-emerald-600" : "text-emerald-500"}`}>
                           Live
                         </span>
                       </div>
@@ -618,6 +780,10 @@ export function ChatShell({
               <ChatComposer
                 activeChannelType={activeChannelType}
                 composerPlaceholder={composerPlaceholder}
+                tone={isLight ? "light" : "dark"}
+                composerMode={composerMode}
+                onComposerModeChange={setComposerMode}
+                showModeTabs={activeChannelType === "community"}
                 userId={userId}
                 message={message}
                 onMessageChange={handleTextChange}

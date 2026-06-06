@@ -112,8 +112,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const formattedPendingDraftSavedAt = formatDraftDate(pendingDraftSavedAt);
   const isCompletionBlocked = !props.isAuthenticated || isMobile;
   const restrictionMessage = isMobile
-    ? "En attendant que l'application mobile Clean my map soit disponible pour récupérer le tracé GPS exact de l'action, le formulaire bénévole ne peut être créé que sur ordinateur pour tracer le chemin emprunté à la main avec le maximum de précision possible. Merci de déclarer votre action spontanée sur ordinateur ou d'attendre que l'organisateur de votre action crée le formulaire de groupe pour ensuite le rejoindre."
-    : "Ce formulaire est consultable publiquement, mais la saisie complète nécessite une connexion sur ordinateur.";
+    ? "La saisie complète se fait sur ordinateur. Sur mobile, l'aperçu reste en lecture seule."
+    : "La saisie complète se fait sur ordinateur.";
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -187,8 +187,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     className="mt-1 text-xl font-black tracking-tight text-amber-950"
                   >
                     {isMobile
-                      ? "Formulaire mobile indisponible"
-                      : "Formulaire en lecture seule"}
+                      ? "Saisie mobile indisponible"
+                      : "Saisie verrouillée"}
                   </h3>
                 </div>
               </div>
@@ -209,7 +209,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 <div className="flex items-start gap-3 rounded-2xl border border-amber-200/70 bg-amber-50 px-4 py-3">
                   <Smartphone size={16} className="mt-0.5 shrink-0 text-amber-700" />
                   <p className="text-sm leading-6 text-amber-950/76">
-                    Vous pouvez fermer ce message et revenir à l&apos;aperçu du formulaire et à la navigation.
+                    Ouvrez le formulaire sur ordinateur pour continuer.
                   </p>
                 </div>
               ) : null}
@@ -287,10 +287,10 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700/80">
-                    Mobile seulement
+                    Aperçu mobile
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6">
-                    Le formulaire complet ne se remplit pas sur téléphone. Touchez ici pour lire l&apos;explication.
+                    L&apos;aperçu est en lecture seule. Ouvrez-le sur ordinateur pour remplir le formulaire.
                   </p>
                 </div>
               </button>
@@ -307,8 +307,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   type="button"
                   aria-label={
                     isMobile
-                      ? "Ouvrir l'explication sur le formulaire mobile"
-                      : "Ouvrir l'explication sur le formulaire en lecture seule"
+                      ? "Ouvrir l'explication mobile"
+                      : "Ouvrir l'explication"
                   }
                   aria-hidden="true"
                   tabIndex={-1}
@@ -329,13 +329,12 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     </span>
                   </div>
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">
-                    Déclarer une action
+                    Créer un formulaire
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 font-medium text-emerald-900/62 md:text-[0.98rem]">
-                    Tous les champs sont visibles sur une seule page. Pourquoi mesurer votre impact ? Vos données
-                    permettent d&apos;évaluer l&apos;impact réel de la propreté urbaine et d&apos;aider les services de
-                    voirie à optimiser leurs tournées. Quatre rubriques structurent la saisie: identité, récolte,
-                    parcours, validation.
+                    Tous les champs tiennent sur une page. Les données servent à mesurer l&apos;impact réel et à
+                    organiser la suite. Quatre rubriques structurent la saisie: identité, récolte, parcours,
+                    validation.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900/74">

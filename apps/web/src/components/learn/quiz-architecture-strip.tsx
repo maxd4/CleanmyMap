@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import { Clock3, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CognitiveSignalChip } from "@/components/learn/cognitive-signal-chip";

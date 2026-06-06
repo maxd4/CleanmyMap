@@ -2,10 +2,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { evaluateActionQualityScore, toFloat, toInt } from "./progression-utils";
 import type { ActionRow } from "./progression-types";
 import { isSpontaneousActionNotes } from "./progression-data";
+import { getTimeScopeFloorDate } from "@/lib/time-scopes";
+import { runActionQuery } from "@/lib/actions/query";
 
 export function getCurrentYearStartDate(): string {
-  const year = new Date().getFullYear();
-  return `${year}-01-01T00:00:00.000Z`;
+  return getTimeScopeFloorDate("yearToDate") ?? new Date().toISOString().slice(0, 10);
+}
+
+export function getYearToDateStartDate(): string {
+  return getCurrentYearStartDate();
 }
 
 export async function loadUserAnnualImpactStats(
@@ -21,21 +26,18 @@ export async function loadUserAnnualImpactStats(
     }
   >
 > {
-  const startDate = getCurrentYearStartDate();
+  const startDate = getYearToDateStartDate();
 
   // Fetch only approved actions from this year
-  const result = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-    )
-    .eq("status", "approved")
-    .gte("action_date", startDate.slice(0, 10)) // Using YYYY-MM-DD
-    .limit(10000);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  const result = await runActionQuery<ActionRow>(supabase, (query) =>
+    query
+      .select(
+        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+      )
+      .eq("status", "approved")
+      .gte("action_date", startDate)
+      .limit(10000),
+  );
 
   const grouped = new Map<
     string,
@@ -47,7 +49,7 @@ export async function loadUserAnnualImpactStats(
     }
   >();
 
-  for (const row of (result.data ?? []) as ActionRow[]) {
+  for (const row of result) {
     if (!isSpontaneousActionNotes(row.notes)) {
       continue;
     }
@@ -94,23 +96,20 @@ export async function getUserAnnualImpact(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<{ wasteKg: number; validatedActions: number }> {
-  const startDate = getCurrentYearStartDate();
+  const startDate = getYearToDateStartDate();
   
-  const result = await supabase
-    .from("actions")
-    .select("waste_kg, status, notes")
-    .eq("created_by_clerk_id", userId)
-    .eq("status", "approved")
-    .gte("action_date", startDate.slice(0, 10));
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  const result = await runActionQuery<Pick<ActionRow, "waste_kg" | "status" | "notes">>(supabase, (query) =>
+    query
+      .select("waste_kg, status, notes")
+      .eq("created_by_clerk_id", userId)
+      .eq("status", "approved")
+      .gte("action_date", startDate),
+  );
 
   let wasteKg = 0;
   let validatedActions = 0;
 
-  for (const row of result.data ?? []) {
+  for (const row of result) {
     if (!isSpontaneousActionNotes((row as { notes?: string | null }).notes ?? null)) {
       continue;
     }

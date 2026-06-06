@@ -4,6 +4,7 @@ import React from "react";
 import CleanZonesBadge from "./CleanZonesBadge";
 import type { GemGrade } from "@/lib/gamification/types";
 import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
 
 export default function CleanZonesBadgeWrapper() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -17,18 +18,7 @@ export default function CleanZonesBadgeWrapper() {
     (async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/gamification/badges/list");
-        if (!res.ok) {
-          if (res.status === 401) {
-            setError("access_denied");
-          } else {
-            setError("fetch_failed");
-          }
-          setCleanZonesData(null);
-          return;
-        }
-
-        const data = await res.json();
+        const data = await loadGamificationBadgesListClient();
 
         // Extract clean zones badges from response
         const cleanZonesBadges = data.badges?.filter(
@@ -58,8 +48,12 @@ export default function CleanZonesBadgeWrapper() {
           grades,
         });
       } catch (err) {
+        if (err instanceof Error && (err as { status?: number }).status === 401) {
+          setError("access_denied");
+        } else {
+          setError("fetch_failed");
+        }
         console.error("Failed to fetch clean zones badge data:", err);
-        setError("fetch_failed");
         setCleanZonesData(null);
       } finally {
         setIsLoading(false);

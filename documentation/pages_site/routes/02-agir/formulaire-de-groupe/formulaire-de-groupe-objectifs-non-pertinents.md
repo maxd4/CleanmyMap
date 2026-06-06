@@ -1,6 +1,6 @@
-# Formulaire de groupe - Objectifs non pertinents
+# Créer un formulaire - Objectifs non pertinents
 
-But: mémoriser les idées écartées pour `Formulaire de groupe` afin d'éviter de les reproposer.
+But: mémoriser les idées écartées pour `Créer un formulaire` afin d'éviter de les reproposer.
 
 ## Liste des objectifs écartés
 
@@ -10,4 +10,3 @@ But: mémoriser les idées écartées pour `Formulaire de groupe` afin d'éviter
 
 - Les propositions listées ici restent écartées par défaut.
 - Si une idée redevient pertinente, elle doit sortir de ce fichier avant toute réintroduction.
-

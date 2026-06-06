@@ -17,6 +17,8 @@ describe("/api/documentation/[slug] GET", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("text/markdown");
     expect(response.headers.get("Content-Disposition")).toContain("graphique_impact_CO2e.md");
+    expect(response.headers.get("Cache-Control")).toContain("s-maxage=86400");
+    expect(response.headers.get("Cache-Control")).not.toContain("no-store");
     expect(await response.text()).toContain("Graphique d'impact CO2e");
   });
 
@@ -28,4 +30,3 @@ describe("/api/documentation/[slug] GET", () => {
     expect(response.status).toBe(404);
   });
 });
-

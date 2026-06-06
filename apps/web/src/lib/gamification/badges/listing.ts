@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadValidatedCompleteActionCountForUser } from "@/lib/gamification/progression-data";
+import { loadActionRowsForUser, loadValidatedCompleteActionCountForUser } from "@/lib/gamification/progression-data";
 import { collectEligibleCleanZoneSources } from "@/lib/gamification/clean-zones";
 import { auditXpAttribution } from "@/lib/gamification/notifications";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "@/lib/gamification/progression-event-write-policy";
+import type { ActionRow } from "@/lib/gamification/progression-types";
+import { runActionQuery } from "@/lib/actions/query";
 import {
   buildCleanZonesBadges,
   buildExplorerFamily,
@@ -129,15 +131,14 @@ async function loadEligibleFormsCount(supabase: SupabaseClient): Promise<number>
   return bestEffort(0, async () => {
     const { data: formsData, error: formsError } = await supabase
       .from("forms")
-      .select("action_id, group_id, status, created_at, is_test, validated_by_admin, is_duplicate, is_deleted")
+      .select("action_id, group_id, status, is_test, validated_by_admin, is_duplicate, is_deleted")
       .neq("status", "draft")
       .neq("status", "deleted")
       .neq("status", "incomplete")
       .eq("validated_by_admin", true)
       .is("is_duplicate", false)
       .is("is_deleted", false)
-      .is("is_test", false)
-      .order("created_at", { ascending: true });
+      .is("is_test", false);
 
     if (formsError || !Array.isArray(formsData)) {
       return 0;
@@ -147,14 +148,12 @@ async function loadEligibleFormsCount(supabase: SupabaseClient): Promise<number>
       new Set(formsData.map((form) => form.action_id).filter(Boolean)),
     );
 
-    const { data: actionsMap } = await supabase
-      .from("actions")
-      .select("id, type, status")
-      .in("id", actionIds)
-      .in("status", ["approved"]);
+    const actionsMap = await runActionQuery<{ id: string; type: string }>(supabase, (query) =>
+      query.select("id, type").in("id", actionIds).eq("status", "approved"),
+    );
 
-    const actionById: Record<string, { id: string; type: string; status: string }> = {};
-    (actionsMap ?? []).forEach((action) => {
+    const actionById: Record<string, { id: string; type: string }> = {};
+    actionsMap.forEach((action) => {
       actionById[action.id] = action;
     });
 
@@ -168,6 +167,53 @@ async function loadEligibleFormsCount(supabase: SupabaseClient): Promise<number>
         continue;
       }
       if (form.status === "draft" || form.status === "deleted" || form.is_test) {
+        continue;
+      }
+
+      const key = `${form.action_id}::${form.group_id || "null"}`;
+      counted.add(key);
+    }
+
+    return counted.size;
+  });
+}
+
+async function loadEligibleFormsCountFromActionRows(
+  supabase: SupabaseClient,
+  actionRows: ActionRow[],
+): Promise<number> {
+  return bestEffort(0, async () => {
+    const actionById = new Map(
+      actionRows
+        .filter((action) => action.status === "approved")
+        .map((action) => [action.id, { id: action.id, type: action.type }] as const),
+    );
+
+    if (actionById.size === 0) {
+      return 0;
+    }
+
+    const actionIds = [...actionById.keys()];
+    const { data: formsData, error: formsError } = await supabase
+      .from("forms")
+      .select("action_id, group_id, status, is_test, validated_by_admin, is_duplicate, is_deleted")
+      .neq("status", "draft")
+      .neq("status", "deleted")
+      .neq("status", "incomplete")
+      .eq("validated_by_admin", true)
+      .is("is_duplicate", false)
+      .is("is_deleted", false)
+      .is("is_test", false)
+      .in("action_id", actionIds);
+
+    if (formsError || !Array.isArray(formsData)) {
+      return 0;
+    }
+
+    const counted = new Set<string>();
+    for (const form of formsData) {
+      const action = actionById.get(form.action_id);
+      if (!action || action.type === "zone_propre") {
         continue;
       }
 
@@ -193,9 +239,9 @@ async function loadCleanZoneSourcesForUser(
       .eq("user_id", userId)
       .eq("spot_type", "clean_place")
       .in("status", ["validated", "cleaned"])
-      .neq("latitude", null)
-      .neq("longitude", null)
-      .neq("notes", null)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .not("notes", "is", null)
       .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
 
     let otherSpots: any[] = [];
@@ -204,9 +250,9 @@ async function loadCleanZoneSourcesForUser(
       .select("id, status, latitude, longitude, notes, cleaned_at, validated_at")
       .eq("created_by_clerk_id", userId)
       .in("status", ["validated", "cleaned"])
-      .neq("latitude", null)
-      .neq("longitude", null)
-      .neq("notes", null)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .not("notes", "is", null)
       .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
 
     if (Array.isArray(spots)) {
@@ -225,6 +271,7 @@ export async function loadGamificationBadgesList(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationBadgesListPayload> {
+  const actionRows = await bestEffort<ActionRow[]>([], async () => loadActionRowsForUser(supabase, userId));
   const [
     pointsData,
     actionsCount,
@@ -243,27 +290,26 @@ export async function loadGamificationBadgesList(
       return data?.total_points ?? 0;
     }),
     bestEffort<number>(0, async () => {
-      const { count } = await supabase
-        .from("actions")
-        .select("*", { count: "exact", head: true })
-        .eq("created_by_clerk_id", userId)
-        .eq("status", "approved");
-      return Number(count ?? 0);
+      return Number(
+        actionRows.filter(
+          (action) => action.created_by_clerk_id === userId && action.status === "approved",
+        ).length,
+      );
     }),
-    loadValidatedCompleteActionCountForUser(supabase, userId).catch(() => 0),
+    loadValidatedCompleteActionCountForUser(supabase, userId, { actionRows }).catch(() => 0),
     bestEffort<number>(0, async () => {
       const { count } = await supabase
         .from("user_visited_places")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", userId);
       return Number(count ?? 0);
     }),
-    loadEligibleFormsCount(supabase),
+    loadEligibleFormsCountFromActionRows(supabase, actionRows),
     loadCleanZoneSourcesForUser(supabase, userId),
     bestEffort<number>(0, async () => {
       const { count } = await supabase
         .from("action_participants")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", userId);
       return Number(count ?? 0);
     }),

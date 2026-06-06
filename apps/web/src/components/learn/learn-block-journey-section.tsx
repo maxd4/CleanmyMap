@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";

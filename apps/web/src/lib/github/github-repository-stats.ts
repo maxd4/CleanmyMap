@@ -8,6 +8,7 @@ export type GitHubRepositoryStats = {
   htmlUrl: string;
   isPrivate: boolean;
   defaultBranch: string | null;
+  workflowRunsCount30d: number | null;
   dependabotOpenAlertsCount: number | null;
   codeScanningWarningCount: number | null;
   actionsQuotaLabel: string | null;
@@ -26,6 +27,10 @@ type CodeScanningAlertResponse = {
   rule?: {
     severity?: string | null;
   } | null;
+};
+
+type WorkflowRunsResponse = {
+  total_count: number;
 };
 
 function buildHeaders(token: string | null): HeadersInit {
@@ -63,6 +68,7 @@ async function resolveGitHubToken(): Promise<string | null> {
 async function fetchJson<T>(path: string, token: string | null): Promise<T | null> {
   const response = await fetch(`https://api.github.com${path}`, {
     headers: buildHeaders(token),
+    next: { revalidate: 3600 },
   });
 
   if (!response.ok) {
@@ -80,6 +86,7 @@ async function fetchPaginatedArray<T>(path: string, token: string | null): Promi
   while (nextUrl && guard < 10) {
     const response: Response = await fetch(nextUrl, {
       headers: buildHeaders(token),
+      next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
@@ -98,11 +105,30 @@ async function fetchPaginatedArray<T>(path: string, token: string | null): Promi
   return items;
 }
 
+async function fetchWorkflowRunsCount30d(repoFullName: string, token: string | null): Promise<number | null> {
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const sinceIso = since.toISOString().slice(0, 10);
+  const response = await fetchJson<WorkflowRunsResponse>(
+    `/repos/${repoFullName}/actions/runs?status=completed&created=>=${sinceIso}&per_page=1`,
+    token,
+  );
+
+  if (!response) {
+    return null;
+  }
+
+  return response.total_count;
+}
+
 export async function loadGitHubRepositoryStats(
   repoFullName: string,
 ): Promise<GitHubRepositoryStats> {
   const token = await resolveGitHubToken();
   const repo = await fetchJson<GitHubRepositoryResponse>(`/repos/${repoFullName}`, token);
+  const workflowRunsCount30d = token
+    ? await fetchWorkflowRunsCount30d(repoFullName, token)
+    : null;
   const dependabotAlerts = token
     ? await fetchPaginatedArray<Record<string, unknown>>(
         `/repos/${repoFullName}/dependabot/alerts?state=open`,
@@ -130,6 +156,7 @@ export async function loadGitHubRepositoryStats(
     htmlUrl: repo?.html_url ?? `https://github.com/${repoFullName}`,
     isPrivate,
     defaultBranch: repo?.default_branch ?? null,
+    workflowRunsCount30d,
     dependabotOpenAlertsCount,
     codeScanningWarningCount,
     actionsQuotaLabel,
@@ -137,10 +164,16 @@ export async function loadGitHubRepositoryStats(
       ? [
           "GitHub Free: 2000 min/mois, 500 MB d’artefacts et 10 GB de cache.",
           "Les alertes Dependabot sont bien disponibles sur les dépôts utilisateur.",
+          workflowRunsCount30d === null
+            ? "Runs GitHub Actions sur 30 jours: NA"
+            : `Runs GitHub Actions sur 30 jours: ${workflowRunsCount30d}`,
         ]
       : [
           "Dépôt public: les runners GitHub standard sont gratuits et illimités.",
           "Les quotas minute Actions s’appliquent surtout aux dépôts privés.",
+          workflowRunsCount30d === null
+            ? "Runs GitHub Actions sur 30 jours: NA"
+            : `Runs GitHub Actions sur 30 jours: ${workflowRunsCount30d}`,
         ],
     source: repo ? "api" : "fallback",
   };

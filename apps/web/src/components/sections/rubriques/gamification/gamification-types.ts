@@ -85,6 +85,11 @@ export type MeResponse = {
       unit: string;
     } | null;
     recognition: ContributorRecognitionSnapshot;
+    annualRecognition: ContributorRecognitionSnapshot;
+    yearToDateImpact: {
+      wasteKg: number;
+      validatedActions: number;
+    };
   };
 };
 
@@ -119,6 +124,7 @@ export type CollectiveItem = {
 export type LeaderboardResponse = {
   status: "ok";
   scope: "individual" | "collective";
+  period: "lifetime" | "yearToDate";
   generatedAt: string;
   items: Array<IndividualItem | CollectiveItem>;
   recognition: ContributorRecognitionSummary;

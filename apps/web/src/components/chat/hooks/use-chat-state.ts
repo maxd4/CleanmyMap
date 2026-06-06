@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -11,6 +12,10 @@ import {
 } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
+import {
+  getDefaultDiscussionTopicId,
+  type ChatTopicId,
+} from "../discussion-guidance";
 import type { ChatUser } from "../chat-types";
 
 type UseChatStateParams = {
@@ -52,6 +57,8 @@ export type UseChatStateModel = {
   setIsRecipientPickerOpen: Dispatch<SetStateAction<boolean>>;
   selectedZone: string;
   isBugReportChannel: boolean;
+  activeTopicId: ChatTopicId | null;
+  setActiveTopicId: Dispatch<SetStateAction<ChatTopicId | null>>;
   fileInputRef: MutableRefObject<HTMLInputElement | null>;
   scrollRef: MutableRefObject<HTMLDivElement | null>;
   submitLockRef: MutableRefObject<boolean>;
@@ -85,6 +92,9 @@ export function useChatState({
   const [isRecipientPickerOpen, setIsRecipientPickerOpen] = useState(
     initialChannelType === "dm",
   );
+  const [activeTopicId, setActiveTopicId] = useState<ChatTopicId | null>(
+    getDefaultDiscussionTopicId(initialChannelType),
+  );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -97,6 +107,10 @@ export function useChatState({
         ? `${initialArrondissement}e arrondissement`
         : "";
   const isBugReportChannel = activeChannelType === "bug_report";
+
+  useEffect(() => {
+    setActiveTopicId(getDefaultDiscussionTopicId(activeChannelType));
+  }, [activeChannelType]);
 
   const setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>> = useCallback(
     (nextValue) => {
@@ -180,6 +194,8 @@ export function useChatState({
     setIsRecipientPickerOpen,
     selectedZone,
     isBugReportChannel,
+    activeTopicId,
+    setActiveTopicId,
     fileInputRef,
     scrollRef,
     submitLockRef,

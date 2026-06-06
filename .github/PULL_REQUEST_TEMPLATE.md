@@ -21,5 +21,6 @@
 
 ## Checklist
 - [ ] Mes changements respectent le [GOVERNANCE.md](documentation/ai-guides/GOVERNANCE.md).
+- [ ] J'ai passé la [Checklist Performance & Quotas Vercel](documentation/development/performance-quotas-vercel-checklist.md) avant la revue.
 - [ ] J'ai ajouté des tests si nécessaire.
 - [ ] La documentation a été mise à jour.

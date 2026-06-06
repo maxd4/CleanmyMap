@@ -172,4 +172,66 @@ describe("loadValidatedActionIdsForUser", () => {
 
     expect(Array.from(validatedActionIds)).toEqual(["action-1"]);
   });
+
+  it("uses preloaded action rows without querying actions again", async () => {
+    const actions = [
+      {
+        id: "action-1",
+        created_at: "2026-01-01",
+        created_by_clerk_id: "user-1",
+        actor_name: "Alice",
+        action_date: "2026-01-01",
+        location_label: "Parc A",
+        latitude: null,
+        longitude: null,
+        waste_kg: 0,
+        cigarette_butts: 0,
+        volunteers_count: 1,
+        duration_minutes: 45,
+        status: "approved",
+        notes: appendActionMetadataToNotes("Action de terrain", {
+          associationName: "Action spontanée",
+        }),
+        manual_drawing: null,
+      },
+    ];
+
+    const forms = [
+      {
+        action_id: "action-1",
+        group_id: "g1",
+        status: "validated",
+        created_at: "2026-01-04",
+        validated_by_admin: true,
+        is_duplicate: false,
+        is_deleted: false,
+        is_test: false,
+      },
+    ];
+
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "actions") {
+          throw new Error("actions table should not be queried when rows are preloaded");
+        }
+        if (table === "action_organizers") {
+          const chain: any = {};
+          chain.select = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          chain.limit = vi.fn(async () => ({ data: [], error: null }));
+          return chain;
+        }
+        if (table === "forms") {
+          return createFormsQuery(forms);
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      }),
+    } as any;
+
+    const validatedActionIds = await loadValidatedActionIdsForUser(supabase, "user-1", {
+      actionRows: actions as any,
+    });
+
+    expect(Array.from(validatedActionIds)).toEqual(["action-1"]);
+  });
 });

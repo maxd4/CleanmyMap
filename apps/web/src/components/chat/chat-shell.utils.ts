@@ -6,7 +6,10 @@ import {
   getChatChannelDefinition,
   type ChatChannelType,
 } from "@/lib/chat/channels";
-import { getDiscussionGuidance } from "./discussion-guidance";
+import {
+  getDiscussionGuidance,
+  type ChatTopicId,
+} from "./discussion-guidance";
 
 export type ChannelVisual = {
   icon: LucideIcon;
@@ -115,6 +118,7 @@ export function getChannelPlaceholder(channelType: ChatChannelType): string {
 
 export type ChatEmptyStateCopy = {
   title: string;
+  cardSummary: string;
   description: string;
   starterTitle: string;
   starterPrompts: string[];
@@ -131,15 +135,17 @@ export function getEmptyStateCopy(
   locale: "fr" | "en",
   recipientLabel?: string | null,
   territoryLabel?: string | null,
+  topicId?: ChatTopicId | null,
 ): ChatEmptyStateCopy {
   const guidance = getDiscussionGuidance(channelType, {
     locale,
     recipientLabel,
     territoryLabel,
-  });
+  }, topicId);
 
   return {
     title: guidance.emptyTitle,
+    cardSummary: guidance.cardSummary,
     description: guidance.emptyDescription,
     starterTitle: guidance.starterTitle,
     starterPrompts: guidance.starterPrompts,

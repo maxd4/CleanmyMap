@@ -118,6 +118,14 @@ function formatImpactKg(value: number | null | undefined): string {
   }).format(value)} kg`;
 }
 
+function formatCount(value: number | null | undefined): string {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "NA";
+  }
+
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+}
+
 function getPlanTone(planType: ServicePlanType): string {
   switch (planType) {
     case "gratuit":
@@ -244,6 +252,9 @@ function buildDisplayedServices(
       const details = [
         githubStats?.actionsQuotaLabel ?? "NA",
         ...(githubStats?.actionsNotes ?? []),
+        githubStats?.workflowRunsCount30d == null
+          ? "Runs GitHub Actions sur 30 jours: NA"
+          : `Runs GitHub Actions sur 30 jours: ${formatCount(githubStats.workflowRunsCount30d)}`,
         dependabotCount === null ? "Dependabot: NA" : `Dependabot: ${dependabotCount}`,
         warningCount === null ? "Warnings: NA" : `Warnings: ${warningCount}`,
       ];
@@ -273,6 +284,47 @@ function buildDisplayedServices(
     const service = serviceByKey.get(definition.key) ?? null;
     const quotaSummary = service ? buildServiceQuotaSummary(service) : null;
     const planInfo = getServicePlanInfo(definition.key);
+
+    if (definition.key === "resend") {
+      const resendEmailsMetric =
+        quotaSummary?.metrics.find((metric) => metric.key === "resendEmailsSent") ?? null;
+      const resendEmailsSummary = resendEmailsMetric
+        ? {
+            ...resendEmailsMetric,
+            isPrimary: true,
+          }
+        : null;
+      const resendEmailsSentText = resendEmailsSummary
+        ? `${formatCount(resendEmailsSummary.quantityPerMonth)} / ${formatCount(
+            resendEmailsSummary.referenceMonthlyQuantity,
+          )}`
+        : "NA";
+
+      return {
+        ...definition,
+        service,
+        planType: planInfo.type,
+        price: planInfo.price,
+        state: resendEmailsSummary?.state ?? "NA",
+        primaryMetric: resendEmailsSummary,
+        metrics: resendEmailsSummary ? [resendEmailsSummary] : [],
+        summary: resendEmailsSummary
+          ? `${resendEmailsSummary.label} · ${resendEmailsSentText} · ${formatServiceQuotaStateLabel(resendEmailsSummary.state)}`
+          : "NA",
+        details: [
+          "Transactionnel: 3 000 emails / mois",
+          "Transactionnel: 100 emails / jour",
+          `Emails envoyés: ${resendEmailsSentText}`,
+          "Emails reçus: NA",
+          "Marketing: 1 000 contacts",
+          "Marketing: broadcasts illimités",
+          "Destinataires multiples comptés séparément",
+        ],
+        linkHref: null,
+        linkLabel: null,
+      };
+    }
+
     const details = [
       ...(planInfo.cycleResetLabel ? [planInfo.cycleResetLabel] : []),
       ...(planInfo.notes ?? []),

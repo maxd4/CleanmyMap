@@ -14,6 +14,7 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 8. [Supabase Linked Advisories Report](./supabase-linked-advisories-2026-05-20.md)
 9. [SQL injection hardening audit](./sql-injection-hardening-audit.md)
 10. [Supabase review checklist](./supabase-review-checklist.md)
+11. [Checklist Performance & Quotas Vercel](../development/performance-quotas-vercel-checklist.md)
 
 ## Checklist courte
 

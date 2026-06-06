@@ -25,6 +25,11 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 - **[ai-guides/SPEC_KIT_ACTIONS.md](./ai-guides/SPEC_KIT_ACTIONS.md)** - liste d'actions derivee de la lecture de Spec Kit.
 - **[ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md](./ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md)** - workflow CleanMyMap pour les skills Matt Pocock, avec quand les utiliser et les commandes de check rapides reelles.
 - **[ai-guides/README.md](./ai-guides/README.md)** - porte d'entree des guides IA.
+- **[development/vercel-quota-governance.md](./development/vercel-quota-governance.md)** - gouvernance des quotas Vercel et détection des régressions de coût.
+- **[development/vercel-surface-report.md](./development/vercel-surface-report.md)** - rapport automatique des surfaces Vercel et de leur risque.
+- **[development/performance-quotas-vercel-checklist.md](./development/performance-quotas-vercel-checklist.md)** - checklist de revue avant PR pour les surfaces Vercel sensibles.
+- **[development/client-server-bundle-splitting.md](./development/client-server-bundle-splitting.md)** - règles pour garder la frontière serveur/client propre et éviter de regonfler le bundle initial.
+- **[development/vercel-route-cost-audit.md](./development/vercel-route-cost-audit.md)** - audit route par route des coûts Vercel.
 
 ### Origine et attribution
 

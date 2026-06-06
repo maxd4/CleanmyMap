@@ -46,6 +46,7 @@ import { GuideOperationalPanel } from "./guide-section";
 import { WeatherLocationPicker } from "./weather-location-picker";
 import { useWeatherData } from "./use-weather-data";
 import { useKitData } from "./use-kit-data";
+import { LearnRessourcesOverview } from "@/components/learn/learn-ressources-client";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 
@@ -1401,6 +1402,34 @@ export function WeatherSection() {
               packItems={kit.packItems}
               fr={fr}
             />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <LightCard className="border-emerald-100 bg-white/95 p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                  <Download size={18} />
+                </span>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+                    {fr ? "Ressources de préparation" : "Preparation resources"}
+                  </p>
+                  <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
+                    {fr
+                      ? "Kit terrain, repères de tri et rendez-vous utiles"
+                      : "Field kit, sorting cues and useful meetups"}
+                  </h3>
+                </div>
+              </div>
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+                {fr
+                  ? "Le contenu déplacé depuis la rubrique Apprendre vit ici, dans la page qui prépare vraiment l’action."
+                  : "The content moved from Learn now lives here, in the page that actually prepares the action."}
+              </p>
+              <div className="mt-5">
+                <LearnRessourcesOverview locale={locale} />
+              </div>
+            </LightCard>
           </motion.div>
         </div>
       </div>

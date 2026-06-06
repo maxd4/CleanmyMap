@@ -75,11 +75,11 @@ export function ActionDeclarationFormFeedback({
       return;
     }
 
-    const text = `Cette action pourra être rejointe après validation: ${resolvedGroupJoinHref}`;
+    const text = `Créer un formulaire après validation: ${resolvedGroupJoinHref}`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Formulaire de groupe CleanMyMap",
+          title: "Créer un formulaire CleanMyMap",
           text,
           url: resolvedGroupJoinHref,
         });
@@ -158,13 +158,13 @@ export function ActionDeclarationFormFeedback({
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-                    Formulaire de groupe
+                    Créer un formulaire
                   </p>
                   <p className="text-sm font-semibold text-sky-950">
                     Cette action pourra être rejointe après validation.
                   </p>
                   <p className="text-xs leading-relaxed text-sky-900/70">
-                    L&apos;organisateur principal et les coorganisateurs peuvent partager ce lien. Il pointera vers la page de jonction et deviendra opérationnel une fois l&apos;action validée.
+                    L&apos;organisateur principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation.
                   </p>
                 </div>
                 <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-800">
@@ -179,7 +179,7 @@ export function ActionDeclarationFormFeedback({
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-950 hover:bg-sky-100 transition"
                 >
                   <Link2 size={13} />
-                  Ouvrir le formulaire de groupe
+                  Créer le formulaire
                 </Link>
                 <button
                   type="button"

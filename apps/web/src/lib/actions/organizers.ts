@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { runSingleActionQuery } from "@/lib/actions/query";
 
 type ProfileLookupRow = {
   id: string;
@@ -86,11 +87,18 @@ async function lookupProfileByToken(
     return null;
   }
 
-  const directId = await supabase
-    .from("profiles")
-    .select("id, display_name, handle")
-    .eq("id", normalized)
-    .maybeSingle();
+  const [directId, directHandle] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, handle")
+      .eq("id", normalized)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, display_name, handle")
+      .eq("handle", normalized)
+      .maybeSingle(),
+  ]);
 
   if (directId.data) {
     return {
@@ -98,12 +106,6 @@ async function lookupProfileByToken(
       sourceToken: token,
     };
   }
-
-  const directHandle = await supabase
-    .from("profiles")
-    .select("id, display_name, handle")
-    .eq("handle", normalized)
-    .maybeSingle();
 
   if (directHandle.data) {
     return {
@@ -115,7 +117,8 @@ async function lookupProfileByToken(
   const displayNameMatch = await supabase
     .from("profiles")
     .select("id, display_name, handle")
-    .ilike("display_name", normalized);
+    .ilike("display_name", normalized)
+    .limit(20);
 
   if (!displayNameMatch.error && Array.isArray(displayNameMatch.data)) {
     const exactMatches = (displayNameMatch.data as ProfileLookupRow[]).filter(
@@ -302,18 +305,12 @@ export async function loadActionOrganizerIdsForAction(
     return organizerIds;
   }
 
-  const actionResult = await supabase
-    .from("actions")
-    .select("created_by_clerk_id")
-    .eq("id", actionId)
-    .maybeSingle();
-
-  if (actionResult.error) {
-    throw new Error(actionResult.error.message);
-  }
+  const actionResult = await runSingleActionQuery<{
+    created_by_clerk_id: string | null;
+  }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", actionId).maybeSingle());
 
   const creatorId =
-    (actionResult.data as { created_by_clerk_id?: string | null } | null)?.created_by_clerk_id?.trim() ||
+    actionResult?.created_by_clerk_id?.trim() ||
     fallbackUserId?.trim() ||
     null;
 

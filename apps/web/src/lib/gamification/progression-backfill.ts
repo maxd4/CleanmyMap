@@ -6,6 +6,7 @@ import {
   extractCommunityOpsFromDescription,
   refreshProgressionProfile,
 } from "./progression-tracking";
+import { runActionQuery } from "@/lib/actions/query";
 
 async function backfillUserActions(
   supabase: SupabaseClient,
@@ -160,20 +161,22 @@ export async function backfillAllProgression(
   supabase: SupabaseClient,
 ): Promise<void> {
   const [actionsUsers, spotsUsers, rsvpUsers, eventUsers] = await Promise.all([
-    supabase.from("actions").select("created_by_clerk_id").limit(10000),
+    runActionQuery<{ created_by_clerk_id: string }>(supabase, (query) =>
+      query.select("created_by_clerk_id").limit(10000),
+    ),
     supabase.from("trash_spotter_spots").select("created_by_clerk_id").limit(10000),
     supabase.from("event_rsvps").select("participant_clerk_id").limit(10000),
     supabase.from("community_events").select("organizer_clerk_id").limit(10000),
   ]);
 
-  for (const result of [actionsUsers, spotsUsers, rsvpUsers, eventUsers]) {
+  for (const result of [spotsUsers, rsvpUsers, eventUsers]) {
     if (result.error) {
       throw new Error(result.error.message);
     }
   }
 
   const userIds = new Set<string>();
-  for (const row of (actionsUsers.data ?? []) as Array<{ created_by_clerk_id: string }>) {
+  for (const row of actionsUsers) {
     if ((row.created_by_clerk_id ?? "").trim()) {
       userIds.add(row.created_by_clerk_id);
     }

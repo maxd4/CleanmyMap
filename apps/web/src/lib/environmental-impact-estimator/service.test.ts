@@ -164,6 +164,15 @@ describe("environmental impact estimator", () => {
     expect(
       model.infrastructure.notes.some((note) => note.includes("point cliquable par semaine")),
     ).toBe(true);
+    expect(model.infrastructure.usage.provenance.length).toBeGreaterThan(0);
+    expect(
+      model.infrastructure.usage.provenance.some((item) => item.source === "reference"),
+    ).toBe(true);
+    expect(
+      model.infrastructure.usage.provenance.some(
+        (item) => item.key === "monthlyChatgptConversationHours",
+      ),
+    ).toBe(true);
 
     const vercel = model.infrastructure.services.find(
       (service) => service.key === "vercel",

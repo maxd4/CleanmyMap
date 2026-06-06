@@ -56,6 +56,7 @@ export function CommunitySection() {
   const [hubCategory, setHubCategory] = useState<HubCategory>("missions");
   const [hubZone, setHubZone] = useState("paris");
   const surfaceTab: SurfaceTab = searchParams.get("tab") === "partners" ? "partners" : "community";
+  const isPartnersTab = surfaceTab === "partners";
 
   function setSurfaceTab(nextTab: SurfaceTab) {
     const params = new URLSearchParams(searchParams.toString());
@@ -97,15 +98,33 @@ export function CommunitySection() {
       title={fr ? "Communauté" : "Community"}
       subtitle={fr ? "Coordonnez la vie de la communauté et accédez au réseau de partenaires." : "Coordinate community life and access the partner network."}
       icon={Users}
+      hideHeader={isPartnersTab}
     >
       <div className="space-y-12 pb-20">
-        <div className="rounded-[2.5rem] border border-white/10 bg-black/25 p-2 backdrop-blur-2xl shadow-2xl">
+        <div
+          className={[
+            "rounded-[2.5rem] p-2 backdrop-blur-2xl shadow-2xl transition-colors",
+            isPartnersTab
+              ? "border border-violet-200 bg-white/85 shadow-[0_20px_60px_-44px_rgba(79,70,229,0.4)]"
+              : "border border-white/10 bg-black/25",
+          ].join(" ")}
+        >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="px-4 pt-2 lg:pt-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
+              <p
+                className={[
+                  "text-[10px] font-black uppercase tracking-[0.28em]",
+                  isPartnersTab ? "text-violet-500/70" : "text-white/45",
+                ].join(" ")}
+              >
                 {fr ? "Navigation de la page" : "Page navigation"}
               </p>
-              <p className="mt-2 text-sm font-semibold text-white/70">
+              <p
+                className={[
+                  "mt-2 text-sm font-semibold",
+                  isPartnersTab ? "text-slate-600" : "text-white/70",
+                ].join(" ")}
+              >
                 {surfaceTab === "community"
                   ? (fr ? "Communauté et coordination interne." : "Community coordination and internal operations.")
                   : (fr ? "Partenaires et parcours réseau." : "Partners and network journeys.")}

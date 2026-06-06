@@ -27,6 +27,17 @@ describe("Quiz SRS Logic", () => {
     expect(diffMins).toBeLessThan(15);
   });
 
+  it("should bring repeated failures back sooner than a first failure", () => {
+    const state = createInitialSRSState("q1");
+    const firstFailure = computeNextSRSState(state, 0);
+    const secondFailure = computeNextSRSState(firstFailure, 0);
+
+    const firstDelay = (new Date(firstFailure.next_review_at).getTime() - new Date().getTime()) / (1000 * 60);
+    const secondDelay = (new Date(secondFailure.next_review_at).getTime() - new Date().getTime()) / (1000 * 60);
+
+    expect(secondDelay).toBeLessThan(firstDelay);
+  });
+
   it("should handle a correct easy answer (quality 5) for the first time", () => {
     const state = createInitialSRSState("q1");
     const nextState = computeNextSRSState(state, 5);

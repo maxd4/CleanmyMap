@@ -19,6 +19,10 @@ export async function GET() {
     return NextResponse.json({
       status: "ok",
       ...payload,
+    }, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+      },
     });
   } catch (error) {
     return handleApiError(error, "GET /api/gamification/badges/list");

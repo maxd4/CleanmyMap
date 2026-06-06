@@ -11,6 +11,8 @@ import type {
   EnvironmentalImpactProjectSignals,
   EnvironmentalImpactSnapshotRecord,
 } from "./types";
+import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
+import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type EnvironmentalImpactCaptureResult = EnvironmentalImpactDashboardResponse & {
@@ -22,14 +24,20 @@ async function buildEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
   historyLimit?: number;
+  githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
   const generatedAt = params.generatedAt ?? new Date().toISOString();
   const historyLimit = params.historyLimit ?? 8;
   const supabase = getSupabaseServerClient();
+  const githubRepositoryStats =
+    params.githubRepositoryStats === undefined
+      ? await loadGitHubRepositoryStats("maxd4/CleanmyMap")
+      : await params.githubRepositoryStats;
 
   const signals = await loadEnvironmentalImpactProjectSignals(supabase, {
     userId: params.userId,
     generatedAt,
+    githubRepositoryStats,
   });
 
   const model = computeEnvironmentalImpactEstimate({
@@ -78,6 +86,7 @@ export async function captureEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
   historyLimit?: number;
+  githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
   const dashboard = await buildEnvironmentalImpactDashboard(params);
   const snapshot = buildEnvironmentalImpactSnapshot({
@@ -97,6 +106,7 @@ export async function loadEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
   historyLimit?: number;
+  githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
   return buildEnvironmentalImpactDashboard(params);
 }

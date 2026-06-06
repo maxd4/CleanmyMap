@@ -17,6 +17,11 @@ Documentation des fonctionnalités pour agents IA.
   - Récompenses
 
 ### Quiz & Apprentissage
+- **quiz-authoring-guide.md** - Règles d'écriture des questions du quiz
+  - Vrai / Faux piégeux
+  - Questions de situation
+  - Anti-questions faciles
+  - Banque équilibrée sur 10 formats
 - **quiz-srs.md** - Système de quiz avec répétition espacée (SRS)
   - Algorithme de répétition
   - Gestion des questions
@@ -34,9 +39,10 @@ Documentation des fonctionnalités pour agents IA.
 
 ### Lors de Modification du Quiz
 1. Consulter **quiz-srs.md**
-2. Respecter l'algorithme SRS
-3. Maintenir la cohérence des questions
-4. Tester la progression
+2. Consulter **quiz-authoring-guide.md** avant de créer ou réécrire une question
+3. Respecter l'algorithme SRS
+4. Maintenir une répartition équilibrée des formats
+5. Tester la progression
 
 ---
 
@@ -49,7 +55,8 @@ Documentation des fonctionnalités pour agents IA.
 
 ### Quiz
 - **SRS** : Respecter l'algorithme de répétition espacée
-- **Difficulté** : Progression graduelle de la difficulté
+- **Formats** : Variété, équilibre et alternance des formats
+- **Raisonnement** : Favoriser la réflexion, les mécanismes et le doute utile
 - **Feedback** : Feedback immédiat et constructif
 
 ---

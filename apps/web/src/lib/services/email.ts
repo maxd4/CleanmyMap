@@ -2,7 +2,7 @@ import { getResendClient } from "./resend";
 import { resolveEmailFrom, resolveEmailReplyTo } from "@/lib/email-config";
 import {
   appendServiceEmailEvent,
-  countServiceEmailEventsForActorSince,
+  countServiceEmailRecipientsForActorSince,
 } from "@/lib/environmental-impact-estimator/service-email-events-store";
 import { logFailure, logWarning } from "@/lib/logging/failure-log";
 
@@ -47,7 +47,7 @@ export async function ensureEmailQuotaAvailable(
   requiredCount = 1,
 ): Promise<void> {
   const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const sentCount = await countServiceEmailEventsForActorSince({
+  const sentCount = await countServiceEmailRecipientsForActorSince({
     actorUserId,
     sinceIso,
     statuses: ["sent"],

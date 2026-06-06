@@ -4,6 +4,7 @@ import React from "react";
 import FormsBadge from "./FormsBadge";
 import type { GemGrade } from "@/lib/gamification/types";
 import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
 
 type FormsGrade = GemGrade;
 
@@ -19,18 +20,7 @@ export default function FormsBadgeWrapper() {
     (async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/gamification/badges/list");
-        if (!res.ok) {
-          if (res.status === 401) {
-            setError("access_denied");
-          } else {
-            setError("fetch_failed");
-          }
-          setFormsData(null);
-          return;
-        }
-
-        const data = await res.json();
+        const data = await loadGamificationBadgesListClient();
 
         // Extract forms badges from response
         const formsBadges = data.badges?.filter(
@@ -60,8 +50,12 @@ export default function FormsBadgeWrapper() {
           grades,
         });
       } catch (err) {
+        if (err instanceof Error && (err as { status?: number }).status === 401) {
+          setError("access_denied");
+        } else {
+          setError("fetch_failed");
+        }
         console.error("Failed to fetch forms badge data:", err);
-        setError("fetch_failed");
         setFormsData(null);
       } finally {
         setIsLoading(false);

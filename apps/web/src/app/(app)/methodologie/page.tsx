@@ -28,7 +28,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = "force-dynamic";
+// The methodology page is public and can be regenerated periodically.
+export const revalidate = 3600;
 
 export default async function MethodologiePage() {
   let freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[] = [];
@@ -44,10 +45,16 @@ export default async function MethodologiePage() {
   let impactLaunchedAt: string | null = null;
 
   try {
-    const dashboard = await loadEnvironmentalImpactDashboard({
+    const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap");
+    const dashboardPromise = loadEnvironmentalImpactDashboard({
       userId: null,
       historyLimit: 24,
+      githubRepositoryStats: githubStatsPromise,
     });
+    const [dashboard, resolvedGitHubStats] = await Promise.all([
+      dashboardPromise,
+      githubStatsPromise,
+    ]);
 
     freePlanServices = dashboard.model.infrastructure.services;
     impactTotals = {
@@ -59,14 +66,9 @@ export default async function MethodologiePage() {
     impactSnapshots = dashboard.snapshots;
     impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
     impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
+    githubStats = resolvedGitHubStats;
   } catch (error) {
     console.error("[MethodologiePage] Failed to load public impact services", error);
-  }
-
-  try {
-    githubStats = await loadGitHubRepositoryStats("maxd4/CleanmyMap");
-  } catch (error) {
-    console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
   }
 
   return (

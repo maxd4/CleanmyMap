@@ -25,6 +25,7 @@ export type ActionRow = {
   id: string;
   created_at: string;
   created_by_clerk_id: string;
+  type?: string | null;
   actor_name: string | null;
   action_date: string;
   location_label: string;
@@ -158,6 +159,11 @@ export type ContributorRecognitionSummary = {
 
 export type ContributorRecognitionSnapshot = {
   currentContributor: ContributorRecognitionCard | null;
+};
+
+export type YearToDateImpactSummary = {
+  wasteKg: number;
+  validatedActions: number;
 };
 
 export type IndividualLeaderboardItem = {

@@ -144,6 +144,51 @@ export function PersonalProgress({
                 />
               </div>
             )}
+            {!loading && progression?.yearToDateImpact && (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] p-5">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">
+                    {locale === "fr" ? "Bilan année en cours" : "Year-to-date balance"}
+                  </p>
+                  <p className="text-3xl font-black text-red-400 tracking-tighter">
+                    <AnimatedCounter value={progression.yearToDateImpact.validatedActions} direction="up" />
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                    {locale === "fr" ? "actions validées" : "validated actions"}
+                  </p>
+                </article>
+                <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] p-5">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">
+                    {locale === "fr" ? "Masse YTD" : "YTD waste"}
+                  </p>
+                  <p className="text-3xl font-black text-red-400 tracking-tighter">
+                    <AnimatedCounter value={progression.yearToDateImpact.wasteKg} direction="up" />
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                    kg
+                  </p>
+                </article>
+              </div>
+            )}
+
+            {!loading && progression?.annualRecognition.currentContributor && (
+              <div className="rounded-[2rem] border border-amber-500/15 bg-amber-500/[0.04] p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-300">
+                    {locale === "fr" ? "Contributeur de l'année" : "Contributor of the year"}
+                  </p>
+                  <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.25em] text-amber-300">
+                    YTD
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-bold text-white">
+                  {progression.annualRecognition.currentContributor.highlight}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                  {progression.annualRecognition.currentContributor.thanksMessage}
+                </p>
+              </div>
+            )}
             {!badgeTotals && !badgeTotalsLoading && !badgeTotalsError && (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-5 h-32 animate-pulse" />

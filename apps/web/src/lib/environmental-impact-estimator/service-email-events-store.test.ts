@@ -98,4 +98,54 @@ describe("service email events store", () => {
     expect(gteMock).toHaveBeenCalledWith("created_at", "2026-05-31T00:00:00.000Z");
     expect(inMock).toHaveBeenCalledWith("status", ["sent"]);
   });
+
+  it("counts sent recipients since a timestamp using recipient_count", async () => {
+    const inMock = vi.fn().mockResolvedValue({
+      error: null,
+      data: [
+        {
+          created_at: "2026-05-31T08:30:00.000Z",
+          status: "sent",
+          actor_user_id: "user_123",
+          recipient_count: 2,
+        },
+        {
+          created_at: "2026-05-31T09:30:00.000Z",
+          status: "sent",
+          actor_user_id: "user_123",
+          recipient_count: 3,
+        },
+      ],
+    });
+    const gteMock = vi.fn().mockReturnValue({
+      in: inMock,
+    });
+    const eqMock = vi.fn().mockReturnValue({
+      gte: gteMock,
+    });
+    const selectMock = vi.fn().mockReturnValue({
+      eq: eqMock,
+    });
+    const fromMock = vi.fn().mockReturnValue({
+      select: selectMock,
+    });
+    getSupabaseServerClientMock.mockReturnValue({
+      from: fromMock,
+    });
+
+    const { countServiceEmailRecipientsForActorSince } = await import("./service-email-events-store");
+    const count = await countServiceEmailRecipientsForActorSince({
+      actorUserId: "user_123",
+      sinceIso: "2026-05-31T00:00:00.000Z",
+    });
+
+    expect(count).toBe(5);
+    expect(fromMock).toHaveBeenCalledWith("service_email_events");
+    expect(selectMock).toHaveBeenCalledWith(
+      "created_at, status, actor_user_id, recipient_count",
+    );
+    expect(eqMock).toHaveBeenCalledWith("actor_user_id", "user_123");
+    expect(gteMock).toHaveBeenCalledWith("created_at", "2026-05-31T00:00:00.000Z");
+    expect(inMock).toHaveBeenCalledWith("status", ["sent"]);
+  });
 });

@@ -176,23 +176,9 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
       },
     },
     {
-      href: "/sections/weather",
-      title: "Météo d'action",
-      detail: "Choisir le bon moment, le bon kit et le bon niveau de risque.",
-      visual: {
-        tone: "cyan",
-        motif: "path",
-        badge: { fr: "Fenêtre", en: "Window" },
-        chips: [
-          { fr: "Kit", en: "Kit" },
-          { fr: "Risque", en: "Risk" },
-        ],
-      },
-    },
-    {
       href: "/actions/map",
       title: "Carte d'entraînement",
-      detail: "Vérifier la zone avant de partir.",
+      detail: "Lire la carte avec les bons repères.",
       visual: {
         tone: "amber",
         motif: "path",
@@ -262,23 +248,9 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
       },
     },
     {
-      href: "/sections/weather",
-      title: "Action weather",
-      detail: "Pick the right moment, kit and risk level.",
-      visual: {
-        tone: "cyan",
-        motif: "path",
-        badge: { fr: "Fenêtre", en: "Window" },
-        chips: [
-          { fr: "Kit", en: "Kit" },
-          { fr: "Risque", en: "Risk" },
-        ],
-      },
-    },
-    {
       href: "/actions/map",
       title: "Training map",
-      detail: "Check the area before leaving.",
+      detail: "Read the map with the right cues.",
       visual: {
         tone: "amber",
         motif: "path",

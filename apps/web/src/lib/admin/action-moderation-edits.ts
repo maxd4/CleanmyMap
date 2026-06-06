@@ -9,6 +9,7 @@ import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { buildPersistedNotes } from "@/lib/actions/store";
 import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
+import { runSingleActionQuery } from "@/lib/actions/query";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -106,21 +107,19 @@ async function loadExistingAction(
   supabase: SupabaseServerClient,
   id: string,
 ): Promise<ExistingActionRow> {
-  const result = await supabase
-    .from("actions")
-    .select(
-      "action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
-    )
-    .eq("id", id)
-    .maybeSingle();
+  const row = await runSingleActionQuery<ExistingActionRow>(supabase, (query) =>
+    query
+      .select(
+        "action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+  );
 
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-  if (!result.data) {
+  if (!row) {
     throw new Error("Action not found");
   }
-  return result.data as ExistingActionRow;
+  return row;
 }
 
 export function buildAdminCleanPlaceUpdates(

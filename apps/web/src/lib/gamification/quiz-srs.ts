@@ -20,6 +20,7 @@ export const SRS_CONFIG = {
   MIN_EASE_FACTOR: 1.3,
   DEFAULT_EASE_FACTOR: 2.5,
   INTERVAL_STAGES: [0, 1, 6], // Jours pour les premières étapes
+  FAILURE_RETRY_MINUTES: [10, 8, 6, 4],
 };
 
 /**
@@ -27,10 +28,12 @@ export const SRS_CONFIG = {
  */
 export function computeNextSRSState(
   current: SRSStats,
-  quality: SRSQuality
+  quality: SRSQuality,
 ): SRSStats {
   let { streak, ease_factor, success_count, failure_count } = current;
   let intervalInDays = 0;
+  let intervalInMinutes = 0;
+  const nextFailureCount = quality >= 3 ? failure_count : failure_count + 1;
 
   if (quality >= 3) {
     // Succès
@@ -47,7 +50,9 @@ export function computeNextSRSState(
       const lastInterval = current.last_seen_at 
         ? Math.max(1, Math.ceil((new Date(current.next_review_at).getTime() - new Date(current.last_seen_at).getTime()) / (1000 * 60 * 60 * 24)))
         : 1;
-      intervalInDays = Math.ceil(lastInterval * ease_factor);
+      const recoveryPenalty = Math.min(0.5, failure_count * 0.12);
+      const qualityPenalty = quality === 3 ? 0.12 : 0;
+      intervalInDays = Math.max(1, Math.ceil(lastInterval * ease_factor * (1 - recoveryPenalty - qualityPenalty)));
     }
 
     // Ajustement de l'Ease Factor (SM-2 simplified)
@@ -59,7 +64,9 @@ export function computeNextSRSState(
     // Échec
     failure_count += 1;
     streak = 0;
-    intervalInDays = 0; // Revoir immédiatement ou dans la session
+    intervalInMinutes = SRS_CONFIG.FAILURE_RETRY_MINUTES[
+      Math.min(SRS_CONFIG.FAILURE_RETRY_MINUTES.length - 1, nextFailureCount - 1)
+    ];
     
     // Pénalité Ease Factor
     ease_factor = Math.max(SRS_CONFIG.MIN_EASE_FACTOR, ease_factor - 0.2);
@@ -74,8 +81,8 @@ export function computeNextSRSState(
   if (intervalInDays > 0) {
     nextReviewDate.setDate(now.getDate() + intervalInDays);
   } else {
-    // Si intervalle 0, on met dans 10 minutes pour la session actuelle
-    nextReviewDate.setMinutes(now.getMinutes() + 10);
+    // Si intervalle 0, on programme une reprise très proche dans la session
+    nextReviewDate.setMinutes(now.getMinutes() + Math.max(2, intervalInMinutes || 10));
   }
 
   return {
@@ -86,17 +93,25 @@ export function computeNextSRSState(
     failure_count,
     streak,
     ease_factor,
-    mastery_level: calculateMasteryLevel(streak, ease_factor)
+    mastery_level: calculateMasteryLevel(streak, ease_factor, failure_count, success_count)
   };
 }
 
 /**
  * Calcul d'un niveau de maîtrise (0 à 5) pour l'UI
  */
-function calculateMasteryLevel(streak: number, ease_factor: number): number {
+function calculateMasteryLevel(
+  streak: number,
+  ease_factor: number,
+  failure_count: number,
+  success_count: number,
+): number {
   if (streak === 0) return 0;
   if (streak === 1) return 1;
   if (streak === 2) return 2;
+  if (failure_count > 0 && success_count <= failure_count) {
+    return 3;
+  }
   if (streak >= 3 && ease_factor < 2.0) return 3;
   if (streak >= 3 && ease_factor < 2.5) return 4;
   return 5;

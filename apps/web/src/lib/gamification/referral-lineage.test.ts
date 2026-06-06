@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildReferralLineageLeaderboard,
   buildReferralLineageView,
   formatReferralLevel,
+  loadReferralLineageView,
 } from "./referral-lineage";
 
 describe("referral lineage", () => {
@@ -72,5 +73,25 @@ describe("referral lineage", () => {
     expect(formatReferralLevel(0)).toBe("Niveau 0");
     expect(formatReferralLevel(1)).toBe("N+1");
     expect(formatReferralLevel(-2)).toBe("N-2");
+  });
+
+  it("loads a focused lineage tree without scanning all profiles", async () => {
+    const focus = profiles[1];
+    const rpcMock = vi.fn(async () => ({
+      data: profiles.slice(0, 3),
+      error: null,
+    }));
+
+    const supabase = {
+      rpc: rpcMock,
+    } as any;
+
+    const view = await loadReferralLineageView(supabase, focus.id);
+
+    expect(view?.focus.id).toBe(focus.id);
+    expect(view?.descendantsCount).toBe(1);
+    expect(rpcMock).toHaveBeenCalledWith("load_referral_lineage_profiles", {
+      focus_profile_id: focus.id,
+    });
   });
 });

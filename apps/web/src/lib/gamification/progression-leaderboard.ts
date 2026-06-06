@@ -11,12 +11,18 @@ import {
   buildPersonalImpactMethodology,
   computePersonalImpactMetrics,
 } from "./progression-impact";
-import { loadUserAnnualImpactStats, getUserAnnualImpact, getCurrentMonthlyMilestone } from "./annual-reset";
+import {
+  getCurrentMonthlyMilestone,
+  getUserAnnualImpact,
+  getYearToDateStartDate,
+  loadUserAnnualImpactStats,
+} from "./annual-reset";
 import {
   actionQualityScoreFromRow,
   fetchActionById,
   loadApprovedActionRows,
   loadActionRowsForUser,
+  loadUserImpactStats,
   loadUserLabelSummary,
   loadUserProgressionStats,
   parseAssociationNameFromActionNotes,
@@ -61,7 +67,14 @@ type UserProgressionResponse = {
   };
   monthlyMilestone: MonthlyMilestone;
   recognition: ContributorRecognitionSnapshot;
+  annualRecognition: ContributorRecognitionSnapshot;
+  yearToDateImpact: {
+    wasteKg: number;
+    validatedActions: number;
+  };
 };
+
+type LeaderboardPeriod = "lifetime" | "yearToDate";
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
   return rows.map((row) => {
@@ -87,6 +100,7 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
 
 async function buildIndividualLeaderboard(
   supabase: SupabaseClient,
+  period: LeaderboardPeriod = "lifetime",
 ): Promise<IndividualLeaderboardItem[]> {
   const [profilesResult, labelsByUser, impactByUser] = await Promise.all([
     supabase
@@ -94,9 +108,11 @@ async function buildIndividualLeaderboard(
       .select(
         "user_id, xp_total, xp_validated, xp_pending, current_level, potential_level",
       )
-      .limit(1000), // Note: Fetch more profiles to allow proper annual sorting
+      .limit(1000),
     loadUserLabelSummary(supabase),
-    loadUserAnnualImpactStats(supabase), // Use Annual impact for the score
+    period === "yearToDate"
+      ? loadUserAnnualImpactStats(supabase)
+      : loadUserImpactStats(supabase),
   ]);
 
   if (profilesResult.error) {
@@ -130,7 +146,6 @@ async function buildIndividualLeaderboard(
         impact.qualityAverage * 3 +
         Math.min(300, impact.wasteKg) * 0.2 +
         impact.validatedActions * 0.5;
-        // Notice we don't add lifetime xp_validated here to have a purely annual ranking.
 
       return {
         rank: 0,
@@ -161,12 +176,22 @@ async function buildIndividualLeaderboard(
         }),
       } as IndividualLeaderboardItem;
     })
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      if (period === "yearToDate") {
+        return (
+          b.score - a.score ||
+          b.validatedActions - a.validatedActions ||
+          b.qualityAverage - a.qualityAverage ||
+          b.currentLevel - a.currentLevel
+        );
+      }
+
+      return (
         b.currentLevel - a.currentLevel ||
         b.xpValidated - a.xpValidated ||
-        b.score - a.score,
-    )
+        b.score - a.score
+      );
+    })
     .slice(0, 60)
     .map((item, index) => ({
       ...item,
@@ -180,7 +205,8 @@ export async function getUserProgression(
 ): Promise<UserProgressionResponse> {
   await backfillUserProgression(supabase, userId);
 
-  const [profileResult, stats, rows, individualItems, annualImpact] = await Promise.all([
+  const yearToDateStartDate = getYearToDateStartDate();
+  const [profileResult, stats, rows, annualRows, individualItems, annualImpact] = await Promise.all([
     supabase
       .from("progression_profiles")
       .select(
@@ -190,6 +216,7 @@ export async function getUserProgression(
       .maybeSingle(),
     loadUserProgressionStats(supabase, userId),
     loadActionRowsForUser(supabase, userId),
+    loadApprovedActionRows(supabase, 10000, yearToDateStartDate),
     buildIndividualLeaderboard(supabase),
     getUserAnnualImpact(supabase, userId),
   ]);
@@ -221,6 +248,7 @@ export async function getUserProgression(
   const timeline = buildTimelineItems(rows).slice(0, 30);
   const rankItem = individualItems.find((item) => item.userId === userId) ?? null;
   const recognitionIndex = buildContributorRecognitionIndex(rows, userId);
+  const annualRecognitionIndex = buildContributorRecognitionIndex(annualRows, userId);
 
   return {
     userId: profile.user_id,
@@ -267,6 +295,10 @@ export async function getUserProgression(
     recognition: {
       currentContributor: recognitionIndex.currentContributor,
     },
+    annualRecognition: {
+      currentContributor: annualRecognitionIndex.currentContributor,
+    },
+    yearToDateImpact: annualImpact,
   };
 }
 
@@ -322,6 +354,7 @@ export async function buildPostActionRetentionLoop(
 export async function getGamificationLeaderboard(
   supabase: SupabaseClient,
   scope: "individual" | "collective",
+  period: LeaderboardPeriod = "lifetime",
 ): Promise<{
   scope: "individual" | "collective";
   generatedAt: string;
@@ -329,14 +362,22 @@ export async function getGamificationLeaderboard(
   recognition: ContributorRecognitionSummary;
 }> {
   await backfillAllProgression(supabase);
+  const yearToDateStartDate = getYearToDateStartDate();
   const approvedActionRows = await loadApprovedActionRows(supabase);
-  const recognitionIndex = buildContributorRecognitionIndex(approvedActionRows);
+  const yearToDateApprovedActionRows = await loadApprovedActionRows(
+    supabase,
+    10000,
+    yearToDateStartDate,
+  );
+  const recognitionRows =
+    period === "yearToDate" ? yearToDateApprovedActionRows : approvedActionRows;
+  const recognitionIndex = buildContributorRecognitionIndex(recognitionRows);
 
   if (scope === "individual") {
     return {
       scope,
       generatedAt: new Date().toISOString(),
-      items: await buildIndividualLeaderboard(supabase),
+      items: await buildIndividualLeaderboard(supabase, period),
       recognition: {
         topContributors: recognitionIndex.topContributors,
         currentContributor: null,
@@ -344,17 +385,10 @@ export async function getGamificationLeaderboard(
     };
   }
 
-  const actionsResult = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes",
-    )
-    .eq("status", "approved")
-    .limit(10000);
-
-  if (actionsResult.error) {
-    throw new Error(actionsResult.error.message);
-  }
+  const actionsResult = {
+    data: approvedActionRows,
+    error: null,
+  };
 
   const grouped = new Map<
     string,

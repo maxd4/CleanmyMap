@@ -24,7 +24,7 @@ import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/I
 import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
 import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
 import { loadReferralSummary } from "@/lib/gamification/referrals";
-import { buildReferralLineageView } from "@/lib/gamification/referral-lineage";
+import { loadReferralLineageView } from "@/lib/gamification/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 
 type ProfilPageProps = {
@@ -128,18 +128,9 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       referralAwardedXp: 0,
     }),
   );
-  const referralLineageProfilesResult = await supabase
-    .from("profiles")
-    .select(
-      "id, display_name, referral_code, referred_by_profile_id, referred_at, created_at",
-    )
-    .order("created_at", { ascending: true });
-  const referralLineageView = referralLineageProfilesResult.error
-    ? null
-    : buildReferralLineageView(
-        userId,
-        referralLineageProfilesResult.data ?? [],
-      );
+  const referralLineageView = await loadReferralLineageView(supabase, userId).catch(
+    () => null,
+  );
   const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
 
   return (

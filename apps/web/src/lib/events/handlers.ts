@@ -9,6 +9,7 @@ import {
   trackCommunityOpsUpdate,
 } from "@/lib/gamification/progression";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { runSingleActionQuery } from "@/lib/actions/query";
 
 export async function handleProgressionEvent(event: Event): Promise<void> {
   const supabase = getSupabaseServerClient();
@@ -98,11 +99,9 @@ export async function handleNotificationEvent(event: Event): Promise<void> {
     case "ACTION_VALIDATED": {
       const payload = event.payload as EventPayload["ACTION_VALIDATED"];
       try {
-        const { data: action } = await supabase
-          .from("actions")
-          .select("location_label")
-          .eq("id", payload.actionId)
-          .single();
+        const action = await runSingleActionQuery<{ location_label: string }>(supabase, (query) =>
+          query.select("location_label").eq("id", payload.actionId).maybeSingle(),
+        );
 
         if (action) {
           await supabase.from("app_notifications").insert({

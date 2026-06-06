@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import { cn } from "@/lib/utils";
 
 type CognitiveSignalTone = "default" | "emerald" | "cyan" | "violet" | "amber";

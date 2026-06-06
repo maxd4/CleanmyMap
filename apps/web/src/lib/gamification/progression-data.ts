@@ -27,8 +27,22 @@ import { awardPointsOnce } from "./points/system";
 import { computeMonthlyRegularityAwards } from "./monthly-regularity";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "./progression-event-write-policy";
+import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
+const ACTION_FULL_COLUMNS =
+  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing";
+const ACTION_APPROVED_COLUMNS =
+  "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing";
+const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_date";
+
+type LoadValidatedActionIdsOptions = {
+  actionRows?: ActionRow[];
+};
+
+type LoadValidatedCompleteActionCountOptions = {
+  actionRows?: ActionRow[];
+};
 
 function normalizeAssociationName(raw: string | null | undefined): string {
   return (raw ?? "")
@@ -82,25 +96,20 @@ export async function loadActionRowsForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ActionRow[]> {
-  const [ownedResult, organizerResult] = await Promise.all([
-    supabase
-      .from("actions")
-      .select(
-        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-      )
-      .eq("created_by_clerk_id", userId)
-      .order("action_date", { ascending: false })
-      .limit(6000),
+  const [ownedActions, organizerResult] = await Promise.all([
+    runActionQuery<ActionRow>(supabase, (query) =>
+      query
+        .select(ACTION_FULL_COLUMNS)
+        .eq("created_by_clerk_id", userId)
+        .order("action_date", { ascending: false })
+        .limit(6000),
+    ),
     supabase
       .from("action_organizers")
       .select("action_id")
       .eq("organizer_clerk_id", userId)
       .limit(6000),
   ]);
-
-  if (ownedResult.error) {
-    throw new Error(ownedResult.error.message);
-  }
 
   if (organizerResult.error) {
     throw new Error(organizerResult.error.message);
@@ -114,20 +123,13 @@ export async function loadActionRowsForUser(
 
   let organizedActions: ActionRow[] = [];
   if (organizedActionIds.length > 0) {
-    const organizedResult = await supabase
-      .from("actions")
-      .select(
-        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-      )
-      .in("id", organizedActionIds)
-      .order("action_date", { ascending: false })
-      .limit(6000);
-
-    if (organizedResult.error) {
-      throw new Error(organizedResult.error.message);
-    }
-
-    organizedActions = (organizedResult.data ?? []) as ActionRow[];
+    organizedActions = await runActionQuery<ActionRow>(supabase, (query) =>
+      query
+        .select(ACTION_FULL_COLUMNS)
+        .in("id", organizedActionIds)
+        .order("action_date", { ascending: false })
+        .limit(6000),
+    );
   }
 
   const rowsById = new Map<string, ActionRow>();
@@ -137,7 +139,7 @@ export async function loadActionRowsForUser(
     }
   }
 
-  for (const row of (ownedResult.data ?? []) as ActionRow[]) {
+  for (const row of ownedActions) {
     if (!isSpontaneousActionNotes(row.notes)) {
       continue;
     }
@@ -152,8 +154,9 @@ export async function loadActionRowsForUser(
 export async function loadValidatedActionIdsForUser(
   supabase: SupabaseClient,
   userId: string,
+  options?: LoadValidatedActionIdsOptions,
 ): Promise<Set<string>> {
-  const actions = await loadActionRowsForUser(supabase, userId);
+  const actions = options?.actionRows ?? (await loadActionRowsForUser(supabase, userId));
   const approvedActionIds = actions
     .filter((row) => row.status === "approved")
     .map((row) => row.id);
@@ -197,26 +200,26 @@ export async function loadValidatedActionIdsForUser(
 export async function loadValidatedCompleteActionCountForUser(
   supabase: SupabaseClient,
   userId: string,
+  options?: LoadValidatedCompleteActionCountOptions,
 ): Promise<number> {
-  const [ownedResult, validatedActionIds] = await Promise.all([
-    supabase
-      .from("actions")
-      .select(
-        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-      )
-      .eq("created_by_clerk_id", userId)
-      .eq("status", "approved")
-      .order("action_date", { ascending: false })
-      .limit(6000),
-    loadValidatedActionIdsForUser(supabase, userId),
-  ]);
-
-  if (ownedResult.error) {
-    throw new Error(ownedResult.error.message);
+  let ownedActions = options?.actionRows ?? null;
+  if (!ownedActions) {
+    ownedActions = await runActionQuery<ActionRow>(supabase, (query) =>
+      query
+        .select(ACTION_APPROVED_COLUMNS)
+        .eq("created_by_clerk_id", userId)
+        .eq("status", "approved")
+        .order("action_date", { ascending: false })
+        .limit(6000),
+    );
   }
 
+  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+    actionRows: ownedActions,
+  });
+
   let count = 0;
-  for (const row of (ownedResult.data ?? []) as ActionRow[]) {
+  for (const row of ownedActions) {
     if (!validatedActionIds.has(row.id)) {
       continue;
     }
@@ -232,41 +235,40 @@ export async function loadValidatedCompleteActionCountForUser(
 export async function loadApprovedActionRows(
   supabase: SupabaseClient,
   limit = 10000,
+  floorDate?: string | null,
 ): Promise<ActionRow[]> {
-  const result = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-    )
-    .eq("status", "approved")
-    .order("action_date", { ascending: false })
-    .limit(limit);
+  const rows = await runActionQuery<ActionRow>(supabase, (query) => {
+    let nextQuery = query.select(ACTION_APPROVED_COLUMNS).eq("status", "approved");
+    if (floorDate) {
+      nextQuery = nextQuery.gte("action_date", floorDate);
+    }
+    return nextQuery.order("action_date", { ascending: false }).limit(limit);
+  });
 
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-  return ((result.data ?? []) as ActionRow[]).filter((row) =>
-    isSpontaneousActionNotes(row.notes),
-  );
+  return rows.filter((row) => isSpontaneousActionNotes(row.notes));
 }
 
 export async function loadUserProgressionStats(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserProgressionStats> {
-  const [eventsResult, actionRows, validatedActionIds, participationCountResult] = await Promise.all([
+  const actionRowsPromise = loadActionRowsForUser(supabase, userId);
+  const [eventsResult, participationCountResult] = await Promise.all([
     supabase
       .from("progression_events")
       .select("event_type, status_phase, xp_awarded")
       .eq("user_id", userId)
       .limit(12000),
-    loadActionRowsForUser(supabase, userId),
-    loadValidatedActionIdsForUser(supabase, userId),
     supabase
       .from("action_participants")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId),
   ]);
+
+  const actionRows = await actionRowsPromise;
+  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+    actionRows,
+  });
 
   if (eventsResult.error) {
     throw new Error(eventsResult.error.message);
@@ -338,21 +340,9 @@ export async function fetchActionById(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<ActionRow | null> {
-  const result = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-    )
-    .eq("id", actionId)
-    .maybeSingle();
-
-  if (result.error) {
-    if ((result.error.message ?? "").toLowerCase().includes("actions")) {
-      return null;
-    }
-    throw new Error(result.error.message);
-  }
-  return (result.data as ActionRow | null) ?? null;
+  return runSingleActionQuery<ActionRow>(supabase, (query) =>
+    query.select(ACTION_APPROVED_COLUMNS).eq("id", actionId).maybeSingle(),
+  );
 }
 
 export async function fetchSpotById(
@@ -374,23 +364,17 @@ export async function fetchSpotById(
 export async function loadUserLabelSummary(
   supabase: SupabaseClient,
 ): Promise<Map<string, UserLabelSummary>> {
-  const result = await supabase
-    .from("actions")
-    .select("created_by_clerk_id, actor_name, notes, action_date")
-    .order("action_date", { ascending: false })
-    .limit(10000);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  const map = new Map<string, UserLabelSummary>();
-
-  for (const row of (result.data ?? []) as Array<{
+  const rows = await runActionQuery<{
     created_by_clerk_id: string;
     actor_name: string | null;
     notes: string | null;
-  }>) {
+  }>(supabase, (query) =>
+    query.select(ACTION_LABEL_COLUMNS).order("action_date", { ascending: false }).limit(10000),
+  );
+
+  const map = new Map<string, UserLabelSummary>();
+
+  for (const row of rows) {
     if (!isSpontaneousActionNotes(row.notes)) {
       continue;
     }
@@ -420,17 +404,9 @@ export async function loadUserImpactStats(
     }
   >
 > {
-  const result = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
-    )
-    .eq("status", "approved")
-    .limit(10000);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  const rows = await runActionQuery<ActionRow>(supabase, (query) =>
+    query.select(ACTION_APPROVED_COLUMNS).eq("status", "approved").limit(10000),
+  );
 
   const grouped = new Map<
     string,
@@ -442,7 +418,7 @@ export async function loadUserImpactStats(
     }
   >();
 
-  for (const row of (result.data ?? []) as ActionRow[]) {
+  for (const row of rows) {
     if (!isSpontaneousActionNotes(row.notes)) {
       continue;
     }
@@ -513,7 +489,9 @@ export async function syncUserActionProgression(
   }
 
   const actions = await loadActionRowsForUser(supabase, userId);
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId);
+  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+    actionRows: actions,
+  });
   let validatedActionCount = 0;
 
   for (const action of actions) {

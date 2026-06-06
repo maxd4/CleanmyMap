@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import {
   ArrowRight,
@@ -65,8 +63,8 @@ const STEP_CARDS: StepCard[] = [
     tone: "violet",
     label: { fr: "Avant", en: "Before" },
     detail: {
-      fr: "Préparer le kit, la zone et le rôle.",
-      en: "Prepare the kit, area, and role.",
+      fr: "Repérer les consignes locales et les catégories utiles.",
+      en: "Identify local rules and useful categories.",
     },
   },
   {
@@ -191,7 +189,7 @@ export function LearnPracticeGuideIntro({
           <div className="grid gap-3 sm:grid-cols-3">
             <QuickCue
               icon={Compass}
-              label={locale === "fr" ? "Préparer" : "Prep"}
+              label={locale === "fr" ? "Repérer" : "Spot"}
             />
             <QuickCue
               icon={ListChecks}
@@ -264,7 +262,7 @@ export function LearnPracticeGuideIntro({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {locale === "fr" ? "Repère terrain" : "Field cue"}
+                  {locale === "fr" ? "Repère de tri" : "Sorting cue"}
                 </p>
                 <p className="text-sm font-semibold text-slate-700">
                   {locale === "fr"
