@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const appendServiceEmailEventMock = vi.hoisted(() => vi.fn());
-const countServiceEmailEventsForActorSinceMock = vi.hoisted(() => vi.fn());
+const countServiceEmailRecipientsForActorSinceMock = vi.hoisted(() => vi.fn());
 const getResendClientMock = vi.hoisted(() => vi.fn());
 const resolveEmailFromMock = vi.hoisted(() => vi.fn());
 const resolveEmailReplyToMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/environmental-impact-estimator/service-email-events-store", () => ({
   appendServiceEmailEvent: appendServiceEmailEventMock,
-  countServiceEmailEventsForActorSince: countServiceEmailEventsForActorSinceMock,
+  countServiceEmailRecipientsForActorSince: countServiceEmailRecipientsForActorSinceMock,
 }));
 
 vi.mock("@/lib/email-config", () => ({
@@ -24,7 +24,7 @@ describe("email service", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    countServiceEmailEventsForActorSinceMock.mockResolvedValue(0);
+    countServiceEmailRecipientsForActorSinceMock.mockResolvedValue(0);
     resolveEmailFromMock.mockReturnValue("CleanMyMap <noreply@cleanmymap.fr>");
     resolveEmailReplyToMock.mockReturnValue("contact@cleanmymap.fr");
     getResendClientMock.mockReturnValue({
@@ -35,7 +35,7 @@ describe("email service", () => {
   });
 
   it("blocks an actor after two sent emails in the daily window", async () => {
-    countServiceEmailEventsForActorSinceMock.mockResolvedValue(2);
+    countServiceEmailRecipientsForActorSinceMock.mockResolvedValue(2);
 
     const { sendEmail, isEmailQuotaExceededError } = await import("./email");
     expect.hasAssertions();

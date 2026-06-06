@@ -11,6 +11,7 @@ import {
   deriveActionTitleFromMetadata,
   extractActionMetadataFromNotes,
 } from "@/lib/actions/metadata";
+import { runSingleActionQuery } from "@/lib/actions/query";
 
 type ActionRow = {
   id: string;
@@ -190,17 +191,18 @@ export async function copyValidatedActionToLocalStore(
   actionId: string,
   validatedBy: string,
 ): Promise<{ source: "actions" | "submissions"; copied: boolean }> {
-  const primary = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, action_date, actor_name, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
-    )
-    .eq("id", actionId)
-    .maybeSingle();
+  const primary = await runSingleActionQuery<ActionRow>(supabase, (query) =>
+    query
+      .select(
+        "id, created_at, action_date, actor_name, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      )
+      .eq("id", actionId)
+      .maybeSingle(),
+  );
 
-  if (!primary.error && primary.data) {
+  if (primary) {
     await upsertLocalRecords(LOCAL_DB_FILES.validated, [
-      fromActionRow(primary.data as ActionRow, "admin_validation", validatedBy),
+      fromActionRow(primary, "admin_validation", validatedBy),
     ]);
     return { source: "actions", copied: true };
   }

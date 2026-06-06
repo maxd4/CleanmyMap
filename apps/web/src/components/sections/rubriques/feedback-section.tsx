@@ -425,95 +425,139 @@ function FeedbackDiscussionMode({
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <SectionShell
+    <section
       id="feedback"
-      title={fr ? "Retours & Qualité" : "Feedback & Quality"}
-      subtitle={fr
-        ? "Votre avis nous permet d'ajuster les algorithmes et d'améliorer continuellement l'expérience utilisateur."
-        : "Your feedback allows us to tune algorithms and continuously improve the user experience."}
-      icon={MessageSquare}
-      gradient="from-rose-500/20 via-pink-500/10 to-transparent"
+      className="space-y-5 rounded-[2.25rem] border border-rose-200/70 bg-[linear-gradient(180deg,rgba(255,249,251,0.98)_0%,rgba(255,255,255,0.98)_100%)] p-4 text-slate-950 shadow-[0_26px_90px_-72px_rgba(236,72,153,0.6)] sm:p-5"
     >
-      <div className="space-y-12 pt-8">
-        <div className="grid gap-6 xl:grid-cols-3">
-          {QUESTIONNAIRES.map((questionnaire) => (
-            <div key={questionnaire.id} id={questionnaire.id}>
-              <QuestionnaireCard
-                questionnaire={questionnaire}
-                pagePath={pagePath}
-                source={source}
-                initialValues={questionnaire.id === "bug" ? supportPrefill ?? undefined : undefined}
-              />
-            </div>
-          ))}
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr] xl:items-end">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-pink-50 px-4 py-2 text-pink-600 shadow-sm">
+            <MessageSquare className="h-4 w-4" aria-hidden="true" />
+            <span className="text-[10px] font-black uppercase tracking-[0.18em]">
+              {fr ? "Feedback & qualité" : "Feedback & quality"}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-[clamp(2rem,4.2vw,3.6rem)] font-black leading-[0.92] tracking-[-0.04em] text-slate-950">
+              {fr ? "Retours & Qualité" : "Feedback & Quality"}
+            </h1>
+            <p className="max-w-2xl text-[0.98rem] leading-[1.7] text-slate-600">
+              {fr
+                ? "Vos retours nous aident à améliorer CleanMyMap en continu et à garantir des données fiables et utiles pour tous."
+                : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."}
+            </p>
+          </div>
         </div>
 
-        <div className="relative flex flex-col gap-10 overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl md:flex-row md:items-center md:justify-between">
-          <div className="pointer-events-none absolute -right-20 -bottom-20 p-20 opacity-5 transition-all duration-1000 group-hover:scale-110 group-hover:opacity-10">
-            <Mail size={300} className="text-cyan-400" />
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {FEEDBACK_METRICS.map((metric) => {
+            const Icon = metric.icon;
+            return (
+              <div
+                key={metric.label.fr}
+                className="rounded-[1.35rem] border border-rose-200/70 bg-white/90 p-4 shadow-[0_16px_42px_-36px_rgba(236,72,153,0.38)] backdrop-blur-sm"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500">
+                  <Icon size={18} />
+                </div>
+                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  {fr ? metric.label.fr : metric.label.en}
+                </p>
+                <p className="mt-2 text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
+                  {metric.value}
+                </p>
+                <p className="mt-2 text-[0.82rem] leading-relaxed text-slate-500">
+                  {fr ? metric.detail.fr : metric.detail.en}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="relative z-10 flex items-center gap-8">
-            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-5 text-rose-400 shadow-2xl transition-transform duration-700">
-              <Mail size={32} />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black tracking-tight text-white">
-                {fr ? "Besoin d'un contact direct ?" : "Need a direct contact?"}
-              </h3>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                {fr ? "Support & Partenariats" : "Support & Partnerships"}
-              </p>
-            </div>
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-[1.8rem] border border-rose-200/70 bg-white/90 p-5 shadow-[0_22px_62px_-54px_rgba(236,72,153,0.48)]">
+          <div className="grid gap-4 xl:grid-cols-3">
+            {QUESTIONNAIRES.map((questionnaire) => (
+              <div key={questionnaire.id} id={questionnaire.id}>
+                <QuestionnaireCard
+                  questionnaire={questionnaire}
+                  pagePath={pagePath}
+                  source={source}
+                  initialValues={questionnaire.id === "bug" ? supportPrefill ?? undefined : undefined}
+                />
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center">
-            <p className="max-w-xs text-sm font-bold leading-relaxed text-slate-400 md:text-right">
-              {fr
-                ? "Le mail reste disponible si le retour doit sortir du cadre des formulaires standardisés."
-                : "Email remains available if the reply needs to go beyond standardized forms."}
-            </p>
+        <div className="space-y-4">
+          <div className="relative overflow-hidden rounded-[1.8rem] border border-rose-200/70 bg-[linear-gradient(135deg,rgba(255,247,250,0.98)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-[0_22px_62px_-54px_rgba(236,72,153,0.48)]">
+            <div className="pointer-events-none absolute -right-16 -bottom-16 opacity-10">
+              <Mail size={220} className="text-rose-400" />
+            </div>
+
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-500 shadow-sm">
+                <Mail size={28} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black leading-tight tracking-[-0.03em] text-slate-950">
+                  {fr ? "Besoin d'un contact direct ?" : "Need a direct contact?"}
+                </h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  {fr ? "Support & partenariats" : "Support & partnerships"}
+                </p>
+                <p className="max-w-md text-[0.96rem] leading-[1.65] text-slate-600">
+                  {fr
+                    ? "Le mail reste disponible si le retour doit sortir du cadre des formulaires standardisés."
+                    : "Email remains available if the reply needs to go beyond standardized forms."}
+                </p>
+              </div>
+            </div>
+
             <a
               href={`mailto:${contactEmail}`}
-              className="inline-flex h-16 items-center gap-4 rounded-2xl bg-rose-500 px-8 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:scale-105 active:scale-95"
+              className="relative z-10 mt-5 inline-flex h-12 items-center gap-3 rounded-full bg-pink-500 px-6 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_-22px_rgba(236,72,153,0.9)] transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               {fr ? "Écrire un mail" : "Write an email"}
               <ArrowRight size={18} />
             </a>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="flex items-center gap-6 rounded-[2.5rem] border border-white/5 bg-slate-950/20 p-8 shadow-xl backdrop-blur-3xl">
-            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-400">
-              <Sparkles size={20} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex items-center gap-4 rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-4 shadow-sm">
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-500">
+                <Sparkles size={18} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">
+                  {fr ? "Traitement prioritaire" : "Priority processing"}
+                </h4>
+                <p className="text-xs leading-relaxed text-slate-500">
+                  {fr ? "Réponse garantie sous 48h" : "Response guaranteed within 48h"}
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-black uppercase tracking-widest text-white">
-                {fr ? "Traitement Prioritaire" : "Priority Processing"}
-              </h4>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                {fr ? "Réponse garantie sous 48h" : "Response guaranteed within 48h"}
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-6 rounded-[2.5rem] border border-white/5 bg-slate-950/20 p-8 shadow-xl backdrop-blur-3xl">
-            <div className="rounded-2xl border border-pink-500/20 bg-pink-500/10 p-4 text-pink-400">
-              <MessageSquare size={20} />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-black uppercase tracking-widest text-white">
-                {fr ? "Amélioration Continue" : "Continuous Improvement"}
-              </h4>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                {fr ? "100% des retours sont analysés" : "100% of feedback is analyzed"}
-              </p>
+            <div className="flex items-center gap-4 rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-4 shadow-sm">
+              <div className="rounded-2xl border border-pink-200 bg-pink-50 p-3 text-pink-500">
+                <MessageSquare size={18} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-black uppercase tracking-[0.14em] text-slate-950">
+                  {fr ? "Amélioration continue" : "Continuous improvement"}
+                </h4>
+                <p className="text-xs leading-relaxed text-slate-500">
+                  {fr ? "100% des retours sont analysés" : "100% of feedback is analyzed"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </SectionShell>
+    </section>
   );
 }
 
@@ -622,7 +666,7 @@ function FeedbackDashboardMode({
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/70 bg-pink-50 px-4 py-2 text-pink-600 shadow-sm">
             <MessageSquare className="h-4 w-4" aria-hidden="true" />
-            <span className="text-[11px] font-black uppercase tracking-[0.22em]">
+            <span className="text-[10px] font-black uppercase tracking-[0.18em]">
               {fr ? "Feedback & qualité" : "Feedback & quality"}
             </span>
           </div>
@@ -630,11 +674,11 @@ function FeedbackDashboardMode({
           <div className="space-y-4">
             <h1
               ref={titleRef}
-              className="text-[clamp(2.4rem,5vw,4.6rem)] font-black leading-[0.95] tracking-tight text-slate-950"
+              className="text-[clamp(2.3rem,4.8vw,4.5rem)] font-black leading-[0.92] tracking-[-0.04em] text-slate-950"
             >
               {fr ? "Retours & Qualité" : "Feedback & Quality"}
             </h1>
-            <p className="max-w-2xl text-[1.04rem] leading-relaxed text-slate-600">
+            <p className="max-w-2xl text-[1rem] leading-[1.7] text-slate-600">
               {fr
                 ? "Vos retours nous aident à améliorer CleanMyMap en continu et à garantir des données fiables et utiles pour tous."
                 : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."}
@@ -653,13 +697,15 @@ function FeedbackDashboardMode({
                 <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500">
                   <Icon size={18} />
                 </div>
-                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                   {localize(locale, metric.label)}
                 </p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                <p className="mt-3 text-[clamp(2rem,2.6vw,2.6rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
                   {metric.value}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">{localize(locale, metric.detail)}</p>
+                <p className="mt-2 text-[0.84rem] leading-relaxed text-slate-500">
+                  {localize(locale, metric.detail)}
+                </p>
               </div>
             );
           })}
@@ -668,14 +714,14 @@ function FeedbackDashboardMode({
 
       <section
         id="bug"
-        className="rounded-[2.2rem] border border-rose-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(255,248,250,0.98)_100%)] p-6 shadow-[0_28px_80px_-64px_rgba(236,72,153,0.6)]"
+        className="rounded-[2.2rem] border border-rose-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,248,250,0.99)_100%)] p-6 shadow-[0_28px_80px_-64px_rgba(236,72,153,0.6)]"
       >
         <div className="space-y-4">
           <div>
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.22em] text-pink-600">
+            <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
               {fr ? "Donnez votre avis" : "Give your feedback"}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
               {fr
                 ? "Partagez votre expérience, signalez un problème ou proposez une amélioration."
                 : "Share your experience, flag a problem or suggest an improvement."}
@@ -708,7 +754,7 @@ function FeedbackDashboardMode({
           <form onSubmit={handleSubmit} className="mt-2 grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
             <div className="space-y-4">
               <label className="block space-y-2">
-                <span className="text-sm font-black text-slate-950">
+                <span className="text-[0.95rem] font-black tracking-[-0.02em] text-slate-950">
                   {fr ? "Quel est votre retour ?" : "What is your feedback?"}
                 </span>
                 <textarea
@@ -722,9 +768,9 @@ function FeedbackDashboardMode({
                   }}
                   rows={8}
                   placeholder={localize(locale, activeTopic.placeholder)}
-                  className="min-h-[188px] w-full rounded-[1.6rem] border border-slate-200 bg-white px-5 py-4 text-[0.98rem] leading-relaxed text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                  className="min-h-[188px] w-full rounded-[1.6rem] border border-slate-200 bg-white px-5 py-4 text-[0.98rem] leading-[1.7] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
                 />
-                <span className="text-xs text-slate-500">
+                <span className="text-[0.78rem] leading-relaxed text-slate-500">
                   {localize(locale, activeTopic.helper)}
                 </span>
               </label>
@@ -746,11 +792,11 @@ function FeedbackDashboardMode({
               <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50/80 p-5">
                 <div className="flex items-center gap-2 text-pink-600">
                   <ShieldCheck size={18} />
-                  <h3 className="text-sm font-black uppercase tracking-[0.16em]">
+                  <h3 className="text-sm font-black uppercase tracking-[0.14em]">
                     {fr ? "Votre retour compte !" : "Your feedback matters!"}
                   </h3>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                <p className="mt-3 text-[0.96rem] leading-[1.65] text-slate-600">
                   {fr
                     ? "Chaque message est lu par notre équipe. Nous nous engageons à vous répondre sous 48h maximum."
                     : "Each message is read by our team. We commit to replying within 48 hours maximum."}
@@ -758,14 +804,14 @@ function FeedbackDashboardMode({
               </div>
 
               <div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-5 shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                   {fr ? "Résumé" : "Summary"}
                 </div>
                 <div className="mt-3 space-y-2">
-                  <p className="text-sm font-bold text-slate-950">
+                  <p className="text-sm font-bold leading-tight text-slate-950">
                     {localize(locale, activeTopic.label)}
                   </p>
-                  <p className="text-sm leading-relaxed text-slate-600">
+                  <p className="text-sm leading-[1.65] text-slate-600">
                     {activeTopic.helper[locale]}
                   </p>
                   <p className="text-xs text-slate-500">
@@ -803,7 +849,7 @@ function FeedbackDashboardMode({
                   disabled={!canSubmit}
                   tone="primary"
                   variant="pill"
-                  className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-pink-500 px-6 text-sm font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_-20px_rgba(236,72,153,0.85)] disabled:opacity-50"
+                  className="inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-pink-500 px-6 text-[0.78rem] font-black uppercase tracking-[0.16em] text-white shadow-[0_18px_40px_-20px_rgba(236,72,153,0.85)] disabled:opacity-50"
                 >
                   {submitState === "submitting"
                     ? fr
@@ -851,10 +897,10 @@ function FeedbackDashboardMode({
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-[0.92rem] font-black uppercase tracking-[0.22em] text-pink-600">
+              <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
                 {fr ? "Suivi des retours" : "Feedback tracking"}
               </h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
                 {fr
                   ? "Consultez l'état d'avancement des sujets que vous avez signalés ou suivis."
                   : "Track the progress of the issues you submitted or follow."}
@@ -886,20 +932,20 @@ function FeedbackDashboardMode({
                   </div>
 
                   <div className="min-w-0">
-                    <h3 className="truncate text-sm font-bold text-slate-950">
+                    <h3 className="truncate text-[0.94rem] font-bold leading-tight text-slate-950">
                       {localize(locale, item.title)}
                     </h3>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-[0.78rem] leading-relaxed text-slate-500">
                       {localize(locale, item.category)}
                     </p>
-                    <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                    <p className="mt-3 text-[0.96rem] leading-[1.65] text-slate-600">
                       {localize(locale, item.summary)}
                     </p>
                   </div>
 
                   <div className="flex flex-col items-start gap-2 md:items-end md:justify-center">
                     <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] ${getStatusTone(item.statusId)}`}
+                      className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${getStatusTone(item.statusId)}`}
                     >
                       {localize(locale, item.status)}
                     </span>
@@ -915,7 +961,7 @@ function FeedbackDashboardMode({
               href="/sections/feedback#bug"
               tone="secondary"
               variant="pill"
-              className="h-12 px-8 text-xs font-black uppercase tracking-[0.18em] text-pink-600"
+              className="h-12 px-8 text-[0.72rem] font-black uppercase tracking-[0.16em] text-pink-600"
             >
               {fr ? "Voir tous mes retours" : "See all my feedback"}
               <ArrowRight size={16} />
@@ -927,10 +973,10 @@ function FeedbackDashboardMode({
           id="collaboration"
           className="rounded-[2rem] border border-rose-200/70 bg-white/88 p-6 shadow-[0_24px_72px_-60px_rgba(236,72,153,0.55)] backdrop-blur-sm"
         >
-          <h2 className="text-[0.92rem] font-black uppercase tracking-[0.22em] text-pink-600">
+          <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
             {fr ? "Comment ça marche ?" : "How it works"}
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
             {fr
               ? "Consultez notre centre d'aide ou contactez-nous."
               : "Check our help center or contact us."}
@@ -943,8 +989,12 @@ function FeedbackDashboardMode({
                   {step.index}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-950">{localize(locale, step.title)}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{localize(locale, step.body)}</p>
+                  <p className="text-[0.95rem] font-bold leading-tight text-slate-950">
+                    {localize(locale, step.title)}
+                  </p>
+                  <p className="mt-1 text-[0.96rem] leading-[1.65] text-slate-600">
+                    {localize(locale, step.body)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -968,10 +1018,10 @@ function FeedbackDashboardMode({
         <div
           className="rounded-[2rem] border border-rose-200/70 bg-white/88 p-6 shadow-[0_24px_72px_-60px_rgba(236,72,153,0.55)] backdrop-blur-sm"
         >
-          <h2 className="text-[0.92rem] font-black uppercase tracking-[0.22em] text-pink-600">
+          <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
             {fr ? "Vos idées, notre feuille de route" : "Your ideas, our roadmap"}
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
             {fr ? "Les suggestions les plus demandées par la communauté." : "The most requested suggestions by the community."}
           </p>
 
@@ -986,7 +1036,7 @@ function FeedbackDashboardMode({
                     {index + 1}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-slate-950">
+                    <h3 className="text-[0.94rem] font-bold leading-tight text-slate-950">
                       {localize(locale, item.title)}
                     </h3>
                   </div>
@@ -1002,7 +1052,9 @@ function FeedbackDashboardMode({
                     style={{ width: `${item.progress}%` }}
                   />
                 </div>
-                <p className="mt-3 text-sm text-slate-500">{localize(locale, item.state)}</p>
+                <p className="mt-3 text-[0.9rem] leading-relaxed text-slate-500">
+                  {localize(locale, item.state)}
+                </p>
               </article>
             ))}
           </div>
@@ -1022,49 +1074,53 @@ function FeedbackDashboardMode({
 
         <div className="space-y-6">
           <aside className="rounded-[2rem] border border-rose-200/70 bg-white/88 p-6 shadow-[0_24px_72px_-60px_rgba(236,72,153,0.55)] backdrop-blur-sm">
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.22em] text-pink-600">
+            <h2 className="text-[0.9rem] font-black uppercase tracking-[0.18em] text-pink-600">
               {fr ? "Une question ?" : "A question?"}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-[0.96rem] leading-[1.65] text-slate-600">
               {fr ? "Consultez notre centre d'aide ou contactez-nous." : "Check our help center or contact us."}
             </p>
 
             <div className="mt-5 space-y-3">
-            {FEEDBACK_SUPPORT_LINKS.map((item) => {
-              const Icon = item.icon;
-              const rowClassName =
-                "group flex items-center justify-between rounded-[1.35rem] border border-rose-100 bg-white p-4 transition hover:border-rose-200 hover:shadow-sm";
+              {FEEDBACK_SUPPORT_LINKS.map((item) => {
+                const Icon = item.icon;
+                const rowClassName =
+                  "group flex items-center justify-between rounded-[1.35rem] border border-rose-100 bg-white p-4 transition hover:border-rose-200 hover:shadow-sm";
 
-              const rowContent = (
-                <>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-pink-500">
-                      <Icon size={18} />
+                const rowContent = (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-pink-500">
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-[0.94rem] font-bold leading-tight text-slate-950">
+                          {localize(locale, item.title)}
+                        </p>
+                        <p className="text-[0.78rem] leading-relaxed text-slate-500">
+                          {localize(locale, item.description)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-950">{localize(locale, item.title)}</p>
-                      <p className="text-xs text-slate-500">{localize(locale, item.description)}</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-pink-400 transition group-hover:translate-x-0.5" />
-                </>
-              );
-
-              if (item.href.startsWith("mailto:")) {
-                return (
-                  <a key={item.href} href={item.href} className={rowClassName}>
-                    {rowContent}
-                  </a>
+                    <ArrowRight className="h-4 w-4 text-pink-400 transition group-hover:translate-x-0.5" />
+                  </>
                 );
-              }
 
-              return (
-                <Link key={item.href} href={item.href} className={rowClassName}>
-                  {rowContent}
-                </Link>
-              );
-            })}
-          </div>
+                if (item.href.startsWith("mailto:")) {
+                  return (
+                    <a key={item.href} href={item.href} className={rowClassName}>
+                      {rowContent}
+                    </a>
+                  );
+                }
+
+                return (
+                  <Link key={item.href} href={item.href} className={rowClassName}>
+                    {rowContent}
+                  </Link>
+                );
+              })}
+            </div>
           </aside>
         </div>
       </section>
@@ -1076,10 +1132,10 @@ function FeedbackDashboardMode({
               <Heart size={34} />
             </div>
             <div className="max-w-2xl space-y-2">
-              <h2 className="text-xl font-black tracking-tight">
+              <h2 className="text-[1.2rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.35rem]">
                 {fr ? "Votre avis fait la différence" : "Your feedback makes a difference"}
               </h2>
-              <p className="max-w-xl text-sm leading-relaxed text-white/90">
+              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white/90">
                 {fr
                   ? "Ensemble, améliorons CleanMyMap pour un impact toujours plus fort et des données toujours plus fiables."
                   : "Together, let's improve CleanMyMap for stronger impact and more reliable data."}

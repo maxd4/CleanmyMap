@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { MissionMap } from "@/components/missions/mission-map";
-import { MissionQR } from "@/components/missions/mission-qr";
+import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
 import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
@@ -23,12 +22,13 @@ export default async function MissionPage({ params }: MissionPageParams) {
   const { id } = params;
   const classes = getBlockClasses("act");
   const supabase = getSupabaseServerClient();
+  const signedUrlCache = new Map<string, Promise<string | null>>();
 
   const { data: mission } = await supabase
     .from("missions")
-    .select("*, profiles(name, avatar_url)")
+    .select("id, label, status, started_at, ended_at, distance_m, duration_s, profiles(name, avatar_url)")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   const m = mission || {
     id,
@@ -49,21 +49,31 @@ export default async function MissionPage({ params }: MissionPageParams) {
 
   const { data: actions } = await supabase
     .from("mission_actions")
-    .select("*")
+    .select("id, type, content, image_url, latitude, longitude, recorded_at")
     .eq("mission_id", id);
 
   const actionsWithResolvedImages = await Promise.all(
     (actions || []).map(async (action) => {
       const imageUrl = await resolveMissionActionImageUrl(action.image_url, async (path) => {
-        const { data, error } = await supabase.storage
-          .from(MISSION_ASSETS_BUCKET)
-          .createSignedUrl(path, 60 * 60 * 24);
-
-        if (error || !data?.signedUrl) {
-          return null;
+        const cached = signedUrlCache.get(path);
+        if (cached) {
+          return cached;
         }
 
-        return data.signedUrl;
+        const request = (async () => {
+          const { data, error } = await supabase.storage
+            .from(MISSION_ASSETS_BUCKET)
+            .createSignedUrl(path, 60 * 60 * 24);
+
+          if (error || !data?.signedUrl) {
+            return null;
+          }
+
+          return data.signedUrl;
+        })();
+
+        signedUrlCache.set(path, request);
+        return request;
       });
 
       return {
@@ -125,7 +135,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="space-y-8">
           {isPending ? (
-            <MissionQR missionId={id} />
+            <DeferredMissionQR missionId={id} />
           ) : (
             <div className={cn("space-y-8 rounded-[2.5rem] border p-8 transition-all duration-700", classes.surface, classes.shadow)}>
               <h3 className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-white/40">
@@ -217,7 +227,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
 
         <div className="space-y-6 lg:col-span-2">
           <div className="group relative overflow-hidden rounded-[3rem] border border-white/10 shadow-2xl">
-            <MissionMap points={gpsPoints} actions={actionsWithResolvedImages} />
+            <DeferredMissionMap points={gpsPoints} actions={actionsWithResolvedImages} />
             <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
               Tracé GPS Certifié
             </div>

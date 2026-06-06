@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 export type ReferralLineageProfileRow = {
   id: string;
   display_name: string | null;
@@ -290,6 +292,24 @@ export function buildReferralLineageView(
     hasReferralCode: Boolean(focusProfile.referral_code?.trim()),
     hasInvitedBy: Boolean(focusProfile.referred_by_profile_id),
   };
+}
+
+export async function loadReferralLineageView(
+  supabase: SupabaseClient,
+  focusProfileId: string,
+): Promise<ReferralLineageView | null> {
+  const rpcResult = await supabase.rpc("load_referral_lineage_profiles", {
+    focus_profile_id: focusProfileId,
+  });
+
+  if (!rpcResult.error && Array.isArray(rpcResult.data) && rpcResult.data.length > 0) {
+    return buildReferralLineageView(
+      focusProfileId,
+      rpcResult.data as ReferralLineageProfileRow[],
+    );
+  }
+
+  return null;
 }
 
 export function buildReferralLineageLeaderboard(

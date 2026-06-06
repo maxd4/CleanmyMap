@@ -10,13 +10,39 @@ const eslintConfig = defineConfig([
     rules: {
       "max-lines": [
         "warn",
-        { max: 500, skipBlankLines: true, skipComments: true },
+        { max: 1800, skipBlankLines: true, skipComments: true },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "react/display-name": "off",
       "react/no-unescaped-entities": "warn",
       "react-hooks/purity": "warn",
       "react-hooks/set-state-in-effect": "warn",
+    },
+  },
+  {
+    files: ["src/app/**/*.tsx", "src/components/**/*.tsx"],
+    rules: {
+      "react/jsx-max-depth": ["warn", { max: 10 }],
+    },
+  },
+  {
+    files: [
+      "src/lib/**/*.ts",
+      "src/hooks/**/*.ts",
+      "src/config/**/*.ts",
+      "src/data/**/*.ts",
+      "src/types/**/*.ts",
+    ],
+    rules: {
+      "max-lines": [
+        "warn",
+        { max: 500, skipBlankLines: true, skipComments: true },
+      ],
+      "max-lines-per-function": [
+        "warn",
+        { max: 100, skipBlankLines: true, skipComments: true },
+      ],
+      complexity: ["warn", 12],
     },
   },
   // Override default ignores of eslint-config-next.

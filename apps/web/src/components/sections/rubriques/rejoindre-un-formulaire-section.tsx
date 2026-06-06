@@ -1,21 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarDays, CheckCircle2, ClipboardList, Loader2, MapPin, ShieldCheck, Users2, type LucideIcon } from "lucide-react";
+import {
+  ArrowUpDown,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Filter,
+  Loader2,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Users2,
+  type LucideIcon,
+} from "lucide-react";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { JoinableActionItem } from "@/lib/actions/group-participation";
+import type {
+  JoinableActionHistoryItem,
+  JoinableActionItem,
+} from "@/lib/actions/group-participation";
+import {
+  filterAndSortJoinableActions,
+  type JoinableActionJoinFilter,
+  type JoinableActionSort,
+} from "./rejoindre-un-formulaire-section.utils";
 
 type JoinableActionsResponse = {
   status: "ok";
   authenticated: boolean;
   count: number;
   items: JoinableActionItem[];
+  history: JoinableActionHistoryItem[];
 };
 
 type JoinActionResponse = {
@@ -65,6 +86,101 @@ function ActionMeta({
   );
 }
 
+function FilterPill({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+        active
+          ? "border-emerald-400 bg-emerald-500 text-white shadow-[0_10px_20px_-14px_rgba(16,185,129,0.5)]"
+          : "border-emerald-200 bg-white/80 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-50"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+type ProgressStep = {
+  id: string;
+  index: number;
+  title: string;
+  description: string;
+};
+
+function ProgressStepper({
+  steps,
+}: {
+  steps: ProgressStep[];
+}) {
+  return (
+    <nav aria-label="Progression du formulaire de groupe">
+      <ol className="grid gap-3 md:grid-cols-3">
+        {steps.map((step) => (
+          <li
+            key={step.id}
+            className="relative rounded-[1.5rem] border border-emerald-200/70 bg-white/85 px-4 py-4 shadow-[0_14px_30px_-24px_rgba(16,185,129,0.28)]"
+          >
+            <a href={`#${step.id}`} className="block">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-800">
+                  {step.index}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
+                    {step.title}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function getJoinFilterLabel(filter: JoinableActionJoinFilter, fr: boolean): string {
+  switch (filter) {
+    case "available":
+      return fr ? "À rejoindre" : "To join";
+    case "joined":
+      return fr ? "Déjà rejoints" : "Joined";
+    case "all":
+    default:
+      return fr ? "Tous" : "All";
+  }
+}
+
+function getJoinSortLabel(sort: JoinableActionSort, fr: boolean): string {
+  switch (sort) {
+    case "latest":
+      return fr ? "Date la plus lointaine" : "Latest date";
+    case "participants-desc":
+      return fr ? "Plus de participants" : "Most participants";
+    case "participants-asc":
+      return fr ? "Moins de participants" : "Fewest participants";
+    case "location-asc":
+      return fr ? "Lieu A → Z" : "Location A → Z";
+    case "soonest":
+    default:
+      return fr ? "Date la plus proche" : "Soonest date";
+  }
+}
+
 export function JoinFormSection() {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
@@ -76,9 +192,13 @@ export function JoinFormSection() {
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [historyItems, setHistoryItems] = useState<JoinableActionHistoryItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [joinFilter, setJoinFilter] = useState<JoinableActionJoinFilter>("all");
+  const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const focusActionId = searchParams.get("actionId")?.trim() || null;
   const listUrl = useMemo(() => {
-    const params = new URLSearchParams({ limit: "6" });
+    const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
     if (focusActionId) {
       params.set("actionId", focusActionId);
     }
@@ -102,6 +222,7 @@ export function JoinFormSection() {
 
         const payload = (await response.json()) as JoinableActionsResponse;
         setItems(payload.items);
+        setHistoryItems(payload.history ?? []);
         setAuthenticated(payload.authenticated);
       } catch (fetchError) {
         if ((fetchError as { name?: string }).name === "AbortError") {
@@ -123,18 +244,18 @@ export function JoinFormSection() {
   }, [fr, listUrl]);
 
   const hasItems = items.length > 0;
-  const orderedItems = useMemo(() => {
-    if (!focusActionId) {
-      return items;
-    }
-
-    const focused = items.find((item) => item.id === focusActionId);
-    if (!focused) {
-      return items;
-    }
-
-    return [focused, ...items.filter((item) => item.id !== focusActionId)];
-  }, [focusActionId, items]);
+  const orderedItems = useMemo(
+    () =>
+      filterAndSortJoinableActions(items, {
+        search,
+        joinFilter,
+        sort,
+        focusActionId,
+        locale: fr ? "fr" : "en",
+      }),
+    [focusActionId, fr, items, joinFilter, search, sort],
+  );
+  const hasVisibleItems = orderedItems.length > 0;
   const emptyMessage = useMemo(
     () =>
       fr
@@ -142,6 +263,42 @@ export function JoinFormSection() {
         : "No validated and opened actions are available to join right now.",
     [fr],
   );
+  const joinedItems = useMemo(
+    () => historyItems.filter((item) => item.joined),
+    [historyItems],
+  );
+  const recentJoinedItems = useMemo(
+    () => joinedItems.slice(0, 4),
+    [joinedItems],
+  );
+  const progressSteps = [
+    {
+      id: "explorer-actions",
+      index: 1,
+      title: fr ? "Explorer" : "Explore",
+      description: fr
+        ? "Repérez les actions validées, puis ouvrez les cartes qui vous intéressent."
+        : "Find approved actions, then open the cards that matter to you.",
+    },
+    {
+      id: "filtres-rapides",
+      index: 2,
+      title: fr ? "Affiner" : "Refine",
+      description: fr
+        ? "Cherchez, filtrez et triez pour réduire la liste sans perdre le contexte."
+        : "Search, filter, and sort to narrow the list without losing context.",
+    },
+    {
+      id: "mon-suivi",
+      index: 3,
+      title: fr ? "Suivre" : "Track",
+      description: fr
+        ? "Gardez vos participations récentes sous la main et revenez rapidement dessus."
+        : "Keep your recent participations close and jump back to them quickly.",
+    },
+  ] satisfies ProgressStep[];
+  const activeFilterLabel = getJoinFilterLabel(joinFilter, fr);
+  const activeSortLabel = getJoinSortLabel(sort, fr);
 
   async function handleJoin(actionId: string) {
     const confirmed = window.confirm(
@@ -153,6 +310,7 @@ export function JoinFormSection() {
       return;
     }
 
+    const currentItem = items.find((item) => item.id === actionId) ?? null;
     setJoiningId(actionId);
     setNotice(null);
 
@@ -198,6 +356,18 @@ export function JoinFormSection() {
             : item,
         ),
       );
+      if (currentItem) {
+        setHistoryItems((previous) => [
+          {
+            ...currentItem,
+            participantsCount: joined.participantsCount,
+            joined: true,
+            joinedAt: joined.joinedAt,
+            groupJoinEnabled: currentItem.groupJoinEnabled,
+          },
+          ...previous.filter((item) => item.id !== actionId),
+        ]);
+      }
       setNotice(
         joined.alreadyJoined
           ? fr
@@ -239,8 +409,14 @@ export function JoinFormSection() {
           className="max-w-4xl"
         />
 
+        <ProgressStepper steps={progressSteps} />
+
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <FamilyRubriqueCard withHover={false} className="p-8">
+          <FamilyRubriqueCard
+            withHover={false}
+            className="p-8 scroll-mt-24"
+            id="explorer-actions"
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
@@ -251,8 +427,8 @@ export function JoinFormSection() {
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
                   {fr
-                    ? "Chaque carte ci-dessous correspond à une action déjà validée et explicitement ouverte par l'organisateur. Rejoindre enregistre votre participation dans `action_participants` et alimente les badges et les stats."
-                    : "Each card below maps to an already approved action that the organizer has explicitly opened. Joining records your participation in `action_participants` and updates badges and stats."}
+                    ? "Chaque carte ci-dessous correspond à une action déjà validée et explicitement ouverte par l'organisateur. Vous pouvez rechercher, filtrer et trier la sélection avant de rejoindre; l'action choisie enregistre ensuite votre participation dans `action_participants` et alimente les badges et les stats."
+                    : "Each card below maps to an already approved action that the organizer has explicitly opened. You can search, filter, and sort the selection before joining; the chosen action then records your participation in `action_participants` and updates badges and stats."}
                 </p>
               </div>
 
@@ -287,6 +463,7 @@ export function JoinFormSection() {
                           }
                           const payload = (await response.json()) as JoinableActionsResponse;
                           setItems(payload.items);
+                          setHistoryItems(payload.history ?? []);
                           setAuthenticated(payload.authenticated);
                         })
                         .catch(() => {
@@ -320,6 +497,98 @@ export function JoinFormSection() {
               )}
 
               {!loading && hasItems && (
+                <div id="filtres-rapides" className="scroll-mt-24">
+                <div className="rounded-[1.75rem] border border-emerald-200/70 bg-emerald-50/40 p-4 shadow-[0_16px_36px_-28px_rgba(16,185,129,0.24)]">
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_auto_auto] lg:items-end">
+                    <label className="space-y-2">
+                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
+                        <Search size={12} />
+                        {fr ? "Recherche" : "Search"}
+                      </span>
+                      <input
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder={
+                          fr
+                            ? "Lieu, date, durée, nombre de participants..."
+                            : "Location, date, duration, participant count..."
+                        }
+                        className="h-11 w-full rounded-2xl border border-emerald-200/80 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                      />
+                    </label>
+
+                    <div className="space-y-2">
+                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
+                        <Filter size={12} />
+                        {fr ? "Filtre" : "Filter"}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <FilterPill active={joinFilter === "all"} onClick={() => setJoinFilter("all")}>
+                          {fr ? "Tous" : "All"}
+                        </FilterPill>
+                        <FilterPill
+                          active={joinFilter === "available"}
+                          onClick={() => setJoinFilter("available")}
+                        >
+                          {fr ? "À rejoindre" : "To join"}
+                        </FilterPill>
+                        <FilterPill active={joinFilter === "joined"} onClick={() => setJoinFilter("joined")}>
+                          {fr ? "Déjà rejoints" : "Joined"}
+                        </FilterPill>
+                      </div>
+                    </div>
+
+                    <label className="space-y-2">
+                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
+                        <ArrowUpDown size={12} />
+                        {fr ? "Tri" : "Sort"}
+                      </span>
+                      <select
+                        value={sort}
+                        onChange={(event) => setSort(event.target.value as JoinableActionSort)}
+                        className="h-11 w-full rounded-2xl border border-emerald-200/80 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                      >
+                        <option value="soonest">{fr ? "Date la plus proche" : "Soonest date"}</option>
+                        <option value="latest">{fr ? "Date la plus lointaine" : "Latest date"}</option>
+                        <option value="participants-desc">
+                          {fr ? "Plus de participants" : "Most participants"}
+                        </option>
+                        <option value="participants-asc">
+                          {fr ? "Moins de participants" : "Fewest participants"}
+                        </option>
+                        <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-medium text-emerald-900/60">
+                      {fr
+                        ? `${orderedItems.length} résultat${orderedItems.length > 1 ? "s" : ""} affiché${
+                            orderedItems.length > 1 ? "s" : ""
+                          } sur ${items.length}`
+                        : `${orderedItems.length} result${orderedItems.length > 1 ? "s" : ""} shown out of ${items.length}`}
+                    </p>
+                    {(search || joinFilter !== "all" || sort !== "soonest") && (
+                      <CmmButton
+                        tone="secondary"
+                        variant="pill"
+                        size="sm"
+                        onClick={() => {
+                          setSearch("");
+                          setJoinFilter("all");
+                          setSort("soonest");
+                        }}
+                      >
+                        {fr ? "Réinitialiser" : "Reset"}
+                      </CmmButton>
+                    )}
+                  </div>
+                </div>
+                </div>
+              )}
+
+              {!loading && hasItems && hasVisibleItems && (
                 <div className="grid gap-4">
                   {orderedItems.map((item) => (
                     <article
@@ -356,6 +625,13 @@ export function JoinFormSection() {
                           <h3 className="text-xl font-black tracking-tight text-slate-900">
                             {item.location_label}
                           </h3>
+
+                          {item.joined && item.joinedAt && (
+                            <p className="text-xs font-semibold text-emerald-800">
+                              {fr ? "Rejoint le" : "Joined on"}{" "}
+                              {formatDate(item.joinedAt.slice(0, 10), fr ? "fr" : "en")}
+                            </p>
+                          )}
 
                           <div className="grid gap-2 md:grid-cols-3">
                             <ActionMeta
@@ -438,6 +714,33 @@ export function JoinFormSection() {
                 </div>
               )}
 
+              {!loading && hasItems && !hasVisibleItems && (
+                <div className="rounded-[1.75rem] border border-dashed border-emerald-200/70 bg-emerald-50/35 p-6 text-slate-700">
+                  <p className="text-sm font-semibold">
+                    {fr
+                      ? "Aucune action ne correspond à votre recherche."
+                      : "No actions match your search."}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed">
+                    {fr
+                      ? "Essayez un autre mot-clé, changez le filtre ou réinitialisez le tri."
+                      : "Try a different keyword, switch the filter, or reset the sort."}
+                  </p>
+                  <CmmButton
+                    tone="secondary"
+                    variant="pill"
+                    className="mt-4"
+                    onClick={() => {
+                      setSearch("");
+                      setJoinFilter("all");
+                      setSort("soonest");
+                    }}
+                  >
+                    {fr ? "Voir tout" : "View all"}
+                  </CmmButton>
+                </div>
+              )}
+
               {notice && (
                 <div className="rounded-[1.5rem] border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 text-sm font-medium text-emerald-900">
                   {notice}
@@ -447,15 +750,70 @@ export function JoinFormSection() {
           </FamilyRubriqueCard>
 
           <div className="space-y-6">
-            <FamilyRubriqueCard withHover={false} className="p-8">
+            <FamilyRubriqueCard withHover={false} className="sticky top-6 p-8 shadow-[0_20px_42px_-34px_rgba(16,185,129,0.38)]">
               <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                  {fr ? "Règles" : "Rules"}
-                </p>
-                <h2 className="text-xl font-black tracking-tight text-white">
-                  {fr ? "Ce flux rejoint, il ne crée rien" : "This flow joins, it does not create"}
-                </h2>
-                <ul className="space-y-3 text-sm leading-relaxed text-slate-700">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
+                      {fr ? "Résumé fixe" : "Pinned summary"}
+                    </p>
+                    <h2 className="text-xl font-black tracking-tight text-white">
+                      {fr ? "Où en êtes-vous ?" : "Where are you?"}
+                    </h2>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200/40 bg-emerald-50/30 px-3 py-2 text-emerald-700">
+                    <ShieldCheck size={18} />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                      {fr ? "Affichées" : "Shown"}
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">{orderedItems.length}</p>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                      {fr ? "Rejointes" : "Joined"}
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">{joinedItems.length}</p>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                      {fr ? "Tri" : "Sort"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{activeSortLabel}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-white/80 px-4 py-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                    {fr ? "Navigation rapide" : "Quick navigation"}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm">
+                      {fr ? "Explorer" : "Explore"}
+                    </CmmButton>
+                    <CmmButton href="#filtres-rapides" tone="secondary" variant="pill" size="sm">
+                      {fr ? "Filtres" : "Filters"}
+                    </CmmButton>
+                    <CmmButton href="#mon-suivi" tone="secondary" variant="pill" size="sm">
+                      {fr ? "Mon suivi" : "My tracking"}
+                    </CmmButton>
+                    <CmmButton href="#regles" tone="secondary" variant="pill" size="sm">
+                      {fr ? "Règles" : "Rules"}
+                    </CmmButton>
+                  </div>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                  {fr
+                    ? `Filtre actif: ${activeFilterLabel}. Résultats visibles: ${orderedItems.length} sur ${items.length}.`
+                    : `Active filter: ${activeFilterLabel}. Visible results: ${orderedItems.length} of ${items.length}.`}
+                </div>
+
+                <ul id="regles" className="space-y-3 text-sm leading-relaxed text-slate-700 scroll-mt-24">
                   <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     {fr
                       ? "La carte n'apparaît que si l'action est validée par un admin et ouverte par l'organisateur."
@@ -480,19 +838,99 @@ export function JoinFormSection() {
               </div>
             </FamilyRubriqueCard>
 
-            <FamilyRubriqueCard withHover={false} className="p-8">
+            <FamilyRubriqueCard withHover={false} className="p-8 scroll-mt-24" id="mon-suivi">
               <div className="space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                  {fr ? "Synchronisation" : "Sync"}
+                  {fr ? "Mon suivi" : "My tracking"}
                 </p>
                 <h2 className="text-xl font-black tracking-tight text-white">
-                  {fr ? "Badges, stats et traçabilité" : "Badges, stats, and traceability"}
+                  {fr ? "Mes actions rejointes" : "My joined actions"}
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-700">
-                  {fr
-                    ? "La table de participation alimente le badge Participant et les compteurs de progression collective. Le backend rejette toute jonction sur une action encore en attente ou non ouverte."
-                    : "The participation table feeds the Participant badge and collective progression counters. The backend rejects any join request for a still-pending or closed action."}
-                </p>
+                {authenticated ? (
+                  <div className="space-y-4">
+                    <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                        {fr ? "Participation actuelle" : "Current participation"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                        {fr
+                          ? `${joinedItems.length} action${joinedItems.length > 1 ? "s" : ""} rejoint${joinedItems.length > 1 ? "es" : ""}`
+                          : `${joinedItems.length} joined action${joinedItems.length > 1 ? "s" : ""}`}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                        {fr
+                          ? "Votre historique récent est synchronisé ici, avec l'état de chaque participation et la date d'inscription."
+                          : "Your recent history is synchronized here, with each participation state and join date."}
+                      </p>
+                    </div>
+
+                    {recentJoinedItems.length > 0 ? (
+                      <div className="space-y-3">
+                        {recentJoinedItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-[1.25rem] border border-emerald-200/60 bg-white/80 px-4 py-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 space-y-1">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {item.location_label}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {formatDate(item.action_date, fr ? "fr" : "en")} ·{" "}
+                                  {fr ? "rejoint le" : "joined on"}{" "}
+                                  {formatDate(item.joinedAt.slice(0, 10), fr ? "fr" : "en")}
+                                </p>
+                              </div>
+                              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-800">
+                                {fr ? "Inscrit" : "Joined"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="rounded-[1.25rem] border border-dashed border-emerald-200/70 bg-emerald-50/30 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                        {fr
+                          ? "Aucune participation enregistrée pour l'instant. Rejoignez un formulaire pour faire apparaître votre historique ici."
+                          : "No participation recorded yet. Join a form to make your history appear here."}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      <CmmButton
+                        tone="secondary"
+                        variant="pill"
+                        size="sm"
+                        onClick={() => {
+                          setSearch("");
+                          setJoinFilter("joined");
+                          setSort("latest");
+                        }}
+                      >
+                        {fr ? "Voir mes actions rejointes" : "View my joined actions"}
+                      </CmmButton>
+                      <CmmButton
+                        tone="secondary"
+                        variant="pill"
+                        size="sm"
+                        onClick={() => {
+                          setSearch("");
+                          setJoinFilter("all");
+                          setSort("soonest");
+                        }}
+                      >
+                        {fr ? "Revenir à la liste" : "Back to list"}
+                      </CmmButton>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    {fr
+                      ? "Connectez-vous pour retrouver vos actions rejointes, votre historique récent et l'état de vos participations."
+                      : "Sign in to find your joined actions, recent history, and participation state."}
+                  </p>
+                )}
               </div>
             </FamilyRubriqueCard>
           </div>

@@ -18,7 +18,7 @@ describe("ActionDeclarationFormFeedback", () => {
       }),
     );
 
-    expect(markup).toContain("Formulaire de groupe");
+    expect(markup).toContain("Créer un formulaire");
     expect(markup).toContain("Cette action pourra être rejointe après validation.");
     expect(markup).toContain("/sections/rejoindre-un-formulaire?actionId=action-123");
     expect(markup).toContain("Copier le lien");

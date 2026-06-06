@@ -60,9 +60,9 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   const actionsCreated = await syncUserActionProgression(supabase, userId).catch(() => 0);
   await refreshProgressionProfile(supabase, userId).catch(() => undefined);
   const actionRows = await loadActionRowsForUser(supabase, userId).catch(() => []);
-  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId).catch(
-    () => new Set<string>(),
-  );
+  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
+    actionRows,
+  }).catch(() => new Set<string>());
   const actionBalance = await loadActionBalanceSummary(supabase, userId, {
     actionRows,
     validatedActionIds,

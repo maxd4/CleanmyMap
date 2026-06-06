@@ -15,12 +15,16 @@ Guides de développement pour agents IA.
 ### Standards & Conventions
 - **api-standard.md** - Standards API
 - **conventions-composants.md** - Conventions composants React
-- **conventions-modularisation.md** - Conventions modularisation
+- **conventions-modularisation.md** - Conventions modularisation et lecture des warnings de densité
 
 ### Qualité & Tests
 - **TESTING.md** - Guide de tests
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
+- **performance-quotas-vercel-checklist.md** - Checklist PR pour prévenir les régressions de coût Vercel
+- **client-server-bundle-splitting.md** - Guide pour éviter de gonfler le bundle initial avec de mauvaises frontières serveur/client
+- **vercel-surface-report.md** - Rapport automatique des surfaces Vercel et du risque associé
+- **vercel-route-cost-audit.md** - Audit route par route des coûts Vercel
 - **typescript-strict-priority-report.md** - Synthèse priorisée du log TypeScript strict
 - **typescript-precision-policy.md** - Politique de précision TypeScript
 - **typescript-anti-errors-checklist.md** - Checklist courte de correction TypeScript
@@ -30,6 +34,7 @@ Guides de développement pour agents IA.
 - **CONTRIBUTING.md** - Guide de contribution
 - **DOCUMENTATION_POLICY.md** - Politique de documentation
 - **supabase-quota-guide.md** - Guide développeur pour éviter d'augmenter les quotas Supabase
+- **vercel-quota-governance.md** - Guide de gouvernance des quotas Vercel et des régressions de coût
 
 ### Dette Technique
 - **dette-technique.md** - Dette technique actuelle
@@ -55,6 +60,7 @@ Guides de développement pour agents IA.
 5. Utiliser **typescript-anti-errors-checklist.md** pour le runbook court
 6. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
 7. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
+8. Relire **vercel-quota-governance.md** avant d'ajouter une route API, une page dynamique, un cron ou un fetch `no-store`
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

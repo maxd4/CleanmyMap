@@ -103,6 +103,8 @@ npm run lint                # ESLint
 npm run typecheck           # Vérification TypeScript
 npm run test                # Tests unitaires
 npm run checks              # Vérification globale du projet
+npm run audit:vercel-quota  # Audit des surfaces de coût Vercel
+npm run report:vercel-surface # Rapport automatique des surfaces Vercel
 npm run screenshots         # Captures d'écran de documentation
 ```
 
@@ -123,6 +125,9 @@ npm run screenshots         # Captures d'écran de documentation
 - [`documentation/design-system/README.md`](./documentation/design-system/README.md)
 - [`documentation/security/README.md`](./documentation/security/README.md)
 - [`documentation/operations/README.md`](./documentation/operations/README.md)
+- [`documentation/development/vercel-quota-governance.md`](./documentation/development/vercel-quota-governance.md)
+- [`documentation/development/vercel-surface-report.md`](./documentation/development/vercel-surface-report.md)
+- [`documentation/development/vercel-route-cost-audit.md`](./documentation/development/vercel-route-cost-audit.md)
 - [`apps/web/README.md`](./apps/web/README.md)
 
 ## Qualité et sécurité
@@ -130,6 +135,8 @@ npm run screenshots         # Captures d'écran de documentation
 - Garde-fous locaux dans [`PRE_PUSH_GUARD.md`](./PRE_PUSH_GUARD.md)
 - Règles persistantes dans [`AGENTS.md`](./AGENTS.md)
 - Audit secrets: `npm run security:secrets`
+- Audit quotas Vercel: `npm run audit:vercel-quota`
+- Rapport surfaces Vercel: `npm run report:vercel-surface`
 - Validation complète: `npm run checks`
 
 ## Flow de contribution

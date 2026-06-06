@@ -251,6 +251,50 @@ export function extractActionMetadataFromNotes(
   };
 }
 
+export function setActionGroupJoinEnabledInNotes(
+  notes: string | null | undefined,
+  groupJoinEnabled: boolean,
+): string | null {
+  const source = notes ?? "";
+  const lines = source.split(/\r?\n/);
+  const outputLines: string[] = [];
+  let metadataUpdated = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith(META_PREFIX)) {
+      outputLines.push(line);
+      continue;
+    }
+
+    const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
+    if (!parsed) {
+      outputLines.push(line);
+      continue;
+    }
+
+    metadataUpdated = true;
+    if (groupJoinEnabled) {
+      delete parsed.groupJoinEnabled;
+    } else {
+      parsed.groupJoinEnabled = false;
+    }
+
+    if (Object.keys(parsed).length > 0) {
+      outputLines.push(`${META_PREFIX}${JSON.stringify(parsed)}`);
+    }
+  }
+
+  if (!metadataUpdated && !groupJoinEnabled) {
+    outputLines.push(
+      `${META_PREFIX}${JSON.stringify({ groupJoinEnabled: false })}`,
+    );
+  }
+
+  const normalized = outputLines.join("\n").trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 export function deriveActionTitleFromMetadata(params: {
   associationName?: string | null;
   actorName?: string | null;

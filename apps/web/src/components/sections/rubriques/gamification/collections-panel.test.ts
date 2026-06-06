@@ -144,6 +144,13 @@ function makeProgression(): MeResponse["progression"] {
     recognition: {
       currentContributor: null,
     },
+    annualRecognition: {
+      currentContributor: null,
+    },
+    yearToDateImpact: {
+      wasteKg: 0,
+      validatedActions: 0,
+    },
   };
 }
 

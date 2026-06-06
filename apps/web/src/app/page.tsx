@@ -16,8 +16,8 @@ import {
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// The landing page can be regenerated periodically while still showing fresh counters.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   ...appMetadata,

@@ -39,15 +39,16 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       syncAnalyticsConsentCookie(consentDecision);
     }
     if (hasConsent && !isPostHogInitialized()) {
-      const posthog = initPostHogClient(true);
-      if (posthog) {
-        posthog.capture("cmm_posthog_initialized_with_consent", {
-          timestamp: Date.now(),
-        });
-      }
+      void initPostHogClient(true).then((posthog) => {
+        if (posthog) {
+          posthog.capture("cmm_posthog_initialized_with_consent", {
+            timestamp: Date.now(),
+          });
+        }
+      });
     }
   }, [consentDecision, hasConsent]);
-  
+
   return <>{children}</>;
 }
 

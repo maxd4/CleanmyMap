@@ -248,6 +248,8 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Trafic");
     expect(markup).toContain("Communauté");
     expect(markup).toContain("Communications");
+    expect(markup).toContain("Traçabilité des signaux");
+    expect(markup).toContain("Directement branchés");
     expect(markup).toContain("Notes de données manquantes");
     expect(markup).toContain("Historique Supabase");
     expect(markup).toContain("Pages vues CleanMyMap");

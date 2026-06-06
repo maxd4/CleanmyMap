@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { ArrowRight, Megaphone, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -111,8 +109,8 @@ const AWARENESS_CARDS: AwarenessCard[] = [
         en: "A clear setup reduces littering and makes sorting easier.",
       },
       {
-        fr: "Prévenir, c’est autant organiser le terrain que parler aux gens.",
-        en: "Prevention means organizing the field as much as speaking to people.",
+        fr: "Prévenir, c’est d’abord rendre les bons réflexes faciles à comprendre.",
+        en: "Prevention starts by making the right reflexes easy to understand.",
       },
     ],
     href: "https://www.ecologie.gouv.fr/politiques-publiques/lutte-contre-depots-illegaux-dechets",
@@ -121,8 +119,8 @@ const AWARENESS_CARDS: AwarenessCard[] = [
       en: "Ministry",
     },
     sourceHint: {
-      fr: "Prévention, sensibilisation et communication de terrain.",
-      en: "Prevention, awareness and field communication.",
+      fr: "Prévention, sensibilisation et communication locale.",
+      en: "Prevention, awareness and local communication.",
     },
     icon: ShieldCheck,
     tone: "sky",
@@ -166,8 +164,8 @@ export function LearnBehaviorAwarenessSection({ locale }: { locale: LearnLocale 
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
             {locale === "fr"
-              ? "On s’appuie ici sur Gestes Propres, l’ADEME et le ministère: montrer l’exemple, choisir les bons leviers de sensibilisation et créer un cadre de terrain lisible."
-              : "This section draws on Gestes Propres, ADEME and the ministry: lead by example, choose the right awareness levers and create a readable field setup."}
+              ? "On s’appuie ici sur Gestes Propres, l’ADEME et le ministère: montrer l’exemple, choisir les bons leviers de sensibilisation et rendre le message simple à suivre."
+              : "This section draws on Gestes Propres, ADEME and the ministry: lead by example, choose the right awareness levers and keep the message easy to follow."}
           </p>
         </div>
         <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">

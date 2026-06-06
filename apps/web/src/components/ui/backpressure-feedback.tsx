@@ -153,6 +153,7 @@ export function useBackpressureStatus(pollIntervalMs = 5000) {
       }
     };
 
+    // Polling is intentional here: the queue status must refresh while the user keeps the view open.
     checkStatus();
     const interval = setInterval(checkStatus, pollIntervalMs);
     return () => {

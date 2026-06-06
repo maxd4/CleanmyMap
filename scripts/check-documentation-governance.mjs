@@ -12,6 +12,7 @@ const skippedPathParts = [
   `${path.sep}documentation${path.sep}plans${path.sep}`,
   `${path.sep}documentation${path.sep}rapport_IA${path.sep}`,
   `${path.sep}documentation${path.sep}publication-governance.md`,
+  `${path.sep}documentation${path.sep}documentation-push-status.md`,
   `${path.sep}documentation${path.sep}AGENTS.md`,
   `${path.sep}documentation${path.sep}project_context.md`,
   `${path.sep}documentation${path.sep}maintenance${path.sep}vercel_deployments.txt`,

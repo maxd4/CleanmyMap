@@ -197,9 +197,10 @@ export async function GET(request: Request) {
  const isTruncated = isEventsTruncated || isActionsTruncated;
 
  const headers: Record<string, string> = {
-"Content-Type":"text/csv; charset=utf-8",
-"Content-Disposition": `attachment; filename="${filename}"`,
-"Cache-Control":"no-store",
+  "Content-Type": "text/csv; charset=utf-8",
+  "Content-Disposition": `attachment; filename="${filename}"`,
+  // Justification Vercel: this export is user-scoped and time-sensitive, so it must bypass caches.
+  "Cache-Control": "no-store",
  };
  if (isTruncated) {
  headers["X-Export-Warning"] = isEventsTruncated

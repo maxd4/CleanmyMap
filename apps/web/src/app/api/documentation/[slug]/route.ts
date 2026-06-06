@@ -34,7 +34,7 @@ function buildDownloadHeaders(filename: string) {
   return {
     "Content-Type": "text/markdown; charset=utf-8",
     "Content-Disposition": `attachment; filename="${filename}"`,
-    "Cache-Control": "no-store",
+    "Cache-Control": "public, max-age=0, must-revalidate, s-maxage=86400, stale-while-revalidate=604800",
   };
 }
 
@@ -85,4 +85,3 @@ export async function GET(
     );
   }
 }
-

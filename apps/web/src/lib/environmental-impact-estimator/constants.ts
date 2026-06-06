@@ -349,7 +349,7 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS = [
     label: "Resend - emails",
     unitLabel: "emails / mois",
     proxyKgCo2ePerUnit: 0.00002,
-    referenceMonthlyQuantity: 2_500,
+    referenceMonthlyQuantity: 3_000,
   },
   {
     key: "resendBatchRequests",

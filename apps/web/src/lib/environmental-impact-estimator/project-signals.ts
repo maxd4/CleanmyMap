@@ -4,9 +4,9 @@ import {
   buildCodexMonthlyUsageEstimate,
   listCodexUsageWeeklySnapshots,
 } from "./codex-usage-store";
+import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import type {
   EnvironmentalImpactCodexUsageMonthlyEstimate,
-  EnvironmentalImpactEstimateInput,
   EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactProjectSignal,
   EnvironmentalImpactProjectSignals,
@@ -116,6 +116,8 @@ type ProjectSignalRows = {
   eventRsvps: EventRsvpRow[];
   appNotifications: AppNotificationRow[];
 };
+
+const PROJECT_SIGNAL_ROW_LIMIT = 6000;
 
 function round6(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
@@ -307,8 +309,6 @@ function buildScopeInputFromRows(
     return ownerId === userId;
   });
 
-  const attributedEmailRows = emailRows.filter((row) => row.actor_user_id === userId);
-
   const pageViews = countProjectPageViews(funnelRows);
   const storedImages = trainingRows.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
@@ -319,7 +319,13 @@ function buildScopeInputFromRows(
     (row) => row.latitude !== null && row.longitude !== null,
   ).length + spotRows.filter((row) => row.latitude !== null && row.longitude !== null).length;
   const aiCalls = trainingRows.filter((row) => countTrainingPhotos(row.photos) > 0).length;
-  const emailCount = emailRows.filter((row) => row.status === "sent").length;
+  const emailCount = emailRows.reduce((acc, row) => {
+    if (row.status !== "sent") {
+      return acc;
+    }
+
+    return acc + Math.max(0, Number(row.recipient_count ?? 0));
+  }, 0);
   const sessionCount = countDistinct(funnelRows.map((row) => row.session_id));
   const activeUserCount = countDistinct([
     ...funnelRows.map((row) => row.user_id),
@@ -411,7 +417,13 @@ function buildProjectSignalsHighlights(
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
   );
-  const recentEmailCount = rows.serviceEmails.filter((row) => row.status === "sent").length;
+  const recentEmailCount = rows.serviceEmails.reduce((acc, row) => {
+    if (row.status !== "sent") {
+      return acc;
+    }
+
+    return acc + Math.max(0, Number(row.recipient_count ?? 0));
+  }, 0);
   const communityEventCount = rows.communityEvents.length;
   const rsvpCount = rows.eventRsvps.length;
   const notificationCount = rows.appNotifications.length;
@@ -516,7 +528,13 @@ function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
   const rsvpCount = rows.eventRsvps.length;
   const notificationCount = rows.appNotifications.length;
   const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
-  const sentEmailsCount = rows.serviceEmails.filter((row) => row.status === "sent").length;
+  const sentEmailsCount = rows.serviceEmails.reduce((acc, row) => {
+    if (row.status !== "sent") {
+      return acc;
+    }
+
+    return acc + Math.max(0, Number(row.recipient_count ?? 0));
+  }, 0);
   const pdfExportsCount = rows.reports.filter((row) => row.file_kind === "pdf").length;
 
   return {
@@ -1040,11 +1058,13 @@ export function buildEnvironmentalImpactProjectSignals(
     userId: string | null;
   },
   codexSnapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[] = [],
+  githubRepositoryStats: GitHubRepositoryStats | null = null,
 ): EnvironmentalImpactProjectSignals {
   const generatedAtDate = parseDateOrNull(params.generatedAt) ?? new Date(params.generatedAt);
   const launchedAt = findEarliestDate(rows);
   const accountCreatedAt = params.userId ? findAccountCreatedAt(rows, params.userId) : null;
   const codexUsage = calculateCodexMonthlyUsageInput(codexSnapshots);
+  const githubWorkflowRunsCount30d = githubRepositoryStats?.workflowRunsCount30d ?? null;
   const siteInput = calculateAllTimeScopeInput(rows, {
     userId: null,
     accountCreatedAt: null,
@@ -1073,6 +1093,9 @@ export function buildEnvironmentalImpactProjectSignals(
       usage: {
         ...calculateMonthlyUsageInput(rows),
         ...codexUsage.usage,
+        ...(githubWorkflowRunsCount30d !== null
+          ? { monthlyDeployments: githubWorkflowRunsCount30d }
+          : {}),
       },
     },
     highlights: [
@@ -1091,6 +1114,17 @@ export function buildEnvironmentalImpactProjectSignals(
             },
           ]
         : []),
+      ...(githubWorkflowRunsCount30d !== null
+        ? [
+            {
+              label: "GitHub Actions runs",
+              value: githubWorkflowRunsCount30d,
+              detail:
+                "Workflow runs GitHub Actions completés sur 30 jours. Cette donnée remplace la projection dérivée sur le poste des déploiements.",
+              basis: "recent" as const,
+            },
+          ]
+        : []),
     ],
     notes: [
       "Les signaux proviennent des tables opérationnelles CleanMyMap, pas de moyennes externes.",
@@ -1099,6 +1133,9 @@ export function buildEnvironmentalImpactProjectSignals(
       "Les événements communautaires, RSVP et notifications app sont intégrés pour refléter l'usage produit réel et non un proxy générique.",
       "Les images stockées sont déduites des training_examples et de leurs pièces jointes, afin de rester projet-spécifique.",
       "Les métriques mensuelles sont projetées à partir des 30 derniers jours observés sur le projet.",
+      githubWorkflowRunsCount30d === null
+        ? "GitHub Actions runs sur 30 jours: NA; le poste de déploiements conserve un proxy dérivé."
+        : `GitHub Actions runs sur 30 jours: ${githubWorkflowRunsCount30d}; le poste des déploiements est branché directement sur cette source.`,
       ...codexUsage.codexUsage.notes,
     ],
   };
@@ -1106,7 +1143,11 @@ export function buildEnvironmentalImpactProjectSignals(
 
 export async function loadEnvironmentalImpactProjectSignals(
   supabase: SupabaseClient,
-  params: { userId: string | null; generatedAt?: string },
+  params: {
+    userId: string | null;
+    generatedAt?: string;
+    githubRepositoryStats?: GitHubRepositoryStats | null;
+  },
 ): Promise<EnvironmentalImpactProjectSignals> {
   const generatedAt = params.generatedAt ?? new Date().toISOString();
   const [
@@ -1122,17 +1163,17 @@ export async function loadEnvironmentalImpactProjectSignals(
     eventRsvps,
     appNotifications,
   ] = await Promise.all([
-    supabase.from("profiles").select("id, created_at").limit(12000),
-    supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status").limit(12000),
-    supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status").limit(12000),
-    supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta").limit(12000),
-    supabase.from("progression_events").select("created_at, user_id, event_type, status_phase").limit(12000),
-    supabase.from("reports").select("created_at, owner_clerk_id, file_kind").limit(12000),
-    supabase.from("training_examples").select("action_id, created_at, photos, status").limit(12000),
-    supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status").limit(12000),
-    supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description").limit(12000),
-    supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at").limit(12000),
-    supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at").limit(12000),
+    supabase.from("profiles").select("id, created_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("progression_events").select("created_at, user_id, event_type, status_phase").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("reports").select("created_at, owner_clerk_id, file_kind").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("training_examples").select("action_id, created_at, photos, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
   ]);
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
 
@@ -1170,5 +1211,6 @@ export async function loadEnvironmentalImpactProjectSignals(
     },
     { generatedAt, userId: params.userId },
     codexSnapshots,
+    params.githubRepositoryStats ?? null,
   );
 }

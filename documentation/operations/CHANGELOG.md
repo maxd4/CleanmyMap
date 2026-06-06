@@ -1,5 +1,75 @@
 # Change Log
 
+## 2026-06-06
+
+### Rapport automatique des surfaces Vercel
+
+- **What changed**
+  - Added an automatic Vercel surface report generator:
+    - `scripts/generate-vercel-surface-report.mjs`
+  - Added a canonical generated report:
+    - `documentation/development/vercel-surface-report.md`
+  - Exposed the report command in the root package scripts:
+    - `npm run report:vercel-surface`
+
+- **Why**
+  - Keep the current API, dynamic page, middleware and provider surface visible in one report.
+  - Make the Vercel cost drivers explicit with a risk estimate for invocations, edge requests and origin transfer.
+
+- **Validation**
+  - Pending: run the report generator after the script lands.
+
+## 2026-06-05
+
+### Documentation par route et cache des documents markdown
+
+- **What changed**
+  - Added a route-by-route Vercel cost audit:
+    - `documentation/development/vercel-route-cost-audit.md`
+  - Added the route audit to the documentation entry points:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+    - `README.md`
+  - Improved the markdown document download route:
+    - `apps/web/src/app/api/documentation/[slug]/route.ts`
+  - Added a regression test for the cache headers:
+    - `apps/web/src/app/api/documentation/[slug]/route.test.ts`
+
+- **Why**
+  - Make the most expensive routes explicit before PR review.
+  - Reduce unnecessary origin hits for static markdown downloads.
+
+- **Validation**
+  - Pending: run the targeted route test after the cache header change.
+
+- **Compatibility notes**
+  - The documentation download route still serves the same files and attachment names.
+  - Only cache headers changed; the payload format is unchanged.
+
+### Gouvernance Vercel: audit statique des régressions de coût
+
+- **What changed**
+  - Added a dedicated Vercel quota governance guide:
+    - `documentation/development/vercel-quota-governance.md`
+  - Added a static audit script and baseline:
+    - `scripts/audit-vercel-quota.mjs`
+    - `scripts/vercel-quota-audit-baseline.json`
+  - Wired the audit into the pre-push guardrail:
+    - `scripts/pre_push_guard.ps1`
+  - Exposed the audit command in the root README:
+    - `npm run audit:vercel-quota`
+
+- **Why**
+  - Detect cost regressions early when a future feature adds dynamic pages, no-store fetches, export routes, or crons.
+  - Make Vercel quota growth visible before it reaches production usage dashboards.
+
+- **Validation**
+  - Pending: run the new audit script after the baseline file is generated.
+
+- **Compatibility notes**
+  - The audit is additive and read-only.
+  - The baseline must be refreshed intentionally when a new hotspot is accepted.
+
 ## 2026-04-09
 
 ### E09 destructive cleanup: Streamlit legacy removed

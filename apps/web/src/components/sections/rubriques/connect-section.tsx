@@ -112,6 +112,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                         initialArrondissement={initialArrondissement}
                         initialZoneName={initialZoneName}
                         initialRecipient={initialRecipient}
+                        tone="light"
                       />
                     </div>
                   </motion.div>

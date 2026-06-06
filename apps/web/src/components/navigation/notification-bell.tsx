@@ -50,6 +50,7 @@ export function NotificationBell() {
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications],
   );
+  const pollIntervalMs = isOpen ? 60_000 : 300_000;
 
   const fetchNotifications = async () => {
     if (!isLoaded || !isSignedIn) {
@@ -83,12 +84,52 @@ export function NotificationBell() {
       return;
     }
 
+    let intervalId: number | null = null;
+    let mounted = true;
+
+    const clearPolling = () => {
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const startPolling = () => {
+      clearPolling();
+      if (!mounted || document.visibilityState !== "visible") {
+        return;
+      }
+
+      // Polling is intentional for unread notifications, but the cadence is reduced to protect Invocations.
+      intervalId = window.setInterval(() => {
+        void fetchNotifications();
+      }, pollIntervalMs);
+    };
+
+    const handleVisibilityChange = () => {
+      if (!mounted) {
+        return;
+      }
+
+      if (document.visibilityState === "visible") {
+        void fetchNotifications();
+        startPolling();
+      } else {
+        clearPolling();
+      }
+    };
+
+    // Polling remains intentional, but it pauses when hidden and slows down while closed.
     void fetchNotifications();
-    const interval = window.setInterval(() => {
-      void fetchNotifications();
-    }, 60000);
-    return () => window.clearInterval(interval);
-  }, [isLoaded, isSignedIn]);
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      mounted = false;
+      clearPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isLoaded, isSignedIn, isOpen, pollIntervalMs]);
 
   useEffect(() => {
     if (

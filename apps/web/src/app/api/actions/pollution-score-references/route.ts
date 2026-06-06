@@ -22,6 +22,7 @@ export async function GET() {
       },
       {
         headers: {
+          // Justification Vercel: these coefficients feed the live map UI and must never be cached.
           "Cache-Control": "no-store",
         },
       },

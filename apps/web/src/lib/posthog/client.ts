@@ -1,7 +1,6 @@
 "use client";
 
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
-import posthog from "posthog-js";
 import {
   getPostHogDeprecatedEnvWarnings,
   getPostHogHost,
@@ -10,13 +9,29 @@ import {
 
 let initialized = false;
 let envWarningLogged = false;
+let posthogModulePromise: Promise<typeof import("posthog-js")> | null = null;
 
 export function isPostHogInitialized(): boolean {
   return initialized;
 }
 
-export function initPostHogClient(enableAnalytics = true) {
-  if (initialized) return posthog;
+async function loadPostHogModule() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (!posthogModulePromise) {
+    posthogModulePromise = import("posthog-js");
+  }
+
+  return posthogModulePromise;
+}
+
+export async function initPostHogClient(enableAnalytics = true) {
+  if (initialized) {
+    const module = await loadPostHogModule();
+    return module?.default ?? null;
+  }
 
   if (!hasAnalyticsConsent()) {
     return null;
@@ -35,6 +50,12 @@ export function initPostHogClient(enableAnalytics = true) {
     envWarningLogged = true;
   }
 
+  const module = await loadPostHogModule();
+  if (!module) {
+    return null;
+  }
+
+  const posthog = module.default;
   posthog.init(key, {
     api_host: getPostHogHost(),
     capture_pageview: true,

@@ -1,27 +1,23 @@
-"use client";
-import { useEffect } from "react";
 import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnVulgarisationPathSection } from "@/components/learn/learn-vulgarisation-path-section";
-import { LearnVulgarisationMagnitudeComparator } from "@/components/learn/learn-vulgarisation-magnitude-comparator";
-import { LearnArtworkAccordion } from "@/components/learn/learn-ressources-client";
+import {
+  DeferredLearnArtworkAccordion,
+  DeferredLearnVulgarisationMagnitudeComparator,
+  DeferredImpactOrderOfMagnitudeSection,
+  DeferredGIECContent,
+  DeferredPlanetaryBoundariesInteractive,
+  DeferredSustainableGoalsInteractive,
+} from "@/components/learn/learn-deferred-panels";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
-import { ImpactOrderOfMagnitudeSection } from "@/components/learn/impact-order-of-magnitude";
 import Link from "next/link";
-import { GIECContent } from "@/components/learn/giac-content";
-import { PlanetaryBoundariesInteractive } from "@/components/learn/planetary-boundaries";
-import { SustainableGoalsInteractive } from "@/components/learn/sustainable-goals";
-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
-import { recordLearnPageVisit } from "@/lib/learning/learn-progress";
+import { getServerLocale } from "@/lib/server-preferences";
 
-export default function LearnVulgarisationPage() {
-  const { locale } = useSitePreferences();
+export default async function LearnVulgarisationPage() {
+  const locale = await getServerLocale();
   const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
-
-  useEffect(() => {
-    recordLearnPageVisit("comprendre");
-  }, []);
 
   return (
     <LearnRubricShell
@@ -47,6 +43,7 @@ export default function LearnVulgarisationPage() {
         label: { fr: "Passer à l'entraînement", en: "Move to practice" },
       }}
     >
+      <LearnPageVisitTracker pageId="comprendre" />
       <div className="space-y-8">
         <LearnComprendreVisualIntro
           locale={locale}
@@ -64,10 +61,10 @@ export default function LearnVulgarisationPage() {
           className="border-amber-200 bg-white/88"
         />
         <LearnVulgarisationPathSection locale={locale} />
-        <LearnVulgarisationMagnitudeComparator />
+        <DeferredLearnVulgarisationMagnitudeComparator />
         <LearnBlockJourneySection locale={locale} currentPageId="comprendre" />
-        <ImpactOrderOfMagnitudeSection />
-        <LearnArtworkAccordion locale={locale} />
+        <DeferredImpactOrderOfMagnitudeSection />
+        <DeferredLearnArtworkAccordion locale={locale} />
         <div className="flex justify-end">
           <Link
             href="/methodologie"
@@ -77,9 +74,9 @@ export default function LearnVulgarisationPage() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
           </Link>
         </div>
-        <GIECContent />
-        <PlanetaryBoundariesInteractive />
-        <SustainableGoalsInteractive />
+        <DeferredGIECContent />
+        <DeferredPlanetaryBoundariesInteractive />
+        <DeferredSustainableGoalsInteractive />
       </div>
     </LearnRubricShell>
   );

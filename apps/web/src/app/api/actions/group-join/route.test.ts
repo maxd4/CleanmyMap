@@ -39,15 +39,21 @@ type ParticipantRow = {
 function createActionsChain(actions: ActionRow[]) {
   const state: {
     filters: Record<string, string>;
+    inFilters: Record<string, string[]>;
     limitValue: number | null;
   } = {
     filters: {},
+    inFilters: {},
     limitValue: null,
   };
   const chain: any = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
+      return chain;
+    }),
+    in: vi.fn((field: string, values: string[]) => {
+      state.inFilters[field] = values;
       return chain;
     }),
     order: vi.fn(() => chain),
@@ -58,6 +64,10 @@ function createActionsChain(actions: ActionRow[]) {
           return false;
         }
         if (state.filters.status && action.status !== state.filters.status) {
+          return false;
+        }
+        const allowedActionIds = state.inFilters.id;
+        if (allowedActionIds && !allowedActionIds.includes(action.id)) {
           return false;
         }
         return true;
@@ -75,6 +85,10 @@ function createActionsChain(actions: ActionRow[]) {
         if (state.filters.status && action.status !== state.filters.status) {
           return false;
         }
+        const allowedActionIds = state.inFilters.id;
+        if (allowedActionIds && !allowedActionIds.includes(action.id)) {
+          return false;
+        }
         return true;
       });
       return {
@@ -84,7 +98,19 @@ function createActionsChain(actions: ActionRow[]) {
     }),
     then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
       Promise.resolve({
-        data: actions,
+        data: actions.filter((action) => {
+          if (state.filters.id && action.id !== state.filters.id) {
+            return false;
+          }
+          if (state.filters.status && action.status !== state.filters.status) {
+            return false;
+          }
+          const allowedActionIds = state.inFilters.id;
+          if (allowedActionIds && !allowedActionIds.includes(action.id)) {
+            return false;
+          }
+          return true;
+        }),
         error: null,
       }).then(resolve, reject),
   };
@@ -97,11 +123,13 @@ function createParticipantsChain(participants: ParticipantRow[]) {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
     headCount: boolean;
+    limitValue: number | null;
     inserting?: ParticipantRow;
   } = {
     filters: {},
     inFilters: {},
     headCount: false,
+    limitValue: null,
   };
 
   const buildFiltered = () =>
@@ -133,6 +161,14 @@ function createParticipantsChain(participants: ParticipantRow[]) {
       return chain;
     }),
     order: vi.fn(() => chain),
+    limit: vi.fn(async (limit: number) => {
+      state.limitValue = limit;
+      const filtered = buildFiltered();
+      return {
+        data: filtered.slice(0, limit),
+        error: null,
+      };
+    }),
     maybeSingle: vi.fn(async () => {
       const filtered = buildFiltered();
       return {
@@ -162,7 +198,7 @@ function createParticipantsChain(participants: ParticipantRow[]) {
     then: (resolve: (value: any) => void, reject: (reason: unknown) => void) => {
       const filtered = buildFiltered();
       return Promise.resolve({
-        data: state.headCount ? null : filtered,
+        data: state.headCount ? null : filtered.slice(0, state.limitValue ?? filtered.length),
         count: filtered.length,
         error: null,
       }).then(resolve, reject);
@@ -386,6 +422,60 @@ describe("GET /api/actions/group-join", () => {
     expect(body.count).toBe(6);
     expect(body.items?.[0]?.id).toBe("action-7");
     expect(body.items?.map((item) => item.id)).toContain("action-7");
+  }, 15000);
+
+  it("returns a personal history of joined actions for the authenticated user", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-open",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-14",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+        {
+          id: "action-closed",
+          created_at: "2026-04-01T10:00:00Z",
+          action_date: "2026-04-11",
+          location_label: "Quai Est",
+          volunteers_count: 8,
+          duration_minutes: 30,
+          status: "approved",
+          notes: appendActionMetadataToNotes("Fermée", { groupJoinEnabled: false }),
+        },
+      ],
+      participants: [
+        {
+          id: "participant-1",
+          created_at: "2026-05-03T10:00:00Z",
+          action_id: "action-open",
+          user_id: "user-1",
+        },
+        {
+          id: "participant-2",
+          created_at: "2026-04-03T10:00:00Z",
+          action_id: "action-closed",
+          user_id: "user-1",
+        },
+      ],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/group-join?limit=6&historyLimit=8"));
+    const body = (await response.json()) as {
+      history?: Array<{ id: string; joined: boolean; joinedAt: string }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.history).toHaveLength(2);
+    expect(body.history?.[0]?.id).toBe("action-open");
+    expect(body.history?.[0]?.joined).toBe(true);
+    expect(body.history?.[1]?.id).toBe("action-closed");
   }, 15000);
 });
 

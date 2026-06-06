@@ -59,3 +59,16 @@ Utiliser cette page comme checklist commune pour les humains et les agents IA.
 - Les tests ciblés passent.
 - Les workflows référencent bien les nouveaux tests ou scripts.
 - Les pages de test ou brouillons ne doivent pas réapparaître dans la navigation publique ni dans le sitemap.
+
+## 9. Performance / Quotas Vercel
+
+- Une nouvelle route API doit avoir un besoin clair et des bornes explicites.
+- Une nouvelle page dynamique doit justifier l'absence de cache.
+- Un nouveau middleware doit rester léger et ciblé.
+- Une nouvelle requête Supabase doit être bornée et relue pour son coût.
+- Un nouveau polling doit être justifié face à un cache ou à une alternative moins coûteuse.
+- Un nouveau composant Leaflet doit être chargé seulement là où il apporte un gain réel.
+- Un nouveau fetch serveur doit expliquer son impact sur l'origine et le transfert.
+- Un nouveau PDF ou export doit être borné, protégé et mesuré.
+- Une nouvelle dépendance lourde doit être justifiée par le besoin métier et le bundle.
+- Si le changement augmente un quota Vercel volontairement, la PR doit l'indiquer explicitement.

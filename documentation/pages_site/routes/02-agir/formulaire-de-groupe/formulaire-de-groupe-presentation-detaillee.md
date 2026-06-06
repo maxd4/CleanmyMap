@@ -1,4 +1,4 @@
-# Formulaire de groupe - Présentation détaillée
+# Créer un formulaire - Présentation détaillée
 
 ## Fiche canonique
 
@@ -9,4 +9,3 @@
 - **États à documenter** : à compléter
 - **Composants concernés** : à compléter
 - **Notes d'audit** : à compléter
-

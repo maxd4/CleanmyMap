@@ -198,3 +198,52 @@ export async function countServiceEmailEventsForActorSince(params: {
     );
   }).length;
 }
+
+export async function countServiceEmailRecipientsForActorSince(params: {
+  actorUserId: string;
+  sinceIso: string;
+  statuses?: ServiceEmailEventStatus[];
+}): Promise<number> {
+  const statuses = params.statuses ?? ["sent"];
+
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const supabase = getSupabaseServerClient();
+      const result = await supabase
+        .from("service_email_events")
+        .select("created_at, status, actor_user_id, recipient_count")
+        .eq("actor_user_id", params.actorUserId)
+        .gte("created_at", params.sinceIso)
+        .in("status", statuses);
+
+      if (!result.error) {
+        return (result.data ?? []).reduce((acc, row) => {
+          const recipients = Number((row as ServiceEmailEventRow).recipient_count ?? 0);
+          return acc + (Number.isFinite(recipients) ? recipients : 0);
+        }, 0);
+      }
+      if (!allowLocalFileStoreFallback()) {
+        return 0;
+      }
+    } catch {
+      if (!allowLocalFileStoreFallback()) {
+        return 0;
+      }
+    }
+  }
+
+  const store = await readStore();
+  return store.records.reduce((acc, entry) => {
+    const ms = new Date(entry.at).getTime();
+    if (
+      entry.actorUserId !== params.actorUserId ||
+      !statuses.includes(entry.status) ||
+      !Number.isFinite(ms) ||
+      ms < new Date(params.sinceIso).getTime()
+    ) {
+      return acc;
+    }
+
+    return acc + (Number.isFinite(entry.recipientCount) ? entry.recipientCount : 0);
+  }, 0);
+}

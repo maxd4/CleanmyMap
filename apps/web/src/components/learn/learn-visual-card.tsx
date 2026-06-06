@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import {
   ArrowRight,
@@ -162,7 +160,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
           <Icon size={24} className={iconTone} />
         </div>
         <div className="absolute bottom-2 right-2 rounded-2xl border border-amber-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 shadow-sm">
-          kit
+          repère
         </div>
       </div>
     );

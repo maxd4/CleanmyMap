@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from"react";
+import { useUser } from"@clerk/nextjs";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
 import { CmmButton } from"@/components/ui/cmm-button";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
  getActionOperationalContext,
  mapItemWasteKg,
@@ -47,7 +49,14 @@ function isJoinableAction(item: ActionListItem): boolean {
  return (
  item.record_type === "action" &&
  item.contract?.metadata.groupJoinEnabled !== false
- );
+  );
+}
+
+function isOwnedByCurrentUser(
+ item: ActionListItem,
+ currentUserId: string | null,
+): boolean {
+ return Boolean(currentUserId && item.created_by_clerk_id === currentUserId);
 }
 
 function qualityTone(grade:"A" |"B" |"C"): string {
@@ -74,6 +83,10 @@ function rowTone(grade:"A" |"B" |"C" | null): string {
 }
 
 export function ActionsHistoryList() {
+ const { user } = useUser();
+ const { locale } = useSitePreferences();
+ const currentUserId = user?.id ?? null;
+ const fr = locale === "fr";
  const [statusFilter, setStatusFilter] = useState<ActionStatus |"all">(
 "approved",
  );
@@ -84,6 +97,8 @@ export function ActionsHistoryList() {
  const [limit, setLimit] = useState<number>(25);
  const [search, setSearch] = useState<string>("");
  const [selectedId, setSelectedId] = useState<string | null>(null);
+ const [groupJoinActionId, setGroupJoinActionId] = useState<string | null>(null);
+ const [groupJoinNotice, setGroupJoinNotice] = useState<string | null>(null);
 
  const swrKey = useMemo(
  () => [
@@ -228,6 +243,70 @@ export function ActionsHistoryList() {
  :"Corriger les champs incomplets et valeurs incoherentes."
  : null;
 
+ async function handleToggleGroupJoin(
+ item: ActionListItem,
+ nextEnabled: boolean,
+ ) {
+ if (!isOwnedByCurrentUser(item, currentUserId)) {
+  setGroupJoinNotice(
+   fr
+    ? "Vous devez être l'organisateur principal de cette action."
+    : "You must be the primary organizer of this action.",
+  );
+  return;
+ }
+
+ setGroupJoinActionId(item.id);
+ setGroupJoinNotice(null);
+
+ try {
+  const response = await fetch(
+   `/api/actions/${encodeURIComponent(item.id)}/group-join`,
+   {
+    method: "PATCH",
+    headers: {
+     "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ groupJoinEnabled: nextEnabled }),
+   },
+  );
+
+  const payload = (await response.json()) as
+   | { status: "ok"; groupJoinEnabled: boolean }
+   | { error?: string };
+
+  if (!response.ok) {
+   const message =
+    typeof payload === "object" && payload && "error" in payload && payload.error
+     ? payload.error
+     : fr
+      ? "Impossible de modifier l'ouverture du formulaire."
+      : "Unable to change the form opening state.";
+   setGroupJoinNotice(message);
+   return;
+  }
+
+  setGroupJoinNotice(
+   nextEnabled
+    ? fr
+     ? "Créer un formulaire rouvert."
+     : "Create form reopened."
+    : fr
+     ? "Créer un formulaire fermé."
+     : "Create form closed.",
+  );
+  await reload();
+ } catch {
+  setGroupJoinNotice(
+   fr
+    ? "Impossible de modifier l'ouverture du formulaire."
+    : "Unable to change the form opening state.",
+  );
+ } finally {
+  setGroupJoinActionId(null);
+ }
+ }
+
  return (
  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
  <div className="flex flex-wrap items-start justify-between gap-3">
@@ -254,14 +333,20 @@ export function ActionsHistoryList() {
 
  <div className="mt-4">
  <RubriquePdfExportButton
- rubrique="historique_terrain"
+  rubrique="historique_terrain"
  periode={`filtre_${statusFilter}_${new Date().getFullYear()}`}
  organizationType="profil"
  defaultTitle="Rapport historique terrain"
  data={pdfData}
- disabled={isLoading || Boolean(error) || approvedFilteredItems.length === 0}
+  disabled={isLoading || Boolean(error) || approvedFilteredItems.length === 0}
  />
  </div>
+
+ {groupJoinNotice && (
+ <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900">
+  {groupJoinNotice}
+ </div>
+ )}
 
  <div className="mt-4 grid gap-3 md:grid-cols-3">
  <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
@@ -473,21 +558,46 @@ export function ActionsHistoryList() {
  )}
  </td>
  <td className="px-2 py-2">
- {item.status ==="approved" && isJoinableAction(item) ? (
- <CmmButton
-  href={buildJoinHref(item.id)}
-  tone="secondary"
-  variant="pill"
-  className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
- >
- Rejoindre
- </CmmButton>
- ) : item.status === "approved" &&
- item.record_type === "action" &&
- item.contract?.metadata.groupJoinEnabled === false ? (
- <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide text-slate-500">
-  Fermé
- </span>
+ {item.status ==="approved" && item.record_type ==="action" ? (
+ <div className="flex flex-col items-start gap-2">
+  {isJoinableAction(item) ? (
+   <CmmButton
+    href={buildJoinHref(item.id)}
+    tone="secondary"
+    variant="pill"
+    className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
+   >
+    Rejoindre
+   </CmmButton>
+  ) : (
+   <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide text-slate-500">
+    Fermé
+   </span>
+  )}
+  {isOwnedByCurrentUser(item, currentUserId) ? (
+   <CmmButton
+    type="button"
+    tone="primary"
+    variant="pill"
+    disabled={groupJoinActionId === item.id}
+    onClick={() =>
+      void handleToggleGroupJoin(item, item.contract?.metadata.groupJoinEnabled === false)
+    }
+    className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
+   >
+    {groupJoinActionId === item.id ? (
+     <>
+      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+      {item.contract?.metadata.groupJoinEnabled === false ? "Rouverture..." : "Fermeture..."}
+     </>
+    ) : item.contract?.metadata.groupJoinEnabled === false ? (
+     "Rouvrir"
+    ) : (
+     "Fermer"
+    )}
+   </CmmButton>
+  ) : null}
+ </div>
  ) : (
  <span className="cmm-text-caption cmm-text-muted">-</span>
  )}

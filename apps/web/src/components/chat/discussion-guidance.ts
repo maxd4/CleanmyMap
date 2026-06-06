@@ -1,3 +1,4 @@
+import { ArrowLeftRight, MapPin, Megaphone, PackageSearch, Users, Workflow, type LucideIcon } from "lucide-react";
 import type { ChatChannelType } from "@/lib/chat/channels";
 
 export type DiscussionLocale = "fr" | "en";
@@ -15,6 +16,24 @@ export type DiscussionGuidance = {
   starterPrompts: string[];
   composerHint: string;
   channelGoal: string;
+};
+
+export type ChatTopicId =
+  | "relais_associatif"
+  | "appel_aux_benevoles"
+  | "demande_diffusion"
+  | "besoin_ressources"
+  | "coordination_secteur"
+  | "mon_territoire"
+  | "territoires_voisins";
+
+export type ChatTopicDefinition = {
+  id: ChatTopicId;
+  label: string;
+  description: string;
+  starterPrompt: string;
+  icon: LucideIcon;
+  accentClassName: string;
 };
 
 type GuidanceOptions = {
@@ -259,11 +278,105 @@ const GUIDANCE: Record<
   },
 };
 
+const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
+  community: [
+    {
+      id: "relais_associatif",
+      label: "Relais associatif",
+      description: "Coordination entre associations et relais locaux.",
+      starterPrompt:
+        "Besoin de relais associatif : j'organise une action et je cherche une association relais.",
+      icon: Megaphone,
+      accentClassName: "text-pink-500",
+    },
+    {
+      id: "appel_aux_benevoles",
+      label: "Appel aux bénévoles",
+      description: "Mobilisation rapide pour un cleanup ou une mission.",
+      starterPrompt:
+        "Appel aux bénévoles : il me manque du monde pour le prochain cleanup.",
+      icon: Users,
+      accentClassName: "text-rose-500",
+    },
+    {
+      id: "demande_diffusion",
+      label: "Demande de diffusion",
+      description: "Relayer une annonce ou un message utile.",
+      starterPrompt:
+        "Demande de diffusion : merci de relayer cette annonce auprès des membres concernés.",
+      icon: Megaphone,
+      accentClassName: "text-pink-500",
+    },
+    {
+      id: "besoin_ressources",
+      label: "Besoin de ressources",
+      description: "Matériel, outils ou compétences à réunir.",
+      starterPrompt:
+        "Besoin de ressources : je cherche du matériel, des outils ou des compétences pour cette action.",
+      icon: PackageSearch,
+      accentClassName: "text-rose-500",
+    },
+    {
+      id: "coordination_secteur",
+      label: "Coordination de secteur",
+      description: "Organisation locale et suivi de terrain.",
+      starterPrompt:
+        "Coordination de secteur : voici l'organisation locale à mettre en place sur mon territoire.",
+      icon: Workflow,
+      accentClassName: "text-pink-500",
+    },
+  ],
+  dm: [],
+  admin_elu: [],
+  territory: [
+    {
+      id: "mon_territoire",
+      label: "Mon territoire",
+      description: "Un point local sur votre zone directe.",
+      starterPrompt:
+        "Mon territoire : voici un point local à partager sur mon secteur.",
+      icon: MapPin,
+      accentClassName: "text-amber-500",
+    },
+    {
+      id: "territoires_voisins",
+      label: "Territoires voisins",
+      description: "Coordination avec les zones limitrophes.",
+      starterPrompt:
+        "Territoires voisins : j'ai besoin d'un relais sur les communes ou quartiers limitrophes.",
+      icon: ArrowLeftRight,
+      accentClassName: "text-sky-500",
+    },
+  ],
+  bug_report: [],
+};
+
+export function getDiscussionTopics(channelType: ChatChannelType): ChatTopicDefinition[] {
+  return CHAT_TOPIC_DEFINITIONS[channelType] ?? [];
+}
+
+export function getDiscussionTopic(
+  channelType: ChatChannelType,
+  topicId: ChatTopicId | null | undefined,
+): ChatTopicDefinition | null {
+  if (!topicId) {
+    return null;
+  }
+
+  return getDiscussionTopics(channelType).find((topic) => topic.id === topicId) ?? null;
+}
+
+export function getDefaultDiscussionTopicId(channelType: ChatChannelType): ChatTopicId | null {
+  return getDiscussionTopics(channelType)[0]?.id ?? null;
+}
+
 export function getDiscussionGuidance(
   channelType: ChatChannelType,
   options: GuidanceOptions,
+  topicId?: ChatTopicId | null,
 ): DiscussionGuidance {
   const localeData = GUIDANCE[channelType][options.locale];
+  const topic = getDiscussionTopic(channelType, topicId);
   let emptyTitle = localeData.emptyTitle;
   let emptyDescription = localeData.emptyDescription;
 
@@ -291,17 +404,19 @@ export function getDiscussionGuidance(
 
   return {
     cardTitle: localeData.cardTitle,
-    cardSummary: localeData.cardSummary,
+    cardSummary: topic?.description ?? localeData.cardSummary,
     visibilityLabel: localeData.visibilityLabel(options),
     audienceLabel: localeData.audienceLabel(options),
-    purposeTags: localeData.purposeTags,
+    purposeTags: topic ? [topic.label, ...localeData.purposeTags.filter((tag) => tag !== topic.label)] : localeData.purposeTags,
     messagePattern: localeData.messagePattern,
     emptyTitle,
     emptyDescription,
     starterTitle: localeData.starterTitle,
-    starterPrompts: localeData.starterPrompts,
+    starterPrompts: topic
+      ? [topic.starterPrompt, ...localeData.starterPrompts.filter((prompt) => prompt !== topic.starterPrompt)]
+      : localeData.starterPrompts,
     composerHint: localeData.composerHint,
-    channelGoal: localeData.channelGoal,
+    channelGoal: topic?.label ?? localeData.channelGoal,
   };
 }
 

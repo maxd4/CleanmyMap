@@ -19,6 +19,7 @@ import {
  newOperationId,
 } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { runSingleActionQuery } from"@/lib/actions/query";
 
 export const runtime ="nodejs";
 const MODERATION_CONFIRM_PHRASE ="CONFIRMER MODERATION";
@@ -233,11 +234,9 @@ let copied = false;
     );
     copied = syncResult.copied;
 
-    const { data: actionDetails } = await supabase
-      .from("actions")
-      .select("created_by_clerk_id")
-      .eq("id", parsed.data.id)
-      .single();
+    const actionDetails = await runSingleActionQuery<{
+      created_by_clerk_id: string | null;
+    }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", parsed.data.id).maybeSingle());
 
     emitActionValidated({
       actionId: parsed.data.id,
@@ -245,11 +244,9 @@ let copied = false;
       moderatorId: access.userId,
     });
   } else if (parsed.data.status ==="rejected") {
-    const { data: actionDetails } = await supabase
-      .from("actions")
-      .select("created_by_clerk_id")
-      .eq("id", parsed.data.id)
-      .single();
+    const actionDetails = await runSingleActionQuery<{
+      created_by_clerk_id: string | null;
+    }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", parsed.data.id).maybeSingle());
 
     emitActionRejected({
       actionId: parsed.data.id,

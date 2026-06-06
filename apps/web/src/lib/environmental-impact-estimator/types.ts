@@ -334,6 +334,20 @@ export type EnvironmentalImpactUsageProfileEstimate = {
   horizonMonths: number;
   source: "input" | "derived";
   derivedFrom: string[];
+  provenance: EnvironmentalImpactUsageProvenanceItem[];
+};
+
+export type EnvironmentalImpactUsageProvenanceSource =
+  | "input"
+  | "derived"
+  | "reference";
+
+export type EnvironmentalImpactUsageProvenanceItem = {
+  key: string;
+  label: string;
+  value: number;
+  source: EnvironmentalImpactUsageProvenanceSource;
+  detail: string;
 };
 
 export type EnvironmentalImpactInfrastructureCurvePoint = {

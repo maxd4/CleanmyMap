@@ -14,6 +14,7 @@ type ChannelButtonProps = {
   accentClass: string;
   chipClass: string;
   isLocked: boolean;
+  tone?: "light" | "dark";
 };
 
 export function ChannelButton({
@@ -27,7 +28,9 @@ export function ChannelButton({
   accentClass,
   chipClass,
   isLocked,
+  tone = "dark",
 }: ChannelButtonProps) {
+  const isLight = tone === "light";
   return (
     <button
       onClick={onClick}
@@ -35,13 +38,17 @@ export function ChannelButton({
       aria-label={label}
       className={`relative flex w-full items-start gap-3 rounded-[1.5rem] border p-3 text-left transition-all duration-300 group ${
         active
-          ? "border-violet-200 bg-violet-600 text-white shadow-2xl shadow-violet-600/30 dark:border-violet-500/40"
-          : "border-transparent bg-white/60 text-slate-600 hover:border-slate-200 hover:bg-white hover:shadow-lg dark:bg-slate-950/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+          ? isLight
+            ? "border-rose-200 bg-rose-500 text-white shadow-2xl shadow-rose-500/20"
+            : "border-violet-200 bg-violet-600 text-white shadow-2xl shadow-violet-600/30 dark:border-violet-500/40"
+          : isLight
+            ? "border-transparent bg-white/80 text-slate-700 hover:border-rose-200 hover:bg-white hover:shadow-lg"
+            : "border-transparent bg-white/60 text-slate-600 hover:border-slate-200 hover:bg-white hover:shadow-lg dark:bg-slate-950/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"
       } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
     >
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors ${
-          active ? "bg-white/15 text-white" : chipClass
+          active ? (isLight ? "bg-white/15 text-white" : "bg-white/15 text-white") : chipClass
         }`}
       >
         <Icon size={18} className={active ? "text-white" : accentClass} />
@@ -49,12 +56,16 @@ export function ChannelButton({
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <span className="block text-[10px] font-black uppercase tracking-widest leading-none">
+            <span className={`block text-[10px] font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
               {label}
             </span>
             <span
               className={`mt-1 block text-[10px] leading-tight ${
-                active ? "text-white/75" : "text-slate-400 dark:text-slate-500"
+                active
+                  ? "text-white/80"
+                  : isLight
+                    ? "text-slate-500"
+                    : "text-slate-400 dark:text-slate-500"
               }`}
             >
               {description}
@@ -65,7 +76,9 @@ export function ChannelButton({
               className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
                 active
                   ? "bg-white/15 text-white"
-                  : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300"
+                  : isLight
+                    ? "bg-rose-50 text-rose-500"
+                    : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
               {count}

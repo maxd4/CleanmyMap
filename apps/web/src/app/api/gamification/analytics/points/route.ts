@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
+import {
+  getTimeScopeFloorDate,
+  getTimeScopeLabel,
+  resolveTimeScopeFromRequest,
+  type TimeScope,
+} from "@/lib/time-scopes";
 
 export const runtime = "nodejs";
 
@@ -14,23 +20,28 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const daysParam = searchParams.get("days");
-  const days = daysParam ? Math.min(parseInt(daysParam) || 30, 365) : 30;
 
   try {
     const supabase = getSupabaseServerClient();
-
-    // Calculate date floor
-    const now = new Date();
-    now.setUTCDate(now.getUTCDate() - days);
-    const dateFloor = now.toISOString().slice(0, 10);
+    const scopeQuery = resolveTimeScopeFromRequest({
+      scope: searchParams.get("scope"),
+      days: daysParam,
+      fallback: "rolling30d",
+    });
+    const scope: TimeScope = scopeQuery.scope;
+    const dateFloor = getTimeScopeFloorDate(scope);
 
     // Fetch points transactions
-    const { data, error } = await supabase
+    let query = supabase
       .from("points_ledger")
       .select("transaction_type, amount, source_event, created_at")
-      .eq("user_id", userId)
-      .gte("created_at", `${dateFloor}T00:00:00Z`)
-      .order("created_at", { ascending: false });
+      .eq("user_id", userId);
+
+    if (dateFloor) {
+      query = query.gte("created_at", `${dateFloor}T00:00:00Z`);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       return handleApiError(error, "GET /api/gamification/analytics/points");
@@ -63,7 +74,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: "ok",
-      days,
+      scope,
+      scopeLabel: getTimeScopeLabel(scope),
+      days: scopeQuery.days,
       totalPoints,
       eventBreakdown: Object.fromEntries(eventBreakdown),
       timeline: timelineArray,

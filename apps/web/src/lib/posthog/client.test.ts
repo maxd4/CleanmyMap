@@ -35,7 +35,7 @@ describe("posthog client integration", () => {
   it("does not initialize without analytics consent", async () => {
     const { initPostHogClient } = await import("./client");
 
-    const result = initPostHogClient();
+    const result = await initPostHogClient();
 
     expect(result).toBeNull();
     expect(posthogInitMock).not.toHaveBeenCalled();
@@ -45,7 +45,7 @@ describe("posthog client integration", () => {
     hasAnalyticsConsentMock.mockReturnValue(true);
     const { initPostHogClient } = await import("./client");
 
-    const result = initPostHogClient();
+    const result = await initPostHogClient();
 
     expect(result).toBeDefined();
     expect(posthogInitMock).toHaveBeenCalledTimes(1);

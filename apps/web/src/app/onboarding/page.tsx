@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
@@ -6,7 +5,6 @@ import { AccountSetupForm } from "@/components/account/account-setup-form";
 import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { isLocalhostHost } from "@/lib/auth/dev-auth";
 import { toProfile } from "@/lib/profiles";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -49,10 +47,9 @@ export default async function OnboardingPage({
     redirect("/sign-in");
   }
 
-  const requestHeaders = await headers();
-  const isLocalHost = isLocalhostHost(requestHeaders.get("host"));
   const resolvedSearchParams = await searchParams;
   const referralCode = resolvedSearchParams.ref?.trim() ?? "";
+  const isLocalHost = process.env.NODE_ENV !== "production";
 
   if (referralCode) {
     const supabase = getSupabaseServerClient(true);

@@ -20,6 +20,7 @@ import {
   recordTrainingExample,
 } from "@/lib/actions/training";
 import { logFailure } from "@/lib/logging/failure-log";
+import { runActionQuery } from "@/lib/actions/query";
 
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
@@ -78,29 +79,26 @@ export async function fetchActions(
     requireCoordinates?: boolean;
   },
 ): Promise<StoredAction[]> {
-  let query = supabase
-    .from("actions")
-    .select(
-      "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
-    )
-    .order("action_date", { ascending: false })
-    .limit(params.limit);
+  const rows = await runActionQuery<StoredAction>(supabase, (query) => {
+    let nextQuery = query
+      .select(
+        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      )
+      .order("action_date", { ascending: false })
+      .limit(params.limit);
 
-  if (params.status) {
-    query = query.eq("status", params.status);
-  }
-  if (params.floorDate) {
-    query = query.gte("action_date", params.floorDate);
-  }
-  if (params.requireCoordinates) {
-    query = query.not("latitude", "is", null).not("longitude", "is", null);
-  }
-
-  const result = await query;
-  if (result.error) {
-    throw result.error;
-  }
-  return ((result.data as StoredAction[] | null) ?? []).map((row) => ({
+    if (params.status) {
+      nextQuery = nextQuery.eq("status", params.status);
+    }
+    if (params.floorDate) {
+      nextQuery = nextQuery.gte("action_date", params.floorDate);
+    }
+    if (params.requireCoordinates) {
+      nextQuery = nextQuery.not("latitude", "is", null).not("longitude", "is", null);
+    }
+    return nextQuery;
+  });
+  return rows.map((row) => ({
     ...row,
     waste_kg: Number(row.waste_kg ?? 0),
     cigarette_butts: Number(row.cigarette_butts ?? 0),
@@ -113,20 +111,17 @@ export async function fetchRecentActionsByUser(
   supabase: SupabaseClient,
   params: { userId: string; limit: number },
 ): Promise<StoredAction[]> {
-  const result = await supabase
-    .from("actions")
-    .select(
-      "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
-    )
-    .eq("created_by_clerk_id", params.userId)
-    .order("action_date", { ascending: false })
-    .limit(params.limit);
+  const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+    query
+      .select(
+        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      )
+      .eq("created_by_clerk_id", params.userId)
+      .order("action_date", { ascending: false })
+      .limit(params.limit),
+  );
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  return ((result.data as StoredAction[] | null) ?? []).map((row) => ({
+  return rows.map((row) => ({
     ...row,
     waste_kg: Number(row.waste_kg ?? 0),
     cigarette_butts: Number(row.cigarette_butts ?? 0),

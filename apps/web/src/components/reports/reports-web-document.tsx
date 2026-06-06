@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -25,7 +25,6 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { buildExecutiveNarrative, toFrInt, toFrNumber } from "@/components/reports/web-document/analytics";
 
 type ReportsWeather = {
   current?: {
@@ -47,6 +46,8 @@ const DETAIL_LEVEL_OPTIONS = [
   { id: "default", label: "Par défaut", pages: "12 à 16 pages" },
   { id: "exhaustif", label: "Exhaustif", pages: "20 à 28 pages" },
 ] as const;
+
+const REPORT_HISTORY_SERVER_LIMIT = 1000;
 
 type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
 type PeriodId = "six_months" | "current_year" | "full_history";
@@ -72,6 +73,95 @@ type ModuleOption = {
   label: string;
   description: string;
 };
+
+type GenerationStageTone = "prepare" | "preview" | "export";
+
+type GenerationStageCardProps = {
+  tone: GenerationStageTone;
+  step: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+  children: ReactNode;
+};
+
+const GENERATION_STAGE_STYLES: Record<
+  GenerationStageTone,
+  {
+    stripe: string;
+    step: string;
+    eyebrow: string;
+    title: string;
+    border: string;
+    surface: string;
+  }
+> = {
+  prepare: {
+    stripe: "from-red-600 via-red-500 to-orange-500",
+    step: "border-red-200 bg-red-50 text-red-700",
+    eyebrow: "text-red-600",
+    title: "text-red-700",
+    border: "border-red-100",
+    surface: "bg-white",
+  },
+  preview: {
+    stripe: "from-cyan-600 via-cyan-500 to-sky-500",
+    step: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    eyebrow: "text-cyan-700",
+    title: "text-cyan-950",
+    border: "border-cyan-100",
+    surface: "bg-white",
+  },
+  export: {
+    stripe: "from-slate-700 via-red-600 to-red-500",
+    step: "border-slate-200 bg-slate-50 text-slate-700",
+    eyebrow: "text-slate-500",
+    title: "text-slate-950",
+    border: "border-slate-200",
+    surface: "bg-slate-50/50",
+  },
+};
+
+function GenerationStageCard({
+  tone,
+  step,
+  title,
+  description,
+  action,
+  children,
+}: GenerationStageCardProps) {
+  const styles = GENERATION_STAGE_STYLES[tone];
+
+  return (
+    <section
+      className={`overflow-hidden rounded-[1.75rem] border ${styles.border} ${styles.surface} shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]`}
+    >
+      <div className={`h-1.5 bg-gradient-to-r ${styles.stripe}`} />
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-black ${styles.step}`}
+            >
+              {step}
+            </span>
+            <div className="min-w-0">
+              <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${styles.eyebrow}`}>
+                Étape {step}
+              </p>
+              <h3 className={`mt-1 text-xl font-black tracking-tight ${styles.title}`}>{title}</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
+            </div>
+          </div>
+
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
+
+        <div className="mt-4">{children}</div>
+      </div>
+    </section>
+  );
+}
 
 function filterContractsByPeriod(
   contracts: ActionDataContract[],
@@ -112,6 +202,43 @@ function formatDateTime(value: string | undefined): string {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatDateLabel(value: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+  }).format(value);
+}
+
+function buildCoverageRangeLabel(contracts: ActionDataContract[]): string {
+  const observedDates = contracts
+    .map((contract) => new Date(contract.dates.observedAt))
+    .filter((date) => !Number.isNaN(date.getTime()));
+
+  if (observedDates.length === 0) {
+    return "Aucune date exploitable";
+  }
+
+  const timestamps = observedDates.map((date) => date.getTime());
+  const minDate = new Date(Math.min(...timestamps));
+  const maxDate = new Date(Math.max(...timestamps));
+
+  if (minDate.getTime() === maxDate.getTime()) {
+    return formatDateLabel(minDate);
+  }
+
+  return `${formatDateLabel(minDate)} → ${formatDateLabel(maxDate)}`;
+}
+
+function buildDetailCoverageLabel(detailLevel: DetailLevelId): string {
+  switch (detailLevel) {
+    case "concis":
+      return "Concis: seule la lecture synthétique est pleinement remplie, les sous-parties avancées restent verrouillées.";
+    case "default":
+      return "Par défaut: le socle principal du rapport est rempli, avec les annexes détaillées ouvertes.";
+    case "exhaustif":
+      return "Exhaustif: le rapport embarque le niveau maximal de détail et les annexes techniques.";
+  }
 }
 
 function periodLabel(period: PeriodId): string {
@@ -600,9 +727,18 @@ export function ReportsWebDocument({
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
   const [modules, setModules] = useState<ModuleState>(detailLevelToModules("default"));
   const effectivePeriod = period || "six_months";
+  const historyCompletenessWarning = effectivePeriod === "full_history";
   const filteredContracts = useMemo(
     () => filterContractsByPeriod(contracts, effectivePeriod),
     [contracts, effectivePeriod],
+  );
+  const coverageRangeLabel = useMemo(
+    () => buildCoverageRangeLabel(filteredContracts),
+    [filteredContracts],
+  );
+  const detailCoverageLabel = useMemo(
+    () => buildDetailCoverageLabel(detailLevel),
+    [detailLevel],
   );
 
   const model = useReportsWebDocumentModel({
@@ -700,8 +836,6 @@ export function ReportsWebDocument({
             ? "Cartes, visualisations et données clés du territoire."
         : "Méthodologie, hypothèses et contrôle qualité.",
   }));
-  const executiveNarrative = useMemo(() => buildExecutiveNarrative(report), [report]);
-
   function syncModulesFromDetailLevel(nextLevel: DetailLevelId): void {
     setDetailLevel(nextLevel);
     setModules(detailLevelToModules(nextLevel));
@@ -785,161 +919,149 @@ export function ReportsWebDocument({
         </div>
       </header>
 
-      <div className="grid gap-4">
-        <section className="space-y-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
-          <div>
-            <p className="text-base font-black text-red-600">1. Configurez votre rapport</p>
-          </div>
+      <div className="grid gap-4 xl:grid-cols-[1.14fr_0.86fr] xl:items-start">
+        <GenerationStageCard
+          tone="prepare"
+          step="1"
+          title="Préparer le rapport"
+          description="Choisissez la période, le périmètre et le niveau de détail avant de lancer la génération."
+        >
+            <div className="space-y-3">
+              <div className="space-y-3">
+                <label className="block text-sm font-black text-slate-900">Période</label>
+              <div className="relative">
+                <CalendarDays
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <select
+                  value={period}
+                  onChange={(event) => setPeriod(event.target.value as SelectedPeriodId)}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
+                >
+                  <option value="six_months">Six mois</option>
+                  <option value="current_year">Année en cours</option>
+                  <option value="full_history">Historique complet</option>
+                </select>
+              </div>
 
-          <div className="space-y-3">
-            <label className="block text-sm font-black text-slate-900">
-              Période
-            </label>
-            <div className="relative">
-              <CalendarDays className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <select
-                value={period}
-                onChange={(event) => setPeriod(event.target.value as SelectedPeriodId)}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
-              >
-                <option value="six_months">Six mois</option>
-                <option value="current_year">Année en cours</option>
-                <option value="full_history">Historique complet</option>
-              </select>
+              {historyCompletenessWarning ? (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                  <TriangleAlert size={14} className="mt-0.5 shrink-0 text-amber-600" />
+                  <p>
+                    Historique complet: la vue actuelle charge jusqu&apos;à{" "}
+                    {REPORT_HISTORY_SERVER_LIMIT} actions approuvées. Pour une complétude
+                    strictement exhaustive, il faut lever ce plafond côté serveur.
+                  </p>
+                </div>
+              ) : null}
             </div>
-          </div>
 
-          <div className="space-y-3">
-            <label className="block text-sm font-black text-slate-900">
-              Périmètre géographique
-            </label>
-            <div className="relative">
-              <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <select
-                value={selectedScopeValue}
-                onChange={(event) => {
-                  const next = parseScopeSelectValue(event.target.value);
-                  model.setScopeKind(next.kind);
-                  model.setScopeValue(next.value);
-                }}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
-              >
-                <option value="">Sélectionner un périmètre</option>
-                <optgroup label="Général">
-                  <option value="global">Global</option>
-                </optgroup>
-                <optgroup label="Compte">
-                  {model.scopeOptions.accounts.map((choice) => (
-                    <option key={choice.value} value={`account:${choice.value}`}>
-                      {choice.label}
+            <div className="space-y-3">
+              <label className="block text-sm font-black text-slate-900">Périmètre géographique</label>
+              <div className="relative">
+                <MapPin
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <select
+                  value={selectedScopeValue}
+                  onChange={(event) => {
+                    const next = parseScopeSelectValue(event.target.value);
+                    model.setScopeKind(next.kind);
+                    model.setScopeValue(next.value);
+                  }}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
+                >
+                  <option value="">Sélectionner un périmètre</option>
+                  <optgroup label="Général">
+                    <option value="global">Global</option>
+                  </optgroup>
+                  <optgroup label="Compte">
+                    {model.scopeOptions.accounts.map((choice) => (
+                      <option key={choice.value} value={`account:${choice.value}`}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Association">
+                    {model.scopeOptions.associations.map((choice) => (
+                      <option key={choice.value} value={`association:${choice.value}`}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Arrondissement">
+                    {model.scopeOptions.arrondissements.map((choice) => (
+                      <option key={choice.value} value={`arrondissement:${choice.value}`}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-black text-slate-900">Niveau de détail</label>
+              <div className="relative">
+                <SlidersHorizontal
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <select
+                  value={detailLevel}
+                  onChange={(event) => syncModulesFromDetailLevel(event.target.value as DetailLevelId)}
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
+                >
+                  {DETAIL_LEVEL_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label} ({option.pages})
                     </option>
                   ))}
-                </optgroup>
-                <optgroup label="Association">
-                  {model.scopeOptions.associations.map((choice) => (
-                    <option key={choice.value} value={`association:${choice.value}`}>
-                      {choice.label}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Arrondissement">
-                  {model.scopeOptions.arrondissements.map((choice) => (
-                    <option key={choice.value} value={`arrondissement:${choice.value}`}>
-                      {choice.label}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
+                </select>
+              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Le nombre de pages est indicatif et varie légèrement selon le volume de données.
+              </p>
             </div>
-          </div>
 
-          <div className="space-y-3">
-            <label className="block text-sm font-black text-slate-900">
-              Niveau de détail
-            </label>
-            <div className="relative">
-              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <select
-                value={detailLevel}
-                onChange={(event) => syncModulesFromDetailLevel(event.target.value as DetailLevelId)}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
-              >
-                {DETAIL_LEVEL_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label} ({option.pages})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs leading-5 text-slate-500">
-              Le nombre de pages est indicatif et varie légèrement selon le volume de données.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              Modules optionnels
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 text-[10px] font-black text-slate-400">
-                i
-              </span>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {moduleOptions.map((option) => {
-                const checked = modules[option.id];
-                return (
-                  <label
-                    key={option.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2 transition ${
-                      checked
-                        ? "border-red-200 bg-red-50"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleModule(option.id)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-400"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-800">{option.label}</span>
-                      <span className="block text-xs leading-5 text-slate-500">{option.description}</span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isDisabled}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-3 text-base font-black text-white shadow-[0_18px_34px_-18px_rgba(220,38,38,0.55)] transition hover:from-red-700 hover:to-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <FileText size={18} />
-              {state === "pending" ? copy.pendingLabel : "Générer le rapport"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePreview}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-700 transition hover:border-red-300 hover:bg-red-50"
-            >
-              <Eye size={16} />
-              {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
-            </button>
-
-            <div className={`flex items-start gap-3 rounded-xl border px-3 py-3 ${exportStatus.tone}`}>
-              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${exportStatus.iconTone}`}>
-                <ExportStatusIcon size={18} className={state === "pending" ? "animate-spin" : ""} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-black">{exportStatus.label}</p>
-                <p className="mt-0.5 text-xs leading-5 text-slate-600">
-                  {exportStatus.description}
-                </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+                Modules optionnels
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 text-[10px] font-black text-slate-400">
+                  i
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {moduleOptions.map((option) => {
+                  const checked = modules[option.id];
+                  return (
+                    <label
+                      key={option.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2 transition ${
+                        checked
+                          ? "border-red-200 bg-red-50"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleModule(option.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-400"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-800">
+                          {option.label}
+                        </span>
+                        <span className="block text-xs leading-5 text-slate-500">
+                          {option.description}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
@@ -947,169 +1069,229 @@ export function ReportsWebDocument({
               <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
               Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
             </p>
+          </div>
+        </GenerationStageCard>
 
-            {message ? (
-              <p
-                role={state === "error" ? "alert" : "status"}
-                className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
-                  state === "error"
-                    ? "border-red-200 bg-red-50 text-red-800"
-                    : "border-cyan-200 bg-cyan-50 text-cyan-900"
-                }`}
+        <div className="grid gap-4">
+          <GenerationStageCard
+            tone="preview"
+            step="2"
+            title="Voir ce qui sortira"
+            description="Regardez ce que l'utilisateur verra dans le PDF avant de l'exporter."
+            action={
+              <button
+                type="button"
+                onClick={handlePreview}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-black text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-50"
               >
-                {message}
-              </p>
-            ) : null}
-          </div>
-        </section>
-
-      </div>
-
-      {showPreview ? (
-        <section ref={previewRef} className="space-y-4 rounded-[2rem] border border-red-100 bg-white p-4 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-red-600">
-                Aperçu condensé
-              </p>
-              <h3 className="mt-1 text-2xl font-black tracking-[-0.03em] text-slate-950">
-                Première page du rapport
-              </h3>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-                L&apos;aperçu reprend le rendu du livrable officiel, alimenté par les données
-                du territoire sélectionné.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                {detailLevelLabel(detailLevel)}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                {periodLabel(effectivePeriod)}
-              </span>
-            </div>
-          </div>
-          <ReportCover
-            id="synthese-executive"
-            report={report}
-            activeScopeLabel={activeScopeLabel}
-            weatherAdvice={model.weatherAdvice}
-          />
-        </section>
-      ) : null}
-
-      <section className="rounded-[1.75rem] border border-red-100 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-base font-black text-red-600">Résultat attendu à l&apos;export</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Une mini maquette du PDF officiel pour comprendre le rendu avant export.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">A4 portrait</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Sommaire cliquable</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">12 sections</span>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_10px_24px_-18px_rgba(15,23,42,0.2)]">
-            <div className="h-2 bg-gradient-to-r from-red-600 to-red-500" />
-            <div className="space-y-4 p-4 sm:p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                    Synthèse exécutive
+                <Eye size={16} />
+                {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
+              </button>
+            }
+          >
+            <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                <div className="rounded-[1.5rem] border border-cyan-100 bg-cyan-50/60 p-4 shadow-[0_12px_28px_-24px_rgba(8,145,178,0.35)]">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                    Ce que l&apos;utilisateur verra
                   </p>
-                  <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                    Rapport d&apos;impact
-                  </h3>
-                  <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                    {executiveNarrative.headline ?? executiveNarrative.summary}
+                  <h4 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                    Première page du PDF
+                  </h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Synthèse exécutive, chiffres clés et sommaire cliquable dans le rendu final.
                   </p>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {report.generatedAt}
-                </span>
-              </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      A4 portrait
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      Sommaire cliquable
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      {REPORT_SECTIONS.length} sections
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      {detailLevelLabel(detailLevel)}
+                    </span>
+                  </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-                    Ce que l&apos;export montrera
-                  </p>
-                  <div className="mt-2 grid gap-1.5 text-sm font-semibold text-slate-800">
-                    <p>{toFrInt(report.totals.actions)} actions validées</p>
-                    <p>{toFrNumber(report.totals.kg)} kg collectés</p>
-                    <p>{toFrNumber(report.map.geoCoverage)}% de couverture géographique</p>
-                    <p>{toFrNumber(executiveNarrative.readinessScore)} / 100 de crédibilité data</p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {sectionCards.map((section, index) => {
+                      const Icon =
+                        index === 0 ? ShoppingBag : index === 1 ? Leaf : index === 2 ? MapIcon : ShieldCheck;
+                      return (
+                        <div
+                          key={section.id}
+                          className="flex items-start gap-3 rounded-2xl border border-cyan-100/60 bg-white/90 px-3 py-2"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-700">
+                            <Icon size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">{section.title}</p>
+                            <p className="mt-0.5 text-xs leading-4 text-slate-500">
+                              {section.subtitle}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-red-100 bg-red-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600">
-                    Première page du PDF
-                  </p>
-                  <p className="mt-2 text-sm font-black text-slate-950">Vue d’ensemble du rapport</p>
-                  <p className="mt-1 text-sm leading-5 text-slate-600">
-                    Synthèse, chiffres clés, conclusions et recommandations prioritaires.
+                <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/70 p-4 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.2)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                        Ce qui sortira dans le PDF
+                      </p>
+                      <h4 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                        Fiche du livrable
+                      </h4>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        Une sortie prête à partager, structurée comme le PDF officiel.
+                      </p>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${exportStatus.tone}`}>
+                      {exportStatus.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      {historyCompletenessWarning
+                        ? `Historique borné à ${REPORT_HISTORY_SERVER_LIMIT}`
+                        : `Historique: ${filteredContracts.length} actions`}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      {periodLabel(effectivePeriod)}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
+                      {detailLevelLabel(detailLevel)}
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-white/80 p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      Garanties d&apos;export
+                    </p>
+                    <div className="space-y-1.5 text-sm leading-6 text-slate-700">
+                      <p>Historique: {historyCompletenessWarning ? `plafonné à ${REPORT_HISTORY_SERVER_LIMIT} actions approuvées` : "couverture conforme à la fenêtre sélectionnée"}.</p>
+                      <p>Période réelle: {coverageRangeLabel}.</p>
+                      <p>Niveau inclus: {detailCoverageLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {showPreview ? (
+                <div ref={previewRef} className="space-y-4 rounded-[1.5rem] border border-cyan-100 bg-white p-3 sm:p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-700">
+                        Ce que l&apos;utilisateur verra
+                      </p>
+                      <h3 className="mt-1 text-2xl font-black tracking-[-0.03em] text-slate-950">
+                        Aperçu du PDF
+                      </h3>
+                      <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+                        L&apos;aperçu reprend le rendu final, alimenté par les données du
+                        territoire sélectionné.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                        {detailLevelLabel(detailLevel)}
+                      </span>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                        {periodLabel(effectivePeriod)}
+                      </span>
+                    </div>
+                  </div>
+                  <ReportCover
+                    id="synthese-executive"
+                    report={report}
+                    activeScopeLabel={activeScopeLabel}
+                    weatherAdvice={model.weatherAdvice}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </GenerationStageCard>
+
+          <GenerationStageCard
+            tone="export"
+            step="3"
+            title="Ce qui est prêt à exporter"
+            description="Lancez le PDF dès que la configuration est validée."
+            action={
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isDisabled}
+                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-3 text-sm font-black text-white shadow-[0_18px_34px_-18px_rgba(220,38,38,0.55)] transition hover:from-red-700 hover:to-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FileText size={18} />
+                {state === "pending" ? copy.pendingLabel : "Générer le rapport"}
+              </button>
+            }
+          >
+            <div className="space-y-3">
+              <div className={`flex items-start gap-3 rounded-2xl border px-3 py-3 ${exportStatus.tone}`}>
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${exportStatus.iconTone}`}
+                >
+                  <ExportStatusIcon size={18} className={state === "pending" ? "animate-spin" : ""} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-black">{exportStatus.label}</p>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-600">
+                    {exportStatus.description}
                   </p>
                 </div>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                {sectionCards.map((section, index) => {
-                  const Icon = index === 0 ? ShoppingBag : index === 1 ? Leaf : index === 2 ? MapIcon : ShieldCheck;
-                  return (
-                    <div key={section.id} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                        <Icon size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-slate-900">{section.title}</p>
-                        <p className="mt-0.5 text-xs leading-5 text-slate-500">{section.subtitle}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  Ce qui est prêt à exporter
+                </p>
+                <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
+                  <li className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                    Le PDF officiel est généré avec la structure exhaustive commune.
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                    Les sections verrouillées restent présentes mais affichent un contenu réduit.
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                    L&apos;export s&apos;ouvre une fois la préparation terminée et valide.
+                  </li>
+                </ul>
               </div>
-            </div>
-          </div>
 
-          <div className="space-y-3">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.2)]">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                Ce que l&apos;utilisateur voit
+              <p className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs leading-5 text-slate-500">
+                <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
+                Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
               </p>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
-                <li className="flex gap-2">
-                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-                  Une première page lisible avec synthèse, chiffres clés et recommandations.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-                  Un sommaire cliquable qui mène vers les sections détaillées.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-                  Un export A4 pensé pour être partagé sans mise en forme supplémentaire.
-                </li>
-              </ul>
-            </div>
 
-            <div className="rounded-[1.5rem] border border-cyan-200 bg-cyan-50 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                Lecture rapide
-              </p>
-              <p className="mt-2 text-sm leading-6 text-cyan-950/90">
-                Le bloc ci-dessus sert de “photo du PDF”. Il montre le rendu attendu avant export,
-                sans ouvrir le livrable détaillé.
-              </p>
+              {message ? (
+                <p
+                  role={state === "error" ? "alert" : "status"}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                    state === "error"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : "border-cyan-200 bg-cyan-50 text-cyan-900"
+                  }`}
+                >
+                  {message}
+                </p>
+              ) : null}
             </div>
-          </div>
+          </GenerationStageCard>
         </div>
-      </section>
+      </div>
 
       <section id="reports-history" className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
         <div className="flex flex-wrap items-center justify-between gap-3">

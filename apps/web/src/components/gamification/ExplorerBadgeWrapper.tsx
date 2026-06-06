@@ -3,12 +3,7 @@ import React from "react";
 import ExplorerBadge from "./ExplorerBadge";
 import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
 import { EXPLORER_TIERS } from "@/lib/gamification/badges/families";
-
-type ExplorerBadgeListResponse = {
-  summary?: {
-    currentPlaces?: number;
-  };
-};
+import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
 
 export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
   const [tiers, setTiers] = React.useState<
@@ -18,8 +13,7 @@ export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
 
   React.useEffect(() => {
     let mounted = true;
-    fetch(`/api/gamification/badges/list`)
-      .then((r) => r.json() as Promise<ExplorerBadgeListResponse>)
+    loadGamificationBadgesListClient()
       .then((body) => {
         if (!mounted) return;
         const explorerTiers = EXPLORER_TIERS.map((tier) => ({

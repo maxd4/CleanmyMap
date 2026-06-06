@@ -1,4 +1,4 @@
-# Formulaire de groupe
+# Créer un formulaire
 
 ## Fiche canonique
 
@@ -12,8 +12,8 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : finalisée
 - **Contexte nécessaire** : Compte connecté pour rejoindre, affichage public possible des actions validées
-- **Objectif utilisateur principal** : Rejoindre le formulaire d'une action déjà validée sans recréer une nouvelle action.
-- **Action principale attendue** : Voir les actions approuvées, choisir celle à rejoindre, enregistrer la participation.
+- **Objectif utilisateur principal** : Créer un formulaire de groupe pour une action déjà validée, puis le partager.
+- **Action principale attendue** : Ouvrir le formulaire de groupe, copier le lien, puis suivre les participations.
 - **Palette attendue** : emerald
 - **Scope** : finalisé
 - **Terminée** : oui
@@ -56,5 +56,5 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
-- Le point d'entrée doit rester cohérent avec la rubrique `Formulaire de groupe` du bloc `Agir`.
+- Le point d'entrée doit rester cohérent avec la rubrique `Créer un formulaire` du bloc `Agir`.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

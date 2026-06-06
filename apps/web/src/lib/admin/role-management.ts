@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeProfileRole, type AppProfile } from "@/lib/profiles";
 
@@ -69,9 +70,9 @@ function escapeLikePattern(value: string): string {
 }
 
 async function queryProfilesByFilter(
+  supabase: SupabaseClient,
   filter: (query: any) => any,
 ): Promise<RoleAccountRecord[]> {
-  const supabase = getSupabaseServerClient();
   const query = filter(supabase.from("profiles").select(PROFILE_SELECT) as any);
   const { data, error } = await query;
   if (error || !data) {
@@ -104,14 +105,30 @@ export async function searchManagedRoleAccounts(
     return [];
   }
 
-  const pattern = `%${escapeLikePattern(term)}%`;
-  const [byId, byHandle, byName] = await Promise.all([
-    queryProfilesByFilter((query) => query.eq("id", term)),
-    queryProfilesByFilter((query) => query.ilike("handle", pattern)),
-    queryProfilesByFilter((query) => query.ilike("display_name", pattern)),
+  const supabase = getSupabaseServerClient();
+  const [byId, byHandle] = await Promise.all([
+    queryProfilesByFilter(supabase, (query) => query.eq("id", term)),
+    queryProfilesByFilter(supabase, (query) => query.eq("handle", term)),
   ]);
 
-  return dedupeRecords([...byId, ...byHandle, ...byName]);
+  const exactMatches = dedupeRecords([...byId, ...byHandle]);
+  if (exactMatches.length > 0) {
+    return exactMatches;
+  }
+
+  const pattern = `%${escapeLikePattern(term)}%`;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(PROFILE_SELECT)
+    .or(`handle.ilike.${pattern},display_name.ilike.${pattern}`)
+    .order("display_name", { ascending: true })
+    .limit(25);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return dedupeRecords((data as RoleAccountRow[]).map(normalizeProfileRow));
 }
 
 export async function getManagedRoleAccountById(

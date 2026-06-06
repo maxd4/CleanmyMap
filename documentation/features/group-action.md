@@ -8,7 +8,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 ## Flux utilisateur
 
-1. Un organisateur declare une action via la rubrique `Déclarer une action`.
+1. Un organisateur crée un formulaire de groupe depuis la déclaration d'action.
 2. L'action passe par la validation admin.
 3. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
 4. Le bénévole rejoint ce formulaire existant.

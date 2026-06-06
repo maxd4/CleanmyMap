@@ -4,7 +4,11 @@ import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { joinActionParticipation, loadJoinableActions } from "@/lib/actions/group-participation";
+import {
+  joinActionParticipation,
+  loadJoinableActions,
+  loadUserParticipationHistory,
+} from "@/lib/actions/group-participation";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 export const runtime = "nodejs";
@@ -12,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(8),
+  historyLimit: z.coerce.number().int().min(1).max(12).default(8),
   actionId: z.string().trim().min(1).optional(),
 });
 
@@ -38,12 +43,19 @@ export async function GET(request: Request) {
       userId: userId ?? null,
       actionId: parsed.data.actionId ?? null,
     });
+    const history = userId
+      ? await loadUserParticipationHistory(supabase, {
+          userId,
+          limit: parsed.data.historyLimit,
+        })
+      : [];
 
     return NextResponse.json({
       status: "ok",
       authenticated: Boolean(userId),
       count: items.length,
       items,
+      history,
     });
   } catch (error) {
     return handleApiError(error, "GET /api/actions/group-join");
