@@ -44,6 +44,9 @@
   "apps/web/src/components/dashboard/storage-business-contribution-donut.tsx",
   "apps/web/src/lib/actions/export-form-media.ts",
   "apps/web/src/components/navigation/app-navigation-ribbon.tsx",
-  "apps/web/src/lib/profiles.ts"
+  "apps/web/src/lib/profiles.ts",
+  "apps/web/src/components/sections/rubriques/weather-section.tsx",
+  "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.tsx",
+  "apps/web/src/components/sections/rubriques/gamification/index.tsx"
   ]
 }
