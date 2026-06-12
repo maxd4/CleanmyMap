@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const hasAnalyticsConsentMock = vi.hoisted(() => vi.fn<() => boolean>());
 const getPostHogKeyMock = vi.hoisted(() => vi.fn<() => string | null>());
