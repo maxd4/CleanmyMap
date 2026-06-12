@@ -11,7 +11,7 @@ describe("QuizSessionPanel", () => {
     const question: QuizQuestion = {
       id: "test-tri-1",
       type: "multiple-choice",
-      category: "Tri, compost, comportements",
+      category: "tri-recyclage",
       question: "Que faire d'un emballage propre et vide quand la consigne locale ne dit rien d'autre ?",
       answer: "Le mettre dans la filière de tri des emballages",
       options: [
@@ -22,7 +22,7 @@ describe("QuizSessionPanel", () => {
       ],
       explanation:
         "Un emballage propre et vide suit généralement la filière des emballages. En cas de doute local, on vérifie la consigne avant d'improviser.",
-      review: QUIZ_REVIEW_TARGETS.tri,
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
       reasoningType: "terrain",
     };
 
@@ -55,7 +55,7 @@ describe("QuizSessionPanel", () => {
     expect(markup).toContain("Réponse attendue");
     expect(markup).toContain("Pourquoi ?");
     expect(markup).toContain("À revoir dans");
-    expect(markup).toContain("Tri, compost, comportements");
+    expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("/learn/bonnes-pratiques");
     expect(markup).toContain("Un emballage propre et vide suit généralement la filière des emballages");
     expect(markup).toContain("Votre réponse : Le jeter au compost");
@@ -65,14 +65,14 @@ describe("QuizSessionPanel", () => {
     const question: QuizQuestion = {
       id: "tf-1",
       type: "true-false",
-      category: "Vulgarisation",
+      category: "climat-biodiversite",
       question:
         "Une bouteille plastique abandonnée dans la nature disparaît complètement au bout de quelques siècles.",
       answer: "Faux",
       options: ["Vrai", "Faux"],
       explanation:
         "Elle ne disparaît pas complètement: elle se fragmente souvent en microplastiques et persiste dans l'environnement.",
-      review: QUIZ_REVIEW_TARGETS.vulgarisation,
+      review: QUIZ_REVIEW_TARGETS.comprendre,
       reasoningType: "idée reçue",
     };
 
@@ -112,7 +112,7 @@ describe("QuizSessionPanel", () => {
     const question: QuizQuestion = {
       id: "summary-v1",
       type: "multiple-choice",
-      category: "Vulgarisation",
+      category: "impact-methodologie",
       question: "Pourquoi commence-t-on souvent par le contexte avant de donner un chiffre ?",
       answer: "Pour éviter de faire dire trop au chiffre",
       options: [
@@ -123,20 +123,20 @@ describe("QuizSessionPanel", () => {
       ],
       explanation:
         "Un chiffre isolé peut sembler énorme ou minuscule sans référence. Le contexte fixe l'échelle, la comparaison utile et la limite de lecture.",
-      review: QUIZ_REVIEW_TARGETS.vulgarisation,
+      review: QUIZ_REVIEW_TARGETS.comprendre,
       reasoningType: "questions contre-intuitives",
     };
 
     const sessionSummary: QuizSessionSummary = {
-        score: 5,
-        totalQuestions: 6,
-        totalAnswered: 6,
+      score: 5,
+      totalQuestions: 6,
+      totalAnswered: 6,
       themesSucceeded: [
-        { label: "Vulgarisation", href: "/learn/comprendre", total: 3, correct: 3, accuracy: 1 },
+        { label: "Comprendre", href: "/learn/comprendre", total: 3, correct: 3, accuracy: 1 },
       ],
       themesToReview: [
         {
-          label: "Tri, compost, comportements",
+          label: "Bonnes pratiques",
           href: "/learn/bonnes-pratiques",
           total: 3,
           correct: 2,
@@ -144,7 +144,7 @@ describe("QuizSessionPanel", () => {
         },
       ],
       nextReviewTarget: {
-        label: "Tri, compost, comportements",
+        label: "Bonnes pratiques",
         href: "/learn/bonnes-pratiques",
       },
     };
@@ -180,9 +180,9 @@ describe("QuizSessionPanel", () => {
     expect(markup).toContain("5/6");
     expect(markup).toContain("83%");
     expect(markup).toContain("Thèmes réussis");
-    expect(markup).toContain("Vulgarisation");
+    expect(markup).toContain("Comprendre");
     expect(markup).toContain("À retravailler");
-    expect(markup).toContain("Tri, compost, comportements");
+    expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("Revoir la rubrique");
     expect(markup).toContain("/learn/bonnes-pratiques");
   });

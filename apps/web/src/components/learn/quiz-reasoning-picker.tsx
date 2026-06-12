@@ -10,6 +10,8 @@ import {
   Scale,
   ArrowRightLeft,
   Lightbulb,
+  ArrowLeft,
+  ShieldAlert,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,8 @@ type QuizReasoningPickerProps = {
   locale: SupportedLocale;
   quizSummary: CognitiveQuizSummary;
   onSelectReasoningType: (reasoningType: ReasoningType) => void;
+  onBackToAccessType?: () => void;
+  availableReasoningTypes?: ReasoningType[];
 };
 
 const REASONING_TYPES: Array<{
@@ -93,16 +97,44 @@ const REASONING_TYPES: Array<{
     tone: "bg-rose-100 text-rose-600",
     icon: <Lightbulb size={28} />,
   },
+  {
+    id: "cas-limites",
+    label: "cas limites",
+    description: {
+      fr: "Traiter les zones grises, les consignes ambiguës et les arbitrages imparfaits du terrain.",
+      en: "Handle gray areas, ambiguous instructions and imperfect field trade-offs.",
+    },
+    tone: "bg-slate-100 text-slate-700",
+    icon: <ShieldAlert size={28} />,
+  },
 ];
 
 export function QuizReasoningPicker({
   locale,
   quizSummary,
   onSelectReasoningType,
+  onBackToAccessType,
+  availableReasoningTypes,
 }: QuizReasoningPickerProps) {
+  const visibleReasoningTypes = availableReasoningTypes
+    ? REASONING_TYPES.filter((reasoningType) => availableReasoningTypes.includes(reasoningType.id))
+    : REASONING_TYPES;
+
   return (
     <div className="space-y-12 py-10">
       <div className="text-center space-y-4">
+        {onBackToAccessType ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onBackToAccessType}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <ArrowLeft size={16} />
+              Changer de type de quiz
+            </button>
+          </div>
+        ) : null}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -131,7 +163,7 @@ export function QuizReasoningPicker({
       />
 
       <div className="grid grid-cols-1 gap-6 max-w-6xl mx-auto md:grid-cols-2 lg:grid-cols-3">
-        {REASONING_TYPES.map((reasoningType, index) => (
+        {visibleReasoningTypes.map((reasoningType, index) => (
           <motion.button
             key={reasoningType.id}
             initial={{ opacity: 0, y: 20 }}
@@ -160,6 +192,12 @@ export function QuizReasoningPicker({
           </motion.button>
         ))}
       </div>
+
+      {availableReasoningTypes && visibleReasoningTypes.length === 0 ? (
+        <p className="text-center text-sm font-medium cmm-text-secondary">
+          Aucun type de raisonnement disponible pour ce choix de quiz.
+        </p>
+      ) : null}
     </div>
   );
 }
