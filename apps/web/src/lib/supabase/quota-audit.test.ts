@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { analyzeFile, buildReport, formatMarkdownReport } from "../../../scripts/supabase-quota-audit.mjs";
 
+type SupabaseQuotaFinding = {
+  type: string;
+  resource: string;
+  file: string;
+  line: number;
+  message: string;
+};
+
+type SupabaseQuotaFileReport = {
+  findings: SupabaseQuotaFinding[];
+  useEffectNetworkHits: Array<{ file: string; line: number; snippet: string }>;
+};
+
 describe("supabase quota audit", () => {
   it("detects select star, unbounded reads, storage ops and mount-triggered network calls", () => {
     const filePath = "src/components/sample.tsx";
@@ -18,7 +31,7 @@ export function Sample({ supabase }: { supabase: any }) {
 }
 `;
 
-    const report = analyzeFile(filePath, process.cwd(), source);
+    const report = analyzeFile(filePath, process.cwd(), source) as SupabaseQuotaFileReport;
     expect(report.findings.some((finding) => finding.type === "select_star")).toBe(true);
     expect(report.findings.some((finding) => finding.type === "unbounded_select")).toBe(true);
     expect(report.findings.some((finding) => finding.type === "storage")).toBe(true);
@@ -46,4 +59,3 @@ export async function load(supabase: any) {
     expect(markdown).toContain("## Highest-risk files");
   });
 });
-

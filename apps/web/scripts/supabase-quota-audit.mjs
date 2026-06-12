@@ -8,6 +8,23 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".cjs"]);
 const SOURCE_ROOTS = ["src", "scripts"];
 const DB_ADVISOR_TYPES = ["performance", "security"];
 
+/**
+ * @typedef {Object} SupabaseQuotaFinding
+ * @property {string} type
+ * @property {string} resource
+ * @property {string} file
+ * @property {number} line
+ * @property {string} message
+ */
+
+/**
+ * @param {SupabaseQuotaFinding[]} findings
+ * @param {SupabaseQuotaFinding} finding
+ */
+function pushFinding(findings, finding) {
+  findings.push(finding);
+}
+
 function normalizePath(value) {
   return value.replace(/\\/g, "/");
 }
@@ -144,22 +161,20 @@ function scoreRisk(bucket) {
   return { score: base, level: "low" };
 }
 
-function pushFinding(findings, finding) {
-  findings.push(finding);
-}
-
 function analyzeFile(filePath, rootDir, sourceText) {
   const absoluteFilePath = resolve(rootDir, filePath);
   const text = typeof sourceText === "string" ? sourceText : readText(absoluteFilePath);
   const lines = splitLines(text);
   const relativePath = normalizePath(relative(rootDir, absoluteFilePath));
   const isClient = lines.slice(0, 10).some((line) => line.includes('"use client"') || line.includes("'use client'"));
+  /** @type {SupabaseQuotaFinding[]} */
+  const findings = [];
 
   const result = {
     filePath: normalizePath(filePath),
     relativePath,
     isClient,
-    findings: [],
+    findings,
     tables: new Map(),
     rpcCalls: new Map(),
     storageBuckets: new Map(),

@@ -20,6 +20,21 @@ function buildStorage(seed: Record<string, string | null> = {}) {
   };
 }
 
+function buildMapItem(overrides: Partial<ActionMapItem> = {}): ActionMapItem {
+  return {
+    id: "action-1",
+    action_date: "2026-04-03",
+    location_label: "Lieu test",
+    latitude: 48.85,
+    longitude: 2.35,
+    waste_kg: 0,
+    cigarette_butts: 0,
+    status: "approved",
+    created_by_clerk_id: null,
+    ...overrides,
+  };
+}
+
 describe("actions map filters utils", () => {
   it("builds safe defaults", () => {
     const filters = buildDefaultActionsMapFilters(120);
@@ -115,29 +130,58 @@ describe("actions map filters utils", () => {
     expect(normalizeZoneQuery("  Paris   11e  ")).toBe("Paris 11e");
     expect(normalizeZoneQuery(42)).toBe("");
 
-    const item = {
+    const item = buildMapItem({
       location_label: "Canal Saint-Martin",
       contract: {
-        location: { label: "Canal Saint-Martin" },
+        id: "contract-1",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        location: {
+          label: "Canal Saint-Martin",
+          latitude: 48.85,
+          longitude: 2.35,
+        },
+        geometry: {
+          kind: "point",
+          coordinates: [[48.85, 2.35]],
+          geojson: null,
+          confidence: null,
+          geometrySource: "manual",
+          origin: "manual",
+        },
+        dates: {
+          observedAt: "2026-04-03",
+          createdAt: null,
+          importedAt: null,
+          validatedAt: null,
+        },
         metadata: {
-          notesPlain: "",
+          actorName: null,
           associationName: "",
+          notes: null,
+          notesPlain: "",
+          groupJoinEnabled: null,
+          wasteKg: 0,
+          cigaretteButts: 0,
+          volunteersCount: 0,
+          durationMinutes: 0,
+          manualDrawing: null,
           placeType: "",
           departureLocationLabel: null,
           arrivalLocationLabel: null,
         },
       },
       notes_plain: "",
-    } as ActionMapItem;
+    });
 
     expect(matchesZoneQuery(item, "canal")).toBe(true);
     expect(matchesZoneQuery(item, "république")).toBe(false);
 
-    const arrondissementItem = {
+    const arrondissementItem = buildMapItem({
       location_label: "11e",
-      contract: null,
       notes_plain: "",
-    } as ActionMapItem;
+    });
 
     expect(matchesZoneQuery(arrondissementItem, "paris 11")).toBe(true);
   });
