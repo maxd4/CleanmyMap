@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 const repoRoot = process.cwd();
 const allowRootFileGeneration = process.env.ALLOW_ROOT_FILE_GENERATION === "1";
@@ -12,12 +11,16 @@ const allowedRootFiles = new Set([
   ".gitignore",
   ".vercelignore",
   "AGENTS.md",
+  "AUTHORS.md",
+  "COMMANDES_UTILISATEUR.md",
   "package-lock.json",
   "package.json",
   "PRE_PUSH_GUARD.md",
   "README.md",
+  "SECURITY.md",
   "resize_homepage.js",
   "resize_image.ps1",
+  "split.js",
 ]);
 
 function listRootFiles(directory) {
@@ -30,7 +33,10 @@ function listRootFiles(directory) {
 const rootFiles = listRootFiles(repoRoot);
 const forbidden = allowRootFileGeneration
   ? []
-  : rootFiles.filter((file) => !allowedRootFiles.has(file) && !file.toLowerCase().endsWith(".bat"));
+  : rootFiles.filter(
+      (file) =>
+        !allowedRootFiles.has(file) && !file.toLowerCase().endsWith(".bat"),
+    );
 
 if (forbidden.length > 0) {
   console.error(

@@ -1,0 +1,36 @@
+name: Sujet de sécurité
+description: Signaler un risque de sécurité non exploitable publiquement ou demander un durcissement.
+title: "[Sécurité] "
+labels:
+  - security
+body:
+  - type: markdown
+    attributes:
+      value: |
+        N'utilisez pas cette issue pour signaler une vulnérabilité exploitable ou des secrets exposés.
+        Pour un signalement sensible, suivez la politique de sécurité du dépôt.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé du risque
+      description: Décrivez le problème de sécurité sans inclure de données sensibles.
+      placeholder: Surface concernée, risque observé, contexte.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact potentiel
+      placeholder: Que pourrait faire un attaquant ou quelle donnée serait exposée ?
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Atténuation proposée
+      placeholder: Contrôle, validation, garde-fou ou test à ajouter.
+  - type: input
+    id: scope
+    attributes:
+      label: Surface concernée
+      placeholder: auth, Supabase, Vercel, CI, proxy, API...

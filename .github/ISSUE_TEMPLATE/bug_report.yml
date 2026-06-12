@@ -1,0 +1,48 @@
+name: Rapport de bug
+description: Signaler un comportement incorrect, une régression ou une erreur bloquante.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: Décrivez le problème de façon concise.
+      placeholder: Ce qui ne fonctionne pas et dans quel contexte.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      description: Listez les étapes exactes pour reproduire le bug.
+      placeholder: 1. Aller sur ... 2. Cliquer sur ... 3. Observer ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+      placeholder: Ce qui devrait se passer.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Comportement observé
+      placeholder: Ce qui se passe réellement, avec message d'erreur si applicable.
+    validations:
+      required: true
+  - type: input
+    id: scope
+    attributes:
+      label: Surface concernée
+      description: Route, composant, API ou workflow touché.
+      placeholder: /dashboard, apps/web/src/..., .github/workflows/ci.yml
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Preuves utiles
+      description: Ajoutez logs, captures ou liens utiles.
+      placeholder: Coller un extrait de log ou un lien vers une capture.

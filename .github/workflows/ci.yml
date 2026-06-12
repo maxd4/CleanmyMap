@@ -2,19 +2,13 @@ name: ci
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
-    paths-ignore:
-      - 'documentation/**'
-      - '**.md'
-      - 'backups/**'
-      - 'artifacts/**'
   pull_request:
-    paths-ignore:
-      - 'documentation/**'
-      - '**.md'
-      - 'backups/**'
-      - 'artifacts/**'
 
 jobs:
   fast-checks:
@@ -25,35 +19,83 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Detect scope
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          if [[ "$base" =~ ^0+$ ]]; then
+            base="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
+          fi
+
+          changed_files="$(git diff --name-only "$base" "$head")"
+          docs_only=true
+
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              documentation/*|*.md|backups/*|artifacts/*)
+                ;;
+              *)
+                docs_only=false
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install Node dependencies
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Lockfile policy
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run check:lockfile-policy
 
       - name: Secret audit
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run security:secrets
 
       - name: TypeScript typecheck
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run check:utf8-fr
 
       - name: Heavy files policy
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run quality:top-heavy
 
       - name: Web lint
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run lint
 
       - name: Web tests
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run test
 
   security-checks:
@@ -64,18 +106,60 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect scope
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          if [[ "$base" =~ ^0+$ ]]; then
+            base="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
+          fi
+
+          changed_files="$(git diff --name-only "$base" "$head")"
+          docs_only=true
+
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              documentation/*|*.md|backups/*|artifacts/*)
+                ;;
+              *)
+                docs_only=false
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install Node dependencies
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Secret audit
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run security:secrets
 
       - name: Security invariants and targeted tests
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run test:security
