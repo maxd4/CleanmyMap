@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type {
   EnvironmentalImpactInfrastructureMetricEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
+  EnvironmentalImpactInfrastructureMetricKey,
 } from "@/lib/environmental-impact-estimator";
 import type { ServiceStatusInfo } from "@/lib/dashboard/status";
 import {
@@ -13,7 +14,7 @@ import {
 } from "./free-plan-services-visual";
 
 function buildMetric(
-  key: string,
+  key: EnvironmentalImpactInfrastructureMetricKey,
   label: string,
   quantityPerMonth: number,
   referenceMonthlyQuantity: number,
@@ -29,6 +30,24 @@ function buildMetric(
     source: "derived",
   };
 }
+
+const fallbackMetricKeyByService: Record<
+  EnvironmentalImpactInfrastructureServiceEstimate["key"],
+  EnvironmentalImpactInfrastructureMetricKey
+> = {
+  vercel: "vercelDeployments",
+  supabase: "supabaseStorageGbMonths",
+  chatgpt: "chatgptConversationHours",
+  codex: "codexSessions",
+  resend: "resendEmailsSent",
+  clerk: "clerkAuthEvents",
+  posthog: "posthogEvents",
+  sentry: "sentryErrorEvents",
+  upstash: "upstashOperations",
+  pinecone: "pineconeQueries",
+  stripe: "stripePaymentOperations",
+  lwsDomain: "lwsDomainYears",
+};
 
 function buildService(
   overrides: Partial<EnvironmentalImpactInfrastructureServiceEstimate> & {
@@ -51,7 +70,12 @@ function buildService(
     metricCount: overrides.metricCount ?? 1,
     referenceMetricCount: overrides.referenceMetricCount ?? 0,
     metricEstimates: overrides.metricEstimates ?? [
-      buildMetric(`${overrides.key}-metric`, `${overrides.label} metric`, 50, 100),
+      buildMetric(
+        fallbackMetricKeyByService[overrides.key],
+        `${overrides.label} metric`,
+        50,
+        100,
+      ),
     ],
   };
 }
@@ -75,7 +99,7 @@ const services = [
     annualKgCo2eProxy: 33.6,
     sharePercent: 70,
     confidencePercent: 90,
-    metricEstimates: [buildMetric("supabaseStorage", "Supabase - stockage", 50, 100)],
+    metricEstimates: [buildMetric("supabaseStorageGbMonths", "Supabase - stockage", 50, 100)],
   }),
   buildService({
     key: "chatgpt",
@@ -114,7 +138,7 @@ const previousServices = [
     annualKgCo2eProxy: 24,
     sharePercent: 80,
     confidencePercent: 88,
-    metricEstimates: [buildMetric("supabaseStorage", "Supabase - stockage", 40, 100)],
+    metricEstimates: [buildMetric("supabaseStorageGbMonths", "Supabase - stockage", 40, 100)],
   }),
   buildService({
     key: "chatgpt",

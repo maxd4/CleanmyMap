@@ -7,10 +7,14 @@ import {
 describe("pollution score references events", () => {
   it("dispatches the invalidation event in browser contexts", () => {
     const dispatchEvent = vi.fn();
-    const originalWindow = globalThis.window;
-    (globalThis as typeof globalThis & { window?: { dispatchEvent: typeof dispatchEvent } }).window = {
-      dispatchEvent,
+    const globalWindow = globalThis as typeof globalThis & {
+      window?: Window & { dispatchEvent: typeof dispatchEvent };
     };
+    const originalWindow = globalWindow.window;
+    Object.defineProperty(globalWindow, "window", {
+      configurable: true,
+      value: { dispatchEvent },
+    });
 
     dispatchActionPollutionScoreReferencesInvalidated();
 
@@ -21,10 +25,12 @@ describe("pollution score references events", () => {
     );
 
     if (originalWindow) {
-      (globalThis as typeof globalThis & { window?: typeof originalWindow }).window =
-        originalWindow;
+      Object.defineProperty(globalWindow, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
     } else {
-      delete (globalThis as typeof globalThis & { window?: unknown }).window;
+      Reflect.deleteProperty(globalWindow, "window");
     }
   });
 });
