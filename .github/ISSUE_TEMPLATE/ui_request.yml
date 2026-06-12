@@ -1,0 +1,31 @@
+name: Amélioration UI
+description: Demander une amélioration visuelle, d'ergonomie ou d'accessibilité.
+title: "[UI] "
+labels:
+  - ui
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexte
+      description: Où se trouve l'interface concernée et quel est le problème actuel.
+      placeholder: Page, composant ou interaction à améliorer.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+      description: Décrivez l'effet visuel ou l'expérience attendue.
+      placeholder: Ce qu'il faudrait voir, lire ou faire.
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Contraintes à respecter
+      options:
+        - label: Mobile
+        - label: Accessibilité
+        - label: Design system CleanMyMap
+        - label: Sobriété / performance

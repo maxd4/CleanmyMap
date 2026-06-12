@@ -1,0 +1,34 @@
+name: Dette technique
+description: Suivre un raccourci, une fragilité ou un nettoyage technique à planifier.
+title: "[Dette technique] "
+labels:
+  - docs
+  - enhancement
+body:
+  - type: textarea
+    id: issue
+    attributes:
+      label: Dette constatée
+      description: Expliquez le compromis technique ou la dette actuelle.
+      placeholder: Pourquoi ce point mérite un suivi.
+    validations:
+      required: true
+  - type: textarea
+    id: consequence
+    attributes:
+      label: Conséquence
+      description: Indiquez le risque ou le coût si on ne traite pas ce sujet.
+      placeholder: Dette de maintenance, risque de régression, dette de performance...
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plan de correction
+      description: Proposez une réduction de dette progressive ou une tâche de suivi.
+      placeholder: Refactor, test, doc, suppression ou migration.
+  - type: input
+    id: reference
+    attributes:
+      label: Référence
+      description: Lien vers une issue, un PR ou un document de suivi si disponible.

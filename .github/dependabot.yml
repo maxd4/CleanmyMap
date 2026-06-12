@@ -12,6 +12,15 @@ updates:
       - "npm"
     groups:
       dependencies:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+      security-updates:
+        applies-to: "security-updates"
         patterns:
           - "*"
         exclude-patterns:
@@ -32,6 +41,15 @@ updates:
       - "apps/web"
     groups:
       dependencies:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+      security-updates:
+        applies-to: "security-updates"
         patterns:
           - "*"
         exclude-patterns:

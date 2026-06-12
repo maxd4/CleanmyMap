@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler un sujet de sécurité
+    url: https://github.com/maxd4/CleanMyMap/blob/main/SECURITY.md
+    about: Utilisez le canal privé de la politique de sécurité pour une vulnérabilité exploitable.
+  - name: Documentation technique du dépôt
+    url: https://github.com/maxd4/CleanMyMap/tree/main/documentation
+    about: Vérifiez la documentation existante avant d'ouvrir une nouvelle issue.
