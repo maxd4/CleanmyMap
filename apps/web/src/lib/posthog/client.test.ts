@@ -24,12 +24,17 @@ vi.mock("posthog-js", () => ({
 
 describe("posthog client integration", () => {
   beforeEach(() => {
+    vi.stubGlobal("window", {});
     vi.resetModules();
     vi.clearAllMocks();
     hasAnalyticsConsentMock.mockReturnValue(false);
     getPostHogKeyMock.mockReturnValue("phc_test_key");
     getPostHogHostMock.mockReturnValue("https://eu.i.posthog.com");
     getPostHogDeprecatedEnvWarningsMock.mockReturnValue([]);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("does not initialize without analytics consent", async () => {

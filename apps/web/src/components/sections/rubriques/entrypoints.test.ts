@@ -29,12 +29,12 @@ describe("rubrique entrypoints", () => {
   it("routes the renderer through folder-level entrypoints", () => {
     const renderer = readFileSync(rendererPath, "utf8");
 
-    expect(renderer).toContain('from "./community"');
-    expect(renderer).toContain('from "./annuaire"');
-    expect(renderer).toContain('from "./feedback"');
+    expect(renderer).toContain('import("./community")');
+    expect(renderer).toContain('import("./annuaire")');
+    expect(renderer).toContain('import("./feedback")');
     expect(renderer).toContain('from "./route"');
-    expect(renderer).toContain('from "./gamification"');
-    expect(renderer).toContain('from "./actors-section"');
+    expect(renderer).toContain('import("./gamification")');
+    expect(renderer).toContain('import("./actors-section")');
     expect(renderer).not.toContain('from "./community-section"');
     expect(renderer).not.toContain('from "./annuaire-section"');
     expect(renderer).not.toContain('from "./feedback-section"');
