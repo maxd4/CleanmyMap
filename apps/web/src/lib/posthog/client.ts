@@ -29,8 +29,8 @@ async function loadPostHogModule() {
 
 export async function initPostHogClient(enableAnalytics = true) {
   if (initialized) {
-    const module = await loadPostHogModule();
-    return module?.default ?? null;
+    const posthogModule = await loadPostHogModule();
+    return posthogModule?.default ?? null;
   }
 
   if (!hasAnalyticsConsent()) {
@@ -50,12 +50,12 @@ export async function initPostHogClient(enableAnalytics = true) {
     envWarningLogged = true;
   }
 
-  const module = await loadPostHogModule();
-  if (!module) {
+  const posthogModule = await loadPostHogModule();
+  if (!posthogModule) {
     return null;
   }
 
-  const posthog = module.default;
+  const posthog = posthogModule.default;
   posthog.init(key, {
     api_host: getPostHogHost(),
     capture_pageview: true,
