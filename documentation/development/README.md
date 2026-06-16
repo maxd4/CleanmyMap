@@ -22,6 +22,9 @@ Guides de développement pour agents IA.
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
 - **performance-quotas-vercel-checklist.md** - Checklist PR pour prévenir les régressions de coût Vercel
+- **vercel-anti-regression-playbook.md** - Retour d'expérience et erreurs à ne pas reproduire sur les surfaces Vercel
+- **vercel-supabase-browser-strategy.md** - Règle de répartition entre Vercel, Supabase et le navigateur
+- **codex-vercel-development-guide.md** - Guide pratique Codex pour développer sans augmenter inutilement les quotas Vercel
 - **client-server-bundle-splitting.md** - Guide pour éviter de gonfler le bundle initial avec de mauvaises frontières serveur/client
 - **vercel-surface-report.md** - Rapport automatique des surfaces Vercel et du risque associé
 - **vercel-route-cost-audit.md** - Audit route par route des coûts Vercel
@@ -29,11 +32,12 @@ Guides de développement pour agents IA.
 - **typescript-precision-policy.md** - Politique de précision TypeScript
 - **typescript-anti-errors-checklist.md** - Checklist courte de correction TypeScript
 - **typescript-anti-errors-playbook.md** - Playbook de correction TypeScript pour agents IA
+- **blocages-de-validation.md** - Etat des erreurs restantes et cas qui exigeraient un breaking change
 
 ### Contribution & Documentation
 - **CONTRIBUTING.md** - Guide de contribution
 - **DOCUMENTATION_POLICY.md** - Politique de documentation
-- **supabase-quota-guide.md** - Guide développeur pour éviter d'augmenter les quotas Supabase
+- **supabase-quota-guide.md** - Guide développeur Supabase: quotas, stockage, limites et doctrine produit
 - **vercel-quota-governance.md** - Guide de gouvernance des quotas Vercel et des régressions de coût
 
 ### Dette Technique
