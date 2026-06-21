@@ -50,6 +50,7 @@ export type AdminOperationAuditItem = {
  operationId: string;
  at: string;
  actorUserId: string;
+ actorLabel?: string;
  operationType:"moderation" |"import_dry_run" |"import_confirm";
  outcome:"success" |"error";
  targetId?: string;

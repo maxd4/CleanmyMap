@@ -4,6 +4,7 @@ interface FeatureFlags {
   showFormComparison: boolean
   pageTemplateV2: boolean
   parcoursNavV2: boolean
+  quizServerSync: boolean
 }
 
 const defaultFlags: FeatureFlags = {
@@ -11,7 +12,8 @@ const defaultFlags: FeatureFlags = {
   enableFormAnalytics: true,
   showFormComparison: true,
   pageTemplateV2: true,
-  parcoursNavV2: true
+  parcoursNavV2: true,
+  quizServerSync: false
 }
 
 class FeatureFlagService {

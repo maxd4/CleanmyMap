@@ -39,7 +39,7 @@ Routes concernées:
 
 - `/actions/map`
 - `/methodologie`
-- `/gamification`
+- `/sections/gamification`
 - `/community`
 - `/messagerie`
 - `/open-data`
@@ -48,7 +48,7 @@ Routes concernées:
 
 Note:
 
-- les routes alias `/community`, `/messagerie`, `/open-data` et `/gamification` redirigent vers les sections rendues par `/sections/[sectionId]`; la correction du lot 1 s'applique donc aux vues réellement affichées.
+- les routes alias `/community`, `/messagerie`, `/open-data` et `/gamification` redirigent vers les sections rendues par `/sections/[sectionId]`; la correction du lot 1 s'applique donc aux vues réellement affichées. La route canonique de gamification est `/sections/gamification`.
 
 Fichiers à modifier:
 
@@ -64,7 +64,7 @@ Palette attendue:
 
 - `/actions/map` -> `sky`
 - `/methodologie` -> `red`
-- `/gamification` -> `red`
+- `/sections/gamification` -> `red`
 - `/community` -> `pink`
 - `/messagerie` -> `pink`
 - `/open-data` -> `pink`
@@ -100,7 +100,7 @@ Risques de régression:
 Ordre recommandé d'exécution:
 
 1. `/actions/map`
-2. `/gamification`
+2. `/sections/gamification`
 3. `/methodologie`
 4. `/community`
 5. `/messagerie`
@@ -598,14 +598,13 @@ Routes concernées:
 - `/parcours`
 - `/parcours/[profile]`
 - `/actions/map`
-- `/gamification`
+- `/sections/gamification`
 - `/reports`
 - `/community`
 - `/messagerie`
 - `/open-data`
 - `/learn/bonnes-pratiques`
 - `/learn/comprendre`
-- `/learn/ressources`
 - `/learn/sentrainer`
 
 Fichiers à modifier:
@@ -619,8 +618,8 @@ Déjà exécuté dans le lot 8:
 - pages `/reports` et composants d'impact: palette red/rose réalignée
 - composants pilotage méthodologique: palette warm amber rééquilibrée
 - sous-sections gamification: accents red/rose harmonisés
-- sous-sections partenaires et learn déjà normalisées selon la charte
-- hub `/learn/hub` réduit à un index léger avec progression et accès directs
+- sous-sections partenaires normalisées selon la charte
+- le bloc `Apprendre` est maintenant réduit à 3 pages canoniques; les surfaces `hub` et `ressources` sont intégrées au contenu des pages
 
 Reste prioritaire dans le lot 8:
 

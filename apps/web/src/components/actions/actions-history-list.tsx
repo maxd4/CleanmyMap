@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from"react";
+import { useCallback, useEffect, useMemo, useState } from"react";
 import { useUser } from"@clerk/nextjs";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
 import { CmmButton } from"@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { isAdminLikeProfile, normalizeProfileRole } from "@/lib/profiles";
 import {
  getActionOperationalContext,
  mapItemWasteKg,
@@ -17,17 +18,20 @@ import type {
  ActionQualityGrade,
  ActionStatus,
 } from"@/lib/actions/types";
+import type { ActionParticipationReviewItem } from"@/lib/actions/group-participation";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import { CmmSkeleton } from"@/components/ui/cmm-skeleton";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 
-function formatDate(value: string): string {
+function formatDate(value: string, locale: "fr" | "en" = "fr"): string {
  const parsed = new Date(value);
  if (Number.isNaN(parsed.getTime())) {
  return value;
  }
- return new Intl.DateTimeFormat("fr-FR", { dateStyle:"medium" }).format(
- parsed,
+ return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
+  dateStyle: "medium",
+ }).format(
+  parsed,
  );
 }
 
@@ -45,6 +49,16 @@ function buildJoinHref(actionId: string): string {
  return `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(actionId)}`;
 }
 
+function readProfileRole(metadata: unknown): string | null {
+ if (!metadata || typeof metadata !== "object") {
+ return null;
+ }
+
+ const candidate = metadata as Record<string, unknown>;
+ const roleValue = candidate.role ?? candidate.profile;
+ return typeof roleValue === "string" ? roleValue : null;
+}
+
 function isJoinableAction(item: ActionListItem): boolean {
  return (
  item.record_type === "action" &&
@@ -57,6 +71,18 @@ function isOwnedByCurrentUser(
  currentUserId: string | null,
 ): boolean {
  return Boolean(currentUserId && item.created_by_clerk_id === currentUserId);
+}
+
+function canManageGroupJoin(
+ item: ActionListItem,
+ currentUserId: string | null,
+ isAdminLikeUser: boolean,
+): boolean {
+ return Boolean(
+  item.status === "approved" &&
+   item.record_type === "action" &&
+   (isAdminLikeUser || isOwnedByCurrentUser(item, currentUserId)),
+ );
 }
 
 function qualityTone(grade:"A" |"B" |"C"): string {
@@ -99,6 +125,14 @@ export function ActionsHistoryList() {
  const [selectedId, setSelectedId] = useState<string | null>(null);
  const [groupJoinActionId, setGroupJoinActionId] = useState<string | null>(null);
  const [groupJoinNotice, setGroupJoinNotice] = useState<string | null>(null);
+ const [pendingGroupJoinRequests, setPendingGroupJoinRequests] = useState<
+  ActionParticipationReviewItem[]
+ >([]);
+ const [pendingGroupJoinLoading, setPendingGroupJoinLoading] = useState(false);
+ const [pendingGroupJoinError, setPendingGroupJoinError] = useState<string | null>(null);
+ const [reviewingParticipantId, setReviewingParticipantId] = useState<string | null>(null);
+ const currentProfileRole = normalizeProfileRole(readProfileRole(user?.publicMetadata));
+ const isAdminLikeUser = currentProfileRole ? isAdminLikeProfile(currentProfileRole) : false;
 
  const swrKey = useMemo(
  () => [
@@ -181,6 +215,10 @@ export function ActionsHistoryList() {
  const selectedOperational = selectedItem?.contract
  ? getActionOperationalContext(selectedItem.contract)
  : null;
+ const selectedActionId = selectedItem?.id ?? null;
+ const selectedCanModerateGroupJoin = Boolean(
+  selectedItem && canManageGroupJoin(selectedItem, currentUserId, isAdminLikeUser),
+ );
  const pdfRows = useMemo(
  () =>
  approvedFilteredItems.map((item: ActionListItem) => {
@@ -243,15 +281,96 @@ export function ActionsHistoryList() {
  :"Corriger les champs incomplets et valeurs incoherentes."
  : null;
 
+ const loadPendingGroupJoinRequests = useCallback(
+  async (actionId: string, signal?: AbortSignal) => {
+   if (!selectedCanModerateGroupJoin) {
+    setPendingGroupJoinRequests([]);
+    setPendingGroupJoinError(null);
+    return;
+   }
+
+   setPendingGroupJoinLoading(true);
+   setPendingGroupJoinError(null);
+
+   try {
+    const response = await fetch(
+     `/api/actions/${encodeURIComponent(actionId)}/group-join`,
+     {
+      signal,
+     },
+    );
+
+    const payload = (await response.json()) as
+     | {
+       status: "ok";
+       actionId: string;
+       count: number;
+       pendingRequests: ActionParticipationReviewItem[];
+       canReview: boolean;
+      }
+     | { error?: string };
+
+    if (!response.ok) {
+     const message =
+      typeof payload === "object" && payload && "error" in payload && payload.error
+       ? payload.error
+       : fr
+        ? "Impossible de charger la file d'attente."
+        : "Unable to load the waitlist.";
+     setPendingGroupJoinRequests([]);
+     setPendingGroupJoinError(message);
+     return;
+    }
+
+    const successPayload = payload as {
+      status: "ok";
+      actionId: string;
+      count: number;
+      pendingRequests: ActionParticipationReviewItem[];
+      canReview: boolean;
+    };
+
+    setPendingGroupJoinRequests(successPayload.pendingRequests ?? []);
+   } catch (error) {
+    if ((error as { name?: string }).name === "AbortError") {
+     return;
+    }
+    setPendingGroupJoinRequests([]);
+    setPendingGroupJoinError(
+     fr
+      ? "Impossible de charger la file d'attente."
+      : "Unable to load the waitlist.",
+    );
+   } finally {
+    setPendingGroupJoinLoading(false);
+   }
+  },
+  [fr, selectedCanModerateGroupJoin],
+ );
+
+ useEffect(() => {
+  if (!selectedActionId || !selectedCanModerateGroupJoin) {
+   setPendingGroupJoinRequests([]);
+   setPendingGroupJoinError(null);
+   setPendingGroupJoinLoading(false);
+   return undefined;
+  }
+
+  const controller = new AbortController();
+  void loadPendingGroupJoinRequests(selectedActionId, controller.signal);
+
+  return () => controller.abort();
+ }, [loadPendingGroupJoinRequests, selectedActionId, selectedCanModerateGroupJoin]);
+
  async function handleToggleGroupJoin(
  item: ActionListItem,
  nextEnabled: boolean,
  ) {
- if (!isOwnedByCurrentUser(item, currentUserId)) {
+ if (!canManageGroupJoin(item, currentUserId, isAdminLikeUser)) {
   setGroupJoinNotice(
    fr
-    ? "Vous devez être l'organisateur principal de cette action."
-    : "You must be the primary organizer of this action.",
+    ? "Vous devez être organisateur principal ou admin pour modifier ce formulaire."
+    : "You must be the primary organizer or an admin to change this form.",
   );
   return;
  }
@@ -305,6 +424,78 @@ export function ActionsHistoryList() {
  } finally {
   setGroupJoinActionId(null);
  }
+ }
+
+ async function handleReviewGroupJoin(
+  request: ActionParticipationReviewItem,
+  decision: "accept" | "reject",
+ ) {
+  if (!selectedItem) {
+   return;
+  }
+
+  setReviewingParticipantId(request.id);
+  setGroupJoinNotice(null);
+  setPendingGroupJoinError(null);
+
+  try {
+   const response = await fetch(
+    `/api/actions/${encodeURIComponent(selectedItem.id)}/group-join`,
+    {
+     method: "POST",
+     headers: {
+      "Content-Type": "application/json",
+     },
+     body: JSON.stringify({ participantId: request.id, decision }),
+    },
+   );
+
+   const payload = (await response.json()) as
+    | {
+      status: "ok";
+      actionId: string;
+      participantId: string;
+      decision: "accept" | "reject";
+      participationStatus: "pending" | "confirmed" | "cancelled";
+      participationSource: "group_form" | "admin" | "import";
+      joinedAt: string;
+      updatedAt: string | null;
+     }
+    | { error?: string };
+
+   if (!response.ok) {
+    const message =
+     typeof payload === "object" && payload && "error" in payload && payload.error
+      ? payload.error
+      : fr
+       ? "Impossible de traiter la demande."
+       : "Unable to review the request.";
+    setPendingGroupJoinError(message);
+    return;
+   }
+
+   setPendingGroupJoinRequests((previous) =>
+    previous.filter((item) => item.id !== request.id),
+   );
+   setGroupJoinNotice(
+    decision === "accept"
+     ? fr
+      ? "Demande acceptée."
+      : "Request accepted."
+     : fr
+      ? "Demande refusée."
+      : "Request rejected.",
+   );
+   await reload();
+  } catch {
+   setPendingGroupJoinError(
+    fr
+     ? "Impossible de traiter la demande."
+     : "Unable to review the request.",
+   );
+  } finally {
+   setReviewingParticipantId(null);
+  }
  }
 
  return (
@@ -461,6 +652,108 @@ export function ActionsHistoryList() {
  ) : null}
  </div>
  ) : null}
+ {selectedCanModerateGroupJoin ? (
+ <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+ <div className="flex flex-wrap items-center justify-between gap-2">
+ <div>
+ <p className="cmm-text-caption font-semibold uppercase tracking-wide text-amber-800">
+ Modération
+ </p>
+ <p className="mt-0.5 cmm-text-small cmm-text-secondary">
+ {fr
+  ? `${pendingGroupJoinRequests.length} demande${pendingGroupJoinRequests.length > 1 ? "s" : ""} à traiter.`
+  : `${pendingGroupJoinRequests.length} request${pendingGroupJoinRequests.length > 1 ? "s" : ""} to review.`}
+ </p>
+ </div>
+ <button
+  type="button"
+ onClick={() => {
+  if (selectedActionId) {
+   void loadPendingGroupJoinRequests(selectedActionId);
+  }
+ }}
+ className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 cmm-text-small font-semibold text-amber-900 transition hover:bg-amber-100"
+ >
+ {pendingGroupJoinLoading ? "..." : fr ? "Actualiser" : "Refresh"}
+ </button>
+ </div>
+
+ {pendingGroupJoinError ? (
+ <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
+  {pendingGroupJoinError}
+ </p>
+ ) : null}
+
+ {pendingGroupJoinLoading ? (
+ <div className="mt-2 space-y-2">
+  {[...Array(2)].map((_, index) => (
+   <div
+    key={index}
+    className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"
+   >
+    <CmmSkeleton className="h-4 w-40" />
+    <CmmSkeleton className="mt-2 h-3 w-24" />
+   </div>
+  ))}
+ </div>
+ ) : pendingGroupJoinRequests.length > 0 ? (
+ <div className="mt-2 space-y-2.5">
+  {pendingGroupJoinRequests.map((request) => (
+   <div
+    key={request.id}
+    className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"
+   >
+    <div className="flex flex-wrap items-start justify-between gap-2">
+     <div>
+      <p className="text-sm font-semibold text-slate-900">
+       {request.displayName}
+      </p>
+      <p className="text-xs text-slate-600">
+       {request.handle ? `@${request.handle}` : request.displayName} ·{" "}
+       {fr
+        ? `depuis ${formatDate(request.joinedAt.slice(0, 10), "fr")}`
+        : `since ${formatDate(request.joinedAt.slice(0, 10), "en")}`}
+      </p>
+     </div>
+     <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
+      {fr ? "À traiter" : "To review"}
+     </span>
+    </div>
+
+    <div className="mt-2 flex flex-wrap gap-2">
+     <CmmButton
+      type="button"
+      tone="primary"
+      variant="pill"
+      size="sm"
+      disabled={reviewingParticipantId === request.id}
+      onClick={() => void handleReviewGroupJoin(request, "accept")}
+     >
+      {reviewingParticipantId === request.id ? "..." : fr ? "Accepter" : "Accept"}
+     </CmmButton>
+     <CmmButton
+      type="button"
+      tone="secondary"
+      variant="pill"
+      size="sm"
+      disabled={reviewingParticipantId === request.id}
+      onClick={() => void handleReviewGroupJoin(request, "reject")}
+     >
+      {reviewingParticipantId === request.id ? "..." : fr ? "Refuser" : "Reject"}
+     </CmmButton>
+    </div>
+   </div>
+  ))}
+ </div>
+) : (
+ <div className="mt-2 rounded-lg border border-dashed border-amber-200 bg-white/80 px-3 py-2.5 cmm-text-small cmm-text-secondary">
+  {fr
+   ? "Aucune demande en attente."
+   : "No requests waiting."}
+ </div>
+ )}
+ </div>
+ ) : null}
  </div>
  ) : null}
 
@@ -574,7 +867,7 @@ export function ActionsHistoryList() {
     Fermé
    </span>
   )}
-  {isOwnedByCurrentUser(item, currentUserId) ? (
+  {canManageGroupJoin(item, currentUserId, isAdminLikeUser) ? (
    <CmmButton
     type="button"
     tone="primary"

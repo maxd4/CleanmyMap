@@ -33,6 +33,7 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
  >
 <Link
  href={DASHBOARD_ROUTE}
+ prefetch={false}
  className="inline-flex shrink-0 items-center gap-1.5 font-medium transition hover:text-emerald-700"
 >
  <Image

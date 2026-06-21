@@ -36,8 +36,9 @@ Après chaque réponse, une qualité `Q` est attribuée :
 3. **Ease Factor** subit une pénalité de `-0.2`.
 
 ## Stockage
-- **Connecté** : Les données sont persistées dans la table Supabase `quiz_srs`.
-- **Anonyme** : Les données sont sauvegardées dans le `localStorage` du navigateur.
+- **Anonyme** : Les données restent dans le `localStorage` du navigateur.
+- **Connecté opt-in** : Si un suivi durable est vraiment utile, ne persister qu'un résumé compact côté Supabase, par exemple score, thème, date et erreurs principales.
+- Les micro-interactions et les états intermédiaires restent côté navigateur par défaut.
 
 ## Priorisation des questions
 Lorsqu'un utilisateur lance un quiz, les questions sont triées selon :

@@ -80,6 +80,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     ? getSwitchableProfiles(activeProfile)
     : [activeProfile];
   const supabase = getSupabaseServerClient(true);
+  const referralSupabase = getSupabaseServerClient(false);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -118,7 +119,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     monthlyRegularity: computeMonthlyRegularitySummary([]),
     sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
   }));
-  const referralSummary = await loadReferralSummary(supabase, userId).catch(
+  const referralSummary = await loadReferralSummary(referralSupabase, userId).catch(
     () => ({
       referralCode: null,
       inviteUrl: null,
@@ -128,9 +129,16 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       referralAwardedXp: 0,
     }),
   );
-  const referralLineageView = await loadReferralLineageView(supabase, userId).catch(
-    () => null,
-  );
+  let referralLineageView = null;
+  let referralLineageError: string | null = null;
+  try {
+    referralLineageView = await loadReferralLineageView(referralSupabase, userId);
+  } catch (error) {
+    referralLineageError =
+      error instanceof Error
+        ? error.message
+        : "Impossible de charger l'arborescence de parrainage.";
+  }
   const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
 
   return (
@@ -169,6 +177,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           <ReferralProfileTabs
             summary={referralSummary}
             lineageView={referralLineageView}
+            lineageError={referralLineageError}
             emptyCtaHref={referralInviteHref}
           />
         </FamilyRubriqueCard>

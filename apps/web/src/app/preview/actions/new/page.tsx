@@ -36,6 +36,7 @@ export default function PreviewActionsNewPage() {
         }}
         initialRecordType="action"
         isAuthenticated={false}
+        isAutoApprovedSubmission={false}
       />
     </div>
   );

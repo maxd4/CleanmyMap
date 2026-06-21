@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Search, ShieldCheck, Sparkles, Users, Eye, Flag, Settings2, Moon, Globe, ChevronRight, Play, BadgeCheck, PartyPopper, TrendingUp, Zap, X, type LucideIcon } from "lucide-react";
+import { Search, ShieldCheck, Sparkles, Users, Eye, Flag, Settings2, Moon, Globe, ChevronRight, Play, BadgeCheck, PartyPopper, TrendingUp, X, Radio, type LucideIcon } from "lucide-react";
 import useSWR from "swr";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
-import { buildCollectionSummary } from "./collections-panel";
+import {
+  buildQuizBalanceProgression,
+  buildQuizTypeProgression,
+} from "@/lib/gamification/badges/families";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import { buildLightCelebrationPreview } from "./light-celebrations-panel";
 import { buildPersonalizationSnapshot } from "./personalization-panel";
 import { buildRoleStatusCards } from "./roles-status-panel";
@@ -364,32 +367,29 @@ function EngagementPanel({
         <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#b53a33]">
           {fr ? "Prochains statuts" : "Next statuses"}
         </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-5 xl:grid-cols-4">
           {roleCards.slice(1).map((card, index) => (
             <article
               key={card.key}
-              className={cn(
-                "rounded-[1.45rem] border p-4 transition-colors",
-                card.unlocked
-                  ? "border-[#efc5be] bg-[#fff6f4]"
-                  : "border-[#f1e1dc] bg-white",
-              )}
+              className="relative"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3 pb-4">
+                <div className="h-px flex-1 border-t border-dashed border-[#eed8d2]" />
                 <div className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[11px] font-black",
-                  card.unlocked ? "bg-[#c51f1f] text-white" : "border border-[#efcfc8] bg-white text-[#b34a41]",
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[11px] font-black ring-8",
+                  card.unlocked ? "bg-[#c51f1f] text-white ring-[#fff8f6]" : "border border-[#efcfc8] bg-white text-[#b34a41] ring-[#fff8f6]",
                 )}>
                   {index + 1}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[12px] font-black text-[#241614]">
-                    {fr ? card.labelFr : card.labelEn}
-                  </p>
-                  <p className="text-[12px] leading-6 text-[#7a625d]">
-                    {fr ? card.descriptionFr : card.descriptionEn}
-                  </p>
-                </div>
+                <div className="h-px flex-1 border-t border-dashed border-[#eed8d2]" />
+              </div>
+              <div className="space-y-1 text-center">
+                <p className="text-[12px] font-black text-[#241614]">
+                  {fr ? card.labelFr : card.labelEn}
+                </p>
+                <p className="text-[12px] leading-6 text-[#7a625d]">
+                  {fr ? card.descriptionFr : card.descriptionEn}
+                </p>
               </div>
             </article>
           ))}
@@ -535,7 +535,7 @@ function RecognitionPanel({
         ) : null}
       </div>
 
-      <div className="mt-6 rounded-[1.75rem] border border-[#f1dfd8] bg-[#fff8f6] px-5 py-10">
+      <div className="mt-6 flex min-h-[22rem] items-center rounded-[1.75rem] border border-[#f1dfd8] bg-[#fff8f6] px-5 py-10">
         <EmptyStateCard
           title={
             hasSearch
@@ -570,12 +570,10 @@ function RecognitionPanel({
 }
 
 function CollectionsPanel({
-  progression,
   loading,
   error,
   locale,
 }: {
-  progression: MeResponse["progression"] | undefined;
   loading: boolean;
   error: unknown;
   locale: string;
@@ -594,7 +592,7 @@ function CollectionsPanel({
     );
   }
 
-  if (error || !progression) {
+  if (error) {
     return (
       <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
         <SectionLabel
@@ -622,8 +620,6 @@ function CollectionsPanel({
     );
   }
 
-  const summary = buildCollectionSummary(progression);
-
   return (
     <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
       <SectionLabel
@@ -632,7 +628,7 @@ function CollectionsPanel({
         subtitle={fr ? "Des distinctions lisibles et sobres, sans surcharge visuelle." : "Readable, restrained distinctions without visual overload."}
       />
 
-      <div className="mt-6 rounded-[1.75rem] border border-[#f1dfd8] bg-[#fff8f6] p-6">
+      <div className="mt-6 flex min-h-[22rem] items-center rounded-[1.75rem] border border-[#f1dfd8] bg-[#fff8f6] p-6">
         <EmptyStateCard
           title={
             fr
@@ -648,34 +644,6 @@ function CollectionsPanel({
           ctaLabel={fr ? "Aperçu" : "Preview"}
         />
       </div>
-
-      {summary.badgeCount > 0 ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {[
-            {
-              label: fr ? "Badges" : "Badges",
-              value: summary.badgeCount,
-            },
-            {
-              label: fr ? "Zones" : "Zones",
-              value: summary.zoneCount,
-            },
-            {
-              label: fr ? "Actions validées" : "Validated actions",
-              value: summary.approvedActionCount,
-            },
-          ].map((item) => (
-            <div key={item.label} className="rounded-[1.35rem] border border-[#efdad4] bg-[#fff8f6] px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#b0554d]">
-                {item.label}
-              </p>
-              <p className="mt-2 text-[22px] font-black tracking-[-0.04em] text-[#281614]">
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -685,7 +653,7 @@ function CelebrationsPanel({ locale }: { locale: string }) {
   const preview = useMemo(() => buildLightCelebrationPreview(locale), [locale]);
 
   const handlePreview = useCallback(() => {
-    dispatchGamificationCelebration(preview);
+    announceGamificationGain(preview);
   }, [preview]);
 
   return (
@@ -765,12 +733,98 @@ function MethodologyBanner({ locale }: { locale: string }) {
   );
 }
 
+function QuizProgressionCard({ locale }: { locale: string }) {
+  const fr = locale === "fr";
+  const quizProgressions = [
+    buildQuizTypeProgression(),
+    buildQuizBalanceProgression(),
+  ];
+
+  return (
+    <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <SectionLabel
+          icon={Sparkles}
+          title={fr ? "Progressions quiz" : "Quiz progressions"}
+          subtitle={
+            fr
+              ? "Deux progressions quiz alimentent réellement l'XP: l'une suit la maîtrise par type, l'autre l'entraînement équilibré."
+              : "Two quiz progressions now feed real XP: one tracks mastery by type, the other balanced training across all types."
+          }
+        />
+        <span className="inline-flex items-center rounded-full border border-[#efb0a9] bg-[#fff1ef] px-3 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-[#bb362f]">
+          {fr ? "Actif" : "Active"}
+        </span>
+      </div>
+
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        {quizProgressions.map((progression) => (
+          <article
+            key={progression.id}
+            className="rounded-[1.7rem] border border-[#f1dfd8] bg-[#fff8f6] p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#c63b35]">
+                  {fr ? "Progression active" : "Active progression"}
+                </p>
+                <p className="mt-1 text-[18px] font-black tracking-[-0.03em] text-[#241411]">
+                  {progression.name}
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-[#efb0a9] bg-white px-3 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-[#bb362f]">
+                {fr ? "Actif" : "Active"}
+              </span>
+            </div>
+
+            <p className="mt-3 text-[12px] leading-6 text-[#7a625d]">
+              {progression.description}
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {progression.tiers.map((tier, index) => (
+                <article
+                  key={tier.id}
+                  className="rounded-[1.35rem] border border-[#f1dfd8] bg-white p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#efc7c1] bg-[#fff8f6] text-[16px]">
+                      {tier.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-[0.28em] text-[#c63b35]">
+                        {fr ? `Palier ${index + 1}` : `Tier ${index + 1}`}
+                      </p>
+                      <p className="mt-1 text-[13px] font-bold text-[#241411]">
+                        {tier.label}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[11px] leading-5 text-[#7a625d]">
+                    {tier.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-5 rounded-[1.45rem] border border-[#f0d9d2] bg-[#fff7f5] px-4 py-3 text-[12px] leading-6 text-[#8a716b]">
+        {fr
+          ? "Ces progressions comptent pour l'XP et restent visibles pour suivre le cap de maîtrise."
+          : "These progressions count toward XP and stay visible to track mastery milestones."}
+      </div>
+    </section>
+  );
+}
+
 function OperationalStatusCard({ locale }: { locale: string }) {
   const fr = locale === "fr";
   return (
     <section className="rounded-[2.25rem] border border-[#ead8d2] bg-white p-6 shadow-[0_18px_60px_rgba(126,31,20,0.08)] lg:p-7">
       <SectionLabel
-        icon={Zap}
+        icon={Radio}
         title={fr ? "Statut opérationnel" : "Operational status"}
         subtitle={fr ? "Le moteur de progression reste en arrière-plan et s’active sur les données validées." : "The progression engine remains in the background and activates on validated data."}
       />
@@ -984,7 +1038,7 @@ export function GamificationSection() {
       hideHeader
       gradient="from-[#fff8f5] via-white to-transparent"
     >
-      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#fffdfc_0%,#fff8f7_48%,#fffefc_100%)] text-[#241311]">
+      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fff8f6_48%,#ffffff_100%)] text-[#241311]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_74%_12%,rgba(255,118,108,0.16)_0%,rgba(255,118,108,0.08)_18%,transparent_40%),radial-gradient(circle_at_82%_20%,rgba(197,31,31,0.10)_0%,transparent_24%),radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.95)_0%,transparent_55%)]" />
         <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
           <HeroBlock fr={fr} />
@@ -1008,13 +1062,14 @@ export function GamificationSection() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               <CollectionsPanel
-                progression={progression}
                 loading={meLoading}
                 error={meError}
                 locale={locale}
               />
               <CelebrationsPanel locale={locale} />
             </div>
+
+            <QuizProgressionCard locale={locale} />
 
             <MethodologyBanner locale={locale} />
 

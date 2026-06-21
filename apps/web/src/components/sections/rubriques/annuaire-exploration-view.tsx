@@ -9,6 +9,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnnuairePartnerList } from "./annuaire-partner-list";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const AnnuaireMapCanvas = dynamic(
   () => import("./annuaire-map-canvas").then((module) => module.AnnuaireMapCanvas),
@@ -55,6 +56,9 @@ export function AnnuaireExplorationView({
   const searchTerm = externalSearchTerm ?? internalSearchTerm;
   const setSearchTerm = externalSetSearchTerm ?? internalSetSearchTerm;
   const selectedActor = sortedAndFilteredEntries.find(e => e.id === selectedActorId) || null;
+  const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLElement>({
+    rootMargin: "280px 0px",
+  });
 
   const handleActorClick = (id: string) => {
     setSelectedActorId(id);
@@ -182,13 +186,16 @@ export function AnnuaireExplorationView({
       </div>
 
       {/* RIGHT COLUMN: Sticky Map - Premium Frame (40%) */}
-      <aside className="relative order-1 h-[600px] w-full min-w-[320px] overflow-hidden rounded-[4rem] border border-white/10 bg-slate-900/40 shadow-2xl lg:sticky lg:top-24 lg:h-[calc(100vh-140px)] lg:w-[40%] lg:order-2 group backdrop-blur-3xl">
+      <aside
+        ref={mapShellRef}
+        className="relative order-1 h-[600px] w-full min-w-[320px] overflow-hidden rounded-[4rem] border border-white/10 bg-slate-900/40 shadow-2xl lg:sticky lg:top-24 lg:h-[calc(100vh-140px)] lg:w-[40%] lg:order-2 group backdrop-blur-3xl"
+      >
         {/* Futuristic Map Overlay */}
         <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(to_bottom,transparent_49%,rgba(255,255,255,0.01)_50%,transparent_51%)] bg-[length:100%_4px] opacity-20" />
         
-        {viewMode === "map" ? (
-          <AnnuaireMapCanvas 
-            items={sortedAndFilteredEntries} 
+        {isMapVisible ? viewMode === "map" ? (
+          <AnnuaireMapCanvas
+            items={sortedAndFilteredEntries}
             variant="exploration"
             onItemClick={handleActorClick}
             highlightedItemId={selectedActorId}
@@ -198,6 +205,15 @@ export function AnnuaireExplorationView({
             entries={sortedAndFilteredEntries}
             onSelectPartner={(entry) => handleActorClick(entry.id)}
           />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-slate-950/70">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto h-12 w-12 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                Chargement de la carte...
+              </p>
+            </div>
+          </div>
         )}
         
         {/* View Mode Toggle - Premium Interface */}

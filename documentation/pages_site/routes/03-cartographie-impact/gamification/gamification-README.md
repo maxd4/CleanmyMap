@@ -1,15 +1,16 @@
 # Gamification - Progression & badges
 
-Point d entrée de la rubrique gamification.
+Point d entrée de la rubrique gamification, désormais canonique sur `/sections/gamification`.
 
 ## Références principales
 
 - [Présentation détaillée](./gamification-presentation-detaillee.md)
 - [Spécification canonique](./gamification-SPEC_CANONIQUE.md)
+- [Notes de scopes et d interface](./gamification-scope-ui-notes.md)
 - [Liste des propositions à traiter](./gamification-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)
 
-La présentation détaillée décrit la page /gamification. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
+La présentation détaillée décrit la section `/sections/gamification`. L URL `/gamification` reste un alias de compatibilité. La spec canonique centralise les règles métier des badges, des paliers, des XP et des garde-fous.
 
 ## Arborescence canonique
 

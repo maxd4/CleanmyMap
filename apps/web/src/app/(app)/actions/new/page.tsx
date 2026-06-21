@@ -3,6 +3,7 @@ import { ActionDeclarationForm } from "@/components/actions/action-declaration-f
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { isAdminLikeProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = {
   title: "Déclarer une action - CleanMyMap",
@@ -49,6 +50,7 @@ export default async function NewActionPage({
   const mode = resolveSingleSearchParam(params?.["mode"]);
   const initialRecordType = mode === "propre" ? "clean_place" : "action";
   const fallbackActorName = isAuthenticated ? userId ?? "unknown-user" : "Aperçu public";
+  const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions
@@ -72,6 +74,7 @@ export default async function NewActionPage({
           linkedEventId={fromEventId}
           initialRecordType={initialRecordType}
           isAuthenticated={isAuthenticated}
+          isAutoApprovedSubmission={isAutoApprovedSubmission}
         />
       </div>
     );
@@ -86,6 +89,7 @@ export default async function NewActionPage({
         linkedEventId={fromEventId}
         initialRecordType={initialRecordType}
         isAuthenticated={isAuthenticated}
+        isAutoApprovedSubmission={isAutoApprovedSubmission}
       />
     </div>
   );

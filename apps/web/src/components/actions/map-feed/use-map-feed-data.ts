@@ -20,6 +20,7 @@ import {
   type ActionsMapDateScope,
 } from "@/components/actions/map/actions-map-filters.utils";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import type { MapViewportState } from "@/components/actions/map/map-export.types";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
@@ -32,6 +33,7 @@ type UseMapFeedDataParams = {
   visibleCategories: Record<MarkerCategory, boolean>;
   pollutionScoreReferences?: PollutionScoreReferences | null;
   limit?: number;
+  viewport?: MapViewportState | null;
 };
 
 export function useMapFeedData({
@@ -45,6 +47,7 @@ export function useMapFeedData({
   visibleCategories,
   pollutionScoreReferences,
   limit = 120,
+  viewport = null,
 }: UseMapFeedDataParams) {
   const normalizedZoneQuery = useMemo(
     () => normalizeZoneQuery(zoneQuery),
@@ -65,8 +68,25 @@ export function useMapFeedData({
       serializedTypes,
       impactFilter,
       String(qualityMin),
+      viewport
+        ? [
+            viewport.bounds.south,
+            viewport.bounds.west,
+            viewport.bounds.north,
+            viewport.bounds.east,
+            viewport.zoom,
+          ].join(":")
+        : "global",
     ],
-    [days, dateScope, statusFilter, serializedTypes, impactFilter, qualityMin],
+    [
+      days,
+      dateScope,
+      statusFilter,
+      serializedTypes,
+      impactFilter,
+      qualityMin,
+      viewport,
+    ],
   );
 
   const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
@@ -82,6 +102,7 @@ export function useMapFeedData({
         qualityMin: qualityMin > 0 ? qualityMin : undefined,
         limit,
         types,
+        viewport,
       }),
     {
       ...swrRecentViewOptions,

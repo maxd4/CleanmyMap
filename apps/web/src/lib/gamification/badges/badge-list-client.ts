@@ -18,6 +18,17 @@ export type GamificationBadgeListResponse = {
     currentPlaces?: number;
   };
   badges?: GamificationBadgeListItem[];
+  quizProgressions?: Array<{
+    id?: string;
+    name?: string;
+    status?: "active";
+    tiers?: Array<{
+      id?: string;
+      label?: string;
+      description?: string;
+      icon?: string;
+    }>;
+  }>;
 };
 
 type FetchError = Error & {

@@ -1,46 +1,37 @@
-# English entry
+# English entry - Alias technique
 
-## Fiche canonique
+## Fiche d alias
 
 - **Route** : `/en`
 - **Fichier(s) source(s)** :
-- `apps/web/src/app/en/page.tsx`
-- **Type fonctionnel** : légale
+  - `apps/web/src/app/en/page.tsx`
+- **Type fonctionnel** : redirection
 - **Famille / bloc fonctionnel** : Institutionnel & Légal (hors bloc)
-- **Statut** : légal
-- **Contexte nécessaire** : Aucun, page institutionnelle
-- **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
-- **Action principale attendue** : Lire un document ou contacter l'équipe.
+- **Statut** : redirection
+- **Contexte nécessaire** : Aucun, la page redirige automatiquement
+- **Page cible** : `/explorer`
+- **Objectif utilisateur principal** : Rediriger vers l'entrée canonique en anglais du site.
+- **Action principale attendue** : Ouvrir la page canonique correspondante.
 - **Palette attendue** : slate / gris clair
-- **Scope** : à corriger
+- **Scope** : hors scope
 - **Terminée** : non
-- **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
-- **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
-- **Niveau de surcharge textuelle** : fort
+- **Couleurs actuellement détectées** : non applicable
+- **Incohérences de couleurs** : Non applicable pour une redirection.
+- **Risque de conflit avec les couleurs existantes** : faible
+- **Niveau de surcharge textuelle** : faible
 - **Textes à conserver** :
-- Titres légaux
-- sections obligatoires
-- liens de contact
-- mentions réglementaires
-- structures de lecture
-- ancres utiles
+- nom de l alias
+- cible de redirection
+- note de contexte
 - **Textes à réduire ou supprimer** :
-- Décorations inutiles
-- phrases promotionnelles
-- blocs redondants
-- callouts d'ambiance
-- **Bulles / cartes / contextes trop nombreux** : Le contenu réglementaire doit rester sobre, compact et cohérent d'une page à l'autre.
+- descriptions longues
+- répétitions du même alias
+- **Bulles / cartes / contextes trop nombreux** : Aucun rendu autonome, simple redirection.
 - **Composants UI concernés** :
-- LegalSection
-- LegalLayout
-- Article
-- listes
-- footer
-- liens
-- tableaux légaux
-- **Captures attendues** : desktop, mobile
-- **Priorité de correction** : moyenne
+- redirection serveur
+- lien technique
+- **Captures attendues** : aucune
+- **Priorité de correction** : basse
 
 ## Références legacy
 
@@ -48,5 +39,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- Cette fiche documente uniquement l alias technique.
+- Le contenu visible reste la page canonique `/explorer`.

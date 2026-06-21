@@ -1,7 +1,7 @@
 "use client";
 
-import { memo } from "react";
-import { Sparkles, type LucideIcon, MessageSquare, Share2, User } from "lucide-react";
+import { memo, useState } from "react";
+import { Sparkles, type LucideIcon, MessageSquare, Share2, User, Info } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatUser } from "./chat-types";
@@ -46,6 +46,7 @@ export const ChatHeader = memo(function ChatHeader({
   showControls = true,
 }: ChatHeaderProps) {
   const isLight = tone === "light";
+  const [showMeta, setShowMeta] = useState(false);
   return (
     <>
       <div className={`p-5 flex items-center justify-between backdrop-blur-xl relative z-30 border-b ${isLight ? "border-rose-100/60 bg-white/70" : "border-pink-100/70 dark:border-slate-800 bg-[rgba(255,248,251,0.9)] dark:bg-slate-900/50"}`}>
@@ -62,25 +63,28 @@ export const ChatHeader = memo(function ChatHeader({
                 Live
               </div>
             </div>
-            <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${isLight ? "text-rose-500" : "text-pink-500"}`}>
-              <Sparkles size={10} className={activeChannelAccentClass} />
-              {activeChannelDescription}
-            </p>
-            {metaItems.length > 0 ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {metaItems.map((item) => (
-                  <div
-                    key={item.label}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold shadow-sm ${isLight ? "border-rose-100/70 bg-white/85 text-rose-700" : "border-pink-100/50 bg-[rgba(255,248,251,0.92)] text-pink-700 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-300"}`}
-                  >
-                    <span className={`uppercase tracking-[0.16em] ${isLight ? "text-slate-400" : "text-slate-400"}`}>{item.label}</span>
-                    <span className="max-w-[220px] truncate">{item.value}</span>
-                  </div>
+            <div className="flex items-center gap-2">
+              <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${isLight ? "text-indigo-500" : "text-indigo-500"}`}>
+                <Sparkles size={10} className={activeChannelAccentClass} />
+                {activeChannelDescription}
+              </p>
+            </div>
+            {/* Thèmes actifs mock */}
+            {activeChannelType === "community" && (
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isLight ? "text-slate-800" : "text-slate-200"}`}>Thèmes actifs :</span>
+                {["coordination", "bénévoles", "diffusion"].map(theme => (
+                  <span key={theme} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
+                    {theme}
+                  </span>
                 ))}
+                <button className={`flex items-center justify-center w-5 h-5 rounded-full ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}>
+                  +
+                </button>
               </div>
-            ) : null}
+            )}
             {activeChannelType === "dm" && selectedRecipient ? (
-              <p className="text-[10px] font-semibold text-pink-500 dark:text-slate-400">
+              <p className="text-[10px] font-semibold text-indigo-500 dark:text-slate-400">
                 Conversation avec {selectedRecipient.display_name} @{selectedRecipient.handle}
               </p>
             ) : null}

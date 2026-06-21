@@ -5,7 +5,8 @@ export type QuizReasoningType =
   | "comparaison"
   | "conséquences indirectes"
   | "questions contre-intuitives"
-  | "cas-limites";
+  | "cas-limites"
+  | "mini-enquetes";
 
 export const REASONING_TYPE_ORDER: QuizReasoningType[] = [
   "idée reçue",
@@ -15,6 +16,7 @@ export const REASONING_TYPE_ORDER: QuizReasoningType[] = [
   "conséquences indirectes",
   "questions contre-intuitives",
   "cas-limites",
+  "mini-enquetes",
 ];
 
 export function getNextReasoningType(

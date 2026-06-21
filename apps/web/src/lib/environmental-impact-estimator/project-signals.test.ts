@@ -1,9 +1,52 @@
 import { subDays } from "date-fns";
-import { describe, expect, it } from "vitest";
-import { buildEnvironmentalImpactProjectSignals } from "./project-signals";
+import { describe, expect, it, vi } from "vitest";
+import {
+  buildEnvironmentalImpactProjectSignals,
+  loadEnvironmentalImpactProjectSignals,
+  PROJECT_SIGNAL_ROW_LIMIT,
+} from "./project-signals";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
+vi.mock("./codex-usage-store", async () => {
+  const actual = await vi.importActual<typeof import("./codex-usage-store")>("./codex-usage-store");
+
+  return {
+    ...actual,
+    listCodexUsageWeeklySnapshots: vi.fn(async () => []),
+  };
+});
+
 describe("environmental impact project signals", () => {
+  it("documents the explicit row cap in the notes", () => {
+    const now = new Date();
+    const signals = buildEnvironmentalImpactProjectSignals(
+      {
+        profiles: [],
+        actions: [],
+        spots: [],
+        funnelEvents: [],
+        progressionEvents: [],
+        reports: [],
+        trainingExamples: [],
+        serviceEmails: [],
+        communityEvents: [],
+        eventRsvps: [],
+        appNotifications: [],
+      },
+      {
+        generatedAt: now.toISOString(),
+        userId: null,
+      },
+    );
+
+    expect(signals.notes.some((note) => note.includes("plafonnés"))).toBe(true);
+    expect(
+      signals.notes.some((note) =>
+        note.includes(new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)),
+      ),
+    ).toBe(true);
+  });
+
   it("builds project-specific site, user and monthly usage inputs", () => {
     const now = new Date();
     const userId = "user_1";
@@ -204,8 +247,134 @@ describe("environmental impact project signals", () => {
     expect(signals.highlights.some((item) => item.label === "Événements communauté")).toBe(true);
     expect(signals.highlights.some((item) => item.label === "Notifications non lues")).toBe(true);
     expect(signals.highlights.some((item) => item.label === "Routes distinctes")).toBe(true);
-    expect(signals.notes[0]).toContain("tables opérationnelles CleanMyMap");
+    expect(signals.notes.some((note) => note.includes("tables opérationnelles CleanMyMap"))).toBe(true);
     expect(signals.notes.some((note) => note.includes("page_view"))).toBe(true);
+  });
+
+  it("loads project signals with deterministic ordering under the cap", async () => {
+    const orderingsByTable = new Map<string, Array<{ column: string; ascending?: boolean }>>();
+    const makeChain = (table: string, rows: Array<Record<string, unknown>>) => {
+      const state: {
+        orderings: Array<{ column: string; ascending?: boolean }>;
+      } = {
+        orderings: [],
+      };
+
+      const chain: any = {
+        select: vi.fn(() => chain),
+        order: vi.fn((column: string, options?: { ascending?: boolean }) => {
+          state.orderings.push({ column, ascending: options?.ascending });
+          return chain;
+        }),
+        limit: vi.fn(async (limit: number) => {
+          orderingsByTable.set(table, [...state.orderings]);
+          return {
+            data: rows.slice(0, limit),
+            error: null,
+          };
+        }),
+      };
+
+      return chain;
+    };
+
+    const supabase = {
+      from: vi.fn((table: string) => {
+        switch (table) {
+          case "profiles":
+            return makeChain(table, [
+              { id: "user-b", created_at: "2026-05-02T12:00:00Z" },
+              { id: "user-a", created_at: "2026-05-02T12:00:00Z" },
+            ]);
+          case "actions":
+            return makeChain(table, [
+              {
+                id: "action-b",
+                created_at: "2026-05-03T12:00:00Z",
+                created_by_clerk_id: "user-2",
+                latitude: null,
+                longitude: null,
+                status: "approved",
+              },
+              {
+                id: "action-a",
+                created_at: "2026-05-03T12:00:00Z",
+                created_by_clerk_id: "user-1",
+                latitude: 48.85,
+                longitude: 2.35,
+                status: "approved",
+              },
+            ]);
+          case "spots":
+            return makeChain(table, [
+              {
+                created_at: "2026-05-04T12:00:00Z",
+                created_by_clerk_id: "user-2",
+                latitude: 48.85,
+                longitude: 2.35,
+                status: "validated",
+              },
+            ]);
+          case "funnel_events":
+            return makeChain(table, [
+              {
+                at: "2026-05-05T12:00:00Z",
+                user_id: "user-2",
+                session_id: "session-b",
+                step: "page_view",
+                mode: "complete",
+                meta: { pagePath: "/b" },
+              },
+              {
+                at: "2026-05-05T12:00:00Z",
+                user_id: "user-1",
+                session_id: "session-a",
+                step: "page_view",
+                mode: "complete",
+                meta: { pagePath: "/a" },
+              },
+            ]);
+          case "progression_events":
+            return makeChain(table, []);
+          case "reports":
+            return makeChain(table, []);
+          case "training_examples":
+            return makeChain(table, []);
+          case "service_email_events":
+            return makeChain(table, []);
+          case "community_events":
+            return makeChain(table, []);
+          case "event_rsvps":
+            return makeChain(table, []);
+          case "app_notifications":
+            return makeChain(table, []);
+          default:
+            throw new Error(`Unexpected table: ${table}`);
+        }
+      }),
+    };
+
+    const signals = await loadEnvironmentalImpactProjectSignals(supabase as never, {
+      userId: null,
+      generatedAt: "2026-05-20T12:00:00.000Z",
+    });
+
+    expect(signals.signalBreakdown?.traffic.pageViewEvents).toBe(2);
+    expect(orderingsByTable.get("profiles")).toEqual([
+      { column: "created_at", ascending: false },
+      { column: "id", ascending: false },
+    ]);
+    expect(orderingsByTable.get("actions")).toEqual([
+      { column: "created_at", ascending: false },
+      { column: "id", ascending: false },
+    ]);
+    expect(orderingsByTable.get("funnel_events")).toEqual([
+      { column: "at", ascending: false },
+      { column: "session_id", ascending: false },
+      { column: "step", ascending: false },
+      { column: "mode", ascending: false },
+      { column: "user_id", ascending: false },
+    ]);
   });
 
   it("uses GitHub Actions runs as a direct monthly deployment source when available", () => {
@@ -246,6 +415,7 @@ describe("environmental impact project signals", () => {
     );
 
     expect(signals.infrastructureInput.usage?.monthlyDeployments).toBe(27);
+    expect(signals.infrastructureInput.metrics?.githubWorkflowRunsCount30d).toBe(27);
     expect(
       signals.highlights.some((item) => item.label === "GitHub Actions runs"),
     ).toBe(true);

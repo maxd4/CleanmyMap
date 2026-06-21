@@ -56,6 +56,7 @@ export function NavigationDropdownItemCard({
     <li>
       <Link
         href={item.href}
+        prefetch={false}
         aria-current={isActiveItem ? "page" : undefined}
         aria-describedby={descriptionId}
         onClick={() => onTrackNavigation(item.href, itemLabel, spaceId)}

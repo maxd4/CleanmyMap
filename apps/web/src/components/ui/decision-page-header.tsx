@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmPill, CmmPillGroup } from "@/components/ui/cmm-pill";
+import { CTAGroup } from "@/components/ui/page-structure";
 import { PageHeader } from "@/components/ui/page-header";
 
 type HeaderAction = {
@@ -52,7 +52,7 @@ export function DecisionPageHeader({
       </CmmPillGroup>
 
       {actions.length > 0 ? (
-        <CmmButtonGroup className="mt-4">
+        <CTAGroup className="mt-4">
           {actions.map((action) => (
             <CmmButton
               key={`${action.href}-${action.label}`}
@@ -62,7 +62,7 @@ export function DecisionPageHeader({
               {action.label}
             </CmmButton>
           ))}
-        </CmmButtonGroup>
+        </CTAGroup>
       ) : null}
     </header>
   );

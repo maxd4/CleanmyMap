@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { BookOpen, ChevronDown, Compass, ExternalLink, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";

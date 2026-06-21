@@ -2,10 +2,10 @@
 
 ## Fiche canonique
 
-- **Route** : `/messagerie`
+- **Route** : `/sections/messagerie`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/messagerie/page.tsx`
-- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` (même rubrique via `/sections/messagerie`)
+- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -57,6 +57,7 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
+- `/messagerie` reste un alias de compatibilité vers cette section canonique.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
 
 ## Fichiers associés

@@ -91,8 +91,9 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
  const active = isActive(pathname, item.href);
  return (
  <li key={item.id}>
- <Link
+<Link
  href={item.href}
+ prefetch={false}
  onClick={() =>
  trackNavigationClick({
  profile: currentProfile,

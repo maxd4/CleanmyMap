@@ -49,6 +49,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <Link
  key={space.id}
  href={firstHref}
+ prefetch={false}
  title={getLocalizedText(space.label, locale, space.id)}
  onClick={() =>
  onTrackNavigation(firstHref, getLocalizedText(space.label, locale, space.id), space.id)
@@ -93,6 +94,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <Link
  key={item.id}
  href={item.href}
+ prefetch={false}
  onClick={() => onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), activeSpace?.id ?? null)}
  title={getLocalizedText(item.description, locale, item.href)}
  className={`inline-flex shrink-0 items-center rounded-full border px-3 py-2 cmm-text-small font-medium transition ${

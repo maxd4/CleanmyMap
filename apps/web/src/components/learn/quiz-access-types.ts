@@ -23,6 +23,7 @@ export type QuizAccessTypeDefinition = {
 export type QuizAccessQuestion = {
   category: QuizQuestionCategory;
   reasoningType: QuizReasoningType;
+  skill?: QuizReasoningType;
 };
 
 export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
@@ -38,7 +39,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Full bank mixing", "No theme or context filter"],
     },
     categories: ["tri-recyclage", "action-terrain", "climat-biodiversite", "impact-methodologie"],
-    reasoningTypes: ["idée reçue", "terrain", "estimation", "comparaison", "conséquences indirectes", "questions contre-intuitives", "cas-limites"],
+    reasoningTypes: ["idée reçue", "terrain", "estimation", "comparaison", "conséquences indirectes", "questions contre-intuitives", "cas-limites", "mini-enquetes"],
   },
   {
     id: "terrain",
@@ -52,7 +53,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Safety, practical gestures and organization", "Edge cases and field trade-offs"],
     },
     categories: ["tri-recyclage", "action-terrain"],
-    reasoningTypes: ["terrain", "cas-limites"],
+    reasoningTypes: ["terrain", "cas-limites", "mini-enquetes"],
   },
   {
     id: "donnees-scientifiques",
@@ -66,7 +67,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Mechanisms and indirect consequences", "Orders of magnitude and measurable impacts"],
     },
     categories: ["climat-biodiversite", "impact-methodologie"],
-    reasoningTypes: ["estimation", "comparaison", "conséquences indirectes"],
+    reasoningTypes: ["estimation", "comparaison", "conséquences indirectes", "mini-enquetes"],
   },
   {
     id: "sensibilisation",
@@ -80,7 +81,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Misconceptions and awareness building", "Questions that challenge intuition"],
     },
     categories: ["tri-recyclage", "action-terrain", "climat-biodiversite", "impact-methodologie"],
-    reasoningTypes: ["idée reçue", "questions contre-intuitives", "cas-limites"],
+    reasoningTypes: ["idée reçue", "questions contre-intuitives", "cas-limites", "mini-enquetes"],
   },
   {
     id: "habitudes-de-vie",
@@ -94,7 +95,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Daily gestures and waste reduction", "How individual behavior scales to collective impact"],
     },
     categories: ["tri-recyclage", "action-terrain", "climat-biodiversite", "impact-methodologie"],
-    reasoningTypes: ["terrain", "comparaison", "estimation", "conséquences indirectes"],
+    reasoningTypes: ["terrain", "comparaison", "estimation", "conséquences indirectes", "mini-enquetes"],
   },
   {
     id: "ordres-de-grandeur",
@@ -108,7 +109,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Reason with useful scales", "Compare without relying on bare numbers"],
     },
     categories: ["tri-recyclage", "action-terrain", "climat-biodiversite", "impact-methodologie"],
-    reasoningTypes: ["estimation", "comparaison", "conséquences indirectes"],
+    reasoningTypes: ["estimation", "comparaison", "conséquences indirectes", "mini-enquetes"],
   },
   {
     id: "tri-securite",
@@ -122,7 +123,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
       en: ["Sorting mistakes and hazardous waste", "Operational safety and reliable gestures"],
     },
     categories: ["tri-recyclage", "action-terrain"],
-    reasoningTypes: ["terrain", "cas-limites", "idée reçue"],
+    reasoningTypes: ["terrain", "cas-limites", "idée reçue", "mini-enquetes"],
   },
 ] as const;
 
@@ -147,9 +148,10 @@ export function matchesQuizAccessType(
   }
 
   const accessType = getQuizAccessType(accessTypeId);
+  const questionSkill = question.skill ?? question.reasoningType;
   return (
     accessType.categories.includes(question.category) &&
-    accessType.reasoningTypes.includes(question.reasoningType)
+    accessType.reasoningTypes.includes(questionSkill)
   );
 }
 

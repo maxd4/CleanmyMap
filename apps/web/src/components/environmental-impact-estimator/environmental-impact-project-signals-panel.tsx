@@ -1,6 +1,7 @@
 "use client";
 
 import type { EnvironmentalImpactProjectSignals } from "@/lib/environmental-impact-estimator/types";
+import { PROJECT_SIGNAL_ROW_LIMIT } from "@/lib/environmental-impact-estimator/project-signals.constants";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("fr-FR", {
@@ -29,6 +30,10 @@ export function EnvironmentalImpactProjectSignalsPanel({
           <p className="mt-1 text-sm text-white/55">
             Même découpage que le PDF mensuel pour garder la fiche admin et le
             rapport sur la même lecture.
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-amber-100/70">
+            Volumes plafonnés à {new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)} lignes par table;
+            les totaux affichés restent indicatifs au-delà de ce seuil.
           </p>
         </div>
         <div className="text-right text-[10px] font-black uppercase tracking-[0.2em] text-white/20">

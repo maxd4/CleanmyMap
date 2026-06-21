@@ -8,8 +8,7 @@ import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
 } from "@/lib/profiles";
-import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { requireSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import {
   DISPLAY_NAME_MODE_COOKIE,
   setDisplayNameModeOverride,
@@ -50,8 +49,22 @@ export async function PATCH(request: Request) {
   const parsed = updateDisplayNameModeSchema.safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
-  const supabase =
-    (await getSupabaseClerkRlsClient()) ?? getSupabaseAdminClient();
+  let supabase: Awaited<ReturnType<typeof requireSupabaseClerkRlsClient>> | null = null;
+  try {
+    supabase = await requireSupabaseClerkRlsClient();
+  } catch (error) {
+    console.warn(
+      "[DisplayNameMode] Clerk/Supabase access token unavailable for required RLS flow",
+      error,
+    );
+    return NextResponse.json(
+      {
+        error: "Connexion sécurisée indisponible",
+        hint: "La mise à jour du profil nécessite un JWT Clerk valide transmis à Supabase via accessToken.",
+      },
+      { status: 503 },
+    );
+  }
 
   try {
     const displayNameMode = normalizeDisplayNameMode(parsed.data.displayNameMode);

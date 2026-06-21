@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Copy, QrCode, Share2, Users } from "lucide-react";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ReferralSummary } from "@/lib/gamification/referrals";
 
 type ReferralInviteBadgeProps = {
@@ -68,12 +68,13 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
       setCurrentSummary(payload.summary);
 
       if (payload.created) {
-        dispatchGamificationCelebration({
+        announceGamificationGain({
           title: "Badge invité un ami",
           message: "+2 XP pour la première invitation générée.",
           tone: "generic",
           icon: "share-2",
           source: "referral-invite",
+          dedupeKey: `referral-invite:${payload.summary.referralCode ?? currentSummary.inviteUrl ?? "created"}`,
         });
       }
     } catch (error) {

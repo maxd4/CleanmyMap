@@ -34,6 +34,7 @@ type QuizSessionPanelProps = {
   currentQuestionStreak: number;
   currentQuestionMasteryLevel: number;
   selectedOption: string;
+  selectedOptions: string[];
   showAnswer: boolean;
   lastCheckResult: boolean | null;
   score: number;
@@ -42,10 +43,12 @@ type QuizSessionPanelProps = {
   hasReviewedToday: boolean;
   sessionSummary?: QuizSessionSummary | null;
   onSelectOption: (option: string) => void;
+  onToggleOption: (option: string) => void;
   onCheckAnswer: () => void;
   onNextQuestion: () => void;
   onResetQuiz: () => void;
   onStartMiniChallenge: () => void;
+  onReplayRecommendedMode: () => void;
   onHandleSRSUpdate: (quality: SRSQuality) => void;
 };
 
@@ -66,6 +69,7 @@ export function QuizSessionPanel({
   currentQuestionStreak,
   currentQuestionMasteryLevel,
   selectedOption,
+  selectedOptions,
   showAnswer,
   lastCheckResult,
   score,
@@ -74,10 +78,12 @@ export function QuizSessionPanel({
   hasReviewedToday,
   sessionSummary,
   onSelectOption,
+  onToggleOption,
   onCheckAnswer,
   onNextQuestion,
   onResetQuiz,
   onStartMiniChallenge,
+  onReplayRecommendedMode,
   onHandleSRSUpdate,
 }: QuizSessionPanelProps) {
   const nextReasoningTypeLabel = useMemo(() => nextReasoningType, [nextReasoningType]);
@@ -88,11 +94,14 @@ export function QuizSessionPanel({
     if (question.type === "true-false") {
       return "Vrai / Faux";
     }
+    if (question.type === "multiple-select") {
+      return "Cases à cocher";
+    }
     return "Choix Multiple";
   }, [question.type]);
   const reviewTarget = useMemo(
-    () => getQuizReviewTarget(question.category, question.review),
-    [question.category, question.review],
+    () => question.reviewTarget ?? getQuizReviewTarget(question.category, question.review, question.reasoningType),
+    [question.category, question.reasoningType, question.review, question.reviewTarget],
   );
   const sessionAccuracy = useMemo(() => {
     if (!sessionSummary || sessionSummary.totalAnswered === 0) {
@@ -102,7 +111,8 @@ export function QuizSessionPanel({
   }, [sessionSummary]);
 
   if (sessionSummary) {
-    const nextReviewTarget = sessionSummary.nextReviewTarget;
+    const nextReviewTarget = sessionSummary.recommendedLearningTarget ?? sessionSummary.nextReviewTarget;
+    const recommendedMode = sessionSummary.recommendedMode;
 
     return (
       <div className="space-y-8">
@@ -126,7 +136,7 @@ export function QuizSessionPanel({
           </div>
 
           <div className="rounded-[2rem] border border-sky-100 bg-sky-50 p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Thèmes réussis</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Compétences maîtrisées</p>
             {sessionSummary.themesSucceeded.length > 0 ? (
               <ul className="mt-3 space-y-2 text-sm font-medium text-sky-950">
                 {sessionSummary.themesSucceeded.map((theme) => (
@@ -137,12 +147,12 @@ export function QuizSessionPanel({
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-sky-900/70">Aucun thème validé entièrement pour l’instant.</p>
+              <p className="mt-3 text-sm text-sky-900/70">Aucune compétence totalement maîtrisée pour l’instant.</p>
             )}
           </div>
 
           <div className="rounded-[2rem] border border-amber-100 bg-amber-50 p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">À retravailler</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">Compétences à revoir</p>
             {sessionSummary.themesToReview.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {sessionSummary.themesToReview.map((theme) => (
@@ -155,7 +165,46 @@ export function QuizSessionPanel({
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-amber-900/70">Aucune reprise prioritaire.</p>
+              <p className="mt-3 text-sm text-amber-900/70">Aucune reprise prioritaire pour le moment.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[2rem] border border-violet-100 bg-violet-50 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-700">Types d&apos;erreurs fréquentes</p>
+            {sessionSummary.frequentErrorTypes.length > 0 ? (
+              <ul className="mt-4 space-y-2">
+                {sessionSummary.frequentErrorTypes.map((item) => (
+                  <li key={item.label} className="flex items-center justify-between rounded-2xl border border-violet-100 bg-white px-4 py-3">
+                    <span className="text-sm font-bold text-violet-950">{item.label}</span>
+                    <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">{item.count}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-violet-900/70">Aucun type d&apos;erreur fréquent à signaler.</p>
+            )}
+          </div>
+
+          <div className="rounded-[2rem] border border-sky-100 bg-sky-50 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">Mode à rejouer</p>
+            {recommendedMode ? (
+              <div className="mt-3 space-y-4">
+                <div>
+                  <p className="text-2xl font-black text-sky-950">{recommendedMode.label}</p>
+                  <p className="mt-2 text-sm text-sky-900/80">{recommendedMode.reason}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onReplayRecommendedMode}
+                  className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700"
+                >
+                  Rejouer ce mode
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-sky-900/70">Aucun mode recommandé pour l’instant.</p>
             )}
           </div>
         </div>
@@ -180,7 +229,7 @@ export function QuizSessionPanel({
                   href={nextReviewTarget.href}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                 >
-                  Revoir la rubrique
+                  Revoir la rubrique d&apos;apprentissage
                   <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               ) : null}
@@ -205,17 +254,29 @@ export function QuizSessionPanel({
 
   const answerFeedbackTitle =
     question.type === "flashcard"
-      ? question.answer
+      ? Array.isArray(question.answer)
+        ? question.answer.join(", ")
+        : question.answer
       : lastCheckResult === true
-      ? "Bonne réponse"
-      : "Réponse attendue";
+        ? question.type === "multiple-select"
+          ? "Bonne combinaison"
+          : "Réponse correcte"
+        : lastCheckResult === false
+          ? "Réponse incorrecte"
+          : "Réponse attendue";
 
   const answerFeedbackBody =
     question.type === "flashcard"
       ? "La réponse attendue et la piste de révision sont affichées immédiatement."
       : lastCheckResult === true
-        ? "Le corrigé rappelle pourquoi la réponse est juste et où la notion se retrouve dans Learn."
-        : "Le corrigé montre la bonne réponse, explique le choix et indique où revoir la notion.";
+        ? question.feedbackCorrect ?? "Bonne réponse : tu as appliqué le bon mécanisme."
+        : question.type === "multiple-select"
+          ? question.feedbackWrong ?? "Erreur pédagogique : le corrigé montre les cases attendues et les exclusions utiles."
+          : question.feedbackWrong ?? "Erreur pédagogique : le corrigé explique pourquoi la réponse attendue est la bonne.";
+
+  const selectedOptionsLabel = selectedOptions.join(", ");
+  const correctOptionsLabel = Array.isArray(question.answer) ? question.answer.join(", ") : question.answer;
+  const sourceIsExternal = Boolean(question.sourceUrl?.startsWith("http"));
 
   return (
     <div className="space-y-8">
@@ -300,22 +361,80 @@ export function QuizSessionPanel({
             {question.question}
           </p>
 
-          {question.type === "multiple-choice" && question.options ? (
+          {question.sourceLabel ? (
+            <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-900">
+              <span className="font-black uppercase tracking-[0.18em] text-sky-700">Source</span>
+              {sourceIsExternal && question.sourceUrl ? (
+                <a
+                  href={question.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="font-bold text-sky-950 underline decoration-sky-300 underline-offset-2"
+                >
+                  {question.sourceLabel}
+                </a>
+              ) : (
+                <span className="font-bold text-sky-950">{question.sourceLabel}</span>
+              )}
+              <span className="rounded-full bg-white px-2 py-1 font-black uppercase tracking-[0.14em] text-sky-700">
+                {question.sourceType}
+              </span>
+              <span className="rounded-full bg-white px-2 py-1 font-black uppercase tracking-[0.14em] text-sky-700">
+                {question.confidenceLevel}
+              </span>
+              {question.isLocalRule ? (
+                <span className="rounded-full bg-white px-2 py-1 font-black uppercase tracking-[0.14em] text-amber-700">
+                  Règle locale {question.localScope}
+                </span>
+              ) : null}
+              {question.needsReview ? (
+                <span className="rounded-full bg-white px-2 py-1 font-black uppercase tracking-[0.14em] text-rose-700">
+                  À relire
+                </span>
+              ) : null}
+              {question.lastCheckedAt ? (
+                <span className="ml-auto text-sky-900/70">
+                  Vérifiée le {question.lastCheckedAt}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(question.type === "multiple-choice" || question.type === "multiple-select") && question.options ? (
             <div className="space-y-3">
               {question.options.map((option, index) => (
                 <button
                   key={index}
-                  onClick={() => !showAnswer && onSelectOption(option)}
+                  onClick={() =>
+                    !showAnswer &&
+                    (question.type === "multiple-select" ? onToggleOption(option) : onSelectOption(option))
+                  }
                   className={cn(
-                    "w-full rounded-xl border p-4 text-left transition-all",
-                    selectedOption === option
+                    "flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all",
+                    question.type === "multiple-select" && selectedOptions.includes(option)
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                      : selectedOption === option
                       ? "border-emerald-500 bg-emerald-50 text-emerald-900"
                       : "border-slate-200 bg-white hover:border-slate-300",
                     showAnswer && "cursor-not-allowed opacity-60",
                   )}
                   disabled={showAnswer}
+                  aria-pressed={question.type === "multiple-select" ? selectedOptions.includes(option) : selectedOption === option}
                 >
-                  {option}
+                  {question.type === "multiple-select" ? (
+                    <span
+                      className={cn(
+                        "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] font-black transition",
+                        selectedOptions.includes(option)
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-slate-300 bg-white text-transparent",
+                      )}
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                  ) : null}
+                  <span>{option}</span>
                 </button>
               ))}
             </div>
@@ -324,7 +443,9 @@ export function QuizSessionPanel({
           {question.type === "flashcard" && !showAnswer ? (
             <div className="text-center">
               <button
-                onClick={() => onSelectOption(question.answer)}
+                onClick={() =>
+                  onSelectOption(Array.isArray(question.answer) ? question.answer.join(", ") : question.answer)
+                }
                 className="rounded-xl bg-emerald-500 px-8 py-4 font-bold text-white transition-colors hover:bg-emerald-600"
               >
                 Révéler la réponse
@@ -338,6 +459,15 @@ export function QuizSessionPanel({
               className="mt-4 w-full rounded-xl bg-emerald-500 py-3 font-bold text-white transition-colors hover:bg-emerald-600"
             >
               Vérifier ma réponse
+            </button>
+          ) : null}
+
+          {question.type === "multiple-select" && selectedOptions.length > 0 && !showAnswer ? (
+            <button
+              onClick={onCheckAnswer}
+              className="mt-4 w-full rounded-xl bg-emerald-500 py-3 font-bold text-white transition-colors hover:bg-emerald-600"
+            >
+              Vérifier mes réponses
             </button>
           ) : null}
 
@@ -383,9 +513,25 @@ export function QuizSessionPanel({
                     {answerFeedbackTitle}
                   </p>
                   <p className="mt-1 text-sm cmm-text-secondary">{answerFeedbackBody}</p>
+                  {lastCheckResult === false && question.errorType ? (
+                    <div className="mt-4 rounded-2xl border border-red-100 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
+                        Erreur pédagogique
+                      </p>
+                      <p className="mt-2 text-sm font-bold text-red-950">{question.errorType}</p>
+                      {question.misconception ? (
+                        <p className="mt-1 text-sm text-red-900/80">{question.misconception}</p>
+                      ) : null}
+                      {question.severity ? (
+                        <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-red-700/80">
+                          Gravité: {question.severity}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {lastCheckResult === false ? (
                     <p className="mt-2 text-sm font-medium italic text-red-600">
-                      Votre réponse : {selectedOption}
+                      Votre réponse : {question.type === "multiple-select" ? selectedOptionsLabel : selectedOption}
                     </p>
                   ) : null}
                 </div>
@@ -402,6 +548,26 @@ export function QuizSessionPanel({
                     </p>
                     <p className="mt-2">{question.explanation}</p>
                   </div>
+                  {question.feedbackCorrect || question.feedbackWrong ? (
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                        Retour pédagogique
+                      </p>
+                      <p className="mt-2 text-sm text-white/85">
+                        {lastCheckResult === true
+                          ? question.feedbackCorrect ?? "Bonne réponse : tu as retenu le bon mécanisme."
+                          : question.feedbackWrong ?? "Erreur pédagogique : ce point mérite d'être revu."}
+                      </p>
+                    </div>
+                  ) : null}
+                  {question.type === "multiple-select" ? (
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                        Réponses attendues
+                      </p>
+                      <p className="mt-2 text-sm text-white/85">{correctOptionsLabel}</p>
+                    </div>
+                  ) : null}
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
                       À revoir dans

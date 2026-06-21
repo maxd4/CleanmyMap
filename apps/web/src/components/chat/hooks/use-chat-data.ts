@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
 import { readAppErrorResponse, toAppError } from "@/lib/errors/app-errors";
 import type {
   ChatMessagesResponse,
@@ -43,6 +44,14 @@ type SendChatMessageParams = {
 type FetcherErrorPayload = {
   hint?: unknown;
   message?: unknown;
+};
+
+type ChatMessageChange = {
+  channel_type?: string;
+  sender_id?: string;
+  recipient_id?: string | null;
+  zone_name?: string | null;
+  arrondissement_id?: number | null;
 };
 
 const fetcher = async <T>(url: string): Promise<T> => {
@@ -138,14 +147,16 @@ export function useChatData({
     isLoading,
     mutate: mutateMessages,
   } = useSWR<ChatMessagesResponse>(messagesKey, fetcher, {
-    // Polling significantly reduced as we use Realtime, but kept as a safety fallback
+    // Polling keeps the feed fresh without relying on Supabase Realtime by default.
     refreshInterval: 60000,
     revalidateOnFocus: true,
   });
 
   // Real-time subscription
   useEffect(() => {
-    if (!supabase || !messagesKey || !canQueryProtectedChat) return;
+    if (!supabase || !messagesKey || !canQueryProtectedChat || !isChatRealtimeEnabled()) {
+      return;
+    }
 
     const channel = supabase
       .channel("chat-updates")
@@ -157,7 +168,7 @@ export function useChatData({
           table: "app_messages",
         },
         (payload) => {
-          const newMsg = payload.new as any;
+          const newMsg = payload.new as ChatMessageChange;
           
           // Basic filtering to avoid excessive revalidations
           // We trigger revalidation if the channel type matches

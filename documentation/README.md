@@ -28,6 +28,11 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 - **[development/vercel-quota-governance.md](./development/vercel-quota-governance.md)** - gouvernance des quotas Vercel et détection des régressions de coût.
 - **[development/vercel-surface-report.md](./development/vercel-surface-report.md)** - rapport automatique des surfaces Vercel et de leur risque.
 - **[development/performance-quotas-vercel-checklist.md](./development/performance-quotas-vercel-checklist.md)** - checklist de revue avant PR pour les surfaces Vercel sensibles.
+- **[development/vercel-anti-regression-playbook.md](./development/vercel-anti-regression-playbook.md)** - retour d'expérience et erreurs à ne pas reproduire sur les surfaces Vercel.
+- **[development/vercel-supabase-browser-strategy.md](./development/vercel-supabase-browser-strategy.md)** - stratégie de répartition des charges entre Vercel, Supabase et le navigateur.
+- **[development/vercel-supabase-free-tier-rules.md](./development/vercel-supabase-free-tier-rules.md)** - doctrine free tier pour garder les features dans les limites Vercel et Supabase.
+- **[development/codex-vercel-development-guide.md](./development/codex-vercel-development-guide.md)** - guide Codex pour développer une fonctionnalité sans augmenter inutilement les quotas Vercel.
+- **[development/supabase-quota-guide.md](./development/supabase-quota-guide.md)** - doctrine de stockage Supabase, règles Git/localStorage et garde-fous de consommation.
 - **[development/client-server-bundle-splitting.md](./development/client-server-bundle-splitting.md)** - règles pour garder la frontière serveur/client propre et éviter de regonfler le bundle initial.
 - **[development/vercel-route-cost-audit.md](./development/vercel-route-cost-audit.md)** - audit route par route des coûts Vercel.
 

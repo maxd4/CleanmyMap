@@ -72,7 +72,7 @@ Checks:
 2. Validate endpoint responses:
    - `GET /api/reports/actions.csv`
    - `GET /api/reports/actions.json`
-3. Check upstream actions data availability (`/api/actions`, `/api/actions/map`).
+3. Check upstream actions data availability (`/api/actions`) and the Supabase RPC `actions_map_feed` used by the map client.
 
 Immediate remediation:
 1. Confirm auth/admin context.

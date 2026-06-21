@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { SensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
 import {
   GamificationBadgePanel,
@@ -59,12 +59,13 @@ export function SensitiveZoneBadge({ summary }: SensitiveZoneBadgeProps) {
       let resetTimeout: number | undefined;
       const celebrationTimeout = window.setTimeout(() => {
         setIsCelebrating(true);
-        dispatchGamificationCelebration({
+        announceGamificationGain({
           title: "Zone sensible apaisée",
           message: `${summary.currentGrade.label} débloqué par les validations en zone sensible.`,
           tone: "actions",
           icon: "shield-check",
           source: "sensitive-zone-badge",
+          dedupeKey: `sensitive-zone:${summary.currentGrade.id}:${summary.eligibleValidatedActions}`,
         });
 
         resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);

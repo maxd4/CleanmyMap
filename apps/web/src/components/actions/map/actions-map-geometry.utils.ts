@@ -455,15 +455,15 @@ export function resolveActionMapGeometryViewModel(
       kind: null,
       renderMode: "empty",
       positions: [],
-    anchor: null,
-    pointCount: 0,
-    confidence,
-    metrics: resolveGeometryMetric(null, []),
-    label: presentation.label,
-    presentation,
-    drawing: null,
-  };
-}
+      anchor: null,
+      pointCount: 0,
+      confidence,
+      metrics: resolveGeometryMetric(null, []),
+      label: presentation.label,
+      presentation,
+      drawing: null,
+    };
+  }
 
 export function resolveInfrastructureAnchor(
   item: ActionMapItem,

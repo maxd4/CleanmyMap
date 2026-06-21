@@ -111,7 +111,7 @@ export function computeEventRelances(
     const maybe = event.rsvpCounts.maybe;
     const fill = percent(yes, event.capacityTarget ?? 0);
     let priority: EventReminder["priority"] = "faible";
-    let reason = "Maintenir le rythme de mobilisation.";
+    let reason: string;
 
     if (daysToEvent <= 2 && (fill === null ? yes < 8 : fill < 85)) {
       priority = "haute";

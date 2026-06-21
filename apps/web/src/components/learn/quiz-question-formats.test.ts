@@ -12,7 +12,7 @@ describe("quiz-question-formats", () => {
       "vrai-faux-piegeux",
       "situations-terrain",
       "comparaisons",
-      "classements",
+      "cases-a-cocher",
       "estimations",
       "consequences-indirectes",
       "questions-contre-intuitives",
@@ -24,7 +24,7 @@ describe("quiz-question-formats", () => {
     expect(getQuizQuestionFormat("vrai-faux-piegeux").objective).toContain("idées reçues");
     expect(getQuizQuestionFormat("situations-terrain").benefits).toContain("Ancre la pédagogie dans le réel");
     expect(getQuizQuestionFormat("comparaisons").avoid.length).toBeGreaterThan(0);
-    expect(getQuizQuestionFormat("classements").objective).toContain("Ordonner");
+    expect(getQuizQuestionFormat("cases-a-cocher").objective).toContain("plusieurs réponses");
     expect(getQuizQuestionFormat("estimations").objective).toContain("ordres de grandeur");
     expect(getQuizQuestionFormat("consequences-indirectes").objective).toContain("effets cachés");
     expect(getQuizQuestionFormat("questions-contre-intuitives").benefits).toContain("Génère un fort effet de surprise");

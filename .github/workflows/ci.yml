@@ -98,6 +98,14 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: npm run test
 
+      - name: Vercel regression gates
+        if: steps.scope.outputs.docs_only != 'true'
+        run: npm run test:regression-gates -w apps/web
+
+      - name: Vercel audits
+        if: ${{ always() && steps.scope.outputs.docs_only != 'true' }}
+        run: npm run audit:vercel:ci
+
   security-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 20

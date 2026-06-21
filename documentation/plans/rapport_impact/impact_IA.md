@@ -951,6 +951,16 @@ Cette réalité crée une contradiction directe pour CleanMyMap. Les outils util
 
 Pour CleanMyMap, cette analyse impose une règle de proportion : l'IA ne doit pas être utilisée comme un réflexe de confort ou de production illimitée. Elle doit être réservée aux tâches où sa valeur ajoutée est réelle : gain de qualité, réduction d'erreurs, meilleure documentation, amélioration de l'accessibilité, accélération d'un service utile ou renforcement de la sobriété du projet. À l'inverse, les usages décoratifs, redondants, massifs ou faiblement utiles doivent être évités, car ils ajoutent de la demande à une industrie dont les coûts humains restent partiellement externalisés.
 
+### Restructurations accélérées et contrainte énergétique
+
+L’IA accélère aussi des restructurations dans plusieurs secteurs, en particulier les fonctions administratives, le support client, l’analyse de données et certaines tâches de développement informatique. Le FMI estime qu’environ **40 %** des emplois mondiaux sont exposés à l’IA, avec une combinaison d’effets de substitution et de complémentarité selon les pays et les métiers [@imf_ai_will_transform_global_economy_2024]. L’OIT souligne de son côté que les métiers les plus exposés restent les occupations de bureau et les tâches de saisie ou de traitement d’information, tout en rappelant que l’automatisation complète des tâches est souvent plus difficile en pratique que la théorie ne le laisse croire [@ilo_generative_ai_jobs_refined_2025].
+
+Les suppressions d’emplois observées ne relèvent donc pas d’une cause unique. Elles résultent en général d’un mélange d’automatisation, de réorganisation interne, de contexte économique et d’arbitrages de productivité, l’IA agissant souvent comme accélérateur plutôt que comme cause exclusive. Pour CleanMyMap, cette dynamique implique une discipline simple : l’outil doit renforcer le travail utile sans pousser à une surproduction fonctionnelle qui ferait perdre de vue la finalité environnementale du projet.
+
+Parallèlement, les investissements consacrés à l’IA atteignent des niveaux sans précédent. Stanford HAI indique que l’investissement privé mondial dans l’IA a atteint **252,3 milliards de dollars** en 2024, tandis que l’IA générative a attiré **33,9 milliards de dollars** de financement privé [@stanford_ai_index_economy_2025]. Cette intensification financière a une conséquence matérielle directe : la contrainte ne porte plus seulement sur la puissance de calcul, mais aussi sur l’électricité, les centres de données et les capacités de raccordement. L’IEA rappelle en effet que les data centers ont représenté environ **1,5 %** de l’électricité mondiale en 2024 et que cette demande est appelée à croître fortement à l’horizon 2030 [@aie_iea_2024_1].
+
+Pour CleanMyMap, cette évolution confirme qu’un projet numérique à finalité écologique doit éviter de confondre vitesse de développement et cohérence de long terme. L’enjeu n’est pas seulement de produire plus vite, mais de préserver un équilibre entre utilité sociale, sobriété numérique, gouvernance des données et faisabilité énergétique.
+
 ### Risques psychologiques liés à la modération
 
 Le travail invisible lié à l'IA ne se limite pas aux tâches techniques d'annotation ou de classement. Il comprend aussi une part plus difficile à soutenir humainement : la **modération de contenus violents, haineux, sexuels ou traumatisants** utilisés pour entraîner, filtrer ou sécuriser les modèles. Pour rendre un modèle plus sûr, des travailleurs doivent parfois lire, regarder, classer ou signaler des contenus extrêmes afin d'apprendre au système à les reconnaître et à les refuser.
@@ -1036,6 +1046,16 @@ Les gains économiques directs — abonnements, API, cloud, vente de GPU, hausse
 Le risque n'est donc pas seulement environnemental ou technique. Il est aussi social et politique. L'IA peut accroître la productivité, mais cette productivité ne se traduit pas automatiquement par une répartition équitable de la valeur. Elle peut au contraire renforcer des positions dominantes, déplacer du travail humain vers des sous-traitants peu visibles, réduire le pouvoir de négociation de certains travailleurs et rendre de nombreux projets dépendants de services contrôlés par quelques entreprises mondiales.
 
 Les fonds consacrés au développement de **CleanMyMap** participent aussi à un système économique très concentré, dans lequel les bénéfices financiers et les coûts sociaux ne sont pas répartis de manière symétrique.
+
+### Promesses de superintelligence et architectures spécialisées
+
+Dans ce contexte de concentration, certaines entreprises communiquent désormais avec un vocabulaire très ambitieux, parfois plus marketing que scientifique à court terme. Le cas de Vertus illustre cette tendance : la présentation publique met en avant une « superintelligence », des « meganeurons » et une « architecture neuronale dynamique », ainsi qu’un positionnement centré sur la décision financière de haut niveau [@vertus_superintelligence]. Ces termes peuvent signaler une tentative réelle de différenciation, mais ils restent à ce stade des formulations propriétaires plutôt que des standards établis de la recherche en IA.
+
+Il ne faut pas pour autant balayer d’un revers de main l’idée qu’il existe une recherche sérieuse sur des systèmes plus autonomes que les grands modèles de langage actuels. Une partie de l’industrie, notamment autour de Yann LeCun et des modèles de type world model, cherche effectivement à dépasser les limites des LLM en développant des systèmes capables de mieux raisonner, d’intégrer de la mémoire, de planifier sur plusieurs horizons et d’adapter leur comportement à l’environnement [@meta_i_jepa_2023]. L’objectif n’est donc pas absurde sur le fond : il existe bien une trajectoire de recherche vers des architectures plus flexibles, des agents autonomes et des systèmes combinant plusieurs modules spécialisés.
+
+La nuance importante pour CleanMyMap est la suivante : l’existence d’une direction de recherche crédible ne valide pas automatiquement les promesses commerciales les plus spectaculaires. Des expressions comme « 8 Meganeuron » ou « 16 Meganeuron » ne correspondent pas à des unités reconnues de la littérature scientifique, et une revendication de rendement financier élevé ne prouve pas une superintelligence. Battre le marché sur un domaine de niche peut indiquer une capacité d’optimisation ou d’exploitation de signaux spécialisés, mais cela ne démontre ni une intelligence générale supérieure à l’humain, ni une robustesse suffisante pour être transposée à d’autres contextes.
+
+Pour CleanMyMap, cette distinction a une portée directe. Le projet doit apprendre à reconnaître la différence entre une avancée technique réelle, une architecture prometteuse et un discours de rupture qui cherche surtout à capter l’attention. Autrement dit, la mesure pertinente n’est pas le vocabulaire employé par un fournisseur, mais la capacité du système à produire une utilité vérifiable, réversible et sobre.
 
 ### Fragilité d'un écosystème dépendant de plateformes privées
 
@@ -3407,7 +3427,7 @@ Le serveur est large : routes API d'actions, carte, rapports, admin, chat, commu
 ||plusieurs requêtes|||cache utilisateurs,|
 ||Supabase, notifications,|||limiter realtime|
 ||filtres utilisateurs||||
-|`/api/actions/map`|données|fort si carte populaire|élevée|tuilage logique,|
+|`actions_map_feed`|données|fort si carte populaire|élevée|tuilage logique,|
 ||cartographiques|||bounding box, cache 1|
 ||publiques, filtres,|||à 10 min, champs|
 ||payload de points|||minimaux|

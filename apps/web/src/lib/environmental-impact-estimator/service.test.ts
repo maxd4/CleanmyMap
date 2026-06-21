@@ -177,12 +177,17 @@ describe("environmental impact estimator", () => {
     const vercel = model.infrastructure.services.find(
       (service) => service.key === "vercel",
     );
+    const github = model.infrastructure.services.find(
+      (service) => service.key === "github",
+    );
     const domain = model.infrastructure.services.find(
       (service) => service.key === "lwsDomain",
     );
 
     expect(vercel?.status).toBe("partial");
     expect(vercel?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(github?.status).toBe("reference");
+    expect(github?.monthlyKgCo2eProxy).toBe(0);
     expect(domain?.monthlyKgCo2eProxy).toBeGreaterThan(0);
     expect(domain?.metricEstimates.find((metric) => metric.key === "lwsDomainYears")?.quantityPerMonth).toBeCloseTo(1 / 12);
     expect(model.infrastructure.hypotheses.length).toBeGreaterThan(0);

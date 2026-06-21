@@ -276,7 +276,7 @@ export const entries = [
     ],
   },
   {
-    route: "/gamification",
+    route: "/sections/gamification",
     slug: "gamification",
     title: "Progression & badges",
     family: "03-cartographie-impact",
@@ -286,9 +286,20 @@ export const entries = [
     summary: "Badges, niveaux et progression personnelle.",
     legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/progression_badges.md"],
   },
+  {
+    route: "/gamification",
+    slug: "gamification",
+    title: "Progression & badges",
+    family: "03-cartographie-impact",
+    kind: "alias",
+    status: "alias",
+    exception: false,
+    summary: "Redirection canonique vers `/sections/gamification`.",
+    legacyDocs: [],
+  },
   // Bloc 4 / Réseau & Discussions
   {
-    route: "/community",
+    route: "/sections/community",
     slug: "community",
     title: "Communauté",
     family: "04-reseau-discussions",
@@ -299,9 +310,9 @@ export const entries = [
     legacyDocs: [],
   },
   {
-    route: "/messagerie",
+    route: "/sections/messagerie",
     slug: "messagerie",
-    title: "Messagerie",
+    title: "Groupes de discussion",
     family: "04-reseau-discussions",
     kind: "page",
     status: "canonique",
@@ -310,7 +321,7 @@ export const entries = [
     legacyDocs: [],
   },
   {
-    route: "/open-data",
+    route: "/sections/open-data",
     slug: "open-data",
     title: "Données publiques",
     family: "04-reseau-discussions",
@@ -343,28 +354,6 @@ export const entries = [
     legacyDocs: ["../4-BLOC-RESEAU&DISCUSSION/rassemblements.md"],
   },
   // Bloc 5 / Apprendre
-  {
-    route: "/learn/hub",
-    slug: "learn-hub",
-    title: "Point de départ",
-    family: "05-apprendre",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Point d'entrée principal des contenus d'apprentissage.",
-    legacyDocs: [],
-  },
-  {
-    route: "/learn/ressources",
-    slug: "learn-ressources",
-    title: "Ressources",
-    family: "05-apprendre",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Ressources, liens et contenus de référence.",
-    legacyDocs: [],
-  },
   {
     route: "/learn/comprendre",
     slug: "learn-comprendre",
@@ -473,10 +462,10 @@ export const entries = [
     slug: "conditions-utilisation",
     title: "Conditions d'utilisation",
     family: "07-legal",
-    kind: "page",
-    status: "canonique",
+    kind: "alias",
+    status: "alias",
     exception: false,
-    summary: "Version complémentaire des conditions d'utilisation.",
+    summary: "Redirection canonique vers `/conditions-generales-utilisation`.",
     legacyDocs: [],
   },
   {
@@ -517,10 +506,10 @@ export const entries = [
     slug: "en",
     title: "English entry",
     family: "07-legal",
-    kind: "page",
-    status: "canonique",
+    kind: "alias",
+    status: "alias",
     exception: false,
-    summary: "Entrée bilingue / internationale.",
+    summary: "Redirection canonique vers `/explorer`.",
     legacyDocs: [],
   },
 
@@ -544,7 +533,7 @@ export const entries = [
     kind: "page",
     status: "canonique",
     exception: false,
-    summary: "Paramètres, préférences et réglages globaux.",
+    summary: "Page protégée de réglages, avec redirection vers `/sign-in` si la session est absente.",
     legacyDocs: [],
   },
   {
@@ -701,7 +690,17 @@ function pageTypeFor(entry) {
   if (base === "admin") return "administration";
   if (base === "form-comparison" || base === "reglages" || pattern.startsWith("/preview/") || pattern === "/declaration-simple") return "outil";
   if (base === "learn") return "page éducative";
-  if (base === "community" || base === "messagerie" || base === "open-data" || base === "partners") return "page de réseau";
+  if (
+    isRoute("/sections/community") ||
+    isRoute("/sections/messagerie") ||
+    isRoute("/sections/open-data") ||
+    base === "community" ||
+    base === "messagerie" ||
+    base === "open-data" ||
+    base === "partners"
+  ) {
+    return "page de réseau";
+  }
   if (base === "actions" || base === "declaration" || base === "signalement" || base === "missions" || base === "parcours") return "page d'action";
   if (base === "dashboard" || base === "profil" || base === "pilotage" || base === "sponsor-portal") return "page de bloc";
   return "page de bloc";
@@ -803,8 +802,17 @@ function expectedToneKeyForRoute(routePattern) {
   if (isRoute("/sections/[sectionId]")) return "system";
   if (isRoute("/parcours")) return "amber";
   if (base === "actions" || base === "declaration" || base === "signalement" || base === "missions") return "emerald";
-  if (isRoute("/reports") || isRoute("/profil/impact") || isRoute("/gamification")) return "red";
-  if (base === "community" || base === "messagerie" || base === "open-data") return "pink";
+  if (isRoute("/reports") || isRoute("/profil/impact") || isRoute("/sections/gamification")) return "red";
+  if (
+    isRoute("/sections/community") ||
+    isRoute("/sections/messagerie") ||
+    isRoute("/sections/open-data") ||
+    base === "community" ||
+    base === "messagerie" ||
+    base === "open-data"
+  ) {
+    return "pink";
+  }
   if (base === "partners") return "indigo";
   if (base === "learn") return "yellow";
   if (base === "sign-in" || base === "sign-up" || base === "onboarding") return "authMint";
@@ -879,7 +887,21 @@ function textLoadForRoute(entry) {
   if (pattern.startsWith("/error/")) return "faible";
   if (base === "sign-in" || base === "sign-up" || base === "onboarding") return "moyen";
   if (base === "learn" || base === "contact" || base === "conditions-generales-utilisation" || base === "conditions-utilisation" || base === "mentions-legales" || base === "politique-confidentialite" || base === "politique-cookies" || base === "en") return "fort";
-  if (base === "admin" || base === "pilotage" || base === "dashboard" || base === "profil" || base === "reports" || base === "community" || base === "messagerie" || base === "partners") return "fort";
+  if (
+    base === "admin" ||
+    base === "pilotage" ||
+    base === "dashboard" ||
+    base === "profil" ||
+    base === "reports" ||
+    base === "community" ||
+    base === "messagerie" ||
+    base === "partners" ||
+    isRoute("/sections/community") ||
+    isRoute("/sections/messagerie") ||
+    isRoute("/sections/open-data")
+  ) {
+    return "fort";
+  }
   if (base === "actions" || base === "declaration" || base === "signalement" || base === "missions" || base === "parcours") return "moyen";
   if (base === "form-comparison" || base === "reglages" || base === "prints") return "moyen";
   return "moyen";

@@ -227,7 +227,7 @@ Voulez-vous que j'applique ce cadrage avant la prochaine modification carte ?
 
 **Checklist pratique**
 - Lire d'abord `page.tsx`, puis `ActionsMapFeed`, puis `ActionsMapCanvas`
-- Ne pas toucher au contrat `/api/actions/map`
+- Ne pas réintroduire de route Vercel intermédiaire pour la carte.
 - Ne pas réintroduire de carte simulée ou de heatmap fictive
 - Désélectionner l'action active si le filtre la fait sortir de la vue
 - Relancer le lint et les tests ciblés de la carte avant de conclure

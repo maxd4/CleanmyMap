@@ -9,6 +9,7 @@ import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { ReportsPageTabs } from "./reports-page-tabs";
+import { SectionHeader, CTAGroup } from "@/components/ui/page-structure";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { Locale } from "@/lib/ui/preferences";
@@ -141,54 +142,45 @@ export function ReportsPageV2Layout({
             <div className="space-y-8">
               {overview ? (
                 <section id="method" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-                  <div>
-                    <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-                      Méthode KPI
-                    </p>
-                    <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
-                      Lire la méthode KPI
-                    </h2>
-                    <p className="mt-1 cmm-text-small cmm-text-secondary">
-                      L&apos;explication détaillée reste disponible plus bas.
-                    </p>
-                  </div>
+                  <SectionHeader
+                    eyebrow="Méthode KPI"
+                    title="Lire la méthode KPI"
+                    subtitle="L&apos;explication détaillée reste disponible plus bas."
+                    titleSize="sm"
+                    eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
+                    subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
+                  />
                   <KpiMethodBlock methods={overview.methods} title="Méthode" />
                 </section>
               ) : null}
 
               <section id="cockpit" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-                <div>
-                  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-                    Analyse mensuelle
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
-                    Vue mensuelle
-                  </h2>
-                  <p className="mt-1 cmm-text-small cmm-text-secondary">
-                    Les comparatifs, les agrégats et les exports restent plus bas.
-                  </p>
-                </div>
+                <SectionHeader
+                  eyebrow="Analyse mensuelle"
+                  title="Vue mensuelle"
+                  subtitle="Les comparatifs, les agrégats et les exports restent plus bas."
+                  titleSize="sm"
+                  eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
+                  subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
+                />
                 <AnalyticsCockpit data={monthlyData} />
               </section>
 
               <section id="exports" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-                <div>
-                  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-                    Exports
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
-                    Livrables
-                  </h2>
-                  <p className="mt-1 cmm-text-small cmm-text-secondary">
-                    Les exports sont regroupés plus bas pour alléger l&apos;ouverture.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
+                <SectionHeader
+                  eyebrow="Exports"
+                  title="Livrables"
+                  subtitle="Les exports sont regroupés plus bas pour alléger l&apos;ouverture."
+                  titleSize="sm"
+                  eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
+                  subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
+                />
+                <CTAGroup>
                   <RubriqueExcelExportButton
                     rubriqueTitle="Reporting et pilotage"
                     data={contracts.map(toReportsExportRow)}
                   />
-                </div>
+                </CTAGroup>
               </section>
             </div>
           </div>

@@ -25,6 +25,7 @@ import {
 } from "./progression-utils";
 import { awardPointsOnce } from "./points/system";
 import { computeMonthlyRegularityAwards } from "./monthly-regularity";
+import { loadGamificationUserCounters } from "./counters";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "./progression-event-write-policy";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
@@ -253,16 +254,13 @@ export async function loadUserProgressionStats(
   userId: string,
 ): Promise<UserProgressionStats> {
   const actionRowsPromise = loadActionRowsForUser(supabase, userId);
-  const [eventsResult, participationCountResult] = await Promise.all([
+  const [eventsResult, counters] = await Promise.all([
     supabase
       .from("progression_events")
       .select("event_type, status_phase, xp_awarded")
       .eq("user_id", userId)
       .limit(12000),
-    supabase
-      .from("action_participants")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId),
+    loadGamificationUserCounters(supabase, userId),
   ]);
 
   const actionRows = await actionRowsPromise;
@@ -272,9 +270,6 @@ export async function loadUserProgressionStats(
 
   if (eventsResult.error) {
     throw new Error(eventsResult.error.message);
-  }
-  if (participationCountResult.error) {
-    throw new Error(participationCountResult.error.message);
   }
 
   const events =
@@ -300,7 +295,7 @@ export async function loadUserProgressionStats(
     }
   }
 
-  collectiveEvents += Number(participationCountResult.count ?? 0);
+  collectiveEvents += counters.participationCount;
 
   let totalActions = 0;
   let approvedActions = 0;

@@ -5,6 +5,7 @@ import {
   DASHBOARD_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
+import { PROXY_MATCHER_PATTERNS } from "./proxy";
 
 describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {
@@ -32,5 +33,40 @@ describe("proxy protected routes", () => {
     for (const pattern of required) {
       expect(PROTECTED_ROUTE_PATTERNS).toContain(pattern);
     }
+  });
+
+  it("keeps the middleware matcher limited to protected surfaces", () => {
+    const required = [
+      `${ADMIN_ROUTE}(.*)`,
+      `${DASHBOARD_ROUTE}(.*)`,
+      "/actions/history(.*)",
+      "/actions/new(.*)",
+      "/form-comparison(.*)",
+      "/prints/report(.*)",
+      `${SPONSOR_PORTAL_ROUTE}(.*)`,
+      "/__clerk/(.*)",
+    ];
+
+    for (const pattern of required) {
+      expect(PROXY_MATCHER_PATTERNS).toContain(pattern);
+    }
+
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/actions(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/admin(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/reports(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/users(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/services(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/reports(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/newsletter/subscribe(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/analytics/funnel(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/bug-reports(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/events(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/promotion-requests(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/partners/onboarding-requests(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/chat(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/(api|trpc)(.*)");
   });
 });

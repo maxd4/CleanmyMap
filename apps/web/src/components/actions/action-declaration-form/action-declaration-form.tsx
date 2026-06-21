@@ -32,6 +32,7 @@ type ActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
   isAuthenticated: boolean;
+  isAutoApprovedSubmission?: boolean;
   userMetadata: {
     userId: string;
     username?: string;
@@ -457,6 +458,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             validationIssues={validationIssues}
             retentionLoop={retentionLoop}
             showGroupInvite={form.recordType === "action" && form.groupJoinEnabled}
+            isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
             groupJoinHref={
               createdId && form.recordType === "action" && form.groupJoinEnabled
                 ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`

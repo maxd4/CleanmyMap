@@ -19,6 +19,11 @@ import {
 } from "./lib/sheet-ingestion-core.mjs";
 import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
 
+const DEPRECATION_MESSAGE =
+  "Google Sheet sync is deprecated. The sheet is no longer used as a source of truth.";
+
+throw new Error(DEPRECATION_MESSAGE);
+
 const DEFAULT_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv&gid=0";
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -96,6 +101,9 @@ function serializeTechnicalMeta(item) {
   const payload = {};
   if (item.associationName) {
     payload.associationName = item.associationName;
+  }
+  if (item.groupJoinEnabled) {
+    payload.groupJoinEnabled = true;
   }
   if (item.placeType) {
     payload.placeType = item.placeType;
@@ -368,11 +376,12 @@ async function main() {
       ? `Entreprise - ${enterpriseName}`
       : association || null;
     const baseNotes = composeActionNotes({
-      notes: rawNotes,
-      associationName,
-      placeType: placeType || null,
-      departureLocationLabel: departureLocationLabel || null,
-      arrivalLocationLabel: arrivalLocationLabel || null,
+    notes: rawNotes,
+    associationName,
+    groupJoinEnabled: city.trim().toLowerCase() === "paris",
+    placeType: placeType || null,
+    departureLocationLabel: departureLocationLabel || null,
+    arrivalLocationLabel: arrivalLocationLabel || null,
       routeStyle: departureLocationLabel && arrivalLocationLabel ? "souple" : null,
       routeAdjustmentMessage:
         departureLocationLabel && arrivalLocationLabel

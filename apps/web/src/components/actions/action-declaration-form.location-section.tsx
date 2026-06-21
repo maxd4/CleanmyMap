@@ -1,9 +1,12 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import type { ActionDrawing } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
 import { toRequiredNumber } from "./action-declaration-form.model";
 import { ActionDeclarationLocationAssist } from "./action-declaration-form.smart-assist";
 import type { GpsStatus } from "./action-declaration-form.smart-assist";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const ActionDrawingMap = dynamic(
   () =>
@@ -52,6 +55,10 @@ export function ActionDeclarationLocationSection({
   onRouteAdjustmentMessageChange,
   onAutofillGps,
 }: ActionDeclarationLocationSectionProps) {
+  const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "260px 0px",
+  });
+
   return (
     <section className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-4 shadow-sm">
       <div className="mb-4">
@@ -129,18 +136,32 @@ export function ActionDeclarationLocationSection({
           </label>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <ActionDrawingMap
-            value={displayDrawing}
-            onChange={onManualDrawingChange}
-            readOnly={drawingMapReadOnly}
-            wasteKg={toRequiredNumber(form.wasteKg, 0)}
-            butts={Math.max(
-              0,
-              Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
-            )}
-            isCleanPlace={false}
-          />
+        <div
+          ref={mapShellRef}
+          className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white"
+        >
+          {isMapVisible ? (
+            <ActionDrawingMap
+              value={displayDrawing}
+              onChange={onManualDrawingChange}
+              readOnly={drawingMapReadOnly}
+              wasteKg={toRequiredNumber(form.wasteKg, 0)}
+              butts={Math.max(
+                0,
+                Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
+              )}
+              isCleanPlace={false}
+            />
+          ) : (
+            <div className="flex h-[420px] items-center justify-center bg-slate-50">
+              <div className="space-y-3 text-center">
+                <div className="mx-auto h-10 w-10 rounded-full border-2 border-sky-500/20 border-t-sky-500 animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                  Chargement de la carte...
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-3 text-sm text-sky-800">

@@ -14,7 +14,8 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
 
 ## Périmètre
 
-La page canonique concernée est `/gamification`, vue dans le bloc Cartographie & Impact.
+La section canonique concernée est `/sections/gamification`, vue dans le bloc Cartographie & Impact.
+L URL `/gamification` reste un alias de compatibilité et ne doit plus être présentée comme la source de vérité.
 
 Le système couvre:
 
@@ -35,6 +36,25 @@ Ordre de confiance:
 5. les mémoires produit `documentation/product/*`.
 
 Si un document secondaire contredit cette spec, cette spec prime.
+
+## Scopes temporels
+
+La gamification manipule maintenant des scopes explicitement nommés.
+
+| Scope | Sens | Usage |
+|---|---|---|
+| `allTime` | cumul depuis la création du compte | progression personnelle, badges persistants, historique |
+| `yearToDate` | année civile en cours | bilans, classements annuels, reconnaissance éditoriale |
+| `rolling30d` | 30 derniers jours | pilotage opérationnel |
+| `rolling90d` | 90 derniers jours | lecture intermédiaire |
+| `rolling365d` | 365 derniers jours | tendance de fond |
+
+Règle d implémentation:
+
+- un bloc de données ne doit pas mélanger plusieurs scopes sans le nommer;
+- `allTime` sert le socle cumulatif;
+- `yearToDate` sert les variantes annuelles ou éditoriales;
+- les fenêtres `rolling*` servent les vues d analyse et de pilotage.
 
 ## Principes communs
 
@@ -110,6 +130,18 @@ Les badges de couverture territoriale conservent une échelle propre, indépenda
 - elle reste explicitement à part de l échelle gemme;
 - elle n est pas la base du contrat `Observateur` des autres familles;
 - ses grades conservent leurs noms minéraux propres: `Talc`, `Gypse`, `Calcite`, `Fluorite`, `Apatite`, `Orthose`, `Quartz`, `Topaze`, `Corindon`, `Diamant`.
+
+### Progressions quiz actives
+
+Deux progressions quiz alimentent désormais l XP actif et restent séparées pour éviter de mélanger les logiques pédagogiques.
+
+- statut métier: `active`;
+- familles canonisées:
+  - `Progression quiz par type` : `50 réponses justes -> 100 réponses justes`;
+  - `Quiz équilibré` : `10 réponses justes -> 50 réponses justes -> 100 réponses justes`;
+- la première récompense la maîtrise d un type de question donné;
+- la seconde récompense l entraînement équilibré sur tous les types de quiz;
+- elles comptent dans les attributions XP et dans les journaux d audit.
 
 ## Familles de badges en V1
 

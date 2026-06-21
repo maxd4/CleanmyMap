@@ -7,6 +7,11 @@ import {
   scanVercelSurface,
 } from "../../../../scripts/vercel-audit-core.mjs";
 
+type DynamicPageEntry = {
+  path: string;
+  signals: string[];
+};
+
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(testDir, "../../../..");
 const baselinePath = path.join(repoRoot, "scripts", "vercel-api-routes-baseline.json");
@@ -59,5 +64,15 @@ describe("vercel regression gates", () => {
       "polling file",
     );
   });
-});
 
+  it("detects dynamic pages that inherit auth helpers through imports", () => {
+    const onboardingPage = (surface.dynamicPages as DynamicPageEntry[]).find(
+      (entry) => entry.path === "apps/web/src/app/onboarding/page.tsx",
+    );
+
+    expect(onboardingPage, "onboarding page should be classified as dynamic").toBeDefined();
+    expect(onboardingPage?.signals).toEqual(
+      expect.arrayContaining(["auth", "headers"]),
+    );
+  });
+});

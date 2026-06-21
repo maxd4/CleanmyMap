@@ -51,6 +51,7 @@ const optionalBoolean = z.preprocess((value) => {
 
 const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: optionalUrl,
+  NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
@@ -108,6 +109,8 @@ const parsed = envSchema.safeParse({
   NEXT_PUBLIC_APP_URL:
     process.env["NEXT_PUBLIC_APP_URL"] ||
     (!isProduction ? "http://localhost:3000" : undefined),
+  NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE:
+    process.env["NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE"],
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
     process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"] ||
     (!isProduction

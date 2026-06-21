@@ -12,7 +12,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 2. L'action passe par la validation admin.
 3. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
 4. Le bénévole rejoint ce formulaire existant.
-5. La participation est enregistrée dans `action_participants` et remonte dans les badges et les stats collectives.
+5. La participation est enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
 
 ## Placement dans le bloc Agir
 
@@ -32,16 +32,19 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 - Le flux doit eviter la double saisie.
 - Le formulaire rejoint doit deja exister et etre valide par un admin.
-- Les participations doivent rester traçables.
+- Les participations doivent rester traçables, y compris si leur statut change.
 - La jonction ne cree pas de nouveau formulaire.
-- Une seule participation est enregistree par benevole et par action.
+- Une seule participation active est conservee par benevole et par action.
+- L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
+- La participation est visible comme trace, mais n'est pas modifiable depuis la page benevole.
 
 ## Données
 
 - Source d'affichage: table `actions` filtree sur `status = approved`.
-- Source de participation: table `action_participants`.
+- Source de participation: table `action_participants` avec `participation_status`, `participation_source` et `joined_at`.
 - Source badge: `action_participants` alimente la famille `Participant`.
 - Source stats: `action_participants` compte pour la progression collective.
+- Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 
 ## Validation
 

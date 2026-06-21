@@ -1,19 +1,20 @@
-# Apprendre - Point de départ
+# Apprendre - Point de départ - Surface intégrée
 
-## Fiche canonique
+## Fiche intégrée
 
-- **Route** : `/learn/hub`
+- **Route** : aucune
 - **Fichier(s) source(s)** :
-- `apps/web/src/app/learn/hub/page.tsx`
-- **Type fonctionnel** : page éducative
+  - `apps/web/src/components/learn/learn-block-journey-section.tsx`
+  - `apps/web/src/components/learn/learn-page-visit-tracker.tsx`
+- **Type fonctionnel** : surface intégrée
 - **Famille / bloc fonctionnel** : Apprendre (bloc)
-- **Statut** : public
+- **Statut** : intégré
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Transmettre les connaissances utiles et guider la montée en compétence.
-- **Action principale attendue** : Lire un contenu ou ouvrir une ressource.
+- **Objectif utilisateur principal** : Fournir des repères d'orientation au sein du bloc.
+- **Action principale attendue** : Lire un repère ou passer à la page suivante.
 - **Palette attendue** : yellow
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : intégré
+- **Terminée** : oui
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible à moyen : le jaune doit rester lisible sans devenir pâle sur fond clair.
@@ -21,7 +22,7 @@
 - **Textes à conserver** :
 - Titre de module
 - résumés
-- ressources
+- repères de parcours
 - CTA d'apprentissage
 - **Textes à réduire ou supprimer** :
 - Paragraphes introductifs trop longs
@@ -31,14 +32,11 @@
 - **Composants UI concernés** :
 - Cards pédagogiques
 - chapitres
-- ressources
+- repères de navigation
 - CTA
 - navigation secondaire
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
-
-
-
 
 ## Références legacy
 
@@ -46,5 +44,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- Cette fiche documente une surface intégrée, pas une route autonome.
+- Les repères d'orientation sont répartis dans les trois pages canoniques du bloc `Apprendre`.

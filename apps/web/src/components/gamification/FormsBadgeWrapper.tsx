@@ -3,7 +3,7 @@
 import React from "react";
 import FormsBadge from "./FormsBadge";
 import type { GemGrade } from "@/lib/gamification/types";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
 
 type FormsGrade = GemGrade;
@@ -134,12 +134,13 @@ export default function FormsBadgeWrapper() {
         grades={formsData.grades}
         current={formsData.current}
         onGradeReached={(grade) => {
-          dispatchGamificationCelebration({
+          announceGamificationGain({
             title: "Palier de formulaires atteint",
             message: `${grade.label} débloqué pour la création de formulaires.`,
             tone: "forms",
             icon: grade.iconVariant || "🌱",
             source: "forms-badge",
+            dedupeKey: `forms:${grade.id}`,
           });
         }}
       />

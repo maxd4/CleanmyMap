@@ -10,11 +10,11 @@ sequenceDiagram
   participant API as API restitution
   Ops->>Build: data:sheet:build-import (--geocode optionnel)
   Build-->>Ops: payloads JSON + CSV
-  Ops->>Import: data:sheet:sync-supabase
+  Ops->>Import: flux retire
   Import->>DB: ecriture actions/spots
   DB-->>Import: statut insertion
   Import-->>Ops: resultat sync
-  Ops->>API: verifier /api/actions et /api/actions/map
+  Ops->>API: verifier /api/actions et le RPC actions_map_feed
 ```
 Fallback statique:
 ```md
@@ -58,11 +58,12 @@ Fallback statique:
 ```
 
 ## Objectif
-Importer des historiques d'actions depuis Google Sheet sans passer par les formulaires utilisateurs.
+Historique d'import Google Sheet conservé pour traçabilité.
+Le document Google Sheet n'est plus utilisé comme source de vérité et le flux de sync vers Supabase est désactivé.
 
 ## Lien Sheet détecté dans le repo
 - Source par défaut: `https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv&gid=0`
-- Script existant: `apps/web/scripts/sync-real-data-from-sheet.mjs`
+- Script historique (retire): `apps/web/scripts/sync-real-data-from-sheet.mjs`
 
 ## Colonnes recommandées (template admin)
 Utiliser le template: `apps/web/data/raw/google-sheet-admin-template.csv`
@@ -126,24 +127,10 @@ Remarque:
   carte du site meme sans colonnes lat/lon dans le sheet.
 
 ## Sync direct vers Supabase (carte web)
-Commande unique (rebuild depuis Google Sheet + import en base):
+Flux désactivé.
 
-```bash
-npm --prefix apps/web run data:sheet:sync-supabase
-```
-
-Effet:
-- écrit les lignes `actions` dans `public.actions`
-- écrit les lieux propres dans `public.spots` (`waste_type=clean_place`)
-- supprime d'abord les anciennes lignes importées par ce même flux (idempotent)
-
-Variables requises:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Options:
-- `--skip-build` pour réutiliser les payloads déjà générés
-- `--system-user-id=<id>` pour changer le `created_by_clerk_id` technique
+Les anciennes commandes `data:real:sync` et `data:sheet:sync-supabase` ne sont plus supportées.
+Conserver cette section uniquement comme trace de migration.
 
 ## Depannage (erreur "Sheet appears empty")
 - Cause frequente: dans certains environnements, Google renvoie une page HTML (auth/interstitiel) au lieu d'un vrai CSV.

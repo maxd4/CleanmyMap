@@ -20,6 +20,7 @@ import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
 import { MapSidebarAid } from "./_components/map-sidebar-aid";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
+import { DEFAULT_ACTIONS_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import {
   ActionPollutionScoreReferencesProvider,
   useActionPollutionScoreReferences,
@@ -135,6 +136,7 @@ function ActionsMapPageContent() {
     visibleCategories,
     pollutionScoreReferences: references,
     limit: 300,
+    viewport: mapViewport ?? DEFAULT_ACTIONS_MAP_VIEWPORT,
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);

@@ -1,11 +1,14 @@
-import * as React from "react";
+import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type {
   EnvironmentalImpactInfrastructureMetricEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
 } from "@/lib/environmental-impact-estimator/types";
-import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
+import {
+  buildImpactDetailRows,
+  FreePlanServicesMethodologyVisual,
+} from "./free-plan-services-methodology-visual";
 
 function metric(
   overrides: Partial<EnvironmentalImpactInfrastructureMetricEstimate> &
@@ -125,6 +128,31 @@ const services = [
         referenceMonthlyQuantity: 180,
         quantityPerMonth: 70,
         estimatedKgCo2eProxy: 0.48,
+      }),
+    ],
+  }),
+  service({
+    key: "github",
+    label: "GitHub",
+    description: "Dépôt source, workflows et maintenance du projet.",
+    sourceNote: "Les runs Actions du dépôt CleanMyMap servent d'ancre directe.",
+    basis: "monthly",
+    status: "ready",
+    monthlyKgCo2eProxy: 0.144,
+    annualKgCo2eProxy: 1.728,
+    sharePercent: 5.1,
+    confidencePercent: 92,
+    uncertaintyPercent: 8,
+    metricCount: 1,
+    referenceMetricCount: 0,
+    metricEstimates: [
+      metric({
+        key: "githubWorkflowRunsCount30d",
+        label: "GitHub - runs Actions",
+        unitLabel: "runs / mois",
+        referenceMonthlyQuantity: 0,
+        quantityPerMonth: 18,
+        estimatedKgCo2eProxy: 0.144,
       }),
     ],
   }),
@@ -270,6 +298,38 @@ const services = [
       }),
     ],
   }),
+  service({
+    key: "clerk",
+    label: "Clerk",
+    description: "Authentification et gestion des sessions.",
+    sourceNote: "Service secondaire regroupé dans Autres sur le graphique carbone.",
+    basis: "monthly",
+    status: "ready",
+    monthlyKgCo2eProxy: 0.04,
+    annualKgCo2eProxy: 0.48,
+    sharePercent: 1.4,
+    confidencePercent: 61,
+    uncertaintyPercent: 39,
+    metricCount: 0,
+    referenceMetricCount: 0,
+    metricEstimates: [],
+  }),
+  service({
+    key: "sentry",
+    label: "Sentry",
+    description: "Suivi d'erreurs et alertes applicatives.",
+    sourceNote: "Service secondaire regroupé dans Autres sur le graphique carbone.",
+    basis: "monthly",
+    status: "ready",
+    monthlyKgCo2eProxy: 0.02,
+    annualKgCo2eProxy: 0.24,
+    sharePercent: 0.7,
+    confidencePercent: 58,
+    uncertaintyPercent: 42,
+    metricCount: 0,
+    referenceMetricCount: 0,
+    metricEstimates: [],
+  }),
 ] satisfies EnvironmentalImpactInfrastructureServiceEstimate[];
 
 const githubStats = {
@@ -304,9 +364,11 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Contribution estimée à l&#x27;empreinte carbone (ACV)");
     expect(markup).toContain("Supabase");
     expect(markup).toContain("Vercel");
+    expect(markup).toContain("GitHub");
     expect(markup).toContain("Resend");
     expect(markup).toContain("PostHog");
     expect(markup).toContain("LWS");
+    expect(markup).toContain("Autres");
     expect(markup).toContain("Top contributeurs");
     expect(markup).toContain("Légende");
     expect(markup).toContain("Développement IA");
@@ -315,9 +377,133 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Inclus ACV");
     expect(markup).toContain("Hors production");
     expect(markup).toContain("Hors quotas web");
-    expect(markup).toContain("NA");
+    expect(markup).not.toContain("NA");
+    expect(markup).not.toContain("Détail de la contribution");
     expect(markup).not.toContain("Relais actif");
     expect(markup).not.toContain("Voir la charte");
+  });
+
+  it("renders the Supabase impact detail rows with the expected posts", () => {
+    const supabase = services[0];
+    const rows = buildImpactDetailRows(supabase, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Base de données",
+      "Requêtes base de données",
+      "Storage",
+      "Bande passante",
+      "Edge Functions",
+      "Backups",
+      "Logs",
+    ]);
+    expect(rows[0]?.valueLabel).toBe("non mesuré");
+    expect(rows[1]?.valueLabel).toBe("98\u202f000 requêtes / mois");
+    expect(rows[2]?.valueLabel).toBe("43 GB-mois");
+    expect(rows[3]?.valueLabel).toBe("non mesuré");
+    expect(rows[1]?.statusLabel).toBe("mesuré");
+    expect(rows[2]?.statusLabel).toBe("mesuré");
+    expect(rows[3]?.statusLabel).toBe("à compléter");
+  });
+
+  it("renders the Vercel impact detail rows with the expected posts", () => {
+    const vercel = services[1];
+    const rows = buildImpactDetailRows(vercel, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Builds",
+      "Hébergement frontend",
+      "Serverless Functions",
+      "Edge Middleware / Edge Functions",
+      "Bande passante",
+      "Image Optimization",
+      "Preview deployments",
+      "Logs",
+    ]);
+    expect(rows[0]?.descriptionLabel).toBe("Compilation Next.js, previews, déploiements.");
+    expect(rows[0]?.valueLabel).toBe("4 déploiements / mois");
+    expect(rows[0]?.statusLabel).toBe("mesuré");
+    expect(rows[1]?.valueLabel).toBe("non mesuré");
+    expect(rows[4]?.valueLabel).toBe("70 GB / mois");
+    expect(rows[4]?.statusLabel).toBe("mesuré");
+    expect(rows[7]?.statusLabel).toBe("à compléter");
+  });
+
+  it("renders the GitHub impact detail rows with the expected posts", () => {
+    const github = services[2];
+    const rows = buildImpactDetailRows(github, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Stockage du dépôt",
+      "GitHub Actions",
+      "Artefacts CI",
+      "Packages / Registry",
+      "Clones et téléchargements",
+      "Pull requests",
+    ]);
+    expect(rows[0]?.descriptionLabel).toBe("Code source, historique Git, branches, tags.");
+    expect(rows[0]?.valueLabel).toBe("non mesuré");
+    expect(rows[1]?.valueLabel).toBe("18 runs / mois");
+    expect(rows[1]?.statusLabel).toBe("mesuré");
+    expect(rows[5]?.statusLabel).toBe("à compléter");
+  });
+
+  it("renders the Resend impact detail rows with the available email data only", () => {
+    const resend = services[3];
+    const rows = buildImpactDetailRows(resend, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Emails envoyés",
+      "Taille des emails",
+      "Templates",
+      "Webhooks",
+      "Logs d'emails",
+      "Réessais d'envoi",
+    ]);
+    expect(rows[0]?.descriptionLabel).toBe("Notifications, emails transactionnels.");
+    expect(rows[0]?.valueLabel).toBe("1 200 emails / mois");
+    expect(rows[0]?.statusLabel).toBe("mesuré");
+    expect(rows[1]?.valueLabel).toBe("non mesuré");
+    expect(rows[5]?.statusLabel).toBe("à compléter");
+  });
+
+  it("renders the PostHog impact detail rows with the expected analytics post", () => {
+    const posthog = services[4];
+    const rows = buildImpactDetailRows(posthog, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Événements collectés",
+      "Sessions enregistrées",
+      "Profils utilisateurs",
+      "Feature flags",
+      "Dashboards",
+      "Rétention",
+      "Exports",
+    ]);
+    expect(rows[0]?.descriptionLabel).toBe("Vues, clics, actions utilisateur.");
+    expect(rows[0]?.valueLabel).toBe("79 000 événements / mois");
+    expect(rows[0]?.statusLabel).toBe("mesuré");
+    expect(rows[1]?.valueLabel).toBe("non mesuré");
+    expect(rows[6]?.statusLabel).toBe("à compléter");
+  });
+
+  it("renders the LWS impact detail rows with the available domain and DNS data only", () => {
+    const lws = services[5];
+    const rows = buildImpactDetailRows(lws, true);
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Nom de domaine",
+      "DNS",
+      "Emails ou redirections",
+      "Hébergement",
+      "Certificats SSL",
+      "Services additionnels",
+    ]);
+    expect(rows[0]?.descriptionLabel).toBe("Enregistrement et gestion DNS.");
+    expect(rows[0]?.valueLabel).toBe("0,08 an");
+    expect(rows[0]?.statusLabel).toBe("mesuré");
+    expect(rows[1]?.valueLabel).toBe("18 000 requêtes / mois");
+    expect(rows[1]?.statusLabel).toBe("mesuré");
+    expect(rows[5]?.statusLabel).toBe("à compléter");
   });
 
   it("renders the quota dashboard when requested", () => {
@@ -341,11 +527,14 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Dependabot: 0");
     expect(markup).toContain("Warnings: 32");
     expect(markup).toContain("Ouvrir le repo GitHub");
+    expect(markup).toContain("Documentation consultable");
+    expect(markup).toContain("Méthodologie de lecture des quotas");
+    expect(markup).toContain("Consulter la fiche quota");
     expect(markup).toContain("Plans payants");
     expect(markup).toContain("Services suivis");
     expect(markup).toContain("Services proches d&#x27;une limite");
     expect(markup).toContain("Emails envoyés: 1 200 / 3 000");
-    expect(markup).toContain("Emails reçus: NA");
+    expect(markup).toContain("Emails reçus: Historique insuffisant");
     expect(markup).toContain("Marketing: 1 000 contacts");
     expect(markup).toContain("Marketing: broadcasts illimités");
     expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
@@ -361,7 +550,7 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).not.toContain("Delta vs N-1");
   });
 
-  it("renders NA when no quota data is available in the quota tab", () => {
+  it("renders fallback labels when no quota data is available in the quota tab", () => {
     const markup = renderToStaticMarkup(
       React.createElement(FreePlanServicesMethodologyVisual, {
         services: [],
@@ -372,7 +561,7 @@ describe("FreePlanServicesMethodologyVisual", () => {
     );
 
     expect(markup).toContain("GitHub");
-    expect(markup).toContain("NA");
+    expect(markup).toContain("Historique insuffisant");
     expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
     expect(markup).toContain("Taille base de données: 0,5 GB");
   });

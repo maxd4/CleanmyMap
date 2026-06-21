@@ -8,6 +8,7 @@ import {
   Database,
   Fingerprint,
   Globe,
+  GitBranch,
   Mail,
   PieChart,
   Plug,
@@ -90,6 +91,11 @@ const SERVICE_VISUALS: Record<
     icon: Database,
     color: "#34d399",
     glow: "rgba(52, 211, 153, 0.18)",
+  },
+  github: {
+    icon: GitBranch,
+    color: "#1f2937",
+    glow: "rgba(31, 41, 55, 0.18)",
   },
   resend: {
     icon: Mail,
@@ -199,14 +205,10 @@ function getPreviousServiceCharge(
 
 function getGrowthPercent(
   currentKgCo2eProxy: number,
-  previousKgCo2eProxy: number | null,
-): number | null {
+  previousKgCo2eProxy: number,
+): number {
   if (currentKgCo2eProxy <= 0) {
     return 0;
-  }
-
-  if (previousKgCo2eProxy === null) {
-    return null;
   }
 
   if (previousKgCo2eProxy <= 0) {

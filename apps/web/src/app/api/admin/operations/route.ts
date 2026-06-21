@@ -31,9 +31,10 @@ export async function GET(request: Request) {
 
  const url = new URL(request.url);
  const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 500, 50);
+ const targetId = url.searchParams.get("targetId")?.trim() || null;
 
  try {
- const items = await listAdminOperationAudit(limit);
+ const items = await listAdminOperationAudit(limit, targetId);
  return NextResponse.json({ status:"ok", count: items.length, items });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";

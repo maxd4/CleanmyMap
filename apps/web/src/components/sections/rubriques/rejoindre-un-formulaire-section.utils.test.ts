@@ -11,6 +11,9 @@ function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionIt
     participantsCount: partial.participantsCount ?? 0,
     joined: partial.joined ?? false,
     joinedAt: partial.joinedAt ?? null,
+    participationStatus: partial.participationStatus ?? null,
+    participationSource: partial.participationSource ?? null,
+    participationUpdatedAt: partial.participationUpdatedAt ?? null,
     groupJoinEnabled: partial.groupJoinEnabled ?? true,
     ...partial,
   };
@@ -36,6 +39,34 @@ describe("filterAndSortJoinableActions", () => {
     const filtered = filterAndSortJoinableActions(items, {
       search: "quai",
       joinFilter: "joined",
+      sort: "soonest",
+      focusActionId: null,
+      locale: "fr",
+    });
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]?.id).toBe("action-2");
+  });
+
+  it("excludes pending requests from available results", () => {
+    const items = [
+      makeAction({
+        id: "action-1",
+        action_date: "2026-05-12",
+        location_label: "Parc Nord",
+        awaitingApproval: true,
+      }),
+      makeAction({
+        id: "action-2",
+        action_date: "2026-05-13",
+        location_label: "Quai Est",
+        joined: false,
+      }),
+    ];
+
+    const filtered = filterAndSortJoinableActions(items, {
+      search: "",
+      joinFilter: "available",
       sort: "soonest",
       focusActionId: null,
       locale: "fr",
@@ -78,4 +109,3 @@ describe("filterAndSortJoinableActions", () => {
     expect(filtered.map((item) => item.id)).toEqual(["action-3", "action-2", "action-1"]);
   });
 });
-

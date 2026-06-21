@@ -24,6 +24,7 @@ type ActionDeclarationFormFeedbackProps = {
   retentionLoop: PostActionRetentionLoop | null;
   groupJoinHref?: string | null;
   showGroupInvite?: boolean;
+  isAutoApprovedSubmission?: boolean;
   onReset?: () => void;
 };
 
@@ -36,6 +37,7 @@ export function ActionDeclarationFormFeedback({
   retentionLoop,
   groupJoinHref,
   showGroupInvite,
+  isAutoApprovedSubmission = false,
   onReset,
 }: ActionDeclarationFormFeedbackProps) {
   const shareUrl = useMemo(() => {
@@ -75,11 +77,15 @@ export function ActionDeclarationFormFeedback({
       return;
     }
 
-    const text = `Créer un formulaire après validation: ${resolvedGroupJoinHref}`;
+    const text = isAutoApprovedSubmission
+      ? `Partager le formulaire public: ${resolvedGroupJoinHref}`
+      : `Créer un formulaire après validation: ${resolvedGroupJoinHref}`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Créer un formulaire CleanMyMap",
+          title: isAutoApprovedSubmission
+            ? "Formulaire public CleanMyMap"
+            : "Créer un formulaire CleanMyMap",
           text,
           url: resolvedGroupJoinHref,
         });
@@ -132,7 +138,9 @@ export function ActionDeclarationFormFeedback({
             <div>
               <p className="text-sm font-semibold text-emerald-950">Déclaration envoyée</p>
               <p className="text-xs text-emerald-900/70 mt-0.5">
-                En attente de validation par un administrateur.
+                {isAutoApprovedSubmission
+                  ? "Publiée immédiatement. Elle est déjà visible dans les formulaires de groupe, mais les nouvelles participations restent soumises à validation."
+                  : "En attente de validation par un administrateur."}
               </p>
               {createdId && (
                 <p className="text-[10px] text-emerald-800/80 font-mono mt-1">Réf : {createdId}</p>
@@ -158,17 +166,21 @@ export function ActionDeclarationFormFeedback({
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-                    Créer un formulaire
+                    {isAutoApprovedSubmission ? "Formulaire publié" : "Créer un formulaire"}
                   </p>
                   <p className="text-sm font-semibold text-sky-950">
-                    Cette action pourra être rejointe après validation.
+                    {isAutoApprovedSubmission
+                      ? "Cette action est déjà visible dans les formulaires de groupe."
+                      : "Cette action pourra être rejointe après validation."}
                   </p>
                   <p className="text-xs leading-relaxed text-sky-900/70">
-                    L&apos;organisateur principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation.
+                    {isAutoApprovedSubmission
+                      ? "L'organisateur principal et les coorganisateurs peuvent partager ce lien dès maintenant. Les bénévoles passeront ensuite par la file d'attente avant validation."
+                      : "L'organisateur principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation."}
                   </p>
                 </div>
                 <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-800">
-                  Prêt à partager
+                  {isAutoApprovedSubmission ? "Visible maintenant" : "Prêt à partager"}
                 </div>
               </div>
 
@@ -190,6 +202,29 @@ export function ActionDeclarationFormFeedback({
                   {groupLinkCopied ? "Lien copié" : "Copier le lien"}
                 </button>
               </div>
+            </div>
+          )}
+
+          {showGroupInvite && (
+            <div className="rounded-2xl border border-emerald-200/70 bg-[#F6FBF7] p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                  {isAutoApprovedSubmission ? "Cycle public" : "Après publication"}
+                </p>
+                <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800">
+                  Cycle groupe
+                </span>
+              </div>
+              <ul className="space-y-2 text-xs leading-relaxed text-emerald-950/80">
+                <li>
+                  Le bénévole rejoint un formulaire déjà validé, sans créer une nouvelle action.
+                </li>
+                <li>Sa demande passe en file d&apos;attente et doit être acceptée par le créateur ou un admin.</li>
+                <li>La participation alimente la progression collective et les badges après jonction.</li>
+                <li>L&apos;organisateur voit le compteur, l&apos;historique et le statut ouvert ou fermé.</li>
+                <li>La participation n&apos;est pas éditable côté bénévole depuis cette page.</li>
+                <li>Vous pouvez fermer ou rouvrir les inscriptions plus tard depuis l&apos;historique des actions.</li>
+              </ul>
             </div>
           )}
 

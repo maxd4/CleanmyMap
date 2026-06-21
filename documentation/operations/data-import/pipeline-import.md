@@ -3,7 +3,7 @@
 ## Diagramme global source -> normalisation -> stockage -> restitution
 ```mermaid
 flowchart LR
-  S1[Source Google Sheet CSV] --> N1[Extraction & parsing]
+  S1[Source Google Sheet CSV historique] --> N1[Extraction & parsing]
   N1 --> N2[Normalisation metier]
   N2 --> N3[Validation qualite]
   N3 --> ST1[Stockage Supabase actions/spots]
@@ -24,7 +24,7 @@ Fallback statique:
 | Normalisation metier | CSV brut + mapping colonnes | Payload JSON admin + payload lieux propres | Colonnes manquantes, types invalides, association non reconnue |
 | Validation qualite | Payload normalise | Payload validable importable | Geoloc manquante/incoherente, dates invalides, champs requis absents |
 | Stockage Supabase | Payload valide + env Supabase | Lignes `public.actions` et `public.spots` | `SUPABASE_SERVICE_ROLE_KEY` absente, echec insertion, conflit idempotence |
-| Restitution API | Donnees stockees | `/api/actions`, `/api/actions/map`, exports reports | Contrat data casse, mismatch champs, reponse partielle |
+| Restitution API | Donnees stockees | `/api/actions`, RPC `actions_map_feed`, exports reports | Contrat data casse, mismatch champs, reponse partielle |
 
 ## Sequence d'execution recommandee
 ```mermaid
@@ -36,11 +36,11 @@ sequenceDiagram
   participant API as API restitution
   Ops->>Build: data:sheet:build-import (--geocode optionnel)
   Build-->>Ops: payloads JSON + CSV
-  Ops->>Import: data:sheet:sync-supabase
+  Ops->>Import: flux retire
   Import->>DB: ecriture actions/spots
   DB-->>Import: statut insertion
   Import-->>Ops: resultat sync
-  Ops->>API: verifier /api/actions et /api/actions/map
+  Ops->>API: verifier /api/actions et le RPC actions_map_feed
 ```
 Fallback statique:
 ```md
@@ -50,7 +50,7 @@ Fallback statique:
 ## Flowchart build -> import -> sync
 ```mermaid
 flowchart TD
-  A[Build import depuis Sheet] --> B{Payload JSON/CSV genere ?}
+  A[Build import depuis Sheet historique] --> B{Payload JSON/CSV genere ?}
   B -- Non --> B1[Corriger mapping/colonnes source]
   B -- Oui --> C[Import vers Supabase]
   C --> D{Insertions DB valides ?}
@@ -69,8 +69,9 @@ Fallback statique:
 ```bash
 npm --prefix apps/web run data:sheet:build-import
 npm --prefix apps/web run data:sheet:build-import -- --geocode
-npm --prefix apps/web run data:sheet:sync-supabase
 ```
+
+La synchronisation directe Google Sheet -> Supabase est retiree.
 
 ## Variables critiques
 - `NEXT_PUBLIC_SUPABASE_URL`

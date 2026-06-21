@@ -23,9 +23,9 @@ import {
 } from "@/lib/accueil-pilotage-routes";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
-const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
+const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map"] as const;
+const PROTECTED_ROUTE_HEADER = "x-cleanmymap-protected-route";
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
-
 type PostRateLimitRule = {
   prefix: string;
   limit: number;
@@ -70,7 +70,9 @@ function getPostRateLimitRule(pathname: string): PostRateLimitRule | null {
 function nextWithAppHeaders(req: NextRequest): NextResponse {
   const pathname = req.nextUrl.pathname;
   const requestHeaders = new Headers(req.headers);
+  const isRealProtectedRoute = isProtectedRoute(req) && !isPublicException(pathname);
   requestHeaders.set("x-cleanmymap-app-shell", isAppShellRoute(pathname) ? "1" : "0");
+  requestHeaders.set(PROTECTED_ROUTE_HEADER, isRealProtectedRoute ? "1" : "0");
   requestHeaders.set(
     "x-cleanmymap-hide-global-header",
     pathname === "/" ? "1" : "0",

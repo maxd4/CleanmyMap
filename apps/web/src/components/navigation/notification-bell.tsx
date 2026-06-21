@@ -10,16 +10,11 @@ import { enUS, fr } from "date-fns/locale";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
 import { logFailure } from "@/lib/logging/failure-log";
-
-type AppNotification = {
-  id: string;
-  type: "validation" | "community" | "system" | "security" | "chat";
-  title: string;
-  content: string;
-  read_at: string | null;
-  created_at: string;
-  payload: Record<string, unknown> | null;
-};
+import {
+  loadNotificationsForCurrentUser,
+  markNotificationAsReadForCurrentUser,
+  type AppNotification,
+} from "@/lib/notifications/client";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -37,7 +32,7 @@ function getNotificationIcon(type: AppNotification["type"]) {
 }
 
 export function NotificationBell() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
   const router = useRouter();
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -53,7 +48,7 @@ export function NotificationBell() {
   const pollIntervalMs = isOpen ? 60_000 : 300_000;
 
   const fetchNotifications = async () => {
-    if (!isLoaded || !isSignedIn) {
+    if (!isLoaded || !isSignedIn || !userId) {
       setNotifications([]);
       return;
     }
@@ -65,11 +60,8 @@ export function NotificationBell() {
     fetchInFlightRef.current = true;
     setLoading(true);
     try {
-      const res = await fetch("/api/notifications");
-      if (res.ok) {
-        const data = (await res.json()) as { notifications?: AppNotification[] };
-        setNotifications(data.notifications ?? []);
-      }
+      const loadedNotifications = await loadNotificationsForCurrentUser(userId, getToken);
+      setNotifications(loadedNotifications);
     } catch (err) {
       logFailure("Notifications", "Fetch failed", err);
     } finally {
@@ -154,7 +146,7 @@ export function NotificationBell() {
   }, [notifications, unreadCount]);
 
   const markAsRead = async (id: string) => {
-    if (!isLoaded || !isSignedIn) {
+    if (!isLoaded || !isSignedIn || !userId) {
       return;
     }
 
@@ -163,20 +155,14 @@ export function NotificationBell() {
         return;
       }
       markReadInFlightRef.current = true;
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (res.ok) {
-        setNotifications((previous) =>
-          previous.map((notification) =>
-            notification.id === id
-              ? { ...notification, read_at: new Date().toISOString() }
-              : notification,
-          ),
-        );
-      }
+      await markNotificationAsReadForCurrentUser(userId, id, getToken);
+      setNotifications((previous) =>
+        previous.map((notification) =>
+          notification.id === id
+            ? { ...notification, read_at: new Date().toISOString() }
+            : notification,
+        ),
+      );
     } catch (err) {
       logFailure("Notifications", "Mark as read failed", err, { id });
     } finally {

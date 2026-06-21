@@ -1,8 +1,8 @@
 # Apprendre - Point de départ - Présentation détaillée
 
-## Rôle de la page
+## Rôle de la surface
 
-- Servir d'entrée pédagogique vers les autres contenus d'apprentissage.
+- Servir d'appui à la navigation pédagogique dans les trois pages canoniques.
 
 ## Points à compléter
 

@@ -11,7 +11,7 @@
 - Main package manager: npm workspaces (`apps/web` workspace).
 
 ## Current architecture anchors
-- Public map feed uses `/api/actions/map`.
+- Public map feed uses the browser client with Supabase RPC `actions_map_feed`.
 - Unified action source merges multiple sources in `apps/web/src/lib/actions/unified-source.ts`.
 - Role and access controls rely on:
   - `apps/web/src/lib/authz.ts`

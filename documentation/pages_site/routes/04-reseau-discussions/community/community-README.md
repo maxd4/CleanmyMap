@@ -4,8 +4,8 @@
 
 - **Route** : `/sections/community`
 - **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
-- `apps/web/src/app/(app)/community/page.tsx` (alias technique)
+  - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
+  - `apps/web/src/app/(app)/community/page.tsx` (alias technique)
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -59,6 +59,7 @@
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
 - L'onglet Partenaires est intégré à la même page et remplace l'ancienne carte de partenaires autonome.
+- `/community` reste un alias de compatibilité vers cette section canonique.
 
 ## Fichiers associés
 

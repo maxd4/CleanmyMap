@@ -23,12 +23,19 @@ import {
   AdminProfileSwitchStrip,
   AdminSectionHeader,
 } from "@/components/admin/admin-dashboard-ui";
+import {
+  ModerationByBlockPanel,
+  type ModerationBlockSummary,
+} from "@/components/admin/moderation-by-block-panel";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
+import { runActionQuery } from "@/lib/actions/query";
+import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
 import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
 import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
+import type { PublishedPartnerAnnuaireEntry } from "@/lib/partners/published-annuaire-entries-store";
 import {
   getProfileLabel,
   getProfilePrimaryAction,
@@ -49,6 +56,23 @@ export const metadata: Metadata = {
     "Back-office du site pour gérer les utilisateurs, la modération et les demandes.",
 };
 
+type PendingActionModerationRow = {
+  id: string;
+  action_date: string;
+  location_label: string;
+  created_at: string;
+  volunteers_count: number;
+  duration_minutes: number;
+};
+
+type PendingSpotModerationRow = {
+  id: string;
+  created_at: string;
+  label: string;
+  status: "new" | "validated" | "cleaned";
+  waste_type: "clean_place" | "spot";
+};
+
 async function loadAdminOverview() {
   const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
@@ -62,6 +86,234 @@ function getForecastLabel(kpi: DecisionSummaryKpi): string {
   if (kpi.id === "impact") return "Prévision prochaine : stabilisation";
   if (kpi.id === "mobilization") return "Prévision prochaine : consolidation";
   return "Prévision prochaine : vigilance renforcée";
+}
+
+function formatModerationDate(value: string): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(value));
+}
+
+async function loadModerationQueues() {
+  const supabase = getSupabaseServerClient();
+
+  const [pendingActions, pendingActionsCount, pendingSpots, pendingGroupJoinRequests] =
+    await Promise.all([
+      runActionQuery<PendingActionModerationRow>(supabase, (query) =>
+        query
+          .select(
+            "id, action_date, location_label, created_at, volunteers_count, duration_minutes",
+          )
+          .eq("status", "pending")
+          .order("action_date", { ascending: false })
+          .limit(6),
+      ),
+      supabase
+        .from("actions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("spots")
+        .select("id, created_at, label, status, waste_type", {
+          count: "exact",
+        })
+        .eq("status", "new")
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase
+        .from("action_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("participation_status", "pending"),
+    ]);
+
+  if (pendingSpots.error) {
+    throw new Error(pendingSpots.error.message);
+  }
+  if (pendingActionsCount.error) {
+    throw new Error(pendingActionsCount.error.message);
+  }
+  if (pendingGroupJoinRequests.error) {
+    throw new Error(pendingGroupJoinRequests.error.message);
+  }
+
+  return {
+    pendingActions,
+    pendingActionsCount: Number(pendingActionsCount.count ?? 0),
+    pendingSpots: (pendingSpots.data ?? []) as PendingSpotModerationRow[],
+    pendingSpotsCount: Number(pendingSpots.count ?? 0),
+    pendingGroupJoinRequestsCount: Number(pendingGroupJoinRequests.count ?? 0),
+  };
+}
+
+function buildModerationBlockSummaries(params: {
+  creatorInboxItems: CreatorInboxItem[];
+  publishedEntries: PublishedPartnerAnnuaireEntry[];
+  adminAudit: Awaited<ReturnType<typeof listAdminOperationAudit>>;
+  pendingActions: PendingActionModerationRow[];
+  pendingActionsCount: number;
+  pendingSpots: PendingSpotModerationRow[];
+  pendingSpotsCount: number;
+  pendingGroupJoinRequestsCount: number;
+}): ModerationBlockSummary[] {
+  const creatorInboxNeedsAttention = params.creatorInboxItems.filter(
+    (item) => item.status === "pending" || item.status === "new",
+  );
+  const pendingFeedbackItems = creatorInboxNeedsAttention.filter(
+    (item) => item.source === "feedback",
+  );
+  const pendingPromotionItems = creatorInboxNeedsAttention.filter(
+    (item) => item.source === "promotion",
+  );
+  const pendingPartnerInboxItems = creatorInboxNeedsAttention.filter(
+    (item) => item.source === "partner",
+  );
+  const pendingPublishedEntries = params.publishedEntries.filter(
+    (item) => item.publicationStatus === "pending_admin_review",
+  );
+  const pendingAuditErrors = params.adminAudit.filter(
+    (item) => item.outcome === "error",
+  );
+  const pendingAuditLabel =
+    pendingAuditErrors.length === 0
+      ? "Aucun incident récent"
+      : pendingAuditErrors.length === 1
+        ? "1 incident récent"
+        : `${pendingAuditErrors.length} incidents récents`;
+
+  return [
+    {
+      id: "apprendre",
+      number: 5,
+      label: "Apprendre",
+      count: 0,
+      description:
+        "Aucune file de modération n’est encore branchée sur ce bloc. Il reste en bas de la pile par défaut.",
+      href: "/learn",
+      ctaLabel: "Voir les contenus",
+      accent: "amber",
+      details: [
+        "Pas de file dédiée aujourd’hui.",
+        "Le bloc peut recevoir une revue éditoriale plus tard si besoin.",
+      ],
+      samples: [
+        {
+          label: "File dédiée",
+          meta: "0 élément à gérer",
+        },
+      ],
+    },
+    {
+      id: "reseau-discussions",
+      number: 4,
+      label: "Réseau & Discussions",
+      count: creatorInboxNeedsAttention.length + pendingPublishedEntries.length,
+      description:
+        "Les demandes liées aux échanges, aux promotions et aux fiches partenaires restent centralisées ici.",
+      href: "/admin/services",
+      ctaLabel: "Ouvrir la revue",
+      accent: "indigo",
+      details: [
+        `${pendingFeedbackItems.length} retours créateur à traiter.`,
+        `${pendingPromotionItems.length} demandes de promotion en attente.`,
+        `${pendingPartnerInboxItems.length} demandes partenaires et ${pendingPublishedEntries.length} fiches publiées à revoir.`,
+      ],
+      samples: [
+        ...creatorInboxNeedsAttention.slice(0, 2).map((item) => ({
+          label: item.title,
+          meta: `${item.sourceLabel} · ${formatModerationDate(item.createdAt)}`,
+        })),
+        ...pendingPublishedEntries.slice(0, 1).map((item) => ({
+          label: item.name,
+          meta: `Publication ${item.publicationStatus} · ${formatModerationDate(item.publishedAt)}`,
+        })),
+      ],
+    },
+    {
+      id: "cartographie-impact",
+      number: 3,
+      label: "Cartographie & Impact",
+      count: params.pendingSpotsCount,
+      description:
+        "Les éléments cartographiques en attente restent visibles depuis ce bloc avant d’alimenter les vues publiques.",
+      href: "/actions/map",
+      ctaLabel: "Voir la carte",
+      accent: "sky",
+      details: [
+        `${params.pendingSpotsCount} lieux ou spots à valider.`,
+        "Les entrées nouvelles restent en file jusqu’à validation.",
+      ],
+      samples: [
+        ...params.pendingSpots.slice(0, 3).map((spot) => ({
+          label: spot.label,
+          meta: `${spot.waste_type === "spot" ? "Spot" : "Lieu propre"} · ${formatModerationDate(spot.created_at)}`,
+        })),
+        ...(params.pendingSpots.length === 0
+          ? [
+              {
+                label: "Aucun lieu en attente",
+                meta: "La file est vide pour l’instant",
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      id: "agir",
+      number: 2,
+      label: "Agir",
+      count: params.pendingActionsCount + params.pendingGroupJoinRequestsCount,
+      description:
+        "Les formulaires d’action et les demandes de participation sont consolidés ici avant traitement.",
+      href: "/actions/history",
+      ctaLabel: "Ouvrir la modération",
+      accent: "emerald",
+      details: [
+        `${params.pendingActionsCount} formulaires d’action en attente.`,
+        `${params.pendingGroupJoinRequestsCount} demandes de participation à traiter.`,
+        "Les comptes admin passent directement, les autres restent en file d’attente.",
+      ],
+      samples: [
+        ...params.pendingActions.slice(0, 2).map((action) => ({
+          label: action.location_label,
+          meta: `${formatModerationDate(action.action_date)} · ${action.volunteers_count} bénévoles · ${action.duration_minutes} min`,
+        })),
+        {
+          label: "File de participation",
+          meta: `${params.pendingGroupJoinRequestsCount} compte${params.pendingGroupJoinRequestsCount > 1 ? "s" : ""} en attente`,
+        },
+      ],
+    },
+    {
+      id: "accueil-pilotage",
+      number: 1,
+      label: "Accueil & Pilotage",
+      count: pendingAuditErrors.length,
+      description:
+        "Les incidents d’audit récents et les signaux de supervision restent visibles en dernier niveau de bloc.",
+      href: "/admin",
+      ctaLabel: "Voir le pilotage",
+      accent: "rose",
+      details: [
+        `${pendingAuditLabel} à relire.`,
+        "Cette zone sert de filet pour les alertes transverses et la supervision.",
+      ],
+      samples: [
+        ...pendingAuditErrors.slice(0, 2).map((item) => ({
+          label: String(item.details.entityType ?? item.operationType),
+          meta: `${item.operationType} · ${formatModerationDate(item.at)}`,
+        })),
+        ...(pendingAuditErrors.length === 0
+          ? [
+              {
+                label: "Aucun incident",
+                meta: "La supervision est stable pour le moment",
+              },
+            ]
+          : []),
+      ],
+    },
+  ];
 }
 
 export default async function AdminPage() {
@@ -180,6 +432,14 @@ export default async function AdminPage() {
       listPublishedPartnerAnnuaireEntries().catch(() => []),
       listAdminOperationAudit(25).catch(() => []),
     ]);
+
+  const moderationQueues = await loadModerationQueues().catch(() => ({
+    pendingActions: [],
+    pendingActionsCount: 0,
+    pendingSpots: [],
+    pendingSpotsCount: 0,
+    pendingGroupJoinRequestsCount: 0,
+  }));
 
   const onboardingStatus = {
     pending: creatorInboxItems.filter(
@@ -375,6 +635,16 @@ export default async function AdminPage() {
   ];
 
   const systemChips = ["Classement global", "Niveau utilisateur"];
+  const moderationBlocks = buildModerationBlockSummaries({
+    creatorInboxItems,
+    publishedEntries,
+    adminAudit,
+    pendingActions: moderationQueues.pendingActions,
+    pendingActionsCount: moderationQueues.pendingActionsCount,
+    pendingSpots: moderationQueues.pendingSpots,
+    pendingSpotsCount: moderationQueues.pendingSpotsCount,
+    pendingGroupJoinRequestsCount: moderationQueues.pendingGroupJoinRequestsCount,
+  });
 
   return (
     <AccountCompletionGate state={accountCompletion}>
@@ -453,6 +723,10 @@ export default async function AdminPage() {
 
             <AdminActionGrid items={actionTiles} className="mt-4" />
           </section>
+
+          <div id="moderation-par-bloc" className="mt-10">
+            <ModerationByBlockPanel blocks={moderationBlocks} />
+          </div>
 
           <section className="mt-10">
             <AdminSectionHeader

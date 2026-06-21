@@ -54,9 +54,9 @@ Les tables ci-dessous ressortent comme les plus exposées dans le code.
 
 ### Charges en lecture massive
 
-- `apps/web/src/lib/environmental-impact-estimator/project-signals.ts:1125-1135`
+- `apps/web/src/lib/environmental-impact-estimator/project-signals.ts:1171-1281`
   - 11 lectures en parallèle
-  - plafonnées à `12000` lignes chacune
+  - plafonnées à `6000` lignes chacune via `PROJECT_SIGNAL_ROW_LIMIT`
   - c'est le plus gros consommateur de requêtes de lecture dans le dépôt
 - `apps/web/src/lib/supabase/storage-usage-service.ts:58-120`
   - scan complet de `storage.objects` par pagination
@@ -81,6 +81,22 @@ Les tables ci-dessous ressortent comme les plus exposées dans le code.
 - `apps/web/src/components/chat/hooks/use-chat-data.ts:151-173`
   - abonnement `postgres_changes` sur `app_messages`
   - polling de secours toutes les 60 secondes
+
+### Chat et salons
+
+Les salons de discussion sont probablement la fonctionnalité la plus dangereuse pour rester sur un plan gratuit.
+
+- beaucoup d'écritures,
+- beaucoup de lectures,
+- du temps réel,
+- de la modération,
+- du spam,
+- des notifications,
+- des signalements.
+
+Pour une première version, privilégier un lien vers Discord, WhatsApp, Signal, Mattermost, Matrix ou un formulaire de contact plutôt que de construire un vrai chat dans Supabase.
+
+Si un chat Supabase est maintenu, il doit être traité comme un hotspot prioritaire de quota et documenté avec bornes, rétention et stratégie anti-spam.
 
 ### Charges Auth
 
@@ -113,12 +129,84 @@ Les résultats bruts sont archivés dans `artifacts/supabase/quota-audit/`.
 
 ## Garde-fous à conserver
 
+- ne pas chercher à faire disparaître tous les `high` si la table est centrale et que l'usage est légitime,
+- traiter d'abord les `SELECT *`,
+- traiter d'abord les requêtes sans `limit`,
+- traiter d'abord les requêtes sans filtre ou trop larges,
+- traiter d'abord les accès répétés au montage,
+- traiter d'abord les colonnes sur-sélectionnées,
+- traiter d'abord les tables très sollicitées mais encore mal bornées,
 - pas de `SELECT *` sur les routes UI quand les colonnes utiles sont connues
 - pas de lecture non paginée sur les listes métier
 - pas de requête déclenchée à chaque montage si un cache ou un polling plus lent suffit
 - pas de `storage.list()` ou `storage.download()` sur tout un bucket hors script de maintenance
 - pas de `rpc()` ajouté sans mesurer l'effet sur la charge
 - pas de nouvelles subscriptions Realtime sans besoin produit clair
+- pas de salon de discussion Supabase sans justification forte, bornes, rétention et stratégie anti-spam explicites
+
+## Priorités d'audit
+
+Pour CleanMyMap, l'audit Supabase doit privilégier la réduction du volume sans casser les usages:
+
+- acceptable si la table est centrale mais les requêtes restent filtrées, bornées et lisibles;
+- acceptable si le volume d'écriture est élevé mais utile métier;
+- à corriger dès qu'une requête critique est non bornée, trop large, ou charge une table entière pour un simple besoin d'affichage;
+- à éviter si le refactor complexifie sans gain net de risque;
+- à éviter pour les index ajoutés "au cas où";
+- `high` acceptable si l'usage est expliqué et borné;
+- `critical` ou `high` non borné, non filtré, ou filtré côté React après chargement complet, à corriger;
+- pas de refactor compliqué sans baisse claire du risque;
+- conserver un `high` sur `profiles` ou une autre table centrale si l'usage est structurellement légitime;
+- corriger en priorité les requêtes non bornées, trop larges, trop fréquentes ou non justifiées;
+- accepter les coûts élevés quand ils correspondent à un usage central, filtré, minimal en colonnes et borné.
+
+### Cartographie à risque
+
+La cartographie doit être traitée comme une zone à risque:
+
+- une carte ne doit jamais charger toute la table `spots`, `actions`, `trash_spotter_spots` ou `community_events`;
+- elle doit charger seulement la zone visible;
+- elle doit appliquer une limite et des filtres;
+- elle peut utiliser des clusters ou des couches simplifiées si cela réduit le volume sans casser l'usage.
+
+## Tri des prochains audits
+
+Les prochaines passes de tri doivent cibler uniquement:
+
+- `profiles` en premier, en cherchant les 4 requêtes non bornées et tout chargement large inutile;
+- `event_rsvps` et `action_participants` ensuite, avec focus sur les listes, compteurs et historiques;
+- `spots`, `trash_spotter_spots` et `community_events` pour garantir des chargements carte toujours bornés;
+- `actions` en contrôle final, pas en priorité si les autres postes restent plus risqués;
+- les lectures non filtrées;
+- les lectures sans `limit`;
+- les sur-sélections de colonnes;
+- les accès répétés inutiles;
+- les usages critiques sur `profiles`, `participants`, `map`, `actions` et `notifications`.
+
+## Doctrine produit à appliquer avant chaque nouvelle feature
+
+Avant d'ouvrir une nouvelle table ou d'ajouter un nouveau flux Supabase, lire aussi le guide développeur:
+
+- [Guide développeur Supabase](../development/supabase-quota-guide.md)
+
+Les décisions attendues sont les suivantes:
+
+- contenus pédagogiques, guides et ressources dans Git;
+- quiz anonymes dans `localStorage` par défaut;
+- formulaires bénévoles en écriture unique;
+- estimateurs graphiques basés sur des agrégats;
+- PDFs et exports générés à la demande;
+- tables centrales acceptées en `high` si les requêtes restent bornées et justifiées.
+
+Si la proposition n'explique pas clairement où vivent les données, combien elle lit, combien elle écrit et comment elle est bornée, elle est incomplète.
+
+Règle d'exécution à appliquer pour chaque nouvelle fonctionnalité:
+
+- où les données sont stockées;
+- combien on écrit;
+- combien on lit;
+- comment c'est borné;
+- pourquoi Supabase est justifié, ou pourquoi il ne l'est pas.
 
 ## Pour relancer l'audit
 

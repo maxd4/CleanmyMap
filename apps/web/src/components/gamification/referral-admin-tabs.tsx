@@ -1,12 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, GitBranch, Medal, Users } from "lucide-react";
+import { ArrowRight, Medal, Users } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import {
   buildReferralLineageLeaderboard,
   buildReferralLineageView,
-  formatReferralLevel,
   type ReferralLineageProfileRow,
 } from "@/lib/gamification/referral-lineage";
 import { ReferralLineagePanel } from "@/components/gamification/referral-lineage-panel";

@@ -230,6 +230,7 @@ export function AppNavigationRibbon({
 
           <Link
             href="/"
+            prefetch={false}
             onClick={() => onTrackNavigation("/", "CleanMyMap", null)}
             className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
             aria-label="CleanMyMap"
@@ -245,6 +246,7 @@ export function AppNavigationRibbon({
           <div className="hidden min-w-0 flex-1 items-center gap-1.5 xl:flex">
           <Link
             href={EXPLORER_ROUTE}
+            prefetch={false}
             onClick={() => onTrackNavigation(EXPLORER_ROUTE, locale === "fr" ? "Sommaire" : "Summary", null)}
             className="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/16 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-22px_rgba(20,184,166,0.58)] transition-transform hover:scale-[1.01] hover:border-cyan-100/28 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
             aria-label={locale === "fr" ? "Sommaire" : "Summary"}
@@ -358,6 +360,7 @@ export function AppNavigationRibbon({
                       <div className="mt-3 border-t border-white/10 pt-3">
                         <Link
                           href={buildOnboardingLocalisationHref(PROFIL_ROUTE)}
+                          prefetch={false}
                           onClick={() => onTrackNavigation(buildOnboardingLocalisationHref(PROFIL_ROUTE), locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
                           className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white/92 transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
                         >
@@ -435,6 +438,7 @@ export function AppNavigationRibbon({
                           <Link
                             key={item.href}
                             href={item.href}
+                            prefetch={false}
                             onClick={() => {
                               onTrackNavigation(item.href, item.label, null);
                               closeFeedbackMenu();

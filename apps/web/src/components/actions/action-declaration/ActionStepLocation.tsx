@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { FormState } from "../action-declaration-form.model";
 import type { ActionDrawing } from "@/lib/actions/types";
 import type { UpdateFormField } from "./types";
@@ -366,6 +367,9 @@ export function ActionStepLocation({
   onAutofillGps,
 }: ActionStepLocationProps) {
   const isCleanPlaceMode = recordType === "clean_place";
+  const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "260px 0px",
+  });
 
   const manualSummary = summarizeActionDrawingValidation(manualDrawing);
   const previewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
@@ -455,22 +459,38 @@ export function ActionStepLocation({
         </div>
 
         {/* Carte */}
-        <div className="relative h-[420px] rounded-xl overflow-hidden border border-emerald-200/70 bg-[#EFFAF3]">
-          <ActionDrawingMap
-            drawing={displayedDrawing}
-            onDrawingChange={setManualDrawing}
-            readOnly={false}
-            isCleanPlace={isCleanPlaceMode}
-          />
+        <div
+          ref={mapShellRef}
+          className="relative h-[420px] rounded-xl overflow-hidden border border-emerald-200/70 bg-[#EFFAF3]"
+        >
+          {isMapVisible ? (
+            <>
+              <ActionDrawingMap
+                drawing={displayedDrawing}
+                onDrawingChange={setManualDrawing}
+                readOnly={false}
+                isCleanPlace={isCleanPlaceMode}
+              />
 
-          {/* Overlay si aucun repère */}
-          {!hasDrawing && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]">
-              <div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm">
-                <Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" />
-                <p className="text-sm font-semibold text-emerald-950">Aucun repère</p>
-                <p className="mt-1 text-xs text-emerald-900/45">
-                  Saisissez une adresse ou utilisez le GPS pour placer le lieu
+              {/* Overlay si aucun repère */}
+              {!hasDrawing && (
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]">
+                  <div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm">
+                    <Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" />
+                    <p className="text-sm font-semibold text-emerald-950">Aucun repère</p>
+                    <p className="mt-1 text-xs text-emerald-900/45">
+                      Saisissez une adresse ou utilisez le GPS pour placer le lieu
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center bg-[#F3FBF6]">
+              <div className="space-y-3 text-center">
+                <div className="mx-auto h-10 w-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-900/45">
+                  Chargement de la carte...
                 </p>
               </div>
             </div>

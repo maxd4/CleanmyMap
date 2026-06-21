@@ -54,7 +54,7 @@ flowchart TD
   B -- Oui --> C{Endpoints export repondent ?}
   C -- Non --> C1[Verifier contrat API / schema recent]
   C -- Oui --> D{Donnees upstream presentes ?}
-  D -- Non --> D1[Verifier /api/actions et /api/actions/map]
+  D -- Non --> D1[Verifier /api/actions et le RPC actions_map_feed]
   D -- Oui --> E[Verifier UI export]
 ```
 Fallback statique:

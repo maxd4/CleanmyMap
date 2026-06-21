@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import "leaflet/dist/leaflet.css";
 import { Compass, MapPin, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
@@ -309,9 +310,15 @@ export function TerritoryMapComparisonCards({
   className,
 }: TerritoryMapComparisonCardsProps) {
   const styles = toneStyles[tone];
+  const { ref, isInView } = useInViewOnce<HTMLElement>({
+    rootMargin: "280px 0px",
+  });
 
   return (
-    <section className={cn("space-y-5 rounded-[3rem] border p-6 sm:p-8 lg:p-10", styles.section, styles.border, styles.shadow, className)}>
+    <section
+      ref={ref}
+      className={cn("space-y-5 rounded-[3rem] border p-6 sm:p-8 lg:p-10", styles.section, styles.border, styles.shadow, className)}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <p className={cn("text-[10px] font-black uppercase tracking-[0.28em]", styles.accent)}>
@@ -346,7 +353,11 @@ export function TerritoryMapComparisonCards({
               Lecture brute
             </div>
           </div>
-          <MapPreviewFrame center={center} zoom={zoom} locationLabel={locationLabel} styles={styles} />
+          {isInView ? (
+            <MapPreviewFrame center={center} zoom={zoom} locationLabel={locationLabel} styles={styles} />
+          ) : (
+            <div className="h-[18rem] rounded-[1.75rem] border border-white/40 bg-slate-950/90 animate-pulse" />
+          )}
         </article>
 
         <article className={cn("space-y-4 rounded-[2.5rem] border p-4 sm:p-5", styles.shell, styles.border)}>
@@ -363,7 +374,11 @@ export function TerritoryMapComparisonCards({
               Version poster
             </div>
           </div>
-          <TerrainkPreviewFrame center={center} zoom={zoom} locationLabel={locationLabel} styles={styles} />
+          {isInView ? (
+            <TerrainkPreviewFrame center={center} zoom={zoom} locationLabel={locationLabel} styles={styles} />
+          ) : (
+            <div className={cn("h-[18rem] rounded-[1.75rem] border animate-pulse", styles.border, styles.poster)} />
+          )}
         </article>
       </div>
 

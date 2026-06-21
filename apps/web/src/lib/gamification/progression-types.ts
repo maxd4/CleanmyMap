@@ -19,7 +19,9 @@ export type ProgressionEventType =
   | "infinite_waste_milestone"
   | "infinite_butts_milestone"
   | "new_place_discovered"
-  | "new_place_milestone";
+  | "new_place_milestone"
+  | "quiz_question_type_milestone"
+  | "quiz_question_type_balance_milestone";
 
 export type ActionRow = {
   id: string;

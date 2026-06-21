@@ -5,14 +5,15 @@ Entrée principale pour tout ce qui touche aux requêtes, index, RLS, stockage e
 ## Ordre de lecture
 
 1. [Supabase quota audit](./supabase-quota-audit.md)
-2. [Database query & index audit](./QUERY_INDEX_AUDIT.md)
-3. [Supabase linked advisories report](../security/supabase-linked-advisories-2026-05-20.md)
+2. [Guide développeur Supabase](../development/supabase-quota-guide.md)
+3. [Database query & index audit](./QUERY_INDEX_AUDIT.md)
+4. [Supabase linked advisories report](../security/supabase-linked-advisories-2026-05-20.md)
 
 ## Ce que couvre ce dossier
 
 - les quotas Supabase utilisés par CleanMyMap
+- la doctrine de stockage produit pour les nouvelles features
 - les tables les plus sollicitées
 - les requêtes les plus coûteuses
 - les risques Storage, Auth, Realtime et Edge Functions
 - les garde-fous pour éviter les régressions
-

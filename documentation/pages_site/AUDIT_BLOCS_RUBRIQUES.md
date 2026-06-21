@@ -33,7 +33,7 @@ Pour chaque bloc, on produit trois fichiers de travail à utiliser dans cet ordr
 
 1. **`AUDIT-[BLOC].md`** — 5 prompts de cadrage. L'agent les reçoit en premier. Ils posent la logique UX/UI choisie pour le bloc, la direction artistique, les contraintes globales et l'ordre d'exécution.
 2. **`RUBRIQUE-[NOM].md`** — prompts d'implémentation détaillés, un fichier par rubrique. L'agent les reçoit après le cadrage, rubrique par rubrique.
-3. **`KAIZEN-[NOM].md`** — audit d'amélioration continue associé à chaque rubrique. Produit après `RUBRIQUE-[NOM].md`, à partir du template Kaizen officiel. Couvre fond, forme et innovations.
+3. **`KAIZEN-[NOM].md`** — audit d'amélioration continue associé à chaque rubrique. Produit après `RUBRIQUE-[NOM].md`, à partir du template Kaizen officiel. Il sert à proposer des améliorations concrètes de fond et de forme, des pistes UX/UI, des évolutions fonctionnelles réalistes, des corrections d'incohérences, des besoins desktop/mobile, ainsi que les impacts accessibilité, performance, sécurité, abus, analytics, SEO et architecture quand c'est pertinent.
 
 **Séquence d'utilisation :**
 → Envoyer les 5 prompts de `AUDIT-[BLOC].md`

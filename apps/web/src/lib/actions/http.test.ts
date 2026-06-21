@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildMapActionsQueryString, createAction } from "./http";
+import { buildMapActionsQueryString, buildMapFeedRpcParams, createAction } from "./http";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -82,5 +82,51 @@ describe("buildMapActionsQueryString", () => {
 
     expect(params.get("floorDate")).toBe("all");
     expect(params.has("days")).toBe(false);
+  });
+});
+
+describe("buildMapFeedRpcParams", () => {
+  it("serializes the viewport and caps the requested limit", () => {
+    const params = buildMapFeedRpcParams({
+      limit: 200,
+      status: "approved",
+      days: 15,
+      impact: "fort",
+      viewport: {
+        center: [48.8566, 2.3522],
+        zoom: 12,
+        bounds: {
+          south: 48.4,
+          west: 2.0,
+          north: 49.0,
+          east: 2.8,
+        },
+      },
+    });
+
+    expect(params).toEqual(
+      expect.objectContaining({
+        p_status: "approved",
+        p_floor_date: expect.any(String),
+        p_impact: "fort",
+        p_zoom: 12,
+        p_south: 48.4,
+        p_west: 2.0,
+        p_north: 49.0,
+        p_east: 2.8,
+      }),
+    );
+    expect(params.p_limit).toBe(300);
+  });
+
+  it("keeps the map open when no viewport is provided", () => {
+    const params = buildMapFeedRpcParams({});
+
+    expect(params.p_south).toBeNull();
+    expect(params.p_west).toBeNull();
+    expect(params.p_north).toBeNull();
+    expect(params.p_east).toBeNull();
+    expect(params.p_zoom).toBeNull();
+    expect(params.p_status).toBeNull();
   });
 });

@@ -2,7 +2,7 @@ export type QuizQuestionFormatId =
   | "vrai-faux-piegeux"
   | "situations-terrain"
   | "comparaisons"
-  | "classements"
+  | "cases-a-cocher"
   | "estimations"
   | "consequences-indirectes"
   | "questions-contre-intuitives"
@@ -68,19 +68,19 @@ export const QUIZ_QUESTION_FORMATS: readonly QuizQuestionFormatDefinition[] = [
     ],
   },
   {
-    id: "classements",
-    label: "Classements",
+    id: "cases-a-cocher",
+    label: "Cases à cocher",
     objective:
-      "Ordonner plusieurs éléments selon un critère comme la durée de dégradation, la recyclabilité, l'impact environnemental, la dangerosité, la fréquence d'observation ou la valeur de recyclage.",
+      "Sélectionner plusieurs réponses lorsqu'il faut exclure des objets, des gestes ou des situations à risque plutôt que choisir une seule bonne option.",
     benefits: [
-      "Force à comparer plusieurs options entre elles",
-      "Développe le sens des priorités",
-      "Évite les réponses binaires trop simples",
+      "Teste la capacité à reconnaître plusieurs éléments à éviter",
+      "Apprend à identifier les cas dangereux sans réponse unique",
+      "Colle mieux à certains gestes de terrain",
     ],
     avoid: [
+      "Les questions où une seule réponse est réellement attendue",
       "Les listes trop courtes ou trop évidentes",
-      "Les classements qui ne demandent aucune hiérarchisation",
-      "Les critères trop triviaux qui ne testent pas la réflexion",
+      "Les distracteurs absurdes qui ne demandent aucun tri mental",
     ],
   },
   {

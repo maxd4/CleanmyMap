@@ -18,7 +18,7 @@ Méthode:
 | [`/`](../../apps/web/src/app/page.tsx) | Accueil public et point d'entrée du produit. | Contenu d'accueil, navigation, données de pilotage utilisées par la home. | Page `force-dynamic` avec `revalidate = 0`: chaque visite consomme une invocation et évite le cache durable. |
 | [`/reports`](../../apps/web/src/app/(app)/reports/page.tsx) | Vue d’impact et de synthèse pour le pilotage. | Supabase (`loadPilotageOverview`, `fetchUnifiedActionContracts`, `fetchCommunityEvents`) et météo externe. | Plusieurs sources chargées en parallèle + `cache: "no-store"` sur la météo: coût élevé en invocations et en transfert origine. |
 | [`/api/actions`](../../apps/web/src/app/api/actions/route.ts) | Liste publique/privée des actions et création d’actions. | Contrats d’actions unifiés, filtres de statut, coordonnées, métadonnées et écriture action/spot. | Route très fréquentée, `dynamic = "force-dynamic"`, lecture + écriture, risque élevé sur `Invocations` et `Fast Origin Transfer`. |
-| [`/api/actions/map`](../../apps/web/src/app/api/actions/map/route.ts) | Alimente la carte des actions. | Contrats d’actions unifiés, coordonnées, filtres de période, d’impact et de qualité. | Très sensible à la fréquence de rafraîchissement de la carte, surtout avec un plafond de résultats élevé. |
+| Carte des actions (`actions_map_feed`) | Alimente la carte des actions sans passer par une route Vercel dédiée. | Vue bornée par viewport, filtres de période, d’impact et de qualité appliqués côté client, avec lecture directe Supabase. | Le risque se déplace vers Supabase et le bundle client, mais on supprime les invocations Vercel du proxy carte. |
 | [`/api/actions/[actionId]/group-join`](../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Active ou désactive le formulaire de groupe pour une action donnée. | Action cible, métadonnées de notes, organisateurs, état d’approbation. | Route dynamique avec lecture + écriture Supabase; chaque interaction déclenche une exécution serveur. |
 | [`/api/actions/group-join`](../../apps/web/src/app/api/actions/group-join/route.ts) | Liste et jonction des actions groupées. | Actions rejoignables, contexte utilisateur, écriture d’adhésion et recalcul de progression. | Appelée à la navigation et à l’action utilisateur; le POST ajoute de la charge calcul + écriture. |
 | [`/api/reports/actions.csv`](../../apps/web/src/app/api/reports/actions.csv/route.ts) | Export admin des actions au format CSV. | Contrats d’actions filtrés, géométrie, notes, métadonnées et colonnes d’export. | Génère un gros payload téléchargeable: plus de `Fast Data Transfer` et de mémoire serveur à chaque export. |
@@ -42,7 +42,6 @@ Avant de modifier une route de cette liste, vérifier:
 ## Routes à surveiller en second plan
 
 Ces routes ne sont pas forcément les plus lourdes individuellement, mais elles peuvent monter rapidement si leur fréquence augmente:
-- `/api/notifications`
 - `/api/partners/onboarding-requests`
 - `/api/community/events`
 - `/api/sandbox/runbook-checks`

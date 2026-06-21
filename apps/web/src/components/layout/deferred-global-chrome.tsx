@@ -4,14 +4,6 @@ import dynamic from "next/dynamic";
 import type { BackdropToneKey } from "@/lib/ui/backdrop-tone";
 import type { FooterVariant } from "@/lib/ui/footer-variant";
 
-const DeferredProjectPageviewTracker = dynamic(
-  () =>
-    import("@/components/analytics/project-pageview-tracker").then(
-      (module) => module.ProjectPageviewTracker,
-    ),
-  { ssr: false, loading: () => null },
-);
-
 const DeferredNetworkToastHost = dynamic(
   () => import("@/components/ui/network-toast").then((module) => module.NetworkToastHost),
   { ssr: false, loading: () => null },
@@ -70,7 +62,6 @@ export function DeferredGlobalChrome({
 }: DeferredGlobalChromeProps) {
   return (
     <>
-      <DeferredProjectPageviewTracker />
       <DeferredNetworkToastHost />
       <DeferredGamificationCelebrationHost />
       <DeferredVibrantBackground initialToneKey={initialBackdropToneKey} />

@@ -23,7 +23,13 @@ describe("QuizSessionPanel", () => {
       explanation:
         "Un emballage propre et vide suit généralement la filière des emballages. En cas de doute local, on vérifie la consigne avant d'improviser.",
       review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
       reasoningType: "terrain",
+      errorType: "mauvaise compréhension d'une filière de tri",
+      misconception: "La propreté seule ne suffit pas à décider la filière.",
+      severity: "medium",
+      feedbackCorrect: "Bonne réponse : tu respectes la consigne locale.",
+      feedbackWrong: "Erreur pédagogique : la filière locale prime sur l'intuition.",
     };
 
     const markup = renderToStaticMarkup(
@@ -37,6 +43,7 @@ describe("QuizSessionPanel", () => {
         currentQuestionStreak: 0,
         currentQuestionMasteryLevel: 0,
         selectedOption: "Le jeter au compost",
+        selectedOptions: [],
         showAnswer: true,
         lastCheckResult: false,
         score: 0,
@@ -44,19 +51,24 @@ describe("QuizSessionPanel", () => {
         nextReasoningType: null,
         hasReviewedToday: false,
         onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
         onHandleSRSUpdate: () => undefined,
       }),
     );
 
-    expect(markup).toContain("Réponse attendue");
+    expect(markup).toContain("Réponse incorrecte");
     expect(markup).toContain("Pourquoi ?");
     expect(markup).toContain("À revoir dans");
     expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("/learn/bonnes-pratiques");
+    expect(markup).toContain("Erreur pédagogique");
+    expect(markup).toContain("mauvaise compréhension d&#x27;une filière de tri");
+    expect(markup).toContain("Gravité: medium");
     expect(markup).toContain("Un emballage propre et vide suit généralement la filière des emballages");
     expect(markup).toContain("Votre réponse : Le jeter au compost");
   });
@@ -87,6 +99,7 @@ describe("QuizSessionPanel", () => {
         currentQuestionStreak: 0,
         currentQuestionMasteryLevel: 0,
         selectedOption: "Vrai",
+        selectedOptions: [],
         showAnswer: false,
         lastCheckResult: null,
         score: 0,
@@ -94,10 +107,12 @@ describe("QuizSessionPanel", () => {
         nextReasoningType: null,
         hasReviewedToday: false,
         onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
         onHandleSRSUpdate: () => undefined,
       }),
     );
@@ -124,7 +139,13 @@ describe("QuizSessionPanel", () => {
       explanation:
         "Un chiffre isolé peut sembler énorme ou minuscule sans référence. Le contexte fixe l'échelle, la comparaison utile et la limite de lecture.",
       review: QUIZ_REVIEW_TARGETS.comprendre,
+      reviewTarget: QUIZ_REVIEW_TARGETS.sentrainer,
       reasoningType: "questions contre-intuitives",
+      errorType: "raisonnement trop simpliste",
+      misconception: "Un seul critère a été survalorisé alors que plusieurs facteurs interagissent.",
+      severity: "medium",
+      feedbackCorrect: "Bonne réponse : tu as évité la simplification excessive.",
+      feedbackWrong: "Erreur pédagogique : le cas demande d'assembler plusieurs critères au lieu d'en isoler un seul.",
     };
 
     const sessionSummary: QuizSessionSummary = {
@@ -136,16 +157,29 @@ describe("QuizSessionPanel", () => {
       ],
       themesToReview: [
         {
-          label: "Bonnes pratiques",
-          href: "/learn/bonnes-pratiques",
+          label: "S'entraîner",
+          href: "/learn/sentrainer",
           total: 3,
           correct: 2,
           accuracy: 0.66,
         },
       ],
+      frequentErrorTypes: [
+        { label: "raisonnement trop simpliste", count: 2 },
+        { label: "idée reçue", count: 1 },
+      ],
+      recommendedMode: {
+        id: "terrain",
+        label: "Terrain",
+        reason: "Ce mode couvre le mieux tes erreurs récentes (2 correspondances).",
+      },
+      recommendedLearningTarget: {
+        label: "S'entraîner",
+        href: "/learn/sentrainer",
+      },
       nextReviewTarget: {
-        label: "Bonnes pratiques",
-        href: "/learn/bonnes-pratiques",
+        label: "S'entraîner",
+        href: "/learn/sentrainer",
       },
     };
 
@@ -160,6 +194,7 @@ describe("QuizSessionPanel", () => {
         currentQuestionStreak: 0,
         currentQuestionMasteryLevel: 0,
         selectedOption: "",
+        selectedOptions: [],
         showAnswer: false,
         lastCheckResult: null,
         score: 5,
@@ -168,10 +203,12 @@ describe("QuizSessionPanel", () => {
         hasReviewedToday: false,
         sessionSummary,
         onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
         onHandleSRSUpdate: () => undefined,
       }),
     );
@@ -179,11 +216,82 @@ describe("QuizSessionPanel", () => {
     expect(markup).toContain("Bilan de session");
     expect(markup).toContain("5/6");
     expect(markup).toContain("83%");
-    expect(markup).toContain("Thèmes réussis");
+    expect(markup).toContain("Compétences maîtrisées");
     expect(markup).toContain("Comprendre");
-    expect(markup).toContain("À retravailler");
-    expect(markup).toContain("Bonnes pratiques");
+    expect(markup).toContain("Compétences à revoir");
+    expect(markup).toContain("S&#x27;entraîner");
     expect(markup).toContain("Revoir la rubrique");
-    expect(markup).toContain("/learn/bonnes-pratiques");
+    expect(markup).toContain("/learn/sentrainer");
+    expect(markup).toContain("Types d&#x27;erreurs fréquentes");
+    expect(markup).toContain("Mode à rejouer");
+    expect(markup).toContain("Terrain");
+  });
+
+  it("renders a checkbox-based question as multiple selectable answers", () => {
+    const question: QuizQuestion = {
+      id: "ms-1",
+      type: "multiple-select",
+      category: "action-terrain",
+      question: "Quels objets ne dois-tu pas ramasser lors d'une action ?",
+      answer: [
+        "Une seringue usagée",
+        "Un bidon fermé contenant un liquide inconnu",
+        "Un verre cassé",
+        "Un déchet souillé par une substance suspecte",
+      ],
+      options: [
+        "Une seringue usagée",
+        "Un bidon fermé contenant un liquide inconnu",
+        "Un verre cassé",
+        "Un déchet souillé par une substance suspecte",
+        "Une canette vide",
+        "Un emballage propre et sec",
+      ],
+      explanation:
+        "On ne ramasse pas ce qui coupe, perce ou expose à un produit inconnu. Dans le doute, on isole et on signale plutôt que de manipuler.",
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reasoningType: "terrain",
+      format: "cases-a-cocher",
+      reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      errorType: "erreur de sécurité",
+      misconception: "Le risque concret a été sous-estimé au profit de la rapidité.",
+      severity: "high",
+      feedbackCorrect: "Bon réflexe : tu as protégé la sécurité avant la vitesse.",
+      feedbackWrong: "Erreur pédagogique : en contexte terrain, la sécurité du geste passe avant le gain de temps.",
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizSessionPanel, {
+        locale: "fr",
+        question,
+        questionIndex: 0,
+        totalQuestions: 1,
+        currentQuestionState: null,
+        currentQuestionReviewDate: "Aujourd'hui",
+        currentQuestionStreak: 0,
+        currentQuestionMasteryLevel: 0,
+        selectedOption: "",
+        selectedOptions: ["Une seringue usagée", "Un verre cassé"],
+        showAnswer: false,
+        lastCheckResult: null,
+        score: 0,
+        shouldOfferMiniChallenge: false,
+        nextReasoningType: null,
+        hasReviewedToday: false,
+        onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
+        onCheckAnswer: () => undefined,
+        onNextQuestion: () => undefined,
+        onResetQuiz: () => undefined,
+        onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
+        onHandleSRSUpdate: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Cases à cocher");
+    expect(markup).toContain("Vérifier mes réponses");
+    expect(markup).toContain("Une seringue usagée");
+    expect(markup).toContain("Un emballage propre et sec");
   });
 });

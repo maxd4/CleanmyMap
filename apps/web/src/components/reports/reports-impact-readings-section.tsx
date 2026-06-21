@@ -7,6 +7,7 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ReportModel } from "@/components/reports/web-document/types";
 import { toFrInt, toFrNumber } from "@/components/reports/web-document/analytics";
+import { SectionHeader } from "@/components/ui/page-structure";
 
 type ReportsWeather = {
   current?: {
@@ -143,26 +144,31 @@ export function ReportsImpactReadingsSection({
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)] sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-600 text-white shadow-[0_18px_36px_-22px_rgba(220,38,38,0.45)]">
+        <SectionHeader
+          eyebrow={
+            <span className="inline-flex items-center gap-2">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-600 text-white shadow-[0_18px_36px_-22px_rgba(220,38,38,0.45)]">
                 <Sparkles size={20} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                  Snapshot de l&apos;impact (aperçu)
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">Résumé des indicateurs inclus dans ce rapport.</p>
-              </div>
-            </div>
-          </div>
-
-          <a href="#kpi-summary" className="inline-flex items-center gap-2 text-sm font-semibold text-sky-700 transition hover:text-sky-800">
-            Voir le détail de tous les indicateurs
-            <ArrowRight size={16} />
-          </a>
-        </div>
+              </span>
+              Snapshot de l&apos;impact
+            </span>
+          }
+          title="Aperçu"
+          subtitle="Résumé des indicateurs inclus dans ce rapport."
+          action={
+            <a
+              href="#kpi-summary"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-sky-700 transition hover:text-sky-800"
+            >
+              Voir le détail de tous les indicateurs
+              <ArrowRight size={16} />
+            </a>
+          }
+          titleSize="md"
+          className="gap-3"
+          eyebrowClassName="text-stone-900"
+          subtitleClassName="text-sm text-slate-500"
+        />
 
         <div className="mt-6 grid gap-4 xl:grid-cols-4">
           {snapshotGroups.map((group) => (

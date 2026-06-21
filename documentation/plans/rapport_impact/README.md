@@ -10,6 +10,8 @@ La source de vérité active est [`impact_IA.md`](./impact_IA.md).
 
 - le rapport principal `impact_IA.md`;
 - la méthode du graphique `graphique_impact_CO2e.md`;
+- la méthodologie ACV numérique `impact_carbone_methodologie.md`;
+- la méthodologie de lecture des quotas `quotas_plans_methodologie.md`;
 - les sources bibliographiques `references.bib` et `references_annexes.bib`;
 - les règles de rédaction `regle-chat-rapport.md`;
 - les plans de transformation et notes de travail liées au rapport.

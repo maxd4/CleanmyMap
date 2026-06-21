@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ProjectPageviewTracker } from "@/components/analytics/project-pageview-tracker";
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
@@ -36,6 +37,7 @@ export function ConditionalAnalytics() {
 
   return (
     <>
+      <ProjectPageviewTracker />
       <Analytics />
       <SpeedInsights />
     </>

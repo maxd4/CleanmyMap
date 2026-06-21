@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -43,6 +44,7 @@ const CHECKLIST_ITEMS = [
 ] as const;
 
 export function GuideOperationalPanel() {
+  const { isLoaded, user } = useUser();
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [checks, setChecks] = useState<Record<string, boolean>>(() => {
@@ -63,6 +65,15 @@ export function GuideOperationalPanel() {
   }, [checks]);
 
   useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!user) {
+      setServerReady(true);
+      return;
+    }
+
     let active = true;
     void fetch("/api/users/checklist-progress?checklistId=guide-main", {
       method: "GET",
@@ -88,10 +99,10 @@ export function GuideOperationalPanel() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isLoaded, user]);
 
   useEffect(() => {
-    if (!serverReady) {
+    if (!serverReady || !user) {
       return;
     }
     void fetch("/api/users/checklist-progress", {
@@ -99,7 +110,7 @@ export function GuideOperationalPanel() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ checklistId: "guide-main", checks }),
     }).catch(() => undefined);
-  }, [checks, serverReady]);
+  }, [checks, serverReady, user]);
 
   const progress = useMemo(() => {
     const values = Object.values(checks);

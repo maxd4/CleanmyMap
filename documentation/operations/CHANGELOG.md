@@ -1,5 +1,154 @@
 # Change Log
 
+## 2026-06-12
+
+### Notifications: suppression du proxy Vercel au profit du client Supabase
+
+- **What changed**
+  - Removed the Vercel API route:
+    - `apps/web/src/app/api/notifications/route.ts`
+  - Moved notification loading and mark-as-read logic to the browser using Supabase + RLS:
+    - `apps/web/src/lib/notifications/client.ts`
+    - `apps/web/src/components/navigation/notification-bell.tsx`
+  - Removed the obsolete protected-route entry:
+    - `apps/web/src/lib/auth/protected-routes.ts`
+  - Updated the API route baseline and generated Vercel reports/docs.
+
+- **Why**
+  - This route was a thin relay around `app_notifications`, and RLS already allows users to read and update their own rows.
+  - Removing the proxy reduces Vercel invocations and keeps the source of access control in Supabase.
+
+- **Validation**
+  - `npm run audit:vercel:api-routes`
+  - `npm run test:regression-gates -w apps/web`
+  - `npm run report:vercel-surface`
+  - `npm run audit:vercel-quota`
+
+- **Compatibility notes**
+  - The notification UI keeps the same behavior, but it now depends on the browser Supabase client instead of a Vercel API hop.
+
+### Doctrine de stockage Supabase et garde-fous produit
+
+- **What changed**
+  - Added and connected a Supabase storage doctrine across the documentation:
+    - `documentation/development/supabase-quota-guide.md`
+    - `documentation/database/supabase-quota-audit.md`
+    - `documentation/backend/local-storage-vs-supabase-audit.md`
+    - `documentation/development/performance-quotas-vercel-checklist.md`
+  - Updated the documentation indexes:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+    - `documentation/database/README.md`
+
+- **Why**
+  - Make the product rule explicit: every new feature must say where data lives, how many writes/reads it creates, and what limits it has.
+  - Keep pedagogical content in Git, quizzes local by default, volunteer forms to one write, aggregates for dashboards, and generated PDFs on demand.
+
+- **Validation**
+  - Documentation links reviewed after the update.
+
+- **Compatibility notes**
+  - Documentation-only change. No runtime behavior changed.
+
+### CI Vercel: garde-fous critiques et audits en warnings
+
+- **What changed**
+  - Added a non-blocking CI audit runner for Vercel-sensitive surfaces:
+    - `scripts/audit-vercel-ci.mjs`
+    - `npm run audit:vercel:ci`
+  - Integrated Vercel governance into the existing GitHub Actions CI:
+    - `npm run test:regression-gates -w apps/web` for critical failures
+    - `npm run audit:vercel:ci` for warnings only
+  - Documented the CI behavior in:
+    - `documentation/development/vercel-quota-governance.md`
+
+- **Why**
+  - Fail only on the regressions that must block a PR.
+  - Keep the rest of the Vercel surface visible as warnings so the team can review cost risk without creating noise.
+
+- **Validation**
+  - `npm run audit:vercel:ci`
+  - `npm run test:regression-gates -w apps/web`
+  - `npm run check:doc-governance`
+
+- **Compatibility notes**
+  - The new CI audit is non-blocking by design.
+  - Critical gates still fail the pipeline when they regress.
+
+### Guide Codex pour développer sans gonfler les quotas Vercel
+
+- **What changed**
+  - Added a Codex-facing development guide focused on avoiding unnecessary Vercel quota growth:
+    - `documentation/development/codex-vercel-development-guide.md`
+  - Linked the guide from the documentation entry points:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+
+- **Why**
+  - Give agents a concrete checklist for Next.js, cache, Server Components, Clerk, Supabase, Leaflet and PDF flows before they add a new feature.
+  - Reduce the chance of creating avoidable `Invocations`, `Edge Requests` or origin transfer growth.
+
+- **Validation**
+  - `npm run check:doc-governance` passed
+
+- **Compatibility notes**
+  - Documentation-only change. No runtime behavior changed.
+
+### Stratégie de répartition Vercel, Supabase et navigateur
+
+- **What changed**
+  - Added a dedicated strategy guide for distributing load between:
+    - Vercel
+    - Supabase
+    - the browser
+  - Added a fast-placement table for:
+    - quiz answers
+    - display preferences
+    - drafts
+    - open documentation
+    - counters and badges
+    - user images and generated PDFs
+    - dynamic maps
+    - PDF generation
+  - Moved the explorer badge counter to a direct browser-side Supabase read:
+    - `apps/web/src/components/gamification/ExplorerBadgeWrapper.tsx`
+  - Linked the guide from the main documentation entry points:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+    - `documentation/development/vercel-quota-governance.md`
+    - `documentation/development/vercel-anti-regression-playbook.md`
+
+- **Why**
+  - Make the "Vercel serves the interface, Supabase serves the data, browser keeps non-critical state" principle explicit and reusable.
+  - Reduce future regressions caused by moving too much logic to the wrong layer.
+
+- **Validation**
+  - Documentation links reviewed after the update.
+
+- **Compatibility notes**
+  - Documentation-only change. No runtime behavior changed.
+
+### Playbook anti-régression Vercel et prévention des erreurs récurrentes
+
+- **What changed**
+  - Added a dedicated anti-regression playbook for Vercel-sensitive development:
+    - `documentation/development/vercel-anti-regression-playbook.md`
+  - Linked the playbook from the main documentation entry points:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+    - `documentation/development/performance-quotas-vercel-checklist.md`
+    - `documentation/development/vercel-quota-governance.md`
+
+- **Why**
+  - Capture the mistakes that already increased Vercel cost risk, then make the safer patterns easy to reuse.
+  - Reduce the chance of reintroducing `force-dynamic`, `revalidate = 0`, `no-store`, or unbounded polling without justification.
+
+- **Validation**
+  - Documentation links reviewed after the update.
+
+- **Compatibility notes**
+  - Documentation-only change. No runtime behavior changed.
+
 ## 2026-06-06
 
 ### Rapport automatique des surfaces Vercel

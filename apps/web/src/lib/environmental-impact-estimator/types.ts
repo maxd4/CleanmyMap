@@ -60,6 +60,7 @@ export type EnvironmentalImpactPostEstimate = EnvironmentalImpactPostDefinition 
 
 export type EnvironmentalImpactInfrastructureServiceKey =
   | "vercel"
+  | "github"
   | "supabase"
   | "resend"
   | "chatgpt"
@@ -93,6 +94,7 @@ export type EnvironmentalImpactInfrastructureMetricKey =
   | "vercelFunctionInvocations"
   | "vercelDeployments"
   | "vercelBandwidthGb"
+  | "githubWorkflowRunsCount30d"
   | "supabaseDbRequests"
   | "supabaseAuthEvents"
   | "supabaseStorageGbMonths"

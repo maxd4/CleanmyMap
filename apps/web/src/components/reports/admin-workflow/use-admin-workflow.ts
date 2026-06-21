@@ -90,16 +90,22 @@ export function useAdminWorkflow(
  },
  );
 
- const audit = useSWR<{ items?: AdminOperationAuditItem[] }>(
- ["admin-operation-audit"],
- () => fetchAdminOperationAudit(fetch, 25),
- {
- ...swrRecentViewOptions,
- fallbackData:
- params.initialAuditItems ? { items: params.initialAuditItems } : undefined,
- revalidateOnMount: params.initialAuditItems ? false : undefined,
- },
- );
+  const auditTargetId =
+    state.moderationEntityType === "action" &&
+    state.moderationId.trim().length > 0
+      ? state.moderationId.trim()
+      : null;
+
+  const audit = useSWR<{ items?: AdminOperationAuditItem[] }>(
+    ["admin-operation-audit", auditTargetId ?? "global"],
+    () => fetchAdminOperationAudit(fetch, 25, auditTargetId),
+    {
+      ...swrRecentViewOptions,
+      fallbackData:
+        params.initialAuditItems ? { items: params.initialAuditItems } : undefined,
+      revalidateOnMount: params.initialAuditItems ? false : undefined,
+    },
+  );
 
  const scopeOptions = useMemo(
  () => buildReportScopeOptions(preview.data?.items ?? []),

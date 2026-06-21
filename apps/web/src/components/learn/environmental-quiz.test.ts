@@ -28,18 +28,32 @@ describe("EnvironmentalQuiz", () => {
     expect(QUIZ_ACCESS_TYPES.every((accessType) => QUIZ_QUESTIONS.some((question) => matchesQuizAccessType(accessType.id, question)))).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => matchesQuizAccessType("mixte", question))).toBe(true);
     expect(trueFalseQuestions.length).toBeGreaterThanOrEqual(4);
+    expect(QUIZ_QUESTIONS.some((question) => question.format === "cases-a-cocher")).toBe(true);
+    expect(QUIZ_QUESTIONS.some((question) => String(question.format) === "classements")).toBe(false);
     expect(
       QUIZ_QUESTIONS.every((question) => {
-        const reviewTargetHref = getQuizReviewTarget(question.category, question.review).href;
+        const reviewTargetHref = getQuizReviewTarget(question.category, question.review, question.reasoningType).href;
         return (
           reviewTargetHref === QUIZ_REVIEW_TARGETS.comprendre.href ||
+          reviewTargetHref === QUIZ_REVIEW_TARGETS.sentrainer.href ||
           reviewTargetHref === QUIZ_REVIEW_TARGETS.bonnes_pratiques.href
         );
       }),
     ).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.reviewTarget))).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.errorType))).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.misconception))).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.feedbackCorrect))).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.feedbackWrong))).toBe(true);
+    expect(QUIZ_QUESTIONS.every((question) => Boolean(question.severity))).toBe(true);
+    expect(new Set(QUIZ_QUESTIONS.map((question) => question.errorType)).size).toBeGreaterThanOrEqual(6);
     expect(trueFalseQuestions.every((question) => question.options?.length === 2)).toBe(true);
-    expect(trueFalseQuestions.every((question) => ["Vrai", "Faux"].includes(question.answer))).toBe(true);
-    expect(QUIZ_QUESTIONS.every((question) => reasoningTypes.includes(question.reasoningType))).toBe(true);
+    expect(trueFalseQuestions.every((question) => ["Vrai", "Faux"].includes(question.answer as string))).toBe(true);
+    expect(
+      QUIZ_QUESTIONS.every((question) =>
+        reasoningTypes.includes(question.reasoningType as (typeof reasoningTypes)[number]),
+      ),
+    ).toBe(true);
     expect(new Set(QUIZ_QUESTIONS.map((question) => question.reasoningType)).size).toBe(7);
     expect(QUIZ_QUESTIONS.every((question) => getQuizAccessTypesForQuestion(question).length > 0)).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => ["low", "medium", "high"].includes(getQuizTrapLevel(question)))).toBe(true);
@@ -118,7 +132,7 @@ describe("EnvironmentalQuiz", () => {
     expect(rewrittenQuestions).toHaveLength(targetIds.length);
     expect(rewrittenQuestions.every((question) => question.type === "true-false")).toBe(true);
     expect(rewrittenQuestions.every((question) => question.options?.length === 2)).toBe(true);
-    expect(rewrittenQuestions.every((question) => ["Vrai", "Faux"].includes(question.answer))).toBe(true);
+    expect(rewrittenQuestions.every((question) => ["Vrai", "Faux"].includes(question.answer as string))).toBe(true);
     expect(rewrittenQuestions.every((question) => question.explanation.length > 20)).toBe(true);
   });
 });
