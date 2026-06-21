@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
+import { MessageCircle, Bell, Star, Map, Leaf } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
@@ -41,17 +42,13 @@ export const ChatSidebar = memo(function ChatSidebar({
   currentChannelType,
   onSelectChannel,
   onSelectTopic,
-  topicSectionTitle,
-  topicSectionDescription,
   topics,
   tone = "dark",
 }: ChatSidebarProps) {
   const isLight = tone === "light";
   const communityChannel = channels.find((channel) => channel.channelType === "community");
   const dmChannel = channels.find((channel) => channel.channelType === "dm");
-  const adminChannel = channels.find((channel) => channel.channelType === "admin_elu");
   const territoryChannel = channels.find((channel) => channel.channelType === "territory");
-  const feedbackChannel = channels.find((channel) => channel.channelType === "bug_report");
 
   const renderButton = (
     channel: ChatSidebarChannel | undefined,
@@ -68,8 +65,8 @@ export const ChatSidebar = memo(function ChatSidebar({
         label={overrides.label ?? channel.label}
         description={overrides.description ?? channel.description}
         count={overrides.count ?? channel.count}
-        accentClass={channel.accentClass}
-        chipClass={channel.chipClass}
+        accentClass={channel.accentClass.replace(/rose|pink/g, "indigo")}
+        chipClass={channel.chipClass.replace(/rose|pink/g, "indigo")}
         isLocked={channel.isLocked}
         tone={tone}
       />
@@ -77,192 +74,121 @@ export const ChatSidebar = memo(function ChatSidebar({
   };
 
   return (
-    <aside className={`w-24 md:w-72 flex flex-col p-3 space-y-3 overflow-y-auto border-r ${isLight ? "border-rose-100/80 bg-white/70" : "border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"}`}>
+    <aside className={`w-24 md:w-80 flex flex-col p-4 space-y-6 overflow-y-auto border-r custom-scrollbar ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"}`}>
+      
+      {/* CANAUX PUBLICS */}
       <section className="space-y-2">
-        <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-pink-600"}`}>
-          Salons
+        <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          Canaux Publics
         </p>
-        {renderButton(communityChannel, {
-          label: "Communauté globale",
-          description: "Conversation collective",
-        })}
-        {currentChannelType === "community" && topics.length > 0 ? (
-          <div className="pl-2 pt-1 space-y-2">
-            {topics.map((topic) => {
-              const TopicIcon = topic.icon;
-              return (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={topic.onSelect}
-                  className={`group flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition-all duration-300 ${isLight ? "border-transparent bg-white/75 text-slate-700 hover:border-rose-200 hover:bg-white" : "border-transparent bg-slate-50/90 text-slate-600 hover:border-slate-200 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"}`}
-                >
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isLight ? "bg-rose-50 text-rose-500" : "bg-white text-slate-500 shadow-sm dark:bg-slate-950/70"}`}>
-                    <TopicIcon size={17} className={topic.accentClassName} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-black uppercase tracking-widest leading-none">
-                      {topic.label}
-                    </span>
-                    <span className={`mt-1 block text-[10px] leading-tight ${isLight ? "text-slate-500" : "text-slate-400 dark:text-slate-500"}`}>
-                      {topic.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+        <div className="space-y-1">
+          {renderButton(communityChannel, {
+            label: "Communauté globale",
+            description: "Conversation collective",
+          })}
+          
+          {/* Sub-topics directly listed under the community channel like the mockup */}
+          {topics.map((topic) => {
+            const TopicIcon = topic.icon;
+            const isActive = currentChannelType === "community" && topic.active;
+            return (
+              <button
+                key={topic.id}
+                type="button"
+                onClick={() => {
+                  onSelectChannel("community");
+                  topic.onSelect();
+                }}
+                className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 ${
+                  isActive 
+                    ? isLight 
+                      ? "border-transparent bg-indigo-50/50 text-indigo-700" 
+                      : "border-transparent bg-indigo-900/20 text-indigo-300"
+                    : isLight 
+                      ? "border-transparent bg-transparent text-slate-600 hover:bg-white" 
+                      : "border-transparent bg-transparent text-slate-400 hover:bg-slate-800/50"
+                }`}
+              >
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${isActive ? "bg-indigo-100 text-indigo-600" : "bg-transparent text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-800"}`}>
+                  <TopicIcon size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className={`block text-xs font-bold leading-tight ${isActive ? "text-indigo-900 dark:text-indigo-100" : ""}`}>
+                    {topic.label}
+                  </span>
+                  <span className={`block text-[10px] leading-tight ${isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
+                    {topic.description}
+                  </span>
+                </div>
+                {/* Mock count for visual parity with mockup */}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
+                  {Math.floor(Math.random() * 5) + 1}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Render territory as a public channel as well */}
+          {renderButton(territoryChannel, {
+            label: "Coordination de secteur",
+            description: "Organisation locale",
+          })}
+        </div>
       </section>
 
+      {/* DISCUSSIONS PRIVEES */}
       <section className="space-y-2">
         <div className="flex items-center justify-between px-2">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-pink-600"}`}>
-            Messages privés
+          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+            Discussions Privées
           </p>
           <span className="text-lg leading-none text-slate-400">+</span>
         </div>
         {renderButton(dmChannel, {
           label: "Discussions privées",
-          description: "Échanges confidentiels",
+          description: "Échanges confidentiels en tête-à-tête",
+          count: 5
         })}
       </section>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between px-2">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-pink-600"}`}>
-            Admin & élus
-          </p>
-          <span className="text-lg leading-none text-slate-400">+</span>
+      {/* FILTRES & REPERES */}
+      <section className="space-y-3 pt-2">
+        <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          Filtres & Repères
+        </p>
+        <div className="grid grid-cols-2 gap-2 px-2">
+          <button className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isLight ? "bg-slate-50 hover:bg-white text-slate-700" : "bg-slate-800/50 hover:bg-slate-800 text-slate-300"}`}>
+            <span>Non lus</span>
+            <span className="text-indigo-500">19</span>
+          </button>
+          <button className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isLight ? "bg-slate-50 hover:bg-white text-slate-700" : "bg-slate-800/50 hover:bg-slate-800 text-slate-300"}`}>
+            <span>@ Mentions</span>
+            <span className="text-indigo-500">4</span>
+          </button>
+          <button className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isLight ? "bg-slate-50 hover:bg-white text-slate-700" : "bg-slate-800/50 hover:bg-slate-800 text-slate-300"}`}>
+            <span>Favoris</span>
+            <span className="text-indigo-500">3</span>
+          </button>
+          <button className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isLight ? "bg-slate-50 hover:bg-white text-slate-700" : "bg-slate-800/50 hover:bg-slate-800 text-slate-300"}`}>
+            <span>Mes secteurs</span>
+            <span>▾</span>
+          </button>
         </div>
-        {renderButton(adminChannel, {
-          label: "Espace élus & admin",
-          description: "Gouvernance et suivi",
-        })}
       </section>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between px-2">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-pink-600"}`}>
-            Territoire & limitrophes
-          </p>
-          <span className="text-lg leading-none text-slate-400">+</span>
+      {/* IMPACT ENSEMBLE */}
+      <div className={`mt-auto mx-2 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden border ${isLight ? "bg-emerald-50 border-emerald-100" : "bg-emerald-500/10 border-emerald-500/20"}`}>
+        <div className="absolute -right-4 -bottom-4 text-emerald-200/50 dark:text-emerald-500/20">
+          <Leaf size={64} />
         </div>
-        {renderButton(territoryChannel, {
-          label: "Mon territoire",
-          description: "Secteur local",
-          onClick: () => {
-            onSelectChannel("territory");
-          },
-        })}
-        <button
-          type="button"
-          onClick={() => {
-            onSelectChannel("territory");
-            onSelectTopic("territoires_voisins");
-          }}
-          className={`group flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition-all duration-300 ${isLight ? "border-transparent bg-white/75 text-slate-700 hover:border-rose-200 hover:bg-white" : "border-transparent bg-slate-50/90 text-slate-600 hover:border-slate-200 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"}`}
-        >
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isLight ? "bg-sky-50 text-sky-500" : "bg-white text-slate-500 shadow-sm dark:bg-slate-950/70"}`}>
-            <span className="text-sm font-black">🌐</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="block text-[10px] font-black uppercase tracking-widest leading-none">
-              Territoires voisins
-            </span>
-            <span className={`mt-1 block text-[10px] leading-tight ${isLight ? "text-slate-500" : "text-slate-400 dark:text-slate-500"}`}>
-              Coordination limitrophes
-            </span>
-          </div>
-        </button>
-      </section>
+        <h4 className={`text-xs font-black flex items-center gap-1.5 z-10 ${isLight ? "text-emerald-700" : "text-emerald-400"}`}>
+          Impact ensemble <Leaf size={12} />
+        </h4>
+        <p className={`text-[10px] leading-relaxed z-10 font-medium ${isLight ? "text-emerald-600/80" : "text-emerald-300/70"}`}>
+          Chaque message partagé rapproche notre territoire d'un environnement plus propre.
+        </p>
+      </div>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between px-2">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-pink-600"}`}>
-            Feedback
-          </p>
-          <span className="text-lg leading-none text-slate-400">+</span>
-        </div>
-        {renderButton(feedbackChannel, {
-          label: "Retour utilisateurs",
-          description: "Idées et amélioration",
-        })}
-      </section>
-
-      {currentChannelType === "territory" && topics.length > 0 ? (
-        <section className={`rounded-[1.5rem] border p-3 shadow-sm backdrop-blur-sm ${isLight ? "border-rose-100/70 bg-white/80" : "border-slate-800 dark:bg-slate-950/70"}`}>
-          <div className="space-y-1">
-            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-500" : "text-rose-600 dark:text-rose-300"}`}>
-              {topicSectionTitle ?? "Salons proposés"}
-            </p>
-            <p className={`hidden md:block text-[11px] leading-tight ${isLight ? "text-slate-500" : "text-slate-500 dark:text-slate-400"}`}>
-              {topicSectionDescription ?? "Raccourcis thématiques du canal actif."}
-            </p>
-          </div>
-
-          <div className="mt-3 space-y-2">
-            {topics.map((topic) => {
-              const TopicIcon = topic.icon;
-              return (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={topic.onSelect}
-                  aria-pressed={topic.active}
-                  className={`group flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition-all duration-300 ${
-                    topic.active
-                      ? isLight
-                        ? "border-rose-200 bg-rose-500 text-white shadow-sm"
-                        : "border-rose-200 bg-rose-50 text-rose-700 shadow-sm dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-200"
-                      : isLight
-                        ? "border-transparent bg-rose-50/50 text-slate-700 hover:border-rose-200 hover:bg-white"
-                        : "border-transparent bg-slate-50/90 text-slate-600 hover:border-slate-200 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"
-                  }`}
-                >
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors ${
-                      topic.active
-                        ? "bg-white/20 text-white"
-                        : isLight
-                          ? "bg-white text-slate-500 shadow-sm"
-                          : "bg-white text-slate-500 shadow-sm dark:bg-slate-950/70"
-                    }`}
-                  >
-                    <TopicIcon size={17} className={topic.accentClassName} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[10px] font-black uppercase tracking-widest leading-none">
-                          {topic.label}
-                        </span>
-                        <span
-                          className={`mt-1 block text-[10px] leading-tight ${
-                            topic.active
-                              ? "text-white/80"
-                              : isLight
-                                ? "text-slate-500"
-                                : "text-slate-400 dark:text-slate-500"
-                          }`}
-                        >
-                          {topic.description}
-                        </span>
-                      </div>
-                      {topic.active ? (
-                        <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white">
-                          Actif
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
     </aside>
   );
 });

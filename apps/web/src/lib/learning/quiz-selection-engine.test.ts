@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 
 import type { SRSStats } from "@/lib/gamification/quiz-srs";
 import type { QuizSelectionQuestionLike } from "./quiz-selection-engine";
@@ -21,84 +21,276 @@ function makeStats(
   };
 }
 
-describe("quiz selection engine", () => {
-  const now = new Date("2026-06-12T12:00:00.000Z");
+const now = new Date("2026-06-12T12:00:00.000Z");
 
-  it("orders focused modes by their trap progression while keeping categories interleaved", () => {
+  it("prioritizes failed and due questions before the rest", () => {
     const questions: QuizSelectionQuestionLike[] = [
-      { id: "a1", type: "true-false" as const, category: "action-terrain", reasoningType: "terrain", trapLevel: "medium" as const },
-      { id: "a2", type: "multiple-choice" as const, category: "action-terrain", reasoningType: "terrain", trapLevel: "high" as const },
-      { id: "b1", type: "true-false" as const, category: "tri-recyclage", reasoningType: "terrain", trapLevel: "medium" as const },
-      { id: "b2", type: "multiple-choice" as const, category: "tri-recyclage", reasoningType: "terrain", trapLevel: "high" as const },
+      {
+        id: "failed",
+        type: "true-false" as const,
+        category: "action-terrain",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "due",
+        type: "true-false" as const,
+        category: "tri-recyclage",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "new",
+        type: "true-false" as const,
+        category: "climat-biodiversite",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "mastered",
+        type: "true-false" as const,
+        category: "impact-methodologie",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
     ];
 
-    const ordered = buildQuizSessionDeck(questions, {
-      a1: makeStats("a1", "2026-06-12T15:00:00.000Z"),
-      a2: makeStats("a2", "2026-06-12T15:00:00.000Z"),
-      b1: makeStats("b1", "2026-06-12T15:00:00.000Z"),
-      b2: makeStats("b2", "2026-06-12T15:00:00.000Z"),
-    }, {
-      accessTypeId: "terrain",
-      now,
-    });
-
-    expect(ordered.map((question) => question.id)).toEqual(["b1", "a1", "b2", "a2"]);
-  });
-
-  it("prioritizes the most surprising trap levels in sensibilisation mode", () => {
-    const questions: QuizSelectionQuestionLike[] = [
-      { id: "h", type: "true-false" as const, category: "impact-methodologie", reasoningType: "idée reçue", trapLevel: "high" as const },
-      { id: "m", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "questions contre-intuitives", trapLevel: "medium" as const },
-      { id: "l", type: "true-false" as const, category: "impact-methodologie", reasoningType: "idée reçue", trapLevel: "low" as const },
-    ];
-
-    const ordered = buildQuizSessionDeck(questions, {
-      h: makeStats("h", "2026-06-12T15:00:00.000Z"),
-      m: makeStats("m", "2026-06-12T15:00:00.000Z"),
-      l: makeStats("l", "2026-06-12T15:00:00.000Z"),
-    }, {
-      accessTypeId: "sensibilisation",
-      now,
-    });
-
-    expect(ordered.map((question) => question.id)).toEqual(["l", "m", "h"]);
-  });
-
-  it("keeps mixte mode state-driven before category interleaving", () => {
-    const questions: QuizSelectionQuestionLike[] = [
-      { id: "failed", type: "true-false" as const, category: "action-terrain", reasoningType: "terrain", trapLevel: "high" as const },
-      { id: "due", type: "true-false" as const, category: "tri-recyclage", reasoningType: "idée reçue", trapLevel: "medium" as const },
-      { id: "new", type: "multiple-choice" as const, category: "climat-biodiversite", reasoningType: "estimation", trapLevel: "low" as const },
-      { id: "mastered", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "comparaison", trapLevel: "low" as const },
-    ];
-
-    const ordered = buildQuizSessionDeck(questions, {
-      failed: makeStats("failed", "2026-06-12T12:30:00.000Z", { failure_count: 1, streak: 0 }),
-      due: makeStats("due", "2026-06-12T11:50:00.000Z", { success_count: 2, streak: 2 }),
-      new: makeStats("new", "2026-06-12T15:00:00.000Z"),
-      mastered: makeStats("mastered", "2026-06-13T15:00:00.000Z", { success_count: 3, streak: 3, mastery_level: 4 }),
-    }, {
-      accessTypeId: "mixte",
-      now,
-    });
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        failed: makeStats("failed", "2026-06-12T12:30:00.000Z", { failure_count: 1, streak: 0 }),
+        due: makeStats("due", "2026-06-12T11:50:00.000Z", { success_count: 2, streak: 2 }),
+        new: makeStats("new", "2026-06-12T15:00:00.000Z"),
+        mastered: makeStats("mastered", "2026-06-13T15:00:00.000Z", { success_count: 3, streak: 3, mastery_level: 4 }),
+      },
+      {
+        accessTypeId: "mixte",
+        mode: "mixte",
+        now,
+      },
+    );
 
     expect(ordered.map((question) => question.id)).toEqual(["failed", "due", "new", "mastered"]);
   });
 
-  it("respects an explicit trap level filter", () => {
+  it("alternates skills within the same review state", () => {
     const questions: QuizSelectionQuestionLike[] = [
-      { id: "keep", type: "true-false" as const, category: "tri-recyclage", reasoningType: "idée reçue", trapLevel: "high" as const },
-      { id: "drop", type: "true-false" as const, category: "tri-recyclage", reasoningType: "idée reçue", trapLevel: "low" as const },
+      {
+        id: "terrain-1",
+        type: "true-false" as const,
+        category: "action-terrain",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "terrain-2",
+        type: "true-false" as const,
+        category: "action-terrain",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "estimation-1",
+        type: "true-false" as const,
+        category: "climat-biodiversite",
+        reasoningType: "estimation",
+        skill: "estimation",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "estimation-2",
+        type: "true-false" as const,
+        category: "climat-biodiversite",
+        reasoningType: "estimation",
+        skill: "estimation",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
     ];
 
-    const ordered = buildQuizSessionDeck(questions, {
-      keep: makeStats("keep", "2026-06-12T15:00:00.000Z"),
-      drop: makeStats("drop", "2026-06-12T15:00:00.000Z"),
-    }, {
-      accessTypeId: "tri-securite",
-      trapLevel: "high",
-      now,
-    });
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        "terrain-1": makeStats("terrain-1", "2026-06-12T15:00:00.000Z"),
+        "terrain-2": makeStats("terrain-2", "2026-06-12T15:00:00.000Z"),
+        "estimation-1": makeStats("estimation-1", "2026-06-12T15:00:00.000Z"),
+        "estimation-2": makeStats("estimation-2", "2026-06-12T15:00:00.000Z"),
+      },
+      {
+        accessTypeId: "mixte",
+        mode: "mixte",
+        now,
+      },
+    );
+
+    expect(ordered.map((question) => question.id)).toEqual([
+      "terrain-1",
+      "estimation-1",
+      "terrain-2",
+      "estimation-2",
+    ]);
+  });
+
+  it("rotates pedagogical types before repeating the same format", () => {
+    const questions: QuizSelectionQuestionLike[] = [
+      {
+        id: "vf-1",
+        type: "true-false" as const,
+        category: "tri-recyclage",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "medium" as const,
+      },
+      {
+        id: "vf-2",
+        type: "true-false" as const,
+        category: "tri-recyclage",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "true-false",
+        difficulty: "low",
+        trapLevel: "medium" as const,
+      },
+      {
+        id: "comp-1",
+        type: "multiple-choice" as const,
+        category: "tri-recyclage",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "situations-terrain",
+        difficulty: "medium",
+        trapLevel: "low" as const,
+      },
+      {
+        id: "comp-2",
+        type: "multiple-choice" as const,
+        category: "tri-recyclage",
+        reasoningType: "terrain",
+        skill: "terrain",
+        pedagogicalType: "situations-terrain",
+        difficulty: "medium",
+        trapLevel: "low" as const,
+      },
+    ];
+
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        "vf-1": makeStats("vf-1", "2026-06-12T15:00:00.000Z"),
+        "vf-2": makeStats("vf-2", "2026-06-12T15:00:00.000Z"),
+        "comp-1": makeStats("comp-1", "2026-06-12T15:00:00.000Z"),
+        "comp-2": makeStats("comp-2", "2026-06-12T15:00:00.000Z"),
+      },
+      {
+        accessTypeId: "mixte",
+        mode: "mixte",
+        now,
+      },
+    );
+
+    expect(ordered.map((question) => question.id)).toEqual(["vf-1", "comp-1", "vf-2", "comp-2"]);
+  });
+
+  it("keeps difficulty before trap level", () => {
+    const questions: QuizSelectionQuestionLike[] = [
+      {
+        id: "easy-trappy",
+        type: "multiple-choice" as const,
+        category: "impact-methodologie",
+        reasoningType: "comparaison",
+        skill: "comparaison",
+        pedagogicalType: "comparaisons",
+        difficulty: "low",
+        trapLevel: "high" as const,
+      },
+      {
+        id: "hard-clear",
+        type: "multiple-choice" as const,
+        category: "impact-methodologie",
+        reasoningType: "comparaison",
+        skill: "comparaison",
+        pedagogicalType: "comparaisons",
+        difficulty: "high",
+        trapLevel: "low" as const,
+      },
+    ];
+
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        "easy-trappy": makeStats("easy-trappy", "2026-06-12T15:00:00.000Z"),
+        "hard-clear": makeStats("hard-clear", "2026-06-12T15:00:00.000Z"),
+      },
+      {
+        accessTypeId: "donnees-scientifiques",
+        mode: "donnees-scientifiques",
+        now,
+      },
+    );
+
+    expect(ordered.map((question) => question.id)).toEqual(["easy-trappy", "hard-clear"]);
+  });
+
+  it("respects an explicit trap level filter", () => {
+    const questions: QuizSelectionQuestionLike[] = [
+      {
+        id: "keep",
+        type: "true-false" as const,
+        category: "tri-recyclage",
+        reasoningType: "idée reçue",
+        skill: "idée reçue",
+        pedagogicalType: "vrai-faux-piegeux",
+        difficulty: "low",
+        trapLevel: "high" as const,
+      },
+      {
+        id: "drop",
+        type: "true-false" as const,
+        category: "tri-recyclage",
+        reasoningType: "idée reçue",
+        skill: "idée reçue",
+        pedagogicalType: "vrai-faux-piegeux",
+        difficulty: "low",
+        trapLevel: "low" as const,
+      },
+    ];
+
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        keep: makeStats("keep", "2026-06-12T15:00:00.000Z"),
+        drop: makeStats("drop", "2026-06-12T15:00:00.000Z"),
+      },
+      {
+        accessTypeId: "tri-securite",
+        mode: "tri-securite",
+        trapLevel: "high",
+        now,
+      },
+    );
 
     expect(ordered.map((question) => question.id)).toEqual(["keep"]);
   });
@@ -107,8 +299,16 @@ describe("quiz selection engine", () => {
     const questions: QuizSelectionQuestionLike[] = Array.from({ length: 14 }, (_, index) => ({
       id: `q${index + 1}`,
       type: index % 2 === 0 ? ("true-false" as const) : ("multiple-choice" as const),
-      category: index % 3 === 0 ? ("action-terrain" as const) : index % 3 === 1 ? ("tri-recyclage" as const) : ("climat-biodiversite" as const),
+      category:
+        index % 3 === 0
+          ? ("action-terrain" as const)
+          : index % 3 === 1
+            ? ("tri-recyclage" as const)
+            : ("climat-biodiversite" as const),
       reasoningType: index % 2 === 0 ? ("terrain" as const) : ("estimation" as const),
+      skill: index % 2 === 0 ? ("terrain" as const) : ("estimation" as const),
+      pedagogicalType: index % 2 === 0 ? ("true-false" as const) : ("multiple-choice" as const),
+      difficulty: index < 5 ? ("low" as const) : index < 9 ? ("medium" as const) : ("high" as const),
       trapLevel: index < 5 ? ("low" as const) : index < 9 ? ("medium" as const) : ("high" as const),
     }));
 
@@ -121,9 +321,9 @@ describe("quiz selection engine", () => {
 
     const ordered = buildQuizSessionDeck(questions, stats, {
       accessTypeId: "mixte",
+      mode: "mixte",
       now,
     });
 
     expect(ordered).toHaveLength(10);
   });
-});

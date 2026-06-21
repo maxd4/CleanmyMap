@@ -6,6 +6,43 @@ Le système de répétition espacée n'est efficace que si la banque contient de
 
 La future banque de questions doit s'appuyer principalement sur 10 formats pédagogiques complémentaires. L'objectif est d'éviter qu'un seul format domine et de forcer des modes de raisonnement différents.
 
+## Sept portes d'entrée utilisateur
+
+Le quiz doit aussi être accessible selon ce que l'utilisateur veut évaluer. Cette sélection reste distincte des formats internes et des types de raisonnement.
+
+### Mixte
+- Toutes les questions mélangées dans une même séance
+- Objectif : alterner les contextes, les mécanismes et les formats
+
+### Terrain
+- Décisions réelles pendant une cleanwalk
+- Sécurité, gestes pratiques, cas limites, organisation
+
+### Données scientifiques
+- Mécanismes environnementaux
+- Pollution, recyclage, dégradation, biodiversité, impacts mesurables
+
+### Sensibilisation
+- Idées reçues, mythes, questions contre-intuitives
+- Objectif : provoquer une prise de conscience rapide
+
+### Habitudes de vie
+- Gestes quotidiens, consommation, réduction des déchets
+- Lien entre comportement individuel et impact collectif
+
+### Ordres de grandeur
+- Estimations, durées, masses, volumes, proportions, comparaisons
+- Objectif : apprendre à raisonner avec des ordres de grandeur
+
+### Tri & sécurité
+- Filières de traitement, erreurs de tri, déchets dangereux
+- Objectif : éviter les mauvais gestes sur le terrain
+
+Règle:
+- ces sept portes d'entrée ne sont pas des niveaux de difficulté;
+- elles servent à orienter le joueur vers le bon type de contenu;
+- le reste de la banque se répartit ensuite dans les formats pédagogiques internes.
+
 ## Objectif pédagogique
 
 Chaque question doit:
@@ -18,6 +55,122 @@ Chaque question doit:
 - produire un effet "ah, je ne savais pas" plutôt qu'un simple rappel automatique;
 - viser la réflexion plutôt que la mémorisation.
 
+## Grille d'évaluation pédagogique
+
+Chaque question doit aussi pouvoir être évaluée par une grille d'erreur lisible.
+
+Champs attendus:
+- `errorType`
+- `misconception`
+- `severity`
+- `feedbackCorrect`
+- `feedbackWrong`
+- `reviewTarget`
+
+Typologie d'erreurs CleanMyMap:
+- `idée reçue`
+- `erreur de sécurité`
+- `mauvaise estimation`
+- `confusion entre recyclabilité et recyclage réel`
+- `mauvais réflexe terrain`
+- `confusion entre biodégradable et sans impact`
+- `mauvaise compréhension d'une filière de tri`
+- `raisonnement trop simpliste`
+- `manque de nuance`
+- `impact indirect ignoré`
+
+Règles:
+- chaque erreur doit expliquer le mécanisme réel, pas seulement signaler qu'une réponse est fausse;
+- `feedbackCorrect` doit renforcer la bonne stratégie de raisonnement;
+- `feedbackWrong` doit nommer l'erreur pédagogique de manière utile;
+- `severity` sert à hiérarchiser l'importance du malentendu, pas à juger l'utilisateur;
+- `reviewTarget` doit renvoyer vers la rubrique la plus utile pour corriger l'erreur;
+- la grille doit rester cohérente avec le type de raisonnement demandé par la question.
+
+## Champ `trapLevel`
+
+Chaque question doit pouvoir recevoir un niveau de piégeage:
+- `low`
+- `medium`
+- `high`
+
+Règle:
+- le `trapLevel` décrit le piège intuitif, pas la difficulté de connaissance;
+- une question peut être simple à comprendre mais très piégeuse;
+- une question peut être technique sans être fortement piégeuse;
+- le `trapLevel` peut servir de filtre de mode avant le lancement du quiz, seul ou combiné avec un type d'accès;
+- le niveau de piégeage doit être renseigné ou déductible sans ambiguïté à l'authoring.
+
+## Champs de sélection du moteur
+
+Le moteur de sélection s'appuie sur plusieurs axes distincts. Ils ne jouent pas tous le même rôle.
+
+### `mode`
+- C'est le filtre principal du pool de questions.
+- Il détermine d'abord quelles questions sont éligibles à la session.
+- Les modes utilisateur restent: `Mixte`, `Terrain`, `Données scientifiques`, `Sensibilisation`, `Habitudes de vie`, `Ordres de grandeur`, `Tri & sécurité`.
+
+### `review`
+- C'est la priorité d'exposition issue du SRS.
+- L'ordre de passage favorise d'abord les questions `failed`, puis `due`, puis le reste.
+- Le but est de réparer d'abord ce qui casse l'apprentissage avant d'ajouter du neuf.
+
+### `skill`
+- C'est l'axe qui équilibre les compétences dans une session.
+- Il évite d'enchaîner trop de questions du même raisonnement.
+- Dans la banque actuelle, il est principalement porté par le type de raisonnement.
+
+### `pedagogicalType`
+- C'est l'axe qui fait tourner les formats pédagogiques.
+- Il évite de répéter le même habillage de question trop souvent.
+- Il doit rester distinct du fond: un même concept peut être posé en Vrai/Faux, en situation terrain ou en comparaison.
+
+### `difficulty`
+- C'est la montée en charge cognitive.
+- Elle organise la session du plus simple au plus exigeant sur le plan de l'effort mental.
+- Elle ne doit pas être confondue avec le piège intuitif.
+
+### `trapLevel`
+- C'est la montée en piège intuitif.
+- Il mesure à quel point la question exploite une intuition trompeuse.
+- Il reste séparé de la difficulté: une question peut être simple à comprendre mais très piégeuse, ou technique sans être très piégeuse.
+
+### `sessionSize`
+- C'est la borne de longueur de session.
+- Elle empêche la séance de devenir trop longue.
+- Elle permet au moteur de garder une sélection concentrée et lisible.
+
+## Moteur de sélection
+
+Le quiz ne pioche pas les questions au hasard.
+
+Règles:
+- le mode choisi par l'utilisateur détermine d'abord le périmètre des questions éligibles;
+- le moteur ordonne ensuite les questions selon `review`, `skill`, `pedagogicalType`, `difficulty` puis `trapLevel`;
+- chaque session ne retient qu'un sous-ensemble limité de la banque, pour éviter les parcours trop longs et favoriser la concentration;
+- la sélection doit éviter les doublons pédagogiques en alternant autant que possible les compétences et les formats;
+- la progression d'une session doit rester lisible: d'abord des questions accessibles, puis des questions plus exigeantes;
+- une sélection explicite de `trapLevel` réduit le pool mais ne remplace pas l'ordonnancement pédagogique;
+- la variété doit rester visible dans la session, sans enchaîner trop de questions du même sous-thème.
+- `difficulty` et `trapLevel` doivent toujours rester distincts dans l'authoring et dans la sélection;
+- quand un doute existe, la question doit être classée par la nature du raisonnement demandé, pas par la seule impression de difficulté.
+
+## Bilan final
+
+La fin de session doit toujours produire un bilan exploitable.
+
+Le bilan doit montrer:
+- le score global;
+- les compétences maîtrisées;
+- les compétences à revoir;
+- les types d'erreurs fréquentes;
+- le mode le plus utile à rejouer;
+- un lien direct vers la rubrique d'apprentissage la plus pertinente.
+
+Règle:
+- le bilan n'est pas un simple message de réussite;
+- il doit guider la reprise suivante avec une action concrète et une destination claire.
+
 ## Taxonomie canonique
 
 Le quiz n'utilise plus de niveaux de difficulté au sens scolaire. Chaque question doit être pensée et classée selon le type de raisonnement qu'elle demande.
@@ -29,6 +182,7 @@ Types de raisonnement de référence:
 - `comparaison`
 - `conséquences indirectes`
 - `questions contre-intuitives`
+- `cas-limites`
 
 Règle:
 - ne pas réintroduire une progression scolaire par niveaux;
@@ -173,6 +327,14 @@ Métadonnées recommandées:
 - `reviewTarget`: rubrique à revoir;
 - `misconception`: idée reçue corrigée;
 - `context`: terrain, plage, ville, événement, compost, etc.
+- `sourceUrl`: lien de référence de la question;
+- `sourceLabel`: nom lisible de la source;
+- `sourceType`: `institutionnelle`, `scientifique`, `associative`, `presse`, `interne` ou `estimation`;
+- `confidenceLevel`: `élevé`, `moyen` ou `faible`;
+- `isLocalRule`: vrai pour les consignes dépendantes du territoire;
+- `localScope`: `national`, `regional`, `departemental`, `communal` ou `variable`;
+- `lastCheckedAt`: date ISO de dernière vérification;
+- `needsReview`: vrai quand la question reste à relire ou dépend d'un contexte terrain général.
 
 ## Banque cible
 
@@ -190,6 +352,14 @@ Répartition éditoriale attendue:
 - varier les formulations pour maintenir l'attention et le doute;
 - alterner les formats selon la nature du concept à apprendre.
 
+Formats à renforcer en priorité aujourd'hui:
+- `classements`
+- `comparaisons`
+- `estimations`
+- `mini-enquetes`
+- `cas-limites`
+- puis, selon les besoins, davantage de `consequences-indirectes`
+
 Les 10 formats doivent rester complémentaires et couvrir notamment:
 - idées reçues;
 - situations terrain;
@@ -206,6 +376,18 @@ Répartition recommandée:
 - 65 à 75 % `Vrai / Faux`;
 - 20 à 25 % questions de situation;
 - 5 à 10 % rappels courts ou cartes flash.
+
+## Couverture réelle de la banque
+
+La banque actuelle est encore plus fournie sur les questions d'idées reçues et de terrain que sur les formats d'investigation et d'ordonnancement.
+
+À renforcer en priorité:
+- les `classements`, qui sont encore rares;
+- les `comparaisons`, qui restent trop peu nombreuses pour créer une vraie diversité;
+- les `estimations`, qui doivent porter davantage d'ordres de grandeur réalistes;
+- les `mini-enquetes`, qui aident à travailler le raisonnement à partir d'indices;
+- les `cas-limites`, encore trop peu présents pour couvrir les ambiguïtés de terrain;
+- secondairement, les `consequences-indirectes`, pour développer davantage la lecture systémique.
 
 ## Transformation d'une question trop facile
 
@@ -288,6 +470,9 @@ Pourquoi:
 - La question peut-elle être reliée à une rubrique de révision?
 - Le piège est-il pédagogique, pas artificiel?
 - La formulation reste-t-elle réaliste pour un utilisateur terrain?
+
+Pour appliquer cette checklist de manière plus stricte, utiliser la grille dédiée:
+[quiz-quality-control.md](./quiz-quality-control.md).
 
 ## Règle de validation éditoriale
 

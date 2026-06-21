@@ -38,6 +38,24 @@ export function Sample({ supabase }: { supabase: any }) {
     expect(report.useEffectNetworkHits.length).toBeGreaterThan(0);
   });
 
+  it("flags unguarded realtime in chat surfaces", () => {
+    const report = analyzeFile(
+      "src/components/chat/hooks/use-chat-data.ts",
+      process.cwd(),
+      `
+"use client";
+export function useChatData({ supabase }: { supabase: any }) {
+  supabase.channel("chat-updates").subscribe();
+  return null;
+}
+`,
+    ) as SupabaseQuotaFileReport;
+
+    expect(
+      report.findings.some((finding) => finding.type === "realtime_chat_unflagged"),
+    ).toBe(true);
+  });
+
   it("builds a markdown report with table and file summaries", () => {
     const fileReports = [
       analyzeFile(

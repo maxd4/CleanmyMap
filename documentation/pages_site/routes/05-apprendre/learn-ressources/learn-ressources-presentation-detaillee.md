@@ -1,8 +1,8 @@
 # Apprendre - Ressources - Présentation détaillée
 
-## Rôle de la page
+## Rôle de la surface
 
-- Rassembler les ressources de lecture, d'aide et de référence.
+- Rassembler les ressources de lecture, d'aide et de référence au sein de `bonnes-pratiques`.
 
 ## Points à compléter
 

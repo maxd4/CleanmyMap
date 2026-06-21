@@ -139,6 +139,56 @@ function MethodologyCard({
   );
 }
 
+function ReferenceDocCard({
+  doc,
+  schemaLabel,
+  schemaHref,
+  isFrench,
+}: {
+  doc: OpenSourceDoc;
+  schemaLabel: { fr: string; en: string };
+  schemaHref: string;
+  isFrench: boolean;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/5 p-8 transition-all duration-500 hover:scale-[1.01]">
+      <div className="mb-6 flex items-start gap-5">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-400 shadow-inner">
+          {doc.icon}
+        </div>
+        <div>
+          <h3 className="mb-2 text-xl font-bold text-white">{doc.title[isFrench ? "fr" : "en"]}</h3>
+          <p className="text-xs font-medium leading-relaxed text-red-100/50">{doc.desc[isFrench ? "fr" : "en"]}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/75">
+          {schemaLabel[isFrench ? "fr" : "en"]}
+        </span>
+        {doc.isPdf ? (
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/60">
+            PDF
+          </span>
+        ) : null}
+      </div>
+      <a
+        href={doc.href}
+        className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-red-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-red-400"
+      >
+        <ExternalLink size={14} />
+        {isFrench ? "Consulter le fichier" : "Open file"}
+      </a>
+      <a
+        href={schemaHref}
+        className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
+      >
+        <ExternalLink size={14} />
+        {isFrench ? "Voir le schéma" : "View schema"}
+      </a>
+    </div>
+  );
+}
+
 const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
   {
     id: "impact",
@@ -152,7 +202,7 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
     },
     href: "/docs/plans/rapport_impact/impact_IA.md",
     icon: <Scaling className="h-6 w-6" />,
-    isPdf: true,
+    isPdf: false,
   },
   {
     id: "master-arch",
@@ -403,12 +453,39 @@ export function MethodologiePageClient({
           ))}
         </div>
 
-        <FreePlanServicesMethodologyVisual
-          services={freePlanServices}
-          impactTotals={impactTotals}
-          githubStats={githubStats}
-          isFrench={isFrench}
-        />
+        <section className="space-y-8 pt-10 border-t border-white/10">
+          <div className="space-y-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+              {isFrench ? "Quota" : "Quota"}
+            </p>
+            <h2 className="text-4xl font-black tracking-tight text-white">
+              {isFrench ? "Plans et quotas" : "Plans and quotas"}
+            </h2>
+            <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
+              {isFrench
+                ? "La partie quota s’appuie sur la fiche d’architecture du site et reste centrée sur le risque de dépassement des limites de plan."
+                : "The quota section relies on the site architecture sheet and stays focused on the risk of exceeding plan limits."}
+            </p>
+          </div>
+
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+            <ReferenceDocCard
+              doc={OPEN_SOURCE_DOCS[6]}
+              schemaLabel={{ fr: "Schéma: onglet 1", en: "Schema: tab 1" }}
+              schemaHref="#quota-services"
+              isFrench={isFrench}
+            />
+
+            <FreePlanServicesMethodologyVisual
+              services={freePlanServices}
+              impactTotals={impactTotals}
+              githubStats={githubStats}
+              isFrench={isFrench}
+              displayMode="quota"
+              sectionId="quota-services"
+            />
+          </div>
+        </section>
 
         <section className="grid gap-10 xl:grid-cols-2">
           <MethodologyCard
@@ -496,76 +573,59 @@ export function MethodologiePageClient({
           </div>
         </div>
 
-        {/* Documentation Open Source */}
-        <div className="space-y-10 pt-10 border-t border-white/10">
-          <div className="text-center space-y-4">
-            <h2 className="text-4xl font-black tracking-tight text-white">
-              {isFrench ? "Documentation & Vision Open Source" : "Documentation & Open Source Vision"}
-            </h2>
-            <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
-              {isFrench 
-                ? "Retrouvez tous nos documents de référence, protocoles et fiches techniques en libre accès." 
-                : "Find all our reference documents, protocols and technical sheets in open access."}
-            </p>
-          </div>
-          
-        <div className="grid gap-6 md:grid-cols-2">
-            {OPEN_SOURCE_DOCS.map((doc) => (
-              <div
-                key={doc.id}
-                className={cn(
-                  "group relative overflow-hidden rounded-[2.5rem] border p-8 transition-all duration-500 hover:scale-[1.01]",
-                  classes.surface,
-                  classes.shadow
-                )}
-              >
-                <div className="flex items-start gap-5 mb-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-400 shadow-inner">
-                    {doc.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-2">{doc.title[locale]}</h3>
-                    <p className="text-xs font-medium leading-relaxed text-red-100/50">{doc.desc[locale]}</p>
-                  </div>
-                </div>
-                <a
-                  href={doc.href}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-red-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-red-400"
-                >
-                  <ExternalLink size={14} />
-                  {isFrench ? "Consulter" : "View"}
-                </a>
-                {doc.secondaryAction ? (
-                  <a
-                    href={doc.secondaryAction.href}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
-                  >
-                    <ExternalLink size={14} />
-                    {doc.secondaryAction.label[locale]}
-                  </a>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-
         <section className="space-y-8 pt-10 border-t border-white/10">
           <div className="space-y-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+              {isFrench ? "Rapport d'impact" : "Impact report"}
+            </p>
             <h2 className="text-4xl font-black tracking-tight text-white">
-              Historique mensuel d&apos;impact
+              {isFrench ? "Impact carbone des services suivis" : "Carbon impact of tracked services"}
             </h2>
             <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
-              La courbe du bas suit l&apos;historique persistant enregistré dans Supabase, tandis que
-              la ligne pointillée estime l&apos;impact du développement par IA depuis le lancement du
-              projet. Aucun chiffre n&apos;est inventé: les données absentes restent en NA.
+              {isFrench
+                ? "Le rapport d’impact est branché sur le texte canonique d’ACV et sur le schéma de l’onglet impact, avec l’historique mensuel en dessous."
+                : "The impact report is tied to the canonical LCA text and the impact tab schema, with the monthly history displayed below."}
             </p>
           </div>
 
-          <MonthlyImpactHistoryChart
-            snapshots={impactSnapshots}
-            launchedAt={impactLaunchedAt}
-            generatedAt={impactGeneratedAt}
-          />
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+            <ReferenceDocCard
+              doc={OPEN_SOURCE_DOCS[0]}
+              schemaLabel={{ fr: "Schéma: onglet 2", en: "Schema: tab 2" }}
+              schemaHref="#impact-services"
+              isFrench={isFrench}
+            />
+
+            <div className="space-y-8">
+              <FreePlanServicesMethodologyVisual
+                services={freePlanServices}
+                impactTotals={impactTotals}
+                githubStats={githubStats}
+                isFrench={isFrench}
+                displayMode="impact"
+                sectionId="impact-services"
+              />
+
+              <section className="space-y-8 rounded-[2.5rem] border border-white/5 bg-white/5 p-8">
+                <div className="space-y-4 text-center">
+                  <h3 className="text-3xl font-black tracking-tight text-white">
+                    {isFrench ? "Historique mensuel d'impact" : "Monthly impact history"}
+                  </h3>
+                  <p className="mx-auto max-w-3xl text-base font-medium leading-relaxed text-red-100/50">
+                    {isFrench
+                      ? "La courbe du bas suit l’historique persistant enregistré dans Supabase, tandis que la ligne pointillée estime l’impact du développement par IA depuis le lancement du projet. Aucun chiffre n’est inventé: les données absentes restent en NA."
+                      : "The bottom curve follows the persistent history stored in Supabase, while the dashed line estimates the impact of AI development since project launch. No number is invented: missing data stays NA."}
+                  </p>
+                </div>
+
+                <MonthlyImpactHistoryChart
+                  snapshots={impactSnapshots}
+                  launchedAt={impactLaunchedAt}
+                  generatedAt={impactGeneratedAt}
+                />
+              </section>
+            </div>
+          </div>
         </section>
 
         <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">

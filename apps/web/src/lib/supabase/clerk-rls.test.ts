@@ -17,6 +17,7 @@ vi.mock("@/lib/env", () => ({
   env: {
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_test_abcdefghijklmnopqrstuvwxyz",
+    NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE: "clerk-supabase",
   },
 }));
 
@@ -35,7 +36,9 @@ describe("getSupabaseClerkRlsClient", () => {
     await expect(getSupabaseClerkRlsClient()).resolves.toBe(client);
 
     expect(getTokenMock).toHaveBeenCalledTimes(1);
-    expect(getTokenMock).toHaveBeenCalledWith();
+    expect(getTokenMock).toHaveBeenCalledWith({
+      template: "clerk-supabase",
+    });
     expect(createClientMock).toHaveBeenCalledTimes(1);
 
     const [, , options] = createClientMock.mock.calls[0] ?? [];
@@ -60,5 +63,15 @@ describe("getSupabaseClerkRlsClient", () => {
 
     expect(getTokenMock).toHaveBeenCalledTimes(1);
     expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it("throws when a required RLS client cannot be created", async () => {
+    getTokenMock.mockResolvedValue(null);
+
+    const { requireSupabaseClerkRlsClient } = await import("./clerk-rls");
+
+    await expect(requireSupabaseClerkRlsClient()).rejects.toThrow(
+      "Clerk/Supabase JWT accessToken unavailable for a required RLS flow.",
+    );
   });
 });

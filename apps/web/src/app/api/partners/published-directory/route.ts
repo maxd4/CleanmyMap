@@ -16,6 +16,10 @@ export async function GET() {
  status:"ok",
  count: visibleItems.length,
  items: visibleItems,
+ }, {
+  headers: {
+   "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+  },
  });
  } catch (error) {
  console.warn("Published partner directory load failed", error);

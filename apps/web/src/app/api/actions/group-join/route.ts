@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getCurrentUserIdentity } from "@/lib/authz";
+import { isAdminLikeProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -12,6 +14,7 @@ import {
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 export const runtime = "nodejs";
+// Justification Vercel: l'adhesion a un groupe depend de la requete courante et du contexte Clerk.
 export const dynamic = "force-dynamic";
 
 const listQuerySchema = z.object({
@@ -85,18 +88,28 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
+    const identity = await getCurrentUserIdentity();
+    const isAdminLikeSubmission = Boolean(
+      identity && isAdminLikeProfile(identity.role),
+    );
     const joined = await joinActionParticipation(supabase, {
       actionId: parsed.data.actionId,
       userId,
+      isAdminLike: isAdminLikeSubmission,
     });
 
-    await refreshProgressionProfile(supabase, userId).catch(() => null);
+    if (joined.participationStatus === "confirmed") {
+      await refreshProgressionProfile(supabase, userId).catch(() => null);
+    }
 
     return NextResponse.json({
       status: "ok",
       actionId: parsed.data.actionId,
       alreadyJoined: joined.alreadyJoined,
       joinedAt: joined.joinedAt,
+      participationStatus: joined.participationStatus,
+      participationSource: joined.participationSource,
+      participationUpdatedAt: joined.participationUpdatedAt,
       participantsCount: joined.participantsCount,
     });
   } catch (error) {

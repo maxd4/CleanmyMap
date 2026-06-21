@@ -94,4 +94,17 @@ describe("referral lineage", () => {
       focus_profile_id: focus.id,
     });
   });
+
+  it("surfaces rpc errors instead of silently returning an empty tree", async () => {
+    const rpcMock = vi.fn(async () => ({
+      data: null,
+      error: { message: "rpc failed" },
+    }));
+
+    const supabase = {
+      rpc: rpcMock,
+    } as any;
+
+    await expect(loadReferralLineageView(supabase, "child")).rejects.toThrow("rpc failed");
+  });
 });

@@ -113,20 +113,37 @@ function fireConfetti(tone: GamificationCelebrationTone) {
 export function GamificationCelebrationHost() {
   const [toast, setToast] = useState<CelebrationState | null>(null);
   const soundPlayedRef = useRef<number | null>(null);
+  const recentKeysRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     const handleCelebration = (event: Event) => {
       const customEvent = event as CustomEvent<GamificationCelebrationPayload>;
+      const payload = customEvent.detail;
+      const now = Date.now();
+      for (const [key, timestamp] of recentKeysRef.current.entries()) {
+        if (now - timestamp > 2 * 60 * 1000) {
+          recentKeysRef.current.delete(key);
+        }
+      }
+
+      if (payload.dedupeKey && recentKeysRef.current.has(payload.dedupeKey)) {
+        return;
+      }
+
+      if (payload.dedupeKey) {
+        recentKeysRef.current.set(payload.dedupeKey, now);
+      }
+
       setToast({
         id: Date.now(),
-        title: customEvent.detail.title,
-        message: customEvent.detail.message,
-        tone: customEvent.detail.tone ?? "generic",
-        icon: customEvent.detail.icon,
-        durationMs: customEvent.detail.durationMs,
-        confetti: customEvent.detail.confetti,
-        sound: customEvent.detail.sound,
-        source: customEvent.detail.source,
+        title: payload.title,
+        message: payload.message,
+        tone: payload.tone ?? "generic",
+        icon: payload.icon,
+        durationMs: payload.durationMs,
+        confetti: payload.confetti,
+        sound: payload.sound,
+        source: payload.source,
       });
     };
 

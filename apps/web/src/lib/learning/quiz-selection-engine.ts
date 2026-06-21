@@ -10,9 +10,17 @@ import {
 } from "@/components/learn/quiz-access-types";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
 import type { QuizQuestionCategory } from "@/components/learn/quiz-review-targets";
-import type { QuizQuestionFormatId } from "@/components/learn/quiz-question-formats";
 import {
-  QUIZ_TRAP_LEVELS,
+  getQuizDifficulty,
+  getQuizDifficultyIndex,
+  getQuizPedagogicalType,
+  getQuizPedagogicalTypeIndex,
+  getQuizSkill,
+  type QuizDifficultyId,
+  type QuizPedagogicalTypeId,
+  type QuizSkillId,
+} from "@/lib/learning/quiz-taxonomy";
+import {
   getQuizTrapLevel,
   matchesQuizTrapLevel,
   type QuizTrapLevelId,
@@ -22,13 +30,17 @@ export type QuizSelectionQuestionLike = {
   id: string;
   category: QuizQuestionCategory;
   reasoningType: QuizReasoningType;
-  type: "multiple-choice" | "true-false" | "flashcard";
-  format?: QuizQuestionFormatId;
+  type: "multiple-choice" | "multiple-select" | "true-false" | "flashcard";
+  format?: QuizPedagogicalTypeId;
+  pedagogicalType?: QuizPedagogicalTypeId;
+  skill?: QuizSkillId;
+  difficulty?: QuizDifficultyId;
   trapLevel?: QuizTrapLevelId;
 };
 
 export type QuizSelectionOptions = {
   accessTypeId: QuizAccessTypeId;
+  mode?: QuizAccessTypeId;
   trapLevel?: QuizTrapLevelId | null;
   reasoningType?: QuizReasoningType | null;
   sessionSize?: number;
@@ -62,57 +74,26 @@ const MODE_TRAP_SEQUENCE: Record<QuizAccessTypeId, readonly QuizTrapLevelId[]> =
   "tri-securite": ["low", "medium", "high"],
 };
 
-const FORMAT_PRIORITY_SEQUENCE: readonly string[] = [
-  "vrai-faux-piegeux",
-  "situations-terrain",
-  "questions-contre-intuitives",
-  "estimations",
-  "comparaisons",
-  "classements",
-  "mini-enquetes",
-  "cas-limites",
-  "mythes-et-realites",
-  "consequences-indirectes",
-  "multiple-choice",
-  "flashcard",
-];
+function getSelectedMode(options: QuizSelectionOptions): QuizAccessTypeId {
+  return options.mode ?? options.accessTypeId;
+}
 
-function getTrapLevelIndex(
-  accessTypeId: QuizAccessTypeId,
-  trapLevel: QuizTrapLevelId,
-): number {
-  const sequence = MODE_TRAP_SEQUENCE[accessTypeId];
+function getTrapLevelIndex(mode: QuizAccessTypeId, trapLevel: QuizTrapLevelId): number {
+  const sequence = MODE_TRAP_SEQUENCE[mode];
   const index = sequence.indexOf(trapLevel);
   return index === -1 ? sequence.length : index;
 }
 
-function getReasoningIndex(
-  accessTypeId: QuizAccessTypeId,
-  reasoningType: QuizReasoningType,
-): number {
-  const sequence = getQuizAccessType(accessTypeId).reasoningTypes;
+function getReasoningIndex(mode: QuizAccessTypeId, reasoningType: QuizReasoningType): number {
+  const sequence = getQuizAccessType(mode).reasoningTypes;
   const index = sequence.indexOf(reasoningType);
   return index === -1 ? sequence.length : index;
 }
 
-function getCategoryIndex(
-  accessTypeId: QuizAccessTypeId,
-  category: QuizQuestionCategory,
-): number {
-  const sequence = getQuizAccessType(accessTypeId).categories;
+function getCategoryIndex(mode: QuizAccessTypeId, category: QuizQuestionCategory): number {
+  const sequence = getQuizAccessType(mode).categories;
   const index = sequence.indexOf(category);
   return index === -1 ? sequence.length : index;
-}
-
-function getFormatKey(question: QuizSelectionQuestionLike): string {
-  return question.format ?? question.type;
-}
-
-function getFormatIndex(
-  formatKey: string,
-): number {
-  const index = FORMAT_PRIORITY_SEQUENCE.indexOf(formatKey);
-  return index === -1 ? FORMAT_PRIORITY_SEQUENCE.length : index;
 }
 
 function getSRSReviewTime(stats: SRSStats | undefined, now: Date): number {
@@ -123,114 +104,81 @@ function getSRSReviewTime(stats: SRSStats | undefined, now: Date): number {
   return new Date(stats.next_review_at).getTime();
 }
 
-function compareQuestionPriority<T extends QuizSelectionQuestionLike>(
+function getResolvedSkill(question: QuizSelectionQuestionLike): QuizSkillId {
+  return question.skill ?? getQuizSkill(question);
+}
+
+function getResolvedPedagogicalType(question: QuizSelectionQuestionLike): QuizPedagogicalTypeId {
+  return question.pedagogicalType ?? question.format ?? getQuizPedagogicalType(question);
+}
+
+function getResolvedDifficulty(question: QuizSelectionQuestionLike): QuizDifficultyId {
+  return question.difficulty ?? getQuizDifficulty(question);
+}
+
+function compareQuestionsWithinBucket<T extends QuizSelectionQuestionLike>(
   left: T,
   right: T,
-  accessTypeId: QuizAccessTypeId,
+  mode: QuizAccessTypeId,
   statsByQuestionId: Record<string, SRSStats>,
   now: Date,
 ): number {
-  const leftStats = statsByQuestionId[left.id];
-  const rightStats = statsByQuestionId[right.id];
-
-  const leftState = getQuizStateFromStats(leftStats, now);
-  const rightState = getQuizStateFromStats(rightStats, now);
-  const stateDiff = STATE_PRIORITY[leftState] - STATE_PRIORITY[rightState];
-  if (stateDiff !== 0) {
-    return stateDiff;
+  const leftDifficulty = getQuizDifficultyIndex(getResolvedDifficulty(left));
+  const rightDifficulty = getQuizDifficultyIndex(getResolvedDifficulty(right));
+  if (leftDifficulty !== rightDifficulty) {
+    return leftDifficulty - rightDifficulty;
   }
 
-  const leftTrapLevel = getQuizTrapLevel(left);
-  const rightTrapLevel = getQuizTrapLevel(right);
-  const trapDiff = getTrapLevelIndex(accessTypeId, leftTrapLevel) - getTrapLevelIndex(accessTypeId, rightTrapLevel);
-  if (trapDiff !== 0) {
-    return trapDiff;
+  const leftTrap = getTrapLevelIndex(mode, getQuizTrapLevel(left));
+  const rightTrap = getTrapLevelIndex(mode, getQuizTrapLevel(right));
+  if (leftTrap !== rightTrap) {
+    return leftTrap - rightTrap;
   }
 
-  const leftReasoningDiff = getReasoningIndex(accessTypeId, left.reasoningType);
-  const rightReasoningDiff = getReasoningIndex(accessTypeId, right.reasoningType);
-  if (leftReasoningDiff !== rightReasoningDiff) {
-    return leftReasoningDiff - rightReasoningDiff;
+  const leftCategory = getCategoryIndex(mode, left.category);
+  const rightCategory = getCategoryIndex(mode, right.category);
+  if (leftCategory !== rightCategory) {
+    return leftCategory - rightCategory;
   }
 
-  const leftCategoryDiff = getCategoryIndex(accessTypeId, left.category);
-  const rightCategoryDiff = getCategoryIndex(accessTypeId, right.category);
-  if (leftCategoryDiff !== rightCategoryDiff) {
-    return leftCategoryDiff - rightCategoryDiff;
-  }
-
-  const leftFormatKey = getFormatKey(left);
-  const rightFormatKey = getFormatKey(right);
-  const leftFormatDiff = getFormatIndex(leftFormatKey);
-  const rightFormatDiff = getFormatIndex(rightFormatKey);
-  if (leftFormatDiff !== rightFormatDiff) {
-    return leftFormatDiff - rightFormatDiff;
-  }
-
-  const reviewDiff = getSRSReviewTime(leftStats, now) - getSRSReviewTime(rightStats, now);
-  if (reviewDiff !== 0) {
-    return reviewDiff;
+  const leftReview = getSRSReviewTime(statsByQuestionId[left.id], now);
+  const rightReview = getSRSReviewTime(statsByQuestionId[right.id], now);
+  if (leftReview !== rightReview) {
+    return leftReview - rightReview;
   }
 
   return left.id.localeCompare(right.id, "fr");
 }
 
-function sortCategoryBuckets<T extends QuizSelectionQuestionLike>(
-  questions: readonly T[],
-  accessTypeId: QuizAccessTypeId,
-  statsByQuestionId: Record<string, SRSStats>,
-  now: Date,
-): T[][] {
-  const buckets = new Map<QuizQuestionCategory, T[]>();
+function compareBucketScore(
+  leftScore: readonly number[],
+  rightScore: readonly number[],
+  leftLabel: string,
+  rightLabel: string,
+): number {
+  for (let index = 0; index < leftScore.length; index += 1) {
+    if (leftScore[index] !== rightScore[index]) {
+      return leftScore[index] - rightScore[index];
+    }
+  }
 
-  questions.forEach((question) => {
-    const bucket = buckets.get(question.category) ?? [];
-    bucket.push(question);
-    buckets.set(question.category, bucket);
+  return leftLabel.localeCompare(rightLabel, "fr");
+}
+
+function bucketize<T extends QuizSelectionQuestionLike, K extends string>(
+  items: readonly T[],
+  getKey: (item: T) => K,
+): Array<{ key: K; bucket: T[] }> {
+  const buckets = new Map<K, T[]>();
+
+  items.forEach((item) => {
+    const key = getKey(item);
+    const bucket = buckets.get(key) ?? [];
+    bucket.push(item);
+    buckets.set(key, bucket);
   });
 
-  const orderedBuckets = Array.from(buckets.entries())
-    .map(([category, bucket]) => {
-      const sortedBucket = [...bucket].sort((left, right) =>
-        compareQuestionPriority(left, right, accessTypeId, statsByQuestionId, now),
-      );
-
-      const bucketHead = sortedBucket[0];
-      const headState = bucketHead ? STATE_PRIORITY[getQuizStateFromStats(statsByQuestionId[bucketHead.id], now)] : 99;
-      const headTrap = bucketHead ? getTrapLevelIndex(accessTypeId, getQuizTrapLevel(bucketHead)) : 99;
-      const headReasoning = bucketHead ? getReasoningIndex(accessTypeId, bucketHead.reasoningType) : 99;
-      const headFormat = bucketHead ? getFormatIndex(getFormatKey(bucketHead)) : 99;
-      const categoryIndex = getCategoryIndex(accessTypeId, category);
-      const dueCount = bucket.reduce((count, item) => {
-        const state = getQuizStateFromStats(statsByQuestionId[item.id], now);
-        return count + (state === "failed" || state === "due" ? 1 : 0);
-      }, 0);
-
-      return {
-        category,
-        bucket: sortedBucket,
-        bucketScore: [
-          headState,
-          categoryIndex,
-          headTrap,
-          headReasoning,
-          headFormat,
-          -dueCount,
-          -sortedBucket.length,
-        ] as const,
-      };
-    })
-    .sort((left, right) => {
-      for (let index = 0; index < left.bucketScore.length; index += 1) {
-        if (left.bucketScore[index] !== right.bucketScore[index]) {
-          return left.bucketScore[index] - right.bucketScore[index];
-        }
-      }
-
-      return left.category.localeCompare(right.category, "fr");
-    });
-
-  return orderedBuckets.map((entry) => entry.bucket);
+  return Array.from(buckets.entries()).map(([key, bucket]) => ({ key, bucket }));
 }
 
 function weaveBuckets<T>(buckets: T[][]): T[] {
@@ -253,64 +201,76 @@ function weaveBuckets<T>(buckets: T[][]): T[] {
   return ordered;
 }
 
-function buildFocusedModeDeck<T extends QuizSelectionQuestionLike>(
+function orderPedagogicalBuckets<T extends QuizSelectionQuestionLike>(
   questions: readonly T[],
-  accessTypeId: QuizAccessTypeId,
+  mode: QuizAccessTypeId,
   statsByQuestionId: Record<string, SRSStats>,
   now: Date,
-): T[] {
-  const trapSequence = MODE_TRAP_SEQUENCE[accessTypeId];
-  const trapOrder = trapSequence.filter((trapLevel) =>
-    questions.some((question) => getQuizTrapLevel(question) === trapLevel),
-  );
+): T[][] {
+  return bucketize(questions, getResolvedPedagogicalType)
+    .map(({ key, bucket }) => {
+      const sortedBucket = [...bucket].sort((left, right) =>
+        compareQuestionsWithinBucket(left, right, mode, statsByQuestionId, now),
+      );
+      const head = sortedBucket[0];
+      const score = [
+        getQuizPedagogicalTypeIndex(key),
+        head ? getQuizDifficultyIndex(getResolvedDifficulty(head)) : 99,
+        head ? getTrapLevelIndex(mode, getQuizTrapLevel(head)) : 99,
+        head ? getCategoryIndex(mode, head.category) : 99,
+        -sortedBucket.length,
+      ] as const;
 
-  const remainingTraps = QUIZ_TRAP_LEVELS.map((trapLevel) => trapLevel.id).filter(
-    (trapLevel) => !trapOrder.includes(trapLevel) && questions.some((question) => getQuizTrapLevel(question) === trapLevel),
-  );
-
-  const ordered: T[] = [];
-
-  [...trapOrder, ...remainingTraps].forEach((trapLevel) => {
-    const trapQuestions = questions.filter((question) => getQuizTrapLevel(question) === trapLevel);
-    if (trapQuestions.length === 0) {
-      return;
-    }
-
-    const bucketOrder = sortCategoryBuckets(trapQuestions, accessTypeId, statsByQuestionId, now);
-    ordered.push(...weaveBuckets(bucketOrder));
-  });
-
-  return ordered;
+      return { key, bucket: sortedBucket, score };
+    })
+    .sort((left, right) => compareBucketScore(left.score, right.score, left.key, right.key))
+    .map((entry) => entry.bucket);
 }
 
-function buildMixedModeDeck<T extends QuizSelectionQuestionLike>(
+function orderSkillBuckets<T extends QuizSelectionQuestionLike>(
   questions: readonly T[],
+  mode: QuizAccessTypeId,
+  statsByQuestionId: Record<string, SRSStats>,
+  now: Date,
+): T[][] {
+  return bucketize(questions, getResolvedSkill)
+    .map(({ key, bucket }) => {
+      const pedagogicalBuckets = orderPedagogicalBuckets(bucket, mode, statsByQuestionId, now);
+      const orderedBucket = weaveBuckets(pedagogicalBuckets);
+      const head = orderedBucket[0];
+      const score = [
+        getReasoningIndex(mode, key),
+        head ? getQuizDifficultyIndex(getResolvedDifficulty(head)) : 99,
+        head ? getTrapLevelIndex(mode, getQuizTrapLevel(head)) : 99,
+        head ? getCategoryIndex(mode, head.category) : 99,
+        -orderedBucket.length,
+      ] as const;
+
+      return { key, bucket: orderedBucket, score };
+    })
+    .sort((left, right) => compareBucketScore(left.score, right.score, left.key, right.key))
+    .map((entry) => entry.bucket);
+}
+
+function buildOrderedModeDeck<T extends QuizSelectionQuestionLike>(
+  questions: readonly T[],
+  mode: QuizAccessTypeId,
   statsByQuestionId: Record<string, SRSStats>,
   now: Date,
 ): T[] {
-  if (questions.length <= 1) {
-    return [...questions];
-  }
-
-  const stateBuckets = new Map<CognitiveQuizStateId, T[]>();
-  questions.forEach((question) => {
-    const state = getQuizStateFromStats(statsByQuestionId[question.id], now);
-    const bucket = stateBuckets.get(state) ?? [];
-    bucket.push(question);
-    stateBuckets.set(state, bucket);
-  });
-
+  const stateBuckets = bucketize(questions, (question) => getQuizStateFromStats(statsByQuestionId[question.id], now));
   const ordered: T[] = [];
+
   (Object.keys(STATE_PRIORITY) as CognitiveQuizStateId[])
     .sort((left, right) => STATE_PRIORITY[left] - STATE_PRIORITY[right])
     .forEach((state) => {
-      const bucket = stateBuckets.get(state);
+      const bucket = stateBuckets.find((entry) => entry.key === state)?.bucket;
       if (!bucket || bucket.length === 0) {
         return;
       }
 
-      const categoryBuckets = sortCategoryBuckets(bucket, "mixte", statsByQuestionId, now);
-      ordered.push(...weaveBuckets(categoryBuckets));
+      const skillBuckets = orderSkillBuckets(bucket, mode, statsByQuestionId, now);
+      ordered.push(...weaveBuckets(skillBuckets));
     });
 
   return ordered;
@@ -322,8 +282,10 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
   options: QuizSelectionOptions,
 ): T[] {
   const now = options.now ?? new Date();
+  const selectedMode = getSelectedMode(options);
+
   const filteredQuestions = questions.filter((question) => {
-    if (!matchesQuizAccessType(options.accessTypeId, question)) {
+    if (!matchesQuizAccessType(selectedMode, question)) {
       return false;
     }
 
@@ -331,7 +293,7 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
       return false;
     }
 
-    if (options.reasoningType && question.reasoningType !== options.reasoningType) {
+    if (options.reasoningType && getResolvedSkill(question) !== options.reasoningType) {
       return false;
     }
 
@@ -342,11 +304,7 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
     return [...filteredQuestions];
   }
 
-  const sessionSize = options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE[options.accessTypeId];
+  const sessionSize = options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE[selectedMode];
 
-  if (options.accessTypeId === "mixte") {
-    return buildMixedModeDeck(filteredQuestions, statsByQuestionId, now).slice(0, sessionSize);
-  }
-
-  return buildFocusedModeDeck(filteredQuestions, options.accessTypeId, statsByQuestionId, now).slice(0, sessionSize);
+  return buildOrderedModeDeck(filteredQuestions, selectedMode, statsByQuestionId, now).slice(0, sessionSize);
 }

@@ -2,9 +2,9 @@
 
 ## Fiche canonique
 
-- **Route** : `/gamification`
+- **Route** : `/sections/gamification`
 - **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/gamification/page.tsx`
+- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - **Type fonctionnel** : page de bloc
 - **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
 - **Statut** : protégé
@@ -57,6 +57,7 @@ La rubrique gamification sert à rendre lisible la progression personnelle, la r
 - `Équilibre des contextes` soutient l alternance entre spontané, association et entreprise avec des cycles croissants: 1, puis 2, puis 3 actions de chaque type, et remise à zéro entre chaque palier.
 - `Régularité mensuelle` suit les mois calendaires de participation et se recalcule si une action est rejetée.
 - `Zone sensible apaisée` compte les actions validées sur les zones critiques ou historiquement très sales.
+- Les progressions quiz actives couvrent `Progression quiz par type` et `Quiz équilibré` afin de séparer la maîtrise d un type de question et l entraînement sur l ensemble du catalogue.
 
 ## États à documenter
 
@@ -73,8 +74,10 @@ La rubrique gamification sert à rendre lisible la progression personnelle, la r
 
 ## Notes d audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche est la source de vérité canonique pour la section.
+- `/gamification` reste un alias de compatibilité vers cette section canonique.
 - La source canonique des règles de gamification vit dans [gamification-SPEC_CANONIQUE.md](./gamification-SPEC_CANONIQUE.md).
+- Les conventions de scopes temporels et le résumé de l interface cible vivent dans [gamification-scope-ui-notes.md](./gamification-scope-ui-notes.md).
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
 
 ## Liens de travail

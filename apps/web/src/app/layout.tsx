@@ -27,22 +27,25 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const identity = await getCurrentUserIdentity();
   const clerkRuntime = getClerkRuntimeConfig();
   const useClerkProxy = Boolean(clerkRuntime.proxyUrl);
-  const { userId, clerkReachable } = await getSafeAuthSession();
   const displayModePreference = await getServerDisplayModePreference();
   const locale = await getServerLocale();
-  const role = clerkReachable
+  const requestHeaders = await headers();
+  const isProtectedRoute =
+    requestHeaders.get("x-cleanmymap-protected-route") === "1";
+  const authSession = isProtectedRoute ? await getSafeAuthSession() : null;
+  const identity = authSession?.userId ? await getCurrentUserIdentity() : null;
+  const role = authSession?.userId && authSession.clerkReachable
     ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
     : ("anonymous" as const);
   const currentProfile = toProfile(role);
-  const profileLabel = userId
-    ? getProfileLabel(currentProfile, locale)
-    : locale === "fr"
-      ? "Visiteur"
-      : "Visitor";
-  const requestHeaders = await headers();
+  const profileLabel =
+    authSession?.userId && isProtectedRoute
+      ? getProfileLabel(currentProfile, locale)
+      : locale === "fr"
+        ? "Visiteur"
+        : "Visitor";
   const initialBackdropToneKey = resolveBackdropToneKey(
     requestHeaders.get("x-cleanmymap-backdrop-tone"),
   );

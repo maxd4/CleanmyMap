@@ -573,6 +573,7 @@ export function LearnArtworkAccordion({ locale }: { locale: LearnLocale }) {
                     alt={artwork.image.alt[locale]}
                     fill
                     sizes="(min-width: 1024px) 50vw, 100vw"
+                    unoptimized
                     className="object-cover"
                   />
                   <figcaption className="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-500">

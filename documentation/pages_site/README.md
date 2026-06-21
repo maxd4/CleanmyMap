@@ -9,6 +9,11 @@ Point d'entrée du registre documentaire route-first.
 
 Ce dossier sert de source de vérité documentaire pour les pages du site. Le détail de chaque route vit dans sa présentation détaillée canonique.
 
+Chaque page modifiée doit être vérifiée par un duo de contrôles :
+
+- capture écran desktop pour le rendu visuel
+- export `.MD this page` dans Chrome pour la lisibilité sémantique sans mise en page
+
 ## Choix de sobriété
 
 Les pages doivent privilégier la légèreté.
@@ -45,6 +50,24 @@ Règle de structure photo:
 - les captures restent en `.webp`.
 
 L'objectif est de centraliser, pour chaque page, à la fois la preuve visuelle, les écarts UI connus et la documentation fonctionnelle.
+La preuve visuelle seule ne suffit pas : la lecture Markdown doit aussi rester claire.
+
+## Fichiers d'amélioration continue
+
+Les fichiers d'amélioration continue de `pages_site` servent à proposer des évolutions concrètes, pas à refaire la fiche canonique.
+
+Ils doivent aider à:
+
+- améliorer la rubrique sur le fond et sur la forme ;
+- proposer des améliorations UX/UI concrètes ;
+- proposer des améliorations fonctionnelles réalistes ;
+- identifier les incohérences possibles ;
+- détailler les besoins desktop et mobile ;
+- anticiper accessibilité, performance, sécurité et abus ;
+- prévoir analytics et SEO si pertinent ;
+- proposer une architecture claire et scalable.
+
+Une bonne fiche d'amélioration reste spécifique à la page ou à la rubrique concernée, priorise les gains à fort impact et évite les idées trop vagues ou déconnectées du code existant.
 
 ## Règles spécifiques aux rubriques
 

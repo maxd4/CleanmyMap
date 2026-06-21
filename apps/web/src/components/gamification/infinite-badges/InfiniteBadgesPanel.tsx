@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { InfiniteBadge } from "./InfiniteBadge";
 import { BADGE_STEP_DECHETS, BADGE_STEP_MEGOTS } from "@/config/gamification.config";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import { ActionBalanceBadge } from "../action-balance-badge";
 import { MonthlyRegularityBadge } from "../monthly-regularity-badge";
@@ -149,12 +149,13 @@ export function InfiniteBadgesPanel({
             unitLabel={item.unitLabel}
             family={item.family}
             onMilestoneReached={(payload) => {
-              dispatchGamificationCelebration({
+              announceGamificationGain({
                 title: "Palier infini atteint",
                 message: `${payload.title} est maintenant au niveau ${payload.level}.`,
                 tone: item.key === "lieux" ? "explorer" : item.key === "actions" ? "actions" : "generic",
                 icon: payload.icon,
                 source: `infinite-${item.key}`,
+                dedupeKey: `infinite-${item.key}:${payload.level}`,
               });
             }}
           />

@@ -57,7 +57,7 @@ export function DefaultLayout({
           ) : null}
           <h2 className="text-xl font-semibold tracking-[-0.02em] text-slate-950">Carte terrain</h2>
           <p className="mt-1 text-sm text-slate-700">
-            Flux géolocalisé depuis <code>/api/actions/map</code>.
+            Flux géolocalisé depuis Supabase, borné par le viewport et les filtres actifs.
           </p>
           {freshnessLabel ? (
             <div className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 ${tone === "emerald" ? "border-emerald-200/80 bg-emerald-100" : "border-sky-200/80 bg-sky-100"}`}>

@@ -194,6 +194,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                       <Link
                         key={item.id}
                         href={item.href}
+                        prefetch={false}
                         onMouseEnter={() => setSelectedIndex(index)}
                         className={cn(
                           "group flex items-center justify-between rounded-2xl border border-transparent p-4 transition-all duration-200",

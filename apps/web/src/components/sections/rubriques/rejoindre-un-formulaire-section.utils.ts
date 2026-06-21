@@ -79,7 +79,11 @@ function buildSearchableText(item: JoinableActionItem, locale: "fr" | "en"): str
       item.participantsCount.toString(),
       item.volunteers_count.toString(),
       item.duration_minutes.toString(),
-      item.joined ? "deja rejoint" : "a rejoindre",
+      item.awaitingApproval
+        ? "en attente approbation"
+        : item.joined
+          ? "deja rejoint"
+          : "a rejoindre",
       item.groupJoinEnabled ? "ouverte" : "fermee",
     ].join(" "),
   );
@@ -111,7 +115,7 @@ export function filterAndSortJoinableActions(
 ): JoinableActionItem[] {
   const normalizedSearch = normalizeSearchText(query.search);
   const filtered = items.filter((item) => {
-    if (query.joinFilter === "available" && item.joined) {
+    if (query.joinFilter === "available" && (item.joined || item.awaitingApproval)) {
       return false;
     }
 
@@ -140,4 +144,3 @@ export function filterAndSortJoinableActions(
   const [focused] = ordered.splice(focusIndex, 1);
   return [focused, ...ordered];
 }
-

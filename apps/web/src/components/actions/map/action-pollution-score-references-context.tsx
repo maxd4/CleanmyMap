@@ -13,6 +13,8 @@ import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution-score";
+import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution-score-references";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   ACTION_POLLUTION_SCORE_REFERENCES_INVALIDATED_EVENT,
 } from "@/lib/actions/pollution-score-references-events";
@@ -34,37 +36,9 @@ const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreRef
 const ActionPollutionScoreReferencesContext =
   createContext<ActionPollutionScoreReferencesContextValue | null>(null);
 
-async function fetchPollutionScoreReferences(
-  signal: AbortSignal,
-): Promise<PollutionScoreReferences> {
-  const response = await fetch("/api/actions/pollution-score-references", {
-    method: "GET",
-    cache: "no-store",
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error("Impossible de charger la référence de score.");
-  }
-
-  const payload = (await response.json()) as {
-    wastePerVolunteer?: number;
-    buttsPerVolunteer?: number;
-  };
-
-  const wastePerVolunteer = Number(payload.wastePerVolunteer ?? 0);
-  const buttsPerVolunteer = Number(payload.buttsPerVolunteer ?? 0);
-
-  return {
-    wastePerVolunteer:
-      Number.isFinite(wastePerVolunteer) && wastePerVolunteer > 0
-        ? wastePerVolunteer
-        : DEFAULT_POLLUTION_SCORE_REFERENCES.wastePerVolunteer,
-    buttsPerVolunteer:
-      Number.isFinite(buttsPerVolunteer) && buttsPerVolunteer > 0
-        ? buttsPerVolunteer
-        : DEFAULT_POLLUTION_SCORE_REFERENCES.buttsPerVolunteer,
-  };
+async function fetchPollutionScoreReferences(): Promise<PollutionScoreReferences> {
+  const supabase = getSupabaseBrowserClient();
+  return fetchActionPollutionScoreReferences(supabase);
 }
 
 export function ActionPollutionScoreReferencesProvider({
@@ -85,9 +59,8 @@ export function ActionPollutionScoreReferencesProvider({
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
 
-    void fetchPollutionScoreReferences(controller.signal)
+    void fetchPollutionScoreReferences()
       .then((nextReferences) => {
         if (!active) {
           return;
@@ -111,7 +84,6 @@ export function ActionPollutionScoreReferencesProvider({
 
     return () => {
       active = false;
-      controller.abort();
     };
   }, [reloadTick]);
 

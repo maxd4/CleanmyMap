@@ -5,6 +5,8 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { createActionSchema } from"@/lib/validation/action";
 import { createAction } from"@/lib/actions/store";
 import { getCurrentUserIdentity, pickTraceableActorName } from"@/lib/authz";
+import { isAdminLikeProfile } from "@/lib/profiles";
+import { resolveActionCreationStatus } from "@/lib/actions/store";
 import { toActionListItem } from"@/lib/actions/data-contract";
 import { resolveActionOrganizers } from"@/lib/actions/organizers";
 import {
@@ -26,6 +28,7 @@ import { verifyRateLimit, createServerRateLimitResponse } from"@/lib/rate-limit"
 import { getVolunteerActionValidationIssues } from"@/lib/actions/submission-validation";
 
 export const runtime ="nodejs";
+// Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
 export const dynamic = "force-dynamic";
 const QUALITY_GRADES = ["A","B","C"] as const;
 const IMPACT_LEVELS = ["faible","moyen","fort","critique"] as const;
@@ -204,9 +207,10 @@ export async function POST(request: Request) {
  }
 
  try {
- const supabase = getSupabaseServerClient();
- const identity = await getCurrentUserIdentity();
- const resolvedIdentity = identity ?? {
+  const supabase = getSupabaseServerClient();
+  const identity = await getCurrentUserIdentity();
+  const isAutoApprovedSubmission = identity ? isAdminLikeProfile(identity.role) : false;
+  const resolvedIdentity = identity ?? {
   displayName: userId,
   handle: userId,
   username: userId,
@@ -318,10 +322,11 @@ emitSpotCreated({
  );
  }
 
-const created = await createAction(supabase, {
+  const created = await createAction(supabase, {
     userId,
     payload: normalizedPayload,
     organizers: organizerResolution.organizers,
+    status: resolveActionCreationStatus(isAutoApprovedSubmission),
   });
 
   emitActionCreated({

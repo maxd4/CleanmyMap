@@ -120,13 +120,13 @@ Prompt opératoire: Audit global rapide du repo. Donne uniquement: 1) 10 problè
 
 Bloc 2 — Audit par rubrique (couche principale)
 But: Couvrir les 15 rubriques sans mélange de contexte.
-Zone de code probable: apps/web/src/components/sections/rubriques, apps/web/src/app/(app)/sections/[sectionId]/page.tsx, apps/web/src/lib/sections-registry.ts.
+Zone de code probable: apps/web/src/components/sections/rubriques, apps/web/src/app/(app)/sections/[sectionId]/page.tsx, apps/web/src/lib/sections-registry/config.ts.
 Risque principal: Oublier des rubriques ou dupliquer les constats.
 Prompt opératoire: Audit rubrique par rubrique (batch de 3 rubriques). Pour chaque rubrique: UX, bugs, cohérence, performance. Sortie: constats + actions correctives concrètes.
 
 Bloc 3 — Audit transversal inter-rubriques
 But: Détecter incohérences navigation/design/logique utilisateur entre rubriques.
-Zone de code probable: apps/web/src/lib/navigation.ts, apps/web/src/lib/sections-registry.ts, apps/web/src/components/navigation/app-navigation.tsx, layouts (app).
+Zone de code probable: apps/web/src/lib/navigation.ts, apps/web/src/lib/sections-registry/config.ts, apps/web/src/components/navigation/app-navigation.tsx, layouts (app).
 Risque principal: Valider localement des pages qui cassent le parcours global.
 Prompt opératoire: Analyse transversale navigation/design/CTA/permissions entre rubriques. Liste les collisions et régressions de parcours.
 
@@ -153,7 +153,6 @@ Execution
 - PARTIE 1: executee, voir `documentation/du/economie/economie_token_partie1_execution.md`.
 - PARTIE 2: executee, voir `documentation/du/economie/economie_token_partie2_execution.md`.
 - PARTIE 3: executee, voir `documentation/du/economie/economie_token_partie3_execution.md`.
-
 
 
 

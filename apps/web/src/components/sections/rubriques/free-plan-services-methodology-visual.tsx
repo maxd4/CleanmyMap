@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
+  EnvironmentalImpactInfrastructureMetricKey,
   EnvironmentalImpactInfrastructureServiceKey,
 } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
@@ -61,6 +62,39 @@ type DisplayService = {
   linkLabel: string | null;
 };
 
+type ImpactSelectionKey =
+  | EnvironmentalImpactInfrastructureServiceKey
+  | "other"
+  | "development";
+
+type ImpactDetailBadge = {
+  label: string;
+  tone: "slate" | "rose";
+};
+
+type ImpactDetailMetric = {
+  label: string;
+  descriptionLabel?: string;
+  valueLabel: string;
+  statusLabel: "mesuré" | "estimé" | "à compléter";
+};
+
+type ImpactDetailPostSpec = {
+  label: string;
+  description: string;
+  metricKey?: EnvironmentalImpactInfrastructureMetricKey;
+};
+
+type ImpactDetailSelection = {
+  key: ImpactSelectionKey;
+  title: string;
+  subtitle: string;
+  badgeLabels: ImpactDetailBadge[];
+  contributionPercentLabel: string;
+  contributionValueLabel: string;
+  serviceRows: ImpactDetailMetric[];
+};
+
 type ServiceIconCardProps = {
   service: DisplayService;
   selected: boolean;
@@ -87,6 +121,7 @@ const IMPACT_VISUALS: Record<
   { icon: LucideIcon; color: string }
 > = {
   vercel: { icon: Triangle, color: "#111827" },
+  github: { icon: GitBranch, color: "#111827" },
   supabase: { icon: Zap, color: "#34d399" },
   resend: { icon: Mail, color: "#f97316" },
   chatgpt: { icon: Sparkles, color: "#ef4444" },
@@ -100,12 +135,273 @@ const IMPACT_VISUALS: Record<
   lwsDomain: { icon: Globe, color: "#ef4444" },
 };
 
+const SUPABASE_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Base de données",
+    description: "Stockage PostgreSQL, tables, index, historiques, logs.",
+  },
+  {
+    label: "Requêtes base de données",
+    description: "Lectures, écritures, agrégations, requêtes lourdes.",
+    metricKey: "supabaseDbRequests",
+  },
+  {
+    label: "Storage",
+    description: "Photos, exports PDF, images, pièces jointes.",
+    metricKey: "supabaseStorageGbMonths",
+  },
+  {
+    label: "Bande passante",
+    description: "Fichiers servis, images téléchargées, exports récupérés.",
+    metricKey: "supabaseEgressGb",
+  },
+  {
+    label: "Edge Functions",
+    description: "Exécutions serveur et calculs.",
+  },
+  {
+    label: "Backups",
+    description: "Sauvegardes et rétention.",
+  },
+  {
+    label: "Logs",
+    description: "Volume conservé.",
+  },
+];
+
+const VERCEL_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Builds",
+    description: "Compilation Next.js, previews, déploiements.",
+    metricKey: "vercelDeployments",
+  },
+  {
+    label: "Hébergement frontend",
+    description: "Pages servies, rendu serveur, routes dynamiques.",
+    metricKey: "vercelPageViews",
+  },
+  {
+    label: "Serverless Functions",
+    description: "Exécutions backend, durée, mémoire.",
+    metricKey: "vercelFunctionInvocations",
+  },
+  {
+    label: "Edge Middleware / Edge Functions",
+    description: "Traitements à la requête.",
+  },
+  {
+    label: "Bande passante",
+    description: "JS, CSS, images, polices, assets.",
+    metricKey: "vercelBandwidthGb",
+  },
+  {
+    label: "Image Optimization",
+    description: "Transformations, cache, variantes générées.",
+  },
+  {
+    label: "Preview deployments",
+    description: "Environnements de test conservés.",
+  },
+  {
+    label: "Logs",
+    description: "Volume et durée de conservation.",
+  },
+];
+
+const GITHUB_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Stockage du dépôt",
+    description: "Code source, historique Git, branches, tags.",
+  },
+  {
+    label: "GitHub Actions",
+    description: "CI/CD, tests, lint, builds automatiques.",
+    metricKey: "githubWorkflowRunsCount30d",
+  },
+  {
+    label: "Artefacts CI",
+    description: "Rapports, caches, fichiers générés.",
+  },
+  {
+    label: "Packages / Registry",
+    description: "Stockage et transferts si utilisé.",
+  },
+  {
+    label: "Clones et téléchargements",
+    description: "Bande passante du dépôt.",
+  },
+  {
+    label: "Pull requests",
+    description: "Déclenchement indirect de builds et previews.",
+  },
+];
+
+const RESEND_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Emails envoyés",
+    description: "Notifications, emails transactionnels.",
+    metricKey: "resendEmailsSent",
+  },
+  {
+    label: "Taille des emails",
+    description: "HTML, images, pièces jointes éventuelles.",
+  },
+  {
+    label: "Templates",
+    description: "Rendu et génération.",
+  },
+  {
+    label: "Webhooks",
+    description: "Appels sortants.",
+  },
+  {
+    label: "Logs d'emails",
+    description: "Événements, erreurs, statuts.",
+  },
+  {
+    label: "Réessais d'envoi",
+    description: "Emails échoués puis renvoyés.",
+  },
+];
+
+const POSTHOG_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Événements collectés",
+    description: "Vues, clics, actions utilisateur.",
+    metricKey: "posthogEvents",
+  },
+  {
+    label: "Sessions enregistrées",
+    description: "Session replay si activé.",
+  },
+  {
+    label: "Profils utilisateurs",
+    description: "Propriétés et identifiants.",
+  },
+  {
+    label: "Feature flags",
+    description: "Évaluations client ou serveur.",
+  },
+  {
+    label: "Dashboards",
+    description: "Calculs analytiques.",
+  },
+  {
+    label: "Rétention",
+    description: "Durée de conservation.",
+  },
+  {
+    label: "Exports",
+    description: "CSV, API ou extraction externe.",
+  },
+];
+
+const LWS_IMPACT_POSTS: ImpactDetailPostSpec[] = [
+  {
+    label: "Nom de domaine",
+    description: "Enregistrement et gestion DNS.",
+    metricKey: "lwsDomainYears",
+  },
+  {
+    label: "DNS",
+    description: "Requêtes de résolution.",
+    metricKey: "lwsDnsQueries",
+  },
+  {
+    label: "Emails ou redirections",
+    description: "Utilisés si activés.",
+  },
+  {
+    label: "Hébergement",
+    description: "Si activé.",
+  },
+  {
+    label: "Certificats SSL",
+    description: "Si gérés par LWS.",
+  },
+  {
+    label: "Services additionnels",
+    description: "Sauvegardes, anti-spam, sécurité, monitoring.",
+  },
+];
+
 function formatPercent(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "NA";
   }
 
   return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value)}%`;
+}
+
+function formatFallbackStatusLabel(kind: "kpi" | "history" | "quota"): string {
+  switch (kind) {
+    case "kpi":
+      return "Non calculé";
+    case "history":
+      return "Aucune période précédente";
+    case "quota":
+      return "Historique insuffisant";
+    default:
+      return "Non calculé";
+  }
+}
+
+function formatImpactValueLabel(value: number | null | undefined): string {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "valeur à compléter";
+  }
+
+  return formatImpactKg(value);
+}
+
+function formatMaybePercent(value: number | null | undefined): string {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "valeur à compléter";
+  }
+
+  return formatPercent(value);
+}
+
+function formatImpactQuantityLabel(
+  quantity: number | null | undefined,
+  unitLabel: string,
+): string {
+  if (typeof quantity !== "number" || Number.isNaN(quantity)) {
+    return "non mesuré";
+  }
+
+  return `${new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits: quantity < 1 || unitLabel.includes("GB") ? 2 : 0,
+  }).format(quantity)} ${unitLabel}`;
+}
+
+function getImpactRowStatusLabel(
+  source: "input" | "derived" | "reference" | null | undefined,
+): ImpactDetailMetric["statusLabel"] {
+  if (source === "input") {
+    return "mesuré";
+  }
+
+  if (source === "derived" || source === "reference") {
+    return "estimé";
+  }
+
+  return "à compléter";
+}
+
+function getImpactDetailBadges(key: ImpactSelectionKey, isFrench: boolean): ImpactDetailBadge[] {
+  if (key === "development") {
+    return [
+      { label: isFrench ? "développement IA" : "development AI", tone: "rose" },
+      { label: isFrench ? "hors quotas web" : "outside web quotas", tone: "rose" },
+    ];
+  }
+
+  if (key === "other") {
+    return [{ label: isFrench ? "autres services" : "other services", tone: "slate" }];
+  }
+
+  return [{ label: isFrench ? "service web" : "web service", tone: "slate" }];
 }
 
 function formatImpactKg(value: number | null | undefined): string {
@@ -188,6 +484,137 @@ function getImpactVisual(serviceKey: EnvironmentalImpactInfrastructureServiceKey
   return IMPACT_VISUALS[serviceKey];
 }
 
+export function buildImpactDetailRows(
+  service: EnvironmentalImpactInfrastructureServiceEstimate,
+  isFrench: boolean,
+): ImpactDetailMetric[] {
+  if (service.key === "supabase") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return SUPABASE_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  if (service.key === "vercel") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return VERCEL_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  if (service.key === "github") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return GITHUB_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  if (service.key === "resend") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return RESEND_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  if (service.key === "posthog") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return POSTHOG_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  if (service.key === "lwsDomain") {
+    const metricByKey = new Map(service.metricEstimates.map((metric) => [metric.key, metric]));
+
+    return LWS_IMPACT_POSTS.map((post) => {
+      const metric = post.metricKey ? metricByKey.get(post.metricKey) ?? null : null;
+
+      return {
+        label: post.label,
+        descriptionLabel: post.description,
+        valueLabel: metric
+          ? formatImpactQuantityLabel(metric.quantityPerMonth, metric.unitLabel)
+          : isFrench
+            ? "non mesuré"
+            : "not measured",
+        statusLabel: getImpactRowStatusLabel(metric?.source),
+      };
+    });
+  }
+
+  return service.metricEstimates.map((metric) => ({
+    label: metric.label,
+    descriptionLabel: undefined,
+    valueLabel:
+      metric.quantityPerMonth === null
+        ? "non mesuré"
+        : `${new Intl.NumberFormat("fr-FR", {
+            maximumFractionDigits: metric.unitLabel.includes("GB") ? 2 : 0,
+          }).format(metric.quantityPerMonth)} ${metric.unitLabel}`,
+    statusLabel: getImpactRowStatusLabel(metric.source),
+  }));
+}
+
 function getMetricIcon(metricKey: string): LucideIcon {
   if (metricKey.includes("supabaseDb")) return Database;
   if (metricKey.includes("supabaseAuth")) return ShieldAlert;
@@ -198,6 +625,7 @@ function getMetricIcon(metricKey: string): LucideIcon {
   if (metricKey.includes("vercelFunction")) return Zap;
   if (metricKey.includes("vercelDeployments")) return Triangle;
   if (metricKey.includes("vercelBandwidth")) return Globe;
+  if (metricKey.includes("github")) return GitBranch;
   if (metricKey.includes("resend")) return Mail;
   if (metricKey.includes("posthog")) return BarChart3;
   if (metricKey.includes("lwsDomain")) return Globe;
@@ -250,13 +678,17 @@ function buildDisplayedServices(
       const hasSecuritySignals =
         typeof dependabotCount === "number" || typeof warningCount === "number";
       const details = [
-        githubStats?.actionsQuotaLabel ?? "NA",
+        githubStats?.actionsQuotaLabel ?? formatFallbackStatusLabel("kpi"),
         ...(githubStats?.actionsNotes ?? []),
         githubStats?.workflowRunsCount30d == null
-          ? "Runs GitHub Actions sur 30 jours: NA"
+          ? `Runs GitHub Actions sur 30 jours: ${formatFallbackStatusLabel("history")}`
           : `Runs GitHub Actions sur 30 jours: ${formatCount(githubStats.workflowRunsCount30d)}`,
-        dependabotCount === null ? "Dependabot: NA" : `Dependabot: ${dependabotCount}`,
-        warningCount === null ? "Warnings: NA" : `Warnings: ${warningCount}`,
+        dependabotCount === null
+          ? `Dependabot: ${formatFallbackStatusLabel("kpi")}`
+          : `Dependabot: ${dependabotCount}`,
+        warningCount === null
+          ? `Warnings: ${formatFallbackStatusLabel("kpi")}`
+          : `Warnings: ${warningCount}`,
       ];
 
       return {
@@ -273,7 +705,7 @@ function buildDisplayedServices(
         metrics: [],
         summary:
           githubStats === null
-            ? "NA"
+            ? formatFallbackStatusLabel("kpi")
             : `Repo ${githubStats.isPrivate ? "privé" : "public"} · Actions ${githubStats.isPrivate ? "quota" : "gratuites et illimitées"}`,
         details,
         linkHref: githubStats?.htmlUrl ?? "https://github.com/maxd4/CleanmyMap",
@@ -310,12 +742,12 @@ function buildDisplayedServices(
         metrics: resendEmailsSummary ? [resendEmailsSummary] : [],
         summary: resendEmailsSummary
           ? `${resendEmailsSummary.label} · ${resendEmailsSentText} · ${formatServiceQuotaStateLabel(resendEmailsSummary.state)}`
-          : "NA",
+          : formatFallbackStatusLabel("quota"),
         details: [
           "Transactionnel: 3 000 emails / mois",
           "Transactionnel: 100 emails / jour",
           `Emails envoyés: ${resendEmailsSentText}`,
-          "Emails reçus: NA",
+          `Emails reçus: ${formatFallbackStatusLabel("quota")}`,
           "Marketing: 1 000 contacts",
           "Marketing: broadcasts illimités",
           "Destinataires multiples comptés séparément",
@@ -349,7 +781,7 @@ function buildDisplayedServices(
       metrics: quotaSummary?.metrics ?? [],
       summary: quotaSummary?.primaryMetric
         ? `${quotaSummary.primaryMetric.label} · ${formatPercent(quotaSummary.primaryMetric.consumedPercent)} · ${formatServiceQuotaStateLabel(quotaSummary.primaryMetric.state)}`
-        : "NA",
+        : formatFallbackStatusLabel("quota"),
       details,
       linkHref: null,
       linkLabel: null,
@@ -406,7 +838,7 @@ function ServiceIconCard({ service, selected, onSelect, onHover }: ServiceIconCa
             </div>
 
             <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getStateTone(service.state))}>
-              {formatServiceQuotaStateLabel(service.state)}
+              {service.state === "NA" ? formatFallbackStatusLabel("quota") : formatServiceQuotaStateLabel(service.state)}
             </span>
           </div>
 
@@ -433,6 +865,9 @@ function ServiceIconCard({ service, selected, onSelect, onHover }: ServiceIconCa
 
 function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }) {
   const width = metric.consumedPercent === null ? 0 : Math.max(2, Math.min(100, metric.consumedPercent));
+  const missingLabel = metric.source === "reference" ? "Non calculé" : "Historique insuffisant";
+  const stateLabel =
+    metric.state === "NA" ? missingLabel : formatServiceQuotaStateLabel(metric.state);
 
   return (
     <div className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3">
@@ -447,7 +882,7 @@ function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }) {
               <p className="truncate text-sm font-semibold text-slate-950">{metric.label}</p>
               <p className="mt-0.5 text-[11px] font-medium text-slate-500">
                 {metric.consumedPercent === null
-                  ? "NA"
+                  ? missingLabel
                   : `Réf. ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
                       metric.referenceMonthlyQuantity,
                     )} ${metric.unitLabel}`}
@@ -456,9 +891,9 @@ function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }) {
 
             <div className="text-right">
               <p className="text-[13px] font-black text-slate-950">
-                {metric.consumedPercent === null ? "NA" : formatPercent(metric.consumedPercent)}
+                {metric.consumedPercent === null ? missingLabel : formatPercent(metric.consumedPercent)}
               </p>
-              <p className="text-[11px] font-medium text-slate-500">{formatServiceQuotaStateLabel(metric.state)}</p>
+              <p className="text-[11px] font-medium text-slate-500">{stateLabel}</p>
             </div>
           </div>
 
@@ -484,6 +919,8 @@ export function FreePlanServicesMethodologyVisual({
   githubStats,
   isFrench = true,
   initialTab = "impact",
+  displayMode = "both",
+  sectionId = "impact-services",
 }: {
   services: EnvironmentalImpactInfrastructureServiceEstimate[];
   githubStats?: GitHubRepositoryStats | null;
@@ -495,6 +932,8 @@ export function FreePlanServicesMethodologyVisual({
   };
   isFrench?: boolean;
   initialTab?: MethodologyTabKey;
+  displayMode?: "both" | MethodologyTabKey;
+  sectionId?: string;
 }) {
   const resolvedImpactTotals = impactTotals ?? {
     monthlyKgCo2eProxy: null,
@@ -509,7 +948,9 @@ export function FreePlanServicesMethodologyVisual({
   const initialSelectedKey = displayedServices.find((service) => service.key === "supabase")?.key ?? displayedServices[0]?.key ?? "github";
   const [selectedKey, setSelectedKey] = useState<QuotaDisplayServiceKey>(initialSelectedKey);
   const [hoveredKey, setHoveredKey] = useState<QuotaDisplayServiceKey | null>(null);
-  const [activeTab, setActiveTab] = useState<MethodologyTabKey>(initialTab);
+  const initialDisplayTab = displayMode === "both" ? initialTab : displayMode;
+  const [activeTab, setActiveTab] = useState<MethodologyTabKey>(initialDisplayTab);
+  const [selectedImpactKey, setSelectedImpactKey] = useState<ImpactSelectionKey | null>(null);
 
   const activeKey = hoveredKey ?? selectedKey;
   const selectedService =
@@ -526,8 +967,8 @@ export function FreePlanServicesMethodologyVisual({
 
   const title = isFrench ? "Quotas & plans des services web" : "Web services quotas and plans";
   const subtitle = isFrench
-    ? "Lecture service par service des limites de plan, sans comparaison trompeuse entre services. GitHub est relié au dépôt réel."
-    : "Service-by-service reading of plan limits, without misleading cross-service comparison. GitHub is linked to the real repository.";
+    ? "L'onglet quotas répond à une seule question: est-ce qu'un service risque de dépasser son plan ? GitHub est relié au dépôt réel."
+    : "The quota tab answers one question: is a service at risk of exceeding its plan? GitHub is linked to the real repository.";
 
   if (activeTab === "impact") {
     const impactServices = services
@@ -547,6 +988,12 @@ export function FreePlanServicesMethodologyVisual({
     const productionImpactServices = impactServices.filter(
       (service) => !isDevelopmentAiServiceKey(service.key),
     );
+    const activeProductionImpactServices = productionImpactServices.filter(
+      (service) => (service.monthlyKgCo2eProxy ?? 0) > 0,
+    );
+    const inactiveProductionImpactServices = productionImpactServices.filter(
+      (service) => (service.monthlyKgCo2eProxy ?? 0) <= 0,
+    );
     const totalMonthlyImpact = impactServices.reduce(
       (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
       0,
@@ -563,10 +1010,8 @@ export function FreePlanServicesMethodologyVisual({
     const totalLifetimeImpact = resolvedImpactTotals.totalKgCo2eProxy;
     const developmentSharePercent =
       totalMonthlyImpact > 0 ? (totalDevelopmentImpact / totalMonthlyImpact) * 100 : null;
-    const topProductionServices = productionImpactServices.slice(0, 6);
-    const otherProductionImpact = productionImpactServices
-      .slice(6)
-      .reduce((sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0), 0);
+    const topProductionServices = activeProductionImpactServices.slice(0, 6);
+    const groupedProductionServices = activeProductionImpactServices.slice(topProductionServices.length);
     const barSegments = [
       ...topProductionServices.map((service) => {
         const visual = getImpactVisual(service.key);
@@ -581,6 +1026,7 @@ export function FreePlanServicesMethodologyVisual({
           sharePercent,
           monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
           kind: "production" as const,
+          services: [service],
         };
       }),
       ...(totalDevelopmentImpact > 0
@@ -595,10 +1041,11 @@ export function FreePlanServicesMethodologyVisual({
                 totalMonthlyImpact > 0 ? (totalDevelopmentImpact / totalMonthlyImpact) * 100 : null,
               monthlyKgCo2eProxy: totalDevelopmentImpact,
               kind: "development" as const,
+              services: developmentImpactServices,
             },
           ]
         : []),
-      ...(otherProductionImpact > 0
+      ...(groupedProductionServices.length > 0
         ? [
             {
               key: "other" as const,
@@ -607,24 +1054,94 @@ export function FreePlanServicesMethodologyVisual({
               icon: MoreHorizontal,
               color: "#e5e7eb",
               sharePercent:
-                totalMonthlyImpact > 0 ? (otherProductionImpact / totalMonthlyImpact) * 100 : null,
-              monthlyKgCo2eProxy: otherProductionImpact,
+                totalMonthlyImpact > 0
+                  ? (groupedProductionServices.reduce(
+                      (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
+                      0,
+                    ) / totalMonthlyImpact) * 100
+                  : null,
+              monthlyKgCo2eProxy: groupedProductionServices.reduce(
+                (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
+                0,
+              ),
               kind: "other" as const,
+              services: groupedProductionServices,
             },
           ]
         : []),
     ];
-    const topContributors = productionImpactServices.slice(0, 6);
+    const topContributors = activeProductionImpactServices.slice(0, 6);
     const developmentLineLabel =
       developmentImpactServices.length > 0
         ? developmentImpactServices
             .map((service) => service.label)
             .join(" · ")
-        : "NA";
+        : formatFallbackStatusLabel("history");
+    const selectedImpactSegment = selectedImpactKey
+      ? barSegments.find((segment) => segment.key === selectedImpactKey) ?? null
+      : null;
+    const selectedImpactSelection: ImpactDetailSelection | null = selectedImpactSegment
+      ? {
+          key: selectedImpactSegment.key,
+          title:
+            selectedImpactSegment.key === "other"
+              ? isFrench
+                ? "Autres services"
+                : "Other services"
+              : selectedImpactSegment.key === "development"
+                ? selectedImpactSegment.label
+                : selectedImpactSegment.label,
+          subtitle:
+            selectedImpactSegment.key === "other"
+              ? isFrench
+                ? "Services regroupés sous la portion négligeable"
+                : "Grouped services under the negligible share"
+              : selectedImpactSegment.key === "development"
+                ? developmentImpactServices
+                    .map((service) => service.label)
+                    .join(" · ")
+                : selectedImpactSegment.label,
+          badgeLabels: getImpactDetailBadges(selectedImpactSegment.key, isFrench),
+          contributionPercentLabel: formatMaybePercent(selectedImpactSegment.sharePercent),
+          contributionValueLabel: formatImpactValueLabel(selectedImpactSegment.monthlyKgCo2eProxy),
+          serviceRows:
+            selectedImpactSegment.key === "development"
+              ? developmentImpactServices.map((service) => ({
+                  label: service.label,
+                  descriptionLabel: isFrench ? "Développement IA" : "AI development",
+                  valueLabel:
+                    service.monthlyKgCo2eProxy === null
+                      ? isFrench
+                        ? "valeur à compléter"
+                        : "value to complete"
+                      : formatImpactValueLabel(service.monthlyKgCo2eProxy),
+                  statusLabel:
+                    service.monthlyKgCo2eProxy === null ? "à compléter" : "estimé",
+                }))
+              : selectedImpactSegment.key === "other"
+                ? groupedProductionServices.map((service) => ({
+                    label: service.label,
+                    descriptionLabel: isFrench
+                      ? "Contribution faible regroupée dans Autres."
+                      : "Low contribution grouped in Other.",
+                    valueLabel:
+                      service.monthlyKgCo2eProxy === null
+                        ? isFrench
+                          ? "contribution négligeable ou non mesurée"
+                          : "negligible or unmeasured contribution"
+                        : formatImpactValueLabel(service.monthlyKgCo2eProxy),
+                    statusLabel:
+                      service.monthlyKgCo2eProxy === null ? "à compléter" : "estimé",
+                  }))
+                : selectedImpactSegment.services[0]
+                  ? buildImpactDetailRows(selectedImpactSegment.services[0], isFrench)
+                  : [],
+        }
+      : null;
 
     return (
       <section
-        id="impact-services"
+        id={sectionId}
         className="rounded-[2.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] md:p-8"
       >
         <div className="space-y-7">
@@ -638,21 +1155,23 @@ export function FreePlanServicesMethodologyVisual({
               </h3>
               <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
                 {isFrench
-                  ? "Lecture linéaire de l'ACV numérique avec les services réellement calculés dans le repo. Les données manquantes restent en NA."
-                  : "Linear reading of the digital LCA with the services actually computed in the repo. Missing data stays NA."}
+                  ? "Lecture linéaire de l'ACV numérique. L'onglet carbone répond à une question précise: quel poste contribue le plus à l'empreinte estimée ?"
+                  : "Linear reading of the digital LCA. The carbon tab answers one question: which post contributes the most to the estimated footprint?"}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              {TAB_ITEMS.map((tab) => (
-                <TabPill
-                  key={tab.key}
-                  tab={tab}
-                  active={tab.key === activeTab}
-                  onClick={() => setActiveTab(tab.key)}
-                />
-              ))}
-            </div>
+            {displayMode === "both" ? (
+              <div className="flex flex-wrap gap-3">
+                {TAB_ITEMS.map((tab) => (
+                  <TabPill
+                    key={tab.key}
+                    tab={tab}
+                    active={tab.key === activeTab}
+                    onClick={() => setActiveTab(tab.key)}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -666,12 +1185,18 @@ export function FreePlanServicesMethodologyVisual({
                     {isFrench ? "Impact carbone année en cours" : "Current year carbon impact"}
                   </p>
                   <p className="mt-2 text-4xl font-black text-rose-600">
-                    {formatImpactKg(resolvedImpactTotals.monthlyKgCo2eProxy)}
+                    {resolvedImpactTotals.monthlyKgCo2eProxy === null
+                      ? formatFallbackStatusLabel("kpi")
+                      : formatImpactKg(resolvedImpactTotals.monthlyKgCo2eProxy)}
                   </p>
                   <p className="mt-2 text-lg font-medium text-slate-600">
                     {isFrench
-                      ? `(${formatImpactKg(totalAnnualImpact)} projetés)`
-                      : `(${formatImpactKg(totalAnnualImpact)} projected)`}
+                      ? totalAnnualImpact === null
+                        ? formatFallbackStatusLabel("kpi")
+                        : `(${formatImpactKg(totalAnnualImpact)} projetés)`
+                      : totalAnnualImpact === null
+                        ? formatFallbackStatusLabel("kpi")
+                        : `(${formatImpactKg(totalAnnualImpact)} projected)`}
                   </p>
                   <p className="mt-3 text-sm text-slate-500">
                     {isFrench
@@ -692,11 +1217,13 @@ export function FreePlanServicesMethodologyVisual({
                     {isFrench ? "Total carbone depuis la création du site" : "Total carbon since site creation"}
                   </p>
                   <p className="mt-2 text-4xl font-black text-rose-600">
-                    {formatImpactKg(totalLifetimeImpact)}
+                    {totalLifetimeImpact === null
+                      ? formatFallbackStatusLabel("kpi")
+                      : formatImpactKg(totalLifetimeImpact)}
                   </p>
                   <p className="mt-2 text-lg font-medium text-slate-600">
                     {developmentSharePercent === null
-                      ? "NA"
+                      ? formatFallbackStatusLabel("history")
                       : isFrench
                         ? `(${formatPercent(developmentSharePercent)} lié au dev IA)`
                         : `(${formatPercent(developmentSharePercent)} linked to AI development)`}
@@ -712,7 +1239,7 @@ export function FreePlanServicesMethodologyVisual({
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <section className="rounded-[2.25rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]">
+            <section className="rounded-[2.25rem] border border-rose-100 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(244,63,94,0.16)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h4 className="text-xl font-black text-slate-950">
@@ -720,13 +1247,8 @@ export function FreePlanServicesMethodologyVisual({
                       ? "Contribution estimée à l'empreinte carbone (ACV)"
                       : "Estimated contribution to the carbon footprint (LCA)"}
                   </h4>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                    {isFrench
-                      ? "La comparaison est pertinente ici car elle additionne les contributions réelles à l'ACV numérique."
-                      : "Comparison is relevant here because it sums the real contributions to the digital LCA."}
-                  </p>
                 </div>
-                <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                <div className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-rose-600">
                   {formatPercent(100)}
                 </div>
               </div>
@@ -738,15 +1260,20 @@ export function FreePlanServicesMethodologyVisual({
                     const widthPercent = Math.max(0, segment.sharePercent ?? 0);
                     const isDevelopment = segment.kind === "development";
                     const isOther = segment.kind === "other";
+                    const isSelected = selectedImpactKey === segment.key;
 
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={segment.key}
                         className={cn(
-                          "flex min-w-[92px] flex-1 flex-col items-center gap-2 rounded-[1.2rem] px-2 py-2 text-center",
+                          "flex min-w-[92px] flex-1 flex-col items-center gap-2 rounded-[1.2rem] px-2 py-2 text-center transition",
                           isDevelopment && "border border-rose-300 border-dashed bg-rose-50/60",
                           isOther && "border border-slate-200 bg-slate-50",
+                          isSelected && "ring-2 ring-rose-500 ring-offset-2 ring-offset-white",
                         )}
+                        onClick={() => setSelectedImpactKey(segment.key)}
+                        aria-pressed={isSelected}
                       >
                         <span
                           className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white"
@@ -783,15 +1310,37 @@ export function FreePlanServicesMethodologyVisual({
                             {formatPercent(widthPercent)}
                           </p>
                         </div>
-                      </div>
+                      </button>
                     );
                   })
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                    NA
+                    <p className="font-black text-slate-950">
+                      {isFrench
+                        ? "Services surveillés sans consommation récente"
+                        : "Tracked services without recent consumption"}
+                    </p>
+                    <p className="mt-2 leading-relaxed">
+                      {isFrench
+                        ? "Aucun poste positif n'est encore disponible pour tracer une barre utile."
+                        : "No positive post is available yet to draw a useful bar."}
+                    </p>
                   </div>
                 )}
               </div>
+
+              {inactiveProductionImpactServices.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    {isFrench
+                      ? "Services surveillés sans consommation récente"
+                      : "Tracked services without recent consumption"}
+                  </p>
+                  <p className="mt-2 leading-relaxed">
+                    {inactiveProductionImpactServices.map((service) => service.label).join(" · ")}
+                  </p>
+                </div>
+              ) : null}
 
               {barSegments.length > 0 ? (
                 <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
@@ -841,6 +1390,113 @@ export function FreePlanServicesMethodologyVisual({
                 <span>{isFrench ? "Contribution relative au total ACV" : "Relative contribution to total LCA"}</span>
                 <span>100%</span>
               </div>
+
+              <section className="mt-5 rounded-[1.75rem] border border-rose-200 bg-rose-50/35 p-5 shadow-[0_18px_45px_-34px_rgba(244,63,94,0.16)]">
+                {selectedImpactSelection ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-600/75">
+                          {isFrench ? "Détail de la contribution" : "Contribution detail"}
+                        </p>
+                        <h4 className="text-2xl font-black tracking-tight text-slate-950">
+                          {selectedImpactSelection.title}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedImpactSelection.badgeLabels.map((badge) => (
+                            <span
+                              key={badge.label}
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
+                                badge.tone === "rose"
+                                  ? "border-rose-200 bg-white text-rose-600"
+                                  : "border-slate-200 bg-white text-slate-600",
+                              )}
+                            >
+                              {badge.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedImpactKey(null)}
+                        className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
+                      >
+                        <ExternalLink size={14} className="rotate-45" />
+                        {isFrench ? "Fermer le détail" : "Close detail"}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full border border-rose-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700">
+                        {isFrench ? "Part du total" : "Share of total"} {selectedImpactSelection.contributionPercentLabel}
+                      </span>
+                      <span className="rounded-full border border-rose-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700">
+                        {isFrench ? "Contribution" : "Contribution"} {selectedImpactSelection.contributionValueLabel}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {selectedImpactSelection.serviceRows.length > 0 ? (
+                        selectedImpactSelection.serviceRows.map((row) => (
+                          <article
+                            key={`${selectedImpactSelection.key}-${row.label}`}
+                            className={cn(
+                              "rounded-[1.15rem] border bg-white p-4 shadow-[0_12px_30px_-26px_rgba(244,63,94,0.18)]",
+                              row.statusLabel === "mesuré"
+                                ? "border-rose-200"
+                                : row.statusLabel === "estimé"
+                                  ? "border-rose-100"
+                                  : "border-slate-200",
+                            )}
+                          >
+                            <div className="flex h-full flex-col gap-2">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-slate-950">{row.label}</p>
+                                  {row.descriptionLabel ? (
+                                    <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                                      {row.descriptionLabel}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <span
+                                  className={cn(
+                                    "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
+                                    row.statusLabel === "mesuré"
+                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                      : row.statusLabel === "estimé"
+                                        ? "border-amber-200 bg-amber-50 text-amber-700"
+                                        : "border-slate-200 bg-slate-50 text-slate-500",
+                                  )}
+                                >
+                                  {row.statusLabel}
+                                </span>
+                              </div>
+
+                              <p className="text-sm font-semibold text-slate-950">{row.valueLabel}</p>
+                            </div>
+                          </article>
+                        ))
+                      ) : (
+                        <div className="col-span-full rounded-[1.15rem] border border-dashed border-rose-200 bg-white p-4 text-sm text-slate-600">
+                          {isFrench
+                            ? "Aucun poste détaillé disponible."
+                            : "No detailed post available."}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-[1.15rem] border border-dashed border-rose-200 bg-white px-4 py-6 text-sm font-medium text-slate-600">
+                    {isFrench
+                      ? "Cliquez sur une portion du graphique pour afficher le détail de contribution."
+                      : "Click a chart segment to show the contribution detail."}
+                  </div>
+                )}
+              </section>
 
               <div className="mt-5 rounded-[1.6rem] border border-rose-200 bg-rose-50/60 p-4 text-sm leading-relaxed text-slate-700">
                 {isFrench ? (
@@ -1039,7 +1695,11 @@ export function FreePlanServicesMethodologyVisual({
 
             <div className="flex items-center gap-2">
               <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getStateTone(selectedService?.state ?? "NA"))}>
-                {selectedService ? formatServiceQuotaStateLabel(selectedService.state) : "NA"}
+                {selectedService?.state === "NA"
+                  ? formatFallbackStatusLabel("quota")
+                  : selectedService
+                    ? formatServiceQuotaStateLabel(selectedService.state)
+                    : formatFallbackStatusLabel("quota")}
               </span>
             </div>
           </div>
@@ -1094,7 +1754,9 @@ export function FreePlanServicesMethodologyVisual({
               </div>
             ) : (
               <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-5">
-                <p className="text-lg font-black text-slate-950">NA</p>
+                <p className="text-lg font-black text-slate-950">
+                  {formatFallbackStatusLabel("quota")}
+                </p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                   {isFrench
                     ? "Aucune donnée de quota n'est branchée pour ce service dans le repo."
@@ -1139,6 +1801,43 @@ export function FreePlanServicesMethodologyVisual({
           </article>
         </div>
 
+        <section className="rounded-[1.75rem] border border-rose-200 bg-rose-50/60 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-600/70">
+                {isFrench ? "Documentation consultable" : "Consultable documentation"}
+              </p>
+              <h4 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                {isFrench ? "Méthodologie de lecture des quotas" : "Quota reading methodology"}
+              </h4>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-600">
+              {isFrench
+                ? "Le document s'ouvre dans le lecteur de documentation du site."
+                : "The document opens in the site documentation viewer."}
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-1">
+            <a
+              href="/docs/plans/rapport_impact/quotas_plans_methodologie.md"
+              className="rounded-2xl border border-rose-200 bg-white px-4 py-4 transition hover:border-rose-300 hover:bg-rose-50"
+            >
+              <p className="text-sm font-black text-slate-950">
+                {isFrench ? "Consulter la fiche quota" : "Open the quota guide"}
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                {isFrench
+                  ? "Lecture des plans, des limites réelles et de la règle NA quand la donnée manque."
+                  : "Reading of plans, real limits, and the NA rule when data is missing."}
+              </p>
+              <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-rose-600/70">
+                quotas_plans_methodologie.md
+              </p>
+            </a>
+          </div>
+        </section>
+
         <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
           {isFrench ? (
             <>
@@ -1146,7 +1845,7 @@ export function FreePlanServicesMethodologyVisual({
               {" "}
               <span className="font-semibold text-slate-800">Inclus ACV / Hors production / Hors quotas web</span>.
               {" "}
-              Les données absentes restent affichées en <span className="font-semibold text-slate-800">NA</span>.
+              Les données absentes restent affichées avec un libellé sobre.
               {" "}
               Le total mensuel affiché ici est
               {" "}
@@ -1158,7 +1857,7 @@ export function FreePlanServicesMethodologyVisual({
               {" "}
               <span className="font-semibold text-slate-800">Included in LCA / Outside production / Outside web quotas</span>.
               {" "}
-              Missing data remains shown as <span className="font-semibold text-slate-800">NA</span>.
+              Missing data remains shown with a sober label.
               {" "}
               The monthly total shown here is
               {" "}

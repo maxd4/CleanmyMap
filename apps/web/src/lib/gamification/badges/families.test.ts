@@ -3,6 +3,8 @@ import {
   buildExplorerFamily,
   buildFormsBadges,
   buildLegacyBadges,
+  buildQuizBalanceProgression,
+  buildQuizTypeProgression,
   buildParticipantBadges,
 } from "./families";
 
@@ -67,5 +69,45 @@ describe("gamification badge families", () => {
       unlocked: true,
       progress: { current: 3, target: 3 },
     });
+  });
+});
+
+describe("quiz badge families", () => {
+  it("exposes the quiz progression by type in the requested order", () => {
+    const pending = buildQuizTypeProgression();
+
+    expect(pending).toMatchObject({
+      id: "quiz-type-progress",
+      name: "Progression quiz par type",
+      status: "active",
+    });
+    expect(pending.tiers.map((tier) => tier.label)).toEqual([
+      "50 réponses justes",
+      "100 réponses justes",
+    ]);
+  });
+
+  it("keeps the quiz type order stable with the expected labels", () => {
+    const pending = buildQuizTypeProgression();
+
+    expect(pending.tiers.map((tier) => tier.id)).toEqual([
+      "quiz-type-50",
+      "quiz-type-100",
+    ]);
+  });
+
+  it("exposes the balanced quiz progression in the requested order", () => {
+    const pending = buildQuizBalanceProgression();
+
+    expect(pending).toMatchObject({
+      id: "quiz-balance-progress",
+      name: "Quiz équilibré",
+      status: "active",
+    });
+    expect(pending.tiers.map((tier) => tier.label)).toEqual([
+      "10 réponses justes",
+      "50 réponses justes",
+      "100 réponses justes",
+    ]);
   });
 });

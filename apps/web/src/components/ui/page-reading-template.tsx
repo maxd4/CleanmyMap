@@ -2,7 +2,8 @@
 
 import type { ReactNode } from "react";
 import { CmmPageShell } from "@/components/ui/cmm-card";
-import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CTAGroup } from "@/components/ui/page-structure";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePageFamily } from "@/lib/ui/page-families";
 
@@ -45,7 +46,7 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
 
    {/* Actions */}
    <section className="border-t border-[color:var(--border-default)] pt-6">
-    <CmmButtonGroup>
+    <CTAGroup>
      <CmmButton href={props.primaryAction.href} tone="primary" variant="default">
       {props.primaryAction.label}
      </CmmButton>
@@ -54,7 +55,7 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
        {props.secondaryAction.label}
       </CmmButton>
      ) : null}
-    </CmmButtonGroup>
+    </CTAGroup>
    </section>
   </CmmPageShell>
  );

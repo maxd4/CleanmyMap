@@ -27,6 +27,9 @@ export type ActionParticipantRow = {
   updated_at?: string;
   action_id: string;
   user_id: string;
+  joined_at: string;
+  participation_status: "pending" | "confirmed" | "cancelled";
+  participation_source: "group_form" | "admin" | "import";
 };
 
 export type SpotRow = {

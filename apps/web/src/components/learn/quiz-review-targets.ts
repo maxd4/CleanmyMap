@@ -1,3 +1,5 @@
+import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+
 export type QuizQuestionCategory =
   | "tri-recyclage"
   | "action-terrain"
@@ -21,11 +23,24 @@ export const QUIZ_REVIEW_TARGETS = {
     label: "Comprendre",
     href: "/learn/comprendre",
   },
+  sentrainer: {
+    label: "S'entraîner",
+    href: "/learn/sentrainer",
+  },
   bonnes_pratiques: {
     label: "Bonnes pratiques",
     href: "/learn/bonnes-pratiques",
   },
 } as const;
+
+const REASONING_REVIEW_TARGET_BY_TYPE: Partial<Record<QuizReasoningType, QuizReviewTarget>> = {
+  estimation: QUIZ_REVIEW_TARGETS.sentrainer,
+  comparaison: QUIZ_REVIEW_TARGETS.sentrainer,
+  "conséquences indirectes": QUIZ_REVIEW_TARGETS.sentrainer,
+  "questions contre-intuitives": QUIZ_REVIEW_TARGETS.sentrainer,
+  "cas-limites": QUIZ_REVIEW_TARGETS.sentrainer,
+  "mini-enquetes": QUIZ_REVIEW_TARGETS.sentrainer,
+};
 
 export const REVIEW_TARGET_BY_CATEGORY: Record<QuizQuestionCategory, QuizReviewTarget> = {
   "tri-recyclage": QUIZ_REVIEW_TARGETS.bonnes_pratiques,
@@ -36,7 +51,13 @@ export const REVIEW_TARGET_BY_CATEGORY: Record<QuizQuestionCategory, QuizReviewT
 
 export function getQuizReviewTarget(
   category: QuizQuestionCategory,
-  explicitTarget?: QuizReviewTarget
+  explicitTarget?: QuizReviewTarget,
+  reasoningType?: QuizReasoningType,
 ): QuizReviewTarget {
-  return explicitTarget ?? REVIEW_TARGET_BY_CATEGORY[category] ?? QUIZ_REVIEW_TARGETS.comprendre;
+  return (
+    (reasoningType ? REASONING_REVIEW_TARGET_BY_TYPE[reasoningType] : null) ??
+    explicitTarget ??
+    REVIEW_TARGET_BY_CATEGORY[category] ??
+    QUIZ_REVIEW_TARGETS.comprendre
+  );
 }

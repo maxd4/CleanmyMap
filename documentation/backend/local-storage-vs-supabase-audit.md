@@ -22,6 +22,21 @@ Le projet utilise déjà `localStorage` pour les préférences d'interface. Les 
 - `training_examples` : données de supervision liées aux images et à l'estimation.
 - `app_notifications` : notifications destinées à l'utilisateur.
 
+## Contenus pédagogiques et quiz
+
+- les contenus pédagogiques, guides, notices, ressources et pages "apprendre" doivent rester dans le repo Git et servir comme contenu statique quand c'est possible;
+- les quiz ne doivent pas écrire en base par défaut;
+- pour remontrer les mauvaises réponses ou conserver un état anonyme local, `localStorage` suffit;
+- Supabase ne devient pertinent que pour un suivi connecté, par exemple une progression personnelle réellement utile, stable et justifiable;
+- si un quiz ou un guide n'apporte pas de valeur multi-appareils, il ne doit pas devenir une nouvelle table.
+
+## Formulaires, agrégats et exports
+
+- les formulaires bénévoles doivent rester à écriture unique: une soumission complète = une écriture;
+- l'auto-save permanent, les brouillons synchronisés à chaque frappe et la persistance de chaque changement de champ sont à éviter;
+- les estimateurs graphiques doivent s'appuyer sur des données agrégées plutôt que sur des micro-événements persistés un par un;
+- les documents générés doivent être produits à la demande, téléchargés, puis résumés en base seulement si un suivi minimal est réellement utile.
+
 ## Peut rester côté frontend dans `localStorage`
 
 - `cleanmymap.locale` : préférence d'affichage locale.

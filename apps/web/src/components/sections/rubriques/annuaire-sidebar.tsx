@@ -6,6 +6,7 @@ import { ShieldCheck, Info, Map as MapIcon, Sparkles, Target, Compass } from "lu
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const AnnuaireMapCanvas = dynamic(
   () => import("./annuaire-map-canvas").then((mod) => mod.AnnuaireMapCanvas),
@@ -31,6 +32,10 @@ export function AnnuaireSidebar({
   entries,
   highlightedActorId,
 }: AnnuaireSidebarProps) {
+  const { ref: mapShellRef, isInView: isMapInView } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "320px 0px",
+  });
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -38,11 +43,25 @@ export function AnnuaireSidebar({
       className="sticky top-24 space-y-6"
     >
       {/* Carte Interactive - Premium Canvas */}
-      <div className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden h-[500px] group relative shadow-2xl">
-        <AnnuaireMapCanvas
-          items={entries}
-          highlightedItemId={highlightedActorId}
-        />
+      <div
+        ref={mapShellRef}
+        className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden h-[500px] group relative shadow-2xl"
+      >
+        {isMapInView ? (
+          <AnnuaireMapCanvas
+            items={entries}
+            highlightedItemId={highlightedActorId}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-slate-950/70">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto h-12 w-12 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                Chargement de la carte...
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Map Overlay HUD */}
         <div className="absolute inset-x-0 bottom-0 p-8 pointer-events-none bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent">

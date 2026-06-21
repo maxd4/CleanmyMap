@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const DeferredMissionMapComponent = dynamic(
   () => import("@/components/missions/mission-map").then((module) => module.MissionMap),
@@ -46,7 +47,26 @@ type MissionQRProps = {
 };
 
 export function DeferredMissionMap(props: MissionMapProps) {
-  return <DeferredMissionMapComponent {...props} />;
+  const { ref, isInView } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "280px 0px",
+  });
+
+  return (
+    <div ref={ref} className="min-h-[500px]">
+      {isInView ? (
+        <DeferredMissionMapComponent {...props} />
+      ) : (
+        <div className="flex h-[500px] w-full items-center justify-center rounded-[3rem] bg-slate-100">
+          <div className="space-y-3 text-center">
+            <div className="mx-auto h-12 w-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+              Chargement de la carte...
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DeferredMissionQR(props: MissionQRProps) {

@@ -141,7 +141,7 @@ Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un
 
 ### 3.2 Flux De Données
 - `page.tsx` pilote les filtres globaux, les KPI, le journal et le rail latéral.
-- `ActionsMapFeed` charge les données via `/api/actions/map` et applique les filtres de catégorie.
+- `ActionsMapFeed` charge les données via le client browser Supabase et applique les filtres de catégorie.
 - `ActionsMapCanvas` rend la carte Leaflet et les couches principales.
 - `map-layers.tsx` transforme les items en points, tracés, popups et infrastructures.
 - `map-controls.tsx` gère la recherche géographique et le recentrage.
@@ -151,7 +151,7 @@ Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un
 
 ### 3.3 Invariants À Préserver
 - Ne pas réintroduire de géométrie simulée comme source principale d'affichage.
-- Ne pas modifier le contrat public `/api/actions/map`.
+- Ne pas réintroduire de route Vercel intermédiaire pour la carte.
 - Ne pas laisser un lien de popup pointer vers `lat=null&lng=null`.
 - Ne pas faire diverger la carte, le journal, les KPI et les filtres globaux.
 - Ne pas utiliser `useEffect` pour calculer un état dérivé qui peut être calculé pendant le rendu.

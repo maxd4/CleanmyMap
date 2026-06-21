@@ -22,6 +22,17 @@
 4. Python only:
    - `pytest -q`
 
+5. QA page par page sur une route visible modifiée:
+   - lancer la page en local
+   - capturer le rendu écran
+   - exporter la page avec `.MD this page` via `Alt+M`
+   - comparer la capture et l'extraction Markdown
+   - corriger la hiérarchie des titres, les CTA, les statistiques, les cartes, les sources/statuts et les attributs accessibles
+   - relancer les deux vérifications avant merge
+
+   Référence détaillée :
+   - `page-by-page-ui-qa.md`
+
 ## Scope Covered
 
 - Python syntax/compile checks
@@ -54,7 +65,12 @@ Run this sequence for every incremental patch:
 2. Web app quality gates:
    - `npm --prefix apps/web run lint`
    - `npm --prefix apps/web run build`
-3. Production post-redeploy smoke (authenticated):
+3. QA page par page pour toute route visible touchée :
+   - capture écran locale
+   - export `.MD this page`
+   - comparaison des deux rendus
+   - correction avant merge si l'un des deux révèle un défaut de lecture
+4. Production post-redeploy smoke (authenticated):
    - sign in with a live Clerk account
    - verify `/dashboard`, `/admin`, `/reports`, `/actions/new`, `/actions/map`
    - verify export endpoints from admin UI (`CSV` + `JSON`)
@@ -62,7 +78,7 @@ Run this sequence for every incremental patch:
 
 Pass criteria:
 - no failing checks in steps 1-2
-- no critical functional gap in step 3
+- no critical functional gap in steps 3-4
 
 ## Local Clerk Verification
 

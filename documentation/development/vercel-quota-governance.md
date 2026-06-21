@@ -1,6 +1,6 @@
 # Gouvernance des quotas Vercel de CleanMyMap
 
-Dernière vérification: 2026-06-05
+Dernière vérification: 2026-06-12
 
 Objectif: repérer tôt les régressions de coût Vercel avant qu'une fonctionnalité ne fasse grimper les quotas sans alerte.
 
@@ -55,6 +55,25 @@ Les exports CSV, JSON ou PDF sont très sensibles au volume:
 - les téléchargements répétés augmentent le `Fast Data Transfer`,
 - les exports admin peuvent déclencher des agrégations coûteuses côté serveur.
 
+### Images distantes et optimisation à la volée
+
+`next/image` reste utile pour les assets locaux, mais il devient un point de coût quand il optimise des images distantes ou déjà préparées.
+
+Règle de base pour CleanMyMap:
+- compresser avant upload quand c'est possible;
+- préparer les tailles nécessaires à l'avance plutôt que les générer à chaque lecture;
+- utiliser `unoptimized` pour les images distantes ou déjà optimisées quand aucune transformation serveur n'est nécessaire;
+- éviter de compter sur le resize à la volée comme mécanisme standard du produit.
+
+Conséquences côté quota:
+- moins de travail serveur pour la transformation d'image;
+- moins de risque d'augmenter `Invocations` et le transfert origine pour un simple média;
+- moins de dépendance à un plan image plus coûteux.
+
+Exemples dans CleanMyMap:
+- [apps/web/src/app/learn/ressources/learn-ressources-client.tsx](../../apps/web/src/app/learn/ressources/learn-ressources-client.tsx) affiche des références artistiques distantes sans optimisation serveur à la volée;
+- [apps/web/src/components/chat/ui/chat-message-item.tsx](../../apps/web/src/components/chat/ui/chat-message-item.tsx) rend les avatars et pièces jointes sans pipeline d'optimisation Vercel.
+
 ### Crons et tâches planifiées
 
 Un cron Vercel compte même sans utilisateur connecté. Si la tâche appelle une route lourde, le coût devient invisible côté produit mais réel côté quota.
@@ -72,7 +91,7 @@ Les composants chargés en `dynamic(..., { ssr: false })` protègent parfois le 
 | --- | --- | --- |
 | [apps/web/src/app/page.tsx](../../apps/web/src/app/page.tsx) | `dynamic = "force-dynamic"` et `revalidate = 0` rendent la page d'accueil entièrement dynamique. | Toute visite passe par du rendu server-side et ne profite pas d'un cache durable. |
 | [apps/web/src/app/(app)/reports/page.tsx](../../apps/web/src/app/(app)/reports/page.tsx) | La page agrège Supabase + météo externe avec `cache: "no-store"`. | Chaque rendu déclenche des lectures serveur et une requête externe non cachée. |
-| [apps/web/src/app/api/actions/map/route.ts](../../apps/web/src/app/api/actions/map/route.ts) | Route dynamique qui retourne jusqu'à 300 éléments filtrés pour la carte. | Les rafraîchissements fréquents de la carte augmentent les invocations et le transfert origine. |
+| [apps/web/src/lib/actions/http.ts](../../apps/web/src/lib/actions/http.ts) + RPC `actions_map_feed` | La carte lit directement Supabase avec bounding box, zoom, filtres et limite. | Le coût Vercel baisse, mais il faut surveiller la taille des réponses et la fréquence des rerenders côté client. |
 | [apps/web/src/app/api/actions/[actionId]/group-join/route.ts](../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Route dynamique de rapprochement d'actions groupées. | Chaque adhésion ou synchronisation déclenche une exécution serveur supplémentaire. |
 | [apps/web/src/app/api/actions/route.ts](../../apps/web/src/app/api/actions/route.ts) | GET dynamique pour la vue liste + POST de création avec rate limit. | C'est une surface de forte activité: lecture, écriture et déclencheurs d'événements. |
 | [apps/web/src/app/api/reports/actions.csv/route.ts](../../apps/web/src/app/api/reports/actions.csv/route.ts) | Export CSV admin avec payload potentiellement lourd. | Chaque téléchargement ajoute du `Fast Data Transfer` et peut consommer de la mémoire serveur. |
@@ -92,6 +111,8 @@ Le dépôt inclut maintenant un audit statique dédié:
 - baseline: `scripts/vercel-quota-audit-baseline.json`
 - commande: `npm run audit:vercel-quota`
 - audit par route: `documentation/development/vercel-route-cost-audit.md`
+- retour d'expérience: `documentation/development/vercel-anti-regression-playbook.md`
+- stratégie de répartition: `documentation/development/vercel-supabase-browser-strategy.md`
 
 Ce script:
 - inventorie les routes API et pages dynamiques,
@@ -105,6 +126,35 @@ Si un changement volontaire augmente le coût attendu, il faut:
 1. documenter la raison,
 2. mesurer le nouveau profil,
 3. mettre à jour le baseline avec `npm run audit:vercel-quota -- --write-baseline`.
+
+## Comportement de la CI
+
+La CI applique une règle simple:
+
+- les régressions critiques font échouer la build;
+- les surfaces sensibles mais non bloquantes génèrent seulement des avertissements;
+- les inventaires restent visibles dans les logs pour guider la revue.
+
+Concrètement:
+- `npm run test:regression-gates -w apps/web` bloque sur les cas critiques déjà couverts par les tests:
+  - augmentation non justifiée du nombre de routes API,
+  - `force-dynamic` sans commentaire explicatif,
+  - `no-store` sans justification,
+  - polling sans documentation.
+- `npm run audit:vercel:ci` publie un rapport d'avertissement non bloquant sur:
+  - routes API,
+  - pages dynamiques,
+  - `force-dynamic`,
+  - `revalidate=0`,
+  - `no-store`,
+  - `cookies()`,
+  - `headers()`,
+  - `auth()`,
+  - imports lourds,
+  - polling,
+  - fetchs externes.
+
+Le but est d'empêcher les vrais accidents de coût sans transformer chaque surface sensible en échec de CI.
 
 ## Checklist avant merge
 
@@ -134,3 +184,6 @@ Si une fonctionnalité ne peut pas expliquer quel quota elle augmente, elle n'es
 - `npm run report:vercel-surface`
 
 Ces commandes s’appuient sur [`scripts/vercel-audit-core.mjs`](../../scripts/vercel-audit-core.mjs), [`scripts/generate-vercel-surface-report.mjs`](../../scripts/generate-vercel-surface-report.mjs) et la baseline [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json).
+
+Lectures associées:
+- [Stratégie de répartition Vercel, Supabase et navigateur](./vercel-supabase-browser-strategy.md)

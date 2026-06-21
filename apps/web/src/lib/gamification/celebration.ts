@@ -16,6 +16,7 @@ export type GamificationCelebrationPayload = {
   confetti?: boolean;
   sound?: boolean;
   source?: string;
+  dedupeKey?: string;
 };
 
 export function dispatchGamificationCelebration(

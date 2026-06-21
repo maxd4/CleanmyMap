@@ -1,68 +1,62 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/" # Racine du monorépo
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     reviewers:
       - "maxd4"
     labels:
       - "dependencies"
       - "npm"
     groups:
-      dependencies:
+      workspace-version-updates:
         applies-to: "version-updates"
         patterns:
           - "*"
-        exclude-patterns:
-          - "next"
-          - "react"
-          - "react-dom"
-      security-updates:
+      workspace-security-updates:
         applies-to: "security-updates"
         patterns:
           - "*"
-        exclude-patterns:
-          - "next"
-          - "react"
-          - "react-dom"
+    # Le lockfile racine couvre le workspace `apps/web`, donc un seul bloc npm
+    # suffit pour le monorepo web. Aucune règle ignore n'est ajoutée ici:
+    # aucune dépendance clairement non pertinente n'a été identifiée.
 
   - package-ecosystem: "npm"
-    directory: "/apps/web" # Dossier spécifique de l'app web
+    directory: "/companion-app"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     reviewers:
       - "maxd4"
     labels:
       - "dependencies"
       - "npm"
-      - "apps/web"
     groups:
-      dependencies:
+      companion-version-updates:
         applies-to: "version-updates"
         patterns:
           - "*"
-        exclude-patterns:
-          - "next"
-          - "react"
-          - "react-dom"
-      security-updates:
+      companion-security-updates:
         applies-to: "security-updates"
         patterns:
           - "*"
-        exclude-patterns:
-          - "next"
-          - "react"
-          - "react-dom"
+    # `companion-app` reste un projet npm autonome avec son propre lockfile.
+    # On le garde séparé pour éviter les doublons avec le workspace principal.
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "maxd4"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      github-actions:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+    # Les Actions sont groupées pour éviter une PR par workflow tout en
+    # conservant une revue unique des mises à jour.

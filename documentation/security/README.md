@@ -15,6 +15,7 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 9. [SQL injection hardening audit](./sql-injection-hardening-audit.md)
 10. [Supabase review checklist](./supabase-review-checklist.md)
 11. [Checklist Performance & Quotas Vercel](../development/performance-quotas-vercel-checklist.md)
+12. [Backlog d'audit GitHub](./github-audit-backlog.md)
 
 ## Checklist courte
 

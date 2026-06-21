@@ -98,9 +98,10 @@ export function NavigationGrid({
             : item.icon;
 
         return (
-          <Link
+        <Link
             key={item.title}
             href={item.href}
+            prefetch={false}
             className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${item.accent} ring-1 ${item.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2`}
           >
             {/* coin accent dot */}

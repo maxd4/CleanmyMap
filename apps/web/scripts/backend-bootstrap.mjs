@@ -27,6 +27,7 @@ if (!skipVercelLink && !existsSync(resolve(cwd, ".vercel", "project.json"))) {
 
 if (!skipSupabase) {
   run("Supabase migrations push", "npx", ["supabase", "db", "push", "--workdir", ".", "--yes"], cwd);
+  run("Supabase preview branch ensure", "node", ["scripts/supabase-preview-branch.mjs"], cwd);
 }
 
 if (!skipVercelEnv) {

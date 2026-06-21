@@ -25,7 +25,9 @@ Parcours d'action, préparation terrain, orientation, signalement et coordinatio
 
 ## Redirections et alias
 
-- `/declaration` -> `/actions/new`
+| Route | Fiche | Type de page | Statut | Détail |
+|---|---|---|---|---|
+| `/declaration` | [Déclaration - Alias technique](./declaration/declaration-README.md) | redirection | hors scope | Alias technique vers `/actions/new` |
 
 ## Notes
 

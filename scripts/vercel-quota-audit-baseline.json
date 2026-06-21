@@ -1,12 +1,11 @@
 {
-  "generatedAt": "2026-06-05T20:28:31.519Z",
+  "generatedAt": "2026-06-12T21:55:22.391Z",
   "routeHandlers": [
     "apps/web/src/app/api/account/display-mode/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
-    "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/pollution-score-references/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/route.ts",
@@ -54,7 +53,6 @@
     "apps/web/src/app/api/health/route.ts",
     "apps/web/src/app/api/manifest/route.ts",
     "apps/web/src/app/api/newsletter/subscribe/route.ts",
-    "apps/web/src/app/api/notifications/route.ts",
     "apps/web/src/app/api/partners/onboarding-requests/route.ts",
     "apps/web/src/app/api/partners/published-directory/route.ts",
     "apps/web/src/app/api/pilotage/overview/route.ts",
@@ -79,13 +77,10 @@
     "apps/web/src/app/images/textures/[...asset]/route.ts"
   ],
   "dynamicRenders": [
-    "apps/web/src/app/(app)/methodologie/page.tsx",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
-    "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/pollution-score-references/route.ts",
-    "apps/web/src/app/api/actions/route.ts",
-    "apps/web/src/app/page.tsx"
+    "apps/web/src/app/api/actions/route.ts"
   ],
   "noStoreFetches": [
     "apps/web/src/app/(app)/reports/page.tsx",
@@ -107,8 +102,7 @@
     "apps/web/src/components/sections/rubriques/use-kit-data.ts",
     "apps/web/src/components/sections/rubriques/use-weather-data.ts",
     "apps/web/src/lib/actions/http.ts",
-    "apps/web/src/lib/community/http.ts",
-    "apps/web/src/lib/gamification/badges/badge-list-client.ts"
+    "apps/web/src/lib/community/http.ts"
   ],
   "externalFetches": [
     "apps/web/src/app/(app)/reports/page.tsx",

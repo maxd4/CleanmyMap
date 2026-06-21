@@ -15,6 +15,7 @@ import {
   toIsoDate,
 } from "./progression-utils";
 import { awardPoints } from "./points/system";
+import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 
 export { syncUserActionProgression } from "./progression-data";
@@ -57,6 +58,7 @@ export async function refreshProgressionProfile(
 
   const potentialLevel = computePotentialLevel(xpValidated);
   const currentLevel = computeCurrentLevel(xpValidated, stats);
+  let previousLevel = 1;
 
   // --- Level Up Detection ---
   try {
@@ -66,9 +68,11 @@ export async function refreshProgressionProfile(
       .eq("user_id", userId)
       .maybeSingle();
 
-    const previousLevel = (existingProfile as any)?.current_level ?? 1;
+    previousLevel = (existingProfile as any)?.current_level ?? 1;
 
-    if (currentLevel > previousLevel) {
+    const didLevelUp = currentLevel > previousLevel;
+
+    if (didLevelUp) {
       await supabase.from("app_notifications").insert({
         user_id: userId,
         type: "system",
@@ -99,6 +103,20 @@ export async function refreshProgressionProfile(
 
   if (upsert.error) {
     throw new Error(upsert.error.message);
+  }
+
+  if (currentLevel > previousLevel) {
+    await broadcastGamificationAnnouncement(supabase, {
+      type: "level_up",
+      userId,
+      previousLevel,
+      newLevel: currentLevel,
+      title: "Niveau Supérieur ! 🏆",
+      message: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
+      icon: "🏆",
+      source: "progression-tracking",
+      dedupeKey: `level_up:${userId}:${currentLevel}`,
+    });
   }
 }
 

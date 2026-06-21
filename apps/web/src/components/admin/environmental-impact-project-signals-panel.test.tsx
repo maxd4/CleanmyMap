@@ -38,5 +38,6 @@ describe("EnvironmentalImpactProjectSignalsPanel", () => {
     expect(markup).toContain("Communauté");
     expect(markup).toContain("Communications");
     expect(markup).toContain("emails envoyés");
+    expect(markup).toContain("Volumes plafonnés");
   });
 });

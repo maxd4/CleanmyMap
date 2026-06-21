@@ -34,6 +34,7 @@ Ce guide résume les règles de sécurité que l'on applique ici quand on audite
 - Vérifier que les helpers RPC ne sont pas appelables par `anon` sans intention claire.
 - Vérifier que les écritures sensibles ne reposent pas sur des paramètres client spoofables.
 - Vérifier les chemins d'importation et de fan-out qui écrivent dans `app_notifications`, `missions`, `actions` ou `spots`.
+- Vérifier qu'une branche Git de preview Supabase est bien associée et active via `npm -C apps/web run backend:supabase:preview:ensure` avant de considérer un preview comme utilisable.
 
 ### OpenAI / Studio local
 

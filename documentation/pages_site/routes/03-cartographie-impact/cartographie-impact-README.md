@@ -18,11 +18,18 @@ Vue carte, impact, méthodologie et lecture des résultats.
 |---|---|---|---|---|:---:|---|---|
 | `/actions/map` | [Carte des actions](./actions-map/actions-map-README.md) | page d'action | protégé | à corriger | non | faible | `apps/web/src/app/(app)/actions/map/page.tsx` |
 | `/methodologie` | [Méthodologie](./methodologie/methodologie-README.md) | exception UI — impact | public | terminé | non | faible | `apps/web/src/app/(app)/methodologie/page.tsx` |
-| `/gamification` | [Progression & badges](./gamification/gamification-README.md) | page de bloc | protégé | à corriger | non | critique | `apps/web/src/app/(app)/gamification/page.tsx` |
+| `/sections/gamification` | [Progression & badges](./gamification/gamification-README.md) | section de bloc | protégé | à corriger | non | critique | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/profil/impact` | [Profil impact](./profil-impact/profil-impact-README.md) | page de bloc | protégé | à corriger | non | moyenne | `apps/web/src/app/(app)/profil/impact/page.tsx` |
 | `/reports` | [Rapports d'impact](./reports/reports-README.md) | page de bloc | protégé | à corriger | non | moyenne | `apps/web/src/app/(app)/reports/page.tsx` |
+
+## Alias et redirections
+
+| Route | Fiche | Type de page | Statut | Détail |
+|---|---|---|---|---|
+| `/gamification` | [Progression & badges](./gamification/gamification-README.md) | redirection | hors scope | Alias technique vers `/sections/gamification` |
 
 ## Notes
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
 - Les captures officielles, quand elles existent, vivent dans `photo/` centralisé du bloc et sont en `WebP`.
+- `/gamification` reste un alias de compatibilité vers `/sections/gamification`.

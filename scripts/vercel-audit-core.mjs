@@ -13,6 +13,17 @@ const scanRoots = [
 
 const fileExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const ignoredDirs = new Set([".git", "node_modules", ".next", "dist", "build", "coverage"]);
+const localImportPatterns = [
+  /(?:^|\n)\s*import\s+(?!type\b)[\s\S]*?\sfrom\s+['"]([^'"]+)['"]/g,
+  /(?:^|\n)\s*export\s+(?!type\b)[\s\S]*?\sfrom\s+['"]([^'"]+)['"]/g,
+  /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+];
+const dynamicTriggerPatterns = {
+  auth: /\bauth\s*\(/,
+  cookies: /\bcookies\s*\(/,
+  headers: /\bheaders\s*\(/,
+};
+const externalFetchPattern = /fetch\s*\(\s*(?:[\s\S]*?['"]https?:\/\/|new\s+URL\s*\(\s*['"]https?:\/\/)/;
 
 const JUSTIFICATION_KEYWORDS = [
   "justification",
@@ -91,6 +102,17 @@ function collectWorkspaceFiles() {
   return files;
 }
 
+function buildFileIndex() {
+  const files = collectWorkspaceFiles();
+  const filesByRelPath = new Map();
+
+  for (const filePath of files) {
+    filesByRelPath.set(toRepoRelative(filePath), filePath);
+  }
+
+  return { files, filesByRelPath };
+}
+
 function isApiRoute(relPath) {
   return /\/app\/api\/.*\/route\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(relPath);
 }
@@ -133,6 +155,70 @@ function hasJustificationComment(content, markerRegex) {
   return false;
 }
 
+function isLocalImportSpecifier(specifier) {
+  return specifier.startsWith(".") || specifier.startsWith("@/");
+}
+
+function resolveLocalImport(filePath, specifier, filesByRelPath) {
+  if (!isLocalImportSpecifier(specifier)) {
+    return null;
+  }
+
+  const candidateBase = specifier.startsWith("@/")
+    ? path.join(appRoot, specifier.slice(2))
+    : path.resolve(path.dirname(filePath), specifier);
+
+  const candidates = [candidateBase];
+
+  if (!path.extname(candidateBase)) {
+    for (const extension of [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]) {
+      candidates.push(`${candidateBase}${extension}`);
+    }
+
+    for (const extension of [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]) {
+      candidates.push(path.join(candidateBase, `index${extension}`));
+    }
+  }
+
+  for (const candidate of candidates) {
+    const relPath = toRepoRelative(candidate);
+    if (filesByRelPath.has(relPath)) {
+      return filesByRelPath.get(relPath);
+    }
+  }
+
+  return null;
+}
+
+function collectLocalDependencies(filePath, content, filesByRelPath) {
+  const dependencies = new Set();
+
+  for (const pattern of localImportPatterns) {
+    pattern.lastIndex = 0;
+    for (const match of content.matchAll(pattern)) {
+      const specifier = match[1];
+      const resolved = resolveLocalImport(filePath, specifier, filesByRelPath);
+      if (resolved) {
+        dependencies.add(resolved);
+      }
+    }
+  }
+
+  return Array.from(dependencies);
+}
+
+function collectDirectSignals(content) {
+  const signals = new Set();
+
+  for (const [signal, pattern] of Object.entries(dynamicTriggerPatterns)) {
+    if (pattern.test(content)) {
+      signals.add(signal);
+    }
+  }
+
+  return Array.from(signals);
+}
+
 function extractHeavyImports(content) {
   const findings = [];
   for (const packageName of HEAVY_IMPORT_PACKAGES) {
@@ -154,31 +240,38 @@ function isPollingFile(content) {
   return hasTimer && hasFetch;
 }
 
-function analyzeFile(filePath, snapshot) {
+function analyzeFile(
+  filePath,
+  snapshot,
+  filesByRelPath,
+  dependencyGraph,
+  runtimeSignalsByFile,
+  pageSignalsByFile,
+) {
   const relPath = toRepoRelative(filePath);
   const content = fs.readFileSync(filePath, "utf8");
+  dependencyGraph.set(filePath, collectLocalDependencies(filePath, content, filesByRelPath));
+  runtimeSignalsByFile.set(filePath, new Set(collectDirectSignals(content)));
 
   if (isApiRoute(relPath)) {
     snapshot.apiRoutes.push(relPath);
   }
 
-  if (isPageFile(relPath)) {
-    const signals = [];
-    if (/export const dynamic\s*=\s*["']force-dynamic["']/.test(content)) {
-      signals.push("force-dynamic");
-      snapshot.forceDynamicPages.push(relPath);
-    }
-    if (/export const revalidate\s*=\s*0\b/.test(content)) {
-      signals.push("revalidate=0");
-      snapshot.revalidateZeroPages.push(relPath);
-    }
-    if (/\b(cookies|headers|auth)\s*\(/.test(content)) {
-      signals.push("runtime-headers");
-    }
+  const pageSignals = [];
+  if (/export const dynamic\s*=\s*["']force-dynamic["']/.test(content)) {
+    pageSignals.push("force-dynamic");
+    snapshot.forceDynamicPages.push(relPath);
+  }
+  if (/export const revalidate\s*=\s*0\b/.test(content)) {
+    pageSignals.push("revalidate=0");
+    snapshot.revalidateZeroPages.push(relPath);
+  }
+  for (const signal of collectDirectSignals(content)) {
+    pageSignals.push(signal);
+  }
 
-    if (signals.length > 0) {
-      snapshot.dynamicPages.push({ path: relPath, signals });
-    }
+  if (isPageFile(relPath) && pageSignals.length > 0) {
+    pageSignalsByFile.set(filePath, new Set(pageSignals));
   }
 
   if (isApiRoute(relPath) && /no-store/.test(content)) {
@@ -207,6 +300,10 @@ function analyzeFile(filePath, snapshot) {
   if (isPollingFile(content)) {
     snapshot.pollingFiles.push(relPath);
   }
+
+  if (externalFetchPattern.test(content)) {
+    snapshot.externalFetches.push(relPath);
+  }
 }
 
 export function scanVercelSurface() {
@@ -221,10 +318,69 @@ export function scanVercelSurface() {
     authFiles: [],
     heavyImports: [],
     pollingFiles: [],
+    externalFetches: [],
   };
 
-  for (const filePath of collectWorkspaceFiles()) {
-    analyzeFile(filePath, snapshot);
+  const { files, filesByRelPath } = buildFileIndex();
+  const dependencyGraph = new Map();
+  const runtimeSignalsByFile = new Map();
+  const pageSignalsByFile = new Map();
+
+  for (const filePath of files) {
+    analyzeFile(
+      filePath,
+      snapshot,
+      filesByRelPath,
+      dependencyGraph,
+      runtimeSignalsByFile,
+      pageSignalsByFile,
+    );
+  }
+
+  const aggregatedSignalsCache = new Map();
+  const visiting = new Set();
+
+  function collectAggregatedSignals(filePath) {
+    if (aggregatedSignalsCache.has(filePath)) {
+      return aggregatedSignalsCache.get(filePath);
+    }
+
+    if (visiting.has(filePath)) {
+      return new Set();
+    }
+
+    visiting.add(filePath);
+    const aggregated = new Set(runtimeSignalsByFile.get(filePath) ?? []);
+    const dependencies = dependencyGraph.get(filePath) ?? [];
+
+    for (const dependency of dependencies) {
+      for (const signal of collectAggregatedSignals(dependency)) {
+        aggregated.add(signal);
+      }
+    }
+
+    visiting.delete(filePath);
+    aggregatedSignalsCache.set(filePath, aggregated);
+    return aggregated;
+  }
+
+  for (const filePath of files) {
+    const relPath = toRepoRelative(filePath);
+    if (!isPageFile(relPath)) {
+      continue;
+    }
+
+    const aggregatedSignals = new Set(pageSignalsByFile.get(filePath) ?? []);
+    for (const signal of collectAggregatedSignals(filePath)) {
+      aggregatedSignals.add(signal);
+    }
+
+    if (aggregatedSignals.size > 0) {
+      snapshot.dynamicPages.push({
+        path: relPath,
+        signals: Array.from(aggregatedSignals).sort((left, right) => left.localeCompare(right)),
+      });
+    }
   }
 
   const sortStrings = (values) => values.sort((left, right) => left.localeCompare(right));
@@ -243,6 +399,7 @@ export function scanVercelSurface() {
       return byPath !== 0 ? byPath : left.packageName.localeCompare(right.packageName);
     }),
     pollingFiles: sortStrings(snapshot.pollingFiles),
+    externalFetches: sortStrings(snapshot.externalFetches),
   };
 }
 

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ArrowRight, UserPlus } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   fetchCurrentAccountIdentity,
@@ -30,6 +31,7 @@ import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
 import { ChatSidebar } from "./chat-sidebar";
+import { ChatContextSidebar } from "./chat-context-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
@@ -59,6 +61,7 @@ type ChatShellProps = {
   initialRecipient?: ChatUser | null;
   initialMessage?: string;
   tone?: "light" | "dark";
+  fullHeight?: boolean;
 };
 
 export function ChatShell({
@@ -68,6 +71,7 @@ export function ChatShell({
   initialRecipient,
   initialMessage,
   tone = "dark",
+  fullHeight = false,
 }: ChatShellProps) {
   const isLight = tone === "light";
   const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -142,7 +146,9 @@ export function ChatShell({
     let cancelled = false;
 
     try {
-      const client = getSupabaseBrowserClient(() => getToken());
+      const client = getSupabaseBrowserClient(
+        buildClerkSupabaseAccessTokenProvider(getToken),
+      );
       if (!cancelled) {
         setSupabase(client);
       }
@@ -593,7 +599,7 @@ export function ChatShell({
   );
 
   return (
-    <div className={`flex flex-col h-[750px] rounded-[3rem] overflow-hidden shadow-2xl relative backdrop-blur-3xl ${isLight ? "border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,251,253,0.98)_0%,rgba(255,244,248,0.94)_100%)]" : "border border-white/10 bg-slate-900/40"}`}>
+    <div className={`flex flex-col ${fullHeight ? "h-full" : "h-[750px]"} overflow-hidden relative ${isLight ? "bg-rose-50/30" : "rounded-[3rem] shadow-2xl backdrop-blur-3xl border border-white/10 bg-slate-900/40"}`}>
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar
           channels={sidebarChannels}
@@ -606,71 +612,6 @@ export function ChatShell({
           tone={isLight ? "light" : "dark"}
         />
         <div className={`flex-1 flex flex-col relative ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
-          {activeChannelType === "community" && isLight ? (
-            <div className="px-4 pt-4 sm:px-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] border border-rose-100/70 bg-[linear-gradient(90deg,rgba(255,244,248,0.98)_0%,rgba(255,255,255,0.95)_100%)] px-5 py-4 shadow-sm">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
-                    <span className="text-xl">📣</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500">
-                      {activeTopic?.label ?? "Relais actif"}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-slate-600">
-                      {activeTopic?.description ?? "Une annonce est en cours de relai dans ce salon."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {communityAnnouncementAvatars.map((sender, index) => (
-                    <div
-                      key={sender.handle}
-                      className={`h-8 w-8 overflow-hidden rounded-full border border-white shadow-sm ${index > 0 ? "-ml-2" : ""}`}
-                      title={sender.display_name}
-                    >
-                      <Image
-                        src={sender.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender.display_name)}`}
-                        alt={sender.display_name}
-                        className="h-full w-full object-cover"
-                        width={32}
-                        height={32}
-                      />
-                    </div>
-                  ))}
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-100 bg-white text-[10px] font-black text-rose-500 shadow-sm">
-                    +{Math.max(0, messages.length - communityAnnouncementAvatars.length)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-          {activeChannelType === "community" ? (
-            <div className={`border-b px-4 py-3 sm:px-5 ${isLight ? "border-rose-100/70 bg-transparent" : "border-emerald-200/12 bg-emerald-500/5"}`}>
-              <div className={`flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border px-4 py-3 ${isLight ? "border-rose-100 bg-white/90 shadow-sm" : "border-emerald-200/12 bg-[rgba(5,34,20,0.32)]"}`}>
-                <div className="min-w-0">
-                  <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${isLight ? "text-rose-500" : "text-emerald-200/70"}`}>
-                    Parrainage
-                  </p>
-                  <p className={`mt-1 text-sm font-semibold ${isLight ? "text-slate-600" : "text-white/90"}`}>
-                    Invitez un ami depuis votre profil et conservez la chaîne de
-                    filiation.
-                  </p>
-                </div>
-                <CmmButton
-                  href="/profil#parrainage"
-                  tone="secondary"
-                  variant="pill"
-                  className="h-10 shrink-0 gap-2 px-4 text-[11px] font-black transition-transform hover:-translate-y-0.5"
-                >
-                  <UserPlus size={14} />
-                  Inviter un ami
-                  <ArrowRight size={13} />
-                </CmmButton>
-              </div>
-            </div>
-          ) : null}
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
@@ -690,34 +631,6 @@ export function ChatShell({
             tone={isLight ? "light" : "dark"}
             showControls={!isLight}
           />
-
-          {activeChannelType === "community" ? (
-            <div className="px-6 pt-5">
-              <div className={`rounded-[2rem] border p-5 shadow-sm ${isLight ? "border-rose-100 bg-white" : "border-rose-200/10 bg-rose-500/5"}`}>
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isLight ? "bg-rose-50 text-rose-500" : "bg-rose-500/10 text-rose-400"}`}>
-                    <span className="text-xl">📣</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-black ${isLight ? "text-slate-900" : "text-slate-100"}`}>
-                      Annonce en cours de relai
-                    </p>
-                    <p className={`mt-1 text-sm leading-relaxed ${isLight ? "text-slate-600" : "text-slate-300"}`}>
-                      {activeTopic?.starterPrompt ||
-                        "Besoin de diffuser : appel à bénévoles pour le nettoyage des berges samedi 18 mai à 9h."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleStarterPrompt(activeTopic?.starterPrompt || discussionGuidance.starterPrompts[0] || "")}
-                      className={`mt-4 inline-flex items-center rounded-full border px-4 py-2 text-xs font-black uppercase tracking-widest transition ${isLight ? "border-rose-200 bg-white text-rose-600 hover:bg-rose-50" : "border-rose-300/20 bg-white/5 text-rose-300 hover:bg-white/10"}`}
-                    >
-                      Voir les détails
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
 
           {isBugReportChannel ? (
             <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
@@ -756,27 +669,6 @@ export function ChatShell({
                 ))}
               </div>
 
-              {feedState !== "degraded" && feedState !== "empty" ? (
-                <div className="px-6 pb-4">
-                  <div className={`flex items-center gap-3 rounded-[1.5rem] px-4 py-3 shadow-sm ${isLight ? "border border-rose-100 bg-white/90" : "border border-white/5 bg-white/5 dark:bg-slate-900/40"}`}>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-600" : "bg-violet-500/20 text-violet-400"}`}>
-                      {discussionGuidance.channelGoal}
-                    </span>
-                    <p className={`min-w-0 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                      {discussionGuidance.composerHint}
-                    </p>
-                    {isLive && (
-                      <div className={`ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/20"}`}>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${isLight ? "text-emerald-600" : "text-emerald-500"}`}>
-                          Live
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-
               <ChatComposer
                 activeChannelType={activeChannelType}
                 composerPlaceholder={composerPlaceholder}
@@ -810,6 +702,10 @@ export function ChatShell({
             </>
           )}
         </div>
+        {/* Right Context Sidebar */}
+        {activeChannelType !== "dm" && activeChannelType !== "bug_report" ? (
+          <ChatContextSidebar tone={isLight ? "light" : "dark"} />
+        ) : null}
       </div>
     </div>
   );

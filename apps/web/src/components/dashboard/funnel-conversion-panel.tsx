@@ -35,8 +35,7 @@ export function FunnelConversionPanel() {
  ["dashboard-funnel", String(periodDays)],
  async () => {
  const response = await fetch(
- `/api/analytics/funnel?periodDays=${periodDays}`,
- { cache:"no-store" },
+  `/api/analytics/funnel?periodDays=${periodDays}`,
  );
  if (!response.ok) {
  throw new Error("funnel_unavailable");

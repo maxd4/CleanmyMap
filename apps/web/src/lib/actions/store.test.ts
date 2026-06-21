@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { resolvePersistedCigaretteButts } from "./store";
+import { resolveActionCreationStatus, resolvePersistedCigaretteButts } from "./store";
 
 function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {
   return {
@@ -40,5 +40,15 @@ describe("resolvePersistedCigaretteButts", () => {
     });
 
     expect(resolvePersistedCigaretteButts(payload)).toBe(120);
+  });
+});
+
+describe("resolveActionCreationStatus", () => {
+  it("approves admin-like submissions immediately", () => {
+    expect(resolveActionCreationStatus(true)).toBe("approved");
+  });
+
+  it("keeps regular submissions pending", () => {
+    expect(resolveActionCreationStatus(false)).toBe("pending");
   });
 });

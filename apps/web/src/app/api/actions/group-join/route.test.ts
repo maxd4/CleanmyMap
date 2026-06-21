@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 
 const authMock = vi.hoisted(() => vi.fn());
+const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
+}));
+
+vi.mock("@/lib/authz", () => ({
+  getCurrentUserIdentity: getCurrentUserIdentityMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -34,6 +39,9 @@ type ParticipantRow = {
   updated_at?: string;
   action_id: string;
   user_id: string;
+  joined_at?: string;
+  participation_status?: "pending" | "confirmed" | "cancelled";
+  participation_source?: "group_form" | "admin" | "import";
 };
 
 function createActionsChain(actions: ActionRow[]) {
@@ -125,6 +133,7 @@ function createParticipantsChain(participants: ParticipantRow[]) {
     headCount: boolean;
     limitValue: number | null;
     inserting?: ParticipantRow;
+    pendingUpdate?: Record<string, unknown>;
   } = {
     filters: {},
     inFilters: {},
@@ -132,16 +141,32 @@ function createParticipantsChain(participants: ParticipantRow[]) {
     limitValue: null,
   };
 
+  const getParticipationStatus = (row: ParticipantRow) => row.participation_status ?? "confirmed";
+  const getJoinedAt = (row: ParticipantRow) => row.joined_at ?? row.created_at;
+  const normalizeRow = (row: ParticipantRow): ParticipantRow => ({
+    ...row,
+    joined_at: row.joined_at ?? row.created_at,
+    participation_status: row.participation_status ?? "confirmed",
+    participation_source: row.participation_source ?? "group_form",
+  });
+
   const buildFiltered = () =>
     participants.filter((row) => {
-      if (state.filters.action_id && row.action_id !== state.filters.action_id) {
+      const normalized = normalizeRow(row);
+      if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
         return false;
       }
-      if (state.filters.user_id && row.user_id !== state.filters.user_id) {
+      if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
+        return false;
+      }
+      if (
+        state.filters.participation_status &&
+        getParticipationStatus(normalized) !== state.filters.participation_status
+      ) {
         return false;
       }
       const allowedActionIds = state.inFilters.action_id;
-      if (allowedActionIds && !allowedActionIds.includes(row.action_id)) {
+      if (allowedActionIds && !allowedActionIds.includes(normalized.action_id)) {
         return false;
       }
       return true;
@@ -150,6 +175,10 @@ function createParticipantsChain(participants: ParticipantRow[]) {
   const chain: any = {
     select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
       state.headCount = Boolean(options?.head);
+      return chain;
+    }),
+    update: vi.fn((values: Record<string, unknown>) => {
+      state.pendingUpdate = values;
       return chain;
     }),
     eq: vi.fn((field: string, value: string) => {
@@ -165,40 +194,84 @@ function createParticipantsChain(participants: ParticipantRow[]) {
       state.limitValue = limit;
       const filtered = buildFiltered();
       return {
-        data: filtered.slice(0, limit),
+        data: filtered.slice(0, limit).map((row) => normalizeRow(row)),
         error: null,
       };
     }),
     maybeSingle: vi.fn(async () => {
       const filtered = buildFiltered();
       return {
-        data: filtered[0] ?? null,
+        data: filtered[0] ? normalizeRow(filtered[0]) : null,
         error: null,
       };
     }),
     single: vi.fn(async () => {
+      if (state.pendingUpdate) {
+        const original = participants.find((row) => {
+          const normalized = normalizeRow(row);
+          if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
+            return false;
+          }
+          if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
+            return false;
+          }
+          return true;
+        }) ?? null;
+        if (original) {
+          Object.assign(original!, state.pendingUpdate, {
+            updated_at: "2026-06-04T12:00:00Z",
+            joined_at:
+              typeof state.pendingUpdate.joined_at === "string"
+                ? state.pendingUpdate.joined_at
+                : getJoinedAt(original),
+          });
+        }
+        state.pendingUpdate = undefined;
+        return {
+          data: original ? normalizeRow(original) : null,
+          error: null,
+        };
+      }
+
       const inserted = state.inserting;
       if (inserted) {
         participants.push(inserted);
       }
+      state.inserting = undefined;
       return {
         data: inserted ?? null,
         error: null,
       };
     }),
-    insert: vi.fn((values: { action_id: string; user_id: string }) => {
-      state.inserting = {
-        id: `participant-${participants.length + 1}`,
-        created_at: "2026-06-04T12:00:00Z",
-        action_id: values.action_id,
-        user_id: values.user_id,
-      };
-      return chain;
-    }),
+    insert: vi.fn(
+      (values: {
+        action_id: string;
+        user_id: string;
+        joined_at?: string;
+        participation_status?: "pending" | "confirmed" | "cancelled";
+        participation_source?: "group_form" | "admin" | "import";
+      }) => {
+        const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
+        state.inserting = {
+          id: `participant-${participants.length + 1}`,
+          created_at: joinedAt,
+          joined_at: joinedAt,
+          participation_status: values.participation_status ?? "confirmed",
+          participation_source: values.participation_source ?? "group_form",
+          action_id: values.action_id,
+          user_id: values.user_id,
+        };
+        return chain;
+      },
+    ),
     then: (resolve: (value: any) => void, reject: (reason: unknown) => void) => {
       const filtered = buildFiltered();
       return Promise.resolve({
-        data: state.headCount ? null : filtered.slice(0, state.limitValue ?? filtered.length),
+        data: state.headCount
+          ? null
+          : filtered
+              .slice(0, state.limitValue ?? filtered.length)
+              .map((row) => normalizeRow(row)),
         count: filtered.length,
         error: null,
       }).then(resolve, reject);
@@ -484,10 +557,11 @@ describe("POST /api/actions/group-join", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValue(null);
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });
 
-  it("joins an approved action form", async () => {
+  it("creates a pending request for an approved action form", async () => {
     const participants: ParticipantRow[] = [];
     const supabase = createSupabaseMock({
       actions: [
@@ -514,12 +588,108 @@ describe("POST /api/actions/group-join", () => {
     );
     const body = (await response.json()) as {
       alreadyJoined?: boolean;
+      participationStatus?: string;
       participantsCount?: number;
       joinedAt?: string;
     };
 
     expect(response.status).toBe(200);
     expect(body.alreadyJoined).toBe(false);
+    expect(body.participationStatus).toBe("pending");
+    expect(body.participantsCount).toBe(0);
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("re-enters a cancelled participation into the waitlist", async () => {
+    const participants: ParticipantRow[] = [
+      {
+        id: "participant-1",
+        created_at: "2026-05-03T10:00:00Z",
+        joined_at: "2026-05-03T10:00:00Z",
+        updated_at: "2026-05-20T10:00:00Z",
+        participation_status: "cancelled",
+        participation_source: "admin",
+        action_id: "action-1",
+        user_id: "user-1",
+      },
+    ];
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-1",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+        },
+      ],
+      participants,
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ actionId: "action-1" }),
+      }),
+    );
+    const body = (await response.json()) as {
+      alreadyJoined?: boolean;
+      participationStatus?: string;
+      participationSource?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.alreadyJoined).toBe(false);
+    expect(body.participationStatus).toBe("pending");
+    expect(body.participationSource).toBe("group_form");
+    expect(body.participantsCount).toBe(0);
+    expect(participants[0]?.participation_status).toBe("pending");
+    expect(participants[0]?.participation_source).toBe("group_form");
+  });
+
+  it("confirms immediately for admin-like users", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "admin",
+    });
+
+    const participants: ParticipantRow[] = [];
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-4",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+        },
+      ],
+      participants,
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ actionId: "action-4" }),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      participationStatus?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.participationStatus).toBe("confirmed");
     expect(body.participantsCount).toBe(1);
     expect(refreshProgressionProfileMock).toHaveBeenCalledWith(supabase, "user-1");
   });

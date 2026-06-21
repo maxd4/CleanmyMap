@@ -25,8 +25,9 @@ Points d'appui deja presents :
 
 - `apps/web/supabase/migrations/*`
 - `npm run data:archive:supabase`
-- `npm run data:sheet:sync-supabase`
+- flux Google Sheet vers Supabase retire et non supporte
 - `npm run backend:supabase:push`
+- `npm run backend:supabase:preview:ensure`
 
 ### Vercel
 
@@ -77,6 +78,7 @@ Points d'appui deja presents :
 | --- | --- |
 | Export des donnees Supabase | `npm run data:archive:supabase` |
 | Push schema / migrations | `npm run backend:supabase:push` |
+| Associer / reactiver un preview Supabase | `npm run backend:supabase:preview:ensure` |
 | Sync env Vercel | `npm run backend:vercel:env:sync` |
 | Audit des deploiements Vercel | `npm run metrics:cicd` |
 | Check hygiene avant release | `npm run pre-release:check` |

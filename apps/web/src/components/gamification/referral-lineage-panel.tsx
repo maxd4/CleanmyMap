@@ -12,6 +12,7 @@ type ReferralLineagePanelProps = {
   title?: string;
   subtitle?: string;
   view: ReferralLineageView | null;
+  errorMessage?: string | null;
   emptyCtaHref: string;
   emptyCtaLabel: string;
 };
@@ -64,9 +65,37 @@ export function ReferralLineagePanel({
   title = "Arborescence de parrainage",
   subtitle = "Visualisez le compte observé, ses ancêtres, puis les branches descendantes qui en dépendent.",
   view,
+  errorMessage,
   emptyCtaHref,
   emptyCtaLabel,
 }: ReferralLineagePanelProps) {
+  if (errorMessage) {
+    return (
+      <section className="rounded-[2rem] border border-red-300/18 bg-[linear-gradient(180deg,rgba(52,17,17,0.96)_0%,rgba(22,8,8,0.98)_100%)] px-5 py-5 shadow-[0_22px_54px_-34px_rgba(0,0,0,0.45)]">
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-100/60">
+            {title}
+          </p>
+          <h3 className="text-2xl font-black tracking-tight text-white">
+            Impossible de charger la filiation pour le moment
+          </h3>
+          <p className="max-w-2xl text-sm leading-relaxed text-red-50/76">
+            {errorMessage}
+          </p>
+          <CmmButton
+            href={emptyCtaHref}
+            tone="secondary"
+            variant="pill"
+            className="h-11 px-5 text-[11px] font-black gap-2"
+          >
+            <UserPlus size={14} />
+            Revenir au parrainage
+          </CmmButton>
+        </div>
+      </section>
+    );
+  }
+
   const shouldShowEmptyState =
     !view ||
     (!view.hasReferralCode &&

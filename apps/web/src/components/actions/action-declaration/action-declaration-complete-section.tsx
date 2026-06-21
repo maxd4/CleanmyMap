@@ -3,6 +3,7 @@
 import dynamic from"next/dynamic";
 import { computeButtsCount } from"@/lib/actions/data-contract";
 import type { ActionDrawing } from"@/lib/actions/types";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { toRequiredNumber } from"./payload";
 import type { FormState, UpdateFormField } from"./types";
 
@@ -35,6 +36,10 @@ export function ActionDeclarationCompleteSection({
  setManualDrawing,
  drawingIsValid,
 }: ActionDeclarationCompleteSectionProps) {
+ const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({
+  rootMargin: "240px 0px",
+ });
+
  return (
  <>
  <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
@@ -58,6 +63,8 @@ export function ActionDeclarationCompleteSection({
  Carte de Paris (fond blanc) : utilisez l&apos;outil ligne pour le
  tracé ou polygone pour la zone nettoyée.
  </p>
+ <div ref={mapShellRef} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+ {isMapVisible ? (
  <ActionDrawingMap
  value={manualDrawing}
  onChange={setManualDrawing}
@@ -68,6 +75,17 @@ export function ActionDeclarationCompleteSection({
  )}
  isCleanPlace={false}
  />
+ ) : (
+ <div className="flex h-[360px] items-center justify-center bg-slate-50">
+ <div className="space-y-3 text-center">
+ <div className="mx-auto h-10 w-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+ <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+ Chargement de la carte...
+ </p>
+ </div>
+ </div>
+ )}
+ </div>
  <p className="cmm-text-caption cmm-text-secondary">
  {drawingIsValid
  ? `Dessin enregistré (${manualDrawing?.kind ==="polygon" ?"polygone" :"tracé"}, ${manualDrawing?.coordinates.length ?? 0} points).`

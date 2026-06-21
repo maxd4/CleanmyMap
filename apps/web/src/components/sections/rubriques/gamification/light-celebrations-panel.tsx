@@ -3,7 +3,7 @@
 import { memo, useCallback } from "react";
 import { BellRing, PartyPopper, Sparkles, Volume2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 
 export type LightCelebrationPreview = {
   title: string;
@@ -43,7 +43,7 @@ export const LightCelebrationsPanel = memo(function LightCelebrationsPanel({
   const preview = buildLightCelebrationPreview(locale);
 
   const handlePreview = useCallback(() => {
-    dispatchGamificationCelebration(preview);
+    announceGamificationGain(preview);
   }, [preview]);
 
   return (

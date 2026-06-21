@@ -18,10 +18,15 @@ Documentation des fonctionnalités pour agents IA.
 
 ### Quiz & Apprentissage
 - **quiz-authoring-guide.md** - Règles d'écriture des questions du quiz
+  - Sept portes d'entrée: mixte, terrain, données scientifiques, sensibilisation, habitudes de vie, ordres de grandeur, tri & sécurité
+  - Champs de sélection: `mode`, `review`, `skill`, `pedagogicalType`, `difficulty`, `trapLevel`, `sessionSize`
+  - `difficulty` distinct de `trapLevel`
+  - Sessions bornées, progression par révision, montée cognitive et piège intuitif
   - Vrai / Faux piégeux
   - Questions de situation
   - Anti-questions faciles
   - Banque équilibrée sur 10 formats
+- **quiz-quality-control.md** - Grille de validation, contrôle qualité et traçabilité des sources du quiz
 - **quiz-srs.md** - Système de quiz avec répétition espacée (SRS)
   - Algorithme de répétition
   - Gestion des questions

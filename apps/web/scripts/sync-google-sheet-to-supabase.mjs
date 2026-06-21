@@ -8,6 +8,11 @@ import { computeButtsFromMegotsKg } from "./lib/sheet-ingestion-core.mjs";
 import { GEOMETRY_CONFIDENCE } from "../src/lib/actions/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
+const DEPRECATION_MESSAGE =
+  "Google Sheet sync is deprecated. The sheet is no longer used as a source of truth.";
+
+throw new Error(DEPRECATION_MESSAGE);
+
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ACTIONS_IMPORT_PATH = join(
   APP_DIR,

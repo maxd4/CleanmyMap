@@ -8,11 +8,14 @@ Contenus pédagogiques et guides de compréhension.
 |---|---|---|---|---|:---:|---|---|
 | `/learn/bonnes-pratiques` | [Bonnes pratiques](./learn-bonnes-pratiques/learn-bonnes-pratiques-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/bonnes-pratiques/page.tsx |
 | `/learn/comprendre` | [Ordres de grandeur](./learn-comprendre/learn-comprendre-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/comprendre/page.tsx |
-| `/learn/hub` | [Point de départ](./learn-hub/learn-hub-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/hub/page.tsx |
-| `/learn/ressources` | [Ressources](./learn-ressources/learn-ressources-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/ressources/page.tsx |
 | `/learn/sentrainer` | [S'entraîner](./learn-sentrainer/learn-sentrainer-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/sentrainer/page.tsx |
 
+## Surfaces intégrées
 
+| Surface | Fiche | Statut | Détail | Source principale |
+|---|---|---|---|---|
+| Point de départ | [Point de départ](./learn-hub/learn-hub-README.md) | intégré | Plus de `page.tsx` dédié, l'orientation est répartie dans les trois pages canoniques. | `apps/web/src/components/learn/learn-block-journey-section.tsx` |
+| Ressources | [Ressources](./learn-ressources/learn-ressources-README.md) | intégré | Plus de `page.tsx` dédié, les ressources sont intégrées à `bonnes-pratiques`. | `apps/web/src/components/learn/learn-ressources-client.tsx` |
 
 ## Notes
 

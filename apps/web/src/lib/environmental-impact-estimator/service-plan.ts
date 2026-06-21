@@ -11,6 +11,7 @@ export type ServicePlanInfo = {
 
 const SERVICE_PLAN_INFO: Record<EnvironmentalImpactInfrastructureServiceKey, ServicePlanInfo> = {
   vercel: { type: "gratuit", price: "NA" },
+  github: { type: "gratuit", price: "NA" },
   supabase: {
     type: "gratuit",
     price: "NA",

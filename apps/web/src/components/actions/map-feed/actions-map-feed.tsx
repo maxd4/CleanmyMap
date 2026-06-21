@@ -9,6 +9,8 @@ import { DefaultLayout } from "./_layouts/default-layout";
 import { logFailure } from "@/lib/logging/failure-log";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import { DEFAULT_ACTIONS_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -41,9 +43,16 @@ export function ActionsMapFeedContent({
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
+  const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLElement>({
+    rootMargin: "260px 0px",
+  });
   const isEmerald = tone === "emerald";
 
   useEffect(() => {
+    if (!isMapVisible) {
+      return;
+    }
+
     let cancelled = false;
 
     void import("@/components/actions/actions-map-canvas")
@@ -67,7 +76,7 @@ export function ActionsMapFeedContent({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isMapVisible]);
 
   const isImmersive = presentation === "immersive";
 
@@ -104,7 +113,7 @@ export function ActionsMapFeedContent({
   };
 
   return (
-    <section className={shellClass}>
+    <section ref={mapShellRef} className={shellClass}>
       {isImmersive ? (
         <ImmersiveLayout {...layoutProps} />
       ) : (
@@ -165,6 +174,9 @@ export function ActionsMapFeed({
   mapExportTargetRef,
   onViewportChange,
 }: ActionsMapFeedProps) {
+  const [mapViewport, setMapViewport] = useState<MapViewportState | null>(
+    DEFAULT_ACTIONS_MAP_VIEWPORT,
+  );
   const feedData = useMapFeedData({
     types,
     days,
@@ -175,6 +187,7 @@ export function ActionsMapFeed({
     zoneQuery,
     visibleCategories,
     limit,
+    viewport: mapViewport,
   });
 
   return (
@@ -190,7 +203,10 @@ export function ActionsMapFeed({
       onOpenAction={onOpenAction}
       onResetFilters={onResetFilters}
       mapExportTargetRef={mapExportTargetRef}
-      onViewportChange={onViewportChange}
+      onViewportChange={(viewport) => {
+        setMapViewport(viewport);
+        onViewportChange?.(viewport);
+      }}
     />
   );
 }

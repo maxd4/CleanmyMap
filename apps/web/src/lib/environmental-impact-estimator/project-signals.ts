@@ -1,5 +1,6 @@
 import { subDays } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
 import {
   buildCodexMonthlyUsageEstimate,
   listCodexUsageWeeklySnapshots,
@@ -16,6 +17,11 @@ import type {
 
 type BaseTimelineRow = {
   created_at: string;
+};
+
+type ProjectSignalQueryBuilder = {
+  order(column: string, options?: { ascending?: boolean }): ProjectSignalQueryBuilder;
+  limit(limit: number): ProjectSignalQueryBuilder;
 };
 
 type FunnelRow = {
@@ -117,7 +123,24 @@ type ProjectSignalRows = {
   appNotifications: AppNotificationRow[];
 };
 
-const PROJECT_SIGNAL_ROW_LIMIT = 6000;
+const PROJECT_SIGNAL_VOLUME_NOTE =
+  `Volumes plafonnés à ${new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)} lignes par table; au-delà, la lecture reste indicative.`;
+
+async function limitProjectSignalRows<T>(
+  query: ProjectSignalQueryBuilder,
+  orderings: Array<[column: string, ascending?: boolean]>,
+): Promise<{ data: T[] | null; error: { message: string } | null }> {
+  let orderedQuery = query;
+
+  for (const [column, ascending = false] of orderings) {
+    orderedQuery = orderedQuery.order(column, { ascending });
+  }
+
+  return (await orderedQuery.limit(PROJECT_SIGNAL_ROW_LIMIT)) as unknown as {
+    data: T[] | null;
+    error: { message: string } | null;
+  };
+}
 
 function round6(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
@@ -1090,6 +1113,12 @@ export function buildEnvironmentalImpactProjectSignals(
       referencePeriodMonths: launchedAt
         ? Math.max(1, Math.min(240, Math.ceil((generatedAtDate.getTime() - new Date(launchedAt).getTime()) / (30 * 24 * 60 * 60 * 1000))))
         : 12,
+      metrics:
+        githubWorkflowRunsCount30d !== null
+          ? {
+              githubWorkflowRunsCount30d,
+            }
+          : undefined,
       usage: {
         ...calculateMonthlyUsageInput(rows),
         ...codexUsage.usage,
@@ -1127,6 +1156,7 @@ export function buildEnvironmentalImpactProjectSignals(
         : []),
     ],
     notes: [
+      PROJECT_SIGNAL_VOLUME_NOTE,
       "Les signaux proviennent des tables opérationnelles CleanMyMap, pas de moyennes externes.",
       "Les vues de page utilisent désormais page_view comme signal route-level principal, avec fallback sur view_new pour l'historique.",
       "Les emails Resend sont journalisés via le service email central pour garder un historique localisé.",
@@ -1163,17 +1193,99 @@ export async function loadEnvironmentalImpactProjectSignals(
     eventRsvps,
     appNotifications,
   ] = await Promise.all([
-    supabase.from("profiles").select("id, created_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("progression_events").select("created_at, user_id, event_type, status_phase").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("reports").select("created_at, owner_clerk_id, file_kind").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("training_examples").select("action_id, created_at, photos, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
-    supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at").limit(PROJECT_SIGNAL_ROW_LIMIT),
+    limitProjectSignalRows<ProfileRow>(supabase.from("profiles").select("id, created_at"), [
+      ["created_at", false],
+      ["id", false],
+    ]),
+    limitProjectSignalRows<ActionRow>(
+      supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status"),
+      [
+        ["created_at", false],
+        ["id", false],
+      ],
+    ),
+    limitProjectSignalRows<SpotRow>(
+      supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status"),
+      [
+        ["created_at", false],
+        ["created_by_clerk_id", false],
+        ["latitude", false],
+        ["longitude", false],
+        ["status", false],
+      ],
+    ),
+    limitProjectSignalRows<FunnelRow>(
+      supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta"),
+      [
+        ["at", false],
+        ["session_id", false],
+        ["step", false],
+        ["mode", false],
+        ["user_id", false],
+      ],
+    ),
+    limitProjectSignalRows<ProgressionRow>(
+      supabase.from("progression_events").select("created_at, user_id, event_type, status_phase"),
+      [
+        ["created_at", false],
+        ["user_id", false],
+        ["event_type", false],
+        ["status_phase", false],
+      ],
+    ),
+    limitProjectSignalRows<ReportRow>(
+      supabase.from("reports").select("created_at, owner_clerk_id, file_kind"),
+      [
+        ["created_at", false],
+        ["owner_clerk_id", false],
+        ["file_kind", false],
+      ],
+    ),
+    limitProjectSignalRows<TrainingRow>(
+      supabase.from("training_examples").select("action_id, created_at, photos, status"),
+      [
+        ["created_at", false],
+        ["action_id", false],
+        ["status", false],
+      ],
+    ),
+    limitProjectSignalRows<ServiceEmailRow>(
+      supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status"),
+      [
+        ["created_at", false],
+        ["actor_user_id", false],
+        ["recipient_count", false],
+        ["status", false],
+      ],
+    ),
+    limitProjectSignalRows<CommunityEventRow>(
+      supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description"),
+      [
+        ["created_at", false],
+        ["id", false],
+        ["organizer_clerk_id", false],
+        ["event_date", false],
+        ["title", false],
+      ],
+    ),
+    limitProjectSignalRows<EventRsvpRow>(
+      supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at"),
+      [
+        ["updated_at", false],
+        ["event_id", false],
+        ["participant_clerk_id", false],
+        ["status", false],
+      ],
+    ),
+    limitProjectSignalRows<AppNotificationRow>(
+      supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at"),
+      [
+        ["created_at", false],
+        ["id", false],
+        ["user_id", false],
+        ["type", false],
+      ],
+    ),
   ]);
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
 

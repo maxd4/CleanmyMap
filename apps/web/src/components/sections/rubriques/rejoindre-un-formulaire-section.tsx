@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
@@ -13,7 +13,6 @@ import {
   Search,
   ShieldCheck,
   Users2,
-  type LucideIcon,
 } from "lucide-react";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
@@ -22,6 +21,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type {
+  ActionParticipationReviewItem,
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "@/lib/actions/group-participation";
@@ -44,7 +44,18 @@ type JoinActionResponse = {
   actionId: string;
   alreadyJoined: boolean;
   joinedAt: string;
+  participationStatus: "pending" | "confirmed" | "cancelled";
+  participationSource: "group_form" | "admin" | "import";
+  participationUpdatedAt: string | null;
   participantsCount: number;
+};
+
+type GroupJoinQueueResponse = {
+  status: "ok";
+  actionId: string;
+  count: number;
+  pendingRequests: ActionParticipationReviewItem[];
+  canReview: boolean;
 };
 
 function formatDate(dateValue: string, locale: "fr" | "en"): string {
@@ -62,28 +73,6 @@ function formatDate(dateValue: string, locale: "fr" | "en"): string {
 
 function formatCount(value: number): string {
   return new Intl.NumberFormat("fr-FR").format(Math.max(0, Math.trunc(value)));
-}
-
-function ActionMeta({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-2xl border border-emerald-200/70 bg-emerald-50/40 px-3 py-2">
-      <Icon size={14} className="text-emerald-700" />
-      <div className="min-w-0">
-        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-emerald-800/70">
-          {label}
-        </p>
-        <p className="truncate text-sm font-semibold text-slate-900">{value}</p>
-      </div>
-    </div>
-  );
 }
 
 function FilterPill({
@@ -111,73 +100,15 @@ function FilterPill({
   );
 }
 
-type ProgressStep = {
-  id: string;
-  index: number;
-  title: string;
-  description: string;
-};
-
-function ProgressStepper({
-  steps,
-}: {
-  steps: ProgressStep[];
-}) {
-  return (
-    <nav aria-label="Progression du formulaire de groupe">
-      <ol className="grid gap-3 md:grid-cols-3">
-        {steps.map((step) => (
-          <li
-            key={step.id}
-            className="relative rounded-[1.5rem] border border-emerald-200/70 bg-white/85 px-4 py-4 shadow-[0_14px_30px_-24px_rgba(16,185,129,0.28)]"
-          >
-            <a href={`#${step.id}`} className="block">
-              <div className="flex items-start gap-3">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-800">
-                  {step.index}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                    {step.title}
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-700">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
-}
-
 function getJoinFilterLabel(filter: JoinableActionJoinFilter, fr: boolean): string {
   switch (filter) {
     case "available":
       return fr ? "À rejoindre" : "To join";
     case "joined":
-      return fr ? "Déjà rejoints" : "Joined";
+      return fr ? "Confirmées" : "Confirmed";
     case "all":
     default:
       return fr ? "Tous" : "All";
-  }
-}
-
-function getJoinSortLabel(sort: JoinableActionSort, fr: boolean): string {
-  switch (sort) {
-    case "latest":
-      return fr ? "Date la plus lointaine" : "Latest date";
-    case "participants-desc":
-      return fr ? "Plus de participants" : "Most participants";
-    case "participants-asc":
-      return fr ? "Moins de participants" : "Fewest participants";
-    case "location-asc":
-      return fr ? "Lieu A → Z" : "Location A → Z";
-    case "soonest":
-    default:
-      return fr ? "Date la plus proche" : "Soonest date";
   }
 }
 
@@ -193,9 +124,18 @@ export function JoinFormSection() {
   const [notice, setNotice] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [historyItems, setHistoryItems] = useState<JoinableActionHistoryItem[]>([]);
+  const [queueRequests, setQueueRequests] = useState<ActionParticipationReviewItem[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [queueCanReview, setQueueCanReview] = useState(false);
+  const [reviewingQueueId, setReviewingQueueId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [joinFilter, setJoinFilter] = useState<JoinableActionJoinFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
+  const [pendingJoinActionId, setPendingJoinActionId] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
@@ -205,43 +145,43 @@ export function JoinFormSection() {
     return `/api/actions/group-join?${params.toString()}`;
   }, [focusActionId]);
 
+  const loadActions = useCallback(async (signal?: AbortSignal) => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(listUrl, {
+        signal: signal ?? controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Impossible de charger les actions validées.");
+      }
+
+      const payload = (await response.json()) as JoinableActionsResponse;
+      setItems(payload.items);
+      setHistoryItems(payload.history ?? []);
+      setAuthenticated(payload.authenticated);
+    } catch (fetchError) {
+      if ((fetchError as { name?: string }).name === "AbortError") {
+        return;
+      }
+      setError(
+        fr
+          ? "Le flux de participation est temporairement indisponible."
+          : "The participation flow is temporarily unavailable.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [fr, listUrl]);
+
   useEffect(() => {
     const controller = new AbortController();
-
-    async function loadActions() {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(listUrl, {
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error("Impossible de charger les actions validées.");
-        }
-
-        const payload = (await response.json()) as JoinableActionsResponse;
-        setItems(payload.items);
-        setHistoryItems(payload.history ?? []);
-        setAuthenticated(payload.authenticated);
-      } catch (fetchError) {
-        if ((fetchError as { name?: string }).name === "AbortError") {
-          return;
-        }
-        setError(
-          fr
-            ? "Le flux de participation est temporairement indisponible."
-            : "The participation flow is temporarily unavailable.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void loadActions();
+    void loadActions(controller.signal);
 
     return () => controller.abort();
-  }, [fr, listUrl]);
+  }, [loadActions]);
 
   const hasItems = items.length > 0;
   const orderedItems = useMemo(
@@ -259,57 +199,93 @@ export function JoinFormSection() {
   const emptyMessage = useMemo(
     () =>
       fr
-        ? "Aucune action validée et ouverte n'est prête à être rejointe pour le moment."
-        : "No validated and opened actions are available to join right now.",
+        ? "Aucune action validée n'est ouverte pour le moment."
+        : "No validated action is open right now.",
     [fr],
   );
-  const joinedItems = useMemo(
+  const activeParticipationItems = useMemo(
     () => historyItems.filter((item) => item.joined),
     [historyItems],
   );
-  const recentJoinedItems = useMemo(
-    () => joinedItems.slice(0, 4),
-    [joinedItems],
+  const pendingParticipationItems = useMemo(
+    () => historyItems.filter((item) => item.participationStatus === "pending"),
+    [historyItems],
   );
-  const progressSteps = [
-    {
-      id: "explorer-actions",
-      index: 1,
-      title: fr ? "Explorer" : "Explore",
-      description: fr
-        ? "Repérez les actions validées, puis ouvrez les cartes qui vous intéressent."
-        : "Find approved actions, then open the cards that matter to you.",
-    },
-    {
-      id: "filtres-rapides",
-      index: 2,
-      title: fr ? "Affiner" : "Refine",
-      description: fr
-        ? "Cherchez, filtrez et triez pour réduire la liste sans perdre le contexte."
-        : "Search, filter, and sort to narrow the list without losing context.",
-    },
-    {
-      id: "mon-suivi",
-      index: 3,
-      title: fr ? "Suivre" : "Track",
-      description: fr
-        ? "Gardez vos participations récentes sous la main et revenez rapidement dessus."
-        : "Keep your recent participations close and jump back to them quickly.",
-    },
-  ] satisfies ProgressStep[];
+  const pendingJoinAction = useMemo(
+    () => items.find((item) => item.id === pendingJoinActionId) ?? null,
+    [items, pendingJoinActionId],
+  );
   const activeFilterLabel = getJoinFilterLabel(joinFilter, fr);
-  const activeSortLabel = getJoinSortLabel(sort, fr);
+  const queueActionId = useMemo(
+    () => focusActionId ?? orderedItems[0]?.id ?? null,
+    [focusActionId, orderedItems],
+  );
+  const queueAction = useMemo(
+    () => orderedItems.find((item) => item.id === queueActionId) ?? null,
+    [orderedItems, queueActionId],
+  );
 
-  async function handleJoin(actionId: string) {
-    const confirmed = window.confirm(
-      fr
-        ? "Rejoindre ce formulaire enregistrera votre participation. Continuer ?"
-        : "Joining this form will record your participation. Continue?",
-    );
-    if (!confirmed) {
-      return;
+  const loadQueue = useCallback(
+    async (actionId: string, signal?: AbortSignal) => {
+      setQueueLoading(true);
+      setQueueError(null);
+
+      try {
+        const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/group-join`, {
+          signal,
+        });
+        const payload = (await response.json()) as GroupJoinQueueResponse | { error?: string };
+
+        if (!response.ok) {
+          const message =
+            typeof payload === "object" && payload && "error" in payload && payload.error
+              ? payload.error
+              : fr
+                ? "Impossible de charger la file publique."
+                : "Unable to load the public queue.";
+          setQueueRequests([]);
+          setQueueCanReview(false);
+          setQueueError(message);
+          return;
+        }
+
+        const typedPayload = payload as GroupJoinQueueResponse;
+        setQueueRequests(typedPayload.pendingRequests ?? []);
+        setQueueCanReview(Boolean(typedPayload.canReview));
+      } catch (queueFetchError) {
+        if ((queueFetchError as { name?: string }).name === "AbortError") {
+          return;
+        }
+        setQueueRequests([]);
+        setQueueCanReview(false);
+        setQueueError(
+          fr
+            ? "Impossible de charger la file publique."
+            : "Unable to load the public queue.",
+        );
+      } finally {
+        setQueueLoading(false);
+      }
+    },
+    [fr],
+  );
+
+  useEffect(() => {
+    if (!queueActionId) {
+      setQueueRequests([]);
+      setQueueCanReview(false);
+      setQueueLoading(false);
+      setQueueError(null);
+      return undefined;
     }
 
+    const controller = new AbortController();
+    void loadQueue(queueActionId, controller.signal);
+
+    return () => controller.abort();
+  }, [loadQueue, queueActionId]);
+
+  async function submitJoin(actionId: string) {
     const currentItem = items.find((item) => item.id === actionId) ?? null;
     setJoiningId(actionId);
     setNotice(null);
@@ -344,13 +320,19 @@ export function JoinFormSection() {
       }
 
       const joined = payload as JoinActionResponse;
+      const isConfirmed = joined.participationStatus === "confirmed";
+      const isPending = joined.participationStatus === "pending";
       setItems((previous) =>
         previous.map((item) =>
           item.id === actionId
             ? {
                 ...item,
-                joined: true,
+                joined: isConfirmed,
+                awaitingApproval: isPending,
                 joinedAt: joined.joinedAt,
+                participationStatus: joined.participationStatus,
+                participationSource: joined.participationSource,
+                participationUpdatedAt: joined.participationUpdatedAt,
                 participantsCount: joined.participantsCount,
               }
             : item,
@@ -361,26 +343,200 @@ export function JoinFormSection() {
           {
             ...currentItem,
             participantsCount: joined.participantsCount,
-            joined: true,
+            joined: isConfirmed,
+            awaitingApproval: isPending,
             joinedAt: joined.joinedAt,
+            participationStatus: joined.participationStatus,
+            participationSource: joined.participationSource,
+            participationUpdatedAt: joined.participationUpdatedAt,
             groupJoinEnabled: currentItem.groupJoinEnabled,
           },
           ...previous.filter((item) => item.id !== actionId),
         ]);
       }
       setNotice(
-        joined.alreadyJoined
+        isPending
           ? fr
-            ? "Vous étiez déjà inscrit sur ce formulaire."
-            : "You had already joined this form."
-          : fr
-            ? "Participation enregistrée."
-            : "Participation saved.",
+            ? "Votre demande est visible dans la file publique. Le créateur ou un admin doit l'accepter."
+            : "Your request is visible in the public queue. The creator or an admin must approve it."
+          : joined.alreadyJoined
+            ? fr
+              ? "Participation déjà enregistrée. L'historique reste synchronisé et la progression peut être recalculée."
+              : "Participation already recorded. Your history stays synced and progression can be recalculated."
+            : fr
+              ? "Participation enregistrée. Elle alimente l'historique, les badges et le compteur collectif."
+              : "Participation saved. It updates history, badges, and the collective counter.",
       );
+      if (queueActionId === actionId) {
+        await loadQueue(actionId);
+      }
     } finally {
       setJoiningId(null);
     }
   }
+
+  function requestJoin(actionId: string) {
+    setNotice(null);
+    setPendingJoinActionId(actionId);
+  }
+
+  async function confirmPendingJoin() {
+    if (!pendingJoinActionId) {
+      return;
+    }
+
+    const actionId = pendingJoinActionId;
+    setPendingJoinActionId(null);
+    await submitJoin(actionId);
+  }
+
+  async function reviewQueueRequest(
+    requestId: string,
+    decision: "accept" | "reject",
+  ) {
+    if (!queueActionId || !queueCanReview) {
+      return;
+    }
+
+    setReviewingQueueId(requestId);
+    setQueueError(null);
+
+    try {
+      const response = await fetch(`/api/actions/${encodeURIComponent(queueActionId)}/group-join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          participantId: requestId,
+          decision,
+        }),
+      });
+
+      const payload = (await response.json()) as
+        | {
+            status: "ok";
+            participantId: string;
+            participationStatus: "pending" | "confirmed" | "cancelled";
+            participationSource: "group_form" | "admin" | "import";
+          }
+        | { error?: string };
+
+      if (!response.ok) {
+        const message =
+          typeof payload === "object" && payload && "error" in payload && payload.error
+            ? payload.error
+            : fr
+              ? "La demande n'a pas pu être traitée."
+              : "The request could not be processed.";
+        setQueueError(message);
+        return;
+      }
+
+      if (decision === "accept") {
+        setItems((previous) =>
+          previous.map((item) =>
+            item.id === queueActionId
+              ? {
+                  ...item,
+                  participantsCount: item.participantsCount + 1,
+                }
+              : item,
+          ),
+        );
+      }
+
+      setNotice(
+        decision === "accept"
+          ? fr
+            ? "Demande acceptée."
+            : "Request approved."
+          : fr
+            ? "Demande refusée."
+            : "Request rejected.",
+      );
+      await loadQueue(queueActionId);
+    } finally {
+      setReviewingQueueId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!pendingJoinActionId) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocusedElement = document.activeElement;
+    if (previouslyFocusedElement instanceof HTMLElement) {
+      previouslyFocusedElementRef.current = previouslyFocusedElement;
+    }
+    document.body.style.overflow = "hidden";
+
+    const focusableSelector = [
+      "button:not([disabled])",
+      "[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(",");
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPendingJoinActionId(null);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const dialogElement = dialogRef.current;
+      if (!dialogElement) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        dialogElement.querySelectorAll<HTMLElement>(focusableSelector),
+      ).filter((element) => !element.hasAttribute("disabled"));
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey) {
+        if (activeElement === firstElement || !dialogElement.contains(activeElement)) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+        return;
+      }
+
+      if (activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    window.setTimeout(() => {
+      confirmButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocusedElementRef.current?.focus();
+    };
+  }, [pendingJoinActionId]);
 
   return (
     <SectionShell
@@ -395,21 +551,18 @@ export function JoinFormSection() {
           title={fr ? "Rejoindre un formulaire" : "Join a form"}
           subtitle={
             fr
-              ? "Rejoindre un formulaire issu d'une action déjà validée et ouverte par l'organisateur, sans créer une nouvelle action."
-              : "Join a form from an already approved action opened by the organizer, without creating a new action."
+              ? "Consultez les actions ouvertes, voyez la file publique et envoyez une demande de participation."
+              : "Browse open actions, see the public queue, and send a participation request."
           }
           badges={
             <>
-              <PageHeroBadge family={pageFamily}>Action validée requise</PageHeroBadge>
-              <PageHeroBadge family={pageFamily} muted>
-                {fr ? "Participation traçable" : "Traceable participation"}
+              <PageHeroBadge family={pageFamily}>
+                {fr ? "Demande en validation" : "Review required"}
               </PageHeroBadge>
             </>
           }
-          className="max-w-4xl"
+          className="max-w-3xl"
         />
-
-        <ProgressStepper steps={progressSteps} />
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <FamilyRubriqueCard
@@ -427,8 +580,8 @@ export function JoinFormSection() {
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
                   {fr
-                    ? "Chaque carte ci-dessous correspond à une action déjà validée et explicitement ouverte par l'organisateur. Vous pouvez rechercher, filtrer et trier la sélection avant de rejoindre; l'action choisie enregistre ensuite votre participation dans `action_participants` et alimente les badges et les stats."
-                    : "Each card below maps to an already approved action that the organizer has explicitly opened. You can search, filter, and sort the selection before joining; the chosen action then records your participation in `action_participants` and updates badges and stats."}
+                    ? "Filtrez, comparez, puis demandez à rejoindre."
+                    : "Filter, compare, then request to join."}
                 </p>
               </div>
 
@@ -443,7 +596,7 @@ export function JoinFormSection() {
                   <div className="flex items-center gap-3 text-emerald-800">
                     <Loader2 size={16} className="animate-spin" />
                     <p className="text-sm font-semibold">
-                      {fr ? "Chargement des actions validées..." : "Loading approved actions..."}
+                      {fr ? "Chargement des actions ouvertes..." : "Loading open actions..."}
                     </p>
                   </div>
                 </div>
@@ -469,8 +622,8 @@ export function JoinFormSection() {
                         .catch(() => {
                           setError(
                             fr
-                              ? "Le flux de participation est temporairement indisponible."
-                              : "The participation flow is temporarily unavailable.",
+                              ? "La liste est temporairement indisponible."
+                              : "The list is temporarily unavailable.",
                           );
                         })
                         .finally(() => {
@@ -487,12 +640,20 @@ export function JoinFormSection() {
 
               {!loading && !error && !hasItems && (
                 <div className="rounded-[1.75rem] border border-dashed border-emerald-200/70 bg-emerald-50/35 p-6 text-slate-700">
-                  <p className="text-sm font-semibold">{emptyMessage}</p>
-                  <p className="mt-2 text-sm leading-relaxed">
+                  <p className="text-base font-bold text-slate-900">{emptyMessage}</p>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed">
                     {fr
-                      ? "Le flux attend qu'une action soit validée par un admin avant d'afficher un bouton de jonction."
-                      : "This flow waits for an admin-approved action before showing a join button."}
+                      ? "Créez un formulaire de groupe depuis la déclaration d'action, puis revenez ici avec son lien."
+                      : "Create a group form from action declaration, then come back with its link."}
                   </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <CmmButton href="/actions/new" tone="primary" variant="pill">
+                      {fr ? "Créer un formulaire" : "Create a form"}
+                    </CmmButton>
+                    <CmmButton href="/actions/new" tone="secondary" variant="pill">
+                      {fr ? "Déclarer une action" : "Declare an action"}
+                    </CmmButton>
+                  </div>
                 </div>
               )}
 
@@ -510,8 +671,8 @@ export function JoinFormSection() {
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder={
                           fr
-                            ? "Lieu, date, durée, nombre de participants..."
-                            : "Location, date, duration, participant count..."
+                            ? "Lieu, date, durée, participants..."
+                            : "Location, date, duration, participants..."
                         }
                         className="h-11 w-full rounded-2xl border border-emerald-200/80 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
                       />
@@ -530,10 +691,10 @@ export function JoinFormSection() {
                           active={joinFilter === "available"}
                           onClick={() => setJoinFilter("available")}
                         >
-                          {fr ? "À rejoindre" : "To join"}
+                          {fr ? "À demander" : "Requestable"}
                         </FilterPill>
                         <FilterPill active={joinFilter === "joined"} onClick={() => setJoinFilter("joined")}>
-                          {fr ? "Déjà rejoints" : "Joined"}
+                          {fr ? "Confirmées" : "Confirmed"}
                         </FilterPill>
                       </div>
                     </div>
@@ -615,9 +776,14 @@ export function JoinFormSection() {
                                   ? "Fermée"
                                   : "Closed"}
                             </span>
+                            {item.awaitingApproval && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-amber-800">
+                                {fr ? "En attente" : "Pending"}
+                              </span>
+                            )}
                             {item.joined && (
                               <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-700">
-                                {fr ? "Déjà rejoint" : "Already joined"}
+                                {fr ? "Confirmée" : "Confirmed"}
                               </span>
                             )}
                           </div>
@@ -628,34 +794,33 @@ export function JoinFormSection() {
 
                           {item.joined && item.joinedAt && (
                             <p className="text-xs font-semibold text-emerald-800">
-                              {fr ? "Rejoint le" : "Joined on"}{" "}
+                              {fr ? "Confirmée le" : "Confirmed on"}{" "}
                               {formatDate(item.joinedAt.slice(0, 10), fr ? "fr" : "en")}
                             </p>
                           )}
+                          {item.awaitingApproval && !item.joined && (
+                            <p className="text-xs font-semibold text-amber-800">
+                              {fr
+                                ? "Demande en attente"
+                                : "Request pending"}
+                            </p>
+                          )}
 
-                          <div className="grid gap-2 md:grid-cols-3">
-                            <ActionMeta
-                              icon={CalendarDays}
-                              label={fr ? "Date" : "Date"}
-                              value={formatDate(item.action_date, fr ? "fr" : "en")}
-                            />
-                            <ActionMeta
-                              icon={Users2}
-                              label={fr ? "Participation" : "Participation"}
-                              value={`${formatCount(item.participantsCount)}${item.volunteers_count > 0 ? ` / ${formatCount(item.volunteers_count)}` : ""}`}
-                            />
-                            <ActionMeta
-                              icon={MapPin}
-                              label={fr ? "Durée" : "Duration"}
-                              value={`${formatCount(item.duration_minutes)} min`}
-                            />
+                          <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
+                              <CalendarDays size={12} className="text-emerald-700" />
+                              {formatDate(item.action_date, fr ? "fr" : "en")}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
+                              <Users2 size={12} className="text-emerald-700" />
+                              {formatCount(item.participantsCount)}
+                              {item.volunteers_count > 0 ? ` / ${formatCount(item.volunteers_count)}` : ""}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
+                              <MapPin size={12} className="text-emerald-700" />
+                              {formatCount(item.duration_minutes)} min
+                            </span>
                           </div>
-
-                          <p className="text-sm leading-relaxed text-slate-600">
-                            {fr
-                              ? "Le formulaire de cette action est déjà créé. Votre participation est ajoutée au même fil de validation et reste traçable séparément."
-                              : "The form for this action already exists. Your participation is added to the same validation thread and stays individually traceable."}
-                          </p>
                         </div>
 
                         <div className="flex shrink-0 flex-col gap-3 md:items-end">
@@ -664,8 +829,8 @@ export function JoinFormSection() {
                               tone="primary"
                               variant="pill"
                               className="min-w-[12rem] px-6"
-                              disabled={joiningId === item.id || item.joined}
-                              onClick={() => void handleJoin(item.id)}
+                              disabled={joiningId === item.id || item.joined || item.awaitingApproval}
+                              onClick={() => requestJoin(item.id)}
                             >
                               {joiningId === item.id ? (
                                 <>
@@ -675,12 +840,17 @@ export function JoinFormSection() {
                               ) : item.joined ? (
                                 <>
                                   <CheckCircle2 size={14} />
-                                  {fr ? "Déjà rejoint" : "Already joined"}
+                                  {fr ? "Confirmée" : "Confirmed"}
+                                </>
+                              ) : item.awaitingApproval ? (
+                                <>
+                                  <ClipboardList size={14} />
+                                  {fr ? "En attente" : "Pending"}
                                 </>
                               ) : (
                                 <>
                                   <ClipboardList size={14} />
-                                  {fr ? "Rejoindre le formulaire" : "Join the form"}
+                                  {fr ? "Demander à rejoindre" : "Request to join"}
                                 </>
                               )}
                             </CmmButton>
@@ -700,12 +870,16 @@ export function JoinFormSection() {
 
                           <p className="max-w-xs text-right text-xs leading-relaxed text-slate-500">
                             {authenticated
-                              ? fr
-                                ? "Une seule participation est enregistrée par bénévole et par action."
-                                : "One participation is stored per volunteer and per action."
+                              ? item.awaitingApproval
+                                ? fr
+                                  ? "Demande envoyée. En attente de validation."
+                                  : "Request sent. Waiting for approval."
+                                : fr
+                                  ? "Une participation confirmée par bénévole et par action."
+                                  : "One confirmed participation per volunteer and action."
                               : fr
-                                ? "Connectez-vous pour enregistrer votre participation."
-                                : "Sign in to record your participation."}
+                                ? "Connectez-vous pour envoyer une demande."
+                                : "Sign in to send a request."}
                           </p>
                         </div>
                       </div>
@@ -775,15 +949,23 @@ export function JoinFormSection() {
                   </div>
                   <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Rejointes" : "Joined"}
+                      {fr ? "Actives" : "Active"}
                     </p>
-                    <p className="mt-1 text-2xl font-black text-slate-900">{joinedItems.length}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">{activeParticipationItems.length}</p>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-amber-200/60 bg-amber-50/40 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700/70">
+                      {fr ? "En attente" : "Pending"}
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">
+                      {pendingParticipationItems.length}
+                    </p>
                   </div>
                   <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Tri" : "Sort"}
+                      {fr ? "Filtre" : "Filter"}
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{activeSortLabel}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{activeFilterLabel}</p>
                   </div>
                 </div>
 
@@ -795,46 +977,139 @@ export function JoinFormSection() {
                     <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm">
                       {fr ? "Explorer" : "Explore"}
                     </CmmButton>
-                    <CmmButton href="#filtres-rapides" tone="secondary" variant="pill" size="sm">
-                      {fr ? "Filtres" : "Filters"}
-                    </CmmButton>
                     <CmmButton href="#mon-suivi" tone="secondary" variant="pill" size="sm">
                       {fr ? "Mon suivi" : "My tracking"}
                     </CmmButton>
-                    <CmmButton href="#regles" tone="secondary" variant="pill" size="sm">
-                      {fr ? "Règles" : "Rules"}
+                    <CmmButton href="/actions/new" tone="secondary" variant="pill" size="sm">
+                      {fr ? "Créer un formulaire" : "Create a form"}
                     </CmmButton>
                   </div>
                 </div>
 
-                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3 text-sm leading-relaxed text-slate-700">
-                  {fr
-                    ? `Filtre actif: ${activeFilterLabel}. Résultats visibles: ${orderedItems.length} sur ${items.length}.`
-                    : `Active filter: ${activeFilterLabel}. Visible results: ${orderedItems.length} of ${items.length}.`}
+                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/50 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                        {fr ? "File publique" : "Public queue"}
+                      </p>
+                      <h3 className="text-base font-black tracking-tight text-slate-900">
+                        {queueAction
+                          ? queueAction.location_label
+                          : fr
+                            ? "Aucun formulaire sélectionné"
+                            : "No form selected"}
+                      </h3>
+                    </div>
+                    <div className="rounded-2xl border border-emerald-200/70 bg-white/80 px-3 py-2 text-emerald-700">
+                      <Users2 size={18} />
+                    </div>
+                  </div>
+
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                    {queueAction
+                      ? fr
+                        ? "Les noms des comptes en attente sont visibles par tous. Le créateur ou un admin peut traiter la file ici ou depuis la rubrique admin."
+                        : "Waiting accounts are visible to everyone. The creator or an admin can process the queue here or from the admin section."
+                      : fr
+                        ? "Choisissez un formulaire pour afficher sa file."
+                        : "Choose a form to display its queue."}
+                  </p>
+
+                  {queueAction && (
+                    <p className="mt-2 text-xs font-semibold text-emerald-800">
+                      {fr
+                        ? `${formatDate(queueAction.action_date, "fr")} · ${formatCount(queueRequests.length)} demande${queueRequests.length > 1 ? "s" : ""}`
+                        : `${formatDate(queueAction.action_date, "en")} · ${formatCount(queueRequests.length)} request${queueRequests.length > 1 ? "s" : ""}`}
+                    </p>
+                  )}
+
+                  {queueError ? (
+                    <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      {queueError}
+                    </p>
+                  ) : queueLoading ? (
+                    <div className="mt-3 space-y-2">
+                      <div className="h-12 rounded-2xl border border-dashed border-emerald-200 bg-white/80" />
+                      <div className="h-12 rounded-2xl border border-dashed border-emerald-200 bg-white/80" />
+                    </div>
+                  ) : queueRequests.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {queueRequests.map((request) => (
+                        <div
+                          key={request.id}
+                          className="rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-3"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {request.displayName}
+                              </p>
+                              <p className="text-xs text-slate-600">
+                                {request.handle ? `@${request.handle}` : fr ? "Compte sans pseudo public" : "No public handle"}
+                                {" · "}
+                                {fr
+                                  ? `depuis ${formatDate(request.joinedAt.slice(0, 10), "fr")}`
+                                  : `since ${formatDate(request.joinedAt.slice(0, 10), "en")}`}
+                              </p>
+                            </div>
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
+                              {fr ? "En attente" : "Pending"}
+                            </span>
+                          </div>
+
+                          {queueCanReview && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <CmmButton
+                                type="button"
+                                tone="primary"
+                                variant="pill"
+                                size="sm"
+                                disabled={reviewingQueueId === request.id}
+                                onClick={() => {
+                                  void reviewQueueRequest(request.id, "accept");
+                                }}
+                              >
+                                {reviewingQueueId === request.id
+                                  ? "..."
+                                  : fr
+                                    ? "Accepter"
+                                    : "Accept"}
+                              </CmmButton>
+                              <CmmButton
+                                type="button"
+                                tone="secondary"
+                                variant="pill"
+                                size="sm"
+                                disabled={reviewingQueueId === request.id}
+                                onClick={() => {
+                                  void reviewQueueRequest(request.id, "reject");
+                                }}
+                              >
+                                {reviewingQueueId === request.id
+                                  ? "..."
+                                  : fr
+                                    ? "Refuser"
+                                    : "Reject"}
+                              </CmmButton>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-2xl border border-dashed border-emerald-200/80 bg-white/80 px-3 py-3 text-sm text-slate-700">
+                      {fr
+                        ? "Aucune demande en attente sur ce formulaire."
+                        : "No requests are waiting on this form."}
+                    </div>
+                  )}
                 </div>
 
-                <ul id="regles" className="space-y-3 text-sm leading-relaxed text-slate-700 scroll-mt-24">
-                  <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    {fr
-                      ? "La carte n'apparaît que si l'action est validée par un admin et ouverte par l'organisateur."
-                      : "The card appears only after admin validation and organizer opening."}
-                  </li>
-                  <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    {fr
-                      ? "La participation est stockée dans `action_participants` avec unicité par bénévole et par action."
-                      : "Participation is stored in `action_participants` with uniqueness per volunteer and action."}
-                  </li>
-                  <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    {fr
-                      ? "Le score de profil et les badges peuvent se recalculer après la jonction."
-                      : "Profile score and badges can be recalculated after joining."}
-                  </li>
-                  <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    {fr
-                      ? "La création d'une action reste dans la rubrique `Déclarer une action`."
-                      : "Creating a new action remains in the `Declare action` section."}
-                  </li>
-                </ul>
+                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                  {fr
+                    ? `${orderedItems.length} action${orderedItems.length > 1 ? "s" : ""} visible${orderedItems.length > 1 ? "s" : ""} avec le filtre ${activeFilterLabel}.`
+                    : `${orderedItems.length} visible action${orderedItems.length > 1 ? "s" : ""} with the ${activeFilterLabel} filter.`}
+                </div>
               </div>
             </FamilyRubriqueCard>
 
@@ -844,58 +1119,25 @@ export function JoinFormSection() {
                   {fr ? "Mon suivi" : "My tracking"}
                 </p>
                 <h2 className="text-xl font-black tracking-tight text-white">
-                  {fr ? "Mes actions rejointes" : "My joined actions"}
+                  {fr ? "Mes participations" : "My participations"}
                 </h2>
                 {authenticated ? (
                   <div className="space-y-4">
                     <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                       <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                        {fr ? "Participation actuelle" : "Current participation"}
+                        {fr ? "Résumé" : "Summary"}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">
                         {fr
-                          ? `${joinedItems.length} action${joinedItems.length > 1 ? "s" : ""} rejoint${joinedItems.length > 1 ? "es" : ""}`
-                          : `${joinedItems.length} joined action${joinedItems.length > 1 ? "s" : ""}`}
+                          ? `${activeParticipationItems.length} participation${activeParticipationItems.length > 1 ? "s" : ""} active${activeParticipationItems.length > 1 ? "s" : ""}`
+                          : `${activeParticipationItems.length} active participation${activeParticipationItems.length > 1 ? "s" : ""}`}
                       </p>
                       <p className="mt-1 text-sm leading-relaxed text-slate-700">
                         {fr
-                          ? "Votre historique récent est synchronisé ici, avec l'état de chaque participation et la date d'inscription."
-                          : "Your recent history is synchronized here, with each participation state and join date."}
+                          ? "Dernière jonction confirmée, file d'attente et origine restent synchronisées."
+                          : "Latest confirmed join, waitlist, and source stay synchronized."}
                       </p>
                     </div>
-
-                    {recentJoinedItems.length > 0 ? (
-                      <div className="space-y-3">
-                        {recentJoinedItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-[1.25rem] border border-emerald-200/60 bg-white/80 px-4 py-3"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 space-y-1">
-                                <p className="truncate text-sm font-semibold text-slate-900">
-                                  {item.location_label}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {formatDate(item.action_date, fr ? "fr" : "en")} ·{" "}
-                                  {fr ? "rejoint le" : "joined on"}{" "}
-                                  {formatDate(item.joinedAt.slice(0, 10), fr ? "fr" : "en")}
-                                </p>
-                              </div>
-                              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-800">
-                                {fr ? "Inscrit" : "Joined"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="rounded-[1.25rem] border border-dashed border-emerald-200/70 bg-emerald-50/30 px-4 py-3 text-sm leading-relaxed text-slate-700">
-                        {fr
-                          ? "Aucune participation enregistrée pour l'instant. Rejoignez un formulaire pour faire apparaître votre historique ici."
-                          : "No participation recorded yet. Join a form to make your history appear here."}
-                      </p>
-                    )}
 
                     <div className="flex flex-wrap gap-2">
                       <CmmButton
@@ -908,7 +1150,7 @@ export function JoinFormSection() {
                           setSort("latest");
                         }}
                       >
-                        {fr ? "Voir mes actions rejointes" : "View my joined actions"}
+                        {fr ? "Voir mes participations actives" : "View my active participations"}
                       </CmmButton>
                       <CmmButton
                         tone="secondary"
@@ -927,14 +1169,106 @@ export function JoinFormSection() {
                 ) : (
                   <p className="text-sm leading-relaxed text-slate-700">
                     {fr
-                      ? "Connectez-vous pour retrouver vos actions rejointes, votre historique récent et l'état de vos participations."
-                      : "Sign in to find your joined actions, recent history, and participation state."}
+                      ? "Connectez-vous pour retrouver vos participations et leur statut."
+                      : "Sign in to find your participations and their status."}
                   </p>
                 )}
               </div>
             </FamilyRubriqueCard>
           </div>
         </div>
+
+        {pendingJoinAction && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setPendingJoinActionId(null);
+              }
+            }}
+          >
+            <div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="join-dialog-title"
+              aria-describedby="join-dialog-description"
+              className="w-full max-w-lg rounded-[2rem] border border-emerald-200 bg-white p-6 text-slate-900 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.55)]"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
+                    {fr ? "Confirmation" : "Confirmation"}
+                  </p>
+                  <h2 id="join-dialog-title" className="text-xl font-black tracking-tight">
+                    {fr ? "Confirmer cette participation ?" : "Confirm this participation?"}
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPendingJoinActionId(null)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                  aria-label={fr ? "Fermer la confirmation" : "Close confirmation"}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </div>
+
+              <div id="join-dialog-description" className="mt-4 space-y-3 text-sm leading-relaxed text-slate-700">
+                <p>
+                  {fr
+                    ? "Votre demande apparaît dans la file publique."
+                    : "Your request appears in the public queue."}
+                </p>
+                <p>
+                  {fr
+                    ? "Le créateur du formulaire ou un admin peut l'accepter ou la refuser."
+                    : "The form creator or an admin can accept or reject it."}
+                </p>
+                <p>
+                  {fr
+                    ? "La demande n'est pas modifiable depuis cette page."
+                    : "Requests cannot be edited here."}
+                </p>
+                {pendingJoinAction && (
+                  <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 text-slate-800">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
+                      {fr ? "Action ciblée" : "Selected action"}
+                    </p>
+                    <p className="mt-1 font-semibold">{pendingJoinAction.location_label}</p>
+                    <p className="text-sm text-slate-600">
+                      {formatDate(pendingJoinAction.action_date, fr ? "fr" : "en")} ·{" "}
+                      {formatCount(pendingJoinAction.participantsCount)}{" "}
+                      {fr ? "participant(s)" : "participant(s)"}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPendingJoinActionId(null)}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                >
+                  {fr ? "Annuler" : "Cancel"}
+                </button>
+                <button
+                  ref={confirmButtonRef}
+                  type="button"
+                  onClick={() => {
+                    void confirmPendingJoin();
+                  }}
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 text-sm font-semibold text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] transition-all duration-200 hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--cmm-button-primary-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {fr ? "Envoyer la demande" : "Send request"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </SectionShell>
   );

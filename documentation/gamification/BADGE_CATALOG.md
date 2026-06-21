@@ -414,7 +414,30 @@ Badges de jalons simples basés sur les points cumulés dans `user_points.total_
 
 ---
 
-## 9. Règle de bonus par décennie
+## 9. Progressions quiz actives
+
+Deux progressions quiz alimentent désormais l XP actif et restent séparées pour éviter de mélanger les logiques pédagogiques.
+
+**Ordre canonique** :
+
+- Progression quiz par type :
+  - 50 réponses justes
+  - 100 réponses justes
+- Quiz équilibré :
+  - 10 réponses justes
+  - 50 réponses justes
+  - 100 réponses justes
+
+**Règles** :
+
+- l une récompense la maîtrise d un type de question donné;
+- l autre récompense l entraînement équilibré sur tous les types de quiz;
+- elles comptent dans les attributions XP et dans les journaux d audit;
+- elles ne doivent pas être confondues avec les familles actives `Explorer`, `Participant`, `Forms` ou `Clean Zones`.
+
+---
+
+## 10. Règle de bonus par décennie
 
 **S applique aux badges utilisant la progression [1, 3, 5, 8, 10, 15, 20, ...] :**
 
@@ -441,7 +464,7 @@ for (let i = 1; i <= bonusCount; i++) {
 - Badge Clean Zones (10, 20, 30, 40 zones)
 - Toute future famille de badges utilisant le motif [1,3,5,8,10,15,20...]
 
-## 10. Correction historique des actions
+## 11. Correction historique des actions
 
 Quand la règle `Actions créées` a été corrigée pour n accorder de XP qu après un formulaire validé, un backfill dédié a été prévu pour remettre l historique au bon niveau.
 

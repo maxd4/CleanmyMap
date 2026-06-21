@@ -65,10 +65,10 @@ describe("admin workflow services", () => {
  expect(result.operationId).toBe("op-55");
  });
 
- it("fetchAdminOperationAudit returns audit items", async () => {
- const fetchImpl = (async () =>
- new Response(
- JSON.stringify({
+  it("fetchAdminOperationAudit returns audit items", async () => {
+    const fetchImpl = (async () =>
+      new Response(
+        JSON.stringify({
  items: [
  {
  operationId:"op-1",
@@ -83,8 +83,25 @@ describe("admin workflow services", () => {
  { status: 200, headers: {"Content-Type":"application/json" } },
  )) as typeof fetch;
 
- const result = await fetchAdminOperationAudit(fetchImpl, 10);
- expect(result.items?.length).toBe(1);
- expect(result.items?.[0]?.operationId).toBe("op-1");
- });
+    const result = await fetchAdminOperationAudit(fetchImpl, 10);
+    expect(result.items?.length).toBe(1);
+    expect(result.items?.[0]?.operationId).toBe("op-1");
+  });
+
+  it("fetchAdminOperationAudit adds a targetId filter when requested", async () => {
+    let requestedUrl = "";
+    const fetchImpl = (async (input: RequestInfo | URL) => {
+      requestedUrl = String(input);
+      return new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await fetchAdminOperationAudit(fetchImpl, 12, "action-1");
+
+    const params = new URL(requestedUrl, "http://localhost").searchParams;
+    expect(params.get("limit")).toBe("12");
+    expect(params.get("targetId")).toBe("action-1");
+  });
 });

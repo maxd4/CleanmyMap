@@ -75,7 +75,7 @@ Ce document resume le gros travail de durcissement realise sur les routes API, l
 
 - `npm run typecheck`
 - `npm run build`
-- `npm run test -- src/app/api/chat/users/route.test.ts src/app/api/community/rsvps/route.test.ts src/app/api/admin/moderation/route.test.ts src/app/api/actions/map/route.test.ts`
+- `npm run test -- src/app/api/chat/users/route.test.ts src/app/api/community/rsvps/route.test.ts src/app/api/admin/moderation/route.test.ts`
 - `npm run test -- src/app/api/public-form-security.test.ts src/app/api/send/route.test.ts`
 
 ## Requetes surees confirmees

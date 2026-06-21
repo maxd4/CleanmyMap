@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import type { PackType } from "./weather-types";
 
 export function useKitData(fr: boolean) {
+  const { isLoaded, user } = useUser();
   const [packType, setPackType] = useState<PackType>("team");
   const [kitChecks, setKitChecks] = useState<Record<string, boolean>>({
     ppe: false,
@@ -51,6 +53,15 @@ export function useKitData(fr: boolean) {
   };
 
   useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!user) {
+      setKitReady(true);
+      return;
+    }
+
     let active = true;
     void fetch("/api/users/checklist-progress?checklistId=kit-main", {
       method: "GET",
@@ -69,16 +80,16 @@ export function useKitData(fr: boolean) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isLoaded, user]);
 
   useEffect(() => {
-    if (!kitReady) return;
+    if (!kitReady || !user) return;
     void fetch("/api/users/checklist-progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ checklistId: "kit-main", checks: kitChecks }),
     }).catch(() => undefined);
-  }, [kitChecks, kitReady]);
+  }, [kitChecks, kitReady, user]);
 
   return {
     packType,

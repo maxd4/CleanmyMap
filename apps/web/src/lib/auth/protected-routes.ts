@@ -23,7 +23,6 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/api/route(.*)",
   "/api/send(.*)",
   "/api/services(.*)",
-  "/api/notifications(.*)",
   "/api/spots(.*)",
   "/api/users(.*)",
   "/api/email/test(.*)",

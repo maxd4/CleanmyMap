@@ -25,6 +25,7 @@ function printHelp() {
   console.log("  list-auth");
   console.log("  list-heavy-imports");
   console.log("  list-polling");
+  console.log("  list-external-fetches");
 }
 
 switch (command) {
@@ -35,10 +36,10 @@ switch (command) {
     printList("Dynamic pages", surface.dynamicPages.map(formatDynamicPageLabel));
     break;
   case "list-force-dynamic":
-    printList("force-dynamic pages", surface.forceDynamicPages);
+    printList("force-dynamic files", surface.forceDynamicPages);
     break;
   case "list-revalidate-zero":
-    printList("revalidate=0 pages", surface.revalidateZeroPages);
+    printList("revalidate=0 files", surface.revalidateZeroPages);
     break;
   case "list-no-store":
     printList("API routes using no-store", surface.noStoreRoutes);
@@ -58,9 +59,11 @@ switch (command) {
   case "list-polling":
     printList("Polling files", surface.pollingFiles);
     break;
+  case "list-external-fetches":
+    printList("Files with external fetches", surface.externalFetches);
+    break;
   default:
     printHelp();
     process.exitCode = 1;
     break;
 }
-

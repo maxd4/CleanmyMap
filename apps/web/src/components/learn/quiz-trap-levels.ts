@@ -41,6 +41,7 @@ const TRAP_LEVEL_BY_REASONING: Record<QuizReasoningType, QuizTrapLevelId> = {
   "conséquences indirectes": "medium",
   "questions contre-intuitives": "high",
   "cas-limites": "high",
+  "mini-enquetes": "medium",
 };
 
 export function getQuizTrapLevel(question: QuizTrapLevelQuestion): QuizTrapLevelId {

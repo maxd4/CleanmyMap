@@ -58,7 +58,7 @@ flowchart LR
     DB_PROPER[(Supabase Actions)] --> UNIFIED
     FORM[Formulaires Directs] --> UNIFIED
     
-    UNIFIED --> API[/api/actions/map]
+    UNIFIED --> RPC[Supabase RPC actions_map_feed]
     API --> UI[Dashboard / Carte]
 ```
 

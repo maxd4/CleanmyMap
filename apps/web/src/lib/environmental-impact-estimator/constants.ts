@@ -310,6 +310,13 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS = [
     referenceMonthlyQuantity: 180,
   },
   {
+    key: "githubWorkflowRunsCount30d",
+    label: "GitHub - runs Actions",
+    unitLabel: "runs / mois",
+    proxyKgCo2ePerUnit: 0.008,
+    referenceMonthlyQuantity: 0,
+  },
+  {
     key: "supabaseDbRequests",
     label: "Supabase - requêtes DB",
     unitLabel: "requêtes / mois",
@@ -499,6 +506,14 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_SERVICE_DEFINITIONS = [
       "vercelDeployments",
       "vercelBandwidthGb",
     ],
+  },
+  {
+    key: "github",
+    label: "GitHub",
+    description: "Dépôt source, workflows et maintenance du projet.",
+    sourceNote: "Les runs Actions du dépôt CleanMyMap servent d'ancre directe.",
+    basis: "monthly",
+    metricKeys: ["githubWorkflowRunsCount30d"],
   },
   {
     key: "supabase",

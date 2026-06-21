@@ -1,11 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadActionRowsForUser, loadValidatedCompleteActionCountForUser } from "@/lib/gamification/progression-data";
 import { collectEligibleCleanZoneSources } from "@/lib/gamification/clean-zones";
 import { auditXpAttribution } from "@/lib/gamification/notifications";
+import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "@/lib/gamification/progression-event-write-policy";
-import type { ActionRow } from "@/lib/gamification/progression-types";
-import { runActionQuery } from "@/lib/actions/query";
+import { loadGamificationUserCounters } from "../counters";
 import {
   buildCleanZonesBadges,
   buildExplorerFamily,
@@ -13,15 +12,19 @@ import {
   FORM_SUBMISSION_TIERS,
   buildFormsBadges,
   buildLegacyBadges,
+  buildQuizBalanceProgression,
+  buildQuizTypeProgression,
   PARTICIPANT_TIERS,
   buildParticipantBadges,
   type GamificationBadgeEntry,
   type GamificationExplorerSummary,
+  type QuizProgressionFamily,
 } from "./families";
 
 export type GamificationBadgesListPayload = {
   totalPoints: number;
   badges: GamificationBadgeEntry[];
+  quizProgressions: QuizProgressionFamily[];
   unlockedCount: number;
   totalBadges: number;
   explorer: GamificationExplorerSummary;
@@ -113,116 +116,16 @@ async function awardProgressionEventIfMissing(
       return undefined;
     });
 
-    if (input.notifyPayload) {
+    const notifyPayload = input.notifyPayload;
+    if (notifyPayload) {
       await bestEffort(undefined, async () => {
-        await supabase.rpc("notify_gamification", {
-          channel: "gamification",
-          payload: input.notifyPayload,
-        });
+        await broadcastGamificationAnnouncement(supabase, notifyPayload);
         return undefined;
       });
     }
   }
 
   return writeResult.inserted;
-}
-
-async function loadEligibleFormsCount(supabase: SupabaseClient): Promise<number> {
-  return bestEffort(0, async () => {
-    const { data: formsData, error: formsError } = await supabase
-      .from("forms")
-      .select("action_id, group_id, status, is_test, validated_by_admin, is_duplicate, is_deleted")
-      .neq("status", "draft")
-      .neq("status", "deleted")
-      .neq("status", "incomplete")
-      .eq("validated_by_admin", true)
-      .is("is_duplicate", false)
-      .is("is_deleted", false)
-      .is("is_test", false);
-
-    if (formsError || !Array.isArray(formsData)) {
-      return 0;
-    }
-
-    const actionIds = Array.from(
-      new Set(formsData.map((form) => form.action_id).filter(Boolean)),
-    );
-
-    const actionsMap = await runActionQuery<{ id: string; type: string }>(supabase, (query) =>
-      query.select("id, type").in("id", actionIds).eq("status", "approved"),
-    );
-
-    const actionById: Record<string, { id: string; type: string }> = {};
-    actionsMap.forEach((action) => {
-      actionById[action.id] = action;
-    });
-
-    const counted = new Set<string>();
-    for (const form of formsData) {
-      const action = actionById[form.action_id];
-      if (!action) {
-        continue;
-      }
-      if (action.type === "zone_propre") {
-        continue;
-      }
-      if (form.status === "draft" || form.status === "deleted" || form.is_test) {
-        continue;
-      }
-
-      const key = `${form.action_id}::${form.group_id || "null"}`;
-      counted.add(key);
-    }
-
-    return counted.size;
-  });
-}
-
-async function loadEligibleFormsCountFromActionRows(
-  supabase: SupabaseClient,
-  actionRows: ActionRow[],
-): Promise<number> {
-  return bestEffort(0, async () => {
-    const actionById = new Map(
-      actionRows
-        .filter((action) => action.status === "approved")
-        .map((action) => [action.id, { id: action.id, type: action.type }] as const),
-    );
-
-    if (actionById.size === 0) {
-      return 0;
-    }
-
-    const actionIds = [...actionById.keys()];
-    const { data: formsData, error: formsError } = await supabase
-      .from("forms")
-      .select("action_id, group_id, status, is_test, validated_by_admin, is_duplicate, is_deleted")
-      .neq("status", "draft")
-      .neq("status", "deleted")
-      .neq("status", "incomplete")
-      .eq("validated_by_admin", true)
-      .is("is_duplicate", false)
-      .is("is_deleted", false)
-      .is("is_test", false)
-      .in("action_id", actionIds);
-
-    if (formsError || !Array.isArray(formsData)) {
-      return 0;
-    }
-
-    const counted = new Set<string>();
-    for (const form of formsData) {
-      const action = actionById.get(form.action_id);
-      if (!action || action.type === "zone_propre") {
-        continue;
-      }
-
-      const key = `${form.action_id}::${form.group_id || "null"}`;
-      counted.add(key);
-    }
-
-    return counted.size;
-  });
 }
 
 async function loadCleanZoneSourcesForUser(
@@ -271,52 +174,24 @@ export async function loadGamificationBadgesList(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationBadgesListPayload> {
-  const actionRows = await bestEffort<ActionRow[]>([], async () => loadActionRowsForUser(supabase, userId));
-  const [
-    pointsData,
-    actionsCount,
-    completeActionsCount,
-    placesCount,
-    eligibleFormsCount,
-    cleanZoneSources,
-    participationCount,
-  ] = await Promise.all([
-    bestEffort<number>(0, async () => {
-      const { data } = await supabase
-        .from("user_points")
-        .select("total_points")
-        .eq("user_id", userId)
-        .maybeSingle();
-      return data?.total_points ?? 0;
-    }),
-    bestEffort<number>(0, async () => {
-      return Number(
-        actionRows.filter(
-          (action) => action.created_by_clerk_id === userId && action.status === "approved",
-        ).length,
-      );
-    }),
-    loadValidatedCompleteActionCountForUser(supabase, userId, { actionRows }).catch(() => 0),
-    bestEffort<number>(0, async () => {
-      const { count } = await supabase
-        .from("user_visited_places")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId);
-      return Number(count ?? 0);
-    }),
-    loadEligibleFormsCountFromActionRows(supabase, actionRows),
+  const [counters, cleanZoneSources] = await Promise.all([
+    loadGamificationUserCounters(supabase, userId),
     loadCleanZoneSourcesForUser(supabase, userId),
-    bestEffort<number>(0, async () => {
-      const { count } = await supabase
-        .from("action_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId);
-      return Number(count ?? 0);
-    }),
   ]);
 
-  const totalPoints = pointsData;
+  const {
+    totalPoints,
+    approvedActionsCount: actionsCount,
+    completeActionsCount,
+    visitedPlacesCount: placesCount,
+    eligibleFormsCount,
+    participationCount,
+  } = counters;
   const badges: GamificationBadgeEntry[] = [];
+  const quizProgressions = [
+    buildQuizTypeProgression(),
+    buildQuizBalanceProgression(),
+  ];
 
   const explorerFamily = buildExplorerFamily(placesCount);
   badges.push(...explorerFamily.badges);
@@ -343,6 +218,8 @@ export async function loadGamificationBadgesList(
         userId,
         sourceTable: source.sourceTable,
         sourceId: source.sourceId,
+        xp: 1,
+        dedupeKey: `clean_zone_task_awarded:${source.sourceTable}:${source.sourceId}`,
       },
     });
   }
@@ -381,6 +258,8 @@ export async function loadGamificationBadgesList(
         userId,
         tierId: tier.id,
         threshold: tier.threshold,
+        xp: 1,
+        dedupeKey: `form_tier_unlocked:${tier.id}`,
       },
     });
   }
@@ -400,6 +279,8 @@ export async function loadGamificationBadgesList(
         type: "form_bonus_unlocked",
         userId,
         bonus: i * 10,
+        xp: 2,
+        dedupeKey: `form_bonus_unlocked:${i * 10}`,
       },
     });
   }
@@ -423,6 +304,8 @@ export async function loadGamificationBadgesList(
         userId,
         tierId: tier.id,
         threshold: tier.threshold,
+        xp: 1,
+        dedupeKey: `participant_tier_unlocked:${tier.id}`,
       },
     });
   }
@@ -442,6 +325,8 @@ export async function loadGamificationBadgesList(
         type: "first_trace_utile_unlocked",
         userId,
         badgeId: "first_trace_utile",
+        xp: 1,
+        dedupeKey: "first_trace_utile_unlocked:first_trace_utile",
       },
     });
   }
@@ -465,6 +350,8 @@ export async function loadGamificationBadgesList(
         userId,
         tierId: tier.id,
         title: tier.title,
+        xp: 1,
+        dedupeKey: `tier_unlocked:${tier.id}`,
       },
     });
   }
@@ -474,6 +361,7 @@ export async function loadGamificationBadgesList(
   return {
     totalPoints,
     badges,
+    quizProgressions,
     unlockedCount,
     totalBadges: badges.length,
     explorer: explorerFamily.summary,

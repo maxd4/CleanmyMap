@@ -133,9 +133,10 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  <Link
  key={profile.id}
  href={profile.href}
+ prefetch={false}
  onClick={() =>
- onTrackNavigation(profile.href, profile.label[locale], null)
- }
+  onTrackNavigation(profile.href, profile.label[locale], null)
+  }
  className={`rounded-lg border px-3 py-2 text-left transition ${
  active
  ?"border-emerald-300 bg-emerald-50 text-emerald-900"
@@ -157,9 +158,10 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  <div className="mt-3 flex flex-wrap gap-2">
  <Link
  href={profileOverview.primaryCTA.href}
+ prefetch={false}
  onClick={() =>
- onTrackCta(
- profileOverview.primaryCTA.href,
+  onTrackCta(
+  profileOverview.primaryCTA.href,
  profileOverview.primaryCTA.label[locale],
 "primary",
  )
@@ -171,9 +173,10 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  {secondaryCTA ? (
  <Link
  href={secondaryCTA.href}
+ prefetch={false}
  onClick={() =>
- onTrackCta(
- secondaryCTA.href,
+  onTrackCta(
+  secondaryCTA.href,
  secondaryCTA.label[locale],
 "secondary",
  )
@@ -209,9 +212,10 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  <li key={item.id}>
  <Link
  href={item.href}
+ prefetch={false}
  onClick={() =>
- onTrackNavigation(
- item.href,
+  onTrackNavigation(
+  item.href,
  item.label[locale],
  space.id,
  )
@@ -268,9 +272,10 @@ style={getNavigationDropdownTitleGradientStyle(space.id)}
  <li key={item.id}>
  <Link
  href={item.href}
+ prefetch={false}
  onClick={() =>
- onTrackNavigation(
- item.href,
+  onTrackNavigation(
+  item.href,
  item.label[locale],
  space.id,
  )
@@ -322,9 +327,10 @@ style={getNavigationDropdownTitleGradientStyle(space.id)}
  <li key={item.id}>
  <Link
  href={item.href}
+ prefetch={false}
  onClick={() =>
- onTrackNavigation(item.href, item.label[locale], null)
- }
+  onTrackNavigation(item.href, item.label[locale], null)
+  }
  className={`block rounded-lg border px-3 py-2 transition ${
  active
  ?"border-emerald-300 bg-emerald-50 text-emerald-900"

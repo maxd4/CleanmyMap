@@ -19,6 +19,7 @@ Guides de développement pour agents IA.
 
 ### Qualité & Tests
 - **TESTING.md** - Guide de tests
+- **page-by-page-ui-qa.md** - Workflow de QA page par page avec capture écran et export `.MD this page`
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
 - **performance-quotas-vercel-checklist.md** - Checklist PR pour prévenir les régressions de coût Vercel
@@ -60,11 +61,12 @@ Guides de développement pour agents IA.
 1. Respecter **api-standard.md** pour les APIs
 2. Suivre **conventions-modularisation.md** si modularisation
 3. Appliquer **TESTING.md** pour les tests
-4. Suivre **typescript-precision-policy.md** pour tout typage, cast ou accès dynamique
-5. Utiliser **typescript-anti-errors-checklist.md** pour le runbook court
-6. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
-7. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
-8. Relire **vercel-quota-governance.md** avant d'ajouter une route API, une page dynamique, un cron ou un fetch `no-store`
+4. Appliquer **page-by-page-ui-qa.md** pour toute route visible modifiée
+5. Suivre **typescript-precision-policy.md** pour tout typage, cast ou accès dynamique
+6. Utiliser **typescript-anti-errors-checklist.md** pour le runbook court
+7. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
+8. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
+9. Relire **vercel-quota-governance.md** avant d'ajouter une route API, une page dynamique, un cron ou un fetch `no-store`
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

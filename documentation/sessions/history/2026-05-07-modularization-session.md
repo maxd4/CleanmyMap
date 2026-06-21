@@ -132,7 +132,7 @@ Mise à jour du guide principal :
 - feedback-section.tsx
 - gamification-section.tsx
 - analytics.ts
-- sections-registry.ts
+- sections-registry/config.ts
 - use-community-section.ts
 
 ### Prochaines étapes

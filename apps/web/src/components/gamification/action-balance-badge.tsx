@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useId } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import {
   GamificationBadgePanel,
@@ -68,12 +68,13 @@ export function ActionBalanceBadge({ summary }: ActionBalanceBadgeProps) {
       let resetTimeout: number | undefined;
       const celebrationTimeout = window.setTimeout(() => {
         setIsCelebrating(true);
-        dispatchGamificationCelebration({
+        announceGamificationGain({
           title: "Équilibre des contextes atteint",
           message: `${summary.currentGrade.label} débloqué. +${summary.balancedCycles} XP sur le dernier cycle.`,
           tone: "actions",
           icon: "sliders-horizontal",
           source: "action-balance",
+          dedupeKey: `action-balance:${summary.currentGrade.id}:${summary.balancedCycles}`,
         });
 
         resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);

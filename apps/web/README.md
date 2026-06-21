@@ -17,6 +17,8 @@ Core required:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE` when you use a dedicated Clerk JWT template for Supabase RLS
+- Supabase est auth via JWT Clerk transmis en `accessToken`, pas via `sessionId`.
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_CLERK_PROXY_URL` only if you intentionally route Clerk through the app proxy path `/__clerk` (otherwise leave it empty and use the direct Clerk frontend API domain)
@@ -102,8 +104,11 @@ npm run backend:vercel:env:sync
 # Doctor check (link + required env presence)
 npm run backend:doctor
 
-# Google Sheet -> Supabase sync (actions + clean places for map)
-npm run data:sheet:sync-supabase
+## Google Sheet -> Supabase sync
+
+Ce flux est désactivé: le document Google Sheet n'est plus utilisé comme source de vérité.
+Les anciens imports sont conservés comme historique local, mais il n'y a plus de commande
+supportée pour resynchroniser la base depuis cette feuille.
 
 # Export Supabase archive to local backups
 npm run data:archive:supabase

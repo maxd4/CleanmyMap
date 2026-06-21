@@ -67,19 +67,6 @@ export function useReportsWebDocumentModel({
       ),
     swrRecentViewOptions,
   );
-  const actionsApproved = useSWR(
-    initialContracts ? null : ["report-web-actions-approved"],
-    () =>
-      import("@/lib/actions/http").then(({ fetchActions }) =>
-        fetchActions({
-          status: "approved",
-          limit: 200,
-          days: 365,
-          types: "all",
-        }),
-      ),
-    swrRecentViewOptions,
-  );
   const mapAll = useSWR(
     initialContracts ? null : ["report-web-map-all"],
     () =>
@@ -115,8 +102,8 @@ export function useReportsWebDocumentModel({
     [actionsAll.data?.items, initialActionListItems, initialContracts],
   );
   const actionsApprovedItems = useMemo(
-    () => (initialContracts ? initialActionListItems : actionsApproved.data?.items ?? []),
-    [actionsApproved.data?.items, initialActionListItems, initialContracts],
+    () => (initialContracts ? initialActionListItems : actionsAll.data?.items ?? []),
+    [actionsAll.data?.items, initialActionListItems, initialContracts],
   );
   const mapItems = useMemo(
     () => (initialContracts ? initialMapItems : mapAll.data?.items ?? []),
@@ -130,12 +117,11 @@ export function useReportsWebDocumentModel({
 
   const isLoading =
     actionsAll.isLoading ||
-    actionsApproved.isLoading ||
     mapAll.isLoading ||
     community.isLoading ||
     weather.isLoading;
   const hasError = Boolean(
-    actionsAll.error || actionsApproved.error || mapAll.error || community.error || weather.error,
+    actionsAll.error || mapAll.error || community.error || weather.error,
   );
 
   const scopeOptions = useMemo(

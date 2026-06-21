@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { MonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
 import {
   GamificationBadgePanel,
@@ -59,12 +59,13 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
       let resetTimeout: number | undefined;
       const celebrationTimeout = window.setTimeout(() => {
         setIsCelebrating(true);
-        dispatchGamificationCelebration({
+        announceGamificationGain({
           title: "Régularité mensuelle atteinte",
           message: `${summary.currentGrade.label} débloqué pour la série mensuelle.`,
           tone: "actions",
           icon: "calendar-days",
           source: "monthly-regularity",
+          dedupeKey: `monthly-regularity:${summary.currentGrade.id}:${summary.currentStreak}`,
         });
 
         resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);

@@ -27,6 +27,7 @@ const infrastructureMetricsInputSchema = z
     vercelFunctionInvocations: quantitySchema.nullable().optional(),
     vercelDeployments: quantitySchema.nullable().optional(),
     vercelBandwidthGb: quantitySchema.nullable().optional(),
+    githubWorkflowRunsCount30d: quantitySchema.nullable().optional(),
     supabaseDbRequests: quantitySchema.nullable().optional(),
     supabaseAuthEvents: quantitySchema.nullable().optional(),
     supabaseStorageGbMonths: quantitySchema.nullable().optional(),

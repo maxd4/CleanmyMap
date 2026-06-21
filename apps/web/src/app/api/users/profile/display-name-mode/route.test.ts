@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
+const requireSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -16,6 +17,7 @@ vi.mock("@/lib/authz", () => ({
 
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
+  requireSupabaseClerkRlsClient: requireSupabaseClerkRlsClientMock,
 }));
 
 describe("PATCH /api/users/profile/display-name-mode", () => {
@@ -49,6 +51,7 @@ describe("PATCH /api/users/profile/display-name-mode", () => {
       })),
     };
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock);
+    requireSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock);
   });
 
   it("returns the current identity payload for the active user", async () => {
@@ -89,5 +92,29 @@ describe("PATCH /api/users/profile/display-name-mode", () => {
     expect(body.status).toBe("updated");
     expect(body.displayNameMode).toBe("pseudo");
     expect(body.displayName).toBe("ada_admin");
+  });
+
+  it("fails closed when the Clerk JWT accessToken is unavailable for the RLS flow", async () => {
+    requireSupabaseClerkRlsClientMock.mockRejectedValue(
+      new Error("Clerk/Supabase JWT accessToken unavailable for a required RLS flow."),
+    );
+
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/users/profile/display-name-mode", {
+        method: "PATCH",
+        body: JSON.stringify({ displayNameMode: "pseudo" }),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      error?: string;
+      hint?: string;
+    };
+
+    expect(response.status).toBe(503);
+    expect(body.error).toBe("Connexion sécurisée indisponible");
+    expect(body.hint).toContain("JWT Clerk valide");
   });
 });

@@ -14,6 +14,8 @@
 - **Contexte nécessaire** : Compte connecté pour rejoindre, affichage public possible des actions validées
 - **Objectif utilisateur principal** : Créer un formulaire de groupe pour une action déjà validée, puis le partager.
 - **Action principale attendue** : Ouvrir le formulaire de groupe, copier le lien, puis suivre les participations.
+- **Contrat de participation** : `action_participants` conserve l'état actif, l'origine et la date de jonction.
+- **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet de fermer ou rouvrir les inscriptions après publication.
 - **Palette attendue** : emerald
 - **Scope** : finalisé
 - **Terminée** : oui
@@ -25,6 +27,8 @@
 - Titre de rubrique
 - CTA principal
 - états de participation
+- origine de participation
+- clôture / réouverture
 - validation et erreurs
 - **Textes à réduire ou supprimer** :
 - Aides répétées

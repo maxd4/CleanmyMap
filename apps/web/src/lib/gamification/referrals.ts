@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { auditXpAttribution } from "./notifications";
 import { insertProgressionEvent } from "./progression-data";
 import { logWarning } from "@/lib/logging/failure-log";
@@ -103,6 +104,20 @@ async function ensureReferralInviteAward(
         inviteUrl,
       },
     );
+
+    await broadcastGamificationAnnouncement(supabase, {
+      type: "referral_invite_awarded",
+      userId: params.userId,
+      badgeId: REFERRAL_BADGE_EVENT_TYPE,
+      xp: REFERRAL_XP,
+      referralCode: params.referralCode,
+      inviteUrl,
+      title: "Badge invité un ami",
+      message: "+2 XP pour la première invitation générée.",
+      icon: "share-2",
+      source: "referrals",
+      dedupeKey: `referral_invite_awarded:${params.referralCode}`,
+    });
   }
 
   return inserted;

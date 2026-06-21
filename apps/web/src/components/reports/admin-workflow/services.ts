@@ -36,8 +36,16 @@ export function triggerBrowserDownload(blob: Blob, filename: string): void {
 export async function fetchAdminOperationAudit(
  fetchImpl: typeof fetch = fetch,
  limit = 25,
+ targetId?: string | null,
 ): Promise<{ items?: AdminOperationAuditItem[] }> {
- const response = await fetchImpl(`/api/admin/operations?limit=${limit}`, {
+ const params = new URLSearchParams({
+  limit: String(limit),
+ });
+ if (targetId && targetId.trim().length > 0) {
+  params.set("targetId", targetId.trim());
+ }
+
+ const response = await fetchImpl(`/api/admin/operations?${params.toString()}`, {
  method:"GET",
  cache:"no-store",
  });

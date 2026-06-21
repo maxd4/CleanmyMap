@@ -246,7 +246,6 @@ Les routes API n'ont pas de UI de page, donc la colonne `Exception UI ?` y est t
 | `/api/geo` | `address-suggestions` | Géocodage |
 | `/api/health` | `/` | Santé système |
 | `/api/newsletter` | `subscribe` | Inscription newsletter |
-| `/api/notifications` | `/` | Notifications |
 | `/api/partners` | `onboarding-requests`, `published-directory` | Réseau partenaires |
 | `/api/pilotage` | `overview` | Pilotage |
 | `/api/recycling` | `breakdown` | Tri / recyclage |

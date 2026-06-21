@@ -17,6 +17,8 @@ const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
   infinite_butts_milestone: "impact",
   new_place_discovered: "exploration",
   new_place_milestone: "exploration",
+  quiz_question_type_milestone: "apprentissage",
+  quiz_question_type_balance_milestone: "apprentissage",
 };
 
 export function eventFamilyMap(): Readonly<Record<ProgressionEventType, string>> {
@@ -92,6 +94,7 @@ export function computeActionPendingAward(weight: number): {
   xpBase: number;
   xpAwarded: number;
 } {
+  void weight;
   // No XP for non-validated (pending) contributions.
   const xpBase = 0;
   return {

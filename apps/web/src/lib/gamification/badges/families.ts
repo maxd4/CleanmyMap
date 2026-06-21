@@ -35,6 +35,21 @@ type BadgeTierDefinition = {
   xp: number;
 };
 
+type QuizProgressionTierDefinition = {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+};
+
+export type QuizProgressionFamily = {
+  id: string;
+  name: string;
+  description: string;
+  status: "active";
+  tiers: QuizProgressionTierDefinition[];
+};
+
 type LegacyBadgeDefinition = {
   id: string;
   name: string;
@@ -95,6 +110,62 @@ export const PARTICIPANT_TIERS: readonly BadgeTierDefinition[] = [
   { threshold: 25, id: "participant-25", label: "Conservateur", iconVariant: "tree", visualVariant: "cosmic", tooltip: "Impact territorial notable", xp: 1 },
   { threshold: 30, id: "participant-30", label: "Gardien", iconVariant: "guardian", visualVariant: "cosmic", tooltip: "Ambassadeur de terrain", xp: 1 },
 ] as const;
+
+export const QUIZ_TYPE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
+  {
+    id: "quiz-type-50",
+    label: "50 réponses justes",
+    description: "Palier intermédiaire à 50 bonnes réponses sur un même type de question.",
+    icon: "✨",
+  },
+  {
+    id: "quiz-type-100",
+    label: "100 réponses justes",
+    description: "Grand palier à 100 bonnes réponses sur un même type de question.",
+    icon: "🏅",
+  },
+] as const;
+
+export const QUIZ_BALANCE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition[] = [
+  {
+    id: "quiz-balance-10",
+    label: "10 réponses justes",
+    description: "Premier palier équilibré quand tous les types atteignent 10 bonnes réponses.",
+    icon: "🧠",
+  },
+  {
+    id: "quiz-balance-50",
+    label: "50 réponses justes",
+    description: "Palier intermédiaire équilibré quand tous les types atteignent 50 bonnes réponses.",
+    icon: "✨",
+  },
+  {
+    id: "quiz-balance-100",
+    label: "100 réponses justes",
+    description: "Grand palier équilibré quand tous les types atteignent 100 bonnes réponses.",
+    icon: "🏅",
+  },
+] as const;
+
+export function buildQuizTypeProgression(): QuizProgressionFamily {
+  return {
+    id: "quiz-type-progress",
+    name: "Progression quiz par type",
+    description: "Échelle active pour suivre les réponses justes par type de question.",
+    status: "active",
+    tiers: [...QUIZ_TYPE_PROGRESS_TIERS],
+  };
+}
+
+export function buildQuizBalanceProgression(): QuizProgressionFamily {
+  return {
+    id: "quiz-balance-progress",
+    name: "Quiz équilibré",
+    description: "Échelle active pour encourager l'entraînement sur tous les types de questions.",
+    status: "active",
+    tiers: [...QUIZ_BALANCE_PROGRESS_TIERS],
+  };
+}
 
 const LEGACY_POINT_BADGES: readonly LegacyBadgeDefinition[] = [
   { id: "first_step", name: "Premier pas", description: "Gagner 10 points", minPoints: 10, icon: "👣" },

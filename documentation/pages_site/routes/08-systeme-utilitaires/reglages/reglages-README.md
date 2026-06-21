@@ -8,9 +8,9 @@
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
-- **Contexte nécessaire** : Accès direct depuis le shell ou un outil interne
-- **Objectif utilisateur principal** : Exposer des outils de support, de contrôle ou de prévisualisation.
-- **Action principale attendue** : Configurer, comparer ou vérifier un état technique.
+- **Contexte nécessaire** : Compte connecté ; redirection vers `/sign-in` si la session est absente.
+- **Objectif utilisateur principal** : Exposer les préférences et réglages du compte.
+- **Action principale attendue** : Configurer les préférences personnelles et l'expérience utilisateur.
 - **Palette attendue** : slate / gris doux
 - **Scope** : à corriger
 - **Terminée** : non
@@ -46,5 +46,6 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche documente une vraie page protégée, pas un alias technique.
+- La redirection vers `/sign-in` ne s'applique qu'aux visiteurs non authentifiés.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

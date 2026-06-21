@@ -4,7 +4,8 @@
 ```mermaid
 flowchart TD
   NAV[navigation.ts + sections-registry/config.ts] --> UI[Section renderer / pages]
-  ACT[lib/actions/*] --> APIA[/api/actions + /api/actions/map]
+  ACT[lib/actions/*] --> APIA[/api/actions]
+  ACT --> RPCMAP[Supabase RPC actions_map_feed]
   GAM[lib/gamification/*] --> APIG[/api/gamification/*]
   COM[lib/community/*] --> APIC[/api/community/*]
   PIL[lib/pilotage/*] --> APIR[/api/reports/*]

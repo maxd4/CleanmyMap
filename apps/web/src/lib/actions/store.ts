@@ -25,6 +25,12 @@ import { runActionQuery } from "@/lib/actions/query";
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
 
+export function resolveActionCreationStatus(
+  isAutoApprovedSubmission: boolean,
+): ActionStatus {
+  return isAutoApprovedSubmission ? "approved" : "pending";
+}
+
 export function buildPersistedNotes(payload: CreateActionPayload): string | null {
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
@@ -136,6 +142,7 @@ export async function createAction(
     userId: string;
     payload: CreateActionPayload;
     organizers: ResolvedActionOrganizer[];
+    status?: ActionStatus;
   },
 ): Promise<{ id: string }> {
   const payload = params.payload;
@@ -193,7 +200,7 @@ export async function createAction(
         ...payload,
         manualDrawing: finalDrawing ?? undefined,
       }),
-      status: "pending",
+      status: params.status ?? "pending",
     })
     .select("id")
     .single();

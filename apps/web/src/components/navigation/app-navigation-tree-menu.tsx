@@ -296,6 +296,7 @@ export function AppNavigationTreeMenu({
                                     <li key={item.id}>
                                       <Link
                                         href={item.href}
+                                        prefetch={false}
                                         aria-current={isActiveItem ? "page" : undefined}
                                         onClick={() => {
                                           onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);

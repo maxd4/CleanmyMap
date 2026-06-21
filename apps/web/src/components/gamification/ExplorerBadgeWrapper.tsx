@@ -1,11 +1,14 @@
 "use client";
 import React from "react";
+import { useAuth } from "@clerk/nextjs";
 import ExplorerBadge from "./ExplorerBadge";
-import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { announceGamificationGain } from "@/lib/gamification/announcements";
 import { EXPLORER_TIERS } from "@/lib/gamification/badges/families";
-import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
+import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [tiers, setTiers] = React.useState<
     Array<{ id: string; title: string; icon: string; min: number; max: number; texture?: string }>
   >([]);
@@ -13,37 +16,62 @@ export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
 
   React.useEffect(() => {
     let mounted = true;
-    loadGamificationBadgesListClient()
-      .then((body) => {
-        if (!mounted) return;
-        const explorerTiers = EXPLORER_TIERS.map((tier) => ({
-          id: tier.id,
-          title: tier.title,
-          icon: tier.icon,
-          min: tier.min,
-          max: tier.max,
-          texture: tier.texture,
-        }));
-        setTiers(explorerTiers);
-        setCurrent(Number(body.summary?.currentPlaces ?? 0));
-      })
-      .catch(() => {});
+
+    async function loadExplorerCount() {
+      if (!isLoaded || !isSignedIn || !userId) {
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseBrowserClient(
+          buildClerkSupabaseAccessTokenProvider(getToken),
+        );
+
+        const { count } = await supabase
+          .from("user_visited_places")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId);
+
+        if (!mounted) {
+          return;
+        }
+
+        setCurrent(Number(count ?? 0));
+      } catch {
+        if (mounted) {
+          setCurrent(0);
+        }
+      }
+    }
+
+    const explorerTiers = EXPLORER_TIERS.map((tier) => ({
+      id: tier.id,
+      title: tier.title,
+      icon: tier.icon,
+      min: tier.min,
+      max: tier.max,
+      texture: tier.texture,
+    }));
+    setTiers(explorerTiers);
+    void loadExplorerCount();
+
     return () => {
       mounted = false;
     };
-  }, [userId]);
+  }, [getToken, isLoaded, isSignedIn, userId]);
 
   return (
-    <ExplorerBadge
+      <ExplorerBadge
       tiers={tiers}
       current={current}
       onTierReached={(tier) => {
-        dispatchGamificationCelebration({
+        announceGamificationGain({
           title: "Palier d'exploration atteint",
           message: `${tier.title} débloqué sur les zones visitées.`,
           tone: "explorer",
           icon: tier.icon,
           source: "explorer-badge",
+          dedupeKey: `explorer:${tier.id}`,
         });
       }}
     />

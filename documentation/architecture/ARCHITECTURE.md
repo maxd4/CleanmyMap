@@ -12,7 +12,7 @@ Read [master-architecture.md](./master-architecture.md) first, then load only ta
 ## High-Value Entry Files
 - `apps/web/src/app/(app)/actions/map/page.tsx`
 - `apps/web/src/components/actions/actions-map-feed.tsx`
-- `apps/web/src/app/api/actions/map/route.ts`
+- `apps/web/src/lib/actions/http.ts`
 - `apps/web/src/lib/actions/store.ts`
 - `apps/web/src/lib/data/map-records.ts`
 - `src/report_generator.py`

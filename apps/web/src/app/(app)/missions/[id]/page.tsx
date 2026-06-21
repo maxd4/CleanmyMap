@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
 import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -126,7 +125,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
           >
             <Share2 size={16} className="text-emerald-400" />
             <span className="text-xs font-black uppercase tracking-widest">
-              Partager l'impact
+              Partager l&apos;impact
             </span>
           </CmmButton>
         }
@@ -244,9 +243,9 @@ export default async function MissionPage({ params }: MissionPageParams) {
             </div>
             <p className="text-sm font-medium leading-relaxed text-amber-100/60">
               <strong className="mb-2 block text-xs font-black uppercase tracking-widest text-amber-400">
-                Preuve d'Impact
+                Preuve d&apos;Impact
               </strong>
-              Ce tracé a été enregistré en direct via l'application Compagnon, garantissant l'authenticité de l'impact écologique mesuré sur le terrain.
+              Ce tracé a été enregistré en direct via l&apos;application Compagnon, garantissant l&apos;authenticité de l&apos;impact écologique mesuré sur le terrain.
             </p>
           </div>
         </div>

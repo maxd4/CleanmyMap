@@ -116,6 +116,13 @@ function isStarSelect(statement) {
   return /\.select\(\s*["'`]\*\s*["'`]\s*(?:,|\)|$)/.test(statement);
 }
 
+function hasChatRealtimeGuard(sourceText) {
+  return (
+    /NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME/.test(sourceText) ||
+    /isChatRealtimeEnabled\s*\(/.test(sourceText)
+  );
+}
+
 function inferOperation(statement) {
   if (/\.insert\(/.test(statement)) return "write";
   if (/\.upsert\(/.test(statement)) return "write";
@@ -308,13 +315,29 @@ function analyzeFile(filePath, rootDir, sourceText) {
       entry.count += 1;
       entry.files.add(relativePath);
       result.realtimeChannels.set(channel, entry);
-      pushFinding(result.findings, {
-        type: "realtime",
-        resource: channel,
-        file: relativePath,
-        line: lineIndex + 1,
-        message: `Subscription Realtime détectée: ${channel}`,
-      });
+
+      const isChatSurface =
+        /\/components\/chat\//.test(relativePath) ||
+        /\/lib\/chat\//.test(relativePath) ||
+        /\/app\/api\/chat\//.test(relativePath);
+      if (!isChatSurface) {
+        pushFinding(result.findings, {
+          type: "realtime",
+          resource: channel,
+          file: relativePath,
+          line: lineIndex + 1,
+          message: `Subscription Realtime détectée: ${channel}`,
+        });
+      } else if (!hasChatRealtimeGuard(text)) {
+        pushFinding(result.findings, {
+          type: "realtime_chat_unflagged",
+          resource: channel,
+          file: relativePath,
+          line: lineIndex + 1,
+          message:
+            "Realtime Supabase détecté dans le chat sans feature flag explicite. Garder cette surface désactivée par défaut.",
+        });
+      }
     }
 
     for (const match of line.matchAll(/\bsupabase\.auth\.(getUser|getSession|onAuthStateChange|signInAnonymously|signOut|signInWithPassword|signInWithOtp|signUp)\b/g)) {

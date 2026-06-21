@@ -19,6 +19,8 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     );
     expect(markup).toContain("Pages vues");
     expect(markup).toContain("Courbe temporelle");
+    expect(markup).toContain("Documentation consultable");
+    expect(markup).toContain("Méthodologie ACV numérique");
     expect(markup).toContain("Documents à télécharger");
     expect(markup).toContain("Fonctionnement du graphique");
     expect(markup).toContain("Prochaines actions à plus fort impact");

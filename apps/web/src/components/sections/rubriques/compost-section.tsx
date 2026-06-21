@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const CompostMapCanvas = dynamic(
   () => import("./compost-map-canvas").then((mod) => mod.CompostMapCanvas),
@@ -69,6 +70,9 @@ const steps = [
 export function CompostSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "280px 0px",
+  });
 
   return (
     <SectionShell 
@@ -137,7 +141,20 @@ export function CompostSection() {
                     {fr ? "Points de proximité" : "Proximity points"}
                  </h3>
               </div>
-              <CompostMapCanvas points={COMPOST_POINTS} />
+              <div ref={mapShellRef} className="min-h-[480px]">
+                {isMapVisible ? (
+                  <CompostMapCanvas points={COMPOST_POINTS} />
+                ) : (
+                  <div className="flex h-[480px] items-center justify-center rounded-[2.5rem] border border-white/10 bg-slate-950/70">
+                    <div className="space-y-3 text-center">
+                      <div className="mx-auto h-12 w-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                        Chargement de la carte...
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
            </div>
 
            <div className="space-y-8">

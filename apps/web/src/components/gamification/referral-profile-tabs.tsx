@@ -11,6 +11,7 @@ import type { ReferralLineageView } from "@/lib/gamification/referral-lineage";
 type ReferralProfileTabsProps = {
   summary: ReferralSummary;
   lineageView: ReferralLineageView | null;
+  lineageError?: string | null;
   emptyCtaHref: string;
 };
 
@@ -19,6 +20,7 @@ type TabKey = "badge" | "tree";
 export function ReferralProfileTabs({
   summary,
   lineageView,
+  lineageError,
   emptyCtaHref,
 }: ReferralProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("badge");
@@ -54,6 +56,7 @@ export function ReferralProfileTabs({
         ) : (
           <ReferralLineagePanel
             view={lineageView}
+            errorMessage={lineageError}
             emptyCtaHref={emptyCtaHref}
             emptyCtaLabel="Créer mon lien de parrainage"
           />

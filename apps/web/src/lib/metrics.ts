@@ -31,7 +31,7 @@ class MetricsService {
   }
 
   startSession(variant: 'simple' | 'complex', userId: string = 'anonymous'): string {
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const sessionId = `session_${Date.now()}_${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`
     
     const metric: FormMetrics = {
       variant,
@@ -147,7 +147,7 @@ class MetricsService {
       if (stored) {
         try {
           this.metrics = JSON.parse(stored)
-        } catch (e) {
+        } catch {
           console.warn('Failed to load metrics from storage')
           this.metrics = []
         }

@@ -25,5 +25,8 @@ Schema (all files):
 Operational scripts:
 
 - `npm run data:test:build`
-- `npm run data:real:sync`
 - `npm run data:validated:sync`
+
+Historical note:
+
+- The Google Sheet import and `data:real:sync` flow are retired and no longer used as source of truth.

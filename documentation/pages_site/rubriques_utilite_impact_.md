@@ -281,12 +281,6 @@ quadrantChart
 
 ### Bloc 5 — Apprendre · `yellow` / `amber`
 
-**Point de départ** `/learn/hub`
-
-- Index + reprise : quatre rubriques internes (Comprendre, S'entraîner, Bonnes pratiques, Ressources).
-- Utilite : centraliser l'entrée du bloc et rediriger vers les pages dédiées sans mélanger les usages.
-- Impact : améliore la qualité des interventions, la reprise mobile et la continuité de lecture.
-
 **Ordres de grandeur** `/learn/comprendre`
 
 - Contexte climat, ordres de grandeur, renvoi vers méthodologie.
@@ -305,11 +299,10 @@ quadrantChart
 - Utilite : garder le bon réflexe sans alourdir l'action.
 - Impact : opérations plus propres et plus efficaces.
 
-**Ressources** `/learn/ressources`
+**Surfaces intégrées**
 
-- Bibliothèque, liens externes, références.
-- Utilite : aller plus loin sur un sujet précis.
-- Impact : autonomie et approfondissement.
+- Point de départ: repères de navigation répartis dans les 3 pages.
+- Ressources: bibliothèque et repères intégrés à `bonnes-pratiques`.
 
 ---
 

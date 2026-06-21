@@ -302,14 +302,18 @@ export async function loadReferralLineageView(
     focus_profile_id: focusProfileId,
   });
 
-  if (!rpcResult.error && Array.isArray(rpcResult.data) && rpcResult.data.length > 0) {
-    return buildReferralLineageView(
-      focusProfileId,
-      rpcResult.data as ReferralLineageProfileRow[],
-    );
+  if (rpcResult.error) {
+    throw new Error(rpcResult.error.message);
   }
 
-  return null;
+  if (!Array.isArray(rpcResult.data) || rpcResult.data.length === 0) {
+    return null;
+  }
+
+  return buildReferralLineageView(
+    focusProfileId,
+    rpcResult.data as ReferralLineageProfileRow[],
+  );
 }
 
 export function buildReferralLineageLeaderboard(

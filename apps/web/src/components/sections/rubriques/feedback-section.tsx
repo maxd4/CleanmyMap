@@ -328,7 +328,7 @@ const FEEDBACK_SUPPORT_LINKS: SupportLink[] = [
       fr: "Accéder à la documentation",
       en: "Access the documentation",
     },
-    href: "/learn/hub",
+    href: "/learn/comprendre",
     icon: BookOpen,
   },
   {
@@ -346,7 +346,7 @@ const FEEDBACK_SUPPORT_LINKS: SupportLink[] = [
       fr: "Voir les questions fréquentes",
       en: "View frequently asked questions",
     },
-    href: "/learn/ressources",
+    href: "/learn/bonnes-pratiques#guides-courts",
     icon: HelpCircle,
   },
 ];
@@ -1002,7 +1002,7 @@ function FeedbackDashboardMode({
 
           <div className="mt-6">
             <CmmButton
-              href="/learn/hub"
+              href="/learn/comprendre"
               tone="secondary"
               variant="pill"
               className="h-12 w-full px-6 text-xs font-black uppercase tracking-[0.18em] text-pink-600"
