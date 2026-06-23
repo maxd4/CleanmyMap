@@ -4,7 +4,8 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { loadGamificationFunnelCounts } from "@/lib/gamification/counters";
 
 export const runtime = "nodejs";
-export const revalidate = 300; // Cache 5 minutes
+// Justification Vercel: la métrique doit rester fraîche côté build, mais la réponse peut être cacheable au CDN.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

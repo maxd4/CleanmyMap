@@ -24,6 +24,16 @@ import {
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map"] as const;
+export const PROXY_MATCHER_PATTERNS = [
+  "/admin(.*)",
+  "/dashboard(.*)",
+  "/actions/history(.*)",
+  "/actions/new(.*)",
+  "/form-comparison(.*)",
+  "/prints/report(.*)",
+  "/sponsor-portal(.*)",
+  "/__clerk/(.*)",
+] as const;
 const PROTECTED_ROUTE_HEADER = "x-cleanmymap-protected-route";
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
 type PostRateLimitRule = {
@@ -217,8 +227,13 @@ export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    "/admin(.*)",
+    "/dashboard(.*)",
+    "/actions/history(.*)",
+    "/actions/new(.*)",
+    "/form-comparison(.*)",
+    "/prints/report(.*)",
+    "/sponsor-portal(.*)",
     "/__clerk/(.*)",
   ],
 };
