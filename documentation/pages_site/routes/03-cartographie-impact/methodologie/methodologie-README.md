@@ -43,7 +43,7 @@
 ## Répartition des blocs
 
 - **Quota** : s'appuie sur la fiche d'architecture `documentation/architecture/methodologie-fonctionnement-site.md` et sur le schéma de l'onglet `Plans et quotas`.
-- **Rapport d'impact** : s'appuie sur le texte canonique `documentation/plans/rapport_impact/impact_IA.md` et sur le schéma de l'onglet `Impact carbone`.
+- **Rapport d'impact** : s'appuie sur le texte canonique du rapport d'impact et sur le schéma de l'onglet `Impact carbone`.
 - **Séparation attendue** : les deux blocs doivent rester indépendants, avec une logique de lecture différente et sans mélange entre quotas web et ACV d'impact.
 
 

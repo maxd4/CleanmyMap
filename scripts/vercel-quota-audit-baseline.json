@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-12T21:55:22.391Z",
+  "generatedAt": "2026-06-23T10:32:47.163Z",
   "routeHandlers": [
-    "apps/web/src/app/api/account/display-mode/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
-    "apps/web/src/app/api/actions/pollution-score-references/route.ts",
+    "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/route.ts",
     "apps/web/src/app/api/admin/codex-usage/route.ts",
@@ -45,6 +45,8 @@
     "apps/web/src/app/api/gamification/points/add/route.ts",
     "apps/web/src/app/api/gamification/points/history/route.ts",
     "apps/web/src/app/api/gamification/points/me/route.ts",
+    "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
+    "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/me/route.ts",
@@ -77,18 +79,17 @@
     "apps/web/src/app/images/textures/[...asset]/route.ts"
   ],
   "dynamicRenders": [
+    "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
-    "apps/web/src/app/api/actions/pollution-score-references/route.ts",
-    "apps/web/src/app/api/actions/route.ts"
+    "apps/web/src/app/api/actions/map/route.ts",
+    "apps/web/src/app/api/actions/route.ts",
+    "apps/web/src/app/api/gamification/analytics/funnel/route.ts"
   ],
   "noStoreFetches": [
     "apps/web/src/app/(app)/reports/page.tsx",
-    "apps/web/src/app/api/actions/pollution-score-references/route.ts",
     "apps/web/src/app/api/community/funnel.csv/route.ts",
-    "apps/web/src/components/actions/map/action-pollution-score-references-context.tsx",
     "apps/web/src/components/admin/free-plan-services-panel.tsx",
-    "apps/web/src/components/dashboard/funnel-conversion-panel.tsx",
     "apps/web/src/components/dashboard/report-export-smoke-card.tsx",
     "apps/web/src/components/dashboard/storage-usage-panel.tsx",
     "apps/web/src/components/dashboard/system-status-panel.tsx",
@@ -98,10 +99,10 @@
     "apps/web/src/components/sections/rubriques/gamification/index.tsx",
     "apps/web/src/components/sections/rubriques/guide-section.tsx",
     "apps/web/src/components/sections/rubriques/recycling-section.tsx",
-    "apps/web/src/components/sections/rubriques/use-annuaire-logic.ts",
     "apps/web/src/components/sections/rubriques/use-kit-data.ts",
     "apps/web/src/components/sections/rubriques/use-weather-data.ts",
     "apps/web/src/lib/actions/http.ts",
+    "apps/web/src/lib/actions/operation-audit.ts",
     "apps/web/src/lib/community/http.ts"
   ],
   "externalFetches": [

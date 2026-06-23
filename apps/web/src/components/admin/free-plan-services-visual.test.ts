@@ -37,6 +37,7 @@ const fallbackMetricKeyByService: Record<
 > = {
   vercel: "vercelDeployments",
   supabase: "supabaseStorageGbMonths",
+  github: "githubWorkflowRunsCount30d",
   chatgpt: "chatgptConversationHours",
   codex: "codexSessions",
   resend: "resendEmailsSent",

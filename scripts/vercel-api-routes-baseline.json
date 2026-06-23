@@ -1,11 +1,13 @@
 {
   "generatedAt": "2026-06-12T23:55:00.000Z",
-  "apiRouteCount": 70,
+  "apiRouteCount": 73,
   "apiRoutes": [
     "apps/web/src/app/api/account/profile-role/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
+    "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/route.ts",
     "apps/web/src/app/api/admin/codex-usage/route.ts",
@@ -44,6 +46,7 @@
     "apps/web/src/app/api/gamification/points/add/route.ts",
     "apps/web/src/app/api/gamification/points/history/route.ts",
     "apps/web/src/app/api/gamification/points/me/route.ts",
+    "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
     "apps/web/src/app/api/gamification/xp_audit/admin/route.ts",

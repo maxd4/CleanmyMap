@@ -10,6 +10,7 @@ function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionIt
     status: partial.status ?? "approved",
     participantsCount: partial.participantsCount ?? 0,
     joined: partial.joined ?? false,
+    awaitingApproval: partial.awaitingApproval ?? false,
     joinedAt: partial.joinedAt ?? null,
     participationStatus: partial.participationStatus ?? null,
     participationSource: partial.participationSource ?? null,

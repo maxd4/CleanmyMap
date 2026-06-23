@@ -1,6 +1,7 @@
 import { subDays } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
+export { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
 import {
   buildCodexMonthlyUsageEstimate,
   listCodexUsageWeeklySnapshots,
