@@ -32,6 +32,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 - **[development/vercel-supabase-browser-strategy.md](./development/vercel-supabase-browser-strategy.md)** - stratégie de répartition des charges entre Vercel, Supabase et le navigateur.
 - **[development/vercel-supabase-free-tier-rules.md](./development/vercel-supabase-free-tier-rules.md)** - doctrine free tier pour garder les features dans les limites Vercel et Supabase.
 - **[development/codex-vercel-development-guide.md](./development/codex-vercel-development-guide.md)** - guide Codex pour développer une fonctionnalité sans augmenter inutilement les quotas Vercel.
+- **[development/vercel-next-build-triage.md](./development/vercel-next-build-triage.md)** - protocole court pour corriger un build Vercel/Next sans multiplier les rebuilds.
 - **[development/supabase-quota-guide.md](./development/supabase-quota-guide.md)** - doctrine de stockage Supabase, règles Git/localStorage et garde-fous de consommation.
 - **[development/client-server-bundle-splitting.md](./development/client-server-bundle-splitting.md)** - règles pour garder la frontière serveur/client propre et éviter de regonfler le bundle initial.
 - **[development/vercel-route-cost-audit.md](./development/vercel-route-cost-audit.md)** - audit route par route des coûts Vercel.

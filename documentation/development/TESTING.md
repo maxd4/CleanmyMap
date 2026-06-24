@@ -80,6 +80,30 @@ Pass criteria:
 - no failing checks in steps 1-2
 - no critical functional gap in steps 3-4
 
+## Vercel Build Fast Path
+
+Use this order before starting a long `vercel build` session:
+
+1. `npm run typecheck -w apps/web`
+2. `npm run test:regression-gates -w apps/web`
+3. `npm run build -w apps/web`
+4. `npm run audit:vercel-quota`
+5. `npx vercel build --yes`
+
+Stop after the first repeated failure. Do not relaunch `next build` after every micro-correction. Batch the fixes by category, re-run the fast checks once, then rebuild once.
+
+If the code-level build passes but `vercel build` fails on Windows with `EPERM: operation not permitted, symlink`, do not loop on the same command:
+
+- verify whether the shell can create symlinks;
+- retry from an elevated shell or with Windows Developer Mode enabled;
+- keep the native `next build` result as the code signal and treat the failure as a packaging/environment issue.
+
+If the build looks stale or manifests are missing, clean the local cache before the next full build:
+
+- `npm run build:clean -w apps/web`
+- this deletes `apps/web/.next` and `apps/web/.turbo`, then relaunches the stable Webpack build path
+- do not fabricate `.next/server/pages-manifest.json`, `.next/server/proxy.js.nft.json` or any other internal Next.js file by hand
+
 ## Local Clerk Verification
 
 For web verification on a localhost app without signing in every time:
@@ -102,7 +126,7 @@ If `localhost` looks older than the GitHub repo or Turbopack logs mention missin
 
 0. If this machine is bugging out in the browser, do not force a Codex browser session on `localhost`; rely on the terminal logs and the local browser outside Codex for verification.
 1. `npm run dev` uses Turbopack by default.
-2. Webpack is disabled in this repository.
+2. `npm run build` for `apps/web` uses the stable Webpack path; if it fails, clean the cache first and inspect the post-build manifest copy step before retrying.
 3. Stop every running `Node.js JavaScript Runtime` / `next dev` process for this repo.
 4. Clear the Next.js cache and restart clean:
    - `npm run dev:clean`
@@ -111,3 +135,14 @@ If `localhost` looks older than the GitHub repo or Turbopack logs mention missin
 6. If the terminal says port `3000` is busy, do not open `3000` by reflex:
    - the launcher may have started on `3001` or higher.
 7. If the browser still serves stale content after restart, hard refresh or clear `localhost` site data.
+
+## Build Notes Observed In The Latest Validation
+
+When validating the web workspace:
+
+1. Run the usual quality gates first:
+   - `npm run typecheck -w apps/web`
+   - `npm run lint -w apps/web`
+2. If the build fails on missing Next server manifests, clean the cache once with `npm run build:clean -w apps/web` before retrying the full build.
+3. Inspect `apps/web/scripts/ensure-deterministic-routes-manifest.mjs` only for the post-build copy step.
+4. Treat `403` on `npm run backend:supabase:advisors -w apps/web` as a permissions issue on the Supabase project, not as a local build regression.

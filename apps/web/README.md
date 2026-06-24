@@ -133,7 +133,7 @@ If the local site looks older than the repository or Turbopack cache errors appe
 
 0. If the machine is unstable in the browser, do not force a Codex localhost session; use the terminal output and the local browser outside Codex for the visual check.
 1. `npm run dev` now starts with Turbopack by default.
-2. Webpack is disabled in this repository.
+2. Webpack remains the stable build path for `npm run build`; use `npm run build:clean` when the cache or manifests look stale.
 3. Run `npm run dev:clean` from the repo root to clear `apps/web/.next`.
 4. If you need an exact port and want to fail when `3000` is already used, run `npm run dev:strict`.
 5. Check the terminal banner before opening the browser. `npm run dev` can fall back to `3001+` when another dev server is still running.
