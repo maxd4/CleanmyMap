@@ -44,6 +44,12 @@ Depuis la racine:
 npm run build
 ```
 
+Si le cache ou les manifests semblent incohérents:
+
+```bash
+npm run build:clean -w apps/web
+```
+
 Option verification locale:
 ```bash
 npm run dev
@@ -51,6 +57,12 @@ npm run dev
 
 Critere de succes:
 - build termine sans erreur.
+
+Retours de terrain utiles:
+- si `npm run build` cote `apps/web` bloque sur des manifests Next/Turbopack manquants, nettoyer d'abord le cache avec `npm run build:clean -w apps/web` avant de relancer un build complet;
+- ne jamais creer a la main `apps/web/.next/server/pages-manifest.json`, `apps/web/.next/server/proxy.js.nft.json` ou tout autre fichier interne Next;
+- `npm run backend:doctor -w apps/web` depend d'un `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` present dans `apps/web/.env.local`;
+- `npm run backend:supabase:advisors -w apps/web` peut echouer avec `403` si le compte Supabase n'a pas les droits requis, meme quand le reste du backend est configure.
 
 ## Partie 4 - Cloture session
 Mettre a jour la memoire session:
@@ -60,7 +72,7 @@ npm run session:close -- --done "<resume>" --next "<prochaine etape>" --risk "<r
 ```
 
 Critere de succes:
-- `documentation/du/session/latest-session.md` mis a jour proprement.
+- `documentation/sessions/history/latest-session.md` mis a jour proprement.
 
 ## Regles de validation de lot
 

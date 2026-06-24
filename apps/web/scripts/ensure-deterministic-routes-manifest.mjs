@@ -1,15 +1,15 @@
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 const candidateNextDirs = [resolve(process.cwd(), ".next")];
 
 const mode = process.argv.includes("--prepare") ? "prepare" : "finalize";
 
-function ensurePlaceholderManifest(pathname) {
-  if (existsSync(pathname)) {
+function removeStaleDeterministicManifest(pathname) {
+  if (!existsSync(pathname)) {
     return false;
   }
-  writeFileSync(pathname, "{\n  \"version\": 1,\n  \"basePath\": \"\",\n  \"routes\": []\n}\n", "utf8");
+  rmSync(pathname, { force: true });
   return true;
 }
 
@@ -19,14 +19,14 @@ if (mode === "prepare") {
     try {
       mkdirSync(nextDir, { recursive: true });
       const targetPath = resolve(nextDir, "routes-manifest-deterministic.json");
-      if (ensurePlaceholderManifest(targetPath)) {
+      if (removeStaleDeterministicManifest(targetPath)) {
         preparedCount += 1;
       }
     } catch {
       // Ignore unavailable target directories.
     }
   }
-  console.log(`[build] preparation deterministic manifest: ${preparedCount} fichier(s) initialises.`);
+  console.log(`[build] preparation deterministic manifest: ${preparedCount} fichier(s) nettoyes.`);
   process.exit(0);
 }
 
