@@ -8,11 +8,11 @@ Les règles ci-dessous s’appliquent à l’ensemble du dépôt, sauf instructi
 
 ## Canari de session
 
-Commencer chaque réponse par :
+Commencer uniquement la réponse finale par :
 
 `Maxence —`
 
-Cette règle doit être respectée pour toutes les réponses. Elle sert de canari de session : si cette mention manque, la conversation doit être considérée comme dérivant et un nouveau flux peut être ouvert.
+Cette règle s'applique seulement au message de clôture. Les mises à jour intermédiaires et les messages de travail ne doivent pas commencer par ce canari.
 
 ## Priorités de travail
 
@@ -117,6 +117,42 @@ Quand un nouveau module est ajouté dans `apps/web/src/components/sections/rubri
 * Ne jamais désactiver une protection de sécurité pour faire passer une fonctionnalité.
 * Ne jamais exposer de secret côté client.
 * Vérifier les règles d’accès, les validations et les erreurs pour tout flux manipulant des données utilisateur.
+
+### Règle de travail Supabase
+
+Toute modification Supabase doit être traitée comme une modification de base de données, pas comme une simple correction de code.
+
+Ne pas modifier la base de production au hasard depuis le dashboard Supabase sans migration associée.
+
+Méthode obligatoire :
+
+1. Identifier si le changement concerne le schéma SQL, les policies RLS, les RPC, les triggers, les fonctions, les buckets Storage, les Edge Functions, les seeds ou les types TypeScript générés.
+2. Regrouper les corrections Supabase par catégorie avant de tester.
+3. Créer ou modifier une migration SQL versionnée dans `supabase/migrations`.
+4. Tester localement avec Supabase CLI quand c’est possible.
+5. Vérifier que la base peut être reconstruite proprement depuis les migrations.
+6. Régénérer les types Supabase si le schéma change.
+7. Vérifier les usages côté Next.js : imports, clients browser/server, variables d’environnement et appels RPC.
+8. Vérifier les règles RLS : un utilisateur non autorisé ne doit pas pouvoir lire, écrire, modifier ou supprimer des données protégées.
+9. Ne jamais exposer `service_role` côté client.
+10. Appliquer les changements à distance seulement après validation locale ou environnement de preview/staging.
+
+À éviter :
+
+* corriger directement la base de production sans migration ;
+* créer des migrations partielles non testées ;
+* mélanger refonte UI, migration SQL et correction Vercel dans le même commit ;
+* désactiver RLS pour débloquer rapidement une erreur ;
+* utiliser `service_role` pour contourner un problème de permission côté frontend ;
+* corriger une policy sans tester les cas utilisateur connecté, anonyme et propriétaire/non-propriétaire.
+
+Résultat attendu à la fin :
+
+* migrations propres ;
+* types Supabase à jour ;
+* RLS vérifiée ;
+* build Next.js encore valide ;
+* résumé des tables, policies, RPC et fichiers modifiés.
 
 ### Authentification et profils
 
@@ -355,6 +391,22 @@ Si une commande échoue :
 4. relancer la commande pertinente.
 
 Si les tests ne peuvent pas être lancés, expliquer précisément pourquoi dans la réponse finale.
+
+### Règle de debug build Vercel/Next.js
+
+Lorsqu’un build Vercel ou Next.js échoue, ne pas lancer une boucle de micro-corrections suivies d’un build complet à chaque fois.
+
+Priorité :
+
+* diagnostiquer la cause racine à partir des logs ;
+* corriger les erreurs TypeScript avant le build complet ;
+* ne jamais créer manuellement de fichiers internes `.next` ;
+* nettoyer le cache seulement si nécessaire ;
+* regrouper les corrections ;
+* utiliser les commandes rapides avant `next build` ;
+* lancer le build complet seulement après un groupe cohérent de corrections.
+
+Les problèmes Turbopack/Webpack doivent être isolés. En cas de doute, stabiliser d’abord le build de production avec le chemin le plus fiable, puis traiter l’optimisation de bundler dans une tâche séparée.
 
 ---
 
