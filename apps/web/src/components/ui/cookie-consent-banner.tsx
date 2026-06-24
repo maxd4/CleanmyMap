@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Cookie, X } from "lucide-react";
 import {
   getAnalyticsConsentCookieDecision,
@@ -13,12 +13,8 @@ import {
 } from "@/lib/storage/ui-state-storage";
 
 export function CookieConsentBanner() {
-  const [isClient, setIsClient] = useState(false);
+  const [isClient] = useState(() => typeof window !== "undefined");
   const [, forceRender] = useState(0);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const consent: CookieConsentState = isClient
     ? cookieConsentStorage.read() ?? { choice: null, timestamp: null, analytics: false }

@@ -64,8 +64,7 @@ export async function GET(request: Request) {
         : null,
       triggeredBy: "vercel-cron",
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "error",

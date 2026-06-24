@@ -1,4 +1,4 @@
-import type { ActionEntityType } from "../actions/data-contract";
+import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority, ZoneComparisonRow } from "./prioritization";
 
@@ -44,7 +44,7 @@ export type PilotageOverview = {
   methods: MethodDefinition[];
   zones: ZoneComparisonRow[];
   summary: DecisionSummary;
-  contracts: any[]; // Raw contracts for exports
+  contracts: ActionDataContract[]; // Raw contracts for exports
 };
 
 export type LoadPilotageOverviewParams = {

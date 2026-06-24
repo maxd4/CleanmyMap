@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
-import { resolveProfile } from "@/lib/profiles";
+import { resolveProfile, type AppProfile } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
 export type ClerkUserIdentity = {
@@ -37,10 +37,52 @@ function parseMaxUserIds(
   return parseAdminUserIds(fallbackRaw);
 }
 
-function extractRole(metadata: Record<string, unknown> | null | undefined): string | null {
+type ClerkMetadata = Record<string, unknown> | null | undefined;
+
+function extractRole(metadata: ClerkMetadata): string | null {
   if (!metadata) return null;
   const role = metadata["role"];
   return typeof role === "string" ? role.trim().toLowerCase() : null;
+}
+
+function resolveClerkRole(params: {
+  id: string;
+  user: {
+    publicMetadata: ClerkMetadata;
+    privateMetadata: ClerkMetadata;
+    primaryEmailAddress?: { emailAddress?: string | null } | null;
+  };
+  adminUserIds: Set<string>;
+  maxUserIds: Set<string>;
+}): AppProfile {
+  const isAdmin =
+    params.adminUserIds.has(params.id) ||
+    isAdminRole({
+      publicMetadata: params.user.publicMetadata,
+      privateMetadata: params.user.privateMetadata,
+    });
+  const isMax =
+    params.maxUserIds.has(params.id) ||
+    isCreatorInboxEmail(params.user.primaryEmailAddress?.emailAddress) ||
+    isMaxRole({
+      publicMetadata: params.user.publicMetadata,
+      privateMetadata: params.user.privateMetadata,
+    });
+  const metadataRole =
+    extractRole(params.user.publicMetadata as ClerkMetadata) ??
+    extractRole(params.user.privateMetadata as ClerkMetadata);
+
+  return resolveProfile({ metadataRole, isAdmin, isMax });
+}
+
+function buildClerkDisplayName(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+}): string {
+  const firstName = user.firstName?.trim() ?? "";
+  const lastName = user.lastName?.trim() ?? "";
+  return `${firstName} ${lastName}`.trim() || user.username?.trim() || "Membre";
 }
 
 /**
@@ -66,25 +108,13 @@ export async function getClerkService() {
         userIds.map(async (id) => {
           try {
             const user = await client.users.getUser(id);
-            const isAdmin = adminUserIds.has(id) || isAdminRole({
-              publicMetadata: user.publicMetadata,
-              privateMetadata: user.privateMetadata,
+            const profile = resolveClerkRole({
+              id,
+              user,
+              adminUserIds,
+              maxUserIds,
             });
-            const isMax =
-              maxUserIds.has(id) ||
-              isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
-              isMaxRole({
-                publicMetadata: user.publicMetadata,
-                privateMetadata: user.privateMetadata,
-              });
-            const metadataRole = 
-              extractRole(user.publicMetadata as any) ?? 
-              extractRole(user.privateMetadata as any);
-            
-            const profile = resolveProfile({ metadataRole, isAdmin, isMax });
-            const firstName = user.firstName?.trim() ?? "";
-            const lastName = user.lastName?.trim() ?? "";
-            const displayName = `${firstName} ${lastName}`.trim() || user.username?.trim() || "Membre";
+            const displayName = buildClerkDisplayName(user);
 
             output.set(id, {
               userId: id,

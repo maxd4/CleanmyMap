@@ -2,7 +2,7 @@
 
 import { computeEventStaffingPlan } from "@/lib/community/engagement";
 import { formatFrDate } from "@/components/sections/rubriques/community/helpers";
-import { Users, AlertTriangle, ShieldCheck, Zap } from "lucide-react";
+import { Users, AlertTriangle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type CommunityStaffingCardProps = {

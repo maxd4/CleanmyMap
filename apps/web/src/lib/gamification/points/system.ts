@@ -195,7 +195,14 @@ export async function getPointsHistory(
     return [];
   }
 
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row: {
+    id: string;
+    transaction_type: string;
+    amount: number;
+    reason: string | null;
+    source_event: string | null;
+    created_at: string;
+  }) => ({
     id: row.id,
     transactionType: row.transaction_type,
     amount: row.amount,

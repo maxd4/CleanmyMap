@@ -1,4 +1,5 @@
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { PersonalImpactMethodology } from "@/lib/gamification/progression-types";
 
@@ -104,7 +105,17 @@ export type ReportModel = {
   calendar: Array<[string, string, string, string]>;
   highlightPhotos: Array<{ url: string; label: string; date: string }>;
   highlightActions: Array<{ id: string; label: string; kg: number; butts: number; photos: string[] }>;
-  executive: any;
+  executive: ReportExecutiveNarrative;
+};
+
+export type ReportExecutiveNarrative = {
+  readinessScore: number;
+  readinessLabel: string;
+  headline: string;
+  summary: string;
+  evidence: string[];
+  budgetUseCases: string[];
+  watchouts: string[];
 };
 
 export type ReportModelInput = {
@@ -113,4 +124,5 @@ export type ReportModelInput = {
   mapItems: ActionMapItem[];
   events: CommunityEventItem[];
   now?: Date;
+  contracts?: ActionDataContract[];
 };

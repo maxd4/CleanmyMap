@@ -182,6 +182,6 @@ export function PlanetaryRadarChart({ boundaries, selectedId, onSelect }: Planet
   );
 }
 
-function cn(...classes: any[]) {
+function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }

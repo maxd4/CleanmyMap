@@ -336,6 +336,45 @@ Métadonnées recommandées:
 - `lastCheckedAt`: date ISO de dernière vérification;
 - `needsReview`: vrai quand la question reste à relire ou dépend d'un contexte terrain général.
 
+## Comment sourcer une question
+
+Une question bien sourcée doit pouvoir être expliquée, vérifiée et réutilisée sans flou éditorial.
+
+Méthode recommandée:
+1. identifier exactement ce que la question affirme;
+2. décider si l'affirmation est factuelle, locale, chiffrée, méthodologique ou purement pédagogique;
+3. choisir une source publique quand elle existe déjà;
+4. n'utiliser une source interne que pour cadrer l'authoring, pas pour masquer une affirmation non vérifiée;
+5. remplir les métadonnées de traçabilité avant de publier la question;
+6. relire toute question chiffrée, locale ou sensible avant validation finale.
+
+Hiérarchie de sources à privilégier:
+- ADEME, Citeo, collectivités, ministère, ARS, INRS, CNRS, OFB, ONU et agences publiques;
+- études scientifiques ou rapports méthodologiques quand la question porte sur un mécanisme ou un ordre de grandeur;
+- associations de référence quand elles documentent clairement un sujet de terrain;
+- presse seulement si elle relaie une donnée déjà attribuable à une source première;
+- source interne uniquement pour des arbitrages d'authoring, de pédagogie ou de relecture.
+
+Règles de remplissage:
+- `sourceUrl` doit pointer vers une référence consultable;
+- `sourceLabel` doit décrire la source en français de manière lisible;
+- `sourceType` doit refléter la nature réelle de la référence;
+- `confidenceLevel` doit traduire le degré de solidité de la preuve;
+- `isLocalRule` doit être `true` dès qu'une consigne varie selon le territoire;
+- `localScope` doit devenir `variable` si la réponse dépend d'une commune, d'un département ou d'une filière locale;
+- `lastCheckedAt` doit être renseigné au format ISO `YYYY-MM-DD`;
+- `needsReview` doit rester `true` tant que la question n'a pas été relue sur le fond ou qu'elle repose surtout sur un raisonnement terrain général.
+
+Cas particuliers:
+- les questions de sécurité, de tri, de pollution, de biodiversité et toutes les questions chiffrées doivent avoir une source;
+- les questions fondées sur des ordres de grandeur doivent être explicitement marquées `sourceType: estimation`;
+- une consigne locale ne doit jamais être présentée comme universelle;
+- une question sans source n'est acceptable que si elle reste un raisonnement terrain général et qu'elle est marquée `needsReview: true`.
+
+Vérification utile:
+- `npm run audit:quiz-sources`
+- `npm run audit:quiz-quality`
+
 ## Banque cible
 
 Pour le quiz environnemental, la banque doit tendre vers:

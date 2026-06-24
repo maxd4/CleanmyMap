@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Megaphone, Sparkles, Leaf, Copy, Check,
-  Cigarette, Trash2, Droplets, Eye, Info, Share2
+  Cigarette, Trash2, Droplets, Eye, Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";

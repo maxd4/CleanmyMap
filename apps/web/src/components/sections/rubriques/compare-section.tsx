@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { computeZoneCompare } from "@/lib/analytics/compare-zones";
@@ -14,7 +14,6 @@ import {
   BarChart3, 
   ArrowUpRight, 
   ArrowDownRight, 
-  Minus, 
   AlertTriangle, 
   TrendingUp, 
   Trophy, 
@@ -42,7 +41,7 @@ const itemVariants = {
 
 export function CompareSection() {
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(() => {
-    return (dashboardPeriodStorage.read() as any) ?? 90;
+    return dashboardPeriodStorage.read() ?? 90;
   });
 
   useEffect(() => {
@@ -86,7 +85,7 @@ export function CompareSection() {
               <Calendar size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Période d'analyse</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">Période d&apos;analyse</p>
               <h3 className="text-xl font-black text-white tracking-tight">
                 {periodDays === 365 ? "12 mois glissants" : `${periodDays} jours`}
               </h3>
@@ -213,7 +212,7 @@ export function CompareSection() {
                 <div className="space-y-3 relative z-10">
                   <h4 className="text-sm font-black text-white uppercase tracking-[0.2em]">Protocole de Benchmark</h4>
                   <p className="text-sm text-slate-400 leading-relaxed font-medium">
-                    Les indicateurs sont normalisés par densité d'activité territoriale. L'indice <span className="text-indigo-400 font-black">« Priorité »</span> identifie les secteurs où l'écart à la médiane suggère un besoin de renforcement logistique ou une pression de déchets atypique.
+                    Les indicateurs sont normalisés par densité d&apos;activité territoriale. L&apos;indice <span className="text-indigo-400 font-black">« Priorité »</span> identifie les secteurs où l&apos;écart à la médiane suggère un besoin de renforcement logistique ou une pression de déchets atypique.
                   </p>
                 </div>
               </div>

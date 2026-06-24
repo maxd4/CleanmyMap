@@ -373,8 +373,8 @@ export default function YourBadgeWrapper() {
           return;
         }
 
-        const data = await res.json();
-        const badges = data.badges?.filter((b: any) => b.id?.startsWith("badge-name-")) || [];
+        const data: { badges?: Array<{ id?: string; progress?: { current?: number; target?: number }; name?: string; tooltip?: string }> } = await res.json();
+        const badges = data.badges?.filter((b) => b.id?.startsWith("badge-name-")) || [];
 
         if (badges.length === 0) {
           setBadgeData(null);
@@ -382,7 +382,7 @@ export default function YourBadgeWrapper() {
         }
 
         const current = badges[0]?.progress?.current ?? 0;
-        const grades: GemGrade[] = badges.map((badge: any) => ({
+        const grades: GemGrade[] = badges.map((badge) => ({
           id: badge.id,
           label: badge.name,
           threshold: badge.progress?.target ?? 1,

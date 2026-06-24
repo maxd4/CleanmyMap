@@ -253,7 +253,7 @@ export function FAQSection() {
              </div>
              <div className="space-y-2">
                 <h3 className="text-xl font-black text-white">Aucun résultat trouvé</h3>
-                <p className="text-slate-500 font-bold">Essayez d'autres mots-clés ou changez de catégorie.</p>
+                <p className="text-slate-500 font-bold">Essayez d&apos;autres mots-clés ou changez de catégorie.</p>
              </div>
              <CmmButton
                onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}

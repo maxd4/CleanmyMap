@@ -62,26 +62,32 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  function buildAnnouncementTemplate(
-    template: CommunityAnnouncementTemplateKey | null,
-  ): string {
-    if (!template) {
-      return "";
-    }
-    const eventSuffix = requestedEventId?.trim().length
-      ? `\nCleanup associé: ${requestedEventId.trim()}`
-      : "";
-    if (template === "relais_associatif") {
-      return `Besoin de relais associatif\nContexte: je cherche une association pour relayer un cleanup.${eventSuffix}\nAction attendue: diffusion et prise de contact.`;
-    }
-    if (template === "benevoles") {
-      return `Besoin de bénévoles\nContexte: je coordonne un cleanup et j'ai besoin de renfort sur le terrain.${eventSuffix}\nAction attendue: mobilisation de volontaires.`;
-    }
-    return `Besoin de diffusion\nContexte: je veux relayer un cleanup auprès d'un réseau plus large.${eventSuffix}\nAction attendue: partage du message et relais local.`;
-  }
-
   const communityInitialMessage = useMemo(() => 
-    buildAnnouncementTemplate(announcementTemplate), 
+    {
+      const buildAnnouncementTemplate = (
+        template: CommunityAnnouncementTemplateKey | null,
+      ): string => {
+        if (!template) {
+          return "";
+        }
+
+        const eventSuffix = requestedEventId?.trim().length
+          ? `\nCleanup associé: ${requestedEventId.trim()}`
+          : "";
+
+        if (template === "relais_associatif") {
+          return `Besoin de relais associatif\nContexte: je cherche une association pour relayer un cleanup.${eventSuffix}\nAction attendue: diffusion et prise de contact.`;
+        }
+
+        if (template === "benevoles") {
+          return `Besoin de bénévoles\nContexte: je coordonne un cleanup et j'ai besoin de renfort sur le terrain.${eventSuffix}\nAction attendue: mobilisation de volontaires.`;
+        }
+
+        return `Besoin de diffusion\nContexte: je veux relayer un cleanup auprès d'un réseau plus large.${eventSuffix}\nAction attendue: partage du message et relais local.`;
+      };
+
+      return buildAnnouncementTemplate(announcementTemplate);
+    }, 
     [announcementTemplate, requestedEventId]
   );
 

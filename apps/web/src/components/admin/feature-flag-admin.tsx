@@ -1,25 +1,39 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { CmmCard } from '@/components/ui/cmm-card'
 import { CmmButton } from '@/components/ui/cmm-button'
 import { featureFlags } from '@/lib/feature-flags'
 
+type FormAnalyticsEvent = {
+ event: string
+ version?: string
+ fieldName?: string
+ timeSpent?: number
+}
+
+function readStoredAnalytics(): FormAnalyticsEvent[] {
+ if (typeof window === 'undefined') {
+ return []
+ }
+
+ const stored = localStorage.getItem('formAnalytics')
+ if (!stored) {
+ return []
+ }
+
+ try {
+ const parsed: unknown = JSON.parse(stored)
+ return Array.isArray(parsed) ? (parsed as FormAnalyticsEvent[]) : []
+ } catch {
+ console.warn('Failed to parse analytics data')
+ return []
+ }
+}
+
 export function FeatureFlagAdmin() {
  const [flags, setFlags] = useState(featureFlags.getAllFlags())
- const [analytics, setAnalytics] = useState<any[]>([])
-
- useEffect(() => {
- // Load analytics data from localStorage for demo
- const stored = localStorage.getItem('formAnalytics')
- if (stored) {
- try {
- setAnalytics(JSON.parse(stored))
- } catch (e) {
- console.warn('Failed to parse analytics data')
- }
- }
- }, [])
+ const [analytics, setAnalytics] = useState<FormAnalyticsEvent[]>(readStoredAnalytics)
 
  const toggleFlag = (flag: keyof typeof flags) => {
  featureFlags.toggle(flag)

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type KpiComparisonCardProps = {
@@ -13,7 +14,7 @@ type KpiComparisonCardProps = {
   deltaPercent?: string;
   interpretation?: "positive" | "negative" | "neutral";
   hint?: string;
-  icon?: any;
+  icon?: LucideIcon;
 };
 
 function toneClass(interpretation: KpiComparisonCardProps["interpretation"]): string {

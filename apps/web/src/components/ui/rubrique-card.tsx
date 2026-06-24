@@ -67,19 +67,6 @@ const watermarkClasses: Record<RubriqueTheme, string> = {
   slate: "text-slate-400",
 };
 
-const topBarClasses: Record<RubriqueTheme, string> = {
-  fuchsia: "bg-fuchsia-500",
-  amber: "bg-amber-500",
-  emerald: "bg-emerald-500",
-  sky: "bg-sky-500",
-  rose: "bg-rose-500",
-  indigo: "bg-indigo-500",
-  violet: "bg-violet-500",
-  purple: "bg-purple-500",
-  blue: "bg-blue-500",
-  slate: "bg-slate-500",
-};
-
 /**
  * Composant standard pour les grands blocs thématiques (Dashboard, Connect, etc.)
  * Assure une cohérence visuelle sur toute l'application.

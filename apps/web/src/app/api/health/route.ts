@@ -44,7 +44,7 @@ export async function GET() {
    } else {
     supabaseConnectivity = true;
    }
-  } catch (error) {
+  } catch {
    supabaseError = "Unavailable";
   }
  }

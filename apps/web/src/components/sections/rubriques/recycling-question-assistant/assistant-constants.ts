@@ -13,6 +13,22 @@ export type Answer = {
   note?: string;
 };
 
+export type AssistantCopy = {
+  title: string;
+  subtitle: string;
+  placeholder: string;
+  helper: string;
+  examples: string;
+  clear: string;
+  answerTitle: string;
+  answerNext: string;
+  noteTitle: string;
+  cta: string;
+  yourQuestion: string;
+  hint: string;
+  footerNote: string;
+};
+
 export const QUICK_PROMPTS: Record<Locale, string[]> = {
   fr: [
     "ampoule usagée",

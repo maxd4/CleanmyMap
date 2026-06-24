@@ -161,7 +161,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
               Cookies
             </Link>
                           <div className="mt-2 text-center text-xs text-white">
-                  <p className="font-bold">Cultivons l'entraide</p>
+                  <p className="font-bold">Cultivons l&apos;entraide</p>
                   <p>© 2026 CleanMyMap</p>
                 </div>
                 </nav>

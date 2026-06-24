@@ -68,7 +68,7 @@ export async function refreshProgressionProfile(
       .eq("user_id", userId)
       .maybeSingle();
 
-    previousLevel = (existingProfile as any)?.current_level ?? 1;
+    previousLevel = (existingProfile as { current_level?: number | null } | null)?.current_level ?? 1;
 
     const didLevelUp = currentLevel > previousLevel;
 

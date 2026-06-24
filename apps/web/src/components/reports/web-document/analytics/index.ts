@@ -129,7 +129,16 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
   return { completenessScore, coherenceScore, freshnessDays, pollutionScoreAverage };
 }
 
-function computeCommunityStats(allItems: ActionListItem[], approvedActions: ActionListItem[], events: any[], now: Date) {
+type CommunityEvent = {
+  eventDate: string;
+  rsvpCounts: {
+    yes: number;
+    maybe: number;
+    no: number;
+  };
+};
+
+function computeCommunityStats(allItems: ActionListItem[], approvedActions: ActionListItem[], events: CommunityEvent[], now: Date) {
   const eventUpcoming = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
   const eventPast = events.filter((event) => event.eventDate < now.toISOString().slice(0, 10));
   const rsvp = events.reduce(
@@ -382,6 +391,6 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
 
   return {
     ...report,
-    executive: buildExecutiveNarrative(report as any),
+    executive: buildExecutiveNarrative(report as Parameters<typeof buildExecutiveNarrative>[0]),
   };
 }

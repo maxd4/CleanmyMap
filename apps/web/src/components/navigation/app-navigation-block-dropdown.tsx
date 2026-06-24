@@ -10,7 +10,7 @@ import {
   MapPinned,
   Medal,
 } from "lucide-react";
-import type { NavigationItem, NavigationSpace } from "@/lib/navigation";
+import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";

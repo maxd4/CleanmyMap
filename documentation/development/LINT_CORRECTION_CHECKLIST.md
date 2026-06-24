@@ -80,7 +80,7 @@ const filteredItems = useMemo(
 
 ```typescript
 // Avant
-function handleData(data: any) {
+function handleData(data: unknown) {
   return data.value;
 }
 

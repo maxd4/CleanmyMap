@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Bell, Check, MessageSquare, ShieldCheck, UserCheck, AlertTriangle } from "lucide-react";
@@ -47,7 +47,7 @@ export function NotificationBell() {
   );
   const pollIntervalMs = isOpen ? 60_000 : 300_000;
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {
       setNotifications([]);
       return;
@@ -68,7 +68,7 @@ export function NotificationBell() {
       setLoading(false);
       fetchInFlightRef.current = false;
     }
-  };
+  }, [getToken, isLoaded, isSignedIn, userId]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
@@ -121,7 +121,7 @@ export function NotificationBell() {
       clearPolling();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isLoaded, isSignedIn, isOpen, pollIntervalMs]);
+  }, [fetchNotifications, isLoaded, isSignedIn, isOpen, pollIntervalMs]);
 
   useEffect(() => {
     if (

@@ -95,6 +95,26 @@ describe("EnvironmentalQuiz", () => {
     expect(accessTypeCounts["tri-securite"]).toBeGreaterThan(0);
   });
 
+  it("keeps every non-mixed mode stocked with enough variety", () => {
+    const questionType = (question: (typeof QUIZ_QUESTIONS)[number]) =>
+      question.format ?? question.pedagogicalType ?? question.type;
+
+    const modeCounts = QUIZ_ACCESS_TYPES.filter((accessType) => accessType.id !== "mixte").map((accessType) => {
+      const questions = QUIZ_QUESTIONS.filter((question) => matchesQuizAccessType(accessType.id, question));
+      const questionTypes = new Set(questions.map(questionType));
+
+      return {
+        id: accessType.id,
+        count: questions.length,
+        typeCount: questionTypes.size,
+      };
+    });
+
+    expect(modeCounts.every((mode) => mode.count >= 18)).toBe(true);
+    expect(modeCounts.every((mode) => mode.typeCount >= 2)).toBe(true);
+    expect(QUIZ_QUESTIONS.filter((question) => matchesQuizAccessType("mixte", question))).toHaveLength(QUIZ_QUESTIONS.length);
+  });
+
   it("classifies questions by trap level", () => {
     expect(QUIZ_QUESTIONS.some((question) => matchesQuizTrapLevel("high", question))).toBe(true);
     expect(QUIZ_QUESTIONS.some((question) => matchesQuizTrapLevel("medium", question))).toBe(true);

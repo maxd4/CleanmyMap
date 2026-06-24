@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from"react";
+import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
 import type { ActionQualityResult } from"@/lib/actions/quality";
 import type {
  ActionListItem,
@@ -46,16 +47,7 @@ export type ImportDryRunSummary = {
  };
 };
 
-export type AdminOperationAuditItem = {
- operationId: string;
- at: string;
- actorUserId: string;
- actorLabel?: string;
- operationType:"moderation" |"import_dry_run" |"import_confirm";
- outcome:"success" |"error";
- targetId?: string;
- details: Record<string, unknown>;
-};
+export type AdminOperationAuditItem = AdminOperationAuditEntry;
 
 export type PreviewRow = {
  item: ActionListItem;

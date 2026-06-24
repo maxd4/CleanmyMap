@@ -37,7 +37,29 @@ function createActionsChain(action: {
     notes: action.notes,
   };
 
-  const chain: any = {
+  type ActionChain = {
+    select: (columns: string) => ActionChain;
+    eq: (field: string, value: string) => ActionChain;
+    maybeSingle: () => Promise<{
+      data: {
+        id: string;
+        created_by_clerk_id: string | null;
+        status: "pending" | "approved" | "rejected";
+        notes: string | null;
+      };
+      error: null;
+    }>;
+    update: (payload: { notes: string | null }) => ActionChain;
+    single: () => Promise<{
+      data: {
+        id: string;
+        notes: string | null;
+      };
+      error: null;
+    }>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     maybeSingle: vi.fn(async () => ({
@@ -60,7 +82,7 @@ function createActionsChain(action: {
       },
       error: null,
     })),
-  };
+  } as ActionChain;
 
   return chain;
 }
@@ -119,7 +141,44 @@ function createParticipantsChain(participants: {
       return true;
     });
 
-  const chain: any = {
+  type ParticipantRow = {
+    id: string;
+    created_at: string;
+    updated_at?: string;
+    action_id: string;
+    user_id: string;
+    joined_at?: string;
+    participation_status?: "pending" | "confirmed" | "cancelled";
+    participation_source?: "group_form" | "admin" | "import";
+  };
+
+  type ParticipantChain = {
+    select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantChain;
+    eq: (field: string, value: string) => ParticipantChain;
+    in: (field: string, values: string[]) => ParticipantChain;
+    order: (field: string, options?: { ascending?: boolean }) => ParticipantChain;
+    limit: (limit: number) => Promise<{ data: ParticipantRow[]; error: null }>;
+    maybeSingle: () => Promise<{ data: ParticipantRow | null; error: null }>;
+    update: (values: Record<string, unknown>) => ParticipantChain;
+    single: () => Promise<{ data: ParticipantRow | null; error: null }>;
+    insert: (values: {
+      action_id: string;
+      user_id: string;
+      joined_at?: string;
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "import";
+    }) => ParticipantChain;
+    then: (
+      resolve: (value: {
+        data: ParticipantRow[] | null;
+        count?: number;
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) => Promise<void>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
@@ -183,14 +242,30 @@ function createParticipantsChain(participants: {
         error: null,
       };
     }),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
+    then: (
+      resolve: (value: {
+        data: Array<{
+          id: string;
+          created_at: string;
+          updated_at?: string;
+          action_id: string;
+          user_id: string;
+          joined_at?: string;
+          participation_status?: "pending" | "confirmed" | "cancelled";
+          participation_source?: "group_form" | "admin" | "import";
+        }> | null;
+        count?: number;
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) =>
       Promise.resolve({
         data: buildFiltered()
           .slice(0, state.limitValue ?? undefined)
           .map((row) => normalizeRow(row)),
         error: null,
       }).then(resolve, reject),
-  };
+  } as ParticipantChain;
 
   return chain;
 }
@@ -202,13 +277,31 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
     inFilters: {},
   };
 
-  const chain: any = {
+  type ProfilesChain = {
+    select: (columns: string) => ProfilesChain;
+    in: (field: string, values: string[]) => ProfilesChain;
+    then: (
+      resolve: (value: {
+        data: { id: string; display_name: string | null; handle: string | null }[];
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) => Promise<void>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     in: vi.fn((field: string, values: string[]) => {
       state.inFilters[field] = values;
       return chain;
     }),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
+    then: (
+      resolve: (value: {
+        data: { id: string; display_name: string | null; handle: string | null }[];
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) =>
       Promise.resolve({
         data: profiles.filter((profile) => {
           const allowedIds = state.inFilters.id;
@@ -219,7 +312,7 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
         }),
         error: null,
       }).then(resolve, reject),
-  };
+  } as ProfilesChain;
 
   return chain;
 }

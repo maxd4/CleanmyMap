@@ -26,6 +26,7 @@ Guides de développement pour agents IA.
 - **vercel-anti-regression-playbook.md** - Retour d'expérience et erreurs à ne pas reproduire sur les surfaces Vercel
 - **vercel-supabase-browser-strategy.md** - Règle de répartition entre Vercel, Supabase et le navigateur
 - **codex-vercel-development-guide.md** - Guide pratique Codex pour développer sans augmenter inutilement les quotas Vercel
+- **vercel-next-build-triage.md** - Méthode courte pour corriger un build Vercel/Next sans rebuilds successifs inutiles
 - **client-server-bundle-splitting.md** - Guide pour éviter de gonfler le bundle initial avec de mauvaises frontières serveur/client
 - **vercel-surface-report.md** - Rapport automatique des surfaces Vercel et du risque associé
 - **vercel-route-cost-audit.md** - Audit route par route des coûts Vercel
@@ -33,6 +34,7 @@ Guides de développement pour agents IA.
 - **typescript-precision-policy.md** - Politique de précision TypeScript
 - **typescript-anti-errors-checklist.md** - Checklist courte de correction TypeScript
 - **typescript-anti-errors-playbook.md** - Playbook de correction TypeScript pour agents IA
+- **LINT_WARNING_PRIORITY.md** - Priorité actuelle des warnings ESLint restants
 - **blocages-de-validation.md** - Etat des erreurs restantes et cas qui exigeraient un breaking change
 
 ### Contribution & Documentation
@@ -67,6 +69,7 @@ Guides de développement pour agents IA.
 7. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
 8. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
 9. Relire **vercel-quota-governance.md** avant d'ajouter une route API, une page dynamique, un cron ou un fetch `no-store`
+10. Relire **vercel-next-build-triage.md** avant de repartir sur un build complet quand le cache ou les manifests semblent suspects
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

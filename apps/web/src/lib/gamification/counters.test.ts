@@ -6,7 +6,7 @@ import {
 
 describe("gamification counters", () => {
   it("loads funnel counts from Supabase RPC", async () => {
-    const supabase: any = {
+    const supabase = {
       rpc: vi.fn(async (name: string) => {
         expect(name).toBe("load_gamification_funnel_counts");
         return {
@@ -32,7 +32,7 @@ describe("gamification counters", () => {
   });
 
   it("loads per-user gamification counters from Supabase RPC", async () => {
-    const supabase: any = {
+    const supabase = {
       rpc: vi.fn(async (name: string, params: Record<string, unknown>) => {
         expect(name).toBe("load_gamification_user_counters");
         expect(params).toEqual({ p_user_id: "user-1" });

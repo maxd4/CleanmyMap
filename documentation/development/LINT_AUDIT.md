@@ -182,7 +182,7 @@ useEffect(() => {
 ### 🟠 Types `any` (`@typescript-eslint/no-explicit-any`)
 ```typescript
 // ❌ Problématique
-const handleData = (data: any) => { ... }
+const handleData = (data: unknown) => { ... }
 
 // ✅ Solution
 interface DataType {
@@ -298,7 +298,7 @@ npx eslint . --format json | jq '.[] | .messages[] | .ruleId' | sort | uniq -c
 ### Ignorer temporairement (à éviter)
 ```typescript
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const data: any = response;
+const data: unknown = response;
 ```
 
 ---

@@ -42,11 +42,30 @@ function buildAction(status: "pending" | "approved" | "rejected"): ActionRow {
   };
 }
 
+const ORGANIZER_ROWS = [
+  {
+    action_id: "action-1",
+    organizer_clerk_id: "user-1",
+    organizer_label: "Alice",
+    organizer_handle: "alice",
+    is_primary: true,
+    created_at: "2026-01-01",
+  },
+  {
+    action_id: "action-1",
+    organizer_clerk_id: "user-2",
+    organizer_label: "Bob",
+    organizer_handle: "bob",
+    is_primary: false,
+    created_at: "2026-01-01",
+  },
+] as const;
+
 function createActionQuery(getRows: () => ActionRow[]) {
   const state = {
     eq: {} as Record<string, string>,
   };
-  const chain: any = {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.eq[field] = value;
@@ -69,8 +88,79 @@ function createActionQuery(getRows: () => ActionRow[]) {
   return chain;
 }
 
+function createOrganizerChain() {
+  type OrganizerChain = {
+    select: (columns: string) => OrganizerChain;
+    eq: (field: string, value: string) => OrganizerChain;
+    order: (field: string, options?: { ascending?: boolean }) => OrganizerChain;
+    limit: (value: number) => OrganizerChain;
+    then: (
+      resolve: (value: {
+        data: Array<{
+          action_id: string;
+          organizer_clerk_id: string;
+          organizer_label: string;
+          organizer_handle: string;
+          is_primary: boolean;
+          created_at: string;
+        }>;
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) => Promise<void>;
+  };
+
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
+    then: (
+      resolve: (value: {
+        data: Array<{
+          action_id: string;
+          organizer_clerk_id: string;
+          organizer_label: string;
+          organizer_handle: string;
+          is_primary: boolean;
+          created_at: string;
+        }>;
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) =>
+      Promise.resolve({
+        data: [...ORGANIZER_ROWS],
+        error: null,
+      }).then(resolve, reject),
+  } as OrganizerChain;
+
+  return chain;
+}
+
 function createFormsQuery() {
-  const chain: any = {
+  type FormsQueryChain = {
+    select: (columns: string) => FormsQueryChain;
+    in: (field: string, values: string[]) => FormsQueryChain;
+    neq: (field: string, value: string) => FormsQueryChain;
+    eq: (field: string, value: string) => FormsQueryChain;
+    is: (field: string, value: boolean | null) => FormsQueryChain;
+    order: (field: string, options?: { ascending?: boolean }) => Promise<{
+      data: Array<{
+        action_id: string;
+        group_id: string;
+        status: string;
+        created_at: string;
+        validated_by_admin: boolean;
+        is_duplicate: boolean;
+        is_deleted: boolean;
+        is_test: boolean;
+      }>;
+      error: null;
+    }>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     in: vi.fn(() => chain),
     neq: vi.fn(() => chain),
@@ -91,15 +181,22 @@ function createFormsQuery() {
       ],
       error: null,
     })),
-  };
+  } as FormsQueryChain;
   return chain;
 }
 
 function createDeleteChain() {
-  const chain: any = {
+  type DeleteChain = {
+    error: null;
+    eq: (field: string, value: string) => DeleteChain;
+    delete: () => DeleteChain;
+    select: (columns: string) => DeleteChain;
+  };
+
+  const chain = {
     error: null,
     eq: vi.fn(() => chain),
-  };
+  } as DeleteChain;
   chain.delete = vi.fn(() => chain);
   chain.select = vi.fn(() => chain);
   return chain;
@@ -116,35 +213,7 @@ describe("syncUserActionProgression action rejection", () => {
           return createActionQuery(() => actions);
         }
         if (table === "action_organizers") {
-          const chain: any = {
-            select: vi.fn(() => chain),
-            eq: vi.fn(() => chain),
-            order: vi.fn(() => chain),
-            limit: vi.fn(() => chain),
-            then: (resolve: (value: unknown) => void, reject: (reason: unknown) => void) =>
-              Promise.resolve({
-                data: [
-                  {
-                    action_id: "action-1",
-                    organizer_clerk_id: "user-1",
-                    organizer_label: "Alice",
-                    organizer_handle: "alice",
-                    is_primary: true,
-                    created_at: "2026-01-01",
-                  },
-                  {
-                    action_id: "action-1",
-                    organizer_clerk_id: "user-2",
-                    organizer_label: "Bob",
-                    organizer_handle: "bob",
-                    is_primary: false,
-                    created_at: "2026-01-01",
-                  },
-                ],
-                error: null,
-              }).then(resolve, reject),
-          };
-          return chain;
+          return createOrganizerChain();
         }
         if (table === "forms") {
           return createFormsQuery();
@@ -156,17 +225,17 @@ describe("syncUserActionProgression action rejection", () => {
               insertedEvents.push(row);
               return { error: null };
             }),
-          } as any;
+          };
         }
         if (table === "points_ledger" || table === "xp_audit") {
           return {
             insert: vi.fn(async () => ({ error: null })),
             select: vi.fn(() => createDeleteChain()),
-          } as any;
+          };
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as any;
+    };
 
     const firstPass = await syncUserActionProgression(supabase, "user-1");
     const firstValidationEvents = insertedEvents.filter(

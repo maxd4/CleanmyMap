@@ -27,6 +27,8 @@ Documentation des fonctionnalités pour agents IA.
   - Anti-questions faciles
   - Banque équilibrée sur 10 formats
 - **quiz-quality-control.md** - Grille de validation, contrôle qualité et traçabilité des sources du quiz
+- **quiz-pedagogical-metrics.md** - Suivi agrégé de l'efficacité pédagogique du quiz
+- **quiz-bank-admin.md** - Interface interne de revue et de correction de la banque de quiz
 - **quiz-srs.md** - Système de quiz avec répétition espacée (SRS)
   - Algorithme de répétition
   - Gestion des questions

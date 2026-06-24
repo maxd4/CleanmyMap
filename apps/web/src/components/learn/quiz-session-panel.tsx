@@ -23,6 +23,10 @@ import type { SRSQuality } from "@/lib/gamification/quiz-srs";
 import type { QuizQuestion, QuizSessionSummary } from "@/components/learn/environmental-quiz";
 import { getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import {
+  QuizPersonalProgressOverview,
+} from "@/components/learn/quiz-personal-progress-overview";
+import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 
 type QuizSessionPanelProps = {
   locale: SupportedLocale;
@@ -42,6 +46,7 @@ type QuizSessionPanelProps = {
   nextReasoningType: QuizReasoningType | null;
   hasReviewedToday: boolean;
   sessionSummary?: QuizSessionSummary | null;
+  personalProgress?: QuizPersonalProgressSnapshot | null;
   onSelectOption: (option: string) => void;
   onToggleOption: (option: string) => void;
   onCheckAnswer: () => void;
@@ -77,6 +82,7 @@ export function QuizSessionPanel({
   nextReasoningType,
   hasReviewedToday,
   sessionSummary,
+  personalProgress,
   onSelectOption,
   onToggleOption,
   onCheckAnswer,
@@ -109,6 +115,7 @@ export function QuizSessionPanel({
     }
     return Math.round((sessionSummary.score / sessionSummary.totalAnswered) * 100);
   }, [sessionSummary]);
+  const progressValue = questionIndex + 1;
 
   if (sessionSummary) {
     const nextReviewTarget = sessionSummary.recommendedLearningTarget ?? sessionSummary.nextReviewTarget;
@@ -169,6 +176,10 @@ export function QuizSessionPanel({
             )}
           </div>
         </div>
+
+        {personalProgress ? (
+          <QuizPersonalProgressOverview locale={locale} snapshot={personalProgress} />
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-[2rem] border border-violet-100 bg-violet-50 p-6 shadow-sm">
@@ -306,11 +317,24 @@ export function QuizSessionPanel({
         </div>
       </div>
 
-      <div className="w-full overflow-hidden rounded-full bg-slate-200/50 h-1.5">
+      <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+        <span>Progression de la session</span>
+        <span>
+          {progressValue} / {totalQuestions}
+        </span>
+      </div>
+      <div
+        className="w-full overflow-hidden rounded-full bg-slate-200/50 h-1.5"
+        role="progressbar"
+        aria-label="Progression de la session"
+        aria-valuemin={0}
+        aria-valuemax={totalQuestions}
+        aria-valuenow={progressValue}
+      >
         <motion.div
           className="h-full rounded-full bg-emerald-500"
           initial={{ width: 0 }}
-          animate={{ width: `${((questionIndex + 1) / totalQuestions) * 100}%` }}
+          animate={{ width: `${(progressValue / totalQuestions) * 100}%` }}
           transition={{ duration: 0.3 }}
         />
       </div>
@@ -544,7 +568,7 @@ export function QuizSessionPanel({
                 <div className="relative z-10 space-y-4">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">
-                      Pourquoi ?
+                      Explication pédagogique
                     </p>
                     <p className="mt-2">{question.explanation}</p>
                   </div>

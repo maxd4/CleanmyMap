@@ -18,6 +18,7 @@ export function PageHero({
   badgesClassName,
   ...props
 }: PageHeroProps) {
+  void _titleSize;
   return <PageHeader {...props} badgesClassName={badgesClassName} />;
 }
 

@@ -1,10 +1,9 @@
 import { HelpCircle, Sparkles } from "lucide-react";
-import { QUICK_PROMPTS, Locale } from "../assistant-constants";
-import { cn } from "@/lib/utils";
+import { QUICK_PROMPTS, type AssistantCopy, type Locale } from "../assistant-constants";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 interface AssistantHeaderProps {
-  copy: any;
+  copy: AssistantCopy;
   locale: Locale;
   setQuestion: (val: string) => void;
 }

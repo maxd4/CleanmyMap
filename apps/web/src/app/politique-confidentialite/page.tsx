@@ -204,7 +204,7 @@ export default function PolitiqueConfidentialitePage() {
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Parrainage, invitations et badge communautaire</td>
-                  <td className="px-4 py-3">Exécution du service et intérêt légitime d'animation de la communauté</td>
+                  <td className="px-4 py-3">Exécution du service et intérêt légitime d&apos;animation de la communauté</td>
                 </tr>
               </tbody>
             </table>

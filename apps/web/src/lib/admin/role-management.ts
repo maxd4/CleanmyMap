@@ -69,9 +69,23 @@ function escapeLikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
+type ProfileQuery = {
+  eq: (column: string, value: string) => any;
+  or: (expression: string) => any;
+  order: (column: string, options?: { ascending?: boolean }) => any;
+  limit: (count: number) => Promise<{
+    data: RoleAccountRow[] | null;
+    error: { message: string } | null;
+  }>;
+  maybeSingle: () => Promise<{
+    data: RoleAccountRow | null;
+    error: { message: string } | null;
+  }>;
+};
+
 async function queryProfilesByFilter(
   supabase: SupabaseClient,
-  filter: (query: any) => any,
+  filter: (query: ProfileQuery) => any,
 ): Promise<RoleAccountRecord[]> {
   const query = filter(supabase.from("profiles").select(PROFILE_SELECT) as any);
   const { data, error } = await query;

@@ -23,7 +23,7 @@ export type QuizSourceMetadata = {
   needsReview: boolean;
 };
 
-const LAST_CHECKED_AT = "2026-06-20";
+const LAST_CHECKED_AT = "2026-06-21";
 
 const INTERNAL_PEDAGOGY_SOURCE: QuizSourceMetadata = {
   sourceUrl: "/documentation/features/quiz-authoring-guide.md",
@@ -188,10 +188,24 @@ function summarizeQuestion(question: QuizQuestion): string {
   return `${question.question} ${question.explanation} ${answer}`;
 }
 
+function hasExplicitSourceMetadata(question: QuizQuestion): question is QuizQuestion & QuizSourceMetadata {
+  return Boolean(
+    question.sourceUrl &&
+      question.sourceLabel &&
+      question.sourceType &&
+      question.confidenceLevel &&
+      question.isLocalRule !== undefined &&
+      question.localScope &&
+      question.lastCheckedAt &&
+      question.needsReview !== undefined,
+  );
+}
+
 function isLocalRuleQuestion(question: QuizQuestion): boolean {
   const summary = summarizeQuestion(question);
   return hasPattern(summary, [
     /\bconsigne locale\b/i,
+    /\bcommune\b/i,
     /\bsuivre la consigne\b/i,
     /\bbac de tri\b/i,
     /\bdéchetterie\b/i,
@@ -282,6 +296,19 @@ function isLivingPlanetQuestion(question: QuizQuestion): boolean {
 }
 
 export function buildQuizSourceMetadata(question: QuizQuestion): QuizSourceMetadata {
+  if (hasExplicitSourceMetadata(question)) {
+    return {
+      sourceUrl: question.sourceUrl,
+      sourceLabel: question.sourceLabel,
+      sourceType: question.sourceType,
+      confidenceLevel: question.confidenceLevel,
+      isLocalRule: question.isLocalRule,
+      localScope: question.localScope,
+      lastCheckedAt: question.lastCheckedAt,
+      needsReview: question.needsReview,
+    };
+  }
+
   if (isEstimationQuestion(question)) {
     const summary = summarizeQuestion(question);
 

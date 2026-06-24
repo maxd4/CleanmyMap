@@ -5,6 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { toFrNumber, toFrInt } from '../reports/web-document/analytics';
 import type { NameType, ValueType } from"recharts/types/component/DefaultTooltipContent";
 
+type MetricKey = "actions" | "kg" | "butts" | "volunteers";
+
 type DataEntry = {
  area: string;
  actions: number;
@@ -20,8 +22,10 @@ type Props = {
 
 const COLORS = ['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#34d399', '#6ee7b7'];
 
+type ChartEntry = DataEntry & Partial<Record<MetricKey, number>> & { area: string };
+
 export function ZoneRepartitionChart({ data, title }: Props) {
- const [metric, setMetric] = useState<'actions' | 'kg' | 'butts' | 'volunteers'>('actions');
+ const [metric, setMetric] = useState<MetricKey>('actions');
 
  const chartData = useMemo(() => {
  const sorted = [...data].sort((a, b) => b[metric] - a[metric]);
@@ -33,7 +37,7 @@ export function ZoneRepartitionChart({ data, title }: Props) {
  top.push({
  area: 'Autres',
  [metric]: othersTotal,
- } as any);
+ } as ChartEntry);
  }
  return top;
  }, [data, metric]);
@@ -66,7 +70,7 @@ export function ZoneRepartitionChart({ data, title }: Props) {
  
  <select 
  value={metric} 
- onChange={(e) => setMetric(e.target.value as any)}
+ onChange={(e) => setMetric(e.target.value as MetricKey)}
  className="bg-slate-50 border border-slate-300 cmm-text-secondary cmm-text-small rounded-lg p-2 outline-none focus:ring-2 focus:ring-emerald-500"
  >
  <option value="actions">Nombre d&apos;actions</option>

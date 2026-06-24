@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { syncUserActionProgression } from "./progression-data";
@@ -46,11 +47,39 @@ function buildAction(
   };
 }
 
-function createActionQuery(getRows: () => ActionRow[]) {
+type QueryResult<T> = {
+  data: T[];
+  error: null;
+};
+
+type ActionQueryChain = {
+  select: (columns: string) => ActionQueryChain;
+  eq: (field: string, value: string) => ActionQueryChain;
+  order: (field: string, options?: { ascending?: boolean }) => ActionQueryChain;
+  limit: (value: number) => Promise<QueryResult<ActionRow>>;
+  maybeSingle: () => Promise<QueryResult<ActionRow | null>>;
+  then: (
+    resolve: (value: QueryResult<ActionRow>) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
+type EmptyChain = {
+  select: (columns: string) => EmptyChain;
+  eq: (field: string, value: string) => EmptyChain;
+  in: (field: string, values: string[]) => EmptyChain;
+  neq: (field: string, value: string) => EmptyChain;
+  is: (field: string, value: boolean | null) => EmptyChain;
+  order: (field: string, options?: { ascending?: boolean }) => Promise<QueryResult<never>>;
+  limit: (value: number) => Promise<QueryResult<never>>;
+  maybeSingle: () => Promise<QueryResult<null>>;
+};
+
+function createActionQuery(getRows: () => ActionRow[]): ActionQueryChain {
   const state = {
     eq: {} as Record<string, string>,
   };
-  const chain: any = {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.eq[field] = value;
@@ -100,12 +129,12 @@ function createActionQuery(getRows: () => ActionRow[]) {
         }),
         error: null,
       }).then(resolve, reject),
-  };
+  } as ActionQueryChain;
   return chain;
 }
 
-function createEmptyChain() {
-  const chain: any = {
+function createEmptyChain(): EmptyChain {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
@@ -114,7 +143,7 @@ function createEmptyChain() {
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({ data: [], error: null })),
     maybeSingle: vi.fn(async () => ({ data: null, error: null })),
-  };
+  } as EmptyChain;
   return chain;
 }
 
@@ -141,7 +170,7 @@ describe("syncUserActionProgression monthly regularity", () => {
           return createEmptyChain();
         }
         if (table === "progression_events") {
-          const chain: any = {
+          const chain = {
             error: null,
             delete: vi.fn(() => chain),
             eq: vi.fn(() => chain),
@@ -149,6 +178,11 @@ describe("syncUserActionProgression monthly regularity", () => {
               insertedEvents.push(row);
               return { error: null };
             }),
+          } as {
+            error: null;
+            delete: () => { error: null; delete: () => unknown; eq: (field: string, value: string) => unknown };
+            eq: (field: string, value: string) => unknown;
+            insert: (row: Record<string, unknown>) => Promise<{ error: null }>;
           };
           return chain;
         }
@@ -156,11 +190,11 @@ describe("syncUserActionProgression monthly regularity", () => {
           return {
             insert: vi.fn(async () => ({ error: null })),
             select: vi.fn(() => createEmptyChain()),
-          } as any;
+          };
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const firstPass = await syncUserActionProgression(supabase, "user-1");
     const firstMonthlyEvents = insertedEvents.filter(

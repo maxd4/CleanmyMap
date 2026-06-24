@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShieldCheck, Info, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { PilotageComparisonResult } from "@/lib/pilotage/metrics";
 import { KpiComparisonGrid, type KpiCardKey } from "./kpi-comparison-grid";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ const REPORT_ORDER: KpiCardKey[] = [
   "moderationDelay",
 ];
 
-function reliabilityTone(level: "elevee" | "moyenne" | "faible"): { text: string; bg: string; border: string; icon: any } {
+function reliabilityTone(level: "elevee" | "moyenne" | "faible"): { text: string; bg: string; border: string; icon: LucideIcon } {
   if (level === "elevee") {
     return { 
       text: "text-emerald-400", 

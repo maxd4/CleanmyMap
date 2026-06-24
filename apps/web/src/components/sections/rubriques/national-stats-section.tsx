@@ -1,26 +1,22 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  TrendingDown, 
   Globe, 
   Wallet, 
   User, 
   Clock, 
   Droplets, 
   Info, 
-  Users, 
   Trash2, 
-  TrendingUp, 
   BarChart3, 
   ArrowRight, 
-  Quote, 
   Sparkles, 
   Target,
-  ShieldCheck,
   Zap,
   Leaf
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -28,6 +24,7 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
+import type { ActionListItem, ActionListResponse } from "@/lib/actions/types";
 
 interface NationalStat {
   value: string;
@@ -35,9 +32,14 @@ interface NationalStat {
   title: string;
   desc: string;
   equivalent?: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
 }
+
+type PlatformStatAction = Pick<
+  ActionListItem,
+  "waste_kg" | "cigarette_butts" | "duration_minutes" | "created_by_clerk_id"
+>;
 
 const CONTEXT_STATS: Record<string, NationalStat> = {
   annualToll: {
@@ -110,11 +112,15 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-function computePlatformStats(actions: any[]) {
+function computePlatformStats(actions: PlatformStatAction[]) {
   const totalKg = actions.reduce((sum, a) => sum + Number(a.waste_kg || 0), 0);
   const totalButts = actions.reduce((sum, a) => sum + Number(a.cigarette_butts || 0), 0);
   const totalMinutes = actions.reduce((sum, a) => sum + Number(a.duration_minutes || 0), 0);
-  const volunteers = new Set(actions.map(a => a.created_by)).size;
+  const volunteers = new Set(
+    actions
+      .map((a) => a.created_by_clerk_id)
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0),
+  ).size;
   
   const waterSaved = totalButts * 500;
   const co2Avoided = totalKg * 2.5;
@@ -133,7 +139,7 @@ export function NationalStatsSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
-  const { data, isLoading, error } = useSWR(["national-platform-stats"], () =>
+  const { data, isLoading } = useSWR<ActionListResponse>(["national-platform-stats"], () =>
     fetchActions({ status: "approved", limit: 5000 }),
   );
 
@@ -157,7 +163,7 @@ export function NationalStatsSection() {
                    {fr ? "Le Défi National" : "The National Challenge"}
                 </div>
                 <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-tight">
-                   L'état des lieux <br/> métropolitain
+                   L&apos;état des lieux <br/> métropolitain
                 </h2>
              </div>
              <p className="max-w-md text-lg text-slate-400 font-bold leading-relaxed opacity-80">
@@ -172,7 +178,7 @@ export function NationalStatsSection() {
             viewport={{ once: true }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {Object.entries(CONTEXT_STATS).map(([key, stat], i) => (
+            {Object.entries(CONTEXT_STATS).map(([key, stat]) => (
               <motion.article
                 key={key}
                 variants={itemVariants}
@@ -288,7 +294,7 @@ export function NationalStatsSection() {
               <div className="space-y-2 max-w-2xl">
                  <h4 className="text-lg font-black text-white tracking-tight uppercase tracking-[0.1em]">{fr ? "Rigueur des données" : "Data Rigor"}</h4>
                  <p className="text-sm font-bold text-slate-400 leading-relaxed opacity-80">
-                    Les indicateurs de la plateforme sont calculés selon les ratios de l'ADEME et les publications scientifiques de référence (ex: 1 mégot pollue 500L d'eau). Notre base de données est auditable et ouverte aux chercheurs.
+                    Les indicateurs de la plateforme sont calculés selon les ratios de l&apos;ADEME et les publications scientifiques de référence (ex: 1 mégot pollue 500L d&apos;eau). Notre base de données est auditable et ouverte aux chercheurs.
                  </p>
               </div>
            </div>

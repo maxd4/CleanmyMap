@@ -9,7 +9,6 @@ import Link from "next/link";
 import { ImpactCard } from "@/components/profil/impact-card";
 import { EnvironmentalImpactEstimatorPanel } from "@/components/environmental-impact-estimator/environmental-impact-estimator-panel";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import {
@@ -49,7 +48,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export default function ImpactProfilePage() {
-  const { locale } = useSitePreferences();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [currentAccountIdentity, setCurrentAccountIdentity] =

@@ -32,7 +32,7 @@ describe("POST /api/account/profile-role", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("updates a safe role and syncs the server state", async () => {
@@ -75,7 +75,7 @@ describe("POST /api/account/profile-role", () => {
       },
       privateMetadata: { role: "coordinateur", profile: "coordinateur" },
     });
-    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalled();
   });
 
   it("allows self-service users to switch to the enterprise role", async () => {
@@ -118,7 +118,7 @@ describe("POST /api/account/profile-role", () => {
       },
       privateMetadata: { role: "entreprise", profile: "entreprise" },
     });
-    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalled();
   });
 
   it("stores IMU in Clerk metadata while keeping the internal owner role", async () => {

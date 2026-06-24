@@ -112,23 +112,23 @@ class ABTestingService {
       
       if (testsData) {
         try {
-          const parsed = JSON.parse(testsData)
+          const parsed = JSON.parse(testsData) as Record<string, ABTestConfig>
           this.tests = new Map(Object.entries(parsed))
-        } catch (e) {
+        } catch {
           console.warn('Failed to load A/B tests from storage')
         }
       }
 
       if (assignmentsData) {
         try {
-          const parsed = JSON.parse(assignmentsData)
+          const parsed = JSON.parse(assignmentsData) as Record<string, Record<string, string>>
           this.userAssignments = new Map(
             Object.entries(parsed).map(([userId, tests]) => [
               userId,
-              new Map(Object.entries(tests as any))
+              new Map(Object.entries(tests))
             ])
           )
-        } catch (e) {
+        } catch {
           console.warn('Failed to load A/B assignments from storage')
         }
       }

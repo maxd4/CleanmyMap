@@ -16,11 +16,17 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizAccessTypeId } from "@/components/learn/quiz-access-types";
+import { getDefaultQuizSessionSize } from "@/lib/learning/quiz-selection-engine";
 import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
+import {
+  QuizPersonalProgressOverview,
+} from "@/components/learn/quiz-personal-progress-overview";
+import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 
 type QuizAccessPickerProps = {
   locale: SupportedLocale;
   selectedTrapLevel: QuizTrapLevelId | null;
+  personalProgress?: QuizPersonalProgressSnapshot | null;
   onSelectTrapLevel: (trapLevel: QuizTrapLevelId | null) => void;
   onSelectAccessType: (accessType: QuizAccessTypeId) => void;
 };
@@ -30,6 +36,7 @@ const ACCESS_TYPES: Array<{
   label: string;
   description: Record<SupportedLocale, string>;
   focus: Record<SupportedLocale, string[]>;
+  learningLabel: Record<SupportedLocale, string>;
   tone: string;
   icon: ReactNode;
 }> = [
@@ -43,6 +50,10 @@ const ACCESS_TYPES: Array<{
     focus: {
       fr: ["Mélange de toute la banque", "Sans filtre de thème ni de contexte"],
       en: ["Full bank mixing", "No theme or context filter"],
+    },
+    learningLabel: {
+      fr: "Parcours équilibré",
+      en: "Balanced path",
     },
     tone: "bg-violet-100 text-violet-700",
     icon: <Shuffle size={28} />,
@@ -58,6 +69,10 @@ const ACCESS_TYPES: Array<{
       fr: ["Sécurité, gestes pratiques et organisation", "Cas limites et arbitrages de terrain"],
       en: ["Safety, practical gestures and organization", "Edge cases and field trade-offs"],
     },
+    learningLabel: {
+      fr: "Décision de terrain",
+      en: "Field decisions",
+    },
     tone: "bg-emerald-100 text-emerald-700",
     icon: <MapPin size={28} />,
   },
@@ -71,6 +86,10 @@ const ACCESS_TYPES: Array<{
     focus: {
       fr: ["Pollution, recyclage, dégradation et biodiversité", "Ordres de grandeur et conséquences indirectes"],
       en: ["Pollution, recycling, degradation and biodiversity", "Orders of magnitude and indirect consequences"],
+    },
+    learningLabel: {
+      fr: "Compréhension scientifique",
+      en: "Scientific understanding",
     },
     tone: "bg-sky-100 text-sky-700",
     icon: <FlaskConical size={28} />,
@@ -86,6 +105,10 @@ const ACCESS_TYPES: Array<{
       fr: ["Prise de conscience rapide", "Questions qui bousculent l'intuition"],
       en: ["Quick awareness building", "Questions that challenge intuition"],
     },
+    learningLabel: {
+      fr: "Doute utile",
+      en: "Productive doubt",
+    },
     tone: "bg-rose-100 text-rose-700",
     icon: <Megaphone size={28} />,
   },
@@ -99,6 +122,10 @@ const ACCESS_TYPES: Array<{
     focus: {
       fr: ["Lien entre geste individuel et impact collectif", "Réduction des déchets au quotidien"],
       en: ["Link individual actions to collective impact", "Waste reduction in daily life"],
+    },
+    learningLabel: {
+      fr: "Habitudes et impact",
+      en: "Habits and impact",
     },
     tone: "bg-amber-100 text-amber-800",
     icon: <Repeat2 size={28} />,
@@ -114,6 +141,10 @@ const ACCESS_TYPES: Array<{
       fr: ["Apprendre à raisonner avec une échelle", "Comparer sans réponse évidente"],
       en: ["Learn to reason with scale", "Compare without an obvious answer"],
     },
+    learningLabel: {
+      fr: "Raisonnement par échelle",
+      en: "Scaling up reasoning",
+    },
     tone: "bg-blue-100 text-blue-700",
     icon: <Calculator size={28} />,
   },
@@ -128,6 +159,10 @@ const ACCESS_TYPES: Array<{
       fr: ["Éviter les mauvais gestes sur le terrain", "Sécuriser les décisions de tri"],
       en: ["Avoid bad field practices", "Secure sorting decisions"],
     },
+    learningLabel: {
+      fr: "Tri fiable et sécurité",
+      en: "Safe sorting",
+    },
     tone: "bg-slate-100 text-slate-700",
     icon: <ShieldAlert size={28} />,
   },
@@ -136,6 +171,7 @@ const ACCESS_TYPES: Array<{
 export function QuizAccessPicker({
   locale,
   selectedTrapLevel,
+  personalProgress,
   onSelectTrapLevel,
   onSelectAccessType,
 }: QuizAccessPickerProps) {
@@ -156,9 +192,22 @@ export function QuizAccessPicker({
           Choisissez ce que vous voulez évaluer
         </h2>
         <p className="mx-auto max-w-2xl text-lg font-medium cmm-text-secondary">
-          Le parcours commence par une porte d&apos;entrée claire: mixte, terrain, données scientifiques,
-          sensibilisation, habitudes de vie, ordres de grandeur ou tri &amp; sécurité selon ce que vous voulez évaluer.
+          Choisissez d&apos;abord le mode. La session reste courte, ciblée et limitée à un nombre raisonnable de questions.
         </p>
+      </div>
+
+      {personalProgress ? (
+        <QuizPersonalProgressOverview locale={locale} snapshot={personalProgress} density="compact" />
+      ) : null}
+
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2 text-sm font-medium text-slate-600">
+        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">Session courte</span>
+        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+          {getDefaultQuizSessionSize("terrain")} questions par mode
+        </span>
+        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+          {getDefaultQuizSessionSize("mixte")} questions en mixte
+        </span>
       </div>
 
       <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
@@ -212,7 +261,10 @@ export function QuizAccessPicker({
             transition={{ delay: index * 0.1 }}
             onClick={() => onSelectAccessType(accessType.id)}
             className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10"
-          >
+            >
+            <div className="mb-3 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              {accessType.learningLabel[locale]}
+            </div>
             <div
               className={cn(
                 "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner",
@@ -224,6 +276,9 @@ export function QuizAccessPicker({
             <h3 className="mb-2 text-xl font-black cmm-text-primary">{accessType.label}</h3>
             <p className="text-sm font-medium leading-relaxed cmm-text-secondary">
               {accessType.description[locale]}
+            </p>
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              {getDefaultQuizSessionSize(accessType.id)} questions
             </p>
             <ul className="mt-5 space-y-2 text-sm font-medium text-slate-700">
               {accessType.focus[locale].map((focus) => (

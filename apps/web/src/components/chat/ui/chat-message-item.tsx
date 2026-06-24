@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   Download,
   FileText,
-  MapPin,
   MessageSquare,
   Zap,
   Heart,

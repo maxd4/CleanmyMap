@@ -17,7 +17,7 @@
 
 ### 1. Ne jamais utiliser `any`
 ```typescript
-❌ data: any
+❌ data: unknown
 ✅ data: unknown
 ✅ data: { id: string; value: number }
 ```

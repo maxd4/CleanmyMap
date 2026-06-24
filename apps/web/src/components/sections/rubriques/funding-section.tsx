@@ -5,7 +5,6 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Banknote, Landmark, Heart, ShieldCheck, ArrowRight, Sparkles, Target, Coins } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function FundingSection() {
   const { locale } = useSitePreferences();

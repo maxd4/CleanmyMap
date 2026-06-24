@@ -11,10 +11,24 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+type ProfilesChain = {
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  ilike: ReturnType<typeof vi.fn>;
+  or: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  limit: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
+  then: (
+    resolve: (value: { data: unknown; error: unknown }) => unknown,
+    reject?: (reason?: unknown) => unknown,
+  ) => Promise<unknown>;
+};
+
 function createProfilesChain() {
   let queryField: string | null = null;
   let queryValue: string | null = null;
-  const chain: any = {};
+  const chain = {} as Partial<ProfilesChain>;
 
   chain.select = vi.fn(() => chain);
   chain.eq = vi.fn((field: string, value: string) => {
@@ -53,13 +67,13 @@ function createProfilesChain() {
   chain.then = (
     resolve: (value: { data: unknown; error: unknown }) => unknown,
     reject?: (reason?: unknown) => unknown,
-  ) =>
+    ) =>
     Promise.resolve({
       data: resolveMatchingRow() ? [resolveMatchingRow()] : [],
       error: null,
     }).then(resolve, reject);
 
-  return chain;
+  return chain as ProfilesChain;
 }
 
 describe("searchManagedRoleAccounts", () => {

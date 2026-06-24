@@ -62,7 +62,7 @@ describe("QuizSessionPanel", () => {
     );
 
     expect(markup).toContain("Réponse incorrecte");
-    expect(markup).toContain("Pourquoi ?");
+    expect(markup).toContain("Explication pédagogique");
     expect(markup).toContain("À revoir dans");
     expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("/learn/bonnes-pratiques");

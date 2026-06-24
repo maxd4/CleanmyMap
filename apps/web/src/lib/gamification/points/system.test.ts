@@ -1,14 +1,23 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { awardPointsOnce } from "./system";
 
-function createLedgerChain(existing: boolean) {
-  const chain: any = {};
-  chain.select = vi.fn(() => chain);
-  chain.eq = vi.fn(() => chain);
-  chain.maybeSingle = vi.fn(async () => ({
-    data: existing ? { id: "existing" } : null,
-    error: null,
-  }));
+type LedgerChain = {
+  select: (columns: string) => LedgerChain;
+  eq: (field: string, value: string) => LedgerChain;
+  maybeSingle: () => Promise<{ data: { id: string } | null; error: null }>;
+  insert?: (values: Record<string, unknown>) => Promise<{ error: null }>;
+};
+
+function createLedgerChain(existing: boolean): LedgerChain {
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    maybeSingle: vi.fn(async () => ({
+      data: existing ? { id: "existing" } : null,
+      error: null,
+    })),
+  } as LedgerChain;
   return chain;
 }
 
@@ -25,7 +34,7 @@ describe("awardPointsOnce", () => {
         }
         throw new Error(`unexpected table ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const result = await awardPointsOnce(supabase, {
       userId: "user-1",
@@ -51,7 +60,7 @@ describe("awardPointsOnce", () => {
         }
         throw new Error(`unexpected table ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const result = await awardPointsOnce(supabase, {
       userId: "user-1",

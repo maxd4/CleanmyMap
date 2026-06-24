@@ -21,23 +21,41 @@ type ProfileRow = {
 };
 
 type ProfileMetadata = Record<string, unknown> | null;
+type MetadataSource = Record<string, unknown> | null | undefined;
+type SyncRoleContext = {
+  metadataRole: string | null;
+  isAdmin: boolean;
+  isMax: boolean;
+};
+type SyncedProfileRow = Record<string, unknown> & { id: string };
+
+function readMetadataValue(
+  metadata: MetadataSource,
+  key: string,
+): unknown {
+  return metadata?.[key];
+}
+
+function readMetadataString(
+  metadata: MetadataSource,
+  key: string,
+): string | null {
+  const value = readMetadataValue(metadata, key);
+  return typeof value === "string" ? value : null;
+}
 
 function extractDisplayNameModeFromMetadata(
-  metadata: Record<string, unknown> | null | undefined,
+  metadata: MetadataSource,
 ): DisplayNameMode | null {
-  if (!metadata) {
-    return null;
-  }
-
   const rawValue =
-    metadata["display_name_mode"] ??
-    metadata["displayNameMode"];
+    readMetadataString(metadata, "display_name_mode") ??
+    readMetadataString(metadata, "displayNameMode");
 
-  return typeof rawValue === "string" ? normalizeDisplayNameMode(rawValue) : null;
+  return rawValue ? normalizeDisplayNameMode(rawValue) : null;
 }
 
 function extractProfileMetadataFromSource(
-  metadata: Record<string, unknown> | null | undefined,
+  metadata: MetadataSource,
 ): ProfileMetadata {
   if (!metadata) {
     return null;
@@ -68,9 +86,9 @@ function extractProfileMetadataFromSource(
 
 function extractProfileMetadata(user: User): Record<string, unknown> {
   const sources = [
-    user.unsafeMetadata as Record<string, unknown> | null | undefined,
-    user.publicMetadata as Record<string, unknown> | null | undefined,
-    user.privateMetadata as Record<string, unknown> | null | undefined,
+    user.unsafeMetadata as MetadataSource,
+    user.publicMetadata as MetadataSource,
+    user.privateMetadata as MetadataSource,
   ];
 
   const merged: Record<string, unknown> = {};
@@ -85,6 +103,153 @@ function extractProfileMetadata(user: User): Record<string, unknown> {
   }
 
   return merged;
+}
+
+function resolveSyncRoleContext(
+  user: User,
+  adminUserIds: Set<string>,
+  maxUserIds: Set<string>,
+): SyncRoleContext {
+  const metadataRole =
+    readMetadataString(user.publicMetadata as MetadataSource, "role") ??
+    readMetadataString(user.publicMetadata as MetadataSource, "profile") ??
+    readMetadataString(user.privateMetadata as MetadataSource, "role") ??
+    readMetadataString(user.privateMetadata as MetadataSource, "profile");
+  const isAdmin = isAdminRole({
+    publicMetadata: user.publicMetadata,
+    privateMetadata: user.privateMetadata,
+  });
+  const isMax =
+    isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
+    isMaxRole({
+      publicMetadata: user.publicMetadata,
+      privateMetadata: user.privateMetadata,
+    }) ||
+    (maxUserIds.size > 0 ? maxUserIds.has(user.id) : adminUserIds.has(user.id));
+
+  return { metadataRole, isAdmin, isMax };
+}
+
+function resolveProfileArrondissement(
+  user: User,
+  profileMetadata: Record<string, unknown>,
+): number | null {
+  const rawArrondissement = readMetadataValue(
+    user.publicMetadata as MetadataSource,
+    "parisArrondissement",
+  );
+
+  const parsedArrondissement =
+    typeof rawArrondissement === "number"
+      ? rawArrondissement
+      : typeof rawArrondissement === "string"
+        ? parseInt(rawArrondissement, 10)
+        : null;
+
+  const metadataZoneName =
+    typeof profileMetadata.zoneName === "string"
+      ? profileMetadata.zoneName
+      : null;
+  const inferredArrondissement = metadataZoneName
+    ? extractArrondissementFromLabel(metadataZoneName)
+    : null;
+
+  return parsedArrondissement &&
+    parsedArrondissement >= 1 &&
+    parsedArrondissement <= 20
+    ? parsedArrondissement
+    : inferredArrondissement;
+}
+
+function resolveDisplayNameModeForUser(
+  user: User,
+  existingProfile: ProfileRow | null,
+): DisplayNameMode {
+  return (
+    getDisplayNameModeOverride(user.id) ??
+    extractDisplayNameModeFromMetadata(user.unsafeMetadata as MetadataSource) ??
+    extractDisplayNameModeFromMetadata(user.publicMetadata as MetadataSource) ??
+    extractDisplayNameModeFromMetadata(user.privateMetadata as MetadataSource) ??
+    normalizeDisplayNameMode(existingProfile?.display_name_mode)
+  );
+}
+
+function resolvePersistedProfileLabel(profile: string): string {
+  return profile === "max" ? "imu" : profile;
+}
+
+function resolveDisplayNameForUser(
+  user: User,
+  displayNameMode: DisplayNameMode,
+): string {
+  return resolveAccountDisplayName({
+    firstName: user.firstName?.trim() ?? "",
+    lastName: user.lastName?.trim() ?? "",
+    username: user.username?.trim() || null,
+    userId: user.id,
+    mode: displayNameMode,
+  });
+}
+
+async function loadExistingProfile(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  userId: string,
+): Promise<ProfileRow | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, handle, display_name_mode")
+    .eq("id", userId)
+    .maybeSingle<ProfileRow>();
+
+  if (error) {
+    console.warn(
+      `[User Sync] Could not read existing profile for ${userId}: ${describeSyncError(error)}`,
+    );
+  }
+
+  return data ?? null;
+}
+
+async function upsertSyncedProfile(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  userId: string,
+  payload: {
+    displayName: string;
+    displayNameMode: DisplayNameMode;
+    handle: string;
+    persistedProfile: string;
+    avatarUrl: string;
+    profileMetadata: Record<string, unknown>;
+    parisArrondissement: number | null;
+  },
+): Promise<SyncedProfileRow | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        display_name: payload.displayName,
+        display_name_mode: payload.displayNameMode,
+        handle: payload.handle,
+        role_label: payload.persistedProfile,
+        avatar_url: payload.avatarUrl,
+        metadata: payload.profileMetadata,
+        paris_arrondissement: payload.parisArrondissement,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    )
+    .select()
+    .single<SyncedProfileRow>();
+
+  if (error) {
+    console.warn(
+      `[User Sync] Sync skipped for user ${userId}: ${describeSyncError(error)}`,
+    );
+    return null;
+  }
+
+  return data ?? null;
 }
 
 export type SyncClerkUserOptions = {
@@ -219,104 +384,31 @@ export async function syncClerkUserToSupabase(
   }
   const adminUserIds = parseUserIds(env.CLERK_ADMIN_USER_IDS);
   const maxUserIds = parseUserIds(env.CLERK_MAX_USER_IDS);
-
-  const isAdmin = isAdminRole({
-    publicMetadata: user.publicMetadata,
-    privateMetadata: user.privateMetadata,
-  });
-  const isMax =
-    isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
-    isMaxRole({
-      publicMetadata: user.publicMetadata,
-      privateMetadata: user.privateMetadata,
-    }) ||
-    (maxUserIds.size > 0
-      ? maxUserIds.has(user.id)
-      : adminUserIds.has(user.id));
-
-  const metadataRole =
-    (user.publicMetadata as any)?.role ||
-    (user.publicMetadata as any)?.profile ||
-    (user.privateMetadata as any)?.role ||
-    (user.privateMetadata as any)?.profile;
+  const { metadataRole, isAdmin, isMax } = resolveSyncRoleContext(
+    user,
+    adminUserIds,
+    maxUserIds,
+  );
   const profile = resolveProfile({ metadataRole, isAdmin, isMax });
-  const persistedProfile = profile === "max" ? "imu" : profile;
+  const persistedProfile = resolvePersistedProfileLabel(profile);
   const profileMetadata = extractProfileMetadata(user);
-
-  const firstName = user.firstName?.trim() ?? "";
-  const lastName = user.lastName?.trim() ?? "";
-
-  const rawArrondissement = (user.publicMetadata as any)?.parisArrondissement;
-  const parsedArrondissement =
-    typeof rawArrondissement === "number"
-      ? rawArrondissement
-      : typeof rawArrondissement === "string"
-        ? parseInt(rawArrondissement, 10)
-        : null;
-  const metadataZoneName =
-    typeof profileMetadata?.zoneName === "string" ? profileMetadata.zoneName : null;
-  const inferredArrondissement = metadataZoneName
-    ? extractArrondissementFromLabel(metadataZoneName)
-    : null;
-
-  const { data: existingProfile, error: existingProfileError } = await supabase
-    .from("profiles")
-    .select("id, handle, display_name_mode")
-    .eq("id", user.id)
-    .maybeSingle<ProfileRow>();
-
-  if (existingProfileError) {
-    console.warn(
-      `[User Sync] Could not read existing profile for ${user.id}: ${describeSyncError(existingProfileError)}`,
-    );
-  }
+  const existingProfile = await loadExistingProfile(supabase, user.id);
 
   const handle = await resolveUniqueHandle(
     supabase,
     user,
     existingProfile?.handle ?? null,
   );
-  const displayNameMode: DisplayNameMode =
-    getDisplayNameModeOverride(user.id) ??
-    extractDisplayNameModeFromMetadata(user.unsafeMetadata as Record<string, unknown> | null | undefined) ??
-    extractDisplayNameModeFromMetadata(user.publicMetadata as Record<string, unknown> | null | undefined) ??
-    extractDisplayNameModeFromMetadata(user.privateMetadata as Record<string, unknown> | null | undefined) ??
-    normalizeDisplayNameMode(existingProfile?.display_name_mode);
-  const displayName = resolveAccountDisplayName({
-    firstName,
-    lastName,
-    username: user.username?.trim() || null,
-    userId: user.id,
-    mode: displayNameMode,
+  const displayNameMode = resolveDisplayNameModeForUser(user, existingProfile);
+  const displayName = resolveDisplayNameForUser(user, displayNameMode);
+
+  return upsertSyncedProfile(supabase, user.id, {
+    displayName,
+    displayNameMode,
+    handle,
+    persistedProfile,
+    avatarUrl: user.imageUrl,
+    profileMetadata,
+    parisArrondissement: resolveProfileArrondissement(user, profileMetadata),
   });
-
-  const { data, error } = await supabase
-    .from("profiles")
-      .upsert({
-      id: user.id,
-      display_name: displayName,
-      display_name_mode: displayNameMode,
-      handle,
-      role_label: persistedProfile,
-      avatar_url: user.imageUrl,
-      metadata: profileMetadata,
-      paris_arrondissement:
-        parsedArrondissement &&
-        parsedArrondissement >= 1 &&
-        parsedArrondissement <= 20
-          ? parsedArrondissement
-          : inferredArrondissement,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" })
-    .select()
-    .single();
-
-  if (error) {
-    console.warn(
-      `[User Sync] Sync skipped for user ${user.id}: ${describeSyncError(error)}`,
-    );
-    return null;
-  }
-
-  return data;
 }

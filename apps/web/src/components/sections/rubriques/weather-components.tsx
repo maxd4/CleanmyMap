@@ -1,37 +1,62 @@
 "use client";
 
-import { memo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { memo } from "react";
+import { motion } from "framer-motion";
 import {
   CloudSun,
   ClipboardCheck,
   MapPin,
   Navigation,
   ShieldAlert, 
-  Thermometer, 
   Wind, 
-  CloudRain, 
   Timer, 
   CheckCircle2, 
-  ArrowRight,
   Package,
   Layers,
-  ChevronRight,
   AlertCircle,
   Sparkles,
   Droplets,
-  Calendar,
   Sun,
   Cloud
 } from "lucide-react";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { OPERATIONAL_ZONES, evaluateWeatherRisk } from "@/lib/weather/ops-weather";
-import type { OperationalZone, WeatherRiskAssessment, InterventionWindow } from "@/lib/weather/ops-weather";
-import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
-import type { WeatherPoint, WeatherDay, WeatherPeriod, PackType } from "./weather-types";
+import { OPERATIONAL_ZONES } from "@/lib/weather/ops-weather";
+import type {
+  InterventionWindow,
+  OperationalZone,
+  WeatherRiskAssessment,
+} from "@/lib/weather/ops-weather";
+import type { PackType } from "./weather-types";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
+
+type WeatherForecastPoint = {
+  time?: string;
+  day?: string;
+  temp: number;
+  pop: number;
+  wind: number;
+};
+
+type ForecastPeriodId = "now" | "13";
+
+type WeatherForecastProps = {
+  activePeriod: ForecastPeriodId;
+  setActivePeriod: (period: ForecastPeriodId) => void;
+  nowcasting: WeatherForecastPoint[];
+  j13: WeatherForecastPoint[];
+  isLoading: boolean;
+  error?: string | null;
+  fr: boolean;
+};
+
+type KitChecklistProps = {
+  packItems: string[];
+  toggleItem: (item: string) => void;
+  fr: boolean;
+  checkedItems?: Record<string, boolean>;
+};
 
 // --- Components ---
 
@@ -104,14 +129,12 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
   setZoneMode,
   setManualZoneId,
   zoneMode,
-  inferredZoneId,
   fr,
 }: {
   selectedZone: OperationalZone;
   setZoneMode: (mode: "auto" | "manual") => void;
   setManualZoneId: (id: string) => void;
   zoneMode: "auto" | "manual";
-  inferredZoneId: string;
   fr: boolean;
 }) {
   return (
@@ -244,9 +267,13 @@ export const WeatherForecast = memo(function WeatherForecast({
   nowcasting,
   j13,
   isLoading,
-  error,
   fr,
-}: any) {
+}: WeatherForecastProps) {
+  const periods: Array<{ id: ForecastPeriodId; label: string }> = [
+    { id: "now", label: fr ? "Direct" : "Live" },
+    { id: "13", label: fr ? "13 Prochains" : "Next 13" },
+  ];
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -263,13 +290,10 @@ export const WeatherForecast = memo(function WeatherForecast({
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-4 bg-slate-950/40 p-2 rounded-[1.5rem] border border-white/5 w-fit">
-        {[
-          { id: 'now', label: fr ? "Direct" : "Live" },
-          { id: '13', label: fr ? "13 Prochains" : "Next 13" }
-        ].map(p => (
+        {periods.map((p) => (
           <CmmButton
             key={p.id}
-            onClick={() => setActivePeriod(p.id as any)}
+            onClick={() => setActivePeriod(p.id)}
             tone={activePeriod === p.id ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
@@ -283,7 +307,9 @@ export const WeatherForecast = memo(function WeatherForecast({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {(activePeriod === 'now' ? nowcasting : j13).slice(0, 5).map((point: any, i: number) => (
+        {(activePeriod === "now" ? nowcasting : j13)
+          .slice(0, 5)
+          .map((point, i) => (
           <RubriqueCard
             key={i}
             initial={{ opacity: 0, y: 20 }}
@@ -486,8 +512,8 @@ export const KitChecklist = memo(function KitChecklist({
   packItems,
   toggleItem,
   fr,
-  checkedItems = {}
-}: any) {
+  checkedItems = {},
+}: KitChecklistProps) {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -498,7 +524,7 @@ export const KitChecklist = memo(function KitChecklist({
       </div>
 
       <div className="grid gap-4">
-        {packItems.map((item: string, i: number) => (
+        {packItems.map((item) => (
           <label 
             key={item}
             className={cn(

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   Activity,
   AlertTriangle,
+  BookOpenText,
   Database,
   Download,
   HardDrive,
@@ -576,6 +577,16 @@ export default async function AdminPage() {
       badge: "Rapide",
       iconWrapClassName: "bg-emerald-100 text-emerald-700 border-emerald-200/60",
       iconClassName: "text-emerald-700",
+    },
+    {
+      id: "quiz-bank",
+      icon: BookOpenText,
+      title: "Revue quiz",
+      description: "Filtrer et corriger la banque de questions.",
+      href: "/admin/quiz-bank",
+      badge: "Audit",
+      iconWrapClassName: "bg-amber-100 text-amber-700 border-amber-200/60",
+      iconClassName: "text-amber-700",
     },
     {
       id: "traceability",
