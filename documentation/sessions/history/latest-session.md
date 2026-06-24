@@ -1,67 +1,39 @@
 # Latest Session
 
-**Dernière mise à jour :** 2026-05-19
+**Derniere mise a jour :** 2026-06-23
 **Status :** UPDATED
 
-## Snapshot qualité courant
+## Snapshot qualite courant
 
-- `npm run typecheck -w apps/web` passe.
-- `npm run test:security -w apps/web` passe.
-- `npm run lint -w apps/web` passe avec warnings tolérés en développement.
-- Les runs et deployments GitHub obsolètes ont été purgés.
-- Le point d'entrée pour le prochain audit est [documentation/maintenance/quality-audit-snapshot.md](../../maintenance/quality-audit-snapshot.md).
+- `npm run lint -w apps/web` : passe avec warnings.
+- `npm run typecheck -w apps/web` : passe.
+- `npm run build -w apps/web` : passe sur le chemin Turbopack natif apres correction du proxy et du bootstrap des manifests Next.
+- `npm run test:security` : passe apres ajout des mocks manquants.
+- `npm run pre-release:check` : passe.
+- `npm run security:secrets` : passe.
+- `npm run backend:doctor -w apps/web` : passe apres alignement de `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+- `npm run backend:supabase:advisors -w apps/web` : bloque sur `403` permissions Supabase.
+- `npm run backend:supabase:push -w apps/web` : passe.
+- `npm run backend:supabase:quota-audit -w apps/web` : passe.
+- `npm run backend:supabase:preview:ensure -w apps/web` : passe.
+- `npm run data:export:clerk` : passe.
+- `npm run data:audit:clerk-supabase` : passe.
+- `npm run data:archive:supabase -w apps/web` : passe.
 
-## Travaux accomplis (Cette session)
+## Ce qui a ete documente pour la prochaine session
 
-### 0. Exécution rapide des messages `ateliers_DU`
-- **Sécurité publication** : correction de `scripts/pre-release-check.mjs`, ajout de `npm run pre-release:check`, validation OK sans exposition détectée dans le bundle client.
-- **Audit des écarts restant** : création de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots absorbés, partiels et encore ouverts.
-- **Observabilité admin** : enrichissement de `/api/services` avec résumé, niveaux de sévérité et timeline courte, exposés dans le panneau admin de supervision.
-- **Tests de contrat exports/services** : ajout de tests ciblés sur `/api/services`, `/api/reports/actions.csv`, `/api/reports/actions.json`, `/api/reports/elus-dossier` et helpers dashboard/exports.
-- **Convergence exports serveur** : mise en place d'un contrat commun de headers et de noms de livrables pour les exports CSV/JSON/PDF.
-- **Convergence exports web** : harmonisation des libellés, messages d'erreur et états de chargement des exports CSV/PDF via un helper UI commun.
-- **Tests UI exports** : ajout d'une couverture statique sur les boutons d'export CSV/PDF pour figer les libellés et les noms de livrables côté interface.
-- **Traçabilité documentaire** : création de `documentation/architecture/traceability-matrix.md` pour relier rubrique, route, composant, API et source de donnée.
-- **Stratégie de sortie technique** : création de `documentation/operations/vendor-exit-strategy.md` pour documenter la mitigation du lock-in Vercel/Supabase.
-- **Validation institutionnelle** : création de `documentation/plans/dossier_validation_institutionnelle.md` comme point d'entrée entre audit d'impact, gouvernance, sobriété et maintenance.
-- **Journal d'impact DU** : mise à jour de `documentation/plans/journal_impact_DU.md` avec les améliorations absorbées du plan d'écarts supprimé.
+- Le guide de session a ete complete avec les retours utiles sur le build web, le bootstrap des manifests et les dependances Clerk/Supabase.
+- Le guide de tests a ete mis a jour pour rappeler les fichiers de bootstrap a verifier si les manifests Next manquent, sans conserver de contournement webpack.
+- Le runbook de session pointe maintenant vers `documentation/sessions/history/latest-session.md` et non vers l'ancien chemin erroné.
+- Le wrapper `backend:supabase:advisors` signale maintenant explicitement la cause du `403` et le correctif attendu: token Supabase personnel avec `advisors_read`, re-login CLI, re-link si besoin, ou Docker Desktop pour le mode local.
 
-### 1. Transformation Visuelle "Film" & Thème Sombre Douce
-- **Stabilisation Thème Unique** : Abandon du mode clair au profit d'une esthétique "Sombre Douce" (Slate-950, Emerald, Cyan).
-- **Nettoyage Global** : Suppression des résidus `bg-white` et teintes claires sur la Accueil et la page Explorer.
-- **Documentation** : Mise à jour de la charte UI et des règles de gouvernance documentaire pour refléter la source de vérité actuelle.
-- **Transitions** : Intégration de Framer Motion pour des transitions fluides type "Film".
+## Travaux accomplis
 
-### 2. Redesign Premium Navigation Ribbon
-- **UI Glassmorphism** : Refonte de la barre de navigation supérieure (`app-navigation-ribbon.tsx`) avec bords arrondis extrêmes, flou d'arrière-plan (`backdrop-blur-2xl`) et indicateur glissant via `layoutId`.
-- **Hiérarchie** : "Shelf" des sous-rubriques visuellement attachée au bloc parent.
+- Ajout de documentation operationnelle pour les prochaines sessions.
+- Consolidation des notes de build et de validation dans les docs existantes.
 
-### 3. Nettoyage de la Racine (Root Clean-up)
-- **Migration** : Déplacement de tous les fichiers non essentiels à la racine vers `documentation/`, `scripts/`, ou `backups/logs/`.
-- **Simplification** : Seuls `modularization_plan.md`, `LANCER_SITE_LOCAL.bat` et les configs standard (git, package.json) subsistent à la racine.
+## Risques / points d'attention
 
-### 4. Gouvernance Design System & Documentation
-- **Canon clarifié** : les anciennes notes de transition du design system ont été retirées pour éviter toute ambiguïté entre canon et archives.
-- **Déplacements** : `standards-visuels.md` a été déplacé vers `documentation/ai-guides/standards-visuels.md` et les anciens plans ponctuels ont été sortis du noyau documentaire.
-- **Index réécrit** : `documentation/design-system/README.md` distingue désormais code live, docs canoniques, legacy et hors périmètre.
-- **Liens corrigés** : mises à jour de `AI_DEVELOPER_GUIDE.md`, `display-modes-implementation.md`, `USAGE_GUIDE.md`, `AGENTS.md` et `ai-guides/README.md`.
-- **Découverte** : ajout du guide `documentation/ai-guides/standards-visuels.md` dans l'index des guides IA.
-
-## En attente d'exécution (Next & Risks)
-- **Observabilité admin** : compléter le lot message 3 avec timeline courte des incidents et vue centralisée plus narrative.
-- **Tests de non-régression** : compléter la couverture explicite de `/dashboard`, `/reports`, `/actions/map` et des endpoints d'export critiques.
-- **Campagnes multi-actions** : industrialiser le modèle, l'API et l'UI de suivi.
-- **Convergence PDF/CSV** : lot rapide borne; ne rouvrir que si une divergence fonctionnelle reapparait.
-- **Section renderer** : planifier le découpage sans régression visible.
-- **Modularisation** : Exécuter le plan (`modularization_plan.md`) en commençant par `apps/web/src/app/page.tsx` et le contrat de données.
-- **Section DM** : Finaliser l'interface des Messages Privés (`/sections/dm`).
-- **Stabilité Tests** : Stabiliser le timeout dans `route.submit.test.ts`.
-- **PostHog** : Finaliser la migration vers `NEXT_PUBLIC_POSTHOG_KEY`.
-
-## Risks
-- **Lots DU restants** : une partie des messages `ateliers_DU` reste à exécuter, surtout sur les flux lourds (campagnes, exports, refactor `section-renderer`).
-- **Traçabilité vs réalité** : la matrice de traçabilité est une v1 documentaire et doit rester synchronisée avec le code.
-- **Dette Lint** : warnings restants acceptés pour le moment; le snapshot qualité courant sert de backlog de priorisation.
-- **Complexité Framer Motion** : Veiller à ce que les animations `layoutId` ne créent pas de conflits de rendu sur mobile.
-- **Chemins Documentation** : Risque de liens brisés dans d'autres docs suite à la migration racine (audit des liens à prévoir).
-- **Références historiques** : certains bookmarks ou commentaires peuvent encore pointer vers l'ancien `design-system.md`; surveiller les retours d'usage avant suppression définitive des mentions résiduelles.
+- `backend:supabase:advisors` reste dependante des droits du projet Supabase et peut encore renvoyer `403`.
+- Le blocage `403` est maintenant explicite dans le message d'erreur, mais la levée effective du blocage exige un token Supabase valide ou le mode local via Docker.
+- Si le build Next redevient instable, verifier d'abord les manifests de secours et la configuration de build du workspace `apps/web`.

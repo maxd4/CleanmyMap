@@ -50,6 +50,7 @@ Activation:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- les audits liés `backend:supabase:advisors` passent par le CLI Supabase et peuvent exiger `SUPABASE_ACCESS_TOKEN` avec un token personnel récent; pour l'endpoint security advisors, la permission fine `advisors_read` est requise sur le projet lié.
 
 Code clé:
 

@@ -48,6 +48,22 @@ function formatError(title, result) {
   return details ? `${title}\n${details}` : title;
 }
 
+function formatLinked403Help(result) {
+  const details = `${result.stdout || ""}\n${result.stderr || ""}`.trim();
+  const accessTokenHelp = [
+    "Supabase linked security advisors require a personal access token with project access and the `advisors_read` permission.",
+    "Generate a fresh token from Supabase Dashboard -> Account -> Tokens, then run `supabase login --token <token>` or export `SUPABASE_ACCESS_TOKEN` before retrying.",
+    "If the project was linked from another Supabase account, re-link it with the account that has Owner/Admin access to the target project ref.",
+    "If you want a local-only path, install Docker Desktop so `backend:supabase:advisors:local` can run the CLI against the local stack.",
+  ].join(" ");
+
+  if (!details) {
+    return accessTokenHelp;
+  }
+
+  return `${details}\n\n${accessTokenHelp}`;
+}
+
 function hasLinkedProject(cwd) {
   return existsSync(resolve(cwd, "supabase", ".temp", "linked-project.json"));
 }
@@ -72,6 +88,15 @@ function runLocalAdvisors(cwd) {
 function runLinkedAdvisors(cwd) {
   const advisors = runSupabase(["db", "advisors", "--linked", "--type", "security", "--level", "warn"], cwd);
   if (advisors.status !== 0) {
+    const combinedOutput = `${advisors.stdout || ""}\n${advisors.stderr || ""}`;
+    if (
+      advisors.status === 403 ||
+      combinedOutput.includes("necessary privileges to access this endpoint") ||
+      combinedOutput.includes("LegacyDbConfigLoginRoleStatusError")
+    ) {
+      throw new Error(`Supabase linked security advisors failed with 403.\n${formatLinked403Help(advisors)}`);
+    }
+
     throw new Error(formatError("Supabase linked security advisors failed", advisors));
   }
 
