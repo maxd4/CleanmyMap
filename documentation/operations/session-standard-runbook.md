@@ -58,6 +58,14 @@ npm run dev
 Critere de succes:
 - build termine sans erreur.
 
+Ordre de diagnostic attendu:
+1. lire le log d'erreur complet;
+2. identifier la catégorie: TypeScript, import, route Next, config Vercel, cache, Supabase, env vars, Turbopack/Webpack;
+3. lancer les vérifications rapides: typecheck, lint, tests ciblés;
+4. corriger les erreurs groupées;
+5. lancer un seul build complet local/sandbox;
+6. déclencher Vercel seulement quand le build local/sandbox est propre.
+
 Retours de terrain utiles:
 - si `npm run build` cote `apps/web` bloque sur des manifests Next/Turbopack manquants, nettoyer d'abord le cache avec `npm run build:clean -w apps/web` avant de relancer un build complet;
 - ne jamais creer a la main `apps/web/.next/server/pages-manifest.json`, `apps/web/.next/server/proxy.js.nft.json` ou tout autre fichier interne Next;

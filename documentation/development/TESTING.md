@@ -84,6 +84,17 @@ Pass criteria:
 
 Use this order before starting a long `vercel build` session:
 
+Do not use `next build` as the first diagnostic method.
+
+Expected order:
+
+1. Read the full error log.
+2. Classify the failure: TypeScript, import, Next route, Vercel config, cache, Supabase, env vars, Turbopack/Webpack.
+3. Run the fast checks: typecheck, lint, targeted tests.
+4. Fix grouped errors.
+5. Run one full local/sandbox build.
+6. Trigger Vercel only once the local/sandbox build is clean.
+
 1. `npm run typecheck -w apps/web`
 2. `npm run test:regression-gates -w apps/web`
 3. `npm run build -w apps/web`

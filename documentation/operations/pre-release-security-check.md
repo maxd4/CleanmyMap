@@ -98,6 +98,9 @@ Regle de lecture :
 
 - `npm run backend:doctor` doit passer avant toute publication.
 - `npm run backend:supabase:advisors` est la commande autonome de référence pour les advisories sécurité: elle tente le local si Docker est disponible puis bascule sur le projet lié.
+- Le mode `--linked` exige un token Supabase personnel avec accès au projet et la permission fine `advisors_read`; en cas de `403`, regénérer un token dans Supabase Dashboard -> Account -> Tokens, puis relancer `supabase login --token <token>` ou exporter `SUPABASE_ACCESS_TOKEN`.
+- Si le compte connecté n'est pas Owner/Admin du projet cible, ré-linker le projet avec le bon compte avant de relancer l'audit.
+- Si Docker Desktop est absent, le chemin `--local` ne peut pas servir de fallback et l'installation Docker devient la correction opérationnelle pour les audits locaux.
 - `npm run backend:vercel:env:sync` doit rester public par défaut et ne pousser les secrets qu'avec `--include-secrets`.
 - `npm run backend:supabase:push` doit être accompagné d'une revue des policies, fonctions SQL et advisors Supabase.
 - Les helpers SQL exposés doivent être relus avec la règle: pas de `SECURITY DEFINER` public sans justification et sans `REVOKE/GRANT` explicites.
