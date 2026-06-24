@@ -44,7 +44,57 @@ type ParticipantRow = {
   participation_source?: "group_form" | "admin" | "import";
 };
 
-function createActionsChain(actions: ActionRow[]) {
+type QueryResult<T> = {
+  data: T[];
+  error: null;
+};
+
+type ActionsChain = {
+  select: (columns: string) => ActionsChain;
+  eq: (field: string, value: string) => ActionsChain;
+  in: (field: string, values: string[]) => ActionsChain;
+  order: (field: string, options?: { ascending?: boolean }) => ActionsChain;
+  limit: (value: number) => Promise<QueryResult<ActionRow>>;
+  maybeSingle: () => Promise<QueryResult<ActionRow | null>>;
+  then: (
+    resolve: (value: QueryResult<ActionRow>) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
+type ParticipantsChain = {
+  select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantsChain;
+  update: (values: Record<string, unknown>) => ParticipantsChain;
+  eq: (field: string, value: string) => ParticipantsChain;
+  in: (field: string, values: string[]) => ParticipantsChain;
+  order: (field: string, options?: { ascending?: boolean }) => ParticipantsChain;
+  limit: (value: number) => Promise<QueryResult<ParticipantRow>>;
+  maybeSingle: () => Promise<QueryResult<ParticipantRow | null>>;
+  single: () => Promise<QueryResult<ParticipantRow | null>>;
+  insert: (values: {
+    action_id: string;
+    user_id: string;
+    joined_at?: string;
+    participation_status?: "pending" | "confirmed" | "cancelled";
+    participation_source?: "group_form" | "admin" | "import";
+  }) => ParticipantsChain;
+  then: (
+    resolve: (value: {
+      data: ParticipantRow[] | null;
+      count?: number;
+      error: null;
+    }) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
+type ProgressionEventsChain = {
+  select: (columns: string) => {
+    delete: () => Promise<{ error: null }>;
+  };
+};
+
+function createActionsChain(actions: ActionRow[]): ActionsChain {
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
@@ -54,7 +104,7 @@ function createActionsChain(actions: ActionRow[]) {
     inFilters: {},
     limitValue: null,
   };
-  const chain: any = {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
@@ -104,7 +154,7 @@ function createActionsChain(actions: ActionRow[]) {
         error: null,
       };
     }),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
+    then: (resolve: (value: QueryResult<ActionRow>) => void, reject: (reason: unknown) => void) =>
       Promise.resolve({
         data: actions.filter((action) => {
           if (state.filters.id && action.id !== state.filters.id) {
@@ -121,12 +171,12 @@ function createActionsChain(actions: ActionRow[]) {
         }),
         error: null,
       }).then(resolve, reject),
-  };
+  } as ActionsChain;
 
   return chain;
 }
 
-function createParticipantsChain(participants: ParticipantRow[]) {
+function createParticipantsChain(participants: ParticipantRow[]): ParticipantsChain {
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
@@ -172,7 +222,7 @@ function createParticipantsChain(participants: ParticipantRow[]) {
       return true;
     });
 
-  const chain: any = {
+  const chain = {
     select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
       state.headCount = Boolean(options?.head);
       return chain;
@@ -264,7 +314,14 @@ function createParticipantsChain(participants: ParticipantRow[]) {
         return chain;
       },
     ),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) => {
+    then: (
+      resolve: (value: {
+        data: ParticipantRow[] | null;
+        count?: number;
+        error: null;
+      }) => void,
+      reject: (reason: unknown) => void,
+    ) => {
       const filtered = buildFiltered();
       return Promise.resolve({
         data: state.headCount
@@ -276,7 +333,7 @@ function createParticipantsChain(participants: ParticipantRow[]) {
         error: null,
       }).then(resolve, reject);
     },
-  };
+  } as ParticipantsChain;
 
   return chain;
 }
@@ -298,7 +355,7 @@ function createSupabaseMock(params: {
           select: vi.fn(() => ({
             delete: vi.fn(async () => ({ error: null })),
           })),
-        };
+        } as ProgressionEventsChain;
       }
       throw new Error(`Unexpected table: ${table}`);
     }),

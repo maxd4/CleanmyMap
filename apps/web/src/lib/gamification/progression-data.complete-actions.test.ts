@@ -1,38 +1,78 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { loadValidatedCompleteActionCountForUser } from "./progression-data";
 
-function createActionsQuery(data: unknown[]) {
-  const chain: any = {};
-  chain.select = vi.fn(() => chain);
-  chain.eq = vi.fn(() => chain);
-  chain.order = vi.fn(() => chain);
-  chain.limit = vi.fn(async () => ({ data, error: null }));
+type QueryResult<T> = {
+  data: T[];
+  error: null;
+};
+
+type ActionsQuery<T> = {
+  select: (columns: string) => ActionsQuery<T>;
+  eq: (field: string, value: string) => ActionsQuery<T>;
+  order: (
+    field: string,
+    options?: { ascending?: boolean },
+  ) => ActionsQuery<T>;
+  limit: (value: number) => Promise<QueryResult<T>>;
+};
+
+type FormsQuery<T> = {
+  select: (columns: string) => FormsQuery<T>;
+  in: (field: string, values: string[]) => FormsQuery<T>;
+  neq: (field: string, value: string) => FormsQuery<T>;
+  eq: (field: string, value: string | boolean) => FormsQuery<T>;
+  is: (field: string, value: boolean | null) => FormsQuery<T>;
+  order: (
+    field: string,
+    options?: { ascending?: boolean },
+  ) => Promise<QueryResult<T>>;
+};
+
+type OrganizerQuery = {
+  select: (columns: string) => OrganizerQuery;
+  eq: (field: string, value: string) => OrganizerQuery;
+  limit: (value: number) => Promise<QueryResult<never>>;
+};
+
+function createActionsQuery<T>(data: T[]): ActionsQuery<T> {
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    limit: vi.fn(async () => ({ data, error: null })),
+  } as ActionsQuery<T>;
   return chain;
 }
 
-function createFormsQuery(data: unknown[]) {
+function createFormsQuery<T extends { action_id?: string }>(data: T[]): FormsQuery<T> {
   let requestedActionIds: string[] | null = null;
-  const chain: any = {};
-  chain.select = vi.fn(() => chain);
-  chain.in = vi.fn((field: string, values: string[]) => {
-    if (field === "action_id") {
-      requestedActionIds = values;
-    }
-    return chain;
-  });
-  chain.neq = vi.fn(() => chain);
-  chain.eq = vi.fn(() => chain);
-  chain.is = vi.fn(() => chain);
-  chain.order = vi.fn(async () => {
-    const rows = (data as Array<{ action_id?: string }>).filter((row) => {
-      if (requestedActionIds && row.action_id && !requestedActionIds.includes(row.action_id)) {
-        return false;
+  const chain = {
+    select: vi.fn(() => chain),
+    in: vi.fn((field: string, values: string[]) => {
+      if (field === "action_id") {
+        requestedActionIds = values;
       }
-      return true;
-    });
-    return { data: rows, error: null };
-  });
+      return chain;
+    }),
+    neq: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    is: vi.fn(() => chain),
+    order: vi.fn(async () => {
+      const rows = data.filter((row) => {
+        if (
+          requestedActionIds &&
+          row.action_id &&
+          !requestedActionIds.includes(row.action_id)
+        ) {
+          return false;
+        }
+        return true;
+      });
+      return { data: rows, error: null };
+    }),
+  } as FormsQuery<T>;
   return chain;
 }
 
@@ -135,10 +175,11 @@ describe("loadValidatedCompleteActionCountForUser", () => {
           return createActionsQuery(actions);
         }
         if (table === "action_organizers") {
-          const chain: any = {};
-          chain.select = vi.fn(() => chain);
-          chain.eq = vi.fn(() => chain);
-          chain.limit = vi.fn(async () => ({ data: [], error: null }));
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn(() => chain),
+            limit: vi.fn(async () => ({ data: [], error: null })),
+          } as OrganizerQuery;
           return chain;
         }
         if (table === "forms") {
@@ -146,7 +187,7 @@ describe("loadValidatedCompleteActionCountForUser", () => {
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const count = await loadValidatedCompleteActionCountForUser(supabase, "user-1");
 
@@ -251,10 +292,11 @@ describe("loadValidatedCompleteActionCountForUser", () => {
           return createActionsQuery(actions);
         }
         if (table === "action_organizers") {
-          const chain: any = {};
-          chain.select = vi.fn(() => chain);
-          chain.eq = vi.fn(() => chain);
-          chain.limit = vi.fn(async () => ({ data: [], error: null }));
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn(() => chain),
+            limit: vi.fn(async () => ({ data: [], error: null })),
+          } as OrganizerQuery;
           return chain;
         }
         if (table === "forms") {
@@ -262,7 +304,7 @@ describe("loadValidatedCompleteActionCountForUser", () => {
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const preloadedSupabase = {
       from: vi.fn((table: string) => {
@@ -270,10 +312,11 @@ describe("loadValidatedCompleteActionCountForUser", () => {
           throw new Error("actions table should not be queried when rows are preloaded");
         }
         if (table === "action_organizers") {
-          const chain: any = {};
-          chain.select = vi.fn(() => chain);
-          chain.eq = vi.fn(() => chain);
-          chain.limit = vi.fn(async () => ({ data: [], error: null }));
+          const chain = {
+            select: vi.fn(() => chain),
+            eq: vi.fn(() => chain),
+            limit: vi.fn(async () => ({ data: [], error: null })),
+          } as OrganizerQuery;
           return chain;
         }
         if (table === "forms") {
@@ -281,11 +324,11 @@ describe("loadValidatedCompleteActionCountForUser", () => {
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const directCount = await loadValidatedCompleteActionCountForUser(directSupabase, "user-1");
     const preloadedCount = await loadValidatedCompleteActionCountForUser(preloadedSupabase, "user-1", {
-      actionRows: actions as any,
+      actionRows: actions,
     });
 
     expect(directCount).toBe(1);

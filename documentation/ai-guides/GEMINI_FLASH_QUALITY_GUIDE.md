@@ -26,7 +26,7 @@ Règle centrale : ne pas inventer de type, de chemin, d'API ou de composant non 
 ### 2.1 Jamais `any` si une forme de données existe
 ```typescript
 // ❌
-function handleData(data: any) {
+function handleData(data: unknown) {
   return data.value;
 }
 

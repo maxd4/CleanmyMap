@@ -5,7 +5,6 @@ import { InboxFilterBar } from "./creator-inbox/inbox-filter-bar";
 import { InboxItemCard } from "./creator-inbox/inbox-item-card";
 import { useCreatorInbox } from "./creator-inbox/use-creator-inbox";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
-import { cn } from "@/lib/utils";
 
 type CreatorInboxPanelProps = {
   initialItems: CreatorInboxItem[];

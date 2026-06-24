@@ -7,7 +7,6 @@ import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import {
   computeBusinessAlerts,
   computeCampaignGoalsByZone,
-  computeNeighborhoodCampaignPlan,
   type AlertSeverity,
   type BusinessAlert,
 } from "@/lib/pilotage/business-alerts";

@@ -20,6 +20,7 @@ import {
   type GamificationExplorerSummary,
   type QuizProgressionFamily,
 } from "./families";
+import type { CleanZoneSpotRow } from "../clean-zones";
 
 export type GamificationBadgesListPayload = {
   totalPoints: number;
@@ -147,7 +148,7 @@ async function loadCleanZoneSourcesForUser(
       .not("notes", "is", null)
       .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
 
-    let otherSpots: any[] = [];
+    const cleanPlaceRows = toCleanZoneSpotRows(cleanPlaces);
     const { data: spots } = await supabase
       .from("spots")
       .select("id, status, latitude, longitude, notes, cleaned_at, validated_at")
@@ -158,48 +159,30 @@ async function loadCleanZoneSourcesForUser(
       .not("notes", "is", null)
       .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
 
-    if (Array.isArray(spots)) {
-      otherSpots = spots;
-    }
-
     return collectEligibleCleanZoneSources({
-      cleanPlaces: (cleanPlaces ?? []) as any[],
-      otherSpots,
+      cleanPlaces: cleanPlaceRows,
+      otherSpots: toCleanZoneSpotRows(spots),
       now,
     });
   });
 }
 
-export async function loadGamificationBadgesList(
+function toCleanZoneSpotRows(rows: unknown): CleanZoneSpotRow[] {
+  return Array.isArray(rows) ? (rows as CleanZoneSpotRow[]) : [];
+}
+
+function appendBadges(
+  target: GamificationBadgeEntry[],
+  source: GamificationBadgeEntry[],
+): void {
+  target.push(...source);
+}
+
+async function awardCleanZoneSourceProgressionEvents(
   supabase: SupabaseClient,
   userId: string,
-): Promise<GamificationBadgesListPayload> {
-  const [counters, cleanZoneSources] = await Promise.all([
-    loadGamificationUserCounters(supabase, userId),
-    loadCleanZoneSourcesForUser(supabase, userId),
-  ]);
-
-  const {
-    totalPoints,
-    approvedActionsCount: actionsCount,
-    completeActionsCount,
-    visitedPlacesCount: placesCount,
-    eligibleFormsCount,
-    participationCount,
-  } = counters;
-  const badges: GamificationBadgeEntry[] = [];
-  const quizProgressions = [
-    buildQuizTypeProgression(),
-    buildQuizBalanceProgression(),
-  ];
-
-  const explorerFamily = buildExplorerFamily(placesCount);
-  badges.push(...explorerFamily.badges);
-
-  for (const tier of buildFormsBadges(eligibleFormsCount)) {
-    badges.push(tier);
-  }
-
+  cleanZoneSources: ReturnType<typeof collectEligibleCleanZoneSources>,
+): Promise<void> {
   for (const source of cleanZoneSources) {
     await awardProgressionEventIfMissing(supabase, {
       userId,
@@ -223,21 +206,14 @@ export async function loadGamificationBadgesList(
       },
     });
   }
+}
 
-  const cleanZoneBadges = buildCleanZonesBadges(cleanZoneSources.length);
-  for (const tier of cleanZoneBadges) {
-    badges.push(tier);
-  }
-
-  const participantBadges = buildParticipantBadges(participationCount);
-  for (const tier of participantBadges) {
-    badges.push(tier);
-  }
-
-  const legacyBadges = buildLegacyBadges(totalPoints, actionsCount, completeActionsCount);
-  badges.push(...legacyBadges);
-
-  const formsBadges = buildFormsBadges(eligibleFormsCount);
+async function awardFormProgressionEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  eligibleFormsCount: number,
+  formsBadges: GamificationBadgeEntry[],
+): Promise<void> {
   for (const tier of FORM_SUBMISSION_TIERS) {
     const matchingBadge = formsBadges.find((item) => item.id === tier.id);
     if (!matchingBadge?.unlocked) {
@@ -284,7 +260,13 @@ export async function loadGamificationBadgesList(
       },
     });
   }
+}
 
+async function awardParticipantTierProgressionEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  participationCount: number,
+): Promise<void> {
   for (const tier of PARTICIPANT_TIERS) {
     if (tier.threshold === 0 || participationCount < tier.threshold) {
       continue;
@@ -309,30 +291,15 @@ export async function loadGamificationBadgesList(
       },
     });
   }
+}
 
-  const firstTraceBadge = legacyBadges.find((badge) => badge.id === "first_trace_utile");
-  if (firstTraceBadge?.unlocked) {
-    await awardProgressionEventIfMissing(supabase, {
-      userId,
-      sourceTable: "actions",
-      sourceId: "first_trace_utile",
-      eventType: "action_declare_validation",
-      statusPhase: "validated",
-      xp: 1,
-      metadata: { badge: "first_trace_utile", completeActionsCount },
-      auditLabel: "Première trace utile débloquée",
-      notifyPayload: {
-        type: "first_trace_utile_unlocked",
-        userId,
-        badgeId: "first_trace_utile",
-        xp: 1,
-        dedupeKey: "first_trace_utile_unlocked:first_trace_utile",
-      },
-    });
-  }
-
+async function awardExplorerTierProgressionEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  currentPlaces: number,
+): Promise<void> {
   for (const tier of EXPLORER_TIERS) {
-    if (tier.min === 0 || explorerFamily.summary.currentPlaces < tier.min) {
+    if (tier.min === 0 || currentPlaces < tier.min) {
       continue;
     }
 
@@ -355,6 +322,78 @@ export async function loadGamificationBadgesList(
       },
     });
   }
+}
+
+async function awardFirstTraceBadgeProgressionEvent(
+  supabase: SupabaseClient,
+  userId: string,
+  completeActionsCount: number,
+  legacyBadges: GamificationBadgeEntry[],
+): Promise<void> {
+  const firstTraceBadge = legacyBadges.find((badge) => badge.id === "first_trace_utile");
+  if (!firstTraceBadge?.unlocked) {
+    return;
+  }
+
+  await awardProgressionEventIfMissing(supabase, {
+    userId,
+    sourceTable: "actions",
+    sourceId: "first_trace_utile",
+    eventType: "action_declare_validation",
+    statusPhase: "validated",
+    xp: 1,
+    metadata: { badge: "first_trace_utile", completeActionsCount },
+    auditLabel: "Première trace utile débloquée",
+    notifyPayload: {
+      type: "first_trace_utile_unlocked",
+      userId,
+      badgeId: "first_trace_utile",
+      xp: 1,
+      dedupeKey: "first_trace_utile_unlocked:first_trace_utile",
+    },
+  });
+}
+
+export async function loadGamificationBadgesList(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<GamificationBadgesListPayload> {
+  const [counters, cleanZoneSources] = await Promise.all([
+    loadGamificationUserCounters(supabase, userId),
+    loadCleanZoneSourcesForUser(supabase, userId),
+  ]);
+
+  const {
+    totalPoints,
+    approvedActionsCount: actionsCount,
+    completeActionsCount,
+    visitedPlacesCount: placesCount,
+    eligibleFormsCount,
+    participationCount,
+  } = counters;
+  const badges: GamificationBadgeEntry[] = [];
+  const quizProgressions = [buildQuizTypeProgression(), buildQuizBalanceProgression()];
+
+  const explorerFamily = buildExplorerFamily(placesCount);
+  appendBadges(badges, explorerFamily.badges);
+
+  const formsBadges = buildFormsBadges(eligibleFormsCount);
+  appendBadges(badges, formsBadges);
+
+  await awardCleanZoneSourceProgressionEvents(supabase, userId, cleanZoneSources);
+
+  appendBadges(badges, buildCleanZonesBadges(cleanZoneSources.length));
+
+  const participantBadges = buildParticipantBadges(participationCount);
+  appendBadges(badges, participantBadges);
+
+  const legacyBadges = buildLegacyBadges(totalPoints, actionsCount, completeActionsCount);
+  appendBadges(badges, legacyBadges);
+
+  await awardFormProgressionEvents(supabase, userId, eligibleFormsCount, formsBadges);
+  await awardParticipantTierProgressionEvents(supabase, userId, participationCount);
+  await awardFirstTraceBadgeProgressionEvent(supabase, userId, completeActionsCount, legacyBadges);
+  await awardExplorerTierProgressionEvents(supabase, userId, explorerFamily.summary.currentPlaces);
 
   const unlockedCount = badges.filter((badge) => badge.unlocked).length;
 

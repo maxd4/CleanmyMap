@@ -1,8 +1,35 @@
-import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { checkAdminAccess } from '@/lib/admin/access';
-import { PageHeader, PageHeaderBadge } from '@/components/ui/page-header';
+import { checkAdminAccess } from "@/lib/admin/access";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 
-export default async function Page({ searchParams }: { searchParams: any }) {
+type XpAuditEntry = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  actor_id: string | null;
+  reason: string | null;
+  xp_change: number | null;
+};
+
+type XpAuditDailyRow = {
+  user_id: string;
+  day: string;
+  xp_total: number | null;
+};
+
+type XpAuditSearchParams = {
+  userId?: string;
+  from?: string;
+  to?: string;
+  limit?: string;
+  offset?: string;
+};
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: XpAuditSearchParams;
+}) {
   await checkAdminAccess();
 
   const supabase = getSupabaseServerClient(true);
@@ -12,17 +39,32 @@ export default async function Page({ searchParams }: { searchParams: any }) {
   const limit = Number(searchParams?.limit ?? 50);
   const offset = Number(searchParams?.offset ?? 0);
 
-  let q: any = supabase.from('xp_audit').select('id, created_at, user_id, actor_id, reason, xp_change, source_table, source_id, metadata').order('created_at', { ascending: false }).range(offset, offset + limit -1);
-  if (userId) q = q.eq('user_id', userId);
-  if (from) q = q.gte('created_at', from);
-  if (to) q = q.lte('created_at', to);
-  const { data } = await q;
+  let query = supabase
+    .from("xp_audit")
+    .select("id, created_at, user_id, actor_id, reason, xp_change, source_table, source_id, metadata")
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
-  // total per day helper
-  const { data: totals } = await supabase.from('xp_audit_daily').select('user_id, day, xp_total').order('day', { ascending: false }).limit(200);
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+  if (from) {
+    query = query.gte("created_at", from);
+  }
+  if (to) {
+    query = query.lte("created_at", to);
+  }
+
+  const { data } = (await query) as { data: XpAuditEntry[] | null };
+
+  const { data: totals } = (await supabase
+    .from("xp_audit_daily")
+    .select("user_id, day, xp_total")
+    .order("day", { ascending: false })
+    .limit(200)) as { data: XpAuditDailyRow[] | null };
 
   return (
-    <div style={{padding:20}}>
+    <div style={{ padding: 20 }}>
       <PageHeader
         tone="slate"
         badge={<PageHeaderBadge tone="slate">Admin</PageHeaderBadge>}
@@ -32,18 +74,46 @@ export default async function Page({ searchParams }: { searchParams: any }) {
       <section>
         <h2>Totals per day</h2>
         <table>
-          <thead><tr><th>user_id</th><th>day</th><th>xp_total</th></tr></thead>
+          <thead>
+            <tr>
+              <th>user_id</th>
+              <th>day</th>
+              <th>xp_total</th>
+            </tr>
+          </thead>
           <tbody>
-            {totals?.map((t:any)=>(<tr key={`${t.user_id}-${t.day}`}><td>{t.user_id}</td><td>{t.day}</td><td>{t.xp_total}</td></tr>))}
+            {totals?.map((row) => (
+              <tr key={`${row.user_id}-${row.day}`}>
+                <td>{row.user_id}</td>
+                <td>{row.day}</td>
+                <td>{row.xp_total}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
       <section>
         <h2>Audit entries</h2>
         <table>
-          <thead><tr><th>when</th><th>user</th><th>actor</th><th>xp</th><th>reason</th></tr></thead>
+          <thead>
+            <tr>
+              <th>when</th>
+              <th>user</th>
+              <th>actor</th>
+              <th>xp</th>
+              <th>reason</th>
+            </tr>
+          </thead>
           <tbody>
-            {data?.map((r:any)=>(<tr key={r.id}><td>{r.created_at}</td><td>{r.user_id}</td><td>{r.actor_id}</td><td>{r.xp_change}</td><td>{r.reason}</td></tr>))}
+            {data?.map((row) => (
+              <tr key={row.id}>
+                <td>{row.created_at}</td>
+                <td>{row.user_id}</td>
+                <td>{row.actor_id}</td>
+                <td>{row.xp_change}</td>
+                <td>{row.reason}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>

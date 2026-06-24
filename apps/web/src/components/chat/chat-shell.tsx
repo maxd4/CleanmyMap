@@ -1,12 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { ArrowRight, UserPlus } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import useSWR from "swr";
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -52,7 +49,7 @@ import {
   type ChatMetaItem,
   toMetadataRecord,
 } from "./chat-shell.utils";
-import { logFailure, logWarning } from "@/lib/logging/failure-log";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -79,9 +76,20 @@ export function ChatShell({
   const { locale } = useSitePreferences();
   const pathname = usePathname();
   const userId = user?.id;
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
-  const [currentAccountIdentity, setCurrentAccountIdentity] =
-    useState<CurrentAccountIdentity | null>(null);
+  const supabase = useMemo(() => {
+    try {
+      return getSupabaseBrowserClient(
+        buildClerkSupabaseAccessTokenProvider(getToken),
+      );
+    } catch {
+      return null;
+    }
+  }, [getToken]);
+
+  const { data: currentAccountIdentity = null } = useSWR<CurrentAccountIdentity | null>(
+    userId ? ["current-account-identity", userId] : null,
+    fetchCurrentAccountIdentity,
+  );
 
   const {
     activeChannelType,
@@ -142,32 +150,6 @@ export function ChatShell({
     [publicMetadata],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    try {
-      const client = getSupabaseBrowserClient(
-        buildClerkSupabaseAccessTokenProvider(getToken),
-      );
-      if (!cancelled) {
-        setSupabase(client);
-      }
-    } catch (error) {
-      if (!cancelled) {
-        if (process.env.NODE_ENV !== "production") {
-          logWarning("ChatShell", "Supabase browser client unavailable", {
-            reason: error instanceof Error ? error.message : String(error),
-          });
-        }
-        setSupabase(null);
-      }
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [getToken]);
-
   const effectiveZone = useMemo(
     () =>
       selectedZone ||
@@ -190,33 +172,6 @@ export function ChatShell({
     () => effectiveZone !== "" && findZoneWithNeighbors(effectiveZone) !== null,
     [effectiveZone],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!userId) {
-      setCurrentAccountIdentity(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    fetchCurrentAccountIdentity()
-      .then((identity) => {
-        if (!cancelled) {
-          setCurrentAccountIdentity(identity);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCurrentAccountIdentity(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
 
   const senderDisplayName =
     currentAccountIdentity?.displayName ||
@@ -305,24 +260,6 @@ export function ChatShell({
     [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
   );
   const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">("message");
-
-  const communityAnnouncementAvatars = useMemo(() => {
-    if (activeChannelType !== "community") {
-      return [];
-    }
-
-    const seen = new Set<string>();
-    return messages
-      .map((messageItem) => messageItem.sender)
-      .filter((sender) => {
-        if (seen.has(sender.handle)) {
-          return false;
-        }
-        seen.add(sender.handle);
-        return true;
-      })
-      .slice(0, 4);
-  }, [activeChannelType, messages]);
 
   const metaItems: ChatMetaItem[] = useMemo(
     () => [

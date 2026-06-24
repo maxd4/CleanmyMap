@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Info, Calendar, ShieldCheck } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Calendar, ShieldCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type {
   MetricDelta,
   PeriodComparisonResult,
@@ -22,7 +23,7 @@ function formatSigned(value: number, unit: string): string {
 function describeDelta(
   delta: MetricDelta,
   betterWhenLower: boolean,
-): { label: string; tone: string; icon: any } {
+): { label: string; tone: string; icon: LucideIcon } {
   const improves = betterWhenLower
     ? delta.direction === "down"
     : delta.direction === "up";

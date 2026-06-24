@@ -3,7 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import { loadGamificationBadgesList } from "./listing";
 
 function createEmptyQueryChain() {
-  const chain: any = {
+  type EmptyQueryChain = {
+    select: (columns: string) => EmptyQueryChain;
+    eq: (field: string, value: string) => EmptyQueryChain;
+    in: (field: string, values: string[]) => EmptyQueryChain;
+    not: (field: string, operator: string, value: string | boolean) => EmptyQueryChain;
+    or: (expression: string) => Promise<{ data: never[]; error: null }>;
+    maybeSingle: () => Promise<{ data: null; error: null }>;
+    insert: (values: Record<string, unknown>) => Promise<{ data: null; error: null }>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
@@ -11,7 +21,7 @@ function createEmptyQueryChain() {
     or: vi.fn(async () => ({ data: [], error: null })),
     maybeSingle: vi.fn(async () => ({ data: null, error: null })),
     insert: vi.fn(async () => ({ data: null, error: null })),
-  };
+  } as EmptyQueryChain;
 
   return chain;
 }
@@ -28,7 +38,7 @@ describe("gamification badges listing", () => {
   });
 
   it("loads badge counters through the Supabase RPC helper", async () => {
-    const supabase: any = {
+    const supabase = {
       rpc: vi.fn(async (name: string, params?: Record<string, unknown>) => {
         if (name === "load_gamification_user_counters") {
           expect(params).toEqual({ p_user_id: "user-1" });

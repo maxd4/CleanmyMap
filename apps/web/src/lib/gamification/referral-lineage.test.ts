@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildReferralLineageLeaderboard,
@@ -84,7 +85,7 @@ describe("referral lineage", () => {
 
     const supabase = {
       rpc: rpcMock,
-    } as any;
+    } as unknown as SupabaseClient;
 
     const view = await loadReferralLineageView(supabase, focus.id);
 
@@ -103,7 +104,7 @@ describe("referral lineage", () => {
 
     const supabase = {
       rpc: rpcMock,
-    } as any;
+    } as unknown as SupabaseClient;
 
     await expect(loadReferralLineageView(supabase, "child")).rejects.toThrow("rpc failed");
   });

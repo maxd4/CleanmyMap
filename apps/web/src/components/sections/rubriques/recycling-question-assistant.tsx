@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Info, MapPin, Search } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";

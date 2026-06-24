@@ -39,7 +39,7 @@ export async function checkAdminAccess() {
 
 #### Page-Level Protection (/admin/gamification/xp-audit/page.tsx)
 ```typescript
-export default async function Page({ searchParams }: { searchParams: any }) {
+export default async function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   await checkAdminAccess();  // ← Guard here
   const supabase = getSupabaseServerClient(true);
   // ... rest of page

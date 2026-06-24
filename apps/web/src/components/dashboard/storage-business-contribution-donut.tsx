@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
@@ -358,11 +358,6 @@ export function StorageBusinessContributionDonut({
 
   const [selectedKey, setSelectedKey] = useState<string | null>(data[0]?.key ?? null);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSelectedKey(data[0]?.key ?? null);
-    setHoveredKey(null);
-  }, [data, mode]);
 
   const selectedItem =
     data.find((item) => item.key === (hoveredKey ?? selectedKey)) ?? data[0] ?? null;

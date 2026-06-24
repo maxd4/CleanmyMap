@@ -168,6 +168,16 @@ Et je laisserai en place un `high` sur une table centrale comme `profiles` si:
 | Refactor qui rend le code plus complexe sans baisse claire du risque | À éviter |
 | Index ajoutés partout "au cas où" | À éviter |
 
+### À faire plus tard sur Supabase, à partir de septembre 2026
+
+| À faire plus tard sur Supabase, à partir de septembre 2026 | Pourquoi |
+| --- | --- |
+| Chercher à faire passer tous les scores en `low` | Pas nécessaire |
+| Ajouter beaucoup d'index fins | À faire quand les requêtes finales sont stabilisées |
+| Refactoriser toutes les tables `high` | Certaines sont normales si elles sont centrales |
+| Optimiser des composants encore instables | Risque de perte de temps |
+| Créer une documentation exhaustive | Elle deviendra vite obsolète |
+
 ### Questions obligatoires pour chaque nouvelle feature
 
 1. Où les données sont-elles stockées ?

@@ -28,7 +28,7 @@ type UseChatDataParams = {
   supabase?: SupabaseClient | null;
 };
 
-type SendChatMessageParams = {
+export type SendChatMessageParams = {
   optimisticMessage: ChatMessage;
   body: {
     channelType: ChatChannelType;

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RecyclingQuestionAssistant } from "./recycling-question-assistant/index";

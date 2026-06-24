@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, MapPin, Info } from "lucide-react";
-import { Answer } from "../assistant-constants";
+import { type Answer, type AssistantCopy } from "../assistant-constants";
 import { toneClasses } from "../assistant-utils";
 import { cn } from "@/lib/utils";
 
 interface AssistantAnswerProps {
   answer: Answer;
-  copy: any;
+  copy: AssistantCopy;
 }
 
 export function AssistantAnswer({ answer, copy }: AssistantAnswerProps) {

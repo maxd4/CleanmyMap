@@ -1,5 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+type ProgressionEventInsert = {
+  user_id: string;
+  event_type: string;
+  source_table: string;
+  source_id: string;
+  status_phase: string;
+  weight: number;
+  xp_base: number;
+  xp_awarded: number;
+  occurred_on: string;
+  metadata: Record<string, unknown>;
+};
+
 // Integration test: badges/list API with participant tier logic and audit/progression_events writes
 describe('POST /api/gamification/badges/list - participant tier unlock', () => {
   beforeEach(() => {
@@ -8,22 +21,22 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
 
   it('should insert into progression_events exactly once per newly-unlocked participant tier', async () => {
     let insertCount = 0;
-    const inserts: any[] = [];
+    const inserts: ProgressionEventInsert[] = [];
 
-    const supabaseMock: any = {
+    const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
             select: vi.fn(() => ({
-              eq: vi.fn((..._args: unknown[]) => ({
-                eq: vi.fn((..._nextArgs: unknown[]) => ({
-                  eq: vi.fn((..._finalArgs: unknown[]) => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
                     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                   })),
                 })),
               })),
             })),
-            insert: vi.fn(async (payload: any) => {
+            insert: vi.fn(async (payload: ProgressionEventInsert) => {
               insertCount++;
               inserts.push(payload);
               return { data: null, error: null };
@@ -98,14 +111,14 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
     let selectCount = 0;
     let insertCount = 0;
 
-    const supabaseMock: any = {
+    const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
             select: vi.fn(() => ({
-              eq: vi.fn((..._args: unknown[]) => ({
-                eq: vi.fn((..._nextArgs: unknown[]) => ({
-                  eq: vi.fn((..._finalArgs: unknown[]) => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
                     maybeSingle: vi.fn(async () => {
                       selectCount++;
                       // return existing row (data is not null) to simulate duplicate

@@ -4,30 +4,48 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { 
   Recycle, 
-  Trash2, 
   MapPin, 
   BarChart3, 
   ArrowRight, 
   CheckCircle2, 
-  AlertTriangle,
-  Info,
   Database,
-  Search,
-  ChevronRight,
   Zap,
-  Sparkles,
   Layers,
   ArrowUpRight,
   Droplets
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type RecyclingStats = {
+  totalKg: number;
+  totalButts: number;
+  withTrace: number;
+  mixedIndex: number;
+};
+
+type RecyclingStreamLine = {
+  category: string;
+  kg: number;
+  sharePercent: number;
+  entries: number;
+};
+
+type RecyclingBreakdown = {
+  lines: RecyclingStreamLine[];
+};
+
+type RecyclingQualitySummary = {
+  elevee: number;
+  moyenne: number;
+  faible: number;
+};
+
 export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
   fr,
   stats,
 }: {
   fr: boolean;
-  stats: any;
+  stats: RecyclingStats;
 }) {
   const cards = [
     {
@@ -109,7 +127,7 @@ export const RecyclingStreamTable = memo(function RecyclingStreamTable({
   breakdown,
   fr,
 }: {
-  breakdown: any;
+  breakdown?: RecyclingBreakdown;
   fr: boolean;
 }) {
   if (!breakdown) return null;
@@ -137,7 +155,7 @@ export const RecyclingStreamTable = memo(function RecyclingStreamTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {breakdown.lines.map((line: any) => (
+            {breakdown.lines.map((line) => (
               <tr key={line.category} className="group hover:bg-white/[0.02] transition-all">
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
@@ -172,7 +190,7 @@ export const RecyclingStreamTable = memo(function RecyclingStreamTable({
   );
 });
 
-export const RecyclingQualitySummary = memo(function RecyclingQualitySummary({ quality, fr }: { quality: any; fr: boolean }) {
+export const RecyclingQualitySummary = memo(function RecyclingQualitySummary({ quality, fr }: { quality?: RecyclingQualitySummary; fr: boolean }) {
   if (!quality) return null;
 
   const items = [
@@ -229,7 +247,7 @@ export const RecyclingWorkflowCard = memo(function RecyclingWorkflowCard({ fr }:
         <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">{fr ? "Circuit de Valorisation" : "Recovery Workflow"}</h3>
       </div>
       <p className="text-xs text-slate-400 leading-relaxed font-bold opacity-80">
-        Chaque action terrain alimente notre base de données circulaire. Les flux sont dirigés vers les centres de tri partenaires pour une réintroduction dans l'économie locale.
+        Chaque action terrain alimente notre base de données circulaire. Les flux sont dirigés vers les centres de tri partenaires pour une réintroduction dans l&apos;économie locale.
       </p>
       <div className="pt-4 border-t border-white/5 flex items-center justify-between">
          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Flux Optimisé</span>

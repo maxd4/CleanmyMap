@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Zap } from "lucide-react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
@@ -8,6 +8,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { computeNextSRSState, createInitialSRSState, type SRSQuality, type SRSStats } from "@/lib/gamification/quiz-srs";
 import { loadQuizSRSData, saveQuizSRSState } from "@/lib/services/quiz-srs-service";
 import { recordQuizQuestionCorrectAnswer } from "@/lib/gamification/api";
+import { recordQuizPedagogicalMetrics } from "@/lib/learning/quiz-pedagogical-metrics-client";
 import {
   formatCognitiveDate,
   getQuizStateFromStats,
@@ -46,6 +47,13 @@ import type {
   QuizLocalScope,
   QuizSourceType,
 } from "@/lib/learning/quiz-source-metadata";
+import {
+  buildQuizPersonalProgressSnapshot,
+  mergeQuizPersonalProgress,
+  readQuizPersonalProgress,
+  saveQuizPersonalProgress,
+  type QuizPersonalProgressState,
+} from "@/lib/learning/quiz-personal-progress";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz-question-bank";
 
 export { QUIZ_QUESTIONS };
@@ -119,6 +127,7 @@ export function EnvironmentalQuiz() {
   const { user } = useUser();
   const { locale } = useSitePreferences();
   const [srsData, setSrsData] = useState<Record<string, SRSStats>>({});
+  const [personalProgress, setPersonalProgress] = useState<QuizPersonalProgressState | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(null);
   const [selectedTrapLevel, setSelectedTrapLevel] = useState<QuizTrapLevelId | null>(null);
@@ -134,6 +143,7 @@ export function EnvironmentalQuiz() {
   const [sessionResults, setSessionResults] = useState<Record<string, boolean>>({});
   const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<string, number>>({});
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const persistedSessionRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,6 +173,10 @@ export function EnvironmentalQuiz() {
     };
   }, [getToken, user?.id]);
 
+  useEffect(() => {
+    setPersonalProgress(readQuizPersonalProgress());
+  }, []);
+
   const filteredQuestions = useMemo(() => {
     if (!selectedAccessType) return [];
     return buildQuizSessionDeck(QUIZ_QUESTIONS, srsData, {
@@ -170,6 +184,7 @@ export function EnvironmentalQuiz() {
       accessTypeId: selectedAccessType,
       trapLevel: selectedTrapLevel,
       reasoningType: selectedReasoningType,
+      shuffleSession: selectedAccessType === "mixte",
     });
   }, [selectedAccessType, selectedReasoningType, selectedTrapLevel, srsData]);
 
@@ -365,6 +380,53 @@ export function EnvironmentalQuiz() {
       nextReviewTarget,
     };
   }, [score, selectedAccessType, sessionCompleted, sessionResults, sessionQuestions.length]);
+  const personalProgressSnapshot = useMemo(
+    () => buildQuizPersonalProgressSnapshot(personalProgress),
+    [personalProgress],
+  );
+
+  useEffect(() => {
+    if (!sessionCompleted || !sessionSummary || !selectedAccessType || persistedSessionRef.current) {
+      return;
+    }
+
+    const nextProgress = mergeQuizPersonalProgress(personalProgress, {
+      mode: selectedAccessType,
+      score: sessionSummary.score,
+      totalQuestions: sessionSummary.totalQuestions,
+      questions: sessionQuestions,
+      results: sessionResults,
+      errorCounts: sessionErrorCounts,
+    });
+
+    persistedSessionRef.current = true;
+    setPersonalProgress(nextProgress);
+    saveQuizPersonalProgress(nextProgress);
+    void recordQuizPedagogicalMetrics({
+      mode: selectedAccessType,
+      playedAt: new Date().toISOString(),
+      totalQuestions: sessionSummary.totalQuestions,
+      score: sessionSummary.score,
+      questions: Array.from(new Map(sessionQuestions.map((question) => [question.id, question])).values()).map((question) => ({
+        questionId: question.id,
+        correct: Boolean(sessionResults[question.id]),
+        skill: question.skill ?? question.reasoningType,
+        pedagogicalType: question.pedagogicalType ?? question.format ?? question.type,
+        errorType: question.errorType ?? buildQuizErrorGrid(question).errorType,
+        category: question.category,
+        difficulty: question.difficulty,
+        trapLevel: question.trapLevel,
+      })),
+    }).catch(() => undefined);
+  }, [
+    personalProgress,
+    selectedAccessType,
+    sessionCompleted,
+    sessionErrorCounts,
+    sessionQuestions,
+    sessionResults,
+    sessionSummary,
+  ]);
 
   const handleSRSUpdate = async (quality: SRSQuality) => {
     if (!question) return;
@@ -449,6 +511,7 @@ export function EnvironmentalQuiz() {
   };
 
   const resetSessionState = () => {
+    persistedSessionRef.current = false;
     setCurrentQuestionIdx(0);
     setSelectedOption("");
     setSelectedOptions([]);
@@ -542,12 +605,13 @@ export function EnvironmentalQuiz() {
 
   if (!selectedAccessType) {
     return (
-      <QuizAccessPicker
-        locale={locale}
-        selectedTrapLevel={selectedTrapLevel}
-        onSelectTrapLevel={handleSelectTrapLevel}
-        onSelectAccessType={handleSelectAccessType}
-      />
+    <QuizAccessPicker
+      locale={locale}
+      selectedTrapLevel={selectedTrapLevel}
+      personalProgress={personalProgressSnapshot}
+      onSelectTrapLevel={handleSelectTrapLevel}
+      onSelectAccessType={handleSelectAccessType}
+    />
     );
   }
 
@@ -609,6 +673,7 @@ export function EnvironmentalQuiz() {
       nextReasoningType={nextReasoningType}
       hasReviewedToday={currentQuestionSeenToday}
       sessionSummary={sessionSummary}
+      personalProgress={personalProgressSnapshot}
       onSelectOption={setSelectedOption}
       onToggleOption={toggleSelectedOption}
       onCheckAnswer={checkAnswer}

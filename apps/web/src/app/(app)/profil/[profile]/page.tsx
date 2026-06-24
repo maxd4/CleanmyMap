@@ -79,7 +79,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const switchableProfiles = isAdmin
     ? getSwitchableProfiles(activeProfile)
     : [activeProfile];
-  const supabase = getSupabaseServerClient(true);
   const referralSupabase = getSupabaseServerClient(false);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,

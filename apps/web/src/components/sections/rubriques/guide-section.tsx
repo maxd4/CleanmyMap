@@ -58,7 +58,8 @@ export function GuideOperationalPanel() {
 
     return { ...defaults, ...(guideChecklistStorage.read() ?? {}) };
   });
-  const [serverReady, setServerReady] = useState(false);
+  const [serverReadyForUser, setServerReadyForUser] = useState(false);
+  const serverReady = !isLoaded || !user || serverReadyForUser;
 
   useEffect(() => {
     guideChecklistStorage.write(checks);
@@ -70,7 +71,6 @@ export function GuideOperationalPanel() {
     }
 
     if (!user) {
-      setServerReady(true);
       return;
     }
 
@@ -92,7 +92,7 @@ export function GuideOperationalPanel() {
       })
       .finally(() => {
         if (active) {
-          setServerReady(true);
+          setServerReadyForUser(true);
         }
       });
 

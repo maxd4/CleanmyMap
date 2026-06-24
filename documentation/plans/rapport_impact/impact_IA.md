@@ -119,6 +119,14 @@ Le cadre du DU a structuré la démarche autant que le sujet. Cette formation é
 
 Cette trajectoire montre une construction progressive, liée à l'apprentissage du développement assisté par IA autant qu'au sujet du projet lui-même. Les ateliers du DU ont aussi nourri la suite du travail d'évaluation et la réflexion sur les arbitrages de sobriété, d'utilité et de gouvernance.
 
+### Chronologie du projet
+
+- Fin février : prototype de cartographie et rapport d'impact sur Google Colab relié à un fichier Excel.
+- Mars : structuration du projet vers un site web et découverte de l'écosystème du « vibe coding ».
+- Avril : stabilisation de toutes les pages du site web et correction des bugs.
+- Mai : finalisation et mise en fonctionnement des rubriques importantes, dont la homepage, le formulaire, le mail, la centralisation UI couleur et texte, le rapport d'impact, le ruban de navigation et la partie juridique.
+- Juin : visioconférences avec des partenaires, application de l'UI de plusieurs pages très belles générées par ChatGPT LLM 5.5, travail de fond sur la page méthodologie, Trash Spotter, la météo et le rapport d'impact, création du formulaire de groupe et optimisation des appels Vercel et Supabase pour économiser les quotas gratuits avant une utilisation grand public.
+
 ### Objectifs fonctionnels de CleanMyMap
 
 CleanMyMap n'a pas pour seul but d'afficher une carte. Le site doit organiser des données utiles à l'action de terrain, faciliter la coordination entre bénévoles et associations, et fournir des outils de pilotage proportionnés à un usage réel. Le projet s'articule autour de rubriques complémentaires :
@@ -491,6 +499,8 @@ Cette stratégie n'est pas neutre pour autant. Un quota gratuit n'est pas un quo
 
 En pratique, les quotas disponibles sur Antigravity ont complété l'usage principal, avec Gemini 3 Flash, Gemini 3.1 Pro et un peu de Claude Sonnet 4.6, tandis que l'extension Amazon Q sur VS Code offrait un large quota sur Sonnet 4.5 après création d'un compte Amazon AWS et vérification de carte bancaire nominative à 1 €. Ces usages répartis sur plusieurs comptes ont doublé approximativement l'utilisation IA hebdomadaire par rapport à l'abonnement ChatGPT Plus seul avec Codex. L'option locale a été écartée faute d'ordinateur suffisamment puissant ; l'achat d'un nouvel équipement dédié aurait ajouté une ACV significative.
 
+Depuis début juin 2026, les quotas gratuits d'Antigravity ont été réduits de moitié, ce qui les rend beaucoup moins exploitables au quotidien. Dans le même temps, les quotas gratuits hebdomadaires de Codex sont passés à une logique mensuelle. Dans ces conditions, multiplier mes autres comptes Gmail pour prolonger artificiellement l'usage ne change presque plus rien en pratique : pour la seconde moitié du développement du site, jusqu'en septembre, je dois donc m'appuyer de manière régulière sur le plan Codex Plus à 20 € par mois, à un rythme d'environ 10 heures hebdomadaires.
+
 **Synthèse opérationnelle**
 
 | Mode d'usage                    | Avantage principal                                  | Risque principal                                                       | Usage recommandé pour CleanMyMap                                  |
@@ -547,6 +557,8 @@ Contrairement à l'abonnement, l'utilisateur n'est pas seulement limité par un 
 Les tarifs varient fortement selon le modèle. À titre d'ordre de grandeur, OpenAI indique par exemple que GPT-5.4 mini est facturé **0,75 $ par million de jetons en entrée** et **4,50 $ par million de jetons en sortie** dans l'API, tandis que des modèles plus puissants coûtent davantage. [@openai_api_pricing] Cela signifie qu'une même session de travail peut coûter quelques dollars avec un modèle léger, mais beaucoup plus avec un modèle haut de gamme, surtout si elle mobilise un contexte long et produit beaucoup de sortie.
 
 Une session de code peut représenter environ 20 à 80 échanges. Chaque échange peut contenir de 1 000 à 5 000 jetons, parfois davantage si sont ajoutés plusieurs fichiers, logs, erreurs, dépendances ou extraits de documentation. À l'échelle d'un mois, un usage régulier peut donc atteindre plusieurs millions de jetons. Le coût final dépend alors du modèle choisi, du ratio entrée/sortie, du contexte réutilisé, du cache éventuel et du nombre de relances.
+
+Dans une hypothèse haute de cette même logique, une longue discussion d'environ deux heures avec un LLM, ou la génération d'une cinquantaine d'images, peut être ramenée à un ordre de grandeur d'environ **1 kWh**, soit environ **1 kgCO₂e**. Ce repère reste indicatif et sert uniquement à comparer des usages lourds entre eux.
 
 L'exemple d'**OpenClaw** permet de montrer comment un modèle de langage (modèke de langage) peut devenir un véritable **agent d'action** dès qu'il est connecté à des services externes. Le projet, développé par **Peter Steinberger**, a d'abord été connu sous le nom **Clawdbot**, puis **Moltbot**, avant d'être renommé **OpenClaw** après des tensions de marque avec Anthropic (entreprise ayant developpée les modèles claude code). OpenClaw est un projet **source ouverte disponible sur GitHub**, conçu pour relier des modèles comme Claude, GPT, DeepSeek ou d'autres modèles compatibles à des outils concrets : messagerie, calendrier, navigateur, fichiers, scripts ou flux de travail personnels.
 À sa sortie, l'outil a été perçu comme une rupture importante, presque révolutionnaire, car il montrait que l'IA ne se limitait plus à répondre dans une interface de chat : elle pouvait commencer à exécuter des actions dans un environnement numérique réel.

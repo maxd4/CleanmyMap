@@ -5,7 +5,9 @@ import { useUser } from"@clerk/nextjs";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
+import { fetchActionOperationAudit } from "@/lib/actions/operation-audit";
 import { CmmButton } from"@/components/ui/cmm-button";
+import { OperationAuditTimeline } from "@/components/actions/operation-audit-timeline";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { isAdminLikeProfile, normalizeProfileRole } from "@/lib/profiles";
 import {
@@ -16,8 +18,10 @@ import {
 import type {
  ActionListItem,
  ActionQualityGrade,
+ ActionMapItem,
  ActionStatus,
 } from"@/lib/actions/types";
+import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
 import type { ActionParticipationReviewItem } from"@/lib/actions/group-participation";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import { CmmSkeleton } from"@/components/ui/cmm-skeleton";
@@ -217,11 +221,22 @@ export function ActionsHistoryList() {
  : null;
  const selectedActionId = selectedItem?.id ?? null;
  const selectedCanModerateGroupJoin = Boolean(
-  selectedItem && canManageGroupJoin(selectedItem, currentUserId, isAdminLikeUser),
+ selectedItem && canManageGroupJoin(selectedItem, currentUserId, isAdminLikeUser),
  );
- const pdfRows = useMemo(
- () =>
- approvedFilteredItems.map((item: ActionListItem) => {
+ const selectedCanViewActionAudit = Boolean(
+  selectedItem &&
+   (isAdminLikeUser || selectedItem.created_by_clerk_id === currentUserId),
+ );
+ const actionAudit = useSWR<{ items?: AdminOperationAuditEntry[] }>(
+  selectedActionId && selectedCanViewActionAudit
+   ? ["action-operation-audit", selectedActionId]
+   : null,
+  () => fetchActionOperationAudit(selectedActionId ?? "", 12),
+  swrRecentViewOptions,
+ );
+  const pdfRows = useMemo(
+    () =>
+      approvedFilteredItems.map((item: ActionListItem) => {
  const quality = qualityById.get(item.id);
  const operational = item.contract ? getActionOperationalContext(item.contract) : null;
  return {
@@ -229,8 +244,8 @@ export function ActionsHistoryList() {
  Bénévole: item.actor_name ||"Anonyme",
  Lieu: item.location_label,
  Type: formatRecordType(item),
- Kg: mapItemWasteKg(item as any) ?? 0,
- Mégots: mapItemCigaretteButts(item as any) ?? 0,
+ Kg: mapItemWasteKg(item as ActionMapItem) ?? 0,
+ Mégots: mapItemCigaretteButts(item as ActionMapItem) ?? 0,
  Statut: item.status,
  Qualité: quality ? `${quality.grade} (${quality.score}/100)` :"n/a",
  Contexte: operational?.placeTypeLabel ??"n/a",
@@ -754,6 +769,39 @@ export function ActionsHistoryList() {
  )}
  </div>
  ) : null}
+
+ {selectedCanViewActionAudit ? (
+  <div className="mt-3">
+   <OperationAuditTimeline
+    title={fr ? "Journal de modifications" : "Change log"}
+    scopeLabel={
+     fr
+      ? selectedItem?.location_label
+        ? `Fiche action · ${selectedItem.location_label}`
+        : "Fiche action"
+      : selectedItem?.location_label
+        ? `Action sheet · ${selectedItem.location_label}`
+        : "Action sheet"
+    }
+    items={actionAudit.data?.items ?? []}
+    loading={actionAudit.isLoading}
+    errorMessage={
+     actionAudit.error
+      ? actionAudit.error instanceof Error
+       ? actionAudit.error.message
+       : fr
+        ? "Journal indisponible."
+        : "Audit unavailable."
+      : null
+    }
+    emptyMessage={
+     fr
+      ? "Aucune modification enregistrée sur cette action pour le moment."
+      : "No change recorded for this action yet."
+    }
+   />
+  </div>
+ ) : null}
  </div>
  ) : null}
 
@@ -817,13 +865,13 @@ export function ActionsHistoryList() {
  <td className="px-2 py-2">{item.location_label}</td>
  <td className="px-2 py-2">{formatRecordType(item)}</td>
  <td className="px-2 py-2">
- {mapItemWasteKg(item as any) !== null 
- ? Number(mapItemWasteKg(item as any)).toFixed(1)
+ {mapItemWasteKg(item as ActionMapItem) !== null
+ ? Number(mapItemWasteKg(item as ActionMapItem)).toFixed(1)
  : <span className="text-slate-300">-</span>}
  </td>
  <td className="px-2 py-2">
- {mapItemCigaretteButts(item as any) !== null 
- ? mapItemCigaretteButts(item as any)
+ {mapItemCigaretteButts(item as ActionMapItem) !== null
+ ? mapItemCigaretteButts(item as ActionMapItem)
  : <span className="text-slate-300">-</span>}
  </td>
  <td className="px-2 py-2">

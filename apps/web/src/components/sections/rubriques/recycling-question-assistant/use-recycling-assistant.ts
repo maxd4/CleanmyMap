@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { buildAnswer } from "./assistant-utils";
+import type { AssistantCopy } from "./assistant-constants";
 
 export function useRecyclingAssistant() {
   const { locale } = useSitePreferences();
@@ -10,7 +11,7 @@ export function useRecyclingAssistant() {
   const [question, setQuestion] = useState("");
   const answer = useMemo(() => buildAnswer(question, locale), [question, locale]);
 
-  const copy = fr
+  const copy: AssistantCopy = fr
     ? {
         title: "Assistant de tri",
         subtitle: "Pose une question en langage simple: dans quelle poubelle, déchèterie ou point de collecte spécifique ?",

@@ -11,7 +11,8 @@ export function useKitData(fr: boolean) {
     tools: false,
     briefing: false,
   });
-  const [kitReady, setKitReady] = useState<boolean>(false);
+  const [kitReadyForUser, setKitReadyForUser] = useState<boolean>(false);
+  const kitReady = !isLoaded || !user || kitReadyForUser;
 
   const packItems = useMemo(() => {
     if (packType === "solo") {
@@ -58,7 +59,6 @@ export function useKitData(fr: boolean) {
     }
 
     if (!user) {
-      setKitReady(true);
       return;
     }
 
@@ -75,7 +75,7 @@ export function useKitData(fr: boolean) {
         }
       })
       .finally(() => {
-        if (active) setKitReady(true);
+        if (active) setKitReadyForUser(true);
       });
     return () => {
       active = false;

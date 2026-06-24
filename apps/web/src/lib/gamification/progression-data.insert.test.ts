@@ -11,7 +11,7 @@ describe("insertProgressionEvent", () => {
       from: vi.fn(() => ({
         insert,
       })),
-    } as any;
+    };
 
     const inserted = await insertProgressionEvent(supabase, {
       userId: "user-1",

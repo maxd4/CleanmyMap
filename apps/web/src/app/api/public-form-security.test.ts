@@ -1,6 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearRateLimitStore } from "@/lib/rate-limit/store";
 
+const verifyRateLimitMock = vi.hoisted(() => vi.fn(async () => ({
+  allowed: true,
+  limit: 1,
+  remaining: 1,
+})));
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn(() => null));
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn(() => ({
+  from: vi.fn(),
+})));
+const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn(async () => true));
+const sendEmailMock = vi.hoisted(() => vi.fn(async () => ({ id: "mock", status: "mocked" })));
+const ensureEmailQuotaAvailableMock = vi.hoisted(() => vi.fn(async () => undefined));
+const appendPartnerOnboardingRequestMock = vi.hoisted(() => vi.fn(async () => ({
+  id: "partner-request-mock",
+  status: "pending_admin_review",
+})));
+const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async () => ({
+  id: "promotion-request-mock",
+  status: "pending_owner_review",
+})));
+
 vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(async () => ({ userId: "user-1" })),
 }));
@@ -9,6 +30,34 @@ vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: vi.fn(async () => ({ email: "user@example.org" })),
   getCurrentUserRoleLabel: vi.fn(async () => "benevole"),
   requireCreatorAccess: vi.fn(async () => ({ ok: true, userId: "user-1" })),
+}));
+
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: getSupabaseServerClientMock,
+}));
+
+vi.mock("@/lib/services/email", () => ({
+  sendEmail: sendEmailMock,
+  ensureEmailQuotaAvailable: ensureEmailQuotaAvailableMock,
+}));
+
+vi.mock("@/lib/community/creator-inbox-email", () => ({
+  sendCreatorInboxEmail: sendCreatorInboxEmailMock,
+}));
+
+vi.mock("@/lib/partners/onboarding-requests-store", () => ({
+  appendPartnerOnboardingRequest: appendPartnerOnboardingRequestMock,
+  countPartnerOnboardingRequests: vi.fn(async () => 0),
+  listPartnerOnboardingRequests: vi.fn(async () => []),
+}));
+
+vi.mock("@/lib/admin/promotion-requests-store", () => ({
+  appendPromotionRequest: appendPromotionRequestMock,
 }));
 
 describe("public form security guardrails", () => {

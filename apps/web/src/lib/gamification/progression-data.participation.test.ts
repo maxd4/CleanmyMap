@@ -1,8 +1,29 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { loadUserProgressionStats } from "./progression-data";
 
-function createQueryChain<T>(result: T[]) {
-  const chain: any = {
+type QueryResult<T> = {
+  data: T[];
+  error: null;
+};
+
+type QueryChain<T> = {
+  select: (columns: string) => QueryChain<T>;
+  eq: (field: string, value: string) => QueryChain<T>;
+  in: (field: string, values: string[]) => QueryChain<T>;
+  neq: (field: string, value: string) => QueryChain<T>;
+  is: (field: string, value: boolean | null) => QueryChain<T>;
+  order: (field: string, options?: { ascending?: boolean }) => QueryChain<T>;
+  limit: (value: number) => Promise<QueryResult<T>>;
+  maybeSingle: () => Promise<{ data: null; error: null }>;
+  then: (
+    resolve: (value: QueryResult<T>) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
+function createQueryChain<T>(result: T[]): QueryChain<T> {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
@@ -11,10 +32,11 @@ function createQueryChain<T>(result: T[]) {
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({ data: result, error: null })),
     maybeSingle: vi.fn(async () => ({ data: null, error: null })),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
-      Promise.resolve({ data: result, error: null }).then(resolve, reject),
-  };
-
+    then: (
+      resolve: (value: QueryResult<T>) => void,
+      reject: (reason: unknown) => void,
+    ) => Promise.resolve({ data: result, error: null }).then(resolve, reject),
+  } as QueryChain<T>;
   return chain;
 }
 
@@ -54,7 +76,7 @@ describe("loadUserProgressionStats", () => {
         }
         throw new Error(`Unexpected rpc: ${name}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const stats = await loadUserProgressionStats(supabase, "user-1");
 

@@ -102,7 +102,7 @@ export const ChatContextSidebar = memo(function ChatContextSidebar({
             <span className={isLight ? "text-slate-800 font-bold" : "text-slate-200 font-bold"}>1 246</span>
           </div>
           <div className="flex justify-between">
-            <span className={isLight ? "text-slate-500" : "text-slate-400"}>Messages aujourd'hui</span>
+            <span className={isLight ? "text-slate-500" : "text-slate-400"}>Messages aujourd&apos;hui</span>
             <span className={isLight ? "text-slate-800 font-bold" : "text-slate-200 font-bold"}>86</span>
           </div>
           <div className="flex justify-between">

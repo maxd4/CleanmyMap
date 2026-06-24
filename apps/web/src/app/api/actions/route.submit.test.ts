@@ -9,6 +9,11 @@ const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
+const resolveActionCreationStatusMock = vi.hoisted(() =>
+  vi.fn((isAutoApprovedSubmission: boolean) =>
+    isAutoApprovedSubmission ? "approved" : "pending",
+  ),
+);
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
@@ -46,6 +51,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/actions/store", () => ({
   createAction: createActionMock,
+  resolveActionCreationStatus: resolveActionCreationStatusMock,
 }));
 
 vi.mock("@/lib/actions/organizers", () => ({

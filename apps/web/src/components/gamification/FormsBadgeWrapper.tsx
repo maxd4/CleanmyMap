@@ -8,6 +8,23 @@ import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badg
 
 type FormsGrade = GemGrade;
 
+type BadgeListItem = {
+  id?: string;
+  name?: string;
+  progress?: {
+    current?: number;
+    target?: number;
+  };
+  icon?: string;
+  visualVariant?: string;
+  tooltip?: string;
+};
+
+type FormsBadgeItem = BadgeListItem & {
+  id: string;
+  name: string;
+};
+
 export default function FormsBadgeWrapper() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -23,9 +40,13 @@ export default function FormsBadgeWrapper() {
         const data = await loadGamificationBadgesListClient();
 
         // Extract forms badges from response
-        const formsBadges = data.badges?.filter(
-          (b: any) => b.id?.startsWith("forms-")
-        ) || [];
+        const formsBadges =
+          data.badges?.filter(
+            (badge: BadgeListItem): badge is FormsBadgeItem =>
+              typeof badge.id === "string" &&
+              typeof badge.name === "string" &&
+              badge.id.startsWith("forms-"),
+          ) ?? [];
 
         if (formsBadges.length === 0) {
           setFormsData(null);
@@ -36,7 +57,7 @@ export default function FormsBadgeWrapper() {
         const currentCount = formsBadges[0]?.progress?.current ?? 0;
 
         // Map badges to grades format
-        const grades: FormsGrade[] = formsBadges.map((badge: any) => ({
+        const grades: FormsGrade[] = formsBadges.map((badge) => ({
           id: badge.id,
           label: badge.name,
           threshold: badge.progress?.target ?? 1,

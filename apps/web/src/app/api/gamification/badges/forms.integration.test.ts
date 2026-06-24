@@ -13,27 +13,8 @@ describe('Forms badge family - eligibility and XP awards', () => {
       { action_id: 'a3', group_id: null, status: 'validated', created_at: '2026-01-04', is_test: false },
     ];
 
-    const supabaseMock = {
-      from: vi.fn((table: string) => {
-        if (table === 'forms') {
-          return { select: vi.fn(() => ({ neq: vi.fn(() => ({ neq: vi.fn(() => ({ neq: vi.fn(() => ({ eq: vi.fn(() => ({ is: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: formsData, error: null }) })) })) })) })) })) })) };
-        }
-        if (table === 'actions') {
-          return { select: vi.fn(() => ({ in: vi.fn(() => ({ in: vi.fn(() => ({ maybeSingle: vi.fn() })) })) })) };
-        }
-        if (table === 'progression_events') {
-          return {
-            select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) })) })) })) })),
-            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        return { select: vi.fn(), insert: vi.fn(), rpc: vi.fn() };
-      }),
-      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-    } as any;
-
     // simulate logic from route.ts (call the functions directly would be better but mocking here)
-    const actionIds = Array.from(new Set(formsData.map((f:any)=>f.action_id).filter(Boolean)));
+    const actionIds = Array.from(new Set(formsData.map((f) => f.action_id).filter(Boolean)));
     expect(actionIds.sort()).toEqual(['a1','a2','a3']);
 
     // dedupe by action+group
@@ -58,13 +39,13 @@ describe('Forms badge family - eligibility and XP awards', () => {
         if (table === 'progression_events') {
           return {
             select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) })) })) })) })),
-            insert: vi.fn(async (payload:any)=>{ if (payload.source_table === 'forms_bonus') insertedBonuses++; return { data: null, error: null }; }),
+            insert: vi.fn(async (payload: { source_table?: string })=>{ if (payload.source_table === 'forms_bonus') insertedBonuses++; return { data: null, error: null }; }),
           };
         }
         return { select: vi.fn(), insert: vi.fn() };
       }),
       rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-    } as any;
+    };
 
     const eligibleFormsCount = 20;
     const bonusCount = Math.floor(eligibleFormsCount / 10);

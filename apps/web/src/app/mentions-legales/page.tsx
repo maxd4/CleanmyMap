@@ -35,7 +35,7 @@ export default function MentionsLegalesPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour à l'accueil
+          Retour à l&apos;accueil
         </Link>
       </div>
 

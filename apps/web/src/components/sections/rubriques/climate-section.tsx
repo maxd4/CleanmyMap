@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
+import type { ActionListResponse } from "@/lib/actions/types";
 import { computeClimateContext } from "@/lib/analytics/climate-context";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
@@ -14,7 +15,7 @@ import {
   ClimateAlertBanner 
 } from "./climate-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, RefreshCw, Leaf, Globe, Wind, ArrowRight, Info, Sparkles } from "lucide-react";
+import { Calendar, RefreshCw, Globe, Wind, ArrowRight, Info } from "lucide-react";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 
@@ -38,20 +39,19 @@ export function ClimateSection() {
   const fr = locale === "fr";
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(30);
   
-  const { data, isLoading, error, mutate } = useSWR(["section-climate-v2"], () =>
+  const { data, isLoading, error, mutate } = useSWR<ActionListResponse>(["section-climate-v2"], () =>
     fetchActions({ status: "approved", limit: 500 }),
   );
 
   const context = useMemo(() => {
-    const records = (data?.items ?? []).map((item: any) => ({
+    const records = (data?.items ?? []).map((item) => ({
       observedAt: item.action_date,
       wasteKg: Number(item.waste_kg || 0),
       cigaretteButts: Number(item.cigarette_butts || 0),
-      durationMinutes: Number(item.duration_minutes || item.durationMinutes || 0),
-      volunteersCount: Number(item.volunteers_count || item.volunteersCount || 0),
-      latitude: item.latitude ?? item.contract?.geometry?.latitude ?? null,
-      longitude: item.longitude ?? item.contract?.geometry?.longitude ?? null,
-      plasticKg: item.plastic_kg ?? item.plasticKg ?? null,
+      durationMinutes: Number(item.duration_minutes || 0),
+      volunteersCount: Number(item.volunteers_count || 0),
+      latitude: item.contract?.geometry?.coordinates?.[0]?.[1] ?? null,
+      longitude: item.contract?.geometry?.coordinates?.[0]?.[0] ?? null,
     }));
     return computeClimateContext({ records, periodDays });
   }, [data?.items, periodDays]);
@@ -82,10 +82,10 @@ export function ClimateSection() {
           </div>
 
           <div className="flex items-center gap-2 bg-slate-950/50 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
-            {[30, 90, 365].map((days) => (
+            {([30, 90, 365] as const).map((days) => (
               <CmmButton
                 key={days}
-                onClick={() => setPeriodDays(days as any)}
+                onClick={() => setPeriodDays(days)}
                 tone={periodDays === days ? "primary" : "tertiary"}
                 variant="pill"
                 className={`relative px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${

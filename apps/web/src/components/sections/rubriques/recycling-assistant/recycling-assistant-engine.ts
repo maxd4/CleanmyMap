@@ -1,4 +1,4 @@
-import { Answer, Locale, Tone } from "./recycling-assistant.types";
+import { Answer, Locale } from "./recycling-assistant.types";
 import {
   includesAny,
   localizedAnswer,

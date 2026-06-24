@@ -44,6 +44,8 @@ export type QuizSelectionOptions = {
   trapLevel?: QuizTrapLevelId | null;
   reasoningType?: QuizReasoningType | null;
   sessionSize?: number;
+  shuffleSession?: boolean;
+  randomizer?: () => number;
   now?: Date;
 };
 
@@ -56,6 +58,10 @@ const DEFAULT_SESSION_SIZE_BY_MODE: Record<QuizAccessTypeId, number> = {
   "ordres-de-grandeur": 8,
   "tri-securite": 8,
 };
+
+export function getDefaultQuizSessionSize(mode: QuizAccessTypeId): number {
+  return DEFAULT_SESSION_SIZE_BY_MODE[mode];
+}
 
 const STATE_PRIORITY: Record<CognitiveQuizStateId, number> = {
   failed: 0,
@@ -201,6 +207,17 @@ function weaveBuckets<T>(buckets: T[][]): T[] {
   return ordered;
 }
 
+function shuffleArray<T>(items: readonly T[], randomizer: () => number): T[] {
+  const nextItems = [...items];
+
+  for (let index = nextItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(randomizer() * (index + 1));
+    [nextItems[index], nextItems[swapIndex]] = [nextItems[swapIndex], nextItems[index]];
+  }
+
+  return nextItems;
+}
+
 function orderPedagogicalBuckets<T extends QuizSelectionQuestionLike>(
   questions: readonly T[],
   mode: QuizAccessTypeId,
@@ -305,6 +322,11 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
   }
 
   const sessionSize = options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE[selectedMode];
+  const orderedDeck = buildOrderedModeDeck(filteredQuestions, selectedMode, statsByQuestionId, now).slice(0, sessionSize);
 
-  return buildOrderedModeDeck(filteredQuestions, selectedMode, statsByQuestionId, now).slice(0, sessionSize);
+  if (!options.shuffleSession) {
+    return orderedDeck;
+  }
+
+  return shuffleArray(orderedDeck, options.randomizer ?? Math.random);
 }

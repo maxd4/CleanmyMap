@@ -11,9 +11,14 @@ import {
   CheckCircle2, 
   ExternalLink,
   Zap,
-  Sparkles
 } from "lucide-react";
-import type { CompostPoint } from "@/lib/learning/compost-guide-data";
+import type {
+  CompostGuideCard,
+  CompostPoint,
+  CompostRuleCard,
+  CompostTerritoryLink,
+  LocalizedText,
+} from "@/lib/learning/compost-guide-data";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 const iconMap = {
@@ -26,7 +31,7 @@ export const CompostReflexGrid = memo(function CompostReflexGrid({
   cards, 
   fr 
 }: { 
-  cards: any[], 
+  cards: CompostGuideCard[],
   fr: boolean 
 }) {
   return (
@@ -76,7 +81,7 @@ export const CompostRulesList = memo(function CompostRulesList({
   rules, 
   fr 
 }: { 
-  rules: any[], 
+  rules: CompostRuleCard[],
   fr: boolean 
 }) {
   return (
@@ -100,7 +105,7 @@ export const CompostRulesList = memo(function CompostRulesList({
             {fr ? rule.title.fr : rule.title.en}
           </h4>
           <ul className="space-y-4">
-            {rule.items.map((item: any, i: number) => (
+            {rule.items.map((item, i) => (
               <motion.li 
                 key={i} 
                 initial={{ opacity: 0, x: -10 }}
@@ -125,7 +130,10 @@ export const CompostStepCards = memo(function CompostStepCards({
   steps, 
   fr 
 }: { 
-  steps: any[], 
+  steps: Array<{
+    title: LocalizedText;
+    body: LocalizedText;
+  }>, 
   fr: boolean 
 }) {
   return (
@@ -158,7 +166,7 @@ export const OfficialMapsList = memo(function OfficialMapsList({
   links, 
   fr 
 }: { 
-  links: any[], 
+  links: CompostTerritoryLink[],
   fr: boolean 
 }) {
   return (
@@ -247,4 +255,3 @@ export const SelectedPointsGrid = memo(function SelectedPointsGrid({
     </div>
   );
 });
-

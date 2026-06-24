@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const limit = Number(url.searchParams.get('limit') || 50);
     const offset = Number(url.searchParams.get('offset') || 0);
 
-    let q: any = supabase
+    let q = supabase
       .from('xp_audit')
       .select('id, created_at, user_id, actor_id, reason, xp_change, source_table, source_id, metadata')
       .order('created_at', { ascending: false })

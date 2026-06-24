@@ -6,9 +6,8 @@ import { CloudRain, Wind, AlertTriangle, X } from"lucide-react";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 
 export function WeatherWarningBar() {
- const [data, setData] = useState<WeatherData | null>(null);
- const [isVisible, setIsVisible] = useState(false);
- const [error, setError] = useState(false);
+const [data, setData] = useState<WeatherData | null>(null);
+const [isVisible, setIsVisible] = useState(false);
  const barRef = useRef<HTMLDivElement | null>(null);
  const isMounted = useRef(false);
 
@@ -34,7 +33,6 @@ export function WeatherWarningBar() {
  }
  } catch (err) {
  console.error("Météo fetch error:", err);
- if (isMounted.current) setError(true);
  }
  },
  () => {

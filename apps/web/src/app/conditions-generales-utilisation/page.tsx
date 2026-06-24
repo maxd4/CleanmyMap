@@ -28,8 +28,8 @@ export default function ConditionsGeneralesUtilisationPage() {
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">Conditions d'utilisation</PageHeaderBadge>}
-          title="Conditions Générales d'Utilisation"
+          badge={<PageHeaderBadge tone="slate">Conditions d&apos;utilisation</PageHeaderBadge>}
+          title="Conditions Générales d&apos;Utilisation"
           subtitle="Règles d'accès et d'utilisation du service CleanMyMap. Ce texte complète la Politique de confidentialité et la Politique cookies."
           action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
         />

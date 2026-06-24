@@ -33,8 +33,7 @@ export async function GET(request: Request) {
       ...result,
       focus: "free-tier-services",
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "error",

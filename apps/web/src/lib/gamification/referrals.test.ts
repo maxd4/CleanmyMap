@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildReferralInviteUrl,
@@ -6,6 +7,56 @@ import {
   loadReferralSummary,
 } from "./referrals";
 
+type ReferralProfileRow = {
+  id: string;
+  display_name: string | null;
+  referral_code: string | null;
+  referred_by_profile_id: string | null;
+  referred_at: string | null;
+};
+
+type MaybeSingleResult<T> = {
+  data: T | null;
+  error: null;
+};
+
+type CountResult = {
+  data: null;
+  count: number;
+  error: null;
+};
+
+type ProfilesCountQuery = {
+  eq: (field: string, value: string) => Promise<CountResult>;
+};
+
+type ProfilesMaybeSingleQuery<T> = {
+  eq: (field: string, value: string) => {
+    maybeSingle: () => Promise<MaybeSingleResult<T>>;
+  };
+};
+
+type ReferralUpdateChain = {
+  eq: (field: string, value: string) => ReferralUpdateChain;
+  is: (field: string, value: unknown) => ReferralUpdateChain;
+  select: (columns: string) => ReferralUpdateChain;
+  maybeSingle: () => Promise<MaybeSingleResult<{ id: string; referral_code: string }>>;
+};
+
+function createCountQuery(count: number): ProfilesCountQuery {
+  return {
+    eq: vi.fn(async () => ({ data: null, count, error: null })),
+  };
+}
+
+function createMaybeSingleQuery<T>(data: T | null): ProfilesMaybeSingleQuery<T> {
+  return {
+    eq: vi.fn(() => ({
+      maybeSingle: vi.fn(async () => ({ data, error: null })),
+    })),
+  };
+}
+
 describe("gamification referrals", () => {
   it("builds a referral url with the code in query string", () => {
     const url = buildReferralInviteUrl("ab12cd34ef");
@@ -13,7 +64,7 @@ describe("gamification referrals", () => {
   });
 
   it("loads a referral summary from profiles", async () => {
-    const supabaseMock: any = {
+    const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           return {
@@ -23,59 +74,37 @@ describe("gamification referrals", () => {
                 options?: { count?: string; head?: boolean },
               ) => {
                 if (options?.count === "exact" && options.head) {
-                  return {
-                    eq: vi.fn(() =>
-                      Promise.resolve({ data: null, count: 3, error: null }),
-                    ),
-                  };
+                  return createCountQuery(3);
                 }
                 if (columns.includes("referral_code")) {
-                  return {
-                    eq: vi.fn(() => ({
-                      maybeSingle: vi.fn().mockResolvedValue({
-                        data: {
-                          id: "user-1",
-                          display_name: "Benoît",
-                          referral_code: "ABC123",
-                          referred_by_profile_id: "inviter-1",
-                          referred_at: null,
-                        },
-                        error: null,
-                      }),
-                    })),
-                  };
+                  return createMaybeSingleQuery<ReferralProfileRow>({
+                    id: "user-1",
+                    display_name: "Benoît",
+                    referral_code: "ABC123",
+                    referred_by_profile_id: "inviter-1",
+                    referred_at: null,
+                  });
                 }
                 if (columns.includes("display_name")) {
-                  return {
-                    eq: vi.fn(() => ({
-                      maybeSingle: vi.fn().mockResolvedValue({
-                        data: { id: "inviter-1", display_name: "Alice" },
-                        error: null,
-                      }),
-                    })),
-                  };
+                  return createMaybeSingleQuery<Pick<ReferralProfileRow, "id" | "display_name">>({
+                    id: "inviter-1",
+                    display_name: "Alice",
+                  });
                 }
-                return {
-                  eq: vi.fn(() => ({
-                    maybeSingle: vi.fn().mockResolvedValue({
-                      data: {
-                        id: "user-1",
-                        display_name: "Benoît",
-                        referral_code: "ABC123",
-                        referred_by_profile_id: "inviter-1",
-                        referred_at: null,
-                      },
-                      error: null,
-                    }),
-                  })),
-                };
+                return createMaybeSingleQuery<ReferralProfileRow>({
+                  id: "user-1",
+                  display_name: "Benoît",
+                  referral_code: "ABC123",
+                  referred_by_profile_id: "inviter-1",
+                  referred_at: null,
+                });
               },
             ),
           };
         }
         throw new Error(`Unexpected table ${table}`);
       }),
-    };
+    } as unknown as SupabaseClient;
 
     const summary = await loadReferralSummary(supabaseMock, "user-1");
     expect(summary.referralCode).toBe("ABC123");
@@ -86,8 +115,8 @@ describe("gamification referrals", () => {
   });
 
   it("creates a referral code once and awards xp once", async () => {
-    const inserts: any[] = [];
-    const updates: any[] = [];
+    const inserts: Array<Record<string, unknown>> = [];
+    const updates: Array<{ referral_code: string }> = [];
     const profileRecord = {
       id: "user-1",
       display_name: "Benoît",
@@ -95,7 +124,7 @@ describe("gamification referrals", () => {
       referred_by_profile_id: null as string | null,
       referred_at: null as string | null,
     };
-    const supabaseMock: any = {
+    const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           return {
@@ -107,22 +136,22 @@ describe("gamification referrals", () => {
                 }),
               })),
             })),
-            update: vi.fn((payload: any) => ({
-              eq: vi.fn(() => ({
-                is: vi.fn(() => ({
-                  select: vi.fn(() => ({
-                    maybeSingle: vi.fn(async () => {
-                      updates.push(payload);
-                      profileRecord.referral_code = payload.referral_code;
-                      return {
-                        data: { ...profileRecord },
-                        error: null,
-                      };
-                    }),
-                  })),
-                })),
-              })),
-            })),
+            update: vi.fn((payload: { referral_code: string }) => {
+              const chain: ReferralUpdateChain = {
+                eq: vi.fn(() => chain),
+                is: vi.fn(() => chain),
+                select: vi.fn(() => chain),
+                maybeSingle: vi.fn(async () => {
+                  updates.push(payload);
+                  profileRecord.referral_code = payload.referral_code;
+                  return {
+                    data: { ...profileRecord },
+                    error: null,
+                  };
+                }),
+              };
+              return chain;
+            }),
           };
         }
         if (table === "progression_events") {
@@ -138,7 +167,7 @@ describe("gamification referrals", () => {
                 })),
               })),
             })),
-            insert: vi.fn(async (payload: any) => {
+            insert: vi.fn(async (payload: Record<string, unknown>) => {
               inserts.push(payload);
               return { error: null };
             }),
@@ -166,7 +195,7 @@ describe("gamification referrals", () => {
         }
         throw new Error(`Unexpected table ${table}`);
       }),
-    };
+    } as unknown as SupabaseClient;
 
     const result = await ensureReferralInviteForUser(supabaseMock, "user-1");
     expect(result.created).toBe(true);
@@ -180,8 +209,8 @@ describe("gamification referrals", () => {
   });
 
   it("claims a referral code once", async () => {
-    const updates: any[] = [];
-    const supabaseMock: any = {
+    const updates: Array<{ referred_by_profile_id: string; referred_at?: string }> = [];
+    const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           return {
@@ -209,8 +238,8 @@ describe("gamification referrals", () => {
                 };
               }),
             })),
-            update: vi.fn((payload: any) => {
-              const chain: any = {
+            update: vi.fn((payload: { referred_by_profile_id: string; referred_at: string }) => {
+              const chain: ReferralUpdateChain = {
                 eq: vi.fn(() => chain),
                 is: vi.fn(async () => {
                   updates.push(payload);
@@ -233,7 +262,7 @@ describe("gamification referrals", () => {
         }
         throw new Error(`Unexpected table ${table}`);
       }),
-    };
+    } as unknown as SupabaseClient;
 
     const result = await claimReferralInviteForUser(supabaseMock, {
       userId: "user-2",

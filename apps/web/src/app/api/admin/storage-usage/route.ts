@@ -22,8 +22,7 @@ export async function GET() {
       status,
       ...report,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "degraded",

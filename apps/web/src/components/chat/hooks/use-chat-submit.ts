@@ -11,6 +11,7 @@ import {
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import type { SendChatMessageParams } from "./use-chat-data";
 
 type UseChatSubmitParams = {
   submitLockRef: React.MutableRefObject<boolean>;
@@ -30,7 +31,7 @@ type UseChatSubmitParams = {
   setSendError: React.Dispatch<React.SetStateAction<string | null>>;
   setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
   supabase: SupabaseClient | null | undefined;
-  sendChatMessage: (params: { optimisticMessage: ChatMessage; body: any }) => Promise<void>;
+  sendChatMessage: (params: SendChatMessageParams) => Promise<void>;
   setMessage: React.Dispatch<React.SetStateAction<string>>;
   setFile: React.Dispatch<React.SetStateAction<File | null>>;
   setShowMentions: React.Dispatch<React.SetStateAction<boolean>>;

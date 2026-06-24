@@ -1,6 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { syncUserActionProgression } from "./progression-data";
+
+type QueryResult<T> = {
+  data: T[];
+  error: null;
+};
+
+type QueryState = {
+  eq: Record<string, string>;
+  in: Record<string, string[]>;
+};
+
+type QueryChain<T> = {
+  select: (columns: string) => QueryChain<T>;
+  eq: (field: string, value: string) => QueryChain<T>;
+  in: (field: string, values: string[]) => QueryChain<T>;
+  neq: (field: string, value: string) => QueryChain<T>;
+  is: (field: string, value: boolean | null) => QueryChain<T>;
+  order: (field: string, options?: { ascending?: boolean }) => QueryChain<T>;
+  limit: (value: number) => Promise<QueryResult<T>>;
+  maybeSingle: () => Promise<{ data: T | null; error: null }>;
+  then: (
+    resolve: (value: QueryResult<T>) => void,
+    reject: (reason: unknown) => void,
+  ) => Promise<void>;
+};
+
+type DeleteChain = {
+  error: null;
+  eq: (field: string, value: string) => DeleteChain;
+  delete: () => DeleteChain;
+  select: (columns: string) => DeleteChain;
+};
 
 function buildAction(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -25,15 +58,14 @@ function buildAction(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function createQueryChain<T>(resolver: (state: {
-  eq: Record<string, string>;
-  in: Record<string, string[]>;
-}) => Promise<{ data: T[]; error: null }> | { data: T[]; error: null }) {
+function createQueryChain<T>(
+  resolver: (state: QueryState) => Promise<QueryResult<T>> | QueryResult<T>,
+): QueryChain<T> {
   const state = {
     eq: {} as Record<string, string>,
     in: {} as Record<string, string[]>,
   };
-  const chain: any = {
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.eq[field] = value;
@@ -51,17 +83,20 @@ function createQueryChain<T>(resolver: (state: {
       const result = await resolver(state);
       return { data: result.data[0] ?? null, error: result.error };
     }),
-    then: (resolve: (value: any) => void, reject: (reason: unknown) => void) =>
+    then: (
+      resolve: (value: QueryResult<T>) => void,
+      reject: (reason: unknown) => void,
+    ) =>
       Promise.resolve(resolver(state)).then(resolve, reject),
-  };
+  } as QueryChain<T>;
   return chain;
 }
 
-function createDeleteChain() {
-  const chain: any = {
+function createDeleteChain(): DeleteChain {
+  const chain = {
     error: null,
     eq: vi.fn(() => chain),
-  };
+  } as DeleteChain;
   chain.delete = vi.fn(() => chain);
   chain.select = vi.fn(() => chain);
   return chain;
@@ -174,22 +209,22 @@ describe("syncUserActionProgression", () => {
               progressionEventsInserted.push(row);
               return { error: null };
             }),
-          } as any;
+          };
         }
         if (table === "points_ledger") {
           return {
             select: () => createQueryChain(() => ({ data: [], error: null })),
             insert: pointsInsert,
-          } as any;
+          };
         }
         if (table === "xp_audit") {
           return {
             insert: auditInsert,
-          } as any;
+          };
         }
         throw new Error(`Unexpected table ${table}`);
       }),
-    } as any;
+    } as unknown as SupabaseClient;
 
     const validatedCount = await syncUserActionProgression(supabase, "user-co");
 
@@ -205,7 +240,7 @@ describe("syncUserActionProgression", () => {
     });
     expect(pointsInsert).not.toHaveBeenCalled();
     expect(auditInsert).toHaveBeenCalledTimes(1);
-    const auditCall = auditInsert.mock.calls[0] as any[] | undefined;
+    const auditCall = auditInsert.mock.calls[0] as unknown[] | undefined;
     const auditPayload = auditCall?.[0] as { xp_change?: number } | undefined;
 
     expect(auditPayload).toEqual(

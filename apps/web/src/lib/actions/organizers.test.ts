@@ -7,7 +7,18 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 function createSupabaseMock(profileRows: Array<{ id: string; display_name: string | null; handle: string | null }>) {
   const state: { eq: Record<string, string> } = { eq: {} };
-  const chain: any = {
+
+  type ProfilesChain = {
+    select: (columns: string) => ProfilesChain;
+    eq: (field: string, value: string) => ProfilesChain;
+    ilike: (field: string, value: string) => ProfilesChain;
+    maybeSingle: () => Promise<{
+      data: { id: string; display_name: string | null; handle: string | null } | null;
+      error: null;
+    }>;
+  };
+
+  const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.eq[field] = value;
@@ -27,7 +38,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
       }
       return { data: null, error: null };
     }),
-  };
+  } as ProfilesChain;
 
   return {
     from: vi.fn((table: string) => {
@@ -37,7 +48,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
       state.eq = {};
       return chain;
     }),
-  } as any;
+  };
 }
 
 describe("resolveActionOrganizers", () => {

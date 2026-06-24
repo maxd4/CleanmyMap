@@ -6,6 +6,23 @@ import type { GemGrade } from "@/lib/gamification/types";
 import { announceGamificationGain } from "@/lib/gamification/announcements";
 import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
 
+type BadgeListItem = {
+  id?: string;
+  name?: string;
+  progress?: {
+    current?: number;
+    target?: number;
+  };
+  icon?: string;
+  visualVariant?: string;
+  tooltip?: string;
+};
+
+type CleanZonesBadgeItem = BadgeListItem & {
+  id: string;
+  name: string;
+};
+
 export default function CleanZonesBadgeWrapper() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -21,9 +38,13 @@ export default function CleanZonesBadgeWrapper() {
         const data = await loadGamificationBadgesListClient();
 
         // Extract clean zones badges from response
-        const cleanZonesBadges = data.badges?.filter(
-          (b: any) => b.id?.startsWith("clean-zones-")
-        ) || [];
+        const cleanZonesBadges =
+          data.badges?.filter(
+            (badge: BadgeListItem): badge is CleanZonesBadgeItem =>
+              typeof badge.id === "string" &&
+              typeof badge.name === "string" &&
+              badge.id.startsWith("clean-zones-"),
+          ) ?? [];
 
         if (cleanZonesBadges.length === 0) {
           setCleanZonesData(null);
@@ -34,7 +55,7 @@ export default function CleanZonesBadgeWrapper() {
         const currentCount = cleanZonesBadges[0]?.progress?.current ?? 0;
 
         // Map badges to grades format
-        const grades: GemGrade[] = cleanZonesBadges.map((badge: any) => ({
+        const grades: GemGrade[] = cleanZonesBadges.map((badge) => ({
           id: badge.id,
           label: badge.name,
           threshold: badge.progress?.target ?? 1,

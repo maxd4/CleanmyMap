@@ -33,8 +33,7 @@ export async function POST(request: Request) {
       ...result,
       triggeredBy: "admin-manual",
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "error",

@@ -29,6 +29,7 @@
     "audit:vercel:external-fetches": "node scripts/audit-vercel-surface.mjs list-external-fetches",
     "audit:supabase:quota": "npm run backend:supabase:quota-audit -w apps/web",
     "audit:quiz-quality": "node --experimental-strip-types scripts/audit-quiz-quality.mjs",
+    "audit:quiz-sources": "node --experimental-strip-types scripts/audit-quiz-sources.mjs",
     "audit:vercel:ci": "node scripts/audit-vercel-ci.mjs",
     "typecheck": "npm run typecheck -w apps/web",
     "check:doc-visuals": "node scripts/check-doc-visuals.mjs",

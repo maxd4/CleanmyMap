@@ -21,7 +21,7 @@ describe("supabase quota audit", () => {
 "use client";
 import { useEffect } from "react";
 
-export function Sample({ supabase }: { supabase: any }) {
+export function Sample({ supabase }: { supabase: unknown }) {
   useEffect(() => {
     void supabase.from("profiles").select("*");
     void supabase.storage.from("chat-attachments").upload("demo.png", new Blob());
@@ -44,7 +44,7 @@ export function Sample({ supabase }: { supabase: any }) {
       process.cwd(),
       `
 "use client";
-export function useChatData({ supabase }: { supabase: any }) {
+export function useChatData({ supabase }: { supabase: unknown }) {
   supabase.channel("chat-updates").subscribe();
   return null;
 }
@@ -62,7 +62,7 @@ export function useChatData({ supabase }: { supabase: any }) {
         "src/components/sample.tsx",
         process.cwd(),
         `
-export async function load(supabase: any) {
+export async function load(supabase: unknown) {
   await supabase.from("actions").select("id").limit(10);
 }
 `,

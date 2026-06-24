@@ -6,6 +6,16 @@ import { handleApiError } from "@/lib/http/api-errors";
 
 export const runtime = "nodejs";
 
+type PointsLedgerRow = {
+  id: string;
+  transaction_type: string;
+  amount: number;
+  reason: string | null;
+  source_event: string | null;
+  source_id: string | null;
+  created_at: string;
+};
+
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) {
@@ -35,7 +45,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: "ok",
-      entries: (data ?? []).map((row: any) => ({
+      entries: (data ?? []).map((row: PointsLedgerRow) => ({
         id: row.id,
         transactionType: row.transaction_type,
         amount: row.amount,

@@ -15,12 +15,13 @@ import {
   Info,
   Sparkles
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PlanetaryRadarChart } from "./planetary-radar-chart";
 
 interface PlanetaryBoundary {
   id: string;
   name: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   status: 'safe' | 'increasing-risk' | 'high-risk' | 'transgressed';
   currentValue: string;
   safeLimit: string;
@@ -165,7 +166,7 @@ export function PlanetaryBoundariesInteractive() {
   const radarBoundaries = PLANETARY_BOUNDARIES.map(b => ({
     id: b.id,
     name: b.name,
-    icon: b.icon as any,
+    icon: b.icon,
     status: b.status,
     color: getStatusColor(b.status),
     radiusRatio: getStatusRadius(b.status)

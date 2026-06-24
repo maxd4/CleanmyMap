@@ -327,3 +327,35 @@ const now = new Date("2026-06-12T12:00:00.000Z");
 
     expect(ordered).toHaveLength(10);
   });
+
+  it("shuffles the mixed session when requested", () => {
+    const questions: QuizSelectionQuestionLike[] = Array.from({ length: 4 }, (_, index) => ({
+      id: `q${index + 1}`,
+      type: "true-false",
+      category: "action-terrain",
+      reasoningType: "terrain",
+      skill: "terrain",
+      pedagogicalType: "true-false",
+      difficulty: "low",
+      trapLevel: "low",
+    }));
+
+    const ordered = buildQuizSessionDeck(
+      questions,
+      {
+        q1: makeStats("q1", "2026-06-12T13:00:00.000Z"),
+        q2: makeStats("q2", "2026-06-12T14:00:00.000Z"),
+        q3: makeStats("q3", "2026-06-12T15:00:00.000Z"),
+        q4: makeStats("q4", "2026-06-12T16:00:00.000Z"),
+      },
+      {
+        accessTypeId: "mixte",
+        mode: "mixte",
+        shuffleSession: true,
+        randomizer: () => 0,
+        now,
+      },
+    );
+
+    expect(ordered.map((question) => question.id)).toEqual(["q2", "q3", "q4", "q1"]);
+  });

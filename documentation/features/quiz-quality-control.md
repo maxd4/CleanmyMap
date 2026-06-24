@@ -77,10 +77,22 @@ L'audit automatique du dépôt se lance avec:
 npm run audit:quiz-quality
 ```
 
+L'audit dédié au sourcing et à la traçabilité se lance avec:
+
+```bash
+npm run audit:quiz-sources
+```
+
 Le test de non-régression associé est:
 
 ```bash
 npm run test -w apps/web -- src/lib/learning/quiz-quality-audit.test.ts
+```
+
+Le test de non-régression du sourcing est:
+
+```bash
+npm run test -w apps/web -- src/lib/learning/quiz-source-audit.test.ts
 ```
 
 Le contrôle automatisé ne remplace pas la relecture éditoriale.

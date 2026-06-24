@@ -6,6 +6,17 @@ Objectif: corriger un build Vercel/Next.js de CleanMyMap sans lancer `next build
 
 ## Principe
 
+Ne pas utiliser `next build` comme première méthode de diagnostic.
+
+Ordre attendu:
+
+1. Lire le log d'erreur complet.
+2. Identifier la catégorie: TypeScript, import, route Next, config Vercel, cache, Supabase, env vars, Turbopack/Webpack.
+3. Lancer les vérifications rapides: typecheck, lint, tests ciblés.
+4. Corriger les erreurs groupées.
+5. Lancer un seul build complet local/sandbox.
+6. Déclencher Vercel seulement quand le build local/sandbox est propre.
+
 Le chemin de correction doit rester groupé:
 
 1. lire la configuration de build;

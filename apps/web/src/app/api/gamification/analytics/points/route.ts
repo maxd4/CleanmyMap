@@ -12,6 +12,12 @@ import {
 
 export const runtime = "nodejs";
 
+type PointsLedgerRow = {
+  source_event: string | null;
+  amount: number | null;
+  created_at: string;
+};
+
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) {
@@ -51,7 +57,7 @@ export async function GET(request: Request) {
     const eventBreakdown = new Map<string, { count: number; points: number }>();
     let totalPoints = 0;
 
-    (data ?? []).forEach((row: any) => {
+    (data ?? []).forEach((row: PointsLedgerRow) => {
       const event = row.source_event ?? "unknown";
       const current = eventBreakdown.get(event) ?? { count: 0, points: 0 };
       current.count += 1;
@@ -62,7 +68,7 @@ export async function GET(request: Request) {
 
     // Build timeline by day
     const timeline = new Map<string, number>();
-    (data ?? []).forEach((row: any) => {
+    (data ?? []).forEach((row: PointsLedgerRow) => {
       const date = row.created_at.slice(0, 10);
       const current = timeline.get(date) ?? 0;
       timeline.set(date, current + (row.amount ?? 0));

@@ -253,6 +253,11 @@ describe("environmental impact project signals", () => {
 
   it("loads project signals with deterministic ordering under the cap", async () => {
     const orderingsByTable = new Map<string, Array<{ column: string; ascending?: boolean }>>();
+    type QueryChain = {
+      select: ReturnType<typeof vi.fn>;
+      order: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+    };
     const makeChain = (table: string, rows: Array<Record<string, unknown>>) => {
       const state: {
         orderings: Array<{ column: string; ascending?: boolean }>;
@@ -260,22 +265,21 @@ describe("environmental impact project signals", () => {
         orderings: [],
       };
 
-      const chain: any = {
-        select: vi.fn(() => chain),
-        order: vi.fn((column: string, options?: { ascending?: boolean }) => {
-          state.orderings.push({ column, ascending: options?.ascending });
-          return chain;
-        }),
-        limit: vi.fn(async (limit: number) => {
-          orderingsByTable.set(table, [...state.orderings]);
-          return {
-            data: rows.slice(0, limit),
-            error: null,
-          };
-        }),
-      };
+      const chain = {} as Partial<QueryChain>;
+      chain.select = vi.fn(() => chain);
+      chain.order = vi.fn((column: string, options?: { ascending?: boolean }) => {
+        state.orderings.push({ column, ascending: options?.ascending });
+        return chain;
+      });
+      chain.limit = vi.fn(async (limit: number) => {
+        orderingsByTable.set(table, [...state.orderings]);
+        return {
+          data: rows.slice(0, limit),
+          error: null,
+        };
+      });
 
-      return chain;
+      return chain as QueryChain;
     };
 
     const supabase = {

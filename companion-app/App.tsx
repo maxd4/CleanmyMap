@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar'
 import * as Linking from 'expo-linking'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import {
   getBackgroundTrackingWarning,
@@ -40,7 +41,7 @@ function formatDuration(startedAt: string): string {
 }
 
 export default function App() {
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [phase, setPhase] = useState<TrackingPhase>('idle')
   const [mission, setMission] = useState<Mission | null>(null)
   const [missionIdInput, setMissionIdInput] = useState('')
