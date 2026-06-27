@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
@@ -9,6 +9,14 @@ import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { guideChecklistStorage } from "@/lib/storage/ui-state-storage";
 import { cn } from "@/lib/utils";
+
+function serializeChecks(currentChecks: Record<string, boolean>): string {
+  return JSON.stringify(
+    Object.keys(currentChecks)
+      .sort()
+      .map((key) => [key, currentChecks[key]]),
+  );
+}
 
 const CHECKLIST_ITEMS = [
   {
@@ -59,6 +67,8 @@ export function GuideOperationalPanel() {
     return { ...defaults, ...(guideChecklistStorage.read() ?? {}) };
   });
   const [serverReadyForUser, setServerReadyForUser] = useState(false);
+  const lastSavedSnapshotRef = useRef<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const serverReady = !isLoaded || !user || serverReadyForUser;
 
   useEffect(() => {
@@ -75,10 +85,7 @@ export function GuideOperationalPanel() {
     }
 
     let active = true;
-    void fetch("/api/users/checklist-progress?checklistId=guide-main", {
-      method: "GET",
-      cache: "no-store",
-    })
+    void fetch("/api/users/checklist-progress?checklistId=guide-main")
       .then(async (response) => {
         if (!response.ok) {
           return;
@@ -87,6 +94,7 @@ export function GuideOperationalPanel() {
           entry?: { checks?: Record<string, boolean> } | null;
         };
         if (active && payload.entry?.checks) {
+          lastSavedSnapshotRef.current = serializeChecks(payload.entry.checks);
           setChecks((prev) => ({ ...prev, ...payload.entry?.checks }));
         }
       })
@@ -105,11 +113,40 @@ export function GuideOperationalPanel() {
     if (!serverReady || !user) {
       return;
     }
-    void fetch("/api/users/checklist-progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checklistId: "guide-main", checks }),
-    }).catch(() => undefined);
+
+    const snapshot = serializeChecks(checks);
+    if (snapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      void fetch("/api/users/checklist-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklistId: "guide-main", checks }),
+      })
+        .then(() => {
+          lastSavedSnapshotRef.current = snapshot;
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+          }
+        });
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
   }, [checks, serverReady, user]);
 
   const progress = useMemo(() => {

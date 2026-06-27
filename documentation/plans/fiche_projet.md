@@ -3,13 +3,13 @@
 ## Identité du projet
 
 **Nom du projet :** CleanMyMap (cleanmymap.fr)
-**Nature :** Plateforme web d'organisation, de cartographie, de communication et de valorisation des cleanwalk (ramassages des déchets de l'espace public) Paris en groupe (association, entreprise, évènement national) ou en solitaire (action spontannée)
+**Nature :** Plateforme web d'organisation, de cartographie, de communication et de valorisation des cleanwalk (ramassages des déchets de l'espace public) à l'échelle nationale, en groupe (association, entreprise, évènement) ou en solitaire (action spontanée)
 **Porteur :** Maxence DEROOME
 **Initiative** : projet étudiant bénévole dans le cadre du diplome universitaire "Engagement" de Sorbonne Université  
 **Date de début** : 20 février 
 ** Mise à jour de la fiche :** 21 mai 2026  
 
-CleanMyMap est un projet d'intérêt général local qui transforme des actions bénévoles de nettoyage en informations utiles, lisibles et partageables.
+CleanMyMap est un projet d'intérêt général à vocation nationale qui transforme des actions bénévoles de nettoyage en informations utiles, lisibles et partageables.
 
 ---
 
@@ -48,7 +48,7 @@ Rendre accessibles des contenus pédagogiques (guides, bonnes pratiques, ressour
 Produire des indicateurs fiables pour objectiver l'impact des actions et soutenir des décisions d'investissement public (prévention, équipements, propreté, biodiversité).
 
 ### Valorisation des acteurs engagés
-Mettre en avant les associations, commerces, entreprises et collectifs impliqués dans des démarches utiles au territoire.
+Mettre en avant les associations, commerces, entreprises, collectivités et collectifs impliqués dans des démarches utiles au territoire, quel que soit le niveau local.
 
 ---
 
@@ -63,6 +63,7 @@ Mettre en avant les associations, commerces, entreprises et collectifs impliqué
 - méthodologie
 - rapport d'impact environnemental et social de l'utilsiation de l'IA dans le projet
 - services web principaux
+- socle de compatibilité territoire national avec lecture des anciens champs et écriture des nouveaux champs
 
 ### A faire 
 - compagnon app pour le suivi GPS par uen application mobile
@@ -72,7 +73,7 @@ Mettre en avant les associations, commerces, entreprises et collectifs impliqué
 - résolution des warning et erreurs de tout type sur le repo et sur les services web (vercel, github)
 - page de méthodologie
 - application mobile du site pour Android et IOS une fois le site stable et utilisé
-- demande de partenariat avec des structures de cleanwalk locales et nationales 
+- demande de partenariat avec des structures de cleanwalk locales et nationales
 
 ---
 
@@ -82,10 +83,10 @@ Mettre en avant les associations, commerces, entreprises et collectifs impliqué
 Routes principales : `/dashboard`, `/reports`, `/admin`, `/actions/new`, `/actions/map`, `/actions/history`.
 
 ### Cartographie interactive
-Visualisation des actions et signalements, avec filtres de lecture territoriale.
+Visualisation des actions et signalements, avec filtres de lecture territoriale nationaux et compatibilité arrondissements pour les comptes historiques.
 
 ### API métier
-API opérationnelle pour collecte, affichage carte, export, modération et flux communautaires.
+API opérationnelle pour collecte, affichage carte, export, modération et flux communautaires, avec support des anciens champs de localisation.
 
 ### Reporting et exports
 Indicateurs clés + exports CSV/JSON pour exploitation externe.
@@ -191,7 +192,7 @@ En cas de dépassement des offres gratuites (hébergement, authentification, bas
 
 CleanMyMap dispose d'un socle web stable et d'une utilité claire : transformer l'engagement bénévole en impact mesurable, compréhensible et mobilisable.
 
-La priorité n'est plus de « faire de la technique pour la technique », mais d'amplifier l'usage réel et de renforcer la valeur collective pour le territoire.
+La priorité n'est plus de « faire de la technique pour la technique », mais d'amplifier l'usage réel et de renforcer la valeur collective pour tous les territoires suivis par le site.
 
 ---
 

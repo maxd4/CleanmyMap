@@ -38,6 +38,14 @@ npm run typecheck -w apps/web                 # vérifie le typage TypeScript
 npm run build -w apps/web                     # lance le build de production local
 ```
 
+## Nettoyage local
+
+```powershell
+npm run clean:temp                            # nettoie les caches temporaires de dev dans %TEMP%
+npm run clean:temp:force                      # purge complète des caches temporaires quand Codex/VS Code sont fermés
+npm run dev:clean                             # nettoie les caches du projet puis relance le dev
+```
+
 ## Notes
 
 - Le déploiement Vercel le plus sûr sur ce dépôt reste le push GitHub, car il suit le pipeline déjà configuré.

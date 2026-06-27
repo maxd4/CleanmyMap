@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   getCommunityEventNotificationTargets,
+  loadCommunityEventNotificationProfiles,
   isProfileEligibleForCommunityEvent,
 } from "./event-notification-targets";
 
@@ -39,5 +40,50 @@ describe("event-notification-targets", () => {
         targets!,
       ),
     ).toBe(true);
+  });
+
+  it("does not treat a non-Paris arrondissement label as Paris territory", () => {
+    expect(getCommunityEventNotificationTargets("Lyon 2e")).toBeNull();
+  });
+
+  it("loads only targeted community profiles through the RPC", async () => {
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          id: "profile-1",
+          paris_arrondissement: 15,
+          metadata: { zoneName: "Vanves" },
+        },
+      ],
+      error: null,
+    }));
+    const supabase = { rpc } as never;
+    const targets = getCommunityEventNotificationTargets("15e arrondissement");
+
+    const profiles = await loadCommunityEventNotificationProfiles(supabase, {
+      excludedProfileId: "organizer-1",
+      targets: targets!,
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      "load_community_event_notification_profiles",
+      {
+        p_excluded_profile_id: "organizer-1",
+        p_arrondissement_ids: [15, 6, 7, 14, 16],
+        p_zone_names: expect.arrayContaining([
+          "Issy-les-Moulineaux",
+          "Vanves",
+          "Malakoff",
+          "Boulogne-Billancourt",
+        ]),
+      },
+    );
+    expect(profiles).toEqual([
+      {
+        id: "profile-1",
+        paris_arrondissement: 15,
+        metadata: { zoneName: "Vanves" },
+      },
+    ]);
   });
 });

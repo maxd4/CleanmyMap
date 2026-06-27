@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type {
   EnvironmentalImpactInfrastructureEstimate,
@@ -187,15 +187,13 @@ export function EnvironmentalImpactCurveChart({
   signals,
   className,
 }: EnvironmentalImpactCurveChartProps) {
-  const [selectedScopeKey, setSelectedScopeKey] = useState<EnvironmentalImpactScopeKey>("site");
-  const [selectedPointIndex, setSelectedPointIndex] = useState<number>(
-    Math.max(site.curve.at(-1)?.index ?? 0, user.curve.at(-1)?.index ?? 0),
+  const latestPointIndex = useMemo(
+    () => Math.max(site.curve.at(-1)?.index ?? 0, user.curve.at(-1)?.index ?? 0),
+    [site.curve, user.curve],
   );
-
-  useEffect(() => {
-    setSelectedPointIndex(Math.max(site.curve.at(-1)?.index ?? 0, user.curve.at(-1)?.index ?? 0));
-    setSelectedScopeKey("site");
-  }, [site.curve, user.curve]);
+  const [selectedScopeKey, setSelectedScopeKey] = useState<EnvironmentalImpactScopeKey>("site");
+  const [selectedPointIndexOverride, setSelectedPointIndexOverride] = useState<number | null>(null);
+  const selectedPointIndex = selectedPointIndexOverride ?? latestPointIndex;
 
   const width = 1000;
   const height = 380;
@@ -443,13 +441,13 @@ export function EnvironmentalImpactCurveChart({
               onClick={() => {
                 if (site.curve[index]) {
                   setSelectedScopeKey("site");
-                  setSelectedPointIndex(site.curve[index].index);
+                  setSelectedPointIndexOverride(site.curve[index].index);
                 }
               }}
               onKeyDown={(event) => {
                 if ((event.key === "Enter" || event.key === " ") && site.curve[index]) {
                   event.preventDefault();
-                  setSelectedPointIndex(site.curve[index].index);
+                  setSelectedPointIndexOverride(site.curve[index].index);
                 }
               }}
             />
@@ -483,13 +481,13 @@ export function EnvironmentalImpactCurveChart({
               onClick={() => {
                 if (user.curve[index]) {
                   setSelectedScopeKey("user");
-                  setSelectedPointIndex(user.curve[index].index);
+                  setSelectedPointIndexOverride(user.curve[index].index);
                 }
               }}
               onKeyDown={(event) => {
                 if ((event.key === "Enter" || event.key === " ") && user.curve[index]) {
                   event.preventDefault();
-                  setSelectedPointIndex(user.curve[index].index);
+                  setSelectedPointIndexOverride(user.curve[index].index);
                 }
               }}
             />
@@ -556,7 +554,7 @@ export function EnvironmentalImpactCurveChart({
               {selectedScopePoint?.weekLabel ?? selectedXAxisPoint?.weekLabel ?? "Aucun point"}
             </h4>
             <p className="mt-1 text-xs leading-relaxed text-red-100/45">
-              Cliquez sur une semaine pour comparer la courbe du site et celle de l'utilisateur.
+              Cliquez sur une semaine pour comparer la courbe du site et celle de l&apos;utilisateur.
               Le bloc suivant détaille la portée actuellement sélectionnée.
             </p>
           </div>

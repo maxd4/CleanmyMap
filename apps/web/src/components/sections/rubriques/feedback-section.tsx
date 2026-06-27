@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import {
   ArrowRight,
   BookOpen,
@@ -832,16 +832,14 @@ function FeedbackDashboardMode({
                       ? "Le retour sera enregistré dans l'espace de suivi interne."
                       : "The reply will be stored in the internal follow-up queue."}
                   </p>
-                  <SignInButton mode="modal">
                     <CmmButton
-                      type="button"
+                      href="/sign-in"
                       tone="secondary"
                       variant="pill"
                       className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-pink-200 bg-white px-4 py-3 text-sm font-bold text-pink-600"
                     >
                       {fr ? "Se connecter" : "Sign in"}
                     </CmmButton>
-                  </SignInButton>
                 </div>
               ) : (
                 <CmmButton

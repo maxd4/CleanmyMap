@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Settings2, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { UserIdentity } from "@/lib/authz";
+import { isProtectedRoutePath } from "@/lib/auth/protected-routes";
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
@@ -28,22 +29,127 @@ import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import {
+  getProfileLabel,
+  normalizeProfileRole,
+  toProfile,
+} from "@/lib/profiles";
+import type { Locale } from "@/lib/ui/preferences";
 
 type AppNavigationRibbonProps = {
-  currentProfile: AppProfile;
-  profileLabel: string;
-  identity: UserIdentity | null;
+  currentProfile?: AppProfile;
+  profileLabel?: string;
+  identity?: UserIdentity | null;
 };
 
-export function AppNavigationRibbon({
+type ClerkUserLike = NonNullable<ReturnType<typeof useUser>["user"]>;
+
+type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
+  pathname: string;
+  user: ClerkUserLike | null;
+  isLoaded: boolean;
+  isSignedIn: boolean;
+  showAccountActions: boolean;
+};
+
+function readProfileRole(metadata: unknown): AppProfile | null {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+
+  const roleValue = (metadata as Record<string, unknown>).role;
+  const profileValue = (metadata as Record<string, unknown>).profile;
+  const rawValue =
+    typeof roleValue === "string"
+      ? roleValue
+      : typeof profileValue === "string"
+        ? profileValue
+        : null;
+
+  return rawValue ? normalizeProfileRole(rawValue) : null;
+}
+
+function readProfileBadges(metadata: unknown): string[] {
+  if (!metadata || typeof metadata !== "object") {
+    return [];
+  }
+
+  const badges = (metadata as Record<string, unknown>).badges;
+  if (!Array.isArray(badges)) {
+    return [];
+  }
+
+  return badges.filter((badge): badge is string => typeof badge === "string");
+}
+
+function buildRoleBadge(profile: AppProfile, locale: Locale) {
+  const profileLabel = getProfileLabel(profile, locale);
+  return {
+    id: `role_${profile}`,
+    label: locale === "fr" ? `Rôle ${profileLabel}` : `${profileLabel} role`,
+    icon: "shield",
+  };
+}
+
+function buildProfileBadge(profile: AppProfile, locale: Locale) {
+  const profileLabel = getProfileLabel(profile, locale);
+  return {
+    id: `profile_${profile}`,
+    label: locale === "fr" ? `Profil ${profileLabel}` : `${profileLabel} profile`,
+    icon: "badge-check",
+  };
+}
+
+function buildIdentityFromUser(
+  user: ClerkUserLike,
+  effectiveProfile: AppProfile,
+  locale: Locale,
+): UserIdentity {
+  const firstName = user.firstName?.trim() ?? null;
+  const lastName = user.lastName?.trim() ?? "";
+  const username =
+    user.username?.trim() ||
+    user.primaryEmailAddress?.emailAddress?.trim() ||
+    user.id;
+  const displayName = `${firstName ?? ""} ${lastName}`.trim() || username;
+  const roleBadge = buildRoleBadge(effectiveProfile, locale);
+  const profileBadge = buildProfileBadge(effectiveProfile, locale);
+  const publicBadges = readProfileBadges(user.publicMetadata);
+  const mergedBadges = Array.from(
+    new Set([...publicBadges, roleBadge.id, profileBadge.id]),
+  );
+
+  return {
+    userId: user.id,
+    displayName,
+    handle: username,
+    firstName,
+    username,
+    email: user.primaryEmailAddress?.emailAddress?.trim() ?? null,
+    currentLevel: 1,
+    actorNameOptions: [displayName, username, user.id],
+    role: effectiveProfile,
+    badges: mergedBadges.map((badgeId) =>
+      badgeId === roleBadge.id
+        ? roleBadge
+        : badgeId === profileBadge.id
+          ? profileBadge
+          : { id: badgeId, label: badgeId.replace(/_/g, " "), icon: "award" },
+    ),
+  };
+}
+
+function AppNavigationRibbonShell({
   currentProfile,
   profileLabel,
   identity,
-}: AppNavigationRibbonProps) {
-  const pathname = usePathname();
-  const router = useRouter();
+  pathname,
+  user,
+  isLoaded,
+  isSignedIn,
+  showAccountActions,
+}: AppNavigationRibbonShellProps) {
   const { locale, displayMode } = useSitePreferences();
-  const { isLoaded, isSignedIn } = useUser();
   const ribbonRef = useRef<HTMLElement | null>(null);
   const preferencesTriggerRef = useRef<HTMLElement | null>(null);
   const feedbackTriggerRef = useRef<HTMLElement | null>(null);
@@ -56,19 +162,30 @@ export function AppNavigationRibbon({
   const preferencesOpen = isPreferencesOpen && preferencesOwnerPath === pathname;
   const [feedbackOwnerPath, setFeedbackOwnerPath] = useState(pathname);
   const feedbackOpen = isFeedbackOpen && feedbackOwnerPath === pathname;
+  const fallbackProfile = currentProfile ?? "benevole";
+  const userRole = readProfileRole(user?.publicMetadata);
+  const effectiveProfile = identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
+  const effectiveProfileLabel =
+    profileLabel ?? getProfileLabel(effectiveProfile, locale);
+  const effectiveIdentity: UserIdentity | null = identity
+    ? identity
+    : showAccountActions && isLoaded && isSignedIn && user
+      ? buildIdentityFromUser(user, effectiveProfile, locale)
+      : null;
 
   const ribbonChrome = useAdaptiveRibbonChrome(
     ribbonRef,
-    `${pathname}:${displayMode}:${locale}:${currentProfile}`,
+    `${pathname}:${displayMode}:${locale}:${effectiveProfile}`,
   );
 
   const spaces = useMemo(() => {
-    const rawSpaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
+    const rawSpaces = getNavigationSpacesForProfile(effectiveProfile, displayMode, locale);
     return rawSpaces;
-  }, [currentProfile, displayMode, locale]);
+  }, [displayMode, effectiveProfile, locale]);
 
-  const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
-  const isAuthenticated = Boolean(identity) || (isLoaded && isSignedIn);
+  const activeSpaceId = getActiveSpaceForPath(effectiveProfile, pathname, displayMode);
+  const isAuthenticated =
+    showAccountActions && (Boolean(effectiveIdentity) || (isLoaded && isSignedIn));
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
@@ -83,7 +200,7 @@ export function AppNavigationRibbon({
 
   function onTrackNavigation(href: string, label: string, spaceId: string | null) {
     trackNavigationClick({
-      profile: currentProfile,
+      profile: effectiveProfile,
       spaceId,
       href,
       label,
@@ -165,12 +282,6 @@ export function AppNavigationRibbon({
   }, []);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn && !identity) {
-      router.refresh();
-    }
-  }, [identity, isLoaded, isSignedIn, router]);
-
-  useEffect(() => {
     const closeMenusOnOutsideClick = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (
@@ -225,7 +336,7 @@ export function AppNavigationRibbon({
       >
         <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:px-7 xl:py-3">
           <p className="sr-only">
-            {locale === "fr" ? "Profil actif" : "Active profile"}: {profileLabel}
+            {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
           <Link
@@ -278,8 +389,8 @@ export function AppNavigationRibbon({
               </nav>
 
               <div className="flex min-w-0 flex-1 justify-center">
-                <div className="w-full max-w-[24rem] xl:max-w-[26rem]">
-                  <GlobalSearch currentProfile={currentProfile} />
+              <div className="w-full max-w-[24rem] xl:max-w-[26rem]">
+                  <GlobalSearch currentProfile={effectiveProfile} />
                 </div>
               </div>
             </div>
@@ -457,31 +568,31 @@ export function AppNavigationRibbon({
 
             {!isAuthenticated ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <SignInButton mode="modal">
-                  <button 
-                    aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
-                    className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white"
-                    type="button"
-                  >
-                    {locale === "fr" ? "Se connecter" : "Sign in"}
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button 
-                    aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
-                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95"
-                    type="button"
-                  >
-                    {locale === "fr" ? "S'inscrire" : "Sign up"}
-                  </button>
-                </SignUpButton>
+                <Link
+                  href="/sign-in"
+                  prefetch={false}
+                  aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
+                  onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white"
+                >
+                  {locale === "fr" ? "Se connecter" : "Sign in"}
+                </Link>
+                <Link
+                  href="/sign-up"
+                  prefetch={false}
+                  aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
+                  onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95"
+                >
+                  {locale === "fr" ? "S'inscrire" : "Sign up"}
+                </Link>
               </div>
             ) : null}
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2 lg:gap-3">
                 <div className="rounded-full border border-white/10 bg-white/8 px-1.5 py-1">
-                  {identity ? <AccountIdentityChip identity={identity} /> : null}
+                  {effectiveIdentity ? <AccountIdentityChip identity={effectiveIdentity} /> : null}
                 </div>
                 <NotificationBell />
                 <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
@@ -500,4 +611,67 @@ export function AppNavigationRibbon({
       </nav>
     </div>
   );
+}
+
+function AppNavigationRibbonPublic({
+  currentProfile,
+  profileLabel,
+  pathname,
+}: AppNavigationRibbonProps & { pathname: string }) {
+  return (
+    <AppNavigationRibbonShell
+      currentProfile={currentProfile}
+      profileLabel={profileLabel}
+      pathname={pathname}
+      user={null}
+      isLoaded={false}
+      isSignedIn={false}
+      showAccountActions={false}
+    />
+  );
+}
+
+function AppNavigationRibbonProtected({
+  currentProfile,
+  profileLabel,
+  identity,
+  pathname,
+}: AppNavigationRibbonProps & { pathname: string }) {
+  const { locale } = useSitePreferences();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const userResource = user ?? null;
+  const authLoaded = Boolean(isLoaded);
+  const authSignedIn = Boolean(isSignedIn);
+  const fallbackProfile = currentProfile ?? "benevole";
+  const userRole = readProfileRole(userResource?.publicMetadata);
+  const effectiveProfile =
+    identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
+  const effectiveIdentity =
+    identity ??
+    (authLoaded && authSignedIn && userResource
+      ? buildIdentityFromUser(userResource, effectiveProfile, locale)
+      : null);
+
+  return (
+    <AppNavigationRibbonShell
+      currentProfile={effectiveProfile}
+      profileLabel={profileLabel}
+      identity={effectiveIdentity}
+      pathname={pathname}
+      user={userResource}
+      isLoaded={authLoaded}
+      isSignedIn={authSignedIn}
+      showAccountActions
+    />
+  );
+}
+
+export function AppNavigationRibbon(props: AppNavigationRibbonProps) {
+  const pathname = usePathname();
+
+  if (isProtectedRoutePath(pathname)) {
+    return <AppNavigationRibbonProtected {...props} pathname={pathname} />;
+  }
+
+  return <AppNavigationRibbonPublic {...props} pathname={pathname} />;
 }

@@ -1,10 +1,10 @@
 import {
-  buildGreaterParisNominatimSearchUrl,
-  parseNominatimCoordinates,
-} from "@/lib/geo/greater-paris";
+  buildTerritoryNominatimSearchUrl,
+  parseTerritoryCoordinates,
+} from "@/lib/geo/territory";
 
 export function buildNominatimSearchUrl(query: string): string | null {
-  return buildGreaterParisNominatimSearchUrl(query);
+  return buildTerritoryNominatimSearchUrl(query);
 }
 
-export { parseNominatimCoordinates };
+export { parseTerritoryCoordinates as parseNominatimCoordinates };

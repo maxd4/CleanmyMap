@@ -10,7 +10,7 @@ const KEYWORDS_BASE = [
   "dépollution",
   "propreté",
   "carte",
-  "Paris",
+  "France",
 ];
 
 const KEYWORDS_ECO = [
@@ -55,22 +55,22 @@ const KEYWORDS_COMMUNITY = [
 ];
 
 const KEYWORDS_CLEANUP = [
-  "dépollution urbaine Paris",
-  "propreté Paris",
-  "carte pollution Paris",
-  "cleanwalk Paris",
+  "dépollution urbaine",
+  "propreté urbaine",
+  "carte pollution",
+  "cleanwalk",
   "collecte déchets bénévole",
   "signalement détritus",
   "action nettoyage urbain",
   "carte propreté",
   "dépollution citoyenne",
-  "nettoyage streets Paris",
+  "nettoyage urbain",
 ];
 
 const KEYWORDS_COMMUNITY_SPECIFIC = [
   "bénévolat environnement",
-  "collecte déchets Paris",
-  "action écologie Paris",
+  "collecte déchets France",
+  "action écologie",
   "citoyen engagé propreté",
   "community cleanup",
   "volontaire nettoyage",
@@ -79,11 +79,11 @@ const KEYWORDS_COMMUNITY_SPECIFIC = [
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "CleanMyMap | Dépollution Urbaine Paris & Carte Propréte",
-    template: "%s | CleanMyMap - Écologie & Impact Terrain",
+    default: "CleanMyMap | Dépollution urbaine & carte citoyenne",
+    template: "%s | CleanMyMap - Écologie & impact terrain",
   },
   description:
-    "CMM : la carte de propreté Paris. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de depollution. Rejoignez 10 000+ benevoles pour une ville plus propre. Ecologie, developpement durable, action citoyenne.",
+    "CleanMyMap est une plateforme nationale de dépollution urbaine et d'action citoyenne. Signalez les pollutions, organisez des cleanwalks et coordonnez vos actions de nettoyage partout en France. Écologie, développement durable, bénévolat et impact terrain.",
   keywords: [
     ...KEYWORDS_BASE,
     ...KEYWORDS_ECO,
@@ -91,11 +91,11 @@ export const metadata: Metadata = {
     ...KEYWORDS_COMMUNITY,
     ...KEYWORDS_CLEANUP,
     ...KEYWORDS_COMMUNITY_SPECIFIC,
-    "carte propreté Paris",
-    "dépollution Paris",
+    "carte propreté",
+    "dépollution France",
     "cleanwalk",
-    "signalement déchets Paris",
-    "action nettoyage Paris",
+    "signalement déchets",
+    "action nettoyage",
     "bénévolat propreté",
     "citoyen environnement",
     "collecte urbaine",
@@ -106,6 +106,9 @@ export const metadata: Metadata = {
     "terrain écologie",
     "partenariat environnement",
     "entraide citoyenne",
+    "région",
+    "département",
+    "commune",
   ],
   authors: [{ name: "CleanMyMap", url: "https://cleanmymap.fr" }],
   creator: "CleanMyMap",
@@ -126,24 +129,24 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     url: "/",
-    siteName: "CleanMyMap - Dépollution Paris",
-    title: "CleanMyMap - Carte Dépollution & Cleanwalks Paris - Écologie Action",
+    siteName: "CleanMyMap - Dépollution citoyenne",
+    title: "CleanMyMap - Carte de dépollution citoyenne & cleanwalks",
     description:
-      "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement. Developpement durable, benevolat, action citoyenne, coordination communautaire.",
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement. Développement durable, bénévolat, action citoyenne, coordination communautaire.",
     images: [
       {
         url: "/brand/logo-cleanmymap.svg",
         width: 1200,
         height: 630,
-        alt: "CleanMyMap - Carte propreté Paris et cleanwalks - Écologie",
+        alt: "CleanMyMap - Carte de dépollution citoyenne et cleanwalks en France",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CleanMyMap - Dépollution Paris & Carte Propréte",
+    title: "CleanMyMap - Dépollution citoyenne & carte propreté",
     description:
-      "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement.",
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement.",
     images: ["/brand/logo-cleanmymap.svg"],
   },
   robots: {

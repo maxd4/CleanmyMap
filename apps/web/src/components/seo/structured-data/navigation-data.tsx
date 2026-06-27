@@ -6,10 +6,10 @@ export function WebSiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     url: "https://cleanmymap.fr",
-    name: "CleanMyMap - Carte Dépollution Paris & Écologie Action",
+    name: "CleanMyMap - Carte de dépollution citoyenne",
     description:
-      "La carte citoyenne de proprete et de depollution urbaine. Signalez, nettoyez, agissez pour l'environnement. Benevolat, ecologie, developpement durable, coordination, impact terrain, valorisation des dechets.",
-    keywords: "depollution, ecologie, proprete Paris, cleanwalk, benevole, action citoyenne, developpement durable, coordination benevoles, impact terrain, valorisation dechets",
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement. Bénévolat, écologie, développement durable, coordination, impact terrain, valorisation des déchets.",
+    keywords: "dépollution, écologie, propreté, cleanwalk, bénévole, action citoyenne, développement durable, coordination bénévoles, impact terrain, valorisation déchets, France, région, département, commune",
     potentialAction: {
       "@type": "SearchAction",
       target: "https://cleanmymap.fr/explorer?q={search_term_string}",
@@ -24,9 +24,9 @@ export function WebPageJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: "CleanMyMap - Carte de Dépollution Urbaine Paris",
+    name: "CleanMyMap - Carte de dépollution citoyenne",
     description:
-      "Plateforme citoyenne de dépollution urbaine et d'action écologique à Paris. Signalez les pollutions, organisez des cleanwalks, déclarez vos actions pour votre impact environnemental.",
+      "Plateforme citoyenne de dépollution urbaine et d'action écologique partout en France. Signalez les pollutions, organisez des cleanwalks, déclarez vos actions pour votre impact environnemental.",
     url: "https://cleanmymap.fr",
     primaryImageOfPage: {
       "@type": "ImageObject",

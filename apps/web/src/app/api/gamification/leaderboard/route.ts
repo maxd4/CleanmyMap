@@ -7,6 +7,9 @@ import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
+const GAMIFICATION_LEADERBOARD_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+};
 
 const scopeSchema = z.enum(["individual","collective"]);
 const periodSchema = z.enum(["lifetime","yearToDate"]);
@@ -40,6 +43,8 @@ export async function GET(request: Request) {
  status:"ok",
  period: period.data,
  ...leaderboard,
+ }, {
+  headers: GAMIFICATION_LEADERBOARD_CACHE_HEADERS,
  });
  } catch (error) {
  return handleApiError(error, "GET /api/gamification/leaderboard");

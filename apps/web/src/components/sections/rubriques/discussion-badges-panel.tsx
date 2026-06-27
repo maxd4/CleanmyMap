@@ -2,8 +2,6 @@
 
 import { Info, Sparkles, UserCog } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 import { RubriqueCard, RubriqueCardIcon } from "@/components/ui/rubrique-card";
 

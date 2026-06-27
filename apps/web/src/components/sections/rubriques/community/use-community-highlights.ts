@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import type { ActionListItem } from "@/lib/actions/types";
-import { swrLiveFeedOptions } from "@/lib/swr-config";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import type { CommunityHighlightItem } from "./types";
 
@@ -14,8 +14,8 @@ export function useCommunityHighlights() {
     mutate: reloadHighlights,
   } = useSWR(
     ["section-community-feed"],
-    () => fetchActions({ status: "approved", limit: 600, days: 365, types: "action" }),
-    swrLiveFeedOptions,
+    () => fetchActions({ status: "approved", limit: 180, days: 365, types: "action" }),
+    swrRecentViewOptions,
   );
 
   const highlights = useMemo<CommunityHighlightItem[]>(() => {

@@ -3,6 +3,7 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { adminErrorResponse, newOperationId } from "@/lib/admin/response";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildDeliverableHeaders } from "@/lib/reports/http";
+import { unstable_cache } from "next/cache";
 import {
   buildReferralLineageCsv,
   buildReferralLineageExportResult,
@@ -11,31 +12,44 @@ import {
 
 export const runtime = "nodejs";
 
-async function loadReferralProfiles(): Promise<ReferralLineageProfileRow[]> {
-  const supabase = getSupabaseServerClient();
-  const profiles: ReferralLineageProfileRow[] = [];
-  const pageSize = 1000;
+const REFERRAL_EXPORT_CACHE_REVALIDATE_SECONDS = 600;
 
-  for (let offset = 0; ; offset += pageSize) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, display_name, referral_code, referred_by_profile_id, referred_at, created_at")
-      .order("created_at", { ascending: true })
-      .range(offset, offset + pageSize - 1);
+function loadCachedReferralProfiles(): Promise<ReferralLineageProfileRow[]> {
+  const cached = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient(false);
+      const profiles: ReferralLineageProfileRow[] = [];
+      const pageSize = 1000;
 
-    if (error) {
-      throw error;
-    }
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, display_name, referral_code, referred_by_profile_id, referred_at, created_at")
+          .order("created_at", { ascending: true })
+          .range(offset, offset + pageSize - 1);
 
-    const batch = (data ?? []) as ReferralLineageProfileRow[];
-    profiles.push(...batch);
+        if (error) {
+          throw error;
+        }
 
-    if (batch.length < pageSize) {
-      break;
-    }
-  }
+        const batch = (data ?? []) as ReferralLineageProfileRow[];
+        profiles.push(...batch);
 
-  return profiles;
+        if (batch.length < pageSize) {
+          break;
+        }
+      }
+
+      return profiles;
+    },
+    ["admin-referral-lineage-export"],
+    {
+      revalidate: REFERRAL_EXPORT_CACHE_REVALIDATE_SECONDS,
+      tags: ["admin-referral-lineage-export"],
+    },
+  );
+
+  return cached();
 }
 
 export async function GET() {
@@ -46,7 +60,7 @@ export async function GET() {
   }
 
   try {
-    const profiles = await loadReferralProfiles();
+    const profiles = await loadCachedReferralProfiles();
     const exportResult = buildReferralLineageExportResult(profiles);
     const csv = buildReferralLineageCsv(exportResult.rows);
     const { headers: responseHeaders } = buildDeliverableHeaders({

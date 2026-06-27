@@ -2,10 +2,9 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { ShieldCheck, Info, Map as MapIcon, Sparkles, Target, Compass } from "lucide-react";
+import { ShieldCheck, Info, Sparkles, Target, Compass } from "lucide-react";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const AnnuaireMapCanvas = dynamic(

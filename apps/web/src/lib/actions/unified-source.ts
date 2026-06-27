@@ -189,32 +189,18 @@ function isTestLikeContract(contract: ActionDataContract): boolean {
   return TEST_MARKERS.some((marker) => haystack.includes(marker));
 }
 
-export function parseEntityTypesParam(
-  raw: string | null,
-): ActionEntityType[] | null {
-  if (!raw || raw.trim() === "" || raw === "all") {
-    return null;
-  }
-  const tokens = raw
-    .split(",")
-    .map((token) => token.trim())
-    .filter((token): token is ActionEntityType =>
-      ACTION_ENTITY_TYPES.includes(token as ActionEntityType),
-    );
-  if (tokens.length === 0) {
-    return null;
-  }
-  return [...new Set(tokens)];
-}
+type UnifiedActionSourceLoadResult = {
+  remoteRows: StoredAction[];
+  remoteSpots: TrashSpotterSpotRow[];
+  localContracts: ActionDataContract[];
+  failedSources: UnifiedSourceName[];
+  availableSources: UnifiedSourceName[];
+};
 
-export async function fetchUnifiedActionContracts(
+async function loadUnifiedActionSourceData(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
-): Promise<{
-  items: ActionDataContract[];
-  isTruncated: boolean;
-  sourceHealth: UnifiedSourceHealth;
-}> {
+): Promise<UnifiedActionSourceLoadResult> {
   const [remoteRowsResult, remoteSpotsResult, localContracts] =
     await Promise.allSettled([
       fetchActions(supabase, {
@@ -241,9 +227,7 @@ export async function fetchUnifiedActionContracts(
           query = query.gte("created_at", `${params.floorDate}T00:00:00.000Z`);
         }
         if (params.requireCoordinates) {
-          query = query
-            .not("latitude", "is", null)
-            .not("longitude", "is", null);
+          query = query.not("latitude", "is", null).not("longitude", "is", null);
         }
         if (spotStatuses) {
           query = query.in("status", spotStatuses);
@@ -284,43 +268,25 @@ export async function fetchUnifiedActionContracts(
     availableSources.push("spots");
   }
 
-  const remoteRows =
-    remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [];
-  const remoteSpots =
-    remoteSpotsResult.status === "fulfilled" ? remoteSpotsResult.value : [];
-  const resolvedLocalContracts =
-    localContracts.status === "fulfilled" ? localContracts.value : [];
-
   if (localContracts.status === "rejected") {
     throw localContracts.reason;
   }
   availableSources.push("local");
 
-  const remoteActionContracts = remoteRows.map((row) =>
-    toActionContractFromRow(row),
-  );
-  const remoteSpotContracts = remoteSpots.map((row) =>
-    toSpotContractFromRow(row),
-  );
+  return {
+    remoteRows: remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [],
+    remoteSpots: remoteSpotsResult.status === "fulfilled" ? remoteSpotsResult.value : [],
+    localContracts: localContracts.status === "fulfilled" ? localContracts.value : [],
+    failedSources,
+    availableSources,
+  };
+}
 
-  const rawContracts = filterByTypes(
-    dedupeContracts([
-      ...remoteActionContracts,
-      ...remoteSpotContracts,
-      ...resolvedLocalContracts,
-    ]),
-    params.types,
-  ).filter((contract) => !isTestLikeContract(contract));
-
-  // Détection de la troncature : si on a trouvé plus d'éléments que la limite demandée
-  // avant le slice final.
-  const isTruncated = rawContracts.length > params.limit;
-
-  const items = rawContracts
-    .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
-    .slice(0, params.limit);
-
-  const sourceHealth: UnifiedSourceHealth = {
+function buildUnifiedSourceHealth(
+  failedSources: UnifiedSourceName[],
+  availableSources: UnifiedSourceName[],
+): UnifiedSourceHealth {
+  return {
     partial: failedSources.length > 0,
     failedSources,
     availableSources,
@@ -331,6 +297,71 @@ export async function fetchUnifiedActionContracts(
           ]
         : [],
   };
+}
 
-  return { items, isTruncated, sourceHealth };
+function buildUnifiedActionContracts(
+  remoteRows: StoredAction[],
+  remoteSpots: TrashSpotterSpotRow[],
+  localContracts: ActionDataContract[],
+  types: ActionEntityType[] | null,
+  limit: number,
+): { items: ActionDataContract[]; isTruncated: boolean } {
+  const rawContracts = filterByTypes(
+    dedupeContracts([
+      ...remoteRows.map((row) => toActionContractFromRow(row)),
+      ...remoteSpots.map((row) => toSpotContractFromRow(row)),
+      ...localContracts,
+    ]),
+    types,
+  ).filter((contract) => !isTestLikeContract(contract));
+
+  const isTruncated = rawContracts.length > limit;
+  const items = rawContracts
+    .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
+    .slice(0, limit);
+
+  return { items, isTruncated };
+}
+
+export function parseEntityTypesParam(
+  raw: string | null,
+): ActionEntityType[] | null {
+  if (!raw || raw.trim() === "" || raw === "all") {
+    return null;
+  }
+  const tokens = raw
+    .split(",")
+    .map((token) => token.trim())
+    .filter((token): token is ActionEntityType =>
+      ACTION_ENTITY_TYPES.includes(token as ActionEntityType),
+    );
+  if (tokens.length === 0) {
+    return null;
+  }
+  return [...new Set(tokens)];
+}
+
+export async function fetchUnifiedActionContracts(
+  supabase: SupabaseClient,
+  params: UnifiedActionContractsParams,
+): Promise<{
+  items: ActionDataContract[];
+  isTruncated: boolean;
+  sourceHealth: UnifiedSourceHealth;
+}> {
+  const { remoteRows, remoteSpots, localContracts, failedSources, availableSources } =
+    await loadUnifiedActionSourceData(supabase, params);
+  const { items, isTruncated } = buildUnifiedActionContracts(
+    remoteRows,
+    remoteSpots,
+    localContracts,
+    params.types,
+    params.limit,
+  );
+
+  return {
+    items,
+    isTruncated,
+    sourceHealth: buildUnifiedSourceHealth(failedSources, availableSources),
+  };
 }

@@ -8,17 +8,17 @@ describe("buildPartnerCards (module)", () => {
       makeAction({
         id: "a1",
         actor_name: "Association X",
-        location_label: "Paris 10e",
+        location_label: "Lyon 1er",
       }),
       makeAction({
         id: "a2",
         actor_name: "Association X",
-        location_label: "Paris 10e",
+        location_label: "Lyon 1er",
       }),
       makeAction({
         id: "a3",
         actor_name: "Collectif Y",
-        location_label: "Paris 11e",
+        location_label: "Nantes",
       }),
     ]);
 

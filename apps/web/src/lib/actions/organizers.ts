@@ -47,6 +47,68 @@ function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens.map(normalizeToken).filter((token) => token.length > 0))];
 }
 
+function buildClerkSearchParams(normalized: string): {
+  emailAddress?: string[];
+  username?: string[];
+} {
+  return normalized.includes("@")
+    ? { emailAddress: [normalized] }
+    : { username: [normalized] };
+}
+
+function isClerkUserMatch(user: ClerkUserLookup, normalized: string): boolean {
+  const username = user.username?.trim() ?? "";
+  const email = user.primaryEmailAddress?.emailAddress?.trim() ?? "";
+  return user.id === normalized || username === normalized || email === normalized;
+}
+
+function buildClerkDisplayName(user: ClerkUserLookup): string {
+  return (
+    [user.firstName?.trim() ?? "", user.lastName?.trim() ?? ""]
+      .join(" ")
+      .trim() ||
+    user.username?.trim() ||
+    user.id
+  );
+}
+
+function buildPrimaryOrganizer(creator: {
+  userId: string;
+  displayName: string;
+  handle?: string | null;
+  username?: string | null;
+}): ResolvedActionOrganizer {
+  return {
+    userId: creator.userId,
+    displayName:
+      creator.displayName.trim() ||
+      creator.handle?.trim() ||
+      creator.username?.trim() ||
+      creator.userId,
+    handle: creator.handle?.trim() || creator.username?.trim() || null,
+    isPrimary: true,
+    sourceToken: null,
+  };
+}
+
+function isCreatorToken(
+  token: string,
+  creator: {
+    userId: string;
+    handle?: string | null;
+    username?: string | null;
+    email?: string | null;
+  },
+): boolean {
+  const normalizedToken = normalizeComparable(token);
+  return (
+    normalizedToken === normalizeComparable(creator.userId) ||
+    normalizedToken === normalizeComparable(creator.handle) ||
+    normalizedToken === normalizeComparable(creator.username) ||
+    normalizedToken === normalizeComparable(creator.email)
+  );
+}
+
 export function parseOrganizerAccountTokens(
   raw: string | string[] | null | undefined,
 ): string[] {
@@ -144,10 +206,7 @@ async function lookupClerkUserByToken(
   }
 
   const client = await clerkClient();
-  const searchParams =
-    normalized.includes("@")
-      ? { emailAddress: [normalized] }
-      : { username: [normalized] };
+  const searchParams = buildClerkSearchParams(normalized);
 
   const result = await client.users.getUserList({
     ...searchParams,
@@ -155,30 +214,17 @@ async function lookupClerkUserByToken(
     limit: 10,
   });
 
-  const match = result.data.find((user: ClerkUserLookup) => {
-    const username = user.username?.trim() ?? "";
-    const email = user.primaryEmailAddress?.emailAddress?.trim() ?? "";
-    return (
-      user.id === normalized ||
-      username === normalized ||
-      email === normalized
-    );
-  });
+  const match = result.data.find((user: ClerkUserLookup) =>
+    isClerkUserMatch(user, normalized),
+  );
 
   if (!match) {
     return null;
   }
 
-  const displayName =
-    [match.firstName?.trim() ?? "", match.lastName?.trim() ?? ""]
-      .join(" ")
-      .trim() ||
-    match.username?.trim() ||
-    match.id;
-
   return {
     userId: match.id,
-    displayName,
+    displayName: buildClerkDisplayName(match),
     handle: match.username?.trim() || null,
     isPrimary: false,
     sourceToken: token,
@@ -201,20 +247,7 @@ export async function resolveActionOrganizers(params: {
   const organizers: ResolvedActionOrganizer[] = [];
 
   if (includeCreatorAsPrimary) {
-    organizers.push({
-      userId: params.creator.userId,
-      displayName:
-        params.creator.displayName.trim() ||
-        params.creator.handle?.trim() ||
-        params.creator.username?.trim() ||
-        params.creator.userId,
-      handle:
-        params.creator.handle?.trim() ||
-        params.creator.username?.trim() ||
-        null,
-      isPrimary: true,
-      sourceToken: null,
-    });
+    organizers.push(buildPrimaryOrganizer(params.creator));
   }
 
   const unresolvedTokens: string[] = [];
@@ -222,15 +255,7 @@ export async function resolveActionOrganizers(params: {
   const seen = new Set<string>(includeCreatorAsPrimary ? [params.creator.userId] : []);
 
   for (const token of tokens) {
-    if (
-      includeCreatorAsPrimary &&
-      (
-        normalizeComparable(token) === normalizeComparable(params.creator.userId) ||
-        normalizeComparable(token) === normalizeComparable(params.creator.handle) ||
-        normalizeComparable(token) === normalizeComparable(params.creator.username) ||
-        normalizeComparable(token) === normalizeComparable(params.creator.email)
-      )
-    ) {
+    if (includeCreatorAsPrimary && isCreatorToken(token, params.creator)) {
       continue;
     }
 

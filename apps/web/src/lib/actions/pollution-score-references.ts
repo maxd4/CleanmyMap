@@ -9,6 +9,26 @@ type PollutionScoreReferenceRow = {
   butts_per_volunteer: number | null;
 };
 
+function normalizePollutionScoreReferenceRows(
+  data: unknown,
+): PollutionScoreReferenceRow[] {
+  if (Array.isArray(data)) {
+    return data as PollutionScoreReferenceRow[];
+  }
+  if (data) {
+    return [data as PollutionScoreReferenceRow];
+  }
+  return [];
+}
+
+function resolvePollutionScoreReferenceValue(
+  value: number | null | undefined,
+  fallback: number,
+): number {
+  const candidate = Number(value ?? 0);
+  return Number.isFinite(candidate) && candidate > 0 ? candidate : fallback;
+}
+
 export async function fetchActionPollutionScoreReferences(
   supabase: SupabaseClient,
 ): Promise<PollutionScoreReferences> {
@@ -18,24 +38,17 @@ export async function fetchActionPollutionScoreReferences(
     throw result.error;
   }
 
-  const rows = Array.isArray(result.data)
-    ? (result.data as PollutionScoreReferenceRow[])
-    : result.data
-      ? ([result.data] as PollutionScoreReferenceRow[])
-      : [];
+  const rows = normalizePollutionScoreReferenceRows(result.data);
   const row = rows[0] ?? null;
 
-  const wastePerVolunteer = Number(row?.waste_per_volunteer ?? 0);
-  const buttsPerVolunteer = Number(row?.butts_per_volunteer ?? 0);
-
   return {
-    wastePerVolunteer:
-      Number.isFinite(wastePerVolunteer) && wastePerVolunteer > 0
-        ? wastePerVolunteer
-        : DEFAULT_POLLUTION_SCORE_REFERENCES.wastePerVolunteer,
-    buttsPerVolunteer:
-      Number.isFinite(buttsPerVolunteer) && buttsPerVolunteer > 0
-        ? buttsPerVolunteer
-        : DEFAULT_POLLUTION_SCORE_REFERENCES.buttsPerVolunteer,
+    wastePerVolunteer: resolvePollutionScoreReferenceValue(
+      row?.waste_per_volunteer,
+      DEFAULT_POLLUTION_SCORE_REFERENCES.wastePerVolunteer,
+    ),
+    buttsPerVolunteer: resolvePollutionScoreReferenceValue(
+      row?.butts_per_volunteer,
+      DEFAULT_POLLUTION_SCORE_REFERENCES.buttsPerVolunteer,
+    ),
   };
 }

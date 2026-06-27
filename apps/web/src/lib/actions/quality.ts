@@ -38,6 +38,10 @@ function hasValidDate(raw: string | null | undefined): boolean {
   return Number.isFinite(parsed);
 }
 
+function isWithinRange(value: number, min: number, max: number): boolean {
+  return value >= min && value <= max;
+}
+
 function parseObservedAt(item: ActionListItem): string {
   return item.contract?.dates.observedAt ?? item.action_date;
 }
@@ -68,6 +72,17 @@ function hasManualDrawing(item: ActionListItem): boolean {
     return true;
   }
   return false;
+}
+
+function hasValidCoherenceCoordinates(item: ActionListItem): boolean {
+  const latitude = item.contract?.location.latitude ?? item.latitude;
+  const longitude = item.contract?.location.longitude ?? item.longitude;
+  if (latitude === null || longitude === null) {
+    return false;
+  }
+  return (
+    isWithinRange(latitude, -90, 90) && isWithinRange(longitude, -180, 180)
+  );
 }
 
 function computeCompleteness(item: ActionListItem): {
@@ -103,21 +118,12 @@ function computeCoherence(item: ActionListItem): {
   const butts = toFiniteNumber(item.cigarette_butts, 0);
   const volunteers = toFiniteNumber(item.volunteers_count, 0);
   const minutes = toFiniteNumber(item.duration_minutes, 0);
-  const coords =
-    (item.latitude === null && item.longitude === null) ||
-    (item.latitude !== null &&
-      item.longitude !== null &&
-      item.latitude >= -90 &&
-      item.latitude <= 90 &&
-      item.longitude >= -180 &&
-      item.longitude <= 180);
-
   const checks = [
-    wasteKg >= 0 && wasteKg <= 1000,
-    butts >= 0 && butts <= 200000,
-    volunteers >= 1 && volunteers <= 500,
-    minutes >= 0 && minutes <= 1440,
-    coords,
+    isWithinRange(wasteKg, 0, 1000),
+    isWithinRange(butts, 0, 200000),
+    isWithinRange(volunteers, 1, 500),
+    isWithinRange(minutes, 0, 1440),
+    hasValidCoherenceCoordinates(item),
   ];
 
   const flags: string[] = [];

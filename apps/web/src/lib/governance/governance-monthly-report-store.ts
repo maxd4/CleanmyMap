@@ -90,6 +90,10 @@ export type GovernanceMonthlyReportPayload = {
   };
   serviceThresholdAlerts: ServiceThresholdAlert[];
   notes: string[];
+  artifacts?: {
+    pdfStoragePath?: string | null;
+    pdfGeneratedAt?: string | null;
+  };
 };
 
 export type GovernanceMonthlyReportRecord = {
@@ -320,6 +324,12 @@ function normalizePayload(
 ): GovernanceMonthlyReportPayload {
   return {
     ...payload,
+    artifacts: payload.artifacts
+      ? {
+          pdfStoragePath: payload.artifacts.pdfStoragePath ?? null,
+          pdfGeneratedAt: payload.artifacts.pdfGeneratedAt ?? null,
+        }
+      : undefined,
     impact: normalizeImpactPayload(payload.impact),
     projectSignals: normalizeProjectSignals(payload.projectSignals),
     storage: normalizeStoragePayload(payload.storage),
@@ -366,6 +376,16 @@ function normalizeReportMonth(value: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
+function getReportMonthRange(value: string): { start: string; end: string } {
+  const parsed = new Date(`${normalizeReportMonth(value)}T00:00:00.000Z`);
+  const year = parsed.getUTCFullYear();
+  const month = parsed.getUTCMonth();
+  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const end = new Date(Date.UTC(year, month + 1, 1)).toISOString().slice(0, 10);
+
+  return { start, end };
+}
+
 function toRecord(row: GovernanceMonthlyReportRow): GovernanceMonthlyReportRecord {
   return {
     id: String(row.id),
@@ -392,6 +412,36 @@ async function readSupabaseRecords(limit: number): Promise<GovernanceMonthlyRepo
   }
 
   return (result.data ?? []).map((row) => toRecord(row as GovernanceMonthlyReportRow));
+}
+
+async function readSupabaseReport(
+  reportMonth?: string | null,
+): Promise<GovernanceMonthlyReportRecord | null> {
+  const supabase = getSupabaseServerClient();
+  let query = supabase
+    .from("governance_monthly_reports")
+    .select("id,report_key,report_month,generated_at,version,title,payload")
+    .eq("report_key", GOVERNANCE_MONTHLY_REPORT_KEY);
+
+  if (reportMonth) {
+    const monthRange = getReportMonthRange(reportMonth);
+    query = query
+      .gte("report_month", monthRange.start)
+      .lt("report_month", monthRange.end)
+      .order("report_month", { ascending: false })
+      .limit(1);
+  } else {
+    query = query.order("report_month", { ascending: false }).limit(1);
+  }
+
+  const result = await query;
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const row = result.data?.[0];
+  return row ? toRecord(row as GovernanceMonthlyReportRow) : null;
 }
 
 export async function upsertGovernanceMonthlyReport(
@@ -462,6 +512,16 @@ export async function listGovernanceMonthlyReports(
 export async function loadGovernanceMonthlyReport(
   reportMonth?: string | null,
 ): Promise<GovernanceMonthlyReportRecord | null> {
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      return await readSupabaseReport(reportMonth);
+    } catch {
+      if (!allowLocalFileStoreFallback()) {
+        return null;
+      }
+    }
+  }
+
   const reports = await listGovernanceMonthlyReports(24);
   if (!reportMonth) {
     return reports[0] ?? null;

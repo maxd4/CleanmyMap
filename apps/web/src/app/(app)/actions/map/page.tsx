@@ -10,7 +10,6 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -20,7 +19,7 @@ import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
 import { MapSidebarAid } from "./_components/map-sidebar-aid";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
-import { DEFAULT_ACTIONS_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
+import { useActionsMapViewport } from "@/components/actions/map-feed/use-actions-map-viewport";
 import {
   ActionPollutionScoreReferencesProvider,
   useActionPollutionScoreReferences,
@@ -93,7 +92,7 @@ function ActionsMapPageContent() {
 
   const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const [mapViewport, setMapViewport] = useState<MapViewportState | null>(null);
+  const { viewport: mapViewport, handleViewportChange } = useActionsMapViewport();
   const mapExportTargetRef = useRef<HTMLDivElement | null>(null);
   const handleSelectAction = (actionId: string) => {
     setSelectedActionId((current) => (current === actionId ? null : actionId));
@@ -136,7 +135,7 @@ function ActionsMapPageContent() {
     visibleCategories,
     pollutionScoreReferences: references,
     limit: 300,
-    viewport: mapViewport ?? DEFAULT_ACTIONS_MAP_VIEWPORT,
+    viewport: mapViewport,
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
@@ -200,14 +199,15 @@ function ActionsMapPageContent() {
             presentation="immersive"
             showIntro={false}
             fullViewport
-          showStoriesCarousel={false}
-          zoneQuery={zoneQuery}
-          selectedActionId={selectedActionId}
-          onOpenAction={handleSelectAction}
-          onResetFilters={handleResetFilters}
-          mapExportTargetRef={mapExportTargetRef}
-          onViewportChange={setMapViewport}
-        />
+            showStoriesCarousel={false}
+            zoneQuery={zoneQuery}
+            selectedActionId={selectedActionId}
+            onOpenAction={handleSelectAction}
+            onResetFilters={handleResetFilters}
+            mapExportTargetRef={mapExportTargetRef}
+            initialViewport={mapViewport}
+            onViewportChange={handleViewportChange}
+          />
         </section>
 
         <div className="mx-auto max-w-[1680px] px-6 space-y-10">

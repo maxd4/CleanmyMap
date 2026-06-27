@@ -1,3 +1,5 @@
+"use client";
+
 import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnVulgarisationPathSection } from "@/components/learn/learn-vulgarisation-path-section";
@@ -13,10 +15,10 @@ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import Link from "next/link";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
-import { getServerLocale } from "@/lib/server-preferences";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
-export default async function LearnVulgarisationPage() {
-  const locale = await getServerLocale();
+export default function LearnVulgarisationPage() {
+  const { locale } = useSitePreferences();
   const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
 
   return (

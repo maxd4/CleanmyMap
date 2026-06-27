@@ -97,6 +97,34 @@ export function toContractCreatePayload(
   };
 }
 
+function fallbackString(
+  primary: string | null | undefined,
+  secondary: string | null | undefined,
+  fallback = "",
+): string {
+  return primary ?? secondary ?? fallback;
+}
+
+function fallbackNumber(
+  value: number | null | undefined,
+  fallback: number,
+): number {
+  return value ?? fallback;
+}
+
+function buildManualDrawing(
+  geometry: CreateActionPayload["manualDrawing"],
+): CreateActionPayload["manualDrawing"] {
+  if (!geometry) {
+    return undefined;
+  }
+
+  return {
+    kind: geometry.kind,
+    coordinates: geometry.coordinates,
+  };
+}
+
 /**
  * Normalise un payload de création (qu'il vienne du formulaire web ou d'un contrat existant).
  */
@@ -114,34 +142,22 @@ export function normalizeCreatePayload(
     actionDate: payload.dates.observedAt,
     recordType: payload.type,
     locationLabel: payload.location.label,
-    departureLocationLabel:
-      payload.departureLocationLabel ??
-      payload.metadata.departureLocationLabel ??
-      "",
-    arrivalLocationLabel:
-      payload.arrivalLocationLabel ?? payload.metadata.arrivalLocationLabel ?? "",
+    departureLocationLabel: fallbackString(payload.departureLocationLabel, payload.metadata.departureLocationLabel),
+    arrivalLocationLabel: fallbackString(payload.arrivalLocationLabel, payload.metadata.arrivalLocationLabel),
     routeStyle: payload.routeStyle ?? payload.metadata.routeStyle ?? undefined,
-    routeAdjustmentMessage:
-      payload.routeAdjustmentMessage ??
-      payload.metadata.routeAdjustmentMessage ??
-      undefined,
+    routeAdjustmentMessage: payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
     latitude: payload.location.latitude,
     longitude: payload.location.longitude,
     wasteKg: payload.metadata.wasteKg,
-    cigaretteButts: payload.metadata.cigaretteButts ?? 0,
-    volunteersCount: payload.metadata.volunteersCount ?? 1,
-    durationMinutes: payload.metadata.durationMinutes ?? 0,
+    cigaretteButts: fallbackNumber(payload.metadata.cigaretteButts, 0),
+    volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),
+    durationMinutes: fallbackNumber(payload.metadata.durationMinutes, 0),
     notes: payload.metadata.notes,
     submissionMode: payload.metadata.submissionMode ?? "complete",
     wasteBreakdown: payload.metadata.wasteBreakdown,
     photos: payload.metadata.photos ?? undefined,
     visionEstimate: payload.metadata.visionEstimate ?? undefined,
-    manualDrawing: payload.geometry
-      ? {
-          kind: payload.geometry.kind,
-          coordinates: payload.geometry.coordinates,
-      }
-      : undefined,
+    manualDrawing: buildManualDrawing(payload.geometry),
     placeType: payload.metadata.placeType ?? undefined,
   };
 }

@@ -8,6 +8,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveMissionActionImageUrl } from "@/lib/missions/mission-images";
 
 const MISSION_ASSETS_BUCKET = "mission-assets";
+const MISSION_GPS_POINT_LIMIT = 1000;
+const MISSION_ACTION_LIMIT = 200;
 
 const FALLBACK_STARTED_AT = new Date(Date.now() - 3600000).toISOString();
 
@@ -44,12 +46,15 @@ export default async function MissionPage({ params }: MissionPageParams) {
     .from("gps_points")
     .select("latitude, longitude, recorded_at")
     .eq("mission_id", id)
-    .order("recorded_at");
+    .order("recorded_at")
+    .limit(MISSION_GPS_POINT_LIMIT);
 
   const { data: actions } = await supabase
     .from("mission_actions")
     .select("id, type, content, image_url, latitude, longitude, recorded_at")
-    .eq("mission_id", id);
+    .eq("mission_id", id)
+    .order("recorded_at", { ascending: true })
+    .limit(MISSION_ACTION_LIMIT);
 
   const actionsWithResolvedImages = await Promise.all(
     (actions || []).map(async (action) => {

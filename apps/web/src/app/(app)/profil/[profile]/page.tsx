@@ -23,7 +23,7 @@ import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-serve
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
 import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
 import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
-import { loadReferralSummary } from "@/lib/gamification/referrals";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 import { loadReferralLineageView } from "@/lib/gamification/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 
@@ -118,7 +118,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     monthlyRegularity: computeMonthlyRegularitySummary([]),
     sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
   }));
-  const referralSummary = await loadReferralSummary(referralSupabase, userId).catch(
+  const referralSummary = await fetchCachedReferralSummary(userId).catch(
     () => ({
       referralCode: null,
       inviteUrl: null,

@@ -6,7 +6,7 @@ import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigat
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
-import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
+import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { ReportsPageTabs } from "./reports-page-tabs";
 import { SectionHeader, CTAGroup } from "@/components/ui/page-structure";
@@ -71,7 +71,7 @@ export function ReportsPageV2Layout({
 
       <ReportsPageTabs
         generation={
-          <ReportsWebDocument
+          <DeferredReportsWebDocument
             contracts={contracts}
             communityEvents={communityEvents}
             weather={weather}

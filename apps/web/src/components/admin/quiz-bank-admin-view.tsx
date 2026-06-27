@@ -8,8 +8,6 @@ import { SourceBadge, StatCard } from "@/components/ui/page-structure";
 import { cn } from "@/lib/utils";
 import {
   QUIZ_ACCESS_TYPES,
-  getQuizAccessType,
-  type QuizAccessTypeId,
 } from "@/components/learn/quiz-access-types";
 import { QUIZ_TRAP_LEVELS } from "@/components/learn/quiz-trap-levels";
 import {

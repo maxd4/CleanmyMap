@@ -34,7 +34,7 @@ type ReportsWeather = {
   };
 } | null;
 
-type ReportsWebDocumentProps = {
+export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
   communityEvents: CommunityEventItem[];
   weather: ReportsWeather;

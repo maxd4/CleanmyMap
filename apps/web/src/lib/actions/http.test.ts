@@ -1,4 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  rpcMock: vi.fn(),
+  getSupabaseBrowserClientMock: vi.fn(),
+  fetchActionPollutionScoreReferencesMock: vi.fn(),
+  loadLocalActionContractsMock: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase/client", () => ({
+  getSupabaseBrowserClient: mocks.getSupabaseBrowserClientMock,
+}));
+
+vi.mock("./pollution-score-references", () => ({
+  fetchActionPollutionScoreReferences: mocks.fetchActionPollutionScoreReferencesMock,
+}));
+
+vi.mock("@/lib/data/map-records", () => ({
+  loadLocalActionContracts: mocks.loadLocalActionContractsMock,
+}));
+
 import {
   buildMapActionsQueryString,
   createAction,
@@ -8,6 +28,10 @@ import {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  mocks.rpcMock.mockReset();
+  mocks.getSupabaseBrowserClientMock.mockReset();
+  mocks.fetchActionPollutionScoreReferencesMock.mockReset();
+  mocks.loadLocalActionContractsMock.mockReset();
 });
 
 describe("createAction", () => {
@@ -80,6 +104,28 @@ describe("buildMapActionsQueryString", () => {
     expect(params.get("qualityMin")).toBe("73");
   });
 
+  it("serializes viewport bounds when present", () => {
+    const query = buildMapActionsQueryString({
+      viewport: {
+        center: [48.8566, 2.3522],
+        zoom: 13,
+        bounds: {
+          south: 48.7,
+          west: 2.2,
+          north: 48.95,
+          east: 2.5,
+        },
+      },
+    });
+    const params = new URLSearchParams(query);
+
+    expect(params.get("south")).toBe("48.7");
+    expect(params.get("west")).toBe("2.2");
+    expect(params.get("north")).toBe("48.95");
+    expect(params.get("east")).toBe("2.5");
+    expect(params.get("zoom")).toBe("13");
+  });
+
   it("supports an all time map window", () => {
     const query = buildMapActionsQueryString({ floorDate: null });
     const params = new URLSearchParams(query);
@@ -90,46 +136,112 @@ describe("buildMapActionsQueryString", () => {
 });
 
 describe("fetchMapActions", () => {
-  it("calls the map API with the serialized filters", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          status: "ok",
-          count: 0,
-          daysWindow: 30,
-          items: [],
-          partialSource: false,
-          sourceHealth: {
-            partial: false,
-            failedSources: [],
-            availableSources: ["actions", "spots", "local"],
-            warnings: [],
-          },
+  it("falls back to the browser RPC when the snapshot route is unavailable", async () => {
+    const rpcRow = {
+      source: "actions",
+      entity_type: "action",
+      id: "map-1",
+      created_at: "2026-06-01T10:00:00.000Z",
+      updated_at: "2026-06-01T11:00:00.000Z",
+      created_by_clerk_id: "clerk_123",
+      status: "approved",
+      observed_at: "2026-06-01",
+      location_label: "Quai de test",
+      latitude: "48.8566",
+      longitude: "2.3522",
+      waste_kg: "10",
+      cigarette_butts: "300",
+      volunteers_count: "5",
+      duration_minutes: "45",
+      notes:
+        "association: Collectif Demo\n[cmm-meta]{\"associationName\":\"Collectif Demo\"}\n[DRAWING_GEOJSON]{\"kind\":\"polyline\",\"coordinates\":[[48.8566,2.3522],[48.857,2.353]]}",
+      derived_geometry_kind: "polyline",
+      derived_geometry_geojson:
+        '{"type":"LineString","coordinates":[[2.3522,48.8566],[2.353,48.857]]}',
+      geometry_confidence: "0.8",
+      geometry_source: "manual",
+    };
+
+    const supabaseClient = {
+      rpc: mocks.rpcMock.mockResolvedValue({
+        data: [rpcRow],
+        error: null,
+      }),
+    };
+
+    mocks.getSupabaseBrowserClientMock.mockReturnValue(supabaseClient);
+    mocks.fetchActionPollutionScoreReferencesMock.mockResolvedValue({
+      wastePerVolunteer: 5,
+      buttsPerVolunteer: 50,
+    });
+    mocks.loadLocalActionContractsMock.mockResolvedValue([]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("", {
+          status: 503,
         }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
       ),
     );
-
-    vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchMapActions({
       status: "approved",
       days: 15,
-      impact: "critique",
-      qualityMin: 73,
+      impact: "fort",
       limit: 200,
+      viewport: {
+        center: [48.8566, 2.3522],
+        zoom: 13,
+        bounds: {
+          south: 48.7,
+          west: 2.2,
+          north: 48.95,
+          east: 2.5,
+        },
+      },
     });
 
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mocks.getSupabaseBrowserClientMock).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchActionPollutionScoreReferencesMock).toHaveBeenCalledTimes(1);
+    expect(mocks.loadLocalActionContractsMock).toHaveBeenCalledTimes(1);
+    expect(mocks.rpcMock).toHaveBeenCalledTimes(1);
+    expect(mocks.rpcMock).toHaveBeenCalledWith(
+      "actions_map_feed",
+      expect.objectContaining({
+        p_status: "approved",
+        p_impact: "fort",
+        p_limit: 800,
+        p_south: 48.7,
+        p_west: 2.2,
+        p_north: 48.95,
+        p_east: 2.5,
+        p_zoom: 13,
+      }),
+    );
+
     expect(result.status).toBe("ok");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("/api/actions/map?");
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("limit=200");
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("status=approved");
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("days=15");
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("impact=critique");
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("qualityMin=73");
+    expect(result.count).toBe(1);
+    expect(result.daysWindow).toBe(15);
+    expect(result.partialSource).toBe(false);
+    expect(result.sourceHealth?.availableSources).toEqual([
+      "actions",
+      "spots",
+      "local",
+    ]);
+    expect(result.items[0]?.id).toBe("map-1");
+    expect(result.items[0]?.waste_pollution_score).toBe(40);
+    expect(result.items[0]?.cigarette_butts_pollution_score).toBe(100);
+    expect(result.items[0]?.impact_level).toBe("fort");
+    expect(result.items[0]?.contract?.metadata.associationName).toBe(
+      "Collectif Demo",
+    );
+    expect(result.items[0]?.contract?.metadata.manualDrawing).toEqual({
+      kind: "polyline",
+      coordinates: [
+        [48.8566, 2.3522],
+        [48.857, 2.353],
+      ],
+    });
   });
 });

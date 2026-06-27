@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
+import { ChatAvatar } from "@/components/chat/chat-avatar";
 
 import type { ChatMessage } from "../chat-types";
 
@@ -85,16 +86,13 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 shrink-0 overflow-hidden rounded-2xl ${isLight ? "bg-indigo-50" : "bg-slate-900"}`}>
-              <Image
-                src={message.sender.avatar_url || `https://ui-avatars.com/api/?name=${message.sender.display_name}`}
-                width={40}
-                height={40}
-                unoptimized
-                className="h-full w-full object-cover"
-                alt={message.sender.display_name}
-              />
-            </div>
+            <ChatAvatar
+              src={message.sender.avatar_url}
+              name={message.sender.display_name}
+              size="md"
+              tone={isLight ? "light" : "dark"}
+              className={isLight ? "bg-indigo-50 text-indigo-700" : "bg-slate-900 text-slate-100"}
+            />
             <div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-slate-200"}`}>

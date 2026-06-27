@@ -29,8 +29,8 @@ export function WeatherLocationPicker({
   selectedLocation,
   onSelectLocation,
   label = "Lieu",
-  helperText = "Saisis une ville, un arrondissement ou un lieu précis",
-  emptyMessage = "Aucune ville trouvée. Essaie un autre arrondissement ou une autre ville.",
+  helperText = "Saisis une commune, une ville ou un lieu précis",
+  emptyMessage = "Aucune ville trouvée. Essaie une autre commune ou une autre ville.",
   currentLocationLabel,
 }: WeatherLocationPickerProps) {
   const listboxId = useId();
@@ -133,7 +133,7 @@ export function WeatherLocationPicker({
             }}
             onKeyDown={handleKeyDown}
             autoComplete="off"
-            placeholder="Ex. Paris 15e, Lyon, Marseille..."
+            placeholder="Ex. Lyon, Marseille, Nantes..."
             role="combobox"
             aria-autocomplete="list"
             aria-expanded={canShowSuggestions}

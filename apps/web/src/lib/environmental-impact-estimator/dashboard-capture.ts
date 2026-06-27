@@ -20,7 +20,7 @@ export type EnvironmentalImpactCaptureResult = EnvironmentalImpactDashboardRespo
   version: string;
 };
 
-async function buildEnvironmentalImpactDashboard(params: {
+async function buildLiveEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
   historyLimit?: number;
@@ -88,7 +88,7 @@ export async function captureEnvironmentalImpactDashboard(params: {
   historyLimit?: number;
   githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
-  const dashboard = await buildEnvironmentalImpactDashboard(params);
+  const dashboard = await buildLiveEnvironmentalImpactDashboard(params);
   const snapshot = buildEnvironmentalImpactSnapshot({
     model: dashboard.model,
     signals: dashboard.signals,
@@ -108,5 +108,39 @@ export async function loadEnvironmentalImpactDashboard(params: {
   historyLimit?: number;
   githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
-  return buildEnvironmentalImpactDashboard(params);
+  const historyLimit = params.historyLimit ?? 8;
+  const snapshots = await listEnvironmentalImpactSnapshots(historyLimit);
+  const latestSnapshot = snapshots[0] ?? null;
+
+  if (latestSnapshot) {
+    return {
+      status: "ok",
+      model: latestSnapshot.model,
+      signals: latestSnapshot.signals,
+      snapshots,
+      version: latestSnapshot.version,
+    };
+  }
+
+  return buildLiveEnvironmentalImpactDashboard(params);
+}
+
+export async function loadEnvironmentalImpactDashboardSnapshotOnly(params: {
+  historyLimit?: number;
+}): Promise<EnvironmentalImpactCaptureResult | null> {
+  const historyLimit = params.historyLimit ?? 8;
+  const snapshots = await listEnvironmentalImpactSnapshots(historyLimit);
+  const latestSnapshot = snapshots[0] ?? null;
+
+  if (!latestSnapshot) {
+    return null;
+  }
+
+  return {
+    status: "ok",
+    model: latestSnapshot.model,
+    signals: latestSnapshot.signals,
+    snapshots,
+    version: latestSnapshot.version,
+  };
 }

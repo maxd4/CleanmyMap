@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
+import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
   ADMIN_ROUTE,
@@ -11,6 +12,9 @@ import {
 
 const PAGEVIEW_TRACKING_STORAGE_KEY = "cleanmymap.funnel.pageviews";
 const PAGEVIEW_DEDUPE_WINDOW_MS = 5000;
+const PAGEVIEW_GLOBAL_COOLDOWN_STORAGE_KEY =
+  "cleanmymap.funnel.pageviews.last_any";
+const PAGEVIEW_GLOBAL_COOLDOWN_MS = 30_000;
 
 type TrackedPageviewMap = Record<string, number>;
 
@@ -101,23 +105,64 @@ function writeTrackedPageviews(trackedPageviews: TrackedPageviewMap): void {
   }
 }
 
-function shouldTrackPageview(routeKey: string): boolean {
+function readLastTrackedPageviewAt(): number | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(PAGEVIEW_GLOBAL_COOLDOWN_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function writeLastTrackedPageviewAt(at: number): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      PAGEVIEW_GLOBAL_COOLDOWN_STORAGE_KEY,
+      String(at),
+    );
+  } catch {
+    // Ignore storage failures and keep the tracker best-effort.
+  }
+}
+
+export function shouldTrackPageview(routeKey: string): boolean {
   if (typeof window === "undefined") {
     return false;
   }
 
   const now = Date.now();
-  const trackedPageviews = readTrackedPageviews();
-  const lastTrackedAt = trackedPageviews[routeKey];
+  const lastTrackedAt = readLastTrackedPageviewAt();
+  if (
+    typeof lastTrackedAt === "number" &&
+    now - lastTrackedAt < PAGEVIEW_GLOBAL_COOLDOWN_MS
+  ) {
+    return false;
+  }
 
-  if (typeof lastTrackedAt === "number" && now - lastTrackedAt < PAGEVIEW_DEDUPE_WINDOW_MS) {
+  const trackedPageviews = readTrackedPageviews();
+  const lastTrackedRouteAt = trackedPageviews[routeKey];
+
+  if (
+    typeof lastTrackedRouteAt === "number" &&
+    now - lastTrackedRouteAt < PAGEVIEW_DEDUPE_WINDOW_MS
+  ) {
     return false;
   }
 
   trackedPageviews[routeKey] = now;
+  writeLastTrackedPageviewAt(now);
 
   for (const [trackedRouteKey, trackedAt] of Object.entries(trackedPageviews)) {
-    if (now - trackedAt > PAGEVIEW_DEDUPE_WINDOW_MS * 4) {
+    if (now - trackedAt > PAGEVIEW_GLOBAL_COOLDOWN_MS * 4) {
       delete trackedPageviews[trackedRouteKey];
     }
   }
@@ -129,21 +174,27 @@ function shouldTrackPageview(routeKey: string): boolean {
 export function ProjectPageviewTracker() {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
-  const routeKey = useMemo(() => {
-    const entries = Array.from(searchParams?.entries() ?? []).sort(([leftKey, leftValue], [rightKey, rightValue]) => {
-      const keyCompare = leftKey.localeCompare(rightKey);
-      return keyCompare !== 0 ? keyCompare : leftValue.localeCompare(rightValue);
-    });
-    const queryString = entries.map(([key, value]) => `${key}=${value}`).join("&");
-    return `${pathname}${queryString ? `?${queryString}` : ""}`;
-  }, [pathname, searchParams]);
+  const searchParamsRef = useRef(searchParams);
 
   useEffect(() => {
-    if (!shouldTrackPageview(routeKey)) {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
+  // On ne compte qu'un pageview par pathname; les changements de query restent
+  // des interactions intra-page et ne doivent pas générer une nouvelle invocation.
+  useEffect(() => {
+    if (!hasAnalyticsConsent()) {
       return;
     }
-    void trackFunnel("page_view", "complete", buildRouteMeta(pathname, searchParams));
-  }, [pathname, routeKey, searchParams]);
+    if (!shouldTrackPageview(pathname)) {
+      return;
+    }
+    void trackFunnel(
+      "page_view",
+      "complete",
+      buildRouteMeta(pathname, searchParamsRef.current),
+    );
+  }, [pathname]);
 
   return null;
 }

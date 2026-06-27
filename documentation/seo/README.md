@@ -64,7 +64,7 @@ export function HowToMonActionJsonLd() {
 Voir `SEO_STRATEGY.md` pour la liste complète.
 
 ### Base
-- CleanMyMap, CMM, cleanwalk, dépollution, propreté, carte, Paris
+- CleanMyMap, CMM, cleanwalk, dépollution, propreté, carte, France, territoire, impact
 
 ### Écologie
 - écologie, développement durable, environnement, transition écologique

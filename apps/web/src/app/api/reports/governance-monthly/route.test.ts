@@ -41,6 +41,10 @@ const governanceReportRecord = {
       topExtensionBytes: 0,
       growthHighlights: [],
     },
+    artifacts: {
+      pdfStoragePath: "governance-monthly/rapport_gouvernance_mensuel_2026-05.pdf",
+      pdfGeneratedAt: "2026-05-20T12:00:00.000Z",
+    },
     notes: [],
   },
 };
@@ -48,35 +52,55 @@ const governanceReportRecord = {
 const loadGovernanceMonthlyReportMock = vi.hoisted(() =>
   vi.fn(async () => governanceReportRecord),
 );
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const signedPdfUrl = "https://supabase.test/storage/v1/object/sign/reports/governance-monthly/rapport_gouvernance_mensuel_2026-05.pdf?token=abc123";
 
 vi.mock("@/lib/governance/governance-monthly-report", () => ({
-  buildGovernanceMonthlyReportDownloadHeaders: vi.fn(() => ({
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="rapport_gouvernance_mensuel_cmm_01-05-2026.pdf"`,
-      "Cache-Control": "no-store",
-      "X-Deliverable-Name": "rapport_gouvernance_mensuel_cmm_01-05-2026.pdf",
-      "X-Deliverable-Format": "pdf",
-    },
-  })),
-  buildGovernanceMonthlyReportLines: vi.fn(() => ["Rapport mensuel de gouvernance", "Mai 2026"]),
-  listGovernanceMonthlyReports: vi.fn(async () => [governanceReportRecord]),
   loadGovernanceMonthlyReport: loadGovernanceMonthlyReportMock,
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
 import { GET } from "./route";
 
 describe("governance monthly report route", () => {
-  it("returns the latest governance report as a PDF", async () => {
+  it("redirects to the precompiled PDF asset", async () => {
+    getSupabaseServerClientMock.mockReturnValue({
+      storage: {
+        from: vi.fn(() => ({
+          createSignedUrl: vi.fn(async () => ({
+            data: { signedUrl: signedPdfUrl },
+            error: null,
+          })),
+        })),
+      },
+    });
+
     const response = await GET(new Request("http://localhost/api/reports/governance-monthly"));
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("application/pdf");
-    expect(response.headers.get("Content-Disposition")).toContain(
-      "rapport_gouvernance_mensuel_cmm_01-05-2026.pdf",
-    );
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(signedPdfUrl);
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, s-maxage=3600");
     expect(loadGovernanceMonthlyReportMock).toHaveBeenCalledWith(null);
-    expect(response.headers.get("X-Deliverable-Format")).toBe("pdf");
+    expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 409 when the pdf asset has not been prepared", async () => {
+    loadGovernanceMonthlyReportMock.mockResolvedValueOnce({
+      ...governanceReportRecord,
+      payload: {
+        ...governanceReportRecord.payload,
+        artifacts: undefined,
+      },
+    } as never);
+
+    const response = await GET(new Request("http://localhost/api/reports/governance-monthly"));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(409);
+    expect(body.error).toContain("préparé");
   });
 
   it("returns 404 when no report exists", async () => {

@@ -5,7 +5,7 @@ import {
   deriveBadges,
   xpRequired,
 } from "./progression-formulas";
-import { backfillAllProgression, backfillUserProgression } from "./progression-backfill";
+import { backfillUserProgression } from "./progression-backfill";
 import { buildContributorRecognitionIndex } from "./contributor-recognition";
 import {
   buildPersonalImpactMethodology,
@@ -96,6 +96,74 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
       manualDrawing: row.manual_drawing ?? null,
     };
   });
+}
+
+function buildCollectiveLeaderboardItems(
+  approvedActionRows: ActionRow[],
+): CollectiveLeaderboardItem[] {
+  const grouped = new Map<
+    string,
+    {
+      qualitySum: number;
+      validatedActions: number;
+      wasteKg: number;
+      members: Set<string>;
+    }
+  >();
+
+  for (const row of approvedActionRows) {
+    const associationName = parseAssociationNameFromActionNotes(row.notes);
+    const quality = actionQualityScoreFromRow(row);
+    const current = grouped.get(associationName) ?? {
+      qualitySum: 0,
+      validatedActions: 0,
+      wasteKg: 0,
+      members: new Set<string>(),
+    };
+
+    current.qualitySum += quality;
+    current.validatedActions += 1;
+    current.wasteKg += toFloat(row.waste_kg, 0);
+    current.members.add(row.created_by_clerk_id);
+    grouped.set(associationName, current);
+  }
+
+  return [...grouped.entries()]
+    .map(([associationName, value]) => {
+      const qualityAverage =
+        value.validatedActions > 0
+          ? Math.round((value.qualitySum / value.validatedActions) * 10) / 10
+          : 0;
+      const score =
+        qualityAverage * 0.6 +
+        Math.min(500, value.wasteKg) * 0.25 +
+        value.validatedActions * 0.15;
+      const structureXp = Math.round(score * 10);
+      const structureLevel = computePotentialLevel(structureXp);
+
+      return {
+        rank: 0,
+        associationName,
+        score: Math.round(score * 10) / 10,
+        currentLevel: structureLevel,
+        potentialLevel: structureLevel,
+        members: value.members.size,
+        qualityAverage,
+        validatedActions: value.validatedActions,
+        wasteKg: Math.round(value.wasteKg * 10) / 10,
+      } as CollectiveLeaderboardItem;
+    })
+    .sort(
+      (a, b) =>
+        b.currentLevel - a.currentLevel ||
+        b.score - a.score ||
+        b.validatedActions - a.validatedActions,
+    )
+    .slice(0, 60)
+    .map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
 }
 
 async function buildIndividualLeaderboard(
@@ -361,7 +429,6 @@ export async function getGamificationLeaderboard(
   items: IndividualLeaderboardItem[] | CollectiveLeaderboardItem[];
   recognition: ContributorRecognitionSummary;
 }> {
-  await backfillAllProgression(supabase);
   const yearToDateStartDate = getYearToDateStartDate();
   const approvedActionRows = await loadApprovedActionRows(supabase);
   const yearToDateApprovedActionRows = await loadApprovedActionRows(
@@ -389,70 +456,7 @@ export async function getGamificationLeaderboard(
     data: approvedActionRows,
     error: null,
   };
-
-  const grouped = new Map<
-    string,
-    {
-      qualitySum: number;
-      validatedActions: number;
-      wasteKg: number;
-      members: Set<string>;
-    }
-  >();
-
-  for (const row of (actionsResult.data ?? []) as ActionRow[]) {
-    const associationName = parseAssociationNameFromActionNotes(row.notes);
-    const quality = actionQualityScoreFromRow(row);
-    const current = grouped.get(associationName) ?? {
-      qualitySum: 0,
-      validatedActions: 0,
-      wasteKg: 0,
-      members: new Set<string>(),
-    };
-
-    current.qualitySum += quality;
-    current.validatedActions += 1;
-    current.wasteKg += toFloat(row.waste_kg, 0);
-    current.members.add(row.created_by_clerk_id);
-    grouped.set(associationName, current);
-  }
-
-  const items = [...grouped.entries()]
-    .map(([associationName, value]) => {
-      const qualityAverage =
-        value.validatedActions > 0
-          ? Math.round((value.qualitySum / value.validatedActions) * 10) / 10
-          : 0;
-      const score =
-        qualityAverage * 0.6 +
-        Math.min(500, value.wasteKg) * 0.25 +
-        value.validatedActions * 0.15;
-      const structureXp = Math.round(score * 10);
-      const structureLevel = computePotentialLevel(structureXp);
-
-      return {
-        rank: 0,
-        associationName,
-        score: Math.round(score * 10) / 10,
-        currentLevel: structureLevel,
-        potentialLevel: structureLevel,
-        members: value.members.size,
-        qualityAverage,
-        validatedActions: value.validatedActions,
-        wasteKg: Math.round(value.wasteKg * 10) / 10,
-      } as CollectiveLeaderboardItem;
-    })
-    .sort(
-      (a, b) =>
-        b.currentLevel - a.currentLevel ||
-        b.score - a.score ||
-        b.validatedActions - a.validatedActions,
-    )
-    .slice(0, 60)
-    .map((item, index) => ({
-      ...item,
-      rank: index + 1,
-    }));
+  const items = buildCollectiveLeaderboardItems(actionsResult.data ?? []);
 
   return {
     scope,

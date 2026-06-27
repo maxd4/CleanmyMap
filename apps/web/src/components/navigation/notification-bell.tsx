@@ -45,7 +45,7 @@ export function NotificationBell() {
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications],
   );
-  const pollIntervalMs = isOpen ? 60_000 : 300_000;
+  const pollIntervalMs = isOpen ? 120_000 : 600_000;
 
   const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {
@@ -92,7 +92,7 @@ export function NotificationBell() {
         return;
       }
 
-      // Polling is intentional for unread notifications, but the cadence is reduced to protect Invocations.
+    // Polling is intentional for unread notifications, but the cadence stays slow to protect Invocations.
       intervalId = window.setInterval(() => {
         void fetchNotifications();
       }, pollIntervalMs);

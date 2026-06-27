@@ -29,7 +29,7 @@ import {
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { loadReferralSummary } from "@/lib/gamification/referrals";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 import { loadUserLabelSummary } from "@/lib/gamification/progression-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
@@ -60,7 +60,9 @@ type UserLevelRanking = {
   currentUserRow: UserLevelRankingItem | null;
 };
 
-type ReferralDashboardSummary = Awaited<ReturnType<typeof loadReferralSummary>>;
+type ReferralDashboardSummary = Awaited<
+  ReturnType<typeof fetchCachedReferralSummary>
+>;
 
 async function loadDashboardOverviewResult(
   locale: "fr" | "en",
@@ -297,7 +299,7 @@ export default async function DashboardPage() {
   const supabase = getSupabaseServerClient();
   const [userLevelRanking, referralSummary] = await Promise.all([
     loadUserLevelRanking(supabase, userId),
-    loadReferralSummary(supabase, userId).catch(() => null),
+    fetchCachedReferralSummary(userId).catch(() => null),
   ]);
   const profile = accountCompletion?.currentProfile ?? toProfile(role);
   const roleLabel = getProfileLabel(profile, locale);

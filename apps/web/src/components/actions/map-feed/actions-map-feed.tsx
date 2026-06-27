@@ -9,8 +9,8 @@ import { DefaultLayout } from "./_layouts/default-layout";
 import { logFailure } from "@/lib/logging/failure-log";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
-import { DEFAULT_ACTIONS_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import { useActionsMapViewport } from "./use-actions-map-viewport";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -25,6 +25,7 @@ type ActionsMapFeedContentProps = {
   onResetFilters?: () => void;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
+  initialViewport?: MapViewportState | null;
 };
 
 export function ActionsMapFeedContent({
@@ -40,6 +41,7 @@ export function ActionsMapFeedContent({
   onResetFilters,
   mapExportTargetRef,
   onViewportChange,
+  initialViewport = null,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -108,6 +110,7 @@ export function ActionsMapFeedContent({
     showStoriesCarousel,
     zoneQuery,
     mapExportTargetRef,
+    initialViewport,
     tone,
     onViewportChange,
   };
@@ -174,9 +177,8 @@ export function ActionsMapFeed({
   mapExportTargetRef,
   onViewportChange,
 }: ActionsMapFeedProps) {
-  const [mapViewport, setMapViewport] = useState<MapViewportState | null>(
-    DEFAULT_ACTIONS_MAP_VIEWPORT,
-  );
+  const { viewport: mapViewport, handleViewportChange } = useActionsMapViewport(onViewportChange);
+
   const feedData = useMapFeedData({
     types,
     days,
@@ -203,10 +205,8 @@ export function ActionsMapFeed({
       onOpenAction={onOpenAction}
       onResetFilters={onResetFilters}
       mapExportTargetRef={mapExportTargetRef}
-      onViewportChange={(viewport) => {
-        setMapViewport(viewport);
-        onViewportChange?.(viewport);
-      }}
+      initialViewport={mapViewport}
+      onViewportChange={handleViewportChange}
     />
   );
 }

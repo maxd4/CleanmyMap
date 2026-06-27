@@ -27,6 +27,7 @@ Guides de développement pour agents IA.
 - **vercel-supabase-browser-strategy.md** - Règle de répartition entre Vercel, Supabase et le navigateur
 - **codex-vercel-development-guide.md** - Guide pratique Codex pour développer sans augmenter inutilement les quotas Vercel
 - **vercel-next-build-triage.md** - Méthode courte pour corriger un build Vercel/Next sans rebuilds successifs inutiles
+- **vercel-next-build-anti-patterns.md** - Anti-patterns déjà rencontrés pendant les corrections de build Vercel / Next.js
 - **client-server-bundle-splitting.md** - Guide pour éviter de gonfler le bundle initial avec de mauvaises frontières serveur/client
 - **vercel-surface-report.md** - Rapport automatique des surfaces Vercel et du risque associé
 - **vercel-route-cost-audit.md** - Audit route par route des coûts Vercel
@@ -41,6 +42,9 @@ Guides de développement pour agents IA.
 - **CONTRIBUTING.md** - Guide de contribution
 - **DOCUMENTATION_POLICY.md** - Politique de documentation
 - **supabase-quota-guide.md** - Guide développeur Supabase: quotas, stockage, limites et doctrine produit
+- **supabase-refresh-strategy-audit.md** - Rapport de priorisation des données à rafraîchir trop souvent
+- **supabase-table-optimization-playbook.md** - Marche à suivre centrale pour optimiser une table sans casser le métier
+- **supabase-query-optimization-playbook.md** - Playbook anti-erreur pour éviter les scans de table et privilégier RPC/index
 - **vercel-quota-governance.md** - Guide de gouvernance des quotas Vercel et des régressions de coût
 
 ### Dette Technique
@@ -69,7 +73,7 @@ Guides de développement pour agents IA.
 7. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
 8. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
 9. Relire **vercel-quota-governance.md** avant d'ajouter une route API, une page dynamique, un cron ou un fetch `no-store`
-10. Relire **vercel-next-build-triage.md** avant de repartir sur un build complet quand le cache ou les manifests semblent suspects
+10. Relire **vercel-next-build-triage.md** et **vercel-next-build-anti-patterns.md** avant de repartir sur un build complet quand le cache, les frontières serveur/client ou les manifests semblent suspects
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

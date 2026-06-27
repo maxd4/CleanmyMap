@@ -20,7 +20,7 @@ function buildItem(
 }
 
 describe("getActionsMapCenter", () => {
-  it("falls back to Paris when there is no geolocated item", () => {
+  it("falls back to the default center when there is no geolocated item", () => {
     expect(getActionsMapCenter([buildItem({ latitude: null, longitude: null })])).toEqual(
       PARIS_CENTER,
     );

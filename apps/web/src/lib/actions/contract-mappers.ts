@@ -34,6 +34,43 @@ function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
   return type;
 }
 
+function buildActionPollutionScores(
+  contract: ActionDataContract,
+  pollutionScoreReferences?: PollutionScoreReferences | null,
+):
+  | {
+      wasteScore?: number;
+      buttsScore?: number;
+    }
+  | null {
+  if (!pollutionScoreReferences) {
+    return null;
+  }
+
+  return computePollutionScoresRelativeToReferences(
+    {
+      wasteKg: contract.metadata.wasteKg,
+      cigaretteButts: contract.metadata.cigaretteButts,
+      volunteersCount: contract.metadata.volunteersCount,
+    },
+    pollutionScoreReferences,
+  );
+}
+
+function getActionCreatedAt(contract: ActionDataContract): string {
+  return (
+    contract.dates.createdAt ??
+    contract.dates.importedAt ??
+    contract.dates.observedAt
+  );
+}
+
+function getActionManualDrawingGeoJson(
+  manualDrawing: ActionDataContract["metadata"]["manualDrawing"],
+): string | null {
+  return manualDrawing ? toGeoJsonString(manualDrawing) : null;
+}
+
 /**
  * Transforme un contrat en ActionMapItem (format pour la carte).
  */
@@ -42,16 +79,10 @@ export function toActionMapItem(
   insights?: ActionInsightsLike,
   pollutionScoreReferences?: PollutionScoreReferences | null,
 ): ActionMapItem {
-  const pollutionScores = pollutionScoreReferences
-    ? computePollutionScoresRelativeToReferences(
-        {
-          wasteKg: contract.metadata.wasteKg,
-          cigaretteButts: contract.metadata.cigaretteButts,
-          volunteersCount: contract.metadata.volunteersCount,
-        },
-        pollutionScoreReferences,
-      )
-    : null;
+  const pollutionScores = buildActionPollutionScores(
+    contract,
+    pollutionScoreReferences,
+  );
 
   return {
     id: contract.id,
@@ -68,9 +99,9 @@ export function toActionMapItem(
     source: contract.source,
     created_by_clerk_id: contract.createdByClerkId ?? null,
     manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: contract.metadata.manualDrawing
-      ? toGeoJsonString(contract.metadata.manualDrawing)
-      : null,
+    manual_drawing_geojson: getActionManualDrawingGeoJson(
+      contract.metadata.manualDrawing,
+    ),
     geometry_confidence: contract.geometry.confidence,
     geometry_source: contract.geometry.geometrySource,
     submission_mode: contract.metadata.submissionMode,
@@ -93,23 +124,14 @@ export function toActionListItem(
   insights?: ActionInsightsLike,
   pollutionScoreReferences?: PollutionScoreReferences | null,
 ): ActionListItem {
-  const pollutionScores = pollutionScoreReferences
-    ? computePollutionScoresRelativeToReferences(
-        {
-          wasteKg: contract.metadata.wasteKg,
-          cigaretteButts: contract.metadata.cigaretteButts,
-          volunteersCount: contract.metadata.volunteersCount,
-        },
-        pollutionScoreReferences,
-      )
-    : null;
+  const pollutionScores = buildActionPollutionScores(
+    contract,
+    pollutionScoreReferences,
+  );
 
   return {
     id: contract.id,
-    created_at:
-      contract.dates.createdAt ??
-      contract.dates.importedAt ??
-      contract.dates.observedAt,
+    created_at: getActionCreatedAt(contract),
     actor_name: contract.metadata.actorName,
     association_name: contract.metadata.associationName,
     action_date: contract.dates.observedAt,
@@ -134,9 +156,9 @@ export function toActionListItem(
     geometry_confidence: contract.geometry.confidence,
     geometry_source: contract.geometry.geometrySource,
     manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: contract.metadata.manualDrawing
-      ? toGeoJsonString(contract.metadata.manualDrawing)
-      : null,
+    manual_drawing_geojson: getActionManualDrawingGeoJson(
+      contract.metadata.manualDrawing,
+    ),
     submission_mode: contract.metadata.submissionMode,
     waste_breakdown: contract.metadata.wasteBreakdown,
     quality_score: insights?.qualityScore,

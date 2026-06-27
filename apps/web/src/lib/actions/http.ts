@@ -1,16 +1,15 @@
 import type {
   ActionImpactLevel,
   ActionListResponse,
-  ActionMapResponse,
-  ActionQualityGrade,
   ActionRecordType,
+  ActionQualityGrade,
   ActionStatus,
   CreateActionPayload,
 } from "@/lib/actions/types";
-import { toContractCreatePayload } from "./data-contract";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
-import type { ReportScopeKind } from "@/lib/reports/scope";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
+import { toContractCreatePayload } from "./data-contract";
+
+export { buildMapActionsQueryString, fetchMapActions } from "./map-http";
 
 type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
@@ -20,32 +19,18 @@ type FetchActionsParams = {
   days?: number;
   types?: ActionTypeFilter;
   association?: string | "all";
-  scopeKind?: ReportScopeKind;
+  scopeKind?: string;
   scopeValue?: string | null;
   qualityGrade?: ActionQualityGrade;
   toFixPriority?: boolean;
   impact?: ActionImpactLevel;
 };
 
-type FetchMapActionsParams = {
-  status?: ActionStatus | "all";
-  limit?: number;
-  days?: number;
-  floorDate?: string | null;
-  types?: ActionTypeFilter;
-  association?: string | "all";
-  scopeKind?: ReportScopeKind;
-  scopeValue?: string | null;
-  impact?: ActionImpactLevel;
-  qualityMin?: number;
-  viewport?: MapViewportState | null;
-};
-
 function setScopeQueryParams(
   query: URLSearchParams,
   params: {
     association?: string | "all";
-    scopeKind?: ReportScopeKind;
+    scopeKind?: string;
     scopeValue?: string | null;
   },
 ): void {
@@ -56,6 +41,7 @@ function setScopeQueryParams(
     }
     return;
   }
+
   if (
     typeof params.association === "string" &&
     params.association !== "all" &&
@@ -150,62 +136,31 @@ async function parseJsonSafely(response: Response): Promise<unknown> {
   }
 }
 
-export function buildActionsQueryString(
-  params: FetchActionsParams = {},
-): string {
-  const query = new URLSearchParams();
-  query.set("limit", String(clampInteger(params.limit, 1, 200, 30)));
-  if (typeof params.days === "number") {
-    query.set("days", String(clampInteger(params.days, 1, 3650, 90)));
-  }
-  query.set("types", serializeTypes(params.types, "action"));
-  if (params.status && params.status !== "all") {
-    query.set("status", params.status);
-  }
-  setScopeQueryParams(query, params);
-  if (params.qualityGrade) {
-    query.set("qualityGrade", params.qualityGrade);
-  }
-  if (typeof params.toFixPriority === "boolean") {
-    query.set("toFixPriority", String(params.toFixPriority));
-  }
-  if (params.impact) {
-    query.set("impact", params.impact);
-  }
-  return query.toString();
-}
+type ActionCreationResponse = {
+  id: string;
+  retentionLoop?: {
+    summary: string;
+    badge: string;
+    thanksMessage: string;
+    share: { text: string; url: string };
+    nextActionSuggestion: string;
+  } | null;
+};
 
-export function buildMapActionsQueryString(
-  params: FetchMapActionsParams = {},
-): string {
-  const query = new URLSearchParams();
-  query.set("limit", String(clampInteger(params.limit, 1, 300, 80)));
-  if (typeof params.floorDate === "string") {
-    query.set("floorDate", params.floorDate);
-  } else if (params.floorDate === null) {
-    query.set("floorDate", "all");
-  } else {
-    query.set("days", String(clampInteger(params.days, 1, 3650, 30)));
+function parseActionCreationResponse(body: unknown): ActionCreationResponse | null {
+  if (!body || typeof body !== "object") {
+    return null;
   }
-  query.set("types", serializeTypes(params.types, "all"));
-  const resolvedStatus = params.status ?? "approved";
-  if (resolvedStatus !== "all") {
-    query.set("status", resolvedStatus);
+
+  const candidate = body as { id?: unknown; retentionLoop?: ActionCreationResponse["retentionLoop"] };
+  if (typeof candidate.id !== "string") {
+    return null;
   }
-  setScopeQueryParams(query, params);
-  if (params.impact) {
-    query.set("impact", params.impact);
-  }
-  if (
-    typeof params.qualityMin === "number" &&
-    Number.isFinite(params.qualityMin)
-  ) {
-    query.set(
-      "qualityMin",
-      String(Math.max(0, Math.min(100, Math.round(params.qualityMin)))),
-    );
-  }
-  return query.toString();
+
+  return {
+    id: candidate.id,
+    retentionLoop: candidate.retentionLoop ?? null,
+  };
 }
 
 export async function createAction(
@@ -232,45 +187,14 @@ export async function createAction(
 
   const contractPayload = toContractCreatePayload(payload);
   const contractResult = await postPayload(contractPayload);
-  const contractError = parseErrorMessage(
-    contractResult.body,
-    "Impossible de créer l'action.",
-  );
+  const contractError = parseErrorMessage(contractResult.body, "Impossible de créer l'action.");
 
   if (!contractResult.response.ok) {
-    if (
-      contractResult.response.status === 400 ||
-      contractResult.response.status === 422
-    ) {
+    if (contractResult.response.status === 400 || contractResult.response.status === 422) {
       const legacyResult = await postPayload(payload);
-      if (legacyResult.response.ok) {
-        const legacyBody = legacyResult.body;
-        if (
-          !legacyBody ||
-          typeof legacyBody !== "object" ||
-          typeof (legacyBody as { id?: unknown }).id !== "string"
-        ) {
-          throw new AppError({
-            kind: "server",
-            message: "La réponse du service est incomplète après la création.",
-          });
-        }
-
-        const parsedBody = legacyBody as {
-          id: string;
-          retentionLoop?: {
-            summary: string;
-            badge: string;
-            thanksMessage: string;
-            share: { text: string; url: string };
-            nextActionSuggestion: string;
-          } | null;
-        };
-
-        return {
-          id: parsedBody.id,
-          retentionLoop: parsedBody.retentionLoop ?? null,
-        };
+      const legacyBody = parseActionCreationResponse(legacyResult.body);
+      if (legacyResult.response.ok && legacyBody) {
+        return legacyBody;
       }
 
       throw createActionError(
@@ -280,33 +204,43 @@ export async function createAction(
       );
     }
 
-    throw createActionError(
-      contractResult.response,
-      contractResult.body,
-      contractError,
-    );
+    throw createActionError(contractResult.response, contractResult.body, contractError);
   }
 
-  const body = contractResult.body;
-  if (!body || typeof body !== "object" || typeof (body as { id?: unknown }).id !== "string") {
+  const body = parseActionCreationResponse(contractResult.body);
+  if (!body) {
     throw new AppError({
       kind: "server",
       message: "La réponse du service est incomplète après la création.",
     });
   }
 
-  const parsedBody = body as {
-    id: string;
-    retentionLoop?: {
-      summary: string;
-      badge: string;
-      thanksMessage: string;
-      share: { text: string; url: string };
-      nextActionSuggestion: string;
-    } | null;
-  };
+  return body;
+}
 
-  return { id: parsedBody.id, retentionLoop: parsedBody.retentionLoop ?? null };
+export function buildActionsQueryString(
+  params: FetchActionsParams = {},
+): string {
+  const query = new URLSearchParams();
+  query.set("limit", String(clampInteger(params.limit, 1, 200, 30)));
+  if (typeof params.days === "number") {
+    query.set("days", String(clampInteger(params.days, 1, 3650, 90)));
+  }
+  query.set("types", serializeTypes(params.types, "action"));
+  if (params.status && params.status !== "all") {
+    query.set("status", params.status);
+  }
+  setScopeQueryParams(query, params);
+  if (params.qualityGrade) {
+    query.set("qualityGrade", params.qualityGrade);
+  }
+  if (typeof params.toFixPriority === "boolean") {
+    query.set("toFixPriority", String(params.toFixPriority));
+  }
+  if (params.impact) {
+    query.set("impact", params.impact);
+  }
+  return query.toString();
 }
 
 export async function fetchActions(
@@ -339,38 +273,6 @@ export async function fetchActions(
   }
 
   return body as ActionListResponse;
-}
-
-export async function fetchMapActions(
-  params: FetchMapActionsParams = {},
-): Promise<ActionMapResponse> {
-  const query = buildMapActionsQueryString(params);
-  const response = await fetch(`/api/actions/map?${query}`, {
-    method: "GET",
-    cache: "no-store",
-  });
-  const body = await parseJsonSafely(response);
-
-  if (!response.ok) {
-    throw createActionError(
-      response,
-      body,
-      parseErrorMessage(body, "Impossible de charger les points cartographiques."),
-    );
-  }
-
-  if (
-    !body ||
-    typeof body !== "object" ||
-    !Array.isArray((body as { items?: unknown }).items)
-  ) {
-    throw new AppError({
-      kind: "server",
-      message: "La réponse du service est incomplète pour la carte.",
-    });
-  }
-
-  return body as ActionMapResponse;
 }
 
 export type ActionPrefillResponse = {

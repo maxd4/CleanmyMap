@@ -19,13 +19,27 @@ import { CampaignsSection } from "@/components/sections/rubriques/community/camp
 import { MissionZeroSection } from "@/components/sections/rubriques/mission-zero-section";
 import { FAQSection } from "@/components/sections/rubriques/faq-section";
 import { LegalSection } from "@/components/sections/rubriques/legal-section";
-import { ChatShell } from "@/components/chat/chat-shell";
+import { DeferredChatShell } from "@/components/chat/deferred-chat-shell";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { UseCommunitySectionModel } from "./community/use-community-section";
 
 export type HubCategory = "agir" | "missions" | "solutions";
+export type HubZone = "france" | "region" | "departement" | "ville";
+
+export function getHubZoneLabel(zone: HubZone, fr: boolean): string {
+  switch (zone) {
+    case "france":
+      return fr ? "France" : "National";
+    case "region":
+      return fr ? "Région" : "Region";
+    case "departement":
+      return fr ? "Département" : "Department";
+    case "ville":
+      return fr ? "Ville" : "City";
+  }
+}
 
 export const CommunityHubNav = memo(function CommunityHubNav({
   category,
@@ -36,8 +50,8 @@ export const CommunityHubNav = memo(function CommunityHubNav({
 }: {
   category: HubCategory;
   setCategory: (cat: HubCategory) => void;
-  zone: string;
-  setZone: (zone: string) => void;
+  zone: HubZone;
+  setZone: (zone: HubZone) => void;
   fr: boolean;
 }) {
   const tabs: { id: HubCategory; label: string; icon: LucideIcon; color: string; bg: string; shadow: string }[] = [
@@ -83,15 +97,18 @@ export const CommunityHubNav = memo(function CommunityHubNav({
         <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-6 py-3 border border-white/5 group hover:border-pink-500/30 transition-colors">
           <MapPin size={14} className="text-pink-500" />
           <div className="flex flex-col">
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Périmètre</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+              {fr ? "Périmètre" : "Scope"}
+            </span>
             <select 
               value={zone} 
-              onChange={(e) => setZone(e.target.value)} 
+              onChange={(e) => setZone(e.target.value as HubZone)} 
               className="bg-transparent border-none text-xs font-black text-white uppercase tracking-widest outline-none cursor-pointer focus:ring-0 p-0"
             >
-              <option value="paris" className="bg-slate-900">Paris (75)</option>
-              <option value="idf" className="bg-slate-900">Île-de-France</option>
-              <option value="france" className="bg-slate-900">France Entière</option>
+              <option value="france" className="bg-slate-900">{fr ? "France" : "National"}</option>
+              <option value="region" className="bg-slate-900">{fr ? "Région" : "Region"}</option>
+              <option value="departement" className="bg-slate-900">{fr ? "Département" : "Department"}</option>
+              <option value="ville" className="bg-slate-900">{fr ? "Ville" : "City"}</option>
             </select>
           </div>
         </div>
@@ -323,7 +340,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             <p className="text-slate-400 text-sm leading-relaxed">
               {fr ? "Posez vos questions sur la vie de la communauté et les solutions durables." : "Ask your questions about community life and sustainable solutions."}
             </p>
-            <ChatShell />
+            <DeferredChatShell />
           </div>
         </div>
       </aside>

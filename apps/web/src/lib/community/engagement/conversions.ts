@@ -35,6 +35,11 @@ export function computeEventConversions(
         rsvpMaybe: event.rsvpCounts.maybe,
         rsvpNo: event.rsvpCounts.no,
         attendanceCount: attendance,
+        cleanupObjective: event.cleanupObjective,
+        cleanupZone: event.cleanupZone,
+        cleanupLogisticsNeeds: event.cleanupLogisticsNeeds,
+        cleanupSupportLevel: event.cleanupSupportLevel,
+        cleanupWasteTypesExpected: event.cleanupWasteTypesExpected,
         linkedActions,
         fillRate: percent(yes, event.capacityTarget ?? 0),
         rsvpToAttendanceRate:

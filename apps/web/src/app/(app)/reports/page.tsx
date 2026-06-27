@@ -18,6 +18,7 @@ import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { isFeatureEnabled } from"@/lib/feature-flags";
 import { getActionOperationalContext, type ActionDataContract } from"@/lib/actions/data-contract";
+import { fetchCachedUnifiedActionContracts } from"@/lib/actions/unified-source-cache";
 import { fetchCommunityEvents } from "@/lib/community/http";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import {
@@ -43,7 +44,6 @@ type ReportsSummaryKpi = {
 
 async function loadReportsData() {
   const supabase = getSupabaseServerClient();
-  const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
 
   const [overview, contractsResult, communityEvents, weather] = await Promise.all([
     loadPilotageOverview({
@@ -51,14 +51,14 @@ async function loadReportsData() {
       periodDays: 90,
       limit: 2200,
     }),
-    fetchUnifiedActionContracts(supabase, {
+    fetchCachedUnifiedActionContracts({
       limit: 1000,
       status: "approved",
       floorDate: null,
       requireCoordinates: false,
       types: null,
     }),
-    fetchCommunityEvents({ limit: 240 }).then((result) => result.items).catch(() => []),
+    fetchCommunityEvents({ limit: 120 }).then((result) => result.items).catch(() => []),
     fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
       { cache: "no-store" },

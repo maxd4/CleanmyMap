@@ -52,12 +52,17 @@ type QueryResult<T> = {
   error: null;
 };
 
+type MaybeSingleResult<T> = {
+  data: T | null;
+  error: null;
+};
+
 type ActionQueryChain = {
   select: (columns: string) => ActionQueryChain;
   eq: (field: string, value: string) => ActionQueryChain;
   order: (field: string, options?: { ascending?: boolean }) => ActionQueryChain;
   limit: (value: number) => Promise<QueryResult<ActionRow>>;
-  maybeSingle: () => Promise<QueryResult<ActionRow | null>>;
+  maybeSingle: () => Promise<MaybeSingleResult<ActionRow>>;
   then: (
     resolve: (value: QueryResult<ActionRow>) => void,
     reject: (reason: unknown) => void,
@@ -72,22 +77,54 @@ type EmptyChain = {
   is: (field: string, value: boolean | null) => EmptyChain;
   order: (field: string, options?: { ascending?: boolean }) => Promise<QueryResult<never>>;
   limit: (value: number) => Promise<QueryResult<never>>;
-  maybeSingle: () => Promise<QueryResult<null>>;
+  maybeSingle: () => Promise<MaybeSingleResult<null>>;
 };
 
 function createActionQuery(getRows: () => ActionRow[]): ActionQueryChain {
   const state = {
     eq: {} as Record<string, string>,
   };
-  const chain = {
-    select: vi.fn(() => chain),
-    eq: vi.fn((field: string, value: string) => {
-      state.eq[field] = value;
-      return chain;
-    }),
-    order: vi.fn(() => chain),
-    limit: vi.fn(async () => {
-      const rows = getRows().filter((row) => {
+  const chain = {} as ActionQueryChain;
+  chain.select = vi.fn(() => chain);
+  chain.eq = vi.fn((field: string, value: string) => {
+    state.eq[field] = value;
+    return chain;
+  });
+  chain.order = vi.fn(() => chain);
+  chain.limit = vi.fn(async () => {
+    const rows = getRows().filter((row) => {
+      const createdBy = state.eq["created_by_clerk_id"];
+      const id = state.eq["id"];
+      if (createdBy && row.created_by_clerk_id !== createdBy) {
+        return false;
+      }
+      if (id && row.id !== id) {
+        return false;
+      }
+      return true;
+    });
+    return { data: rows, error: null };
+  });
+  chain.maybeSingle = vi.fn(async () => {
+    const rows = getRows().filter((row) => {
+      const createdBy = state.eq["created_by_clerk_id"];
+      const id = state.eq["id"];
+      if (createdBy && row.created_by_clerk_id !== createdBy) {
+        return false;
+      }
+      if (id && row.id !== id) {
+        return false;
+      }
+      return true;
+    });
+    return { data: rows[0] ?? null, error: null };
+  });
+  chain.then = (
+    resolve: (value: QueryResult<ActionRow>) => void,
+    reject: (reason: unknown) => void,
+  ) =>
+    Promise.resolve({
+      data: getRows().filter((row) => {
         const createdBy = state.eq["created_by_clerk_id"];
         const id = state.eq["id"];
         if (createdBy && row.created_by_clerk_id !== createdBy) {
@@ -97,53 +134,22 @@ function createActionQuery(getRows: () => ActionRow[]): ActionQueryChain {
           return false;
         }
         return true;
-      });
-      return { data: rows, error: null };
-    }),
-    maybeSingle: vi.fn(async () => {
-      const rows = getRows().filter((row) => {
-        const createdBy = state.eq["created_by_clerk_id"];
-        const id = state.eq["id"];
-        if (createdBy && row.created_by_clerk_id !== createdBy) {
-          return false;
-        }
-        if (id && row.id !== id) {
-          return false;
-        }
-        return true;
-      });
-      return { data: rows[0] ?? null, error: null };
-    }),
-    then: (resolve: (value: unknown) => void, reject: (reason: unknown) => void) =>
-      Promise.resolve({
-        data: getRows().filter((row) => {
-          const createdBy = state.eq["created_by_clerk_id"];
-          const id = state.eq["id"];
-          if (createdBy && row.created_by_clerk_id !== createdBy) {
-            return false;
-          }
-          if (id && row.id !== id) {
-            return false;
-          }
-          return true;
-        }),
-        error: null,
-      }).then(resolve, reject),
-  } as ActionQueryChain;
+      }),
+      error: null,
+    }).then(resolve, reject);
   return chain;
 }
 
 function createEmptyChain(): EmptyChain {
-  const chain = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    in: vi.fn(() => chain),
-    neq: vi.fn(() => chain),
-    is: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(async () => ({ data: [], error: null })),
-    maybeSingle: vi.fn(async () => ({ data: null, error: null })),
-  } as EmptyChain;
+  const chain = {} as EmptyChain;
+  chain.select = vi.fn(() => chain);
+  chain.eq = vi.fn(() => chain);
+  chain.in = vi.fn(() => chain);
+  chain.neq = vi.fn(() => chain);
+  chain.is = vi.fn(() => chain);
+  chain.order = vi.fn(async () => ({ data: [], error: null }));
+  chain.limit = vi.fn(async () => ({ data: [], error: null }));
+  chain.maybeSingle = vi.fn(async () => ({ data: null, error: null }));
   return chain;
 }
 
@@ -170,20 +176,23 @@ describe("syncUserActionProgression monthly regularity", () => {
           return createEmptyChain();
         }
         if (table === "progression_events") {
-          const chain = {
-            error: null,
-            delete: vi.fn(() => chain),
-            eq: vi.fn(() => chain),
-            insert: vi.fn(async (row: Record<string, unknown>) => {
-              insertedEvents.push(row);
-              return { error: null };
-            }),
-          } as {
+          const chain = {} as {
             error: null;
-            delete: () => { error: null; delete: () => unknown; eq: (field: string, value: string) => unknown };
+            delete: () => {
+              error: null;
+              delete: () => unknown;
+              eq: (field: string, value: string) => unknown;
+            };
             eq: (field: string, value: string) => unknown;
             insert: (row: Record<string, unknown>) => Promise<{ error: null }>;
           };
+          chain.error = null;
+          chain.delete = vi.fn(() => chain);
+          chain.eq = vi.fn(() => chain);
+          chain.insert = vi.fn(async (row: Record<string, unknown>) => {
+            insertedEvents.push(row);
+            return { error: null };
+          });
           return chain;
         }
         if (table === "points_ledger" || table === "xp_audit") {

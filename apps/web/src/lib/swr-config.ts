@@ -14,5 +14,7 @@ export const swrRecentViewOptions: SWRConfiguration = {
 export const swrLiveFeedOptions: SWRConfiguration = {
   ...swrRecentViewOptions,
   revalidateOnFocus: true,
-  refreshInterval: 30_000, // Polling every 30s for live streams (community, chat, etc.)
+  refreshWhenHidden: false,
+  refreshWhenOffline: false,
+  refreshInterval: 120_000, // Live feeds are kept warm without hammering Vercel every 30s.
 };

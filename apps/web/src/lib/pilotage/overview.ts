@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
+import { fetchCachedUnifiedActionContracts } from "../actions/unified-source-cache";
 import {
   computePilotageComparison,
   type PilotageComparisonResult,
@@ -64,10 +65,10 @@ export function buildPilotageOverviewFromContracts(
 export async function loadPilotageOverview(
   params: { supabase: SupabaseClient } & LoadPilotageOverviewParams,
 ): Promise<PilotageOverview> {
-  const { fetchUnifiedActionContracts } = await import("../actions/unified-source");
+  void params.supabase;
   const limit = params.limit ?? 1500;
   const floorDate = buildDateFloor(Math.max(params.periodDays * 2, 730));
-  const { items: contracts } = await fetchUnifiedActionContracts(params.supabase, {
+  const { items: contracts } = await fetchCachedUnifiedActionContracts({
     limit,
     status: "approved",
     floorDate,

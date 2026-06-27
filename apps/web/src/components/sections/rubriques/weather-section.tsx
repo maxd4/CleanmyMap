@@ -334,13 +334,13 @@ function ConditionsPanel({
           currentLocationLabel={fr ? "Lieu actif" : "Active place"}
           helperText={
             fr
-              ? "Choisis un arrondissement, une ville ou un lieu précis pour obtenir la météo réelle."
-              : "Choose a district, city or precise place to get the real weather."
+              ? "Choisis une commune, une ville ou un lieu précis pour obtenir la météo réelle."
+              : "Choose a commune, city or precise place to get the real weather."
           }
           emptyMessage={
             fr
-              ? "Ville introuvable. Essaie une autre ville ou un autre arrondissement."
-              : "City not found. Try another city or district."
+              ? "Lieu introuvable. Essaie une autre commune ou une autre ville."
+              : "Place not found. Try another commune or another city."
           }
         />
 
@@ -1361,7 +1361,7 @@ export function WeatherSection() {
 
           <div className="max-w-xl text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/80">
-              {fr ? "Ville sélectionnée" : "Selected city"}
+              {fr ? "Lieu sélectionné" : "Selected place"}
             </p>
             <p className="mt-1 text-lg font-black tracking-tight text-slate-900">
               {weather.selectedLocation.label}

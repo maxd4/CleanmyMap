@@ -6,7 +6,7 @@ describe("/api/geo/address-suggestions", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns stable exact address labels within greater paris", async () => {
+  it("returns stable exact address labels within the national cache", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
@@ -28,7 +28,7 @@ describe("/api/geo/address-suggestions", () => {
     expect(body.status).toBe("ok");
     expect(body.query).toBe("Rivoli");
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(body.items).toHaveLength(2);
+    expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       label: "12 Rue de Rivoli, 75004 Paris",
       subtitle: "Paris 4e · Louvre",
@@ -47,7 +47,7 @@ describe("/api/geo/address-suggestions", () => {
     expect(body.items).toEqual([]);
   });
 
-  it("falls back to geoplateforme completion outside the local paris cache", async () => {
+  it("falls back to geoplateforme completion outside the local cache", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -55,9 +55,9 @@ describe("/api/geo/address-suggestions", () => {
           {
             x: 4.8357,
             y: 45.764,
-            fulltext: "Lyon, 69000 Lyon",
-            city: "Lyon",
-            zipcode: "69000",
+            fulltext: "Metz, 57000 Metz",
+            city: "Metz",
+            zipcode: "57000",
             kind: "municipality",
             classification: 2,
           },
@@ -67,7 +67,7 @@ describe("/api/geo/address-suggestions", () => {
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
     const response = await GET(
-      new Request("http://localhost/api/geo/address-suggestions?q=Lyon&limit=3"),
+      new Request("http://localhost/api/geo/address-suggestions?q=Metz&limit=3"),
     );
     const body = (await response.json()) as {
       status: string;
@@ -82,12 +82,12 @@ describe("/api/geo/address-suggestions", () => {
     };
 
     expect(body.status).toBe("ok");
-    expect(body.query).toBe("Lyon");
+    expect(body.query).toBe("Metz");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
-      label: "Lyon, 69000 Lyon",
-      subtitle: "69000 Lyon · municipality",
+      label: "Metz, 57000 Metz",
+      subtitle: "57000 Metz · municipality",
       latitude: 45.764,
       longitude: 4.8357,
     });

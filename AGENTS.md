@@ -124,6 +124,12 @@ Toute modification Supabase doit être traitée comme une modification de base d
 
 Ne pas modifier la base de production au hasard depuis le dashboard Supabase sans migration associée.
 
+Avant toute optimisation de lecture, vérifier d'abord si le code charge une table entière puis filtre côté application. Si c'est le cas, traiter ça comme un défaut de conception de requête: réduire les colonnes, déplacer le filtre dans la base, puis seulement garder un filtre métier local si nécessaire.
+
+Référence de travail à relire avant de toucher une requête coûteuse:
+
+- `documentation/development/supabase-query-optimization-playbook.md`
+
 Méthode obligatoire :
 
 1. Identifier si le changement concerne le schéma SQL, les policies RLS, les RPC, les triggers, les fonctions, les buckets Storage, les Edge Functions, les seeds ou les types TypeScript générés.
@@ -364,6 +370,12 @@ Ne pas laisser tourner inutilement :
 * processus liés à un `localhost` inutilisé.
 
 Les commandes `git` peuvent rester en arrière-plan lorsqu’elles sont légères.
+
+Au lancement d’une tâche, éviter d’ouvrir ou de parcourir les dossiers générés ou d’outillage comme `node_modules`, `.next`, `.vercel`, `.playwright-mcp`, `.codex-remote-attachments`, `artifacts` ou `backups` sauf nécessité explicite.
+
+Si un diagnostic demande un scan large, le justifier d’abord et privilégier une cible précise.
+
+Si `%TEMP%` grossit à cause des outils de dev ou de Codex, lancer `npm run clean:temp` avant de repartir sur une tâche lourde.
 
 ---
 

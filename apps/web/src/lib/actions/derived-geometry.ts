@@ -1,5 +1,4 @@
 import type { ActionDrawing, ActionGeometryKind } from "@/lib/actions/types";
-import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 export { GEOMETRY_CONFIDENCE } from "./geometry-core.ts";
 import {
   resolveBestGeometry as resolveBestGeometryResolution,
@@ -38,8 +37,6 @@ export function isRenderableDrawing(
   return drawing.coordinates.length >= minimumPoints;
 }
 
-
-
 export function toGeoJsonString(drawing: ActionDrawing | null): string | null {
   if (!drawing) {
     return null;
@@ -56,6 +53,92 @@ export function toGeoJsonString(drawing: ActionDrawing | null): string | null {
   });
 }
 
+type GeoJsonLike = {
+  type?: string;
+  coordinates?: unknown;
+};
+
+function isGeoJsonLike(value: unknown): value is GeoJsonLike {
+  return Boolean(value && typeof value === "object");
+}
+
+function toDrawingCoordinates(points: unknown): [number, number][] {
+  if (!Array.isArray(points)) {
+    return [];
+  }
+
+  return points
+    .map((point) =>
+      Array.isArray(point) && point.length >= 2
+        ? [Number(point[1]), Number(point[0])] as [number, number]
+        : null,
+    )
+    .filter((point): point is [number, number] => {
+      if (!point) {
+        return false;
+      }
+      return Number.isFinite(point[0]) && Number.isFinite(point[1]);
+    });
+}
+
+function normalizePolygonCoordinates(
+  coordinates: [number, number][],
+): [number, number][] {
+  if (
+    coordinates.length >= 2 &&
+    coordinates[0][0] === coordinates[coordinates.length - 1][0] &&
+    coordinates[0][1] === coordinates[coordinates.length - 1][1]
+  ) {
+    return coordinates.slice(0, -1);
+  }
+  return coordinates;
+}
+
+function parseLineStringDrawing(
+  parsed: GeoJsonLike,
+  kindHint?: ActionGeometryKind | null,
+): ActionDrawing | null {
+  if (parsed.type !== "LineString" && kindHint !== "polyline") {
+    return null;
+  }
+
+  const coordinates = toDrawingCoordinates(parsed.coordinates);
+  return isRenderableDrawing({ kind: "polyline", coordinates })
+    ? { kind: "polyline", coordinates }
+    : null;
+}
+
+function parsePolygonDrawing(
+  parsed: GeoJsonLike,
+  kindHint?: ActionGeometryKind | null,
+): ActionDrawing | null {
+  if (parsed.type !== "Polygon" && kindHint !== "polygon") {
+    return null;
+  }
+
+  const coordinates = toDrawingCoordinates(
+    Array.isArray(parsed.coordinates) ? parsed.coordinates[0] : null,
+  );
+  const normalizedCoordinates = normalizePolygonCoordinates(coordinates);
+
+  return isRenderableDrawing({
+    kind: "polygon",
+    coordinates: normalizedCoordinates,
+  })
+    ? { kind: "polygon", coordinates: normalizedCoordinates }
+    : null;
+}
+
+function parseDrawingFromGeoJsonContent(
+  parsed: GeoJsonLike,
+  kindHint?: ActionGeometryKind | null,
+): ActionDrawing | null {
+  return (
+    parseLineStringDrawing(parsed, kindHint) ??
+    parsePolygonDrawing(parsed, kindHint)
+  );
+}
+
 export function parseDrawingFromGeoJson(
   geojson: string | null | undefined,
   kindHint?: ActionGeometryKind | null,
@@ -65,76 +148,47 @@ export function parseDrawingFromGeoJson(
   }
 
   try {
-    const parsed = JSON.parse(geojson) as
-      | {
-        type?: string;
-        coordinates?: unknown;
-      }
-      | null;
+    const parsed = JSON.parse(geojson) as unknown;
 
-    if (!parsed || typeof parsed !== "object") {
+    if (!isGeoJsonLike(parsed)) {
       return null;
     }
 
-    if (parsed.type === "LineString" || kindHint === "polyline") {
-      if (!Array.isArray(parsed.coordinates)) {
-        return null;
-      }
-      const coordinates = parsed.coordinates
-        .map((point) =>
-          Array.isArray(point) && point.length >= 2
-            ? [Number(point[1]), Number(point[0])] as [number, number]
-            : null,
-        )
-        .filter((point): point is [number, number] => {
-          if (!point) {
-            return false;
-          }
-          return Number.isFinite(point[0]) && Number.isFinite(point[1]);
-        });
-
-      return isRenderableDrawing({ kind: "polyline", coordinates })
-        ? { kind: "polyline", coordinates }
-        : null;
-    }
-
-    if (parsed.type === "Polygon" || kindHint === "polygon") {
-      if (!Array.isArray(parsed.coordinates) || !Array.isArray(parsed.coordinates[0])) {
-        return null;
-      }
-      const ring = parsed.coordinates[0] as unknown[];
-      const coordinates = ring
-        .map((point) =>
-          Array.isArray(point) && point.length >= 2
-            ? [Number(point[1]), Number(point[0])] as [number, number]
-            : null,
-        )
-        .filter((point): point is [number, number] => {
-          if (!point) {
-            return false;
-          }
-          return Number.isFinite(point[0]) && Number.isFinite(point[1]);
-        });
-
-      const normalizedCoordinates =
-        coordinates.length >= 2 &&
-          coordinates[0][0] === coordinates[coordinates.length - 1][0] &&
-          coordinates[0][1] === coordinates[coordinates.length - 1][1]
-          ? coordinates.slice(0, -1)
-          : coordinates;
-
-      return isRenderableDrawing({
-        kind: "polygon",
-        coordinates: normalizedCoordinates,
-      })
-        ? { kind: "polygon", coordinates: normalizedCoordinates }
-        : null;
-    }
+    return parseDrawingFromGeoJsonContent(parsed, kindHint);
   } catch {
     return null;
   }
 
   return null;
+}
+
+function resolveStoredDrawing(params: {
+  derivedGeometryKind?: ActionGeometryKind | null;
+  derivedGeometryGeoJson?: string | null;
+  manualDrawing?: ActionDrawing | null;
+  manualDrawingGeoJson?: string | null;
+}): ActionDrawing | null {
+  return (
+    parseDrawingFromGeoJson(
+      params.derivedGeometryGeoJson,
+      params.derivedGeometryKind ?? null,
+    ) ?? params.manualDrawing ?? parseDrawingFromGeoJson(params.manualDrawingGeoJson, null)
+  );
+}
+
+function resolveStoredGeoJson(params: {
+  derivedGeometryGeoJson?: string | null;
+  manualDrawingGeoJson?: string | null;
+}, storedDrawing: ActionDrawing | null): string | null {
+  if (!storedDrawing) {
+    return null;
+  }
+
+  return (
+    params.derivedGeometryGeoJson ??
+    params.manualDrawingGeoJson ??
+    toGeoJsonString(storedDrawing)
+  );
 }
 
 export function buildPersistedGeometry(params: {
@@ -187,22 +241,12 @@ export function buildPersistedGeometryFromStoredFields(params: {
   arrivalLocationLabel?: string | null;
   routeStyle?: "direct" | "souple" | null;
 }): PersistedDerivedGeometry {
-  const storedDrawing =
-    parseDrawingFromGeoJson(
-      params.derivedGeometryGeoJson,
-      params.derivedGeometryKind ?? null,
-    ) ??
-    params.manualDrawing ??
-    parseDrawingFromGeoJson(params.manualDrawingGeoJson, null);
+  const storedDrawing = resolveStoredDrawing(params);
+  const geojson = resolveStoredGeoJson(params, storedDrawing);
 
   return buildPersistedGeometry({
     drawing: storedDrawing,
-    geojson:
-      storedDrawing
-        ? params.derivedGeometryGeoJson ??
-        params.manualDrawingGeoJson ??
-        toGeoJsonString(storedDrawing)
-        : null,
+    geojson,
     confidence: params.geometryConfidence ?? null,
     geometrySourceHint: params.geometrySource ?? null,
     latitude: params.latitude ?? null,

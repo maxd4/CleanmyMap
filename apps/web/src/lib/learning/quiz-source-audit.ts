@@ -110,6 +110,122 @@ function toFinding(question: QuizQuestion, reason: string): QuizSourceAuditFindi
   };
 }
 
+type QuizSourceAuditState = {
+  questionsWithoutSource: QuizSourceAuditFinding[];
+  questionsWithUnsourcedFigures: QuizSourceAuditFinding[];
+  questionsWithLocalRulesNotVariable: QuizSourceAuditFinding[];
+  questionsToReview: QuizSourceAuditFinding[];
+  weakOrVagueSources: QuizSourceAuditFinding[];
+  blockingQuestionIds: Set<string>;
+};
+
+function addBlockingFinding(
+  target: QuizSourceAuditFinding[],
+  question: QuizQuestion,
+  reason: string,
+  blockingQuestionIds: Set<string>,
+): void {
+  target.push(toFinding(question, reason));
+  blockingQuestionIds.add(question.id);
+}
+
+function handleMissingQuizSource(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+  questionHasNumberCue: boolean,
+): void {
+  addBlockingFinding(
+    state.questionsWithoutSource,
+    question,
+    questionHasNumberCue
+      ? "La question contient un chiffre ou un pourcentage sans source documentée."
+      : "La question n'a pas de source documentée.",
+    state.blockingQuestionIds,
+  );
+}
+
+function handleUnsourcedFigure(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+): void {
+  addBlockingFinding(
+    state.questionsWithUnsourcedFigures,
+    question,
+    "La question chiffrée n'est pas reliée à une source.",
+    state.blockingQuestionIds,
+  );
+}
+
+function handleLocalRuleCue(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+): void {
+  addBlockingFinding(
+    state.questionsWithLocalRulesNotVariable,
+    question,
+    question.isLocalRule
+      ? "La règle locale devrait être marquée `localScope: variable`."
+      : "La question ressemble à une règle locale mais n'est pas marquée comme telle.",
+    state.blockingQuestionIds,
+  );
+}
+
+function handleReviewFlag(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+): void {
+  state.questionsToReview.push(
+    toFinding(question, "La question reste signalée needsReview pour relecture éditoriale."),
+  );
+}
+
+function handleWeakOrVagueSource(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+): void {
+  state.weakOrVagueSources.push(
+    toFinding(
+      question,
+      question.confidenceLevel === "faible"
+        ? "La source est explicitement faible."
+        : question.sourceType === "estimation"
+          ? "La source est une estimation pédagogique."
+          : question.sourceType === "interne"
+            ? "La source est interne et reste peu vérifiable publiquement."
+            : "Le libellé de source est trop générique.",
+    ),
+  );
+}
+
+function collectQuizSourceAuditFindings(
+  question: QuizQuestion,
+  state: QuizSourceAuditState,
+): void {
+  const questionHasSource = hasSourceMetadata(question);
+  const questionHasNumberCue = hasNumberCue(question);
+  const questionHasLocalCue = hasLocalRuleCue(question);
+
+  if (!questionHasSource) {
+    handleMissingQuizSource(question, state, questionHasNumberCue);
+  }
+
+  if (!questionHasSource && questionHasNumberCue) {
+    handleUnsourcedFigure(question, state);
+  }
+
+  if (questionHasLocalCue && (!question.isLocalRule || question.localScope !== "variable")) {
+    handleLocalRuleCue(question, state);
+  }
+
+  if (question.needsReview) {
+    handleReviewFlag(question, state);
+  }
+
+  if (isWeakOrVagueSource(question)) {
+    handleWeakOrVagueSource(question, state);
+  }
+}
+
 function formatQuestionLine(finding: QuizSourceAuditFinding): string {
   const details = [
     finding.sourceType ? `source=${finding.sourceType}` : null,
@@ -133,80 +249,27 @@ function formatSection(title: string, items: QuizSourceAuditFinding[]): string {
 }
 
 export function auditQuizSources(questions: readonly QuizQuestion[]): QuizSourceAuditReport {
-  const questionsWithoutSource: QuizSourceAuditFinding[] = [];
-  const questionsWithUnsourcedFigures: QuizSourceAuditFinding[] = [];
-  const questionsWithLocalRulesNotVariable: QuizSourceAuditFinding[] = [];
-  const questionsToReview: QuizSourceAuditFinding[] = [];
-  const weakOrVagueSources: QuizSourceAuditFinding[] = [];
-  const blockingQuestionIds = new Set<string>();
+  const state: QuizSourceAuditState = {
+    questionsWithoutSource: [],
+    questionsWithUnsourcedFigures: [],
+    questionsWithLocalRulesNotVariable: [],
+    questionsToReview: [],
+    weakOrVagueSources: [],
+    blockingQuestionIds: new Set<string>(),
+  };
 
   for (const question of questions) {
-    const questionHasSource = hasSourceMetadata(question);
-    const questionHasNumberCue = hasNumberCue(question);
-    const questionHasLocalCue = hasLocalRuleCue(question);
-
-    if (!questionHasSource) {
-      questionsWithoutSource.push(
-        toFinding(
-          question,
-          questionHasNumberCue
-            ? "La question contient un chiffre ou un pourcentage sans source documentée."
-            : "La question n'a pas de source documentée.",
-        ),
-      );
-      blockingQuestionIds.add(question.id);
-    }
-
-    if (!questionHasSource && questionHasNumberCue) {
-      questionsWithUnsourcedFigures.push(
-        toFinding(question, "La question chiffrée n'est pas reliée à une source."),
-      );
-      blockingQuestionIds.add(question.id);
-    }
-
-    if (questionHasLocalCue && (!question.isLocalRule || question.localScope !== "variable")) {
-      questionsWithLocalRulesNotVariable.push(
-        toFinding(
-          question,
-          question.isLocalRule
-            ? "La règle locale devrait être marquée `localScope: variable`."
-            : "La question ressemble à une règle locale mais n'est pas marquée comme telle.",
-        ),
-      );
-      blockingQuestionIds.add(question.id);
-    }
-
-    if (question.needsReview) {
-      questionsToReview.push(
-        toFinding(question, "La question reste signalée needsReview pour relecture éditoriale."),
-      );
-    }
-
-    if (isWeakOrVagueSource(question)) {
-      weakOrVagueSources.push(
-        toFinding(
-          question,
-          question.confidenceLevel === "faible"
-            ? "La source est explicitement faible."
-            : question.sourceType === "estimation"
-              ? "La source est une estimation pédagogique."
-              : question.sourceType === "interne"
-                ? "La source est interne et reste peu vérifiable publiquement."
-                : "Le libellé de source est trop générique.",
-          ),
-      );
-    }
+    collectQuizSourceAuditFindings(question, state);
   }
 
   return {
     totalQuestions: questions.length,
-    questionsWithoutSource,
-    questionsWithUnsourcedFigures,
-    questionsWithLocalRulesNotVariable,
-    questionsToReview,
-    weakOrVagueSources,
-    blockingIssuesCount:
-      blockingQuestionIds.size,
+    questionsWithoutSource: state.questionsWithoutSource,
+    questionsWithUnsourcedFigures: state.questionsWithUnsourcedFigures,
+    questionsWithLocalRulesNotVariable: state.questionsWithLocalRulesNotVariable,
+    questionsToReview: state.questionsToReview,
+    weakOrVagueSources: state.weakOrVagueSources,
+    blockingIssuesCount: state.blockingQuestionIds.size,
   };
 }
 

@@ -1,31 +1,29 @@
 "use client";
 
 import React from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
 import FormsBadge from "./FormsBadge";
 import type { GemGrade } from "@/lib/gamification/types";
 import { announceGamificationGain } from "@/lib/gamification/announcements";
-import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
+import { loadGamificationCountersClient } from "@/lib/gamification/counters-client";
+import { FORM_SUBMISSION_TIERS } from "@/lib/gamification/badges/families";
 
 type FormsGrade = GemGrade;
 
-type BadgeListItem = {
-  id?: string;
-  name?: string;
-  progress?: {
-    current?: number;
-    target?: number;
-  };
-  icon?: string;
-  visualVariant?: string;
-  tooltip?: string;
-};
-
-type FormsBadgeItem = BadgeListItem & {
-  id: string;
-  name: string;
-};
+function buildFormsGrades(): FormsGrade[] {
+  return FORM_SUBMISSION_TIERS.map((tier) => ({
+    id: tier.id,
+    label: tier.label,
+    threshold: tier.threshold,
+    iconVariant: tier.iconVariant,
+    visualVariant: tier.visualVariant,
+    tooltip: tier.tooltip,
+  }));
+}
 
 export default function FormsBadgeWrapper() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [formsData, setFormsData] = React.useState<{
@@ -34,37 +32,22 @@ export default function FormsBadgeWrapper() {
   } | null>(null);
 
   React.useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn || !user?.id) {
+      setIsLoading(false);
+      setError("access_denied");
+      return;
+    }
+
     (async () => {
       try {
         setIsLoading(true);
-        const data = await loadGamificationBadgesListClient();
-
-        // Extract forms badges from response
-        const formsBadges =
-          data.badges?.filter(
-            (badge: BadgeListItem): badge is FormsBadgeItem =>
-              typeof badge.id === "string" &&
-              typeof badge.name === "string" &&
-              badge.id.startsWith("forms-"),
-          ) ?? [];
-
-        if (formsBadges.length === 0) {
-          setFormsData(null);
-          return;
-        }
-
-        // Extract current eligible forms count from progress
-        const currentCount = formsBadges[0]?.progress?.current ?? 0;
-
-        // Map badges to grades format
-        const grades: FormsGrade[] = formsBadges.map((badge) => ({
-          id: badge.id,
-          label: badge.name,
-          threshold: badge.progress?.target ?? 1,
-          iconVariant: badge.icon,
-          visualVariant: badge.visualVariant,
-          tooltip: badge.tooltip,
-        }));
+        const data = await loadGamificationCountersClient(user.id, getToken);
+        const currentCount = data.counters?.eligibleFormsCount ?? 0;
+        const grades = buildFormsGrades();
 
         setFormsData({
           current: currentCount,
@@ -82,23 +65,7 @@ export default function FormsBadgeWrapper() {
         setIsLoading(false);
       }
     })();
-  }, []);
-
-  // Empty state
-  if (!isLoading && !formsData && !error) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          textAlign: "center",
-          color: "var(--gray-500, #999)",
-          fontSize: 14,
-        }}
-      >
-        Aucune donnée de formulaires disponible
-      </div>
-    );
-  }
+  }, [getToken, isLoaded, isSignedIn, user?.id]);
 
   // Loading state
   if (isLoading) {

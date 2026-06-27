@@ -25,6 +25,18 @@ type XpAuditSearchParams = {
   offset?: string;
 };
 
+function clampInteger(
+  value: number,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
 export default async function Page({
   searchParams,
 }: {
@@ -36,8 +48,8 @@ export default async function Page({
   const userId = searchParams?.userId ?? null;
   const from = searchParams?.from ?? null;
   const to = searchParams?.to ?? null;
-  const limit = Number(searchParams?.limit ?? 50);
-  const offset = Number(searchParams?.offset ?? 0);
+  const limit = clampInteger(Number(searchParams?.limit ?? 50), 1, 200, 50);
+  const offset = clampInteger(Number(searchParams?.offset ?? 0), 0, 10000, 0);
 
   let query = supabase
     .from("xp_audit")

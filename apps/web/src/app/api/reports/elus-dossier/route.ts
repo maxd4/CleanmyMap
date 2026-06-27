@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { computePeriodComparison } from"@/lib/analytics/period-comparison";
 import {
  buildTerritorialBenchmark,
@@ -13,7 +14,6 @@ import type { PersonalImpactMethodology } from"@/lib/gamification/progression-ty
 import { buildPilotageOverviewFromContracts } from"@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from"@/lib/pilotage/prioritization";
 import { buildDeliverableHeaders } from"@/lib/reports/http";
-import { buildSimplePdf } from "@/lib/pdf-export/simple-pdf";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
@@ -22,6 +22,7 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 export const runtime ="nodejs";
 
 type ExportFormat ="json" |"md" |"pdf";
+const ELUS_DOSSIER_BUCKET ="reports";
 
 function parsePositiveInteger(
  raw: string | null,
@@ -222,14 +223,51 @@ function buildMarkdownPack(payload: {
  ].join("\n");
 }
 
-function sanitizeLineForPdf(value: string): string {
- return value
- .replace(/```json/g,"")
- .replace(/```/g,"")
- .replace(/^#\s+/g,"")
- .replace(/^##\s+/g,"")
- .replace(/\*\*/g,"")
- .replace(/\t/g,"");
+function resolveScopeSelection(params: {
+ scopeKind: string | null;
+ scopeValue: string | null;
+ legacyAssociation: string | null;
+}): {
+ kind: "global" | "account" | "association" | "arrondissement";
+ value: string | null;
+} {
+ return {
+  kind:
+   params.scopeKind ==="account" ||
+   params.scopeKind ==="association" ||
+   params.scopeKind ==="arrondissement"
+    ? params.scopeKind
+    : params.legacyAssociation
+    ?"association"
+    :"global",
+  value:
+   params.scopeValue ??
+   (params.scopeKind ==="association" ? params.legacyAssociation : null) ??
+   params.legacyAssociation,
+ };
+}
+
+function buildElusDossierPdfStoragePath(params: {
+ generatedAt: string;
+ days: number;
+ limit: number;
+ scopeKind: "global" | "account" | "association" | "arrondissement";
+ scopeValue: string | null;
+}): string {
+ const cacheKey = createHash("sha1")
+  .update(
+   JSON.stringify({
+    generatedDate: params.generatedAt.slice(0, 10),
+    days: params.days,
+    limit: params.limit,
+    scopeKind: params.scopeKind,
+    scopeValue: params.scopeValue,
+   }),
+  )
+  .digest("hex")
+  .slice(0, 16);
+
+ return `elus-dossier/${params.generatedAt.slice(0, 10)}/${cacheKey}.pdf`;
 }
 
 export async function GET(request: Request) {
@@ -241,7 +279,7 @@ export async function GET(request: Request) {
  const url = new URL(request.url);
  const days = parsePositiveInteger(url.searchParams.get("days"), 7, 365, 90);
  const limit = parsePositiveInteger(
- url.searchParams.get("limit"),
+  url.searchParams.get("limit"),
  50,
  2500,
  1200,
@@ -251,9 +289,65 @@ export async function GET(request: Request) {
  const scopeKind = url.searchParams.get("scopeKind");
  const scopeValue = url.searchParams.get("scopeValue");
  const legacyAssociation = url.searchParams.get("association");
+ const scope = resolveScopeSelection({
+  scopeKind,
+  scopeValue,
+  legacyAssociation,
+ });
+ const supabase = getSupabaseServerClient();
+ const cacheDay = new Date().toISOString().slice(0, 10);
+ const cachedPdfPath = buildElusDossierPdfStoragePath({
+  generatedAt: cacheDay,
+  days,
+  limit,
+  scopeKind: scope.kind,
+  scopeValue: scope.value,
+ });
 
  try {
- const supabase = getSupabaseServerClient();
+ if (format ==="pdf") {
+  const cachedExport = await supabase
+  .from("reports")
+  .select("file_path")
+  .eq("file_path", cachedPdfPath)
+  .eq("file_kind", "pdf")
+  .order("created_at", { ascending: false })
+  .limit(1);
+
+  if (!cachedExport.error && cachedExport.data?.length > 0) {
+   const { filename } = buildDeliverableHeaders({
+    rubrique:"reports_elus_dossier",
+    extension:"pdf",
+    contentType:"application/pdf",
+   });
+   const signedPdf = await supabase.storage.from(ELUS_DOSSIER_BUCKET).createSignedUrl(
+    cachedPdfPath,
+    60 * 60 * 24,
+    {
+     download: filename,
+    },
+   );
+
+   if (!signedPdf.error && signedPdf.data?.signedUrl) {
+    return Response.redirect(signedPdf.data.signedUrl, 302);
+   }
+  }
+
+  return new Response(
+   JSON.stringify({
+    error:
+     "Le PDF de dossier élus est désormais généré côté navigateur. Utilisez l'export PDF depuis la page de rapports.",
+   }),
+   {
+    status: 409,
+    headers: {
+     "Content-Type": "application/json; charset=utf-8",
+     "Cache-Control": "no-store",
+    },
+   },
+  );
+ }
+
  const { items: contracts, isTruncated } = await fetchUnifiedActionContracts(
  supabase,
  {
@@ -265,22 +359,12 @@ export async function GET(request: Request) {
  },
  );
 
- const scope = filterActionContractsByScope(contracts, {
- kind:
- scopeKind ==="account" ||
- scopeKind ==="association" ||
- scopeKind ==="arrondissement"
- ? scopeKind
- : legacyAssociation
- ?"association"
- :"global",
- value:
- scopeValue ??
- (scopeKind ==="association" ? legacyAssociation : null) ??
- legacyAssociation,
+ const scopeContracts = filterActionContractsByScope(contracts, {
+  kind: scope.kind,
+  value: scope.value,
  });
 
- const approved = scope.filter((contract) => contract.status ==="approved");
+ const approved = scopeContracts.filter((contract) => contract.status ==="approved");
  const totalKg = sumApprovedMetric(approved, (contract) => contract.metadata.wasteKg);
  const totalActions = approved.length;
  const totalVolunteers = sumApprovedMetric(
@@ -290,7 +374,7 @@ export async function GET(request: Request) {
  const geolocated = countGeolocatedContracts(approved);
 
  const comparison = computePeriodComparison(
- scope.map((contract) => ({
+  scopeContracts.map((contract) => ({
  status: contract.status,
  observedAt: contract.dates.observedAt,
  createdAt: contract.dates.createdAt ?? contract.dates.importedAt,
@@ -302,15 +386,15 @@ export async function GET(request: Request) {
  );
 
  const benchmark = buildTerritorialBenchmark(
- approved.map((contract) => ({
- locationLabel: contract.location.label,
- wasteKg: contract.metadata.wasteKg,
- volunteersCount: contract.metadata.volunteersCount,
- })),
+  approved.map((contract) => ({
+   locationLabel: contract.location.label,
+   wasteKg: contract.metadata.wasteKg,
+   volunteersCount: contract.metadata.volunteersCount,
+  })),
  );
  const overview = buildPilotageOverviewFromContracts({
- contracts: scope,
- periodDays: days,
+  contracts: scopeContracts,
+  periodDays: days,
  });
 
  const qualityScores = approved.map((contract) =>
@@ -345,40 +429,19 @@ export async function GET(request: Request) {
 "Comparatif: periode N vs N-1 sur actions, volume, couverture, delai moderation.",
 "Benchmark: normalisation par surface, densite, volume d'actions et participation.",
 "Lecture decisionnelle: priorisation haute/moyenne/fond selon score normalise.",
- ],
+  ],
  };
 
  const { headers: responseHeaders } = buildDeliverableHeaders({
   rubrique:"reports_elus_dossier",
-  extension: format === "pdf" ? "pdf" : format === "md" ? "md" : "json",
-  contentType:
- format === "pdf"
- ? "application/pdf"
- : format === "md"
+  extension: format === "md" ? "md" : "json",
+  contentType: format === "md"
  ? "text/markdown; charset=utf-8"
     : "application/json; charset=utf-8",
  });
  const headers: Record<string, string> = { ...responseHeaders };
  if (isTruncated) {
  headers["X-Export-Warning"] ="Dataset truncated to limit";
- }
-
- if (format ==="pdf") {
- const markdown = buildMarkdownPack(payload);
- const lines = markdown
- .split("\n")
- .map((line) => sanitizeLineForPdf(line))
- .filter((line) => line.trim().length > 0);
- const pdfBytes = buildSimplePdf(lines);
- const pdfBuffer = pdfBytes.buffer.slice(
- pdfBytes.byteOffset,
- pdfBytes.byteOffset + pdfBytes.byteLength,
- ) as ArrayBuffer;
-
- return new Response(pdfBuffer, {
- status: 200,
- headers,
- });
  }
 
  if (format ==="md") {

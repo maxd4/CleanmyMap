@@ -22,6 +22,7 @@ type DefaultLayoutProps = {
   zoneQuery?: string;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
+  initialViewport?: MapViewportState | null;
 };
 
 export function DefaultLayout({
@@ -41,6 +42,7 @@ export function DefaultLayout({
   zoneQuery = "",
   mapExportTargetRef,
   onViewportChange,
+  initialViewport,
 }: DefaultLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -107,6 +109,7 @@ export function DefaultLayout({
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
             onViewportChange={onViewportChange}
+            initialViewport={initialViewport}
             tone={tone}
           />
         )}

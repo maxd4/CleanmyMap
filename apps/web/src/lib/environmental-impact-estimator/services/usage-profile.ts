@@ -14,7 +14,246 @@ import {
   resolveNumber,
   round6,
 } from "./utils";
-
+import {
+  buildUsageDerivedFrom,
+  buildUsageOperationsMetrics,
+  buildUsageTrendMetrics,
+} from "./usage-profile-operations";
+interface UsageProfileContext {
+  infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined;
+  siteInput: EnvironmentalImpactScopeInput | null | undefined;
+  userInput: EnvironmentalImpactScopeInput | null | undefined;
+  usageInput: EnvironmentalImpactInfrastructureInput["usage"] | null;
+  pushProvenance: (item: EnvironmentalImpactUsageProvenanceItem) => void;
+}
+function getTrafficPageViewsDetail(hasSignals: boolean): string {
+  return hasSignals
+    ? "Dérivé des signaux site/utilisateur"
+    : "Référence mensuelle si aucun signal n'est branché";
+}
+function getTrafficPageViewsSource(hasSignals: boolean): EnvironmentalImpactUsageProvenanceSource {
+  return hasSignals ? "derived" : "reference";
+}
+function getTrafficSignalDetail(label: string): string {
+  return `Dérivé du signal site ${label}`;
+}
+function getTrafficFallbackDetail(): string {
+  return "Dérivé des pages vues du site";
+}
+function resolveMonthlyPageViewsMetric(
+  ctx: UsageProfileContext,
+  sitePageViews: number,
+  userPageViews: number,
+): number {
+  const hasTrafficSignals = sitePageViews > 0 || userPageViews > 0;
+  const fallbackPageViews = Math.max(1, sitePageViews + userPageViews);
+  return resolveUsageField(
+    ctx,
+    "monthlyPageViews",
+    "Pages vues",
+    ctx.usageInput?.monthlyPageViews,
+    fallbackPageViews > 1 ? fallbackPageViews : 60_000,
+    getTrafficPageViewsDetail(hasTrafficSignals),
+    getTrafficPageViewsSource(hasTrafficSignals),
+  );
+}
+function resolveMonthlyActiveUsersMetric(
+  ctx: UsageProfileContext,
+  monthlyPageViews: number,
+): number {
+  return resolveUsageField(
+    ctx,
+    "monthlyActiveUsers",
+    "Utilisateurs actifs",
+    ctx.usageInput?.monthlyActiveUsers,
+    Math.max(25, Math.round(monthlyPageViews / 18)),
+    "Dérivé des pages vues mensuelles",
+    "derived",
+  );
+}
+function resolveMonthlySessionsMetric(
+  ctx: UsageProfileContext,
+  monthlyPageViews: number,
+  monthlyActiveUsers: number,
+): number {
+  return resolveUsageField(
+    ctx,
+    "monthlySessions",
+    "Sessions",
+    ctx.usageInput?.monthlySessions,
+    Math.max(Math.round(monthlyActiveUsers * 1.8), Math.round(monthlyPageViews / 1.35)),
+    "Dérivé des pages vues et des utilisateurs actifs",
+    "derived",
+  );
+}
+function resolveMonthlyPdfExportsMetric(
+  ctx: UsageProfileContext,
+  monthlyPageViews: number,
+): number {
+  const hasSitePdfExports = ctx.siteInput?.pdfExports != null;
+  return resolveUsageField(
+    ctx,
+    "monthlyPdfExports",
+    "Exports PDF",
+    ctx.usageInput?.monthlyPdfExports,
+    Math.max(0, Math.round(resolveNumber(ctx.siteInput?.pdfExports, monthlyPageViews * 0.004))),
+    hasSitePdfExports ? getTrafficSignalDetail("pdfExports") : getTrafficFallbackDetail(),
+    "derived",
+  );
+}
+function resolveMonthlyMapViewsMetric(
+  ctx: UsageProfileContext,
+  monthlyPageViews: number,
+): number {
+  const hasSiteMaps = ctx.siteInput?.maps != null;
+  return resolveUsageField(
+    ctx,
+    "monthlyMapViews",
+    "Vues carte",
+    ctx.usageInput?.monthlyMapViews,
+    Math.max(0, Math.round(resolveNumber(ctx.siteInput?.maps, monthlyPageViews * 0.03))),
+    hasSiteMaps ? getTrafficSignalDetail("maps") : getTrafficFallbackDetail(),
+    "derived",
+  );
+}
+function resolveMonthlyAiCallsMetric(
+  ctx: UsageProfileContext,
+  monthlyPageViews: number,
+): number {
+  const hasSiteAiCalls = ctx.siteInput?.aiCalls != null;
+  return resolveUsageField(
+    ctx,
+    "monthlyAiCalls",
+    "Appels IA",
+    ctx.usageInput?.monthlyAiCalls,
+    Math.max(0, Math.round(resolveNumber(ctx.siteInput?.aiCalls, monthlyPageViews * 0.0012))),
+    hasSiteAiCalls ? getTrafficSignalDetail("aiCalls") : getTrafficFallbackDetail(),
+    "derived",
+  );
+}
+function resolveMonthlyChatgptConversationHoursMetric(ctx: UsageProfileContext): number {
+  return resolveUsageField(
+    ctx,
+    "monthlyChatgptConversationHours",
+    "Heures GPT-5.4 mini",
+    ctx.usageInput?.monthlyChatgptConversationHours,
+    ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK * WEEKS_PER_MONTH,
+    "Référence CleanMyMap documentée à 2h hebdomadaires",
+    "reference",
+  );
+}
+function resolveUsageField(
+  ctx: UsageProfileContext,
+  key: string,
+  label: string,
+  inputValue: number | null | undefined,
+  fallbackValue: number,
+  detail: string,
+  source: EnvironmentalImpactUsageProvenanceSource,
+): number {
+  const hasInput = inputValue !== null && inputValue !== undefined;
+  const value = resolveNumber(inputValue, fallbackValue);
+  ctx.pushProvenance({
+    key,
+    label,
+    value,
+    source: hasInput ? "input" : source,
+    detail,
+  });
+  return value;
+}
+function buildUsageTrafficMetrics(ctx: UsageProfileContext, sitePageViews: number, userPageViews: number) {
+  const monthlyPageViews = resolveMonthlyPageViewsMetric(ctx, sitePageViews, userPageViews);
+  return {
+    monthlyPageViews,
+    monthlyActiveUsers: resolveMonthlyActiveUsersMetric(ctx, monthlyPageViews),
+    monthlySessions: resolveMonthlySessionsMetric(
+      ctx,
+      monthlyPageViews,
+      resolveMonthlyActiveUsersMetric(ctx, monthlyPageViews),
+    ),
+    monthlyPdfExports: resolveMonthlyPdfExportsMetric(ctx, monthlyPageViews),
+    monthlyMapViews: resolveMonthlyMapViewsMetric(ctx, monthlyPageViews),
+    monthlyAiCalls: resolveMonthlyAiCallsMetric(ctx, monthlyPageViews),
+    monthlyChatgptConversationHours: resolveMonthlyChatgptConversationHoursMetric(ctx),
+  };
+}
+function buildUsageCodexMetrics(ctx: UsageProfileContext) {
+  return {
+    monthlyCodexSessions: resolveUsageField(
+      ctx,
+      "monthlyCodexSessions",
+      "Sessions Codex",
+      ctx.usageInput?.monthlyCodexSessions,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexConversationTurns: resolveUsageField(
+      ctx,
+      "monthlyCodexConversationTurns",
+      "Conversations Codex",
+      ctx.usageInput?.monthlyCodexConversationTurns,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexToolActions: resolveUsageField(
+      ctx,
+      "monthlyCodexToolActions",
+      "Actions outillées Codex",
+      ctx.usageInput?.monthlyCodexToolActions,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexShellCommands: resolveUsageField(
+      ctx,
+      "monthlyCodexShellCommands",
+      "Commandes shell Codex",
+      ctx.usageInput?.monthlyCodexShellCommands,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexFilesTouched: resolveUsageField(
+      ctx,
+      "monthlyCodexFilesTouched",
+      "Fichiers touchés Codex",
+      ctx.usageInput?.monthlyCodexFilesTouched,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexTestsRun: resolveUsageField(
+      ctx,
+      "monthlyCodexTestsRun",
+      "Tests Codex",
+      ctx.usageInput?.monthlyCodexTestsRun,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexChangedLines: resolveUsageField(
+      ctx,
+      "monthlyCodexChangedLines",
+      "Lignes modifiées Codex",
+      ctx.usageInput?.monthlyCodexChangedLines,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+    monthlyCodexActiveMinutes: resolveUsageField(
+      ctx,
+      "monthlyCodexActiveMinutes",
+      "Minutes actives Codex",
+      ctx.usageInput?.monthlyCodexActiveMinutes,
+      0,
+      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
+      "reference",
+    ),
+  };
+}
 export function buildUsageProfileEstimate(
   infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined,
   siteInput: EnvironmentalImpactScopeInput | null | undefined,
@@ -22,341 +261,47 @@ export function buildUsageProfileEstimate(
 ): EnvironmentalImpactUsageProfileEstimate {
   const usageInput = infrastructureInput?.usage ?? null;
   const provenance: EnvironmentalImpactUsageProvenanceItem[] = [];
-
-  function pushProvenance(item: EnvironmentalImpactUsageProvenanceItem) {
+  const pushProvenance = (item: EnvironmentalImpactUsageProvenanceItem) => {
     provenance.push(item);
-  }
-
-  function resolveField(
-    key: string,
-    label: string,
-    inputValue: number | null | undefined,
-    fallbackValue: number,
-    detail: string,
-    source: EnvironmentalImpactUsageProvenanceSource,
-  ): number {
-    const hasInput = inputValue !== null && inputValue !== undefined;
-    const value = resolveNumber(inputValue, fallbackValue);
-
-    pushProvenance({
-      key,
-      label,
-      value,
-      source: hasInput ? "input" : source,
-      detail,
-    });
-
-    return value;
-  }
-
+  };
+  const ctx: UsageProfileContext = {
+    infrastructureInput,
+    siteInput,
+    userInput,
+    usageInput,
+    pushProvenance,
+  };
   const sitePageViews = resolveNumber(siteInput?.pageViews, 0);
   const userPageViews = resolveNumber(userInput?.pageViews, 0);
-  const fallbackPageViews = Math.max(1, sitePageViews + userPageViews);
-  const monthlyPageViews = resolveField(
-    "monthlyPageViews",
-    "Pages vues",
-    usageInput?.monthlyPageViews,
-    fallbackPageViews > 1 ? fallbackPageViews : 60_000,
-    sitePageViews > 0 || userPageViews > 0
-      ? "Dérivé des signaux site/utilisateur"
-      : "Référence mensuelle si aucun signal n'est branché",
-    sitePageViews > 0 || userPageViews > 0 ? "derived" : "reference",
+  const trafficMetrics = buildUsageTrafficMetrics(ctx, sitePageViews, userPageViews);
+  const codexMetrics = buildUsageCodexMetrics(ctx);
+  const operationsMetrics = buildUsageOperationsMetrics(
+    ctx,
+    trafficMetrics.monthlyPageViews,
+    trafficMetrics.monthlyActiveUsers,
+    trafficMetrics.monthlySessions,
+    trafficMetrics.monthlyPdfExports,
+    trafficMetrics.monthlyMapViews,
   );
-  const monthlyActiveUsers = resolveField(
-    "monthlyActiveUsers",
-    "Utilisateurs actifs",
-    usageInput?.monthlyActiveUsers,
-    Math.max(25, Math.round(monthlyPageViews / 18)),
-    "Dérivé des pages vues mensuelles",
-    "derived",
+  const trendMetrics = buildUsageTrendMetrics(
+    ctx,
+    trafficMetrics.monthlyPageViews,
+    trafficMetrics.monthlyActiveUsers,
   );
-  const monthlySessions = resolveField(
-    "monthlySessions",
-    "Sessions",
-    usageInput?.monthlySessions,
-    Math.max(Math.round(monthlyActiveUsers * 1.8), Math.round(monthlyPageViews / 1.35)),
-    "Dérivé des pages vues et des utilisateurs actifs",
-    "derived",
-  );
-  const monthlyPdfExports = resolveField(
-    "monthlyPdfExports",
-    "Exports PDF",
-    usageInput?.monthlyPdfExports,
-    Math.max(0, Math.round(resolveNumber(siteInput?.pdfExports, monthlyPageViews * 0.004))),
-    siteInput?.pdfExports != null
-      ? "Dérivé du signal site pdfExports"
-      : "Dérivé des pages vues du site",
-    "derived",
-  );
-  const monthlyMapViews = resolveField(
-    "monthlyMapViews",
-    "Vues carte",
-    usageInput?.monthlyMapViews,
-    Math.max(0, Math.round(resolveNumber(siteInput?.maps, monthlyPageViews * 0.03))),
-    siteInput?.maps != null
-      ? "Dérivé du signal site maps"
-      : "Dérivé des pages vues du site",
-    "derived",
-  );
-  const monthlyAiCalls = resolveField(
-    "monthlyAiCalls",
-    "Appels IA",
-    usageInput?.monthlyAiCalls,
-    Math.max(0, Math.round(resolveNumber(siteInput?.aiCalls, monthlyPageViews * 0.0012))),
-    siteInput?.aiCalls != null
-      ? "Dérivé du signal site aiCalls"
-      : "Dérivé des pages vues du site",
-    "derived",
-  );
-  const monthlyChatgptConversationHours = resolveField(
-    "monthlyChatgptConversationHours",
-    "Heures GPT-5.4 mini",
-    usageInput?.monthlyChatgptConversationHours,
-    ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK * WEEKS_PER_MONTH,
-    "Référence CleanMyMap documentée à 2h hebdomadaires",
-    "reference",
-  );
-  const monthlyCodexSessions = resolveField(
-    "monthlyCodexSessions",
-    "Sessions Codex",
-    usageInput?.monthlyCodexSessions,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexConversationTurns = resolveField(
-    "monthlyCodexConversationTurns",
-    "Conversations Codex",
-    usageInput?.monthlyCodexConversationTurns,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexToolActions = resolveField(
-    "monthlyCodexToolActions",
-    "Actions outillées Codex",
-    usageInput?.monthlyCodexToolActions,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexShellCommands = resolveField(
-    "monthlyCodexShellCommands",
-    "Commandes shell Codex",
-    usageInput?.monthlyCodexShellCommands,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexFilesTouched = resolveField(
-    "monthlyCodexFilesTouched",
-    "Fichiers touchés Codex",
-    usageInput?.monthlyCodexFilesTouched,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexTestsRun = resolveField(
-    "monthlyCodexTestsRun",
-    "Tests Codex",
-    usageInput?.monthlyCodexTestsRun,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexChangedLines = resolveField(
-    "monthlyCodexChangedLines",
-    "Lignes modifiées Codex",
-    usageInput?.monthlyCodexChangedLines,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyCodexActiveMinutes = resolveField(
-    "monthlyCodexActiveMinutes",
-    "Minutes actives Codex",
-    usageInput?.monthlyCodexActiveMinutes,
-    0,
-    "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-    "reference",
-  );
-  const monthlyStorageGbMonths = resolveField(
-    "monthlyStorageGbMonths",
-    "Stockage GB-mois",
-    usageInput?.monthlyStorageGbMonths,
-    Math.max(
-      0.1,
-      round6(
-        resolveNumber(siteInput?.storageGbMonths, 0) +
-          resolveNumber(siteInput?.storedImages, 0) * 0.0025 +
-          resolveNumber(userInput?.storageGbMonths, 0) * 0.35,
-      ),
-    ),
-    siteInput?.storageGbMonths != null || siteInput?.storedImages != null || userInput?.storageGbMonths != null
-      ? "Dérivé des signaux de stockage du site et de l'utilisateur"
-      : "Référence mensuelle minimale pour garder le poste visible",
-    siteInput?.storageGbMonths != null || siteInput?.storedImages != null || userInput?.storageGbMonths != null
-      ? "derived"
-      : "reference",
-  );
-  const monthlyApiRequests = resolveField(
-    "monthlyApiRequests",
-    "Requêtes API",
-    usageInput?.monthlyApiRequests,
-    Math.max(
-      1,
-      Math.round(
-        resolveNumber(siteInput?.apiRequests, monthlyPageViews * 0.32) +
-          monthlySessions * 0.12 +
-          monthlyPdfExports * 2,
-      ),
-    ),
-    siteInput?.apiRequests != null
-      ? "Dérivé du signal site apiRequests"
-      : "Dérivé des pages vues, sessions et exports",
-    "derived",
-  );
-  const monthlyAuthEvents = resolveField(
-    "monthlyAuthEvents",
-    "Événements d'auth",
-    usageInput?.monthlyAuthEvents,
-    Math.max(1, Math.round(monthlyActiveUsers * 1.45)),
-    "Dérivé des utilisateurs actifs",
-    "derived",
-  );
-  const monthlyRealtimeEvents = resolveField(
-    "monthlyRealtimeEvents",
-    "Événements realtime",
-    usageInput?.monthlyRealtimeEvents,
-    Math.max(1, Math.round(monthlyActiveUsers * 10 + monthlySessions * 0.55)),
-    "Dérivé des utilisateurs actifs et des sessions",
-    "derived",
-  );
-  const monthlyEgressGb = resolveField(
-    "monthlyEgressGb",
-    "Egress GB",
-    usageInput?.monthlyEgressGb,
-    Math.max(
-      0.1,
-      round6(monthlyPageViews * 0.00008 + monthlyMapViews * 0.0014 + monthlyStorageGbMonths * 0.12),
-    ),
-    "Dérivé des pages vues, cartes et stockage",
-    "derived",
-  );
-  const monthlyBandwidthGb = resolveField(
-    "monthlyBandwidthGb",
-    "Bande passante GB",
-    usageInput?.monthlyBandwidthGb,
-    Math.max(
-      0.1,
-      round6(monthlyPageViews * 0.00011 + monthlyMapViews * 0.0012 + monthlyPdfExports * 0.002),
-    ),
-    "Dérivé des pages vues, cartes et exports",
-    "derived",
-  );
-  const monthlyEmailsSent = resolveField(
-    "monthlyEmailsSent",
-    "Emails envoyés",
-    usageInput?.monthlyEmailsSent,
-    Math.max(0, Math.round(monthlyActiveUsers * 0.08 + monthlyPdfExports * 0.15)),
-    "Dérivé des utilisateurs actifs et des exports PDF",
-    "derived",
-  );
-  const monthlyDeployments = resolveField(
-    "monthlyDeployments",
-    "Déploiements",
-    usageInput?.monthlyDeployments,
-    Math.max(1, Math.round(2 + monthlyActiveUsers / 250)),
-    "Dérivé des utilisateurs actifs tant qu'aucun compteur de déploiements n'est branché",
-    "derived",
-  );
-  const monthlyErrorEvents = resolveField(
-    "monthlyErrorEvents",
-    "Erreurs",
-    usageInput?.monthlyErrorEvents,
-    Math.max(0, Math.round(monthlyApiRequests * 0.0025)),
-    "Dérivé des requêtes API",
-    "derived",
-  );
-  const growthRateMonthly = resolveField(
-    "growthRateMonthly",
-    "Croissance mensuelle",
-    usageInput?.growthRateMonthly,
-    Math.min(
-      0.12,
-      Math.max(0.01, monthlyPageViews > 0 ? Math.min(0.1, monthlyActiveUsers / monthlyPageViews) : 0.04),
-    ),
-    "Dérivé des pages vues et des utilisateurs actifs",
-    "derived",
-  );
-  const seasonalityAmplitude = resolveField(
-    "seasonalityAmplitude",
-    "Saisonnalité",
-    usageInput?.seasonalityAmplitude,
-    0.08,
-    "Référence par défaut tant qu'aucune saisonnalité spécifique n'est branchée",
-    "reference",
-  );
-  const horizonMonths = resolveField(
-    "horizonMonths",
-    "Horizon",
-    usageInput?.horizonMonths,
-    infrastructureInput?.referencePeriodMonths ?? 12,
-    "Référence du cycle d'observation",
-    "reference",
-  );
-
   const source: "input" | "derived" =
     hasUsageInput(usageInput) || hasScopeSignalInput(siteInput) || hasScopeSignalInput(userInput)
       ? "input"
       : "derived";
-  const derivedFrom =
-    source === "input"
-    ? []
-    : [
-        ...(siteInput?.pageViews != null ? ["site.pageViews"] : []),
-        ...(siteInput?.apiRequests != null ? ["site.apiRequests"] : []),
-        ...(siteInput?.pdfExports != null ? ["site.pdfExports"] : []),
-        ...(siteInput?.maps != null ? ["site.maps"] : []),
-        ...(siteInput?.storageGbMonths != null ? ["site.storageGbMonths"] : []),
-        ...(siteInput?.aiCalls != null ? ["site.aiCalls"] : []),
-        ...(userInput?.pageViews != null ? ["user.pageViews"] : []),
-      ];
-
   return {
-    monthlyPageViews,
-    monthlyActiveUsers,
-    monthlySessions,
-    monthlyEmailsSent,
-    monthlyDeployments,
-    monthlyPdfExports,
-    monthlyMapViews,
-    monthlyAiCalls,
-    monthlyChatgptConversationHours,
-    monthlyCodexSessions,
-    monthlyCodexConversationTurns,
-    monthlyCodexToolActions,
-    monthlyCodexShellCommands,
-    monthlyCodexFilesTouched,
-    monthlyCodexTestsRun,
-    monthlyCodexChangedLines,
-    monthlyCodexActiveMinutes,
-    monthlyStorageGbMonths,
-    monthlyApiRequests,
-    monthlyAuthEvents,
-    monthlyRealtimeEvents,
-    monthlyEgressGb,
-    monthlyBandwidthGb,
-    monthlyErrorEvents,
-    growthRateMonthly,
-    seasonalityAmplitude,
-    horizonMonths,
+    ...trafficMetrics,
+    ...codexMetrics,
+    ...operationsMetrics,
+    ...trendMetrics,
     source,
-    derivedFrom,
+    derivedFrom: buildUsageDerivedFrom(source, siteInput, userInput),
     provenance,
   };
 }
-
 export function projectUsageProfileAtWeek(
   usage: EnvironmentalImpactUsageProfileEstimate,
   weekIndex: number,
@@ -369,7 +314,6 @@ export function projectUsageProfileAtWeek(
       Math.sin(((weekIndex % 52) / 52) * Math.PI * 2);
   const multiplier = clampUsageMultiplier(growthMultiplier * seasonalMultiplier);
   const weeklyScale = 1 / WEEKS_PER_MONTH;
-
   return {
     ...usage,
     monthlyPageViews: round6(usage.monthlyPageViews * weeklyScale * multiplier),

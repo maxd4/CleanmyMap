@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
-import { captureStorageUsageReport } from "@/lib/supabase/storage-usage-service";
+import {
+  captureStorageUsageReport,
+  loadStorageUsageReport,
+} from "@/lib/supabase/storage-usage-service";
 
 export const runtime = "nodejs";
 
@@ -12,7 +15,7 @@ export async function GET() {
   }
 
   try {
-    const report = await captureStorageUsageReport();
+    const report = await loadStorageUsageReport();
     const status =
       report.current.usagePercent >= 100 || report.warnings.length > 0
         ? "degraded"
@@ -35,5 +38,31 @@ export async function GET() {
 }
 
 export async function POST() {
-  return GET();
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
+  }
+
+  try {
+    const report = await captureStorageUsageReport();
+    const status =
+      report.current.usagePercent >= 100 || report.warnings.length > 0
+        ? "degraded"
+        : "ok";
+
+    return NextResponse.json({
+      status,
+      ...report,
+      triggeredBy: "manual-refresh",
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        status: "degraded",
+        error: "Impossible de rafraîchir manuellement le suivi du stockage Supabase.",
+        details: "Unavailable",
+      },
+      { status: 503 },
+    );
+  }
 }

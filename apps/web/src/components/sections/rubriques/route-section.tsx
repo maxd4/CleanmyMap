@@ -7,9 +7,8 @@ import { RouteConstraintsForm } from "./route/components/route-constraints-form"
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { Navigation, MapPin, Zap, Info, Clock, Route as RouteIcon, Sparkles } from "lucide-react";
+import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function RouteSection() {
   const {

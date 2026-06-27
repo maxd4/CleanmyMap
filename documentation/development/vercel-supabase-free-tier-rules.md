@@ -31,12 +31,38 @@ Conséquences pratiques:
 
 | À faire maintenant | Pourquoi |
 | --- | --- |
-| Supprimer les requêtes non bornées | C'est un vrai risque de quota et de lenteur |
-| Mettre des `.limit()`, filtres, pagination, bounding box | Ce sont des garde-fous durables |
-| Documenter les tables centrales | Pour éviter que Codex recrée des mauvaises pratiques |
-| Définir où stocker chaque type de donnée | Supabase, `localStorage`, repo Markdown, cache, fichier |
-| Encadrer les fonctions coûteuses | Cartographie, chat, quiz, génération de documents |
-| Garder une trace des choix techniques | Utile pour ton rapport et pour la suite du développement |
+| Corriger les requêtes non bornées | C'est un vrai risque de quota et de lenteur |
+| Mettre des `.limit()`, filtres, pagination, bounding box | Ce sont des garde-fous durables pour borner chaque lecture |
+| Documenter les tables centrales | Pour éviter que Codex recrée des mauvaises pratiques, des RLS floues et des requêtes non bornées |
+| Définir où stocker chaque type de donnée | Choisir la bonne couche de vérité avant d'écrire: Supabase, `localStorage`, repo Markdown, cache, fichier |
+| Encadrer les fonctions coûteuses | Cartographie, chat, quiz, génération de documents: bornes de volume, fréquence, cache et durée d'exécution à définir avant mise en prod |
+| Garder une trace des choix techniques | Noter le choix, le coût, le risque et la raison du placement pour pouvoir arbitrer ensuite |
+
+## Tables centrales à documenter en priorité
+
+Ces tables reviennent souvent dans les hotspots de quota. Les documenter évite de les traiter comme des tables génériques.
+
+- [Guide de référence database](../database/README.md)
+- `profiles`
+- `actions`
+- `progression_profiles`
+- `progression_events`
+- `points_ledger`
+- `user_points`
+- `community_events`
+- `event_rsvps`
+- `app_notifications`
+- `quiz_type_progress`
+- `quiz_srs`
+- `checklist_progress`
+- `runbook_checks`
+- `user_badge_totals`
+
+Règle pratique:
+
+- une table centrale peut rester visible dans les audits;
+- elle ne doit jamais être relue en entier juste pour un compteur, un badge ou un résumé;
+- si une synthèse existe déjà, consommer l'agrégat ou le RPC correspondant plutôt que refaire le calcul dans une route Vercel ou un composant client.
 
 ## Ce qui doit rester statique dans le repo
 
@@ -100,6 +126,7 @@ Règle:
 Règle:
 - si une route Vercel ne fait que transférer la requête vers Supabase, elle doit être supprimée ou remplacée seulement si l'accès direct est sécurisé par la RLS;
 - si Vercel reste nécessaire, la route doit apporter une vraie valeur: contrôle d'accès, agrégation, transformation, secret serveur, limite anti-abus, ou orchestration.
+- toute lecture Supabase ou Vercel doit être bornée explicitement: `limit`, pagination, filtre de période, bbox, scope, ou agrégat; une requête sans borne claire est un risque direct de quota, de lenteur et de coût.
 
 ## Règles par surface
 
@@ -186,6 +213,7 @@ Règle:
 - [ ] Si elle doit aller en base, quelle table, quelle RLS, quelle durée de vie ?
 - [ ] Combien d'écritures la feature produit-elle ?
 - [ ] Combien de lectures la feature produit-elle ?
+- [ ] Chaque lecture est-elle bornée par `limit`, pagination, filtre temporel, scope, bbox ou agrégat ?
 - [ ] La lecture peut-elle être faite directement côté client avec la clé anon et une RLS correcte ?
 - [ ] La feature ajoute-t-elle une route Vercel inutile ?
 - [ ] Le middleware touche-t-il seulement les routes protégées ?
@@ -205,3 +233,14 @@ Si une fonctionnalité ne peut pas dire clairement:
 4. pourquoi elle passe par Vercel, Supabase ou le navigateur,
 
 alors elle n'est pas assez cadrée pour être livrée.
+
+## Règle de validation des migrations
+
+Chaque migration Supabase doit suivre la séquence suivante:
+
+1. migration SQL versionnée ou changement de schéma explicitement identifié;
+2. usages client et serveur ajustés au nouveau contrat;
+3. vérification ciblée sur les routes, composants ou helpers touchés;
+4. contrôle que la lecture reste bornée et que la RLS attendue continue de tenir.
+
+Si l'une de ces étapes manque, la migration doit rester considérée comme incomplète.

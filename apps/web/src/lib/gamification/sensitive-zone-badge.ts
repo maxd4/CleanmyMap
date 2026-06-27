@@ -253,6 +253,49 @@ export function computeSensitiveZoneApaisementSummary(params: {
   };
 }
 
+async function loadSensitiveZoneInputs(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: {
+    userRows?: ActionRow[];
+    validatedActionIds?: Set<string>;
+    sensitiveAreas?: string[];
+    now?: Date;
+  },
+): Promise<{
+  loadedRows: ActionRow[];
+  loadedValidatedActionIds: Set<string>;
+  sensitiveAreas: string[];
+}> {
+  const loadedRows = options?.userRows ?? (await loadActionRowsForUser(supabase, userId));
+  const loadedValidatedActionIds =
+    options?.validatedActionIds ??
+    (await loadValidatedActionIdsForUser(supabase, userId));
+  const sensitiveAreas =
+    options?.sensitiveAreas ??
+    (await loadSensitiveZoneAreasFromContracts(supabase, options?.now ?? new Date()));
+
+  return {
+    loadedRows,
+    loadedValidatedActionIds,
+    sensitiveAreas,
+  };
+}
+
+async function loadSensitiveZoneAreasFromContracts(
+  supabase: SupabaseClient,
+  now: Date,
+): Promise<string[]> {
+  const zoneContractsResult = await fetchUnifiedActionContracts(supabase, {
+    limit: 6000,
+    status: "approved",
+    floorDate: buildDateFloor(240),
+    requireCoordinates: false,
+    types: ["action"],
+  });
+  return deriveSensitiveAreasFromContracts(zoneContractsResult?.items ?? [], now);
+}
+
 export async function loadSensitiveZoneApaisementSummary(
   supabase: SupabaseClient,
   userId: string,
@@ -263,24 +306,8 @@ export async function loadSensitiveZoneApaisementSummary(
     now?: Date;
   },
 ): Promise<SensitiveZoneApaisementSummary> {
-  const [loadedRows, loadedValidatedActionIds, zoneContractsResult] = await Promise.all([
-    options?.userRows ? Promise.resolve(options.userRows) : loadActionRowsForUser(supabase, userId),
-    options?.validatedActionIds
-      ? Promise.resolve(options.validatedActionIds)
-      : loadValidatedActionIdsForUser(supabase, userId),
-    options?.sensitiveAreas
-      ? Promise.resolve(null)
-      : fetchUnifiedActionContracts(supabase, {
-          limit: 6000,
-          status: "approved",
-          floorDate: buildDateFloor(240),
-          requireCoordinates: false,
-          types: ["action"],
-        }),
-  ]);
-
-  const sensitiveAreas =
-    options?.sensitiveAreas ?? deriveSensitiveAreasFromContracts(zoneContractsResult?.items ?? [], options?.now ?? new Date());
+  const { loadedRows, loadedValidatedActionIds, sensitiveAreas } =
+    await loadSensitiveZoneInputs(supabase, userId, options);
 
   return computeSensitiveZoneApaisementSummary({
     rows: loadedRows,

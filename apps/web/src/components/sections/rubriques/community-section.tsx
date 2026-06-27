@@ -12,7 +12,9 @@ import {
   CommunityAgirView,
   CommunityMissionsView,
   CommunitySolutionsView,
+  getHubZoneLabel,
   HubCategory,
+  HubZone,
 } from "./community-section-components";
 import { PartnersNetworkSection } from "./partners-network-section";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -54,7 +56,7 @@ export function CommunitySection() {
 
   // États du Hub Opérationnel
   const [hubCategory, setHubCategory] = useState<HubCategory>("missions");
-  const [hubZone, setHubZone] = useState("paris");
+  const [hubZone, setHubZone] = useState<HubZone>("france");
   const surfaceTab: SurfaceTab = searchParams.get("tab") === "partners" ? "partners" : "community";
   const isPartnersTab = surfaceTab === "partners";
 
@@ -179,7 +181,7 @@ export function CommunitySection() {
             </div>
             <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-widest">
               <MapPin size={12} className="text-pink-500" />
-              <span>Zone : <span className="text-white uppercase">{hubZone}</span></span>
+              <span>{fr ? "Périmètre" : "Scope"} : <span className="text-white uppercase">{getHubZoneLabel(hubZone, fr)}</span></span>
               <div className="w-1 h-1 rounded-full bg-white/10 mx-2" />
               <Info size={12} className="text-pink-500" />
               <span>Inspiration : <span className="text-white">Cleanwalk.org</span></span>

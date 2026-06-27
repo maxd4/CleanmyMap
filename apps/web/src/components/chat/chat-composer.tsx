@@ -1,6 +1,4 @@
 "use client";
-
-import Image from "next/image";
 import { Paperclip, Search, Send, X } from "lucide-react";
 import { memo } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
@@ -11,6 +9,7 @@ import {
   isSupportedChatAttachmentFile,
 } from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
+import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
 
 const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
@@ -157,17 +156,12 @@ export const ChatComposer = memo(function ChatComposer({
 
           {selectedRecipient ? (
             <div className={`mt-3 flex items-center gap-3 rounded-2xl border px-3 py-3 ${isLight ? "border-rose-100 bg-white" : "border-violet-500/20 bg-violet-500/5"}`}>
-              <div className={`h-10 w-10 overflow-hidden rounded-2xl ${isLight ? "bg-rose-50" : "bg-white/10"}`}>
-                {selectedRecipient.avatar_url ? (
-                  <Image
-                    src={selectedRecipient.avatar_url}
-                    alt={selectedRecipient.display_name}
-                    width={40}
-                    height={40}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-              </div>
+              <ChatAvatar
+                src={selectedRecipient.avatar_url}
+                name={selectedRecipient.display_name}
+                tone={isLight ? "light" : "dark"}
+                className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
+              />
               <div className="min-w-0">
                 <p className={`truncate text-sm font-black ${isLight ? "text-slate-900" : "text-white"}`}>
                   {selectedRecipient.display_name}
@@ -206,17 +200,13 @@ export const ChatComposer = memo(function ChatComposer({
                         onClick={() => onSelectRecipient(candidate)}
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
                       >
-                        <div className={`h-9 w-9 overflow-hidden rounded-xl ${isLight ? "bg-rose-50" : "bg-white/10"}`}>
-                          {candidate.avatar_url ? (
-                            <Image
-                              src={candidate.avatar_url}
-                              alt={candidate.display_name}
-                              width={36}
-                              height={36}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : null}
-                        </div>
+                        <ChatAvatar
+                          src={candidate.avatar_url}
+                          name={candidate.display_name}
+                          size="sm"
+                          tone={isLight ? "light" : "dark"}
+                          className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
+                        />
                         <div className="min-w-0">
                           <p className={`truncate text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                             {candidate.display_name}
@@ -248,17 +238,13 @@ export const ChatComposer = memo(function ChatComposer({
               onClick={() => onInsertMention(candidate.handle)}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
             >
-              <div className={`h-9 w-9 overflow-hidden rounded-xl ${isLight ? "bg-rose-50" : "bg-white/10"}`}>
-                {candidate.avatar_url ? (
-                  <Image
-                    src={candidate.avatar_url}
-                    alt={candidate.display_name}
-                    width={36}
-                    height={36}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
-              </div>
+              <ChatAvatar
+                src={candidate.avatar_url}
+                name={candidate.display_name}
+                size="sm"
+                tone={isLight ? "light" : "dark"}
+                className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
+              />
               <div className="min-w-0">
                 <p className={`truncate text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                   {candidate.display_name}

@@ -64,20 +64,27 @@ async function writeStore(store: ServiceEmailStore): Promise<void> {
   await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
 
+function normalizeServiceEmailProvider(value: unknown): "resend" | "mock" {
+  return value === "mock" ? "mock" : "resend";
+}
+
+function normalizeServiceEmailStatus(value: unknown): ServiceEmailEventStatus {
+  return value === "sent" ||
+    value === "mocked" ||
+    value === "missing_config" ||
+    value === "error"
+    ? value
+    : "error";
+}
+
 function normalizeServiceEmailEventRow(row: ServiceEmailEventRow): ServiceEmailEvent {
   return {
     at: row.created_at ?? row.at ?? new Date().toISOString(),
-    provider: row.provider === "mock" ? "mock" : "resend",
+    provider: normalizeServiceEmailProvider(row.provider),
     actorUserId: row.actor_user_id ?? null,
     recipientCount: Number(row.recipient_count ?? 0),
     subject: row.subject ?? "",
-    status:
-      row.status === "sent" ||
-      row.status === "mocked" ||
-      row.status === "missing_config" ||
-      row.status === "error"
-        ? row.status
-        : "error",
+    status: normalizeServiceEmailStatus(row.status),
     messageId: row.message_id ?? null,
     meta: row.meta ?? undefined,
   };
@@ -169,13 +176,13 @@ export async function countServiceEmailEventsForActorSince(params: {
       const supabase = getSupabaseServerClient();
       const result = await supabase
         .from("service_email_events")
-        .select("created_at, status, actor_user_id")
+        .select("created_at", { count: "exact", head: true })
         .eq("actor_user_id", params.actorUserId)
         .gte("created_at", params.sinceIso)
         .in("status", statuses);
 
       if (!result.error) {
-        return (result.data ?? []).length;
+        return Number(result.count ?? 0);
       }
       if (!allowLocalFileStoreFallback()) {
         return 0;
@@ -209,18 +216,15 @@ export async function countServiceEmailRecipientsForActorSince(params: {
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
-      const result = await supabase
-        .from("service_email_events")
-        .select("created_at, status, actor_user_id, recipient_count")
-        .eq("actor_user_id", params.actorUserId)
-        .gte("created_at", params.sinceIso)
-        .in("status", statuses);
+      const result = await supabase.rpc("sum_service_email_recipients_for_actor_since", {
+        p_actor_user_id: params.actorUserId,
+        p_since: params.sinceIso,
+        p_statuses: statuses,
+      });
 
       if (!result.error) {
-        return (result.data ?? []).reduce((acc, row) => {
-          const recipients = Number((row as ServiceEmailEventRow).recipient_count ?? 0);
-          return acc + (Number.isFinite(recipients) ? recipients : 0);
-        }, 0);
+        const recipients = Number(result.data ?? 0);
+        return Number.isFinite(recipients) ? recipients : 0;
       }
       if (!allowLocalFileStoreFallback()) {
         return 0;

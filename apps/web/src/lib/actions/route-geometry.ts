@@ -3,10 +3,10 @@ import { buildPedestrianRoute } from "./geometry-core";
 import { findMatchingGeometry } from "../geo/geometry-reference";
 import { snapPolylineToStreetNetwork } from "../geo/osrm-routing";
 import {
-  buildGreaterParisNominatimSearchUrl,
-  isWithinGreaterParisBounds,
-  parseNominatimCoordinates,
-} from "../geo/greater-paris";
+  buildTerritoryNominatimSearchUrl,
+  isWithinTerritoryBounds,
+  parseTerritoryCoordinates,
+} from "../geo/territory";
 
 type GeoPoint = {
   latitude: number;
@@ -73,8 +73,60 @@ function isSmallStreetLike(label: string): boolean {
   ].some((keyword) => lower.includes(keyword));
 }
 
+async function buildRouteDrawingFromArrivalLabels(params: {
+  departureLabel: string;
+  arrivalLabel: string;
+  routeStyle: "direct" | "souple";
+}): Promise<ActionDrawing | null> {
+  const departure = await geocodeLabel(params.departureLabel);
+  if (!departure) {
+    return null;
+  }
+
+  const arrival = await geocodeLabel(params.arrivalLabel);
+  if (!arrival) {
+    return buildLinearTrace(departure, 500);
+  }
+
+  const routeDrawing = buildPedestrianRoute(departure, arrival, params.routeStyle);
+  const snapped = await snapPolylineToStreetNetwork(routeDrawing.coordinates);
+  if (snapped && snapped.length >= 2) {
+    return {
+      kind: "polyline",
+      coordinates: snapped,
+    };
+  }
+  return routeDrawing;
+}
+
+async function buildFallbackDrawingFromLabel(params: {
+  locationLabel: string;
+  departureLabel: string;
+}): Promise<ActionDrawing | null> {
+  const referenceDrawing = findMatchingGeometry(
+    params.locationLabel || params.departureLabel,
+  );
+  if (referenceDrawing) {
+    return referenceDrawing;
+  }
+
+  const departure = await geocodeLabel(params.departureLabel);
+  if (!departure) {
+    return null;
+  }
+
+  const labelForHeuristic = `${params.locationLabel} ${params.departureLabel}`.trim();
+  if (isBoulevardLike(labelForHeuristic)) {
+    return buildLinearTrace(departure, 500);
+  }
+  if (isSmallStreetLike(labelForHeuristic)) {
+    return buildSquarePolygon(departure, 200);
+  }
+  return buildSquarePolygon(departure, 300);
+}
+
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
-  const url = buildGreaterParisNominatimSearchUrl(label);
+  const url = buildTerritoryNominatimSearchUrl(label);
   if (!url) {
     return null;
   }
@@ -91,12 +143,12 @@ async function geocodeLabel(label: string): Promise<GeoPoint | null> {
       lat?: string;
       lon?: string;
     }>;
-    const coordinates = parseNominatimCoordinates(data[0]);
+    const coordinates = parseTerritoryCoordinates(data[0]);
     if (!coordinates) {
       return null;
     }
     if (
-      !isWithinGreaterParisBounds(
+      !isWithinTerritoryBounds(
         coordinates.latitude,
         coordinates.longitude,
       )
@@ -124,41 +176,15 @@ export async function deriveAutoDrawingFromLocation(params: {
   }
 
   if (arrivalLabel.length > 0) {
-    const departure = await geocodeLabel(departureLabel);
-    if (!departure) {
-      return null;
-    }
-    const arrival = await geocodeLabel(arrivalLabel);
-    if (arrival) {
-      const routeDrawing = buildPedestrianRoute(departure, arrival, routeStyle);
-      const snapped = await snapPolylineToStreetNetwork(routeDrawing.coordinates);
-      if (snapped && snapped.length >= 2) {
-        return {
-          kind: "polyline",
-          coordinates: snapped,
-        };
-      }
-      return routeDrawing;
-    }
-    return buildLinearTrace(departure, 500);
+    return buildRouteDrawingFromArrivalLabels({
+      departureLabel,
+      arrivalLabel,
+      routeStyle,
+    });
   }
 
-  const referenceDrawing = findMatchingGeometry(params.locationLabel || departureLabel);
-  if (referenceDrawing) {
-    return referenceDrawing;
-  }
-
-  const departure = await geocodeLabel(departureLabel);
-  if (!departure) {
-    return null;
-  }
-
-  const labelForHeuristic = `${params.locationLabel} ${departureLabel}`.trim();
-  if (isBoulevardLike(labelForHeuristic)) {
-    return buildLinearTrace(departure, 500);
-  }
-  if (isSmallStreetLike(labelForHeuristic)) {
-    return buildSquarePolygon(departure, 200);
-  }
-  return buildSquarePolygon(departure, 300);
+  return buildFallbackDrawingFromLabel({
+    locationLabel: params.locationLabel,
+    departureLabel,
+  });
 }

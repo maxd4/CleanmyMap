@@ -168,6 +168,23 @@ function scoreRisk(bucket) {
   return { score: base, level: "low" };
 }
 
+function scoreOptimizationPriority(bucket) {
+  return (
+    bucket.unboundedSelectCount * 100 +
+    bucket.selectStarCount * 60 +
+    bucket.mountTriggeredCount * 35 +
+    bucket.clientExposureCount * 20 +
+    Math.max(0, bucket.files.size - 1) * 5
+  );
+}
+
+function classifyOptimizationPriority(score) {
+  if (score >= 100) return { level: "P1", label: "P1" };
+  if (score >= 60) return { level: "P2", label: "P2" };
+  if (score >= 20) return { level: "P3", label: "P3" };
+  return { level: "P4", label: "P4" };
+}
+
 function analyzeFile(filePath, rootDir, sourceText) {
   const absoluteFilePath = resolve(rootDir, filePath);
   const text = typeof sourceText === "string" ? sourceText : readText(absoluteFilePath);
@@ -459,6 +476,8 @@ function aggregateTables(fileReports) {
 
   return [...tableMap.values()]
     .map((entry) => {
+      const priority = scoreOptimizationPriority(entry);
+      const priorityLevel = classifyOptimizationPriority(priority);
       const scored = scoreRisk({
         readCount: entry.readCount,
         writeCount: entry.writeCount,
@@ -472,11 +491,15 @@ function aggregateTables(fileReports) {
       return {
         ...entry,
         files: [...entry.files],
+        priorityScore: priority,
+        priorityLevel: priorityLevel.level,
+        priorityLabel: priorityLevel.label,
         riskScore: scored.score,
         riskLevel: scored.level,
       };
     })
     .sort((left, right) => {
+      if (right.priorityScore !== left.priorityScore) return right.priorityScore - left.priorityScore;
       if (right.riskScore !== left.riskScore) return right.riskScore - left.riskScore;
       if (right.readCount !== left.readCount) return right.readCount - left.readCount;
       if (right.writeCount !== left.writeCount) return right.writeCount - left.writeCount;
@@ -601,12 +624,12 @@ function formatMarkdownReport(summary) {
   lines.push("");
   lines.push("## Top tables");
   lines.push("");
-  lines.push("| Table | Risk | Reads | Writes | Star selects | Unbounded | Client | Mount | Files |");
-  lines.push("|---|---:|---:|---:|---:|---:|---:|---:|---:|");
+  lines.push("| Table | Priorité | Risk | Reads | Writes | Star selects | Unbounded | Client | Mount | Files |");
+  lines.push("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
 
   for (const table of summary.tables.slice(0, 15)) {
     lines.push(
-      `| \`${table.table}\` | ${table.riskLevel} (${table.riskScore}) | ${table.readCount} | ${table.writeCount} | ${table.selectStarCount} | ${table.unboundedSelectCount} | ${table.clientExposureCount} | ${table.mountTriggeredCount} | ${table.files.length} |`,
+      `| \`${table.table}\` | ${table.priorityLabel} (${table.priorityScore}) | ${table.riskLevel} (${table.riskScore}) | ${table.readCount} | ${table.writeCount} | ${table.selectStarCount} | ${table.unboundedSelectCount} | ${table.clientExposureCount} | ${table.mountTriggeredCount} | ${table.files.length} |`,
     );
   }
 
@@ -824,11 +847,11 @@ function main() {
     "",
     `Generated at: ${summary.generatedAt}`,
     "",
-    "| Table | Risk | Reads | Writes | Star selects | Unbounded | Client | Mount | Files |",
-    "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    "| Table | Priorité | Risk | Reads | Writes | Star selects | Unbounded | Client | Mount | Files |",
+    "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ...summary.tables.map(
       (table) =>
-        `| \`${table.table}\` | ${table.riskLevel} (${table.riskScore}) | ${table.readCount} | ${table.writeCount} | ${table.selectStarCount} | ${table.unboundedSelectCount} | ${table.clientExposureCount} | ${table.mountTriggeredCount} | ${table.files.length} |`,
+        `| \`${table.table}\` | ${table.priorityLabel} (${table.priorityScore}) | ${table.riskLevel} (${table.riskScore}) | ${table.readCount} | ${table.writeCount} | ${table.selectStarCount} | ${table.unboundedSelectCount} | ${table.clientExposureCount} | ${table.mountTriggeredCount} | ${table.files.length} |`,
     ),
     "",
   ];

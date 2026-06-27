@@ -54,7 +54,7 @@ export function ActionDeclarationSummarySection({
     </div>
     <div className="mt-2 space-y-2">
       <p className="cmm-text-small text-emerald-800">
-        <strong>+{2 + photoCount} XP</strong> estimés après validation (+2 pour l'action, +{photoCount} pour les photos). Un bonus supplémentaire sera accordé s'il s'agit d'un nouveau lieu.
+        <strong>+{2 + photoCount} XP</strong> estimés après validation (+2 pour l&apos;action, +{photoCount} pour les photos). Un bonus supplémentaire sera accordé s&apos;il s&apos;agit d&apos;un nouveau lieu.
       </p>
       <p className="cmm-text-small text-emerald-800">
         <strong>Badges en progression :</strong> Déchets (+{form.wasteKg || "0"} kg), Mégots (+{form.wasteMegotsKg || "0"} kg), et Explorateur (nouveaux lieux).

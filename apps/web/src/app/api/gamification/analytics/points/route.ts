@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import {
@@ -9,13 +8,12 @@ import {
   resolveTimeScopeFromRequest,
   type TimeScope,
 } from "@/lib/time-scopes";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadGamificationPointsAnalytics } from "@/lib/gamification/points/analytics";
 
 export const runtime = "nodejs";
-
-type PointsLedgerRow = {
-  source_event: string | null;
-  amount: number | null;
-  created_at: string;
+const GAMIFICATION_POINTS_ANALYTICS_CACHE_HEADERS = {
+  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
 
 export async function GET(request: Request) {
@@ -36,57 +34,16 @@ export async function GET(request: Request) {
     });
     const scope: TimeScope = scopeQuery.scope;
     const dateFloor = getTimeScopeFloorDate(scope);
-
-    // Fetch points transactions
-    let query = supabase
-      .from("points_ledger")
-      .select("transaction_type, amount, source_event, created_at")
-      .eq("user_id", userId);
-
-    if (dateFloor) {
-      query = query.gte("created_at", `${dateFloor}T00:00:00Z`);
-    }
-
-    const { data, error } = await query.order("created_at", { ascending: false });
-
-    if (error) {
-      return handleApiError(error, "GET /api/gamification/analytics/points");
-    }
-
-    // Aggregate by source event
-    const eventBreakdown = new Map<string, { count: number; points: number }>();
-    let totalPoints = 0;
-
-    (data ?? []).forEach((row: PointsLedgerRow) => {
-      const event = row.source_event ?? "unknown";
-      const current = eventBreakdown.get(event) ?? { count: 0, points: 0 };
-      current.count += 1;
-      current.points += row.amount ?? 0;
-      eventBreakdown.set(event, current);
-      totalPoints += row.amount ?? 0;
-    });
-
-    // Build timeline by day
-    const timeline = new Map<string, number>();
-    (data ?? []).forEach((row: PointsLedgerRow) => {
-      const date = row.created_at.slice(0, 10);
-      const current = timeline.get(date) ?? 0;
-      timeline.set(date, current + (row.amount ?? 0));
-    });
-
-    const timelineArray = Array.from(timeline.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, points]) => ({ date, points }));
+    const analytics = await loadGamificationPointsAnalytics(supabase, userId, dateFloor);
 
     return NextResponse.json({
       status: "ok",
       scope,
       scopeLabel: getTimeScopeLabel(scope),
       days: scopeQuery.days,
-      totalPoints,
-      eventBreakdown: Object.fromEntries(eventBreakdown),
-      timeline: timelineArray,
-      transactionCount: data?.length ?? 0,
+      ...analytics,
+    }, {
+      headers: GAMIFICATION_POINTS_ANALYTICS_CACHE_HEADERS,
     });
   } catch (error) {
     return handleApiError(error, "GET /api/gamification/analytics/points");

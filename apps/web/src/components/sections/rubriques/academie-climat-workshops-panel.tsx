@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatFrDate } from "./community/helpers";
@@ -9,7 +8,7 @@ import {
   getVisibleAcademieClimatWorkshops,
 } from "./academie-climat-workshops";
 import { Calendar, Info, ArrowUpRight, Sparkles, MapPin, Clock, Globe } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const TONE_STYLES: Record<"rose" | "amber" | "emerald", { border: string; bg: string; text: string; glow: string }> = {

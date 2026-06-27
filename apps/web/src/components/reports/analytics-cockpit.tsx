@@ -1,18 +1,16 @@
 "use client";
 
-import { 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer, 
+import {
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
   Line,
   ComposedChart
 } from "recharts";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
-import { cn } from "@/lib/utils";
 
 type AnalyticsCockpitProps = {
   data: MonthlyAnalyticsPoint[];

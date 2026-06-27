@@ -51,7 +51,6 @@ export function AnnuairePartnerList({
             <AnnuaireActorCard
               entry={actor}
               onFocusMap={() => onFocusMap(actor.id)}
-              showInternalContact={false}
             />
           </motion.div>
         ))}

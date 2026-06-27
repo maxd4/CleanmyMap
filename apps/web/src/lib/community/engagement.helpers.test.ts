@@ -8,23 +8,24 @@ import {
   percent,
 } from "./engagement.helpers";
 
+const ACTION_DEFAULTS: ActionListItem = {
+  id: "a-1",
+  created_at: "2026-04-01T10:00:00.000Z",
+  actor_name: "Alice",
+  action_date: "2026-04-01",
+  location_label: "Lyon 10e",
+  latitude: 48.87,
+  longitude: 2.36,
+  waste_kg: 10,
+  cigarette_butts: 100,
+  volunteers_count: 3,
+  duration_minutes: 60,
+  notes: null,
+  status: "approved",
+};
+
 function makeAction(partial: Partial<ActionListItem>): ActionListItem {
-  return {
-    id: partial.id ?? "a-1",
-    created_at: partial.created_at ?? "2026-04-01T10:00:00.000Z",
-    actor_name: partial.actor_name ?? "Alice",
-    action_date: partial.action_date ?? "2026-04-01",
-    location_label: partial.location_label ?? "Paris 10e",
-    latitude: partial.latitude ?? 48.87,
-    longitude: partial.longitude ?? 2.36,
-    waste_kg: partial.waste_kg ?? 10,
-    cigarette_butts: partial.cigarette_butts ?? 100,
-    volunteers_count: partial.volunteers_count ?? 3,
-    duration_minutes: partial.duration_minutes ?? 60,
-    notes: partial.notes ?? null,
-    status: partial.status ?? "approved",
-    ...partial,
-  };
+  return { ...ACTION_DEFAULTS, ...partial };
 }
 
 describe("engagement helpers", () => {
@@ -34,7 +35,7 @@ describe("engagement helpers", () => {
   });
 
   it("extracts area labels from arrondissement strings", () => {
-    expect(extractArea("Paris 11e")).toBe("11e");
+    expect(extractArea("Lyon 11e")).toBe("11e");
     expect(extractArea("Berges de Seine")).toBe("Hors arrondissement");
   });
 

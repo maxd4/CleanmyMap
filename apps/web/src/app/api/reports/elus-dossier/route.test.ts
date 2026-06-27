@@ -8,9 +8,50 @@ const computePeriodComparisonMock = vi.hoisted(() => vi.fn());
 const buildTerritorialBenchmarkMock = vi.hoisted(() => vi.fn());
 const buildPilotageOverviewFromContractsMock = vi.hoisted(() => vi.fn());
 const buildPersonalImpactMethodologyMock = vi.hoisted(() => vi.fn());
-const buildSimplePdfMock = vi.hoisted(() => vi.fn());
 const evaluateActionQualityMock = vi.hoisted(() => vi.fn());
 const toActionListItemMock = vi.hoisted(() => vi.fn());
+
+function createSupabaseMock(options?: {
+  cachedPdf?: Blob | null;
+}) {
+  const cachedPdf = options?.cachedPdf ?? null;
+  const reportsQuery = {
+    data: cachedPdf ? [{ file_path: "elus-dossier/cache.pdf" }] : [],
+    error: null,
+  };
+  const storage = {
+    from: vi.fn(() => ({
+      createSignedUrl: vi.fn(async () =>
+        cachedPdf
+          ? {
+              data: {
+                signedUrl:
+                  "https://supabase.test/storage/v1/object/sign/reports/elus-dossier/cache.pdf?token=abc123",
+              },
+              error: null,
+            }
+          : { data: null, error: { message: "not found" } },
+      ),
+      upload: vi.fn(async () => ({
+        data: { path: "elus-dossier/cache.pdf" },
+        error: null,
+      })),
+    })),
+  };
+
+  const queryChain = {
+    select: vi.fn(() => queryChain),
+    eq: vi.fn(() => queryChain),
+    order: vi.fn(() => queryChain),
+    limit: vi.fn(async () => reportsQuery),
+    insert: vi.fn(async () => ({ data: null, error: null })),
+  };
+
+  return {
+    from: vi.fn(() => queryChain),
+    storage,
+  };
+}
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -48,10 +89,6 @@ vi.mock("@/lib/gamification/progression-impact", () => ({
   buildPersonalImpactMethodology: buildPersonalImpactMethodologyMock,
 }));
 
-vi.mock("@/lib/pdf-export/simple-pdf", () => ({
-  buildSimplePdf: buildSimplePdfMock,
-}));
-
 vi.mock("@/lib/actions/quality", () => ({
   evaluateActionQuality: evaluateActionQualityMock,
 }));
@@ -73,7 +110,7 @@ describe("GET /api/reports/elus-dossier", () => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
-    getSupabaseServerClientMock.mockReturnValue({});
+    getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
     fetchUnifiedActionContractsMock.mockResolvedValue({
       items: [contract],
       isTruncated: false,
@@ -102,17 +139,13 @@ describe("GET /api/reports/elus-dossier", () => {
     });
     evaluateActionQualityMock.mockReturnValue({ score: 88 });
     toActionListItemMock.mockReturnValue({});
-    buildSimplePdfMock.mockReturnValue(new TextEncoder().encode("%PDF-1.4 test"));
   });
 
-  it("returns markdown and pdf deliverables with coherent headers", async () => {
+  it("returns markdown deliverables with coherent headers", async () => {
     const { GET } = await import("./route");
 
     const markdownResponse = await GET(
       new Request("http://localhost/api/reports/elus-dossier?format=md&days=30"),
-    );
-    const pdfResponse = await GET(
-      new Request("http://localhost/api/reports/elus-dossier?format=pdf&days=30"),
     );
 
     expect(markdownResponse.status).toBe(200);
@@ -122,13 +155,43 @@ describe("GET /api/reports/elus-dossier", () => {
     );
     expect(markdownResponse.headers.get("X-Deliverable-Format")).toBe("md");
     expect(await markdownResponse.text()).toContain("# Dossier elu - Pack institutionnel");
+  });
 
-    expect(pdfResponse.status).toBe(200);
-    expect(pdfResponse.headers.get("Content-Type")).toContain("application/pdf");
-    expect(pdfResponse.headers.get("Content-Disposition")).toContain(
-      'filename="reports_elus_dossier_',
+  it("returns 409 when the pdf cache is missing and points to the browser export", async () => {
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request("http://localhost/api/reports/elus-dossier?format=pdf&days=30"),
     );
-    expect(pdfResponse.headers.get("X-Deliverable-Format")).toBe("pdf");
+
+    expect(response.status).toBe(409);
+    expect(response.headers.get("Content-Type")).toContain("application/json");
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining("généré côté navigateur"),
+    });
+    expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(buildTerritorialBenchmarkMock).not.toHaveBeenCalled();
+    expect(buildPilotageOverviewFromContractsMock).not.toHaveBeenCalled();
+  });
+
+  it("serves a cached pdf asset without rebuilding it", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createSupabaseMock({
+        cachedPdf: new Blob(["cached-pdf"], { type: "application/pdf" }),
+      }),
+    );
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request("http://localhost/api/reports/elus-dossier?format=pdf&days=30"),
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      "https://supabase.test/storage/v1/object/sign/reports/elus-dossier/cache.pdf?token=abc123",
+    );
+    expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(await response.text()).toBe("");
   });
 
   it("sanitizes malformed numeric fields in JSON output", async () => {

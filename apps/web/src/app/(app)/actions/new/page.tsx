@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/actions/new",
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 type NewActionPageProps = {

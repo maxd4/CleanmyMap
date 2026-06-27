@@ -93,6 +93,7 @@ export function PilotageOverviewContent({
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/actions/new"
+                prefetch={false}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:-translate-y-[1px]"
               >
                 {locale === "fr" ? "Ouvrir le formulaire" : "Open form"}
@@ -100,6 +101,7 @@ export function PilotageOverviewContent({
               </Link>
               <Link
                 href="/actions/history"
+                prefetch={false}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full border border-orange-200/30 bg-[rgba(44,28,15,0.60)] px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:border-orange-300/50"
               >
                 {locale === "fr" ? "Historique" : "History"}

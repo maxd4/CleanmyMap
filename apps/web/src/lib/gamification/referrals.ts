@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { revalidateTag } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
@@ -29,6 +30,8 @@ const REFERRAL_BADGE_SOURCE_TABLE = "referral_invites";
 const REFERRAL_BADGE_SOURCE_ID_PREFIX = "referral-invite:";
 const REFERRAL_XP = 2;
 const REFERRAL_PATH = "/sign-up";
+const REFERRAL_SUMMARY_CACHE_TAG_PREFIX = "referral-summary:";
+const REFERRAL_EXPORT_CACHE_TAG = "admin-referral-lineage-export";
 
 function normalizeReferralCode(code: string | null | undefined): string {
   return (code ?? "").trim().toUpperCase();
@@ -47,6 +50,13 @@ export function buildReferralInviteUrl(code: string): string {
 
 function createReferralCode(): string {
   return randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
+}
+
+function invalidateReferralCaches(userIds: string[]): void {
+  for (const userId of userIds) {
+    revalidateTag(`${REFERRAL_SUMMARY_CACHE_TAG_PREFIX}${userId}`, "max");
+  }
+  revalidateTag(REFERRAL_EXPORT_CACHE_TAG, "max");
 }
 
 async function ensureReferralInviteAward(
@@ -91,6 +101,8 @@ async function ensureReferralInviteAward(
   });
 
   if (inserted) {
+    invalidateReferralCaches([params.userId]);
+
     await auditXpAttribution(
       supabase,
       params.userId,
@@ -272,10 +284,10 @@ export async function ensureReferralInviteForUser(
           reason: error instanceof Error ? error.message : String(error),
         });
       });
-      return {
-        summary: await loadReferralSummary(supabase, userId),
-        created: false,
-      };
+    return {
+      summary: await loadReferralSummary(supabase, userId),
+      created: false,
+    };
     }
 
     throw lastError ?? new Error("Impossible de créer le lien d'invitation.");
@@ -285,6 +297,8 @@ export async function ensureReferralInviteForUser(
     userId,
     referralCode,
   });
+
+  invalidateReferralCaches([userId]);
 
   return {
     summary: await loadReferralSummary(supabase, userId),
@@ -355,6 +369,8 @@ export async function claimReferralInviteForUser(
   if (updateError) {
     throw updateError;
   }
+
+  invalidateReferralCaches([params.userId, inviter.id]);
 
   return {
     claimed: true,

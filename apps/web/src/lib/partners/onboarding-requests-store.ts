@@ -41,56 +41,79 @@ function emptyStore(): StorePayload {
   };
 }
 
+function readStringField(record: Record<string, unknown>, key: string): string {
+  return typeof record[key] === "string" ? record[key] : "";
+}
+
+function readOptionalStringField(record: Record<string, unknown>, key: string): string | null {
+  const value = readStringField(record, key);
+  return value.trim().length > 0 ? value : null;
+}
+
+function isOrganizationType(
+  value: unknown,
+): value is PartnerOnboardingRequestInput["organizationType"] {
+  return value === "association" || value === "commerce" || value === "entreprise" || value === "collectif";
+}
+
+function isContributionType(
+  value: unknown,
+): value is PartnerOnboardingRequestInput["contributionTypes"][number] {
+  return (
+    value === "materiel" ||
+    value === "logistique" ||
+    value === "accueil" ||
+    value === "financement" ||
+    value === "communication"
+  );
+}
+
+function normalizeContributionTypes(
+  rawValue: unknown,
+): PartnerOnboardingRequestInput["contributionTypes"] {
+  if (!Array.isArray(rawValue)) {
+    return [];
+  }
+  return rawValue.filter(isContributionType);
+}
+
+function normalizeCreatorState(
+  rawValue: unknown,
+  status: "pending_admin_review" | "accepted" | "rejected",
+): PartnerOnboardingRequestRecord["creatorState"] {
+  if (
+    rawValue === "pending" ||
+    rawValue === "responded" ||
+    rawValue === "treated" ||
+    rawValue === "archived" ||
+    rawValue === "accepted" ||
+    rawValue === "rejected"
+  ) {
+    return rawValue;
+  }
+  return status === "accepted" ? "accepted" : status === "rejected" ? "rejected" : "new";
+}
+
 export function normalizeStoredPartnerOnboardingRequest(
   record: Record<string, unknown>,
 ): PartnerOnboardingRequestRecord | null {
-  const id = typeof record["id"] === "string" ? record["id"] : "";
-  const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
-  const submittedByUserId =
-    typeof record["submittedByUserId"] === "string" ? record["submittedByUserId"] : "";
-  const submittedByEmail =
-    typeof record["submittedByEmail"] === "string" && record["submittedByEmail"].trim().length > 0
-      ? record["submittedByEmail"]
-      : null;
+  const id = readStringField(record, "id");
+  const createdAt = readStringField(record, "createdAt");
+  const submittedByUserId = readStringField(record, "submittedByUserId");
+  const submittedByEmail = readOptionalStringField(record, "submittedByEmail");
   const status =
     record["status"] === "accepted" || record["status"] === "rejected"
       ? record["status"]
       : "pending_admin_review";
-  const creatorState =
-    record["creatorState"] === "pending" ||
-    record["creatorState"] === "responded" ||
-    record["creatorState"] === "treated" ||
-    record["creatorState"] === "archived" ||
-    record["creatorState"] === "accepted" ||
-    record["creatorState"] === "rejected"
-      ? record["creatorState"]
-      : status === "accepted"
-        ? "accepted"
-        : status === "rejected"
-          ? "rejected"
-          : "new";
-
-  const organizationName =
-    typeof record["organizationName"] === "string" ? record["organizationName"] : "";
+  const creatorState = normalizeCreatorState(record["creatorState"], status);
+  const organizationName = readStringField(record, "organizationName");
   const organizationType = record["organizationType"];
   const partnerScope =
-    record["partnerScope"] === "national" ||
-    record["partnerScope"] === "france"
+    record["partnerScope"] === "national" || record["partnerScope"] === "france"
       ? record["partnerScope"]
       : "local";
-  const legalIdentity =
-    typeof record["legalIdentity"] === "string" ? record["legalIdentity"] : "";
-  const rawContributionTypes = record["contributionTypes"];
-  const contributionTypes = Array.isArray(rawContributionTypes)
-    ? rawContributionTypes.filter(
-        (item): item is PartnerOnboardingRequestInput["contributionTypes"][number] =>
-          item === "materiel" ||
-          item === "logistique" ||
-          item === "accueil" ||
-          item === "financement" ||
-          item === "communication",
-      )
-    : [];
+  const legalIdentity = readStringField(record, "legalIdentity");
+  const contributionTypes = normalizeContributionTypes(record["contributionTypes"]);
 
   if (
     !id ||
@@ -98,10 +121,7 @@ export function normalizeStoredPartnerOnboardingRequest(
     !submittedByUserId ||
     !organizationName ||
     !legalIdentity ||
-    (organizationType !== "association" &&
-      organizationType !== "commerce" &&
-      organizationType !== "entreprise" &&
-      organizationType !== "collectif") ||
+    !isOrganizationType(organizationType) ||
     contributionTypes.length === 0
   ) {
     return null;
@@ -122,13 +142,12 @@ export function normalizeStoredPartnerOnboardingRequest(
     legalIdentity,
     coverage,
     contributionTypes,
-    relayActions:
-      typeof record["relayActions"] === "string" ? record["relayActions"] : "",
+    relayActions: readStringField(record, "relayActions"),
     availability,
-    contactName: typeof record["contactName"] === "string" ? record["contactName"] : "",
-    contactChannel: typeof record["contactChannel"] === "string" ? record["contactChannel"] : "",
-    contactDetails: typeof record["contactDetails"] === "string" ? record["contactDetails"] : "",
-    motivation: typeof record["motivation"] === "string" ? record["motivation"] : "",
+    contactName: readStringField(record, "contactName"),
+    contactChannel: readStringField(record, "contactChannel"),
+    contactDetails: readStringField(record, "contactDetails"),
+    motivation: readStringField(record, "motivation"),
     creatorState,
   };
 }

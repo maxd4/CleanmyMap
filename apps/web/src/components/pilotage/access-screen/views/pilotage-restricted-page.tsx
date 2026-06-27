@@ -141,10 +141,11 @@ export function PilotageRestrictedPage({
               {locale === "fr" ? "Rapports" : "Reports"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
-            <Link
-              href="/actions/map"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
-            >
+              <Link
+                href="/actions/map"
+                prefetch={false}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
+              >
               {locale === "fr" ? "Carte des actions" : "Action map"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>

@@ -101,7 +101,7 @@ export default async function SponsorPortalPage() {
               label: "Économie de voirie",
               value: `${totalEuroSaved.toLocaleString()} €`,
               deltaPercent: "+12%",
-              icon: Euro,
+              icon: <Euro size={16} aria-hidden="true" />,
               interpretation: "positive",
             },
             {
@@ -109,7 +109,7 @@ export default async function SponsorPortalPage() {
               label: "CO2 évité (estimé)",
               value: `${totalCo2.toLocaleString()} kg`,
               deltaPercent: "+8%",
-              icon: Leaf,
+              icon: <Leaf size={16} aria-hidden="true" />,
               interpretation: "positive",
             },
             {
@@ -117,7 +117,7 @@ export default async function SponsorPortalPage() {
               label: "Mobilisation citoyenne",
               value: totalVolunteers.toLocaleString(),
               deltaPercent: "+24%",
-              icon: Users,
+              icon: <Users size={16} aria-hidden="true" />,
               interpretation: "positive",
             },
             {
@@ -125,7 +125,7 @@ export default async function SponsorPortalPage() {
               label: "Masse extraite",
               value: `${totalKg.toLocaleString()} kg`,
               deltaPercent: "+15%",
-              icon: MapIcon,
+              icon: <MapIcon size={16} aria-hidden="true" />,
               interpretation: "positive",
             },
           ]}

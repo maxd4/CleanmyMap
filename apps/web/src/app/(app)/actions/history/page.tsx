@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
@@ -7,6 +8,16 @@ import { SectionHeader, StatCard } from"@/components/ui/page-structure";
 import { isFeatureEnabled } from"@/lib/feature-flags";
 import { ActionsHistoryList } from "@/components/actions/actions-history-list";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
+
+export const metadata: Metadata = {
+ title: "Historique des actions validées - CleanMyMap",
+ description:
+  "Historique interne des actions validées, réservé aux comptes connectés.",
+ robots: {
+  index: false,
+  follow: false,
+ },
+};
 
 export default async function ActionsHistoryPage() {
  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");

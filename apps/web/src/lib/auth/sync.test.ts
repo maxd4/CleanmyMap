@@ -20,7 +20,13 @@ type MockState = {
 };
 
 function createSupabaseMock(options: {
-  existingProfile?: { id: string; handle: string | null; display_name_mode?: string | null } | null;
+  existingProfile?: {
+    id: string;
+    handle: string | null;
+    display_name_mode?: string | null;
+    metadata?: Record<string, unknown> | null;
+    paris_arrondissement?: number | null;
+  } | null;
   takenHandles?: Record<string, string | null>;
   upsertError?: unknown;
 }) {
@@ -33,6 +39,15 @@ function createSupabaseMock(options: {
   const single = vi.fn(async () => ({
     data: options.upsertError ? null : { id: "user", handle: "resolved_handle" },
     error: options.upsertError ?? null,
+  }));
+  const upload = vi.fn(async () => ({
+    data: { path: "profiles/user/avatar.jpg" },
+    error: null,
+  }));
+  const getPublicUrl = vi.fn((path: string) => ({
+    data: {
+      publicUrl: `https://supabase.test/storage/v1/object/public/avatars/${path}`,
+    },
   }));
 
   const upsert = vi.fn(() => ({
@@ -80,13 +95,20 @@ function createSupabaseMock(options: {
 
   const supabase = {
     from: vi.fn(() => chain),
+    storage: {
+      from: vi.fn(() => ({
+        upload,
+        getPublicUrl,
+      })),
+    },
   };
 
-  return { supabase, upsert, select, eq, maybeSingle, state, single };
+  return { supabase, upsert, select, eq, maybeSingle, state, single, upload, getPublicUrl };
 }
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("syncClerkUserToSupabase", () => {
@@ -253,6 +275,52 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
+  it("backfills new territory metadata from the legacy arrondissement column", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: {
+        id: "user_legacy",
+        handle: "legacy_handle",
+        display_name_mode: null,
+        metadata: null,
+        paris_arrondissement: 15,
+      },
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_legacy",
+      username: "legacy_handle",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: {},
+      privateMetadata: {},
+      firstName: "Legacy",
+      lastName: "Profile",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paris_arrondissement: 15,
+        metadata: expect.objectContaining({
+          territoryCountry: "France",
+          territoryLevel: "arrondissement",
+          territoryLabel: "Paris 15e",
+          territoryArrondissement: 15,
+          territoryLocationType: "residence",
+          zoneName: "Paris 15e",
+          parisArrondissement: 15,
+          parisLocationType: "residence",
+        }),
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
   it("preserves a pseudo display preference during sync", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: {
@@ -282,6 +350,46 @@ describe("syncClerkUserToSupabase", () => {
         handle: "custom_handle",
         display_name_mode: "pseudo",
         display_name: "handle_mode",
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it("mirrors Clerk avatars into Supabase Storage when available", async () => {
+    const { supabase, upsert, upload } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["avatar-bytes"], { type: "image/jpeg" }), {
+          status: 200,
+          headers: { "content-type": "image/jpeg" },
+        }),
+      ),
+    );
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_clerk_avatar",
+      username: "avatar_user",
+      emailAddresses: [],
+      imageUrl: "https://img.clerk.com/avatar.png",
+      publicMetadata: {},
+      privateMetadata: {},
+      firstName: "Avatar",
+      lastName: "User",
+    } as never);
+
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        avatar_url: expect.stringContaining("/storage/v1/object/public/avatars/"),
       }),
       { onConflict: "id" },
     );

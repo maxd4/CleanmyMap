@@ -61,13 +61,7 @@ describe("service email events store", () => {
   it("counts sent events since a timestamp using created_at", async () => {
     const inMock = vi.fn().mockResolvedValue({
       error: null,
-      data: [
-        {
-          created_at: "2026-05-31T08:30:00.000Z",
-          status: "sent",
-          actor_user_id: "user_123",
-        },
-      ],
+      count: 1,
     });
     const gteMock = vi.fn().mockReturnValue({
       in: inMock,
@@ -93,44 +87,22 @@ describe("service email events store", () => {
 
     expect(count).toBe(1);
     expect(fromMock).toHaveBeenCalledWith("service_email_events");
-    expect(selectMock).toHaveBeenCalledWith("created_at, status, actor_user_id");
+    expect(selectMock).toHaveBeenCalledWith("created_at", {
+      count: "exact",
+      head: true,
+    });
     expect(eqMock).toHaveBeenCalledWith("actor_user_id", "user_123");
     expect(gteMock).toHaveBeenCalledWith("created_at", "2026-05-31T00:00:00.000Z");
     expect(inMock).toHaveBeenCalledWith("status", ["sent"]);
   });
 
   it("counts sent recipients since a timestamp using recipient_count", async () => {
-    const inMock = vi.fn().mockResolvedValue({
+    const rpcMock = vi.fn().mockResolvedValue({
       error: null,
-      data: [
-        {
-          created_at: "2026-05-31T08:30:00.000Z",
-          status: "sent",
-          actor_user_id: "user_123",
-          recipient_count: 2,
-        },
-        {
-          created_at: "2026-05-31T09:30:00.000Z",
-          status: "sent",
-          actor_user_id: "user_123",
-          recipient_count: 3,
-        },
-      ],
-    });
-    const gteMock = vi.fn().mockReturnValue({
-      in: inMock,
-    });
-    const eqMock = vi.fn().mockReturnValue({
-      gte: gteMock,
-    });
-    const selectMock = vi.fn().mockReturnValue({
-      eq: eqMock,
-    });
-    const fromMock = vi.fn().mockReturnValue({
-      select: selectMock,
+      data: "5",
     });
     getSupabaseServerClientMock.mockReturnValue({
-      from: fromMock,
+      rpc: rpcMock,
     });
 
     const { countServiceEmailRecipientsForActorSince } = await import("./service-email-events-store");
@@ -140,12 +112,13 @@ describe("service email events store", () => {
     });
 
     expect(count).toBe(5);
-    expect(fromMock).toHaveBeenCalledWith("service_email_events");
-    expect(selectMock).toHaveBeenCalledWith(
-      "created_at, status, actor_user_id, recipient_count",
+    expect(rpcMock).toHaveBeenCalledWith(
+      "sum_service_email_recipients_for_actor_since",
+      {
+        p_actor_user_id: "user_123",
+        p_since: "2026-05-31T00:00:00.000Z",
+        p_statuses: ["sent"],
+      },
     );
-    expect(eqMock).toHaveBeenCalledWith("actor_user_id", "user_123");
-    expect(gteMock).toHaveBeenCalledWith("created_at", "2026-05-31T00:00:00.000Z");
-    expect(inMock).toHaveBeenCalledWith("status", ["sent"]);
   });
 });

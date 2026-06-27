@@ -51,7 +51,7 @@ export function useZoneFilters() {
     }
 
     return groups;
-  }, [selectedAreaType, selectedDepartment]);
+  }, [selectedAreaType]);
 
   const groupedFilters = useMemo(() => {
     const groups: Record<string, ZoneFilterOption[]> = {};

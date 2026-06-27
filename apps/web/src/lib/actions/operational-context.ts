@@ -1,5 +1,3 @@
-import { ActionSubmissionMode, ActionWasteBreakdown, ActionPhotoAsset, ActionVisionEstimate } from "./types";
-
 export type ActionOperationalContext = {
   placeType: string | null;
   routeStyle: "direct" | "souple" | null;
@@ -49,6 +47,21 @@ function toFiniteNumber(
   return value;
 }
 
+function normalizeOperationalCount(
+  value: number | null | undefined,
+): number {
+  return Math.max(0, Math.trunc(toFiniteNumber(value ?? null, 0)));
+}
+
+function normalizeOperationalRouteStyle(
+  value: "direct" | "souple" | null | undefined,
+): "souple" | null {
+  if (value === "direct" || value === "souple") {
+    return "souple";
+  }
+  return null;
+}
+
 /**
  * Extrait le contexte opérationnel (volontaires, durée, engagement) d'un contrat ou d'une source compatible.
  */
@@ -57,21 +70,12 @@ export function getActionOperationalContext(
 ): ActionOperationalContext {
   const metadata = contract?.metadata ?? null;
   const placeType = normalizeContextText(metadata?.placeType);
-  const routeStyle =
-    metadata?.routeStyle === "direct" || metadata?.routeStyle === "souple"
-      ? "souple"
-      : null;
+  const routeStyle = normalizeOperationalRouteStyle(metadata?.routeStyle);
   const routeAdjustmentMessage = normalizeContextText(
     metadata?.routeAdjustmentMessage,
   );
-  const volunteersCount = Math.max(
-    0,
-    Math.trunc(toFiniteNumber(metadata?.volunteersCount ?? null, 0)),
-  );
-  const durationMinutes = Math.max(
-    0,
-    Math.trunc(toFiniteNumber(metadata?.durationMinutes ?? null, 0)),
-  );
+  const volunteersCount = normalizeOperationalCount(metadata?.volunteersCount);
+  const durationMinutes = normalizeOperationalCount(metadata?.durationMinutes);
   const engagementMinutes = volunteersCount * durationMinutes;
 
   return {

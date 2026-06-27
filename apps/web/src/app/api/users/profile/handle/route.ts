@@ -38,15 +38,15 @@ export async function PATCH(request: Request) {
  }
 
  try {
- // Check uniqueness
- const { data: existing } = await supabase
+ const { count, error: existingError } = await supabase
  .from("profiles")
- .select("id")
+ .select("id", { count: "exact", head: true })
  .eq("handle", parsed.data.handle)
- .not("id","eq", userId)
- .maybeSingle();
+ .neq("id", userId);
 
- if (existing) {
+ if (existingError) return handleApiError(existingError,"PATCH /api/users/profile/handle (handle check)");
+
+ if ((count ?? 0) > 0) {
  return NextResponse.json({ 
  error:"Ce handle est déjà utilisé par un autre membre." 
  }, { status: 409 });

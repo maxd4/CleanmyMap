@@ -13,13 +13,8 @@ import {
   TrendingDown, 
   Activity,
   Info,
-  Calendar,
-  Globe,
-  CheckCircle2,
-  ChevronRight,
   ChevronDown,
   Scaling,
-  MousePointer2,
   Scale
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -120,8 +115,8 @@ export function ClimateKpiCard({ label, value, unit, delta, icon, confidence, cl
 
 export function ClimateIndicatorGrid({ indicators, fr }: { indicators: ClimateIndicator[]; fr: boolean }) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {indicators.map((ind, i) => (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" aria-label={fr ? "Indicateurs climatiques" : "Climate indicators"}>
+      {indicators.map((ind) => (
         <ClimateKpiCard
           key={ind.label}
           label={ind.label}

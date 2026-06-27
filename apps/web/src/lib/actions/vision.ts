@@ -109,6 +109,23 @@ function fillLevelFromAnalysis(
   );
 }
 
+function buildPlaceTypeFactor(placeType?: string): number {
+  const normalizedPlaceType = placeType?.toLowerCase() ?? "";
+  if (
+    normalizedPlaceType.includes("boulevard") ||
+    normalizedPlaceType.includes("avenue")
+  ) {
+    return 1.2;
+  }
+  if (
+    normalizedPlaceType.includes("parc") ||
+    normalizedPlaceType.includes("jardin")
+  ) {
+    return 0.85;
+  }
+  return 1;
+}
+
 function deriveWasteKg(
   bagsCount: number,
   fillLevel: number,
@@ -119,15 +136,12 @@ function deriveWasteKg(
     fillLevel === 25 ? 0.35 : fillLevel === 50 ? 0.7 : fillLevel === 75 ? 1 : 1.25;
   const densityFactor =
     density === "sec" ? 0.85 : density === "humide_dense" ? 1 : 1.18;
-  const placeFactor = placeType?.toLowerCase().includes("boulevard") ||
-    placeType?.toLowerCase().includes("avenue")
-    ? 1.2
-    : placeType?.toLowerCase().includes("parc") ||
-        placeType?.toLowerCase().includes("jardin")
-      ? 0.85
-      : 1;
   return round(
-    clamp(bagsCount * fillFactor * densityFactor * placeFactor, 0.1, 150),
+    clamp(
+      bagsCount * fillFactor * densityFactor * buildPlaceTypeFactor(placeType),
+      0.1,
+      150,
+    ),
     1,
   );
 }

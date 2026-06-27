@@ -136,29 +136,29 @@ export async function fetchRecentActionsByUser(
   }));
 }
 
-export async function createAction(
-  supabase: SupabaseClient,
-  params: {
-    userId: string;
-    payload: CreateActionPayload;
-    organizers: ResolvedActionOrganizer[];
-    status?: ActionStatus;
-  },
-): Promise<{ id: string }> {
-  const payload = params.payload;
-
-  // Injection automatique de géométrie si aucun dessin manuel n'est fourni.
-  let finalDrawing: ActionDrawing | null = payload.manualDrawing ?? null;
-  if (!finalDrawing || finalDrawing.coordinates.length === 0) {
-    finalDrawing =
-      (await deriveAutoDrawingFromLocation({
-        locationLabel: payload.locationLabel,
-        departureLocationLabel: payload.departureLocationLabel,
-        arrivalLocationLabel: payload.arrivalLocationLabel,
-        routeStyle: payload.routeStyle,
-      })) ?? null;
+async function resolveCreateActionDrawing(
+  payload: CreateActionPayload,
+): Promise<ActionDrawing | null> {
+  const manualDrawing = payload.manualDrawing ?? null;
+  if (manualDrawing && manualDrawing.coordinates.length > 0) {
+    return manualDrawing;
   }
-  const persistedGeometry = buildPersistedGeometry({
+
+  return (
+    (await deriveAutoDrawingFromLocation({
+      locationLabel: payload.locationLabel,
+      departureLocationLabel: payload.departureLocationLabel,
+      arrivalLocationLabel: payload.arrivalLocationLabel,
+      routeStyle: payload.routeStyle,
+    })) ?? null
+  );
+}
+
+function buildCreateActionGeometry(
+  payload: CreateActionPayload,
+  finalDrawing: ActionDrawing | null,
+) {
+  return buildPersistedGeometry({
     drawing: finalDrawing,
     geojson: finalDrawing ? toGeoJsonString(finalDrawing) : null,
     confidence: finalDrawing
@@ -178,27 +178,38 @@ export async function createAction(
     arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
     routeStyle: payload.routeStyle ?? null,
   });
+}
 
+async function insertCreatedAction(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    payload: CreateActionPayload;
+    persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
+    finalDrawing: ActionDrawing | null;
+    status: ActionStatus | undefined;
+  },
+): Promise<string> {
   const inserted = await supabase
     .from("actions")
     .insert({
       created_by_clerk_id: params.userId,
-      actor_name: payload.actorName ?? null,
-      action_date: payload.actionDate,
-      location_label: payload.locationLabel,
-      latitude: payload.latitude ?? null,
-      longitude: payload.longitude ?? null,
-      derived_geometry_kind: persistedGeometry.kind,
-      derived_geometry_geojson: persistedGeometry.geojson,
-      geometry_confidence: persistedGeometry.confidence,
-      geometry_source: persistedGeometry.geometrySource,
-      waste_kg: payload.wasteKg,
-      cigarette_butts: resolvePersistedCigaretteButts(payload),
-      volunteers_count: payload.volunteersCount,
-      duration_minutes: payload.durationMinutes,
+      actor_name: params.payload.actorName ?? null,
+      action_date: params.payload.actionDate,
+      location_label: params.payload.locationLabel,
+      latitude: params.payload.latitude ?? null,
+      longitude: params.payload.longitude ?? null,
+      derived_geometry_kind: params.persistedGeometry.kind,
+      derived_geometry_geojson: params.persistedGeometry.geojson,
+      geometry_confidence: params.persistedGeometry.confidence,
+      geometry_source: params.persistedGeometry.geometrySource,
+      waste_kg: params.payload.wasteKg,
+      cigarette_butts: resolvePersistedCigaretteButts(params.payload),
+      volunteers_count: params.payload.volunteersCount,
+      duration_minutes: params.payload.durationMinutes,
       notes: buildPersistedNotes({
-        ...payload,
-        manualDrawing: finalDrawing ?? undefined,
+        ...params.payload,
+        manualDrawing: params.finalDrawing ?? undefined,
       }),
       status: params.status ?? "pending",
     })
@@ -209,13 +220,19 @@ export async function createAction(
     throw inserted.error;
   }
 
-  const actionId = inserted.data.id;
+  return inserted.data.id;
+}
 
-  if (params.organizers.length === 0) {
+async function insertActionOrganizers(
+  supabase: SupabaseClient,
+  actionId: string,
+  organizers: ResolvedActionOrganizer[],
+): Promise<void> {
+  if (organizers.length === 0) {
     throw new Error("At least one organizer is required for action creation.");
   }
 
-  const organizerRows = params.organizers.map((organizer, index) => ({
+  const organizerRows = organizers.map((organizer, index) => ({
     action_id: actionId,
     organizer_clerk_id: organizer.userId,
     organizer_label: organizer.displayName,
@@ -231,26 +248,59 @@ export async function createAction(
     await supabase.from("actions").delete().eq("id", actionId);
     throw organizersInserted.error;
   }
+}
 
+async function recordCreateActionTrainingExample(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    payload: CreateActionPayload;
+  },
+): Promise<void> {
   try {
     const trainingExample = buildTrainingExampleInsert({
-      actionId: String(actionId),
-      photos: payload.photos ?? null,
-      realWeightKg: payload.wasteKg ?? null,
-      visionEstimate: payload.visionEstimate ?? null,
+      actionId: params.actionId,
+      photos: params.payload.photos ?? null,
+      realWeightKg: params.payload.wasteKg ?? null,
+      visionEstimate: params.payload.visionEstimate ?? null,
       metadata: {
-        departureLocationLabel: payload.departureLocationLabel ?? null,
-        arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
-        placeType: payload.placeType ?? null,
-        submissionMode: payload.submissionMode ?? null,
+        departureLocationLabel: params.payload.departureLocationLabel ?? null,
+        arrivalLocationLabel: params.payload.arrivalLocationLabel ?? null,
+        placeType: params.payload.placeType ?? null,
+        submissionMode: params.payload.submissionMode ?? null,
       },
     });
     await recordTrainingExample(supabase, trainingExample);
   } catch (trainingError) {
     logFailure("Actions/Create", "Training example creation failed", trainingError, {
-      actionId,
+      actionId: params.actionId,
     });
   }
+}
+
+export async function createAction(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    payload: CreateActionPayload;
+    organizers: ResolvedActionOrganizer[];
+  status?: ActionStatus;
+  },
+): Promise<{ id: string }> {
+  const payload = params.payload;
+
+  const finalDrawing = await resolveCreateActionDrawing(payload);
+  const persistedGeometry = buildCreateActionGeometry(payload, finalDrawing);
+  const actionId = await insertCreatedAction(supabase, {
+    userId: params.userId,
+    payload,
+    persistedGeometry,
+    finalDrawing,
+    status: params.status,
+  });
+
+  await insertActionOrganizers(supabase, actionId, params.organizers);
+  await recordCreateActionTrainingExample(supabase, { actionId, payload });
 
   return { id: String(actionId) };
 }

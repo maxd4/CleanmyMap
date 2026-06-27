@@ -55,32 +55,27 @@ function normalizeZoneLabel(raw: string | null | undefined): string {
   return `${firstSegment.slice(0, 25).trim()}…`;
 }
 
+function containsAny(raw: string, terms: string[]): boolean {
+  return terms.some((term) => raw.includes(term));
+}
+
 function inferContributionType(row: ActionRow): ContributorRecognitionType {
   const raw = `${row.notes ?? ""} ${row.location_label ?? ""}`.toLowerCase();
-  if (
-    raw.includes("relais") ||
-    raw.includes("diffusion") ||
-    raw.includes("partage") ||
-    raw.includes("communication")
-  ) {
+  if (containsAny(raw, ["relais", "diffusion", "partage", "communication"])) {
     return "diffusion";
   }
-  if (
-    raw.includes("coord") ||
-    raw.includes("organis") ||
-    raw.includes("animation") ||
-    raw.includes("accompagn") ||
-    row.volunteers_count >= 6
-  ) {
+  if (containsAny(raw, ["coord", "organis", "animation", "accompagn"]) || row.volunteers_count >= 6) {
     return "coordination";
   }
   if (
-    raw.includes("mentor") ||
-    raw.includes("formation") ||
-    raw.includes("guide") ||
-    raw.includes("bonne pratique") ||
-    raw.includes("referent") ||
-    raw.includes("référent")
+    containsAny(raw, [
+      "mentor",
+      "formation",
+      "guide",
+      "bonne pratique",
+      "referent",
+      "référent",
+    ])
   ) {
     return "mentorat";
   }
@@ -149,6 +144,53 @@ function scoreContributor(params: {
       params.activeMonths * 4 +
       (params.mentorEligible ? 10 : 0),
   );
+}
+
+function createRecognitionAggregate(row: ActionRow): RecognitionAggregate {
+  return {
+    userId: row.created_by_clerk_id?.trim() || row.actor_name?.trim() || "anonymous",
+    actorName: row.actor_name?.trim() || "Contributeur",
+    associationName: parseAssociationNameFromActionNotes(row.notes),
+    verifiedContributions: 0,
+    qualitySum: 0,
+    zoneCounts: new Map<string, number>(),
+    typeCounts: {
+      terrain: 0,
+      diffusion: 0,
+      coordination: 0,
+      mentorat: 0,
+    },
+    activeMonths: new Set<string>(),
+    lastContributionDate: null,
+  };
+}
+
+function updateRecognitionAggregate(
+  aggregate: RecognitionAggregate,
+  row: ActionRow,
+): void {
+  aggregate.verifiedContributions += 1;
+  aggregate.qualitySum += actionQualityScoreFromRow(row);
+  const zone = normalizeZoneLabel(row.location_label);
+  aggregate.zoneCounts.set(zone, (aggregate.zoneCounts.get(zone) ?? 0) + 1);
+  const type = inferContributionType(row);
+  aggregate.typeCounts[type] += 1;
+  aggregate.activeMonths.add(row.action_date.slice(0, 7));
+  if (!aggregate.lastContributionDate || row.action_date > aggregate.lastContributionDate) {
+    aggregate.lastContributionDate = row.action_date;
+  }
+  if (aggregate.actorName === "Contributeur" && row.actor_name?.trim()) {
+    aggregate.actorName = row.actor_name.trim();
+  }
+  if (
+    aggregate.associationName === "Sans association" ||
+    aggregate.associationName.trim().length === 0
+  ) {
+    const associationName = parseAssociationNameFromActionNotes(row.notes);
+    if (associationName !== "Sans association") {
+      aggregate.associationName = associationName;
+    }
+  }
 }
 
 function toCard(aggregate: RecognitionAggregate): ContributorRecognitionCard {
@@ -224,46 +266,8 @@ export function buildContributorRecognitionIndex(
 
   for (const row of approvedRows) {
     const userId = row.created_by_clerk_id?.trim() || row.actor_name?.trim() || "anonymous";
-    const current = grouped.get(userId) ?? {
-      userId,
-      actorName: row.actor_name?.trim() || "Contributeur",
-      associationName: parseAssociationNameFromActionNotes(row.notes),
-      verifiedContributions: 0,
-      qualitySum: 0,
-      zoneCounts: new Map<string, number>(),
-      typeCounts: {
-        terrain: 0,
-        diffusion: 0,
-        coordination: 0,
-        mentorat: 0,
-      },
-      activeMonths: new Set<string>(),
-      lastContributionDate: null,
-    };
-
-    current.verifiedContributions += 1;
-    current.qualitySum += actionQualityScoreFromRow(row);
-    const zone = normalizeZoneLabel(row.location_label);
-    current.zoneCounts.set(zone, (current.zoneCounts.get(zone) ?? 0) + 1);
-    const type = inferContributionType(row);
-    current.typeCounts[type] += 1;
-    current.activeMonths.add(row.action_date.slice(0, 7));
-    if (!current.lastContributionDate || row.action_date > current.lastContributionDate) {
-      current.lastContributionDate = row.action_date;
-    }
-    if (current.actorName === "Contributeur" && row.actor_name?.trim()) {
-      current.actorName = row.actor_name.trim();
-    }
-    if (
-      current.associationName === "Sans association" ||
-      current.associationName.trim().length === 0
-    ) {
-      const associationName = parseAssociationNameFromActionNotes(row.notes);
-      if (associationName !== "Sans association") {
-        current.associationName = associationName;
-      }
-    }
-
+    const current = grouped.get(userId) ?? createRecognitionAggregate(row);
+    updateRecognitionAggregate(current, row);
     grouped.set(userId, current);
   }
 

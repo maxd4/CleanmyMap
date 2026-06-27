@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveActionOrganizers } from "./organizers";
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -48,7 +49,7 @@ function createSupabaseMock(profileRows: Array<{ id: string; display_name: strin
       state.eq = {};
       return chain;
     }),
-  };
+  } as unknown as SupabaseClient;
 }
 
 describe("resolveActionOrganizers", () => {

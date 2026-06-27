@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, ArrowRight, Sparkles, ExternalLink } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -98,7 +97,7 @@ export function LegalSection() {
               </div>
            </div>
            <p className="relative z-10 text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
-              CleanMyMap s'engage à protéger vos données personnelles conformément au Règlement Général sur la Protection des Données (RGPD).
+              CleanMyMap s&apos;engage à protéger vos données personnelles conformément au Règlement Général sur la Protection des Données (RGPD).
            </p>
         </RubriqueCard>
 

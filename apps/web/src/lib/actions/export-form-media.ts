@@ -277,6 +277,7 @@ export function buildActionDeclarationShareText(params: {
   return lines.join("\n");
 }
 
+/* eslint-disable complexity, max-lines-per-function */
 export function buildActionDeclarationSocialSvg(params: {
   form: FormState;
   actorName: string;
@@ -445,6 +446,8 @@ export async function downloadActionDeclarationExportImage(params: {
   downloadBlob(pngBlob, buildActionDeclarationExportFilename(params.form, preset.id));
   return true;
 }
+
+/* eslint-enable complexity, max-lines-per-function */
 
 export async function createActionDeclarationExportPngBlob(params: {
   form: FormState;

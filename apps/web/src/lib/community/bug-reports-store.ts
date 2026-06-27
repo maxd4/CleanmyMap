@@ -53,6 +53,49 @@ function isBugReportType(
   );
 }
 
+function normalizeTextField(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function normalizeOptionalTextField(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function normalizeBugReportSource(
+  value: unknown,
+): BugReportRecord["source"] {
+  return value === "feedback_section" || value === "feedback_discussion"
+    ? value
+    : "discussion_form";
+}
+
+function normalizeBugReportStatus(
+  value: unknown,
+): BugReportRecord["status"] {
+  return value === "treated" || value === "archived" ? value : "open";
+}
+
+function normalizeBugReportCreatorState(
+  value: unknown,
+  status: BugReportRecord["status"],
+): BugReportRecord["creatorState"] {
+  if (
+    value === "pending" ||
+    value === "responded" ||
+    value === "treated" ||
+    value === "archived"
+  ) {
+    return value;
+  }
+  if (status === "treated") {
+    return "treated";
+  }
+  if (status === "archived") {
+    return "archived";
+  }
+  return "new";
+}
+
 function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
   if (!record || typeof record !== "object") {
     return null;
@@ -63,43 +106,21 @@ function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
     return null;
   }
 
-  const title = typeof raw["title"] === "string" ? raw["title"] : "";
-  const description = typeof raw["description"] === "string" ? raw["description"] : "";
-  const pagePath = typeof raw["pagePath"] === "string" ? raw["pagePath"] : null;
+  const title = normalizeTextField(raw["title"]);
+  const description = normalizeTextField(raw["description"]);
+  const pagePath = normalizeOptionalTextField(raw["pagePath"]);
   const submittedByUserId =
     typeof raw["submittedByUserId"] === "string" ? raw["submittedByUserId"] : "unknown";
   const submittedByDisplayName =
-    typeof raw["submittedByDisplayName"] === "string" &&
-      raw["submittedByDisplayName"].trim().length > 0
-      ? raw["submittedByDisplayName"]
-      : submittedByUserId;
-  const submittedByEmail =
-    typeof raw["submittedByEmail"] === "string" && raw["submittedByEmail"].trim().length > 0
-      ? raw["submittedByEmail"]
-      : null;
-  const submittedByRole =
-    typeof raw["submittedByRole"] === "string" && raw["submittedByRole"].trim().length > 0
-      ? raw["submittedByRole"]
-      : null;
+    normalizeOptionalTextField(raw["submittedByDisplayName"]) ?? submittedByUserId;
+  const submittedByEmail = normalizeOptionalTextField(raw["submittedByEmail"]);
+  const submittedByRole = normalizeOptionalTextField(raw["submittedByRole"]);
   const id = typeof raw["id"] === "string" ? raw["id"] : randomUUID();
-  const createdAt = typeof raw["createdAt"] === "string" ? raw["createdAt"] : new Date().toISOString();
-  const source =
-    raw["source"] === "feedback_section" || raw["source"] === "feedback_discussion"
-      ? raw["source"]
-      : "discussion_form";
-  const status =
-    raw["status"] === "treated" || raw["status"] === "archived" ? raw["status"] : "open";
-  const creatorState =
-    raw["creatorState"] === "pending" ||
-    raw["creatorState"] === "responded" ||
-    raw["creatorState"] === "treated" ||
-    raw["creatorState"] === "archived"
-      ? raw["creatorState"]
-      : status === "treated"
-        ? "treated"
-        : status === "archived"
-          ? "archived"
-      : "new";
+  const createdAt =
+    typeof raw["createdAt"] === "string" ? raw["createdAt"] : new Date().toISOString();
+  const source = normalizeBugReportSource(raw["source"]);
+  const status = normalizeBugReportStatus(raw["status"]);
+  const creatorState = normalizeBugReportCreatorState(raw["creatorState"], status);
   const rawReportType = raw["reportType"];
 
   return {

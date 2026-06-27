@@ -17,20 +17,17 @@ import {
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Zap, Building2, Sparkles } from "lucide-react";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Zap, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 type AnnuaireActorCardProps = {
   entry: EnrichedAnnuaireEntry;
   onFocusMap: (entryId: string) => void;
-  showInternalContact: boolean;
 };
 
 export function AnnuaireActorCard({
   entry,
   onFocusMap,
-  showInternalContact,
 }: AnnuaireActorCardProps) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";

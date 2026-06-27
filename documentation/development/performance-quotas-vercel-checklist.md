@@ -46,6 +46,13 @@ Utiliser cette checklist avant chaque PR pour éviter d'introduire une régressi
   - Confirmer qu'un cache, un `revalidate`, un SSE ou un push n'est pas plus adapté.
   - S'assurer que le polling ne déclenche pas plusieurs requêtes en cascade.
 
+- [ ] Nouveau chat live ou surface de discussion ?
+  - Vérifier si Supabase Realtime peut porter la fraîcheur à la place d'un polling agressif.
+  - Garder un polling de secours plus lent seulement si la surface visible le justifie.
+  - Couper les rafraîchissements quand l'onglet est caché ou hors ligne.
+  - Revalider au focus ou à la reconnexion plutôt que sur chaque micro-événement.
+  - Borner le chat actif au strict nécessaire pour conserver l'effet "WhatsApp / Discord" sans faire tourner tout le reste.
+
 - [ ] Nouveau salon de discussion ?
   - Vérifier d'abord si un lien externe vers Discord, WhatsApp, Signal, Mattermost, Matrix ou un formulaire de contact suffit pour la première version.
   - Si Supabase est quand même utilisé, documenter clairement les lectures, les écritures, la modération, le spam, les notifications et la rétention.
@@ -96,6 +103,7 @@ Utiliser cette checklist avant chaque PR pour éviter d'introduire une régressi
 - une feature ne dit pas où la donnée vit ni combien elle écrit ou lit,
 - une feature persiste des brouillons alors qu'une soumission unique suffit,
 - un tableau de bord lit des micro-événements alors qu'un agrégat est disponible.
+- un chat live garde un polling rapide même quand l'onglet est caché ou que Realtime suffit déjà.
 - une optimisation Supabase cherche à faire disparaître tous les `high` au lieu de corriger les vrais points de volume.
 - une requête `high` ou `critical` reste non bornée, non filtrée, ou filtrée côté React après chargement complet.
 - des contenus pédagogiques ou des pages "apprendre" ont été déplacés hors du dépôt alors qu'ils devraient rester dans Git.

@@ -1,18 +1,22 @@
 # Backlog réduction Vercel
 
-Dernière mise à jour: 2026-06-16
+Dernière mise à jour: 2026-06-27
 
 Ce document conserve la partie de l’audit Vercel qui n’a pas encore été traitée.  
 Les points déjà corrigés au moment de cette note sont exclus ici pour éviter les doublons.
+
+## Déjà traités
+
+- `apps/web/src/app/layout.tsx` a été allégé pour éviter de recalculer des infos d’auth et de préférences côté serveur à chaque rendu du root layout.
+- `apps/web/src/app/(app)/layout.tsx` a été déplacé vers un shell client pour ne plus lire l’auth et les préférences côté serveur sur tout le groupe protégé.
+- `apps/web/src/app/api/reports/elus-dossier/route.ts` bascule sur un artefact PDF préexistant via cache et redirection signée.
+- `apps/web/src/app/api/reports/actions.csv/route.ts` sert désormais un artefact CSV cache-first, avec borne stricte et fallback direct seulement si nécessaire.
+- `apps/web/src/app/api/reports/actions.json/route.ts` applique la même stratégie cache-first que le CSV, avec artefact JSON pré-généré si disponible.
 
 ## À corriger maintenant
 
 | fichier | usage Vercel suspect | gravité | solution recommandée | risque de casse | priorité |
 | --- | --- | --- | --- | --- | --- |
-| [apps/web/src/app/layout.tsx](../../apps/web/src/app/layout.tsx) | Le root layout lit encore des infos d’auth et de préférences côté serveur pour tout le site. | Élevée | Continuer à réduire le travail serveur au strict nécessaire, surtout hors des routes protégées. | Élevé | P1 |
-| [apps/web/src/app/api/reports/elus-dossier/route.ts](../../apps/web/src/app/api/reports/elus-dossier/route.ts) | Génération serveur de dossier Markdown / PDF / JSON. | Élevée | Pré-générer ou mettre en cache l’artefact quand l’usage le permet. | Élevé | P1 |
-| [apps/web/src/app/api/reports/actions.csv/route.ts](../../apps/web/src/app/api/reports/actions.csv/route.ts) | Export CSV lourd, téléchargé à la demande. | Élevée | Limiter la volumétrie ou servir un artefact déjà produit. | Moyen à élevé | P1 |
-| [apps/web/src/app/api/reports/actions.json/route.ts](../../apps/web/src/app/api/reports/actions.json/route.ts) | Export JSON lourd, même surface que le CSV. | Élevée | Même stratégie que le CSV, avec borne stricte et cache si possible. | Moyen à élevé | P1 |
 | [apps/web/src/app/api/reports/governance-monthly/route.ts](../../apps/web/src/app/api/reports/governance-monthly/route.ts) | Génération PDF serveur. | Moyenne à élevée | Garder serveur seulement si l’usage reste ponctuel; sinon passer à un livrable précompilé. | Moyen | P1 |
 
 ## Acceptable provisoirement

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchCommunityEvents } from "@/lib/community/http";
 import type { ActionListItem } from "@/lib/actions/types";
-import { swrLiveFeedOptions } from "@/lib/swr-config";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import {
   computeEventConversions,
@@ -24,8 +24,8 @@ export function useCommunityEvents(actionItems: ActionListItem[]) {
     mutate: reloadEvents,
   } = useSWR(
     ["section-community-events"],
-    () => fetchCommunityEvents({ limit: 240 }),
-    swrLiveFeedOptions,
+    () => fetchCommunityEvents({ limit: 120 }),
+    swrRecentViewOptions,
   );
 
   const allEvents = useMemo(() => eventsData?.items ?? [], [eventsData?.items]);

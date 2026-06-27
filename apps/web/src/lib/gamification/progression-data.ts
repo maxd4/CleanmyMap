@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { evaluateActionQuality } from "@/lib/actions/quality";
@@ -36,6 +37,9 @@ const ACTION_FULL_COLUMNS =
 const ACTION_APPROVED_COLUMNS =
   "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing";
 const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_date";
+const USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS = 120;
+const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";
+const USER_LABEL_SUMMARY_LIMIT = 10000;
 
 type LoadValidatedActionIdsOptions = {
   actionRows?: ActionRow[];
@@ -359,31 +363,47 @@ export async function fetchSpotById(
 export async function loadUserLabelSummary(
   supabase: SupabaseClient,
 ): Promise<Map<string, UserLabelSummary>> {
-  const rows = await runActionQuery<{
-    created_by_clerk_id: string;
-    actor_name: string | null;
-    notes: string | null;
-  }>(supabase, (query) =>
-    query.select(ACTION_LABEL_COLUMNS).order("action_date", { ascending: false }).limit(10000),
+  const cached = unstable_cache(
+    async () => {
+      const rows = await runActionQuery<{
+        created_by_clerk_id: string;
+        actor_name: string | null;
+        notes: string | null;
+        action_date: string;
+      }>(supabase, (query) =>
+        query
+          .select(ACTION_LABEL_COLUMNS)
+          .order("action_date", { ascending: false })
+          .limit(USER_LABEL_SUMMARY_LIMIT),
+      );
+
+      const map = new Map<string, UserLabelSummary>();
+
+      for (const row of rows) {
+        if (!isSpontaneousActionNotes(row.notes)) {
+          continue;
+        }
+        if (map.has(row.created_by_clerk_id)) {
+          continue;
+        }
+        const metadata = extractActionMetadataFromNotes(row.notes);
+        map.set(row.created_by_clerk_id, {
+          actorName:
+            (row.actor_name ?? "").trim() || row.created_by_clerk_id || "Contributeur",
+          associationName: metadata.associationName?.trim() || "Sans association",
+        });
+      }
+
+      return map;
+    },
+    ["gamification-user-label-summary", `limit:${USER_LABEL_SUMMARY_LIMIT}`],
+    {
+      revalidate: USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS,
+      tags: [USER_LABEL_SUMMARY_CACHE_TAG],
+    },
   );
 
-  const map = new Map<string, UserLabelSummary>();
-
-  for (const row of rows) {
-    if (!isSpontaneousActionNotes(row.notes)) {
-      continue;
-    }
-    if (map.has(row.created_by_clerk_id)) {
-      continue;
-    }
-    const metadata = extractActionMetadataFromNotes(row.notes);
-    map.set(row.created_by_clerk_id, {
-      actorName: (row.actor_name ?? "").trim() || row.created_by_clerk_id || "Contributeur",
-      associationName: metadata.associationName?.trim() || "Sans association",
-    });
-  }
-
-  return map;
+  return cached();
 }
 
 export async function loadUserImpactStats(

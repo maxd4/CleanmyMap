@@ -15,15 +15,14 @@ import {
 import { snapPolylineToStreetNetwork } from"@/lib/geo/osrm-routing";
 import { computePollutionScore } from"@/lib/actions/pollution-score";
 import {
-  normalizeActionDrawing,
+ normalizeActionDrawing,
 } from"./map/actions-map-geometry.utils";
-import { GREATER_PARIS_BOUNDS } from "@/lib/geo/greater-paris";
+import {
+  TERRITORY_CENTER,
+  buildTerritoryLeafletBounds,
+} from "@/lib/geo/territory";
 
-const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
-const GREATER_PARIS_LAT_LNG_BOUNDS = L.latLngBounds(
- [GREATER_PARIS_BOUNDS.south, GREATER_PARIS_BOUNDS.west],
- [GREATER_PARIS_BOUNDS.north, GREATER_PARIS_BOUNDS.east],
-);
+const FRANCE_TERRITORY_LAT_LNG_BOUNDS = L.latLngBounds(buildTerritoryLeafletBounds());
 const MOBILE_MEDIA_QUERY = "(max-width: 768px)";
 
 type DrawingLayer = L.Polyline | L.Polygon;
@@ -375,11 +374,11 @@ export function ActionDrawingMap({
  </div>
  )}
  <MapContainer
- center={PARIS_CENTER}
- zoom={13}
- minZoom={10}
+ center={TERRITORY_CENTER}
+ zoom={5}
+ minZoom={4}
  maxZoom={18}
- maxBounds={GREATER_PARIS_LAT_LNG_BOUNDS}
+ maxBounds={FRANCE_TERRITORY_LAT_LNG_BOUNDS}
  maxBoundsViscosity={0.9}
  scrollWheelZoom
  className="bg-white"

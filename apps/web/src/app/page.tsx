@@ -21,16 +21,16 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   ...appMetadata,
-  title: "CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie",
+  title: "CleanMyMap - Carte de dépollution citoyenne & actions écologiques",
   description:
-    "CMM Paris : la carte citoyenne de propreté et depollution. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de nettoyage. Developpement durable, benevolat, impact terrain, valorisation des dechets.",
+    "CleanMyMap est la carte citoyenne de dépollution urbaine en France. Signalez les pollutions, organisez des cleanwalks et déclarez vos actions de nettoyage. Développement durable, bénévolat, impact terrain, valorisation des déchets.",
   keywords: [
     ...(appMetadata.keywords ?? []),
     "cleanmymap",
     "cmm",
     "depollution",
     "proprete",
-    "paris",
+    "france",
     "cleanwalk",
     "carte",
     "signalement",
@@ -54,12 +54,15 @@ export const metadata: Metadata = {
     "collecte populaire",
     "operation proprete",
     "engagement citoyen",
+    "region",
+    "departement",
+    "commune",
   ],
   openGraph: {
     ...appMetadata.openGraph,
-    title: "CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie",
+    title: "CleanMyMap - Carte de dépollution citoyenne & actions écologiques",
     description:
-      "La carte citoyenne de propreté Paris. Signalez, nettoyez, agissez pour l'environnement. Benevolat, ecologie, impact terrain.",
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement. Bénévolat, écologie, impact terrain.",
     url: HOME_ROUTE,
     siteName: "CleanMyMap",
     locale: "fr_FR",
@@ -69,16 +72,16 @@ export const metadata: Metadata = {
         url: "/brand/logo-cleanmymap.svg",
         width: 1200,
         height: 630,
-        alt: "CleanMyMap - Carte propreté Paris et cleanwalks",
+        alt: "CleanMyMap - Carte de dépollution citoyenne et cleanwalks en France",
       },
     ],
   },
   twitter: {
     ...appMetadata.twitter,
     card: "summary_large_image",
-    title: "CleanMyMap - Écologie Action Paris",
+    title: "CleanMyMap - Dépollution citoyenne & actions écologiques",
     description:
-      "La carte citoyenne de depollution - Benevolat, ecologie, impact terrain",
+      "La carte citoyenne de dépollution urbaine partout en France - Bénévolat, écologie, impact terrain",
     images: ["/brand/logo-cleanmymap.svg"],
   },
   robots: {

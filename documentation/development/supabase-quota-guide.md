@@ -18,11 +18,49 @@ Supabase doit rester la couche des données vraiment vivantes et utiles: comptes
 | À faire maintenant | Pourquoi |
 | --- | --- |
 | Supprimer les requêtes non bornées | C'est un vrai risque de quota et de lenteur |
-| Mettre des `.limit()`, filtres, pagination, bounding box | Ce sont des garde-fous durables |
+| Mettre des `.limit()`, filtres, pagination, bounding box | Ce sont les garde-fous à appliquer pour borner chaque lecture |
 | Documenter les tables centrales | Pour éviter que Codex recrée des mauvaises pratiques |
 | Définir où stocker chaque type de donnée | Supabase, `localStorage`, repo Markdown, cache, fichier |
 | Encadrer les fonctions coûteuses | Cartographie, chat, quiz, génération de documents |
 | Garder une trace des choix techniques | Utile pour ton rapport et pour la suite du développement |
+
+## Tables centrales à documenter
+
+Quand une table est centrale, elle peut rester très sollicitée. Le but n'est pas de la faire disparaître, mais d'éviter qu'elle soit relue ou recopiée naïvement.
+
+Référence à garder à portée de main:
+- [Audit localStorage vs Supabase](../backend/local-storage-vs-supabase-audit.md)
+- [Guide de référence database](../database/README.md)
+- [Playbook d'optimisation des tables Supabase](../database/supabase-table-optimization-playbook.md)
+
+| Table | Rôle | Règle à retenir |
+| --- | --- | --- |
+| `profiles` | Identité, rôles, referrals, signaux de notification | Toujours borner les listes et réutiliser les index exacts |
+| `actions` | Carte, création, import, modération, analytics | Toujours filtrer par zone, statut, période ou type avant toute lecture large |
+| `progression_profiles` | État de progression persistant par utilisateur | Lire par `user_id` ou RPC dédié, jamais comme table de listing général |
+| `progression_events` | Journal d'audit de la progression | Ne pas l'utiliser comme source de vérité métier pour recalculer tout le système |
+| `user_points` | Solde de points courant | Laisser les agrégats ou RPC fournir les vues de synthèse |
+| `points_ledger` | Historique des transactions de points | Lire via agrégat borné, historique paginé, ou RPC de synthèse |
+| `action_participants` | Participation aux actions collectives | Filtrer par `user_id`, `action_id` ou période; jamais en scan large |
+| `user_visited_places` | Compteur de lieux visités | Lire par utilisateur ou agrégat dédié |
+| `community_events` | Événements communautaires | Toujours limiter par statut, date ou géographie |
+| `event_rsvps` | RSVP et signaux d'intérêt | Ne pas charger toute la table pour un simple compteur |
+| `app_notifications` | Notifications utilisateur | Lire uniquement pour l'utilisateur courant, avec `limit` et tri |
+| `quiz_type_progress` | Progression par type de quiz | Lire par `user_id` et type, jamais toute la table pour un badge |
+| `quiz_srs` | Révision espacée par question | Filtrer par utilisateur et ensemble de questions ciblé |
+| `quiz_pedagogical_metrics` | Métriques pédagogiques agrégées | Lire par bucket ou période, pas en balayage ad hoc |
+| `checklist_progress` | État localisé des checklists | Lire par `(user_id, checklist_id)` uniquement |
+| `runbook_checks` | Statut des runbooks | Lire la ligne de profil voulue, pas un listing global |
+| `user_badge_totals` | Agrégats de badges utilisateur | Lire par utilisateur, jamais comme table de recherche générale |
+
+Règles pratiques:
+
+- une table centrale n'autorise jamais un `select("*")` par défaut;
+- une table centrale n'autorise jamais une lecture complète juste pour afficher un compteur ou un badge;
+- une table centrale doit avoir un motif de lecture clair: par utilisateur, par période, par zone ou par agrégat;
+- les tables d'agrégats persistés doivent servir de source de synthèse, pas de matière première pour refaire le calcul au `GET`;
+- si plusieurs écrans partagent la même logique, créer un RPC ou un cache de synthèse plutôt que dupliquer le scan;
+- si un écran a besoin d'une vue globale, documenter pourquoi le coût reste acceptable.
 
 ## Doctrine de stockage CleanMyMap
 
@@ -35,6 +73,20 @@ Avant d'ajouter une nouvelle fonctionnalité, documenter explicitement:
 - pourquoi Supabase est nécessaire, ou pourquoi il ne l'est pas.
 
 Cette doctrine s'applique aussi aux fonctionnalités qui "pourraient" aller en base. Le fait qu'un stockage soit possible ne suffit pas à le justifier.
+
+### Matrice de stockage de référence
+
+| Type de donnée | Emplacement par défaut | Quand déplacer ailleurs |
+| --- | --- | --- |
+| Contenus pédagogiques, guides, décisions, checklists durables, pages "apprendre" | Repo Markdown / Git | Si la donnée doit être versionnée, relue en PR et publiée comme contenu statique |
+| Préférences UI, brouillons non critiques, quiz anonymes, états temporaires | `localStorage` | Si la donnée doit suivre l'utilisateur entre appareils ou devenir un suivi métier durable |
+| Données métier vivantes, comptes, rôles, actions, participations, agrégats persistés | Supabase | Si la donnée est partagée, soumise aux RLS, ou consommée par plusieurs écrans |
+| Données dérivées lues souvent mais recalculables | Cache HTTP, ISR, `SWR`, cache applicatif | Si la fraîcheur seconde par seconde n'est pas requise |
+| Fichiers téléchargeables, images uploadées, PDF générés, exports réutilisables | Fichier préparé / Storage | Si le livrable doit rester disponible, partageable ou téléchargeable plus tard |
+
+Le cache n'est jamais une source de vérité. Il sert uniquement à réduire les lectures et les recalculs.
+
+Un fichier n'est pas une table. Quand le livrable est utile mais coûteux, on garde en base seulement les métadonnées minimales et on met le contenu lourd dans un fichier ou un bucket préparé.
 
 ### Conserver dans le dépôt Git
 
@@ -84,6 +136,7 @@ Supabase ne sert qu'au suivi connecté si la valeur produit est réelle et durab
 - compteurs: `head: true`, `count`, ou RPC dédié si besoin,
 - cartes et listes: pagination ou limites systématiques,
 - documents générés: lecture du résumé minimal, pas d'historique complet inutile.
+- leaderboard gamification: lire les agrégats persistés (`progression_profiles`, RPC de synthèse) et réserver les backfills globaux aux tâches de maintenance, jamais au `GET`.
 
 ### Cartographie
 
@@ -105,6 +158,13 @@ La cartographie est une zone à risque:
 ### Tables centrales
 
 Une table centrale peut rester `high`, voire `critical`, si les requêtes sont filtrées, bornées et justifiées.
+
+Pour `profiles`, la règle pratique est encore plus stricte:
+
+- les recherches exactes doivent s'appuyer sur les index existants (`id`, `handle`, `referral_code`);
+- les recherches partielles doivent rester bornées et s'appuyer sur des index trigram ou des RPC dédiés;
+- les listes `profiles` doivent conserver une borne explicite, même quand elles servent l'admin ou le chat;
+- un `ilike` sur `profiles` sans index adapté est une régression de coût, même si la requête est courte.
 
 Règle de lecture de l'audit:
 
@@ -197,6 +257,7 @@ Règle d'exécution à utiliser pour chaque nouvelle fonctionnalité:
 ## Règles de base
 
 - utiliser le minimum de colonnes nécessaires
+- borner chaque lecture avec `.limit()`, `.range()`, filtres, pagination ou bounding box selon le cas
 - paginer systématiquement les listes métier
 - préférer des compteurs `head: true` ou des RPC dédiés pour les dashboards de synthèse
 - garder les écritures en lot quand plusieurs lignes sont créées ensemble
@@ -216,6 +277,35 @@ Règle d'exécution à utiliser pour chaque nouvelle fonctionnalité:
 - synchronisation de quiz anonymes alors qu'un état local suffit
 - autosave permanent sur des formulaires qui n'ont besoin que d'une soumission finale
 
+## Réflexe de correction attendu
+
+Quand un hotspot Supabase est signalé, corriger dans cet ordre:
+
+1. réduire le volume lu ou écrit;
+2. déplacer le filtre dans la base si le code filtre encore côté application;
+3. ajouter un index sur la colonne réellement filtrée;
+4. convertir la requête répétée en RPC stable si plusieurs chemins la partagent;
+5. garder le filtre métier côté app seulement s'il protège encore une règle fonctionnelle.
+
+Le bon signal d'une correction réussie n'est pas seulement “ça marche”, mais:
+
+- le nombre de lignes lues diminue;
+- la colonne filtrée est indexée ou sargable;
+- le comportement visible ne change pas;
+- le code n'introduit pas un nouveau scan sur une autre table.
+
+### Transformations attendues
+
+| Mauvais réflexe | Correction attendue |
+| --- | --- |
+| Charger `profiles`, puis filtrer par zone en mémoire | Charger seulement les profils candidats via RPC ou filtre DB |
+| Lire `app_notifications` sans borne | Lire par `user_id`, avec tri et limite |
+| Lire `community_events` ou `event_rsvps` sans borne | Ajouter limite, filtre et colonne minimale |
+| Faire une requête large pour un simple compteur | Utiliser `count`, `head: true`, ou un RPC agrégé |
+| Corriger un hotspot en désactivant RLS | Ajouter un index, une RPC ou une migration ciblée |
+| Corriger un hotspot en exposant `service_role` côté client | Garder la logique serveur et limiter la surface |
+| Chercher des profils avec `ilike` sans index trigram | Ajouter l’index trigram et garder une limite courte |
+
 ## Bonnes pratiques par surface
 
 ### Database / PostgREST
@@ -231,6 +321,7 @@ Règle d'exécution à utiliser pour chaque nouvelle fonctionnalité:
 - garder les fonctions limitées à un besoin métier précis
 - documenter le coût attendu dans le code ou la migration
 - éviter les RPC qui remplacent une simple requête paginée
+- si la fonction évite un scan complet, expliquer explicitement quelle table est évitée et quel index la rend efficace
 
 ### Storage
 

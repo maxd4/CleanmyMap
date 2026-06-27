@@ -1,8 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { BackdropToneKey } from "@/lib/ui/backdrop-tone";
-import type { FooterVariant } from "@/lib/ui/footer-variant";
 
 const DeferredNetworkToastHost = dynamic(
   () => import("@/components/ui/network-toast").then((module) => module.NetworkToastHost),
@@ -51,24 +49,16 @@ const DeferredHomeFooter = dynamic(
   { ssr: false, loading: () => null },
 );
 
-type DeferredGlobalChromeProps = {
-  initialBackdropToneKey: BackdropToneKey | null;
-  initialFooterVariant?: FooterVariant | null;
-};
-
-export function DeferredGlobalChrome({
-  initialBackdropToneKey,
-  initialFooterVariant,
-}: DeferredGlobalChromeProps) {
+export function DeferredGlobalChrome() {
   return (
     <>
       <DeferredNetworkToastHost />
       <DeferredGamificationCelebrationHost />
-      <DeferredVibrantBackground initialToneKey={initialBackdropToneKey} />
+      <DeferredVibrantBackground />
       <DeferredSiteTooltips />
       <DeferredConditionalAnalytics />
       <DeferredCookieConsentBanner />
-      <DeferredHomeFooter initialVariant={initialFooterVariant ?? undefined} />
+      <DeferredHomeFooter />
     </>
   );
 }

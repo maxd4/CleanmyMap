@@ -1,4 +1,4 @@
-// Structured data for organization and local business schemas
+// Structured data for organization and service schemas
 import { JsonLd } from "./json-ld-wrapper";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
@@ -11,7 +11,7 @@ export function OrganizationJsonLd() {
     url: "https://cleanmymap.fr",
     logo: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     description:
-      "Plateforme citoyenne de depollution urbaine, d'action ecologique et de developpement durable a Paris et en France. Coordination benevoles, mutualisation resultats, valorisation dechets.",
+      "Plateforme citoyenne de dépollution urbaine, d'action écologique et de développement durable partout en France. Coordination des bénévoles, mutualisation des résultats, valorisation des déchets.",
     sameAs: [
       "https://twitter.com/cleanmymap",
       "https://github.com/cleanmymap",
@@ -35,21 +35,16 @@ export function OrganizationJsonLd() {
 export function LocalBusinessJsonLd() {
   const data = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": "Organization",
     name: "CleanMyMap",
     image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Paris",
-      addressCountry: "FR",
-    },
     areaServed: {
-      "@type": "City",
-      name: "Paris",
+      "@type": "Country",
+      name: "France",
     },
     serviceType: "Environmental cleanup platform",
     description:
-      "Plateforme citoyenne de nettoyage urbain et de depollution a Paris.",
+      "Plateforme citoyenne de nettoyage urbain et de dépollution partout en France.",
   };
 
   return <JsonLd id="json-ld-local-business" data={data} />;

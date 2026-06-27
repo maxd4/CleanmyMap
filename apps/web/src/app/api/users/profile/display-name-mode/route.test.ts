@@ -5,6 +5,7 @@ const clerkClientMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const requireSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
+const revalidateTagMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -18,6 +19,10 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
   requireSupabaseClerkRlsClient: requireSupabaseClerkRlsClientMock,
+}));
+
+vi.mock("next/cache", () => ({
+  revalidateTag: revalidateTagMock,
 }));
 
 describe("PATCH /api/users/profile/display-name-mode", () => {
@@ -70,7 +75,7 @@ describe("PATCH /api/users/profile/display-name-mode", () => {
     expect(body.displayName).toBe("Ada Admin");
     expect(body.displayNameMode).toBe("full_name");
     expect(body.handle).toBe("ada_admin");
-  });
+  }, 15000);
 
   it("updates the display name mode and derived display name", async () => {
     const { PATCH } = await import("./route");

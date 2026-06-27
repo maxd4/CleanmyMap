@@ -5,19 +5,22 @@ type ActionQueryResult<TData = unknown> = {
   error: { message: string } | null;
 };
 
-export type ActionQuery = {
-  select: (...args: unknown[]) => any;
-  eq: (...args: unknown[]) => any;
-  order: (...args: unknown[]) => any;
-  limit: (...args: unknown[]) => any;
-  in: (...args: unknown[]) => any;
-  neq: (...args: unknown[]) => any;
-  is: (...args: unknown[]) => any;
-  gte: (...args: unknown[]) => any;
-  maybeSingle: (...args: unknown[]) => Promise<ActionQueryResult>;
+type ActionQueryTerminal = PromiseLike<ActionQueryResult<unknown>>;
+
+export type ActionQuery = PromiseLike<ActionQueryResult<unknown>> & {
+  select: (...args: unknown[]) => ActionQuery;
+  eq: (...args: unknown[]) => ActionQuery;
+  order: (...args: unknown[]) => ActionQuery;
+  limit: (...args: unknown[]) => ActionQuery;
+  in: (...args: unknown[]) => ActionQuery;
+  neq: (...args: unknown[]) => ActionQuery;
+  is: (...args: unknown[]) => ActionQuery;
+  not: (...args: unknown[]) => ActionQuery;
+  gte: (...args: unknown[]) => ActionQuery;
+  maybeSingle: () => ActionQueryTerminal;
 };
 
-type ActionQueryBuilder = (query: ActionQuery) => unknown;
+type ActionQueryBuilder = (query: ActionQuery) => ActionQueryTerminal;
 
 function buildActionQuery(supabase: SupabaseClient) {
   return supabase.from("actions") as unknown as ActionQuery;
@@ -28,14 +31,13 @@ export async function runActionQuery<T>(
   configure: ActionQueryBuilder,
 ): Promise<T[]> {
   const result = await configure(buildActionQuery(supabase));
-
-  const typedResult = result as ActionQueryResult<T>;
+  const typedResult = result as ActionQueryResult<T[]>;
 
   if (typedResult.error) {
     throw new Error(typedResult.error.message);
   }
 
-  return (typedResult.data ?? []) as T[];
+  return typedResult.data ?? [];
 }
 
 export async function runSingleActionQuery<T>(
@@ -43,12 +45,11 @@ export async function runSingleActionQuery<T>(
   configure: ActionQueryBuilder,
 ): Promise<T | null> {
   const result = await configure(buildActionQuery(supabase));
-
   const typedResult = result as ActionQueryResult<T>;
 
   if (typedResult.error) {
     throw new Error(typedResult.error.message);
   }
 
-  return (typedResult.data ?? null) as T | null;
+  return typedResult.data ?? null;
 }

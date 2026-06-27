@@ -58,7 +58,7 @@ export default function FormComparisonPage() {
  </div>
 
  <div className="pt-4">
- <Link href="/actions/new">
+ <Link href="/actions/new" prefetch={false}>
         <CmmButton className="w-full" tone="secondary">
  Tester le formulaire complexe
  </CmmButton>
@@ -97,7 +97,7 @@ export default function FormComparisonPage() {
  </div>
 
  <div className="pt-4">
- <Link href="/actions/new">
+ <Link href="/actions/new" prefetch={false}>
  <CmmButton className="w-full" tone="primary">
  Tester le formulaire simplifié
  </CmmButton>

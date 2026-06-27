@@ -1,7 +1,6 @@
 import type {
   EnvironmentalImpactScopeInput,
   EnvironmentalImpactUsageProfileInput,
-  EnvironmentalImpactUsageProfileEstimate,
   EnvironmentalImpactPostDefinition,
   EnvironmentalImpactScopeKey
 } from "../types";

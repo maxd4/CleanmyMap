@@ -130,37 +130,144 @@ function normalizeObservedDate(raw: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
+function normalizeCoordinate(
+  value: number | null | undefined,
+): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return toFiniteNumber(value, 0);
+}
+
+function normalizeCount(value: number | null | undefined): number {
+  return Math.max(0, Math.trunc(toFiniteNumber(value, 0)));
+}
+
+function buildPersistedActionGeometry(params: BuildActionContractParams): PersistedDerivedGeometry {
+  const manualDrawing = params.manualDrawing ?? null;
+  const latitude = normalizeCoordinate(params.latitude);
+  const longitude = normalizeCoordinate(params.longitude);
+
+  return buildPersistedGeometryFromStoredFields({
+    derivedGeometryKind: params.derivedGeometryKind ?? null,
+    derivedGeometryGeoJson: params.derivedGeometryGeoJson ?? null,
+    geometrySource: params.geometrySource ?? null,
+    geometryConfidence: params.geometryConfidence ?? null,
+    manualDrawing,
+    manualDrawingGeoJson: params.manualDrawingGeoJson ?? null,
+    latitude,
+    longitude,
+    locationLabel: params.locationLabel,
+    departureLocationLabel: params.departureLocationLabel ?? null,
+    arrivalLocationLabel: params.arrivalLocationLabel ?? null,
+    routeStyle: params.routeStyle ?? null,
+  });
+}
+
+function buildActionDates(params: BuildActionContractParams): ActionDataDates {
+  return {
+    observedAt: normalizeObservedDate(params.observedAt),
+    createdAt: params.createdAt ?? null,
+    importedAt: params.importedAt ?? null,
+    validatedAt: params.validatedAt ?? null,
+  };
+}
+
+function buildActionIdentityMetadata(
+  params: BuildActionContractParams,
+): Pick<
+  ActionDataMetadata,
+  "actorName" | "associationName" | "groupJoinEnabled"
+> {
+  return {
+    actorName: params.actorName ?? null,
+    associationName: params.associationName ?? null,
+    groupJoinEnabled: params.groupJoinEnabled ?? true,
+  };
+}
+
+function buildActionRouteMetadata(
+  params: BuildActionContractParams,
+): Pick<
+  ActionDataMetadata,
+  | "placeType"
+  | "departureLocationLabel"
+  | "arrivalLocationLabel"
+  | "routeStyle"
+  | "routeAdjustmentMessage"
+> {
+  return {
+    placeType: params.placeType ?? null,
+    departureLocationLabel: params.departureLocationLabel ?? null,
+    arrivalLocationLabel: params.arrivalLocationLabel ?? null,
+    routeStyle: params.routeStyle ?? null,
+    routeAdjustmentMessage: params.routeAdjustmentMessage ?? null,
+  };
+}
+
+function buildActionNoteMetadata(
+  params: BuildActionContractParams,
+): Pick<
+  ActionDataMetadata,
+  "notes" | "notesPlain" | "submissionMode" | "wasteBreakdown"
+> {
+  return {
+    notes: params.notes ?? null,
+    notesPlain: params.notesPlain ?? null,
+    submissionMode: params.submissionMode ?? null,
+    wasteBreakdown: params.wasteBreakdown ?? null,
+  };
+}
+
+function buildActionMediaMetadata(
+  params: BuildActionContractParams,
+): Pick<ActionDataMetadata, "photos" | "visionEstimate" | "manualDrawing"> {
+  return {
+    photos: params.photos ?? null,
+    visionEstimate: params.visionEstimate ?? null,
+    manualDrawing: params.manualDrawing ?? null,
+  };
+}
+
+function buildActionMeasureMetadata(
+  params: BuildActionContractParams,
+): Pick<
+  ActionDataMetadata,
+  "wasteKg" | "cigaretteButts" | "volunteersCount" | "durationMinutes"
+> {
+  return {
+    wasteKg: normalizeOptionalNumber(params.wasteKg),
+    cigaretteButts: normalizeCount(params.cigaretteButts),
+    volunteersCount: normalizeCount(params.volunteersCount),
+    durationMinutes: normalizeCount(params.durationMinutes),
+  };
+}
+
+function normalizeOptionalNumber(value: number | null | undefined): number {
+  return value === undefined || value === null ? 0 : toFiniteNumber(value, 0);
+}
+
+function buildActionMetadata(
+  params: BuildActionContractParams,
+): ActionDataMetadata {
+  return {
+    ...buildActionIdentityMetadata(params),
+    ...buildActionRouteMetadata(params),
+    ...buildActionNoteMetadata(params),
+    ...buildActionMediaMetadata(params),
+    ...buildActionMeasureMetadata(params),
+  };
+}
+
 /**
  * Construit un objet ActionDataContract standardisé à partir de données brutes (souvent issues de Supabase).
  */
 export function buildActionDataContract(
   params: BuildActionContractParams,
 ): ActionDataContract {
-  const manualDrawing = params.manualDrawing ?? null;
-  const latitude =
-    params.latitude === null || params.latitude === undefined
-      ? null
-      : toFiniteNumber(params.latitude, 0);
-  const longitude =
-    params.longitude === null || params.longitude === undefined
-      ? null
-      : toFiniteNumber(params.longitude, 0);
-
-  const persistedGeometry: PersistedDerivedGeometry =
-    buildPersistedGeometryFromStoredFields({
-      derivedGeometryKind: params.derivedGeometryKind ?? null,
-      derivedGeometryGeoJson: params.derivedGeometryGeoJson ?? null,
-      geometrySource: params.geometrySource ?? null,
-      geometryConfidence: params.geometryConfidence ?? null,
-      manualDrawing,
-      manualDrawingGeoJson: params.manualDrawingGeoJson ?? null,
-      latitude,
-      longitude,
-      locationLabel: params.locationLabel,
-      departureLocationLabel: params.departureLocationLabel ?? null,
-      arrivalLocationLabel: params.arrivalLocationLabel ?? null,
-      routeStyle: params.routeStyle ?? null,
-    });
+  const latitude = normalizeCoordinate(params.latitude);
+  const longitude = normalizeCoordinate(params.longitude);
+  const persistedGeometry = buildPersistedActionGeometry(params);
 
   return {
     id: params.id,
@@ -174,44 +281,7 @@ export function buildActionDataContract(
       longitude,
     },
     geometry: persistedGeometry,
-    dates: {
-      observedAt: normalizeObservedDate(params.observedAt),
-      createdAt: params.createdAt ?? null,
-      importedAt: params.importedAt ?? null,
-      validatedAt: params.validatedAt ?? null,
-    },
-    metadata: {
-      actorName: params.actorName ?? null,
-      associationName: params.associationName ?? null,
-      groupJoinEnabled: params.groupJoinEnabled ?? true,
-      placeType: params.placeType ?? null,
-      departureLocationLabel: params.departureLocationLabel ?? null,
-      arrivalLocationLabel: params.arrivalLocationLabel ?? null,
-      routeStyle: params.routeStyle ?? null,
-      routeAdjustmentMessage: params.routeAdjustmentMessage ?? null,
-      notes: params.notes ?? null,
-      notesPlain: params.notesPlain ?? null,
-      submissionMode: params.submissionMode ?? null,
-      wasteBreakdown: params.wasteBreakdown ?? null,
-      photos: params.photos ?? null,
-      visionEstimate: params.visionEstimate ?? null,
-      wasteKg:
-        params.wasteKg === undefined || params.wasteKg === null
-          ? 0
-          : toFiniteNumber(params.wasteKg, 0),
-      cigaretteButts:
-        params.cigaretteButts === undefined || params.cigaretteButts === null
-          ? 0
-          : Math.max(0, Math.trunc(toFiniteNumber(params.cigaretteButts, 0))),
-      volunteersCount: Math.max(
-        0,
-        Math.trunc(toFiniteNumber(params.volunteersCount, 0)),
-      ),
-      durationMinutes: Math.max(
-        0,
-        Math.trunc(toFiniteNumber(params.durationMinutes, 0)),
-      ),
-      manualDrawing,
-    },
+    dates: buildActionDates(params),
+    metadata: buildActionMetadata(params),
   };
 }

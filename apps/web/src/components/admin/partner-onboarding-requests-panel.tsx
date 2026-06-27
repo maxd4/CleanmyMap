@@ -108,10 +108,11 @@ export function PartnerOnboardingRequestsPanel({
               : "Requests land here with contact details, context and processing status."}
           </p>
         </div>
-        <Link
-          href="/partners/dashboard"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
-        >
+          <Link
+            href="/partners/dashboard"
+            prefetch={false}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
+          >
           {fr ? "Ouvrir la revue partenaire" : "Open partner review"}
         </Link>
       </div>
@@ -212,10 +213,10 @@ export function PartnerOnboardingRequestsPanel({
                   >
                     {copiedId === item.id ? (fr ? "Copié" : "Copied") : (fr ? "Copier le résumé" : "Copy summary")}
                   </button>
-                  <a
-                    href="/partners/dashboard"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
-                  >
+                    <a
+                      href="/partners/dashboard"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100"
+                    >
                     {fr ? "Voir la revue" : "Open review"}
                   </a>
                 </div>

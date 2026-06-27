@@ -1,13 +1,30 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { ProjectPageviewTracker } from "@/components/analytics/project-pageview-tracker";
+import dynamic from "next/dynamic";
 import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
 } from "@/lib/storage/ui-state-storage";
+
+const DeferredProjectPageviewTracker = dynamic(
+  () =>
+    import("@/components/analytics/project-pageview-tracker").then(
+      (module) => module.ProjectPageviewTracker,
+    ),
+  { ssr: false, loading: () => null },
+);
+
+const DeferredVercelAnalytics = dynamic(
+  () => import("@vercel/analytics/next").then((module) => module.Analytics),
+  { ssr: false, loading: () => null },
+);
+
+const DeferredSpeedInsights = dynamic(
+  () =>
+    import("@vercel/speed-insights/next").then((module) => module.SpeedInsights),
+  { ssr: false, loading: () => null },
+);
 
 function subscribe(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") {
@@ -37,9 +54,9 @@ export function ConditionalAnalytics() {
 
   return (
     <>
-      <ProjectPageviewTracker />
-      <Analytics />
-      <SpeedInsights />
+      <DeferredProjectPageviewTracker />
+      <DeferredVercelAnalytics />
+      <DeferredSpeedInsights />
     </>
   );
 }
