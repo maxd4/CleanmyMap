@@ -2,8 +2,8 @@ import type {
   EnvironmentalImpactInfrastructureMetricEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
-  EnvironmentalImpactSnapshotRecord,
 } from "./types";
+export { buildServiceThresholdAlerts } from "./service-risk-alerts";
 
 export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique";
 
@@ -287,26 +287,6 @@ function getServiceCriticalityPercent(
   return SERVICE_CRITICALITY_BY_KEY[serviceKey] ?? 50;
 }
 
-function formatMonthLabel(snapshotDate: string): string {
-  const parsed = new Date(`${snapshotDate}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return snapshotDate;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(parsed);
-}
-
-function formatPercentValue(value: number, maximumFractionDigits = 1): string {
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits,
-    minimumFractionDigits: maximumFractionDigits > 0 ? 0 : 0,
-  }).format(value);
-}
-
 function getThresholdProximityPercent(
   sharePercent: number,
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[],
@@ -353,31 +333,6 @@ function getGrowthPercent(
       100,
     ),
   );
-}
-
-function getStreakEndLabel<T>(series: T[], predicate: (item: T) => boolean): number {
-  if (series.length === 0 || !predicate(series[0])) {
-    return -1;
-  }
-
-  let index = 0;
-  while (index + 1 < series.length && predicate(series[index + 1])) {
-    index += 1;
-  }
-
-  return index;
-}
-
-function getRecommendedAction(signal: ServiceThresholdAlertSignal): string {
-  switch (signal) {
-    case "quotaShare":
-      return "Réduire les usages non critiques de la catégorie, reporter les charges lourdes et revalider le quota.";
-    case "trend":
-      return "Auditer la pente sur deux mois, confirmer le signal et préparer un plan de réduction ciblé.";
-    case "growth":
-    default:
-      return "Identifier la source de croissance, corriger les usages coûteux et vérifier le prochain snapshot.";
-  }
 }
 
 export function computeServiceRiskScore(params: {
@@ -454,156 +409,6 @@ export function buildServiceRiskRows(
 
       return left.label.localeCompare(right.label, "fr");
     });
-}
-
-export function buildServiceThresholdAlerts(params: {
-  currentGeneratedAt: string;
-  currentServices: ServiceRiskSource[];
-  snapshots: EnvironmentalImpactSnapshotRecord[];
-}): ServiceThresholdAlert[] {
-  const currentSnapshotDate = params.currentGeneratedAt.slice(0, 10);
-  const currentSnapshotMonth = currentSnapshotDate.slice(0, 7);
-  const historySnapshots = [
-    {
-      snapshotDate: currentSnapshotDate,
-      monthLabel: formatMonthLabel(currentSnapshotDate),
-      services: params.currentServices,
-    },
-    ...params.snapshots
-      .filter((snapshot) => snapshot.snapshotDate.slice(0, 7) !== currentSnapshotMonth)
-      .slice(0, 4)
-      .map((snapshot) => ({
-      snapshotDate: snapshot.snapshotDate,
-      monthLabel: formatMonthLabel(snapshot.snapshotDate),
-      services: snapshot.model.infrastructure.services,
-    })),
-  ];
-
-  const alerts: ServiceThresholdAlert[] = [];
-
-  for (const service of params.currentServices) {
-    const quotaSeries = historySnapshots
-      .map((snapshot) => {
-        const item = snapshot.services.find((entry) => entry.key === service.key);
-        if (!item) {
-          return null;
-        }
-
-        return {
-          snapshotDate: snapshot.snapshotDate,
-          monthLabel: snapshot.monthLabel,
-          sharePercent: clamp(item.sharePercent, 0, 100),
-          monthlyKgCo2eProxy: item.monthlyKgCo2eProxy ?? 0,
-        };
-      })
-      .filter(
-        (
-          item,
-        ): item is {
-          snapshotDate: string;
-          monthLabel: string;
-          sharePercent: number;
-          monthlyKgCo2eProxy: number;
-        } => item !== null,
-      );
-
-    if (quotaSeries.length === 0) {
-      continue;
-    }
-
-    const current = quotaSeries[0];
-    const previous = quotaSeries[1] ?? null;
-
-    const growthSeries = quotaSeries.slice(0, Math.max(0, quotaSeries.length - 1)).map((item, index) => {
-      const previousItem = quotaSeries[index + 1] ?? null;
-      return {
-        monthLabel: item.monthLabel,
-        growthPercent: getGrowthPercent(item.monthlyKgCo2eProxy, previousItem?.monthlyKgCo2eProxy ?? null),
-      };
-    });
-
-    const quotaThreshold = 70;
-    const growthThreshold = 15;
-    const trendThreshold = 10;
-
-    const quotaStreakEnd = getStreakEndLabel(quotaSeries, (item) => item.sharePercent >= quotaThreshold);
-    if (quotaStreakEnd >= 0) {
-      const sinceLabel = quotaSeries[quotaStreakEnd]?.monthLabel ?? current.monthLabel;
-      const overage = current.sharePercent - quotaThreshold;
-      alerts.push({
-        id: `${service.key}:quotaShare:${current.snapshotDate}`,
-        serviceKey: service.key,
-        serviceLabel: service.label,
-        severity: "critical",
-        signal: "quotaShare",
-        title: "Quota de catégorie dépassé",
-        thresholdLabel: "usage > 70 % du quota alloué à la catégorie",
-        details: `${formatPercentValue(current.sharePercent)} % consommés, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
-        sinceLabel,
-        recommendedAction: getRecommendedAction("quotaShare"),
-      });
-      continue;
-    }
-
-    const currentGrowth = growthSeries[0]?.growthPercent ?? 0;
-    const previousGrowth = growthSeries[1]?.growthPercent ?? null;
-    const growthStreakEnd = getStreakEndLabel(growthSeries, (item) => item.growthPercent >= growthThreshold);
-    if (growthStreakEnd >= 0 && currentGrowth >= growthThreshold) {
-      const sinceLabel = growthSeries[growthStreakEnd]?.monthLabel ?? current.monthLabel;
-      const overage = currentGrowth - growthThreshold;
-      alerts.push({
-        id: `${service.key}:growth:${current.snapshotDate}`,
-        serviceKey: service.key,
-        serviceLabel: service.label,
-        severity: "critical",
-        signal: "growth",
-        title: "Croissance mensuelle excessive",
-        thresholdLabel: "croissance > +15 % sur un mois",
-        details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci, soit +${formatPercentValue(overage)} points au-dessus du seuil.`,
-        sinceLabel,
-        recommendedAction: getRecommendedAction("growth"),
-      });
-      continue;
-    }
-
-    if (currentGrowth >= trendThreshold && previousGrowth !== null && previousGrowth >= trendThreshold) {
-      const trendStreakEnd = getStreakEndLabel(growthSeries, (item) => item.growthPercent >= trendThreshold);
-      const sinceLabel =
-        trendStreakEnd >= 0
-          ? growthSeries[trendStreakEnd]?.monthLabel ?? previous?.monthLabel ?? current.monthLabel
-          : previous?.monthLabel ?? current.monthLabel;
-      alerts.push({
-        id: `${service.key}:trend:${current.snapshotDate}`,
-        serviceKey: service.key,
-        serviceLabel: service.label,
-        severity: "warning",
-        signal: "trend",
-        title: "Pente forte sur 2 mois",
-        thresholdLabel: "croissance > +10 % sur deux mois d'affilée",
-        details: `Croissance de +${formatPercentValue(currentGrowth)} % ce mois-ci et +${formatPercentValue(previousGrowth)} % le mois précédent.`,
-        sinceLabel,
-        recommendedAction: getRecommendedAction("trend"),
-      });
-    }
-  }
-
-  return alerts.sort((left, right) => {
-    if (left.severity !== right.severity) {
-      return left.severity === "critical" ? -1 : 1;
-    }
-
-    const signalRank: Record<ServiceThresholdAlertSignal, number> = {
-      quotaShare: 0,
-      growth: 1,
-      trend: 2,
-    };
-
-    if (signalRank[left.signal] !== signalRank[right.signal]) {
-      return signalRank[left.signal] - signalRank[right.signal];
-    }
-
-    return left.serviceLabel.localeCompare(right.serviceLabel, "fr");
-  });
 }
 
 export function formatServiceRiskBandLabel(band: ServiceRiskBand): string {

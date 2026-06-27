@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -53,6 +53,41 @@ type ChatMessageChange = {
   zone_name?: string | null;
   arrondissement_id?: number | null;
 };
+
+type ChatRefreshContext = {
+  activeChannelType: ChatChannelType;
+  realtimeEnabled: boolean;
+  isVisible: boolean;
+  isOnline: boolean;
+};
+
+const CHAT_REFRESH_INTERVALS_MS: Record<
+  ChatChannelType,
+  {
+    realtime: number;
+    fallback: number;
+  }
+> = {
+  community: { realtime: 60_000, fallback: 120_000 },
+  dm: { realtime: 30_000, fallback: 60_000 },
+  admin_elu: { realtime: 60_000, fallback: 120_000 },
+  territory: { realtime: 45_000, fallback: 90_000 },
+  bug_report: { realtime: 30_000, fallback: 60_000 },
+};
+
+export function getChatRefreshIntervalMs({
+  activeChannelType,
+  realtimeEnabled,
+  isVisible,
+  isOnline,
+}: ChatRefreshContext): number {
+  if (!isOnline || !isVisible) {
+    return 0;
+  }
+
+  const interval = CHAT_REFRESH_INTERVALS_MS[activeChannelType];
+  return realtimeEnabled ? interval.realtime : interval.fallback;
+}
 
 const fetcher = async <T>(url: string): Promise<T> => {
   const response = await fetch(url);
@@ -111,7 +146,16 @@ export function useChatData({
   canAccessProtectedChat = Boolean(currentUserId),
   supabase,
 }: UseChatDataParams) {
+  const [isPageVisible, setIsPageVisible] = useState(() =>
+    typeof document === "undefined" ? true : document.visibilityState !== "hidden",
+  );
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  const realtimeEnabled = isChatRealtimeEnabled();
   const canQueryProtectedChat = canAccessProtectedChat && Boolean(currentUserId);
+  const deferredMentionQuery = useDeferredValue(mentionQuery.trim());
+  const deferredRecipientQuery = useDeferredValue(recipientQuery.trim());
   const messagesKey = canQueryProtectedChat
     ? buildMessagesKey({
         activeChannelType,
@@ -124,16 +168,16 @@ export function useChatData({
   const mentionUsersKey =
     canQueryProtectedChat &&
     showMentions &&
-    mentionQuery.trim().length > 0
-      ? `/api/chat/users?q=${encodeURIComponent(mentionQuery.trim())}`
+    deferredMentionQuery.length >= 2
+      ? `/api/chat/users?q=${encodeURIComponent(deferredMentionQuery)}`
       : null;
 
   const dmUsersKey =
     canQueryProtectedChat &&
     activeChannelType === "dm"
       ? `/api/chat/users${
-          recipientQuery.trim().length > 0
-            ? `?q=${encodeURIComponent(recipientQuery.trim())}`
+          deferredRecipientQuery.length >= 2
+            ? `?q=${encodeURIComponent(deferredRecipientQuery)}`
             : ""
         }`
       : null;
@@ -148,13 +192,88 @@ export function useChatData({
     mutate: mutateMessages,
   } = useSWR<ChatMessagesResponse>(messagesKey, fetcher, {
     // Polling keeps the feed fresh without relying on Supabase Realtime by default.
-    refreshInterval: 60000,
+    refreshWhenHidden: false,
+    refreshWhenOffline: false,
+    refreshInterval: () =>
+      getChatRefreshIntervalMs({
+        activeChannelType,
+        realtimeEnabled,
+        isVisible: isPageVisible,
+        isOnline,
+      }),
     revalidateOnFocus: true,
+    revalidateOnReconnect: true,
   });
+
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRefreshAtRef = useRef(0);
+
+  const scheduleMessagesRefresh = useCallback(() => {
+    if (!messagesKey) {
+      return;
+    }
+
+    const now = Date.now();
+    const minGapMs = realtimeEnabled ? 8_000 : 15_000;
+    const elapsed = now - lastRefreshAtRef.current;
+
+    if (elapsed >= minGapMs) {
+      lastRefreshAtRef.current = now;
+      void mutateMessages();
+      return;
+    }
+
+    if (refreshTimerRef.current) {
+      return;
+    }
+
+    refreshTimerRef.current = setTimeout(() => {
+      refreshTimerRef.current = null;
+      lastRefreshAtRef.current = Date.now();
+      void mutateMessages();
+    }, minGapMs - elapsed);
+  }, [messagesKey, mutateMessages, realtimeEnabled]);
+
+  useEffect(() => {
+    if (!messagesKey) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      const visible = document.visibilityState !== "hidden";
+      setIsPageVisible(visible);
+      if (visible) {
+        scheduleMessagesRefresh();
+      }
+    };
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      scheduleMessagesRefresh();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [messagesKey, scheduleMessagesRefresh]);
 
   // Real-time subscription
   useEffect(() => {
-    if (!supabase || !messagesKey || !canQueryProtectedChat || !isChatRealtimeEnabled()) {
+    if (!supabase || !messagesKey || !canQueryProtectedChat || !realtimeEnabled) {
       return;
     }
 
@@ -179,7 +298,7 @@ export function useChatData({
                 (newMsg.sender_id === currentUserId && newMsg.recipient_id === selectedRecipientId) ||
                 (newMsg.sender_id === selectedRecipientId && newMsg.recipient_id === currentUserId)
               ) {
-                mutateMessages();
+                scheduleMessagesRefresh();
               }
             } else if (activeChannelType === "territory") {
               // Match by zone or arrondissement
@@ -187,11 +306,11 @@ export function useChatData({
                 (newMsg.zone_name && newMsg.zone_name === effectiveZone) ||
                 (newMsg.arrondissement_id && newMsg.arrondissement_id === territoryFocus)
               ) {
-                mutateMessages();
+                scheduleMessagesRefresh();
               }
             } else {
               // Global channels (community, admin_elu, etc.)
-              mutateMessages();
+              scheduleMessagesRefresh();
             }
           }
         }
@@ -210,7 +329,8 @@ export function useChatData({
     currentUserId,
     effectiveZone,
     territoryFocus,
-    mutateMessages,
+    scheduleMessagesRefresh,
+    realtimeEnabled,
   ]);
 
   const messages = messagesData?.messages ?? [];
@@ -289,6 +409,6 @@ export function useChatData({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
-    isLive: !!supabase && canQueryProtectedChat,
+    isLive: !!supabase && canQueryProtectedChat && realtimeEnabled,
   };
 }

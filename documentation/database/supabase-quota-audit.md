@@ -160,6 +160,21 @@ Pour CleanMyMap, l'audit Supabase doit privilégier la réduction du volume sans
 - corriger en priorité les requêtes non bornées, trop larges, trop fréquentes ou non justifiées;
 - accepter les coûts élevés quand ils correspondent à un usage central, filtré, minimal en colonnes et borné.
 
+La colonne `Priorité` du tableau de risque ne classe pas les tables par popularité brute. Elle classe d'abord les tables à optimiser en premier:
+
+- une petite table avec `SELECT *`, un scan non borné ou un accès au montage remonte avant une table centrale déjà propre;
+- une table centrale bien bornée et bien indexée peut rester plus bas, même si elle est beaucoup utilisée;
+- le tri de priorité sert à décider quoi corriger d'abord, pas à mesurer la seule charge absolue.
+
+### Focus `profiles`
+
+`profiles` reste une table centrale et peut rester dans le haut du classement tant que l'usage est justifié, mais les requêtes doivent être strictement bornées.
+
+- les recherches exactes par `id`, `handle` ou `referral_code` sont acceptables si les index existent déjà;
+- les recherches de type `ilike` doivent avoir un index trigram ou passer par un RPC dédié;
+- les listes de type chat / admin / export doivent garder un `limit` ou un `range`;
+- si une requête `profiles` lit encore trop large, corriger d'abord la forme de requête avant d'envisager une nouvelle surface produit.
+
 ### Cartographie à risque
 
 La cartographie doit être traitée comme une zone à risque:
@@ -182,6 +197,25 @@ Les prochaines passes de tri doivent cibler uniquement:
 - les sur-sélections de colonnes;
 - les accès répétés inutiles;
 - les usages critiques sur `profiles`, `participants`, `map`, `actions` et `notifications`.
+
+## Ce qu'on corrige en premier sur une alerte de quota
+
+Si l'audit remonte une table ou une route coûteuse, la séquence de correction attendue est la suivante:
+
+1. vérifier si la table est chargée en entier avant filtrage;
+2. réduire la projection aux colonnes utiles;
+3. déplacer le filtre dans la base;
+4. ajouter l'index sur la colonne ou l'expression réellement filtrée;
+5. regrouper la logique dans une RPC stable si le même chemin est réutilisé;
+6. ne toucher à RLS ou aux clés qu'en dernier recours, et seulement si le problème est vraiment d'accès.
+
+### Signes qui montrent une mauvaise correction
+
+- une requête devient plus compliquée mais lit autant de lignes qu'avant;
+- un filtre a été déplacé côté React au lieu d'être rapproché de la base;
+- une règle métier disparaît pour “faire marcher” la requête;
+- un `service_role` est introduit alors que l'accès public ou invoker suffisait;
+- une table critique est scannée alors qu'une sous-sélection ciblée était possible.
 
 ## Doctrine produit à appliquer avant chaque nouvelle feature
 

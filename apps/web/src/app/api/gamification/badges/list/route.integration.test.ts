@@ -13,6 +13,50 @@ type ProgressionEventInsert = {
   metadata: Record<string, unknown>;
 };
 
+type ProgressionEventLookupRow = {
+  id: string;
+};
+
+type ProgressionEventLookupResult = {
+  data: ProgressionEventLookupRow | null;
+  error: null;
+};
+
+type ProgressionEventsLookupChain = {
+  eq: (field: string, value: string) => ProgressionEventsLookupChain;
+  maybeSingle: () => Promise<ProgressionEventLookupResult>;
+};
+
+type ProgressionEventsTableChain = {
+  select: (columns: string) => ProgressionEventsLookupChain;
+  insert: (payload: ProgressionEventInsert) => Promise<{ data: null; error: null }>;
+};
+
+function createProgressionEventsTableChain(params: {
+  existingRow: ProgressionEventLookupRow | null;
+  onInsert: (payload: ProgressionEventInsert) => void;
+  onLookup: () => void;
+}): ProgressionEventsTableChain {
+  const lookupChain: ProgressionEventsLookupChain = {
+    eq: vi.fn(() => lookupChain),
+    maybeSingle: vi.fn(async () => {
+      params.onLookup();
+      return {
+        data: params.existingRow,
+        error: null,
+      };
+    }),
+  };
+
+  return {
+    select: vi.fn(() => lookupChain),
+    insert: vi.fn(async (payload: ProgressionEventInsert) => {
+      params.onInsert(payload);
+      return { data: null, error: null };
+    }),
+  };
+}
+
 // Integration test: badges/list API with participant tier logic and audit/progression_events writes
 describe('POST /api/gamification/badges/list - participant tier unlock', () => {
   beforeEach(() => {
@@ -21,40 +65,18 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
 
   it('should insert into progression_events exactly once per newly-unlocked participant tier', async () => {
     let insertCount = 0;
+    let lookupCount = 0;
     const inserts: ProgressionEventInsert[] = [];
-
-    const supabaseMock = {
-      from: vi.fn((table: string) => {
-        if (table === 'progression_events') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
-                    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                  })),
-                })),
-              })),
-            })),
-            insert: vi.fn(async (payload: ProgressionEventInsert) => {
-              insertCount++;
-              inserts.push(payload);
-              return { data: null, error: null };
-            }),
-          };
-        }
-        if (table === 'xp_audit') {
-          return {
-            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        return {
-          select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn() })) })),
-          insert: vi.fn(),
-        };
-      }),
-      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-    };
+    const progressionEvents = createProgressionEventsTableChain({
+      existingRow: null,
+      onInsert: (payload) => {
+        insertCount += 1;
+        inserts.push(payload);
+      },
+      onLookup: () => {
+        lookupCount += 1;
+      },
+    });
 
     // Simulate the tier unlock logic from badges/list route
     const PARTICIPANT_TIERS = [
@@ -74,8 +96,7 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
         if (tier.xp <= 0) {
           continue;
         }
-        const existing = await supabaseMock
-          .from('progression_events')
+        const existing = await progressionEvents
           .select('id')
           .eq('user_id', userId)
           .eq('source_table', 'action_participants')
@@ -83,7 +104,7 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
           .maybeSingle();
 
         if (!existing?.data) {
-          await supabaseMock.from('progression_events').insert({
+          await progressionEvents.insert({
             user_id: userId,
             event_type: 'participant_tier_unlock',
             source_table: 'action_participants',
@@ -101,6 +122,7 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
 
     // Verify: 3 inserts for tiers 1, 3, 5 (threshold <= 5); the 0-tier is a base badge and does not award XP
     expect(insertCount).toBe(3);
+    expect(lookupCount).toBe(3);
     expect(inserts).toHaveLength(3);
     expect(inserts[0].source_id).toBe('participant:participant-1');
     expect(inserts[1].source_id).toBe('participant:participant-3');
@@ -110,37 +132,18 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
   it('should not re-insert if progression_events already exists for the same tier', async () => {
     let selectCount = 0;
     let insertCount = 0;
-
-    const supabaseMock = {
-      from: vi.fn((table: string) => {
-        if (table === 'progression_events') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
-                    maybeSingle: vi.fn(async () => {
-                      selectCount++;
-                      // return existing row (data is not null) to simulate duplicate
-                      return { data: { id: 1 }, error: null };
-                    }),
-                  })),
-                })),
-              })),
-            })),
-            insert: vi.fn(async () => {
-              insertCount++;
-              return { data: null, error: null };
-            }),
-          };
-        }
-        return { select: vi.fn(), insert: vi.fn() };
-      }),
-    };
+    const progressionEvents = createProgressionEventsTableChain({
+      existingRow: { id: '1' },
+      onInsert: () => {
+        insertCount += 1;
+      },
+      onLookup: () => {
+        selectCount += 1;
+      },
+    });
 
     const tier = { threshold: 1, id: 'p-1', xp: 1 };
-    const existing = await supabaseMock
-      .from('progression_events')
+    const existing = await progressionEvents
       .select('id')
       .eq('user_id', 'user-1')
       .eq('source_table', 'action_participants')
@@ -149,7 +152,18 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
 
     // This time existing.data is truthy, so we should skip insert
     if (!existing || !existing.data) {
-      await supabaseMock.from('progression_events').insert({ /* ... */ });
+      await progressionEvents.insert({
+        user_id: 'user-1',
+        event_type: 'participant_tier_unlock',
+        source_table: 'action_participants',
+        source_id: `participant:${tier.id}`,
+        status_phase: 'pending',
+        weight: 1,
+        xp_base: tier.xp,
+        xp_awarded: tier.xp,
+        occurred_on: new Date().toISOString().split('T')[0],
+        metadata: { tier: tier.id, threshold: tier.threshold },
+      });
     }
 
     expect(selectCount).toBe(1);

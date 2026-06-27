@@ -70,6 +70,25 @@ function SectionDivider({
   );
 }
 
+function ActionDeclarationFormExportButton({
+  onOpen,
+}: {
+  onOpen: () => void;
+}) {
+  return (
+    <div className="flex justify-end pt-2">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition-all hover:border-emerald-500/30 hover:bg-emerald-500 hover:text-white"
+      >
+        <Download size={13} />
+        Exporter
+      </button>
+    </div>
+  );
+}
+
 export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const {
     form,
@@ -433,16 +452,9 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                       isSubmitting={submissionState === "pending"}
                       onSubmit={() => onSubmit()}
                     />
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsExportPickerOpen(true)}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition-all hover:border-emerald-500/30 hover:bg-emerald-500 hover:text-white"
-                      >
-                        <Download size={13} />
-                        Exporter
-                      </button>
-                    </div>
+                    <ActionDeclarationFormExportButton
+                      onOpen={() => setIsExportPickerOpen(true)}
+                    />
                   </div>
                 </section>
               </div>

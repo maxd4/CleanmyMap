@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
-import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
+import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { ReportsPageTabs } from "./reports-page-tabs";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
@@ -92,7 +92,7 @@ export function ReportsPageV1Layout({
 
       <ReportsPageTabs
         generation={
-          <ReportsWebDocument
+          <DeferredReportsWebDocument
             contracts={contracts}
             communityEvents={communityEvents}
             weather={weather}

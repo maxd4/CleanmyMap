@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
 import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
+import type { ReactNode } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ export type PilotageClusterMetric = {
   deltaAbsolute?: string;
   deltaPercent?: string;
   interpretation?: "positive" | "negative" | "neutral";
-  icon?: LucideIcon;
+  icon?: ReactNode;
   note?: string;
 };
 
@@ -146,7 +146,6 @@ export function PilotageMetricGrid({
   return (
     <div className={cn("grid gap-4 md:grid-cols-2 xl:grid-cols-4", className)}>
       {metrics.map((metric) => {
-        const Icon = metric.icon;
         const interpretationClass =
           metric.interpretation === "positive"
             ? "bg-emerald-500/10 text-emerald-300"
@@ -173,9 +172,9 @@ export function PilotageMetricGrid({
               <p className={cn("text-[10px] font-black uppercase tracking-[0.2em]", theme.label, labelClassName)}>
                 {metric.label}
               </p>
-              {Icon ? (
+              {metric.icon ? (
                 <span className={cn("rounded-2xl border border-white/10 p-3 text-white/80", theme.chip)}>
-                  <Icon size={16} aria-hidden="true" />
+                  {metric.icon}
                 </span>
               ) : null}
             </div>

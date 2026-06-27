@@ -10,10 +10,10 @@ import {
 import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
 
 export type VibrantBackgroundProps = {
-  initialToneKey: BackdropToneKey | null;
+  initialToneKey?: BackdropToneKey | null;
 };
 
-export function VibrantBackground({ initialToneKey }: VibrantBackgroundProps) {
+export function VibrantBackground({ initialToneKey = null }: VibrantBackgroundProps) {
   const pathname = usePathname();
   const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
 

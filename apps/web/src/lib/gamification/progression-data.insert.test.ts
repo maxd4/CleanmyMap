@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { insertProgressionEvent } from "./progression-data";
 
@@ -11,7 +12,7 @@ describe("insertProgressionEvent", () => {
       from: vi.fn(() => ({
         insert,
       })),
-    };
+    } as unknown as SupabaseClient;
 
     const inserted = await insertProgressionEvent(supabase, {
       userId: "user-1",

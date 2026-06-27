@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
-  searchLocalGreaterParisAddressSuggestions,
-} from "@/lib/geo/greater-paris";
+  searchLocalTerritoryAddressSuggestions,
+} from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 
@@ -113,7 +113,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const localSuggestions = searchLocalGreaterParisAddressSuggestions(query, limit);
+  const localSuggestions = searchLocalTerritoryAddressSuggestions(query, limit);
   if (localSuggestions.length > 0) {
     return NextResponse.json({
       status: "ok",

@@ -1,17 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LogIn, WifiOff } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
-import { GreaterParisSelect } from "@/lib/geo/greater-paris-select";
 import {
-  createGreaterParisMetadata,
-  createGreaterParisMetadataFromZoneName,
-  extractGreaterParisLocationPreferenceFromMetadata,
+  GreaterParisSelect,
+  type TerritoryLocationSelection,
+} from "@/lib/geo/greater-paris-select";
+import {
+  createTerritoryLocationMetadata,
+  extractTerritoryLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
 import { getProfileLabel, getProfileSubtitle, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
@@ -32,6 +33,23 @@ import { cn } from "@/lib/utils";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { logFailure } from "@/lib/logging/failure-log";
+
+function createInitialTerritorySelection(
+  initialArrondissement: number | null | undefined,
+): TerritoryLocationSelection | null {
+  if (!initialArrondissement || initialArrondissement <= 0) {
+    return null;
+  }
+
+  return {
+    country: "France",
+    level: "arrondissement",
+    label: `Paris ${initialArrondissement === 1 ? "1er" : `${initialArrondissement}e`}`,
+    subtitle: "Compatibilité historique",
+    arrondissement: initialArrondissement as TerritoryLocationSelection["arrondissement"],
+    arrondissementCity: "Paris",
+  };
+}
 
 type AccountSetupFormProps = {
   nextPath?: string;
@@ -83,34 +101,52 @@ export function AccountSetupForm({
   const [locationType, setLocationType] = useState<"residence" | "work">(
     initialLocationType ?? "residence",
   );
-  const [arrondissement, setArrondissement] = useState<number>(
-    initialArrondissement ?? 0,
+  const [territorySelection, setTerritorySelection] = useState<TerritoryLocationSelection | null>(
+    createInitialTerritorySelection(initialArrondissement),
   );
-  const [selectedZone, setSelectedZone] = useState<string>(
-    initialArrondissement
-      ? `${initialArrondissement}e arrondissement`
-      : "",
-  );
+  const hasHydratedTerritorySelection = useRef(Boolean(initialArrondissement));
   const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
   const [acceptExhaustiveMode, setAcceptExhaustiveMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
+  useEffect(() => {
+    if (!isLoaded || !user) {
+      return;
+    }
+    if (territorySelection) {
+      hasHydratedTerritorySelection.current = true;
+      return;
+    }
+    if (hasHydratedTerritorySelection.current) {
+      return;
+    }
+
+    const existingSelection = extractTerritoryLocationPreferenceFromMetadata(
+      user.unsafeMetadata as Record<string, unknown> | undefined,
+    );
+    if (existingSelection) {
+      setTerritorySelection(existingSelection);
+    }
+    hasHydratedTerritorySelection.current = true;
+  }, [isLoaded, territorySelection, user]);
+
   const isProfileValid =
     profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
-  const zoneIsValid = Boolean(
-    selectedZone || parseParisArrondissement(arrondissement),
-  );
+  const territoryIsValid =
+    Boolean(territorySelection?.label.trim()) &&
+    (territorySelection?.level !== "arrondissement" ||
+      territorySelection.arrondissement != null);
   const profileError = !isProfileValid
     ? "Sélectionnez un rôle valide."
     : null;
-  const zoneError = !zoneIsValid
-    ? "Sélectionnez une zone (arrondissement ou commune)."
+  const territoryError = !territoryIsValid
+    ? "Sélectionnez un territoire (pays, région, département, commune ou arrondissement)."
     : null;
   const displayModeError = acceptExhaustiveMode
     ? null
     : "Confirmez le mode exhaustif pour continuer.";
-  const canSubmit = !profileError && !zoneError && !displayModeError && !isSaving;
+  const canSubmit = !profileError && !territoryError && !displayModeError && !isSaving;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -133,20 +169,20 @@ export function AccountSetupForm({
       );
       return;
     }
-    if (!zoneIsValid) {
-      setError(
-        toAppError("Sélectionnez une zone (arrondissement ou commune).", {
-          kind: "validation",
-          message: "Sélectionnez une zone (arrondissement ou commune).",
-        }),
-      );
-      return;
-    }
     if (!acceptExhaustiveMode) {
       setError(
         toAppError("Confirmez le mode exhaustif pour continuer.", {
           kind: "validation",
           message: "Confirmez le mode exhaustif pour continuer.",
+        }),
+      );
+      return;
+    }
+    if (!territoryIsValid || !territorySelection) {
+      setError(
+        toAppError("Sélectionnez un territoire (pays, région, département, commune ou arrondissement).", {
+          kind: "validation",
+          message: "Sélectionnez un territoire (pays, région, département, commune ou arrondissement).",
         }),
       );
       return;
@@ -161,10 +197,6 @@ export function AccountSetupForm({
       setLocale(selectedLocale);
       setDisplayMode("exhaustif");
 
-      const existingPref = extractGreaterParisLocationPreferenceFromMetadata(
-        user.unsafeMetadata as Record<string, unknown> | undefined,
-      );
-
       const metadata: Record<string, unknown> = {
         ...(user.unsafeMetadata ?? {}),
         profileSetupCompleted: true,
@@ -172,33 +204,10 @@ export function AccountSetupForm({
         profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
       };
 
-      const parsedArr = parseParisArrondissement(arrondissement);
-      const zoneMetadata =
-        selectedZone && existingPref
-          ? createGreaterParisMetadata(
-              selectedZone,
-              existingPref.department,
-              existingPref.areaType,
-              locationType,
-            )
-          : selectedZone
-          ? createGreaterParisMetadataFromZoneName(selectedZone, locationType)
-          : null;
-
-      if (zoneMetadata) {
-        Object.assign(metadata, zoneMetadata);
-      } else if (parsedArr) {
-        metadata["parisArrondissement"] = parsedArr;
-        metadata["parisLocationType"] = locationType;
-      } else {
-        setError(
-          toAppError("Sélectionnez une zone (arrondissement ou commune).", {
-            kind: "validation",
-            message: "Sélectionnez une zone (arrondissement ou commune).",
-          }),
-        );
-        return;
-      }
+      Object.assign(
+        metadata,
+        createTerritoryLocationMetadata(territorySelection, locationType),
+      );
 
       await user.update({ unsafeMetadata: metadata });
 
@@ -405,7 +414,7 @@ export function AccountSetupForm({
 
         <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <legend className="cmm-text-small font-medium text-white/90">
-            Lieu principal
+            Territoire principal
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center gap-2 cmm-text-small text-violet-100/76">
@@ -434,23 +443,14 @@ export function AccountSetupForm({
 
           <label className="block space-y-2">
             <span className="cmm-text-small font-medium text-white/90">
-              Zone (arrondissement ou commune)
+              Pays, région, département, commune ou arrondissement
             </span>
             <GreaterParisSelect
-              value={selectedZone || (arrondissement ? `${arrondissement}e arrondissement` : "")}
-              onChange={(value) => {
-                const nextZone = value.trim();
-                setSelectedZone(nextZone);
-                const arrNum = parseInt(nextZone.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
-                if (!isNaN(arrNum) && arrNum >= 1 && arrNum <= 20) {
-                  setArrondissement(arrNum);
-                } else {
-                  setArrondissement(0);
-                }
-              }}
-              placeholder="Sélectionnez une zone..."
+              value={territorySelection}
+              onChange={setTerritorySelection}
+              placeholder="Rechercher un territoire..."
             />
-            {zoneError ? <InlineFieldError message={zoneError} /> : null}
+            {territoryError ? <InlineFieldError message={territoryError} /> : null}
           </label>
         </fieldset>
       </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Leaf, Heart, Users, Trash2, Wind, Info, Sparkles } from "lucide-react";
+import { Leaf, Heart, Users, Trash2, Wind, Info } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -74,7 +74,7 @@ export function AnnuaireThematicExploration({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-      {themes.map((theme, i) => {
+      {themes.map((theme) => {
         const Icon = theme.icon;
         const isActive = activeTag === theme.id;
         

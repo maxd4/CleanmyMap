@@ -9,28 +9,28 @@ describe("computeZoneCompare", () => {
       records: [
         {
           observedAt: "2026-04-08",
-          locationLabel: "Paris 10e",
+          locationLabel: "Lyon 10e",
           wasteKg: 12,
           butts: 200,
           volunteersCount: 4,
         },
         {
           observedAt: "2026-04-07",
-          locationLabel: "Paris 10e",
+          locationLabel: "Lyon 10e",
           wasteKg: 8,
           butts: 80,
           volunteersCount: 3,
         },
         {
           observedAt: "2026-03-01",
-          locationLabel: "Paris 10e",
+          locationLabel: "Lyon 10e",
           wasteKg: 3,
           butts: 20,
           volunteersCount: 2,
         },
         {
           observedAt: "2026-04-08",
-          locationLabel: "Paris 11e",
+          locationLabel: "Lyon 11e",
           wasteKg: 6,
           butts: 40,
           volunteersCount: 2,

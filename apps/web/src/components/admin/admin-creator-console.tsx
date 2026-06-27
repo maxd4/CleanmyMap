@@ -161,6 +161,7 @@ export function AdminCreatorConsole({
             <div className="relative z-10 space-y-4">
               <CmmButton
                 href="/admin"
+                prefetch={false}
                 tone="secondary"
                 variant="default"
                 className="group/btn w-full justify-start gap-4 rounded-2xl p-5 text-left"
@@ -178,6 +179,7 @@ export function AdminCreatorConsole({
 
               <CmmButton
                 href="/reports"
+                prefetch={false}
                 tone="primary"
                 variant="default"
                 className="group/btn w-full justify-start gap-4 rounded-2xl p-5 text-left"

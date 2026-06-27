@@ -253,31 +253,44 @@ describe("environmental impact project signals", () => {
 
   it("loads project signals with deterministic ordering under the cap", async () => {
     const orderingsByTable = new Map<string, Array<{ column: string; ascending?: boolean }>>();
+    let profilesQueryCount = 0;
     type QueryChain = {
       select: ReturnType<typeof vi.fn>;
+      eq: ReturnType<typeof vi.fn>;
       order: ReturnType<typeof vi.fn>;
       limit: ReturnType<typeof vi.fn>;
+      then: (
+        onfulfilled?: (value: { data: Array<Record<string, unknown>>; error: null }) => unknown,
+        onrejected?: (reason: unknown) => unknown,
+      ) => Promise<unknown>;
     };
     const makeChain = (table: string, rows: Array<Record<string, unknown>>) => {
       const state: {
         orderings: Array<{ column: string; ascending?: boolean }>;
+        limitValue: number;
       } = {
         orderings: [],
+        limitValue: rows.length,
       };
 
       const chain = {} as Partial<QueryChain>;
       chain.select = vi.fn(() => chain);
+      chain.eq = vi.fn(() => chain);
       chain.order = vi.fn((column: string, options?: { ascending?: boolean }) => {
         state.orderings.push({ column, ascending: options?.ascending });
         return chain;
       });
-      chain.limit = vi.fn(async (limit: number) => {
-        orderingsByTable.set(table, [...state.orderings]);
-        return {
-          data: rows.slice(0, limit),
-          error: null,
-        };
+      chain.limit = vi.fn((limit: number) => {
+        state.limitValue = limit;
+        return chain;
       });
+      chain.then = ((onfulfilled, onrejected) => {
+        orderingsByTable.set(table, [...state.orderings]);
+        return Promise.resolve({
+          data: rows.slice(0, state.limitValue),
+          error: null,
+        }).then(onfulfilled, onrejected);
+      }) as QueryChain["then"];
 
       return chain as QueryChain;
     };
@@ -286,10 +299,10 @@ describe("environmental impact project signals", () => {
       from: vi.fn((table: string) => {
         switch (table) {
           case "profiles":
-            return makeChain(table, [
-              { id: "user-b", created_at: "2026-05-02T12:00:00Z" },
-              { id: "user-a", created_at: "2026-05-02T12:00:00Z" },
-            ]);
+            profilesQueryCount += 1;
+            return profilesQueryCount === 1
+              ? makeChain("profiles-oldest", [{ created_at: "2026-05-01T12:00:00Z" }])
+              : makeChain("profiles-current", [{ created_at: "2026-05-02T12:00:00Z" }]);
           case "actions":
             return makeChain(table, [
               {
@@ -359,15 +372,16 @@ describe("environmental impact project signals", () => {
     };
 
     const signals = await loadEnvironmentalImpactProjectSignals(supabase as never, {
-      userId: null,
+      userId: "user-1",
       generatedAt: "2026-05-20T12:00:00.000Z",
     });
 
     expect(signals.signalBreakdown?.traffic.pageViewEvents).toBe(2);
-    expect(orderingsByTable.get("profiles")).toEqual([
-      { column: "created_at", ascending: false },
-      { column: "id", ascending: false },
+    expect(profilesQueryCount).toBe(2);
+    expect(orderingsByTable.get("profiles-oldest")).toEqual([
+      { column: "created_at", ascending: true },
     ]);
+    expect(orderingsByTable.get("profiles-current")).toEqual([]);
     expect(orderingsByTable.get("actions")).toEqual([
       { column: "created_at", ascending: false },
       { column: "id", ascending: false },

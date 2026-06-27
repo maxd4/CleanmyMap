@@ -6,6 +6,7 @@ import {
   LayersControl,
   MapContainer,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -37,6 +38,7 @@ type ActionsMapCanvasProps = {
   className?: string;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
+  initialViewport?: MapViewportState | null;
 };
 
 function MapViewportReporter({
@@ -75,6 +77,34 @@ function resolveViewportState(map: LeafletMap): MapViewportState {
   };
 }
 
+function MapViewportSync({
+  viewport,
+}: {
+  viewport: MapViewportState | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!viewport) {
+      return;
+    }
+
+    map.fitBounds(
+      [
+        [viewport.bounds.south, viewport.bounds.west],
+        [viewport.bounds.north, viewport.bounds.east],
+      ],
+      {
+        animate: false,
+        padding: [24, 24],
+        maxZoom: viewport.zoom,
+      },
+    );
+  }, [map, viewport]);
+
+  return null;
+}
+
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
@@ -84,8 +114,11 @@ export function ActionsMapCanvas({
   className,
   tone = "sky",
   onViewportChange,
+  initialViewport = null,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
+  const mapCenter = initialViewport?.center ?? center;
+  const mapZoom = initialViewport?.zoom ?? (compact ? 11 : 12);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
   const isEmerald = tone === "emerald";
   const mapShellClasses = isEmerald
@@ -153,8 +186,8 @@ export function ActionsMapCanvas({
       </div>
 
       <MapContainer
-        center={center}
-        zoom={compact ? 11 : 12}
+        center={mapCenter}
+        zoom={mapZoom}
         scrollWheelZoom
         wheelPxPerZoomLevel={120}
         className={
@@ -169,8 +202,9 @@ export function ActionsMapCanvas({
             : `h-[68vh] min-h-[34rem] w-full transition-colors duration-500 md:h-[74vh] md:min-h-[42rem] ${mapCanvasClass}`
         }
         >
+        <MapViewportSync viewport={initialViewport} />
         <MapViewportReporter onViewportChange={onViewportChange} />
-        <MapControls center={center} variant={compact ? "default" : "immersive"} tone={tone} />
+        <MapControls center={mapCenter} variant={compact ? "default" : "immersive"} tone={tone} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer

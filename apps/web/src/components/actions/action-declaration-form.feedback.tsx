@@ -187,7 +187,7 @@ export function ActionDeclarationFormFeedback({
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href={resolvedGroupJoinHref}
-                  prefetch
+                  prefetch={false}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-950 hover:bg-sky-100 transition"
                 >
                   <Link2 size={13} />
@@ -230,11 +230,11 @@ export function ActionDeclarationFormFeedback({
 
           <div className="flex flex-wrap gap-2">
             {createdId && (
-              <Link
-                href={`/actions/history?declaration=${encodeURIComponent(createdId)}`}
-                prefetch
-                className="flex items-center gap-1.5 rounded-lg border border-emerald-200/70 bg-[#ECF8EF] px-3 py-2 text-xs font-semibold text-emerald-950 hover:bg-[#E0F4E6] transition"
-              >
+                <Link
+                  href={`/actions/history?declaration=${encodeURIComponent(createdId)}`}
+                  prefetch={false}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200/70 bg-[#ECF8EF] px-3 py-2 text-xs font-semibold text-emerald-950 hover:bg-[#E0F4E6] transition"
+                >
                 <ExternalLink size={13} />
                 Voir ma déclaration
               </Link>
@@ -259,11 +259,11 @@ export function ActionDeclarationFormFeedback({
                 Nouvelle déclaration
               </button>
             )}
-            <Link
-              href="/actions/history"
-              prefetch
-              className="rounded-lg border border-emerald-200/70 bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-200 transition"
-            >
+              <Link
+                href="/actions/history"
+                prefetch={false}
+                className="rounded-lg border border-emerald-200/70 bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-200 transition"
+              >
               Historique
             </Link>
           </div>

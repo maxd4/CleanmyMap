@@ -1,12 +1,10 @@
 "use client";
 
 import type { AnnuaireEntry } from "./annuaire-map-canvas";
-import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { ShieldCheck, Info, Sparkles, Target, ArrowUpRight, Users, Clock, Mail } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 type AnnuaireGovernancePanelProps = {
   pendingEntries: AnnuaireEntry[];

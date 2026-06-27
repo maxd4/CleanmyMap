@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
 
 export type ProgressStatus = "idle" | "loading" | "processing" | "success" | "error" | "queued";
@@ -99,7 +99,7 @@ export function BackpressureFeedback({
               
               {status === "queued" && estimatedTime && (
                 <p className="text-xs cmm-text-muted">
-                  Temps d'attente estimé: ~{estimatedTime}s
+                  Temps d&apos;attente estimé: ~{estimatedTime}s
                 </p>
               )}
             </div>
@@ -128,7 +128,7 @@ export function BackpressureFeedback({
   );
 }
 
-export function useBackpressureStatus(pollIntervalMs = 5000) {
+export function useBackpressureStatus(pollIntervalMs = 15000) {
   const [status, setStatus] = useState<{
     active: number;
     queued: number;

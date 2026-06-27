@@ -137,6 +137,96 @@ function parseOperationId(value: unknown): string | undefined {
     : undefined;
 }
 
+function throwModerationResponseError(
+  status: number,
+  message: string,
+  hint?: string,
+  operationId?: string,
+): never {
+  switch (status) {
+    case 400:
+    case 409:
+      throw new ModerationClientError({
+        code: "invalid_payload",
+        message,
+        status,
+        hint,
+        operationId,
+      });
+    case 401:
+    case 403:
+      throw new ModerationClientError({
+        code: "permission_denied",
+        message,
+        status,
+        hint,
+        operationId,
+      });
+    case 404:
+      throw new ModerationClientError({
+        code: "not_found",
+        message,
+        status,
+        hint,
+        operationId,
+      });
+    default:
+      throw new ModerationClientError({
+        code: "server_error",
+        message,
+        status,
+        hint,
+        operationId,
+      });
+  }
+}
+
+function isModerationSuccessBody(
+  value: unknown,
+): value is {
+  status: "ok";
+  entityType: ModerationEntityType;
+  id: string;
+  sourceTable?: unknown;
+  copiedToLocalValidatedStore?: unknown;
+  operationId?: unknown;
+} {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const normalized = value as Record<string, unknown>;
+  return (
+    normalized["status"] === "ok" &&
+    typeof normalized["entityType"] === "string" &&
+    typeof normalized["id"] === "string"
+  );
+}
+
+function buildModerationSuccessResponse(
+  value: {
+    status: "ok";
+    entityType: ModerationEntityType;
+    id: string;
+    sourceTable?: unknown;
+    copiedToLocalValidatedStore?: unknown;
+    operationId?: unknown;
+  },
+): ModerationSuccessResponse {
+  return {
+    status: "ok",
+    entityType: value.entityType,
+    id: value.id,
+    sourceTable:
+      typeof value.sourceTable === "string" ? value.sourceTable : undefined,
+    copiedToLocalValidatedStore:
+      typeof value.copiedToLocalValidatedStore === "boolean"
+        ? value.copiedToLocalValidatedStore
+        : undefined,
+    operationId:
+      typeof value.operationId === "string" ? value.operationId : undefined,
+  };
+}
+
 export async function postAdminModeration(
   payload: ModerationPayload,
 ): Promise<ModerationSuccessResponse> {
@@ -157,61 +247,20 @@ export async function postAdminModeration(
 
   const body = await parseJsonSafely(response);
   if (!response.ok) {
-    const apiMessage = parseApiErrorMessage(body, "Moderation impossible.");
-    const hint = parseApiHint(body);
-    const operationId = parseOperationId(body);
-    if (response.status === 400 || response.status === 409) {
-      throw new ModerationClientError({
-        code: "invalid_payload",
-        message: apiMessage,
-        status: response.status,
-        hint,
-        operationId,
-      });
-    }
-    if (response.status === 401 || response.status === 403) {
-      throw new ModerationClientError({
-        code: "permission_denied",
-        message: apiMessage,
-        status: response.status,
-        hint,
-        operationId,
-      });
-    }
-    if (response.status === 404) {
-      throw new ModerationClientError({
-        code: "not_found",
-        message: apiMessage,
-        status: response.status,
-        hint,
-        operationId,
-      });
-    }
-    throw new ModerationClientError({
-      code: "server_error",
-      message: apiMessage,
-      status: response.status,
-      hint,
-      operationId,
-    });
+    throwModerationResponseError(
+      response.status,
+      parseApiErrorMessage(body, "Moderation impossible."),
+      parseApiHint(body),
+      parseOperationId(body),
+    );
   }
 
-  if (!body || typeof body !== "object") {
+  if (!isModerationSuccessBody(body)) {
     throw new ModerationClientError({
       code: "server_error",
-      message: "Reponse moderation invalide.",
-    });
-  }
-
-  const normalized = body as Record<string, unknown>;
-  if (
-    normalized["status"] !== "ok" ||
-    typeof normalized["entityType"] !== "string" ||
-    typeof normalized["id"] !== "string"
-  ) {
-    throw new ModerationClientError({
-      code: "server_error",
-      message: "Reponse moderation incomplete.",
+      message: !body || typeof body !== "object"
+        ? "Reponse moderation invalide."
+        : "Reponse moderation incomplete.",
     });
   }
 
@@ -219,21 +268,5 @@ export async function postAdminModeration(
     dispatchActionPollutionScoreReferencesInvalidated();
   }
 
-  return {
-    status: "ok",
-    entityType: normalized["entityType"] as ModerationEntityType,
-    id: normalized["id"],
-    sourceTable:
-      typeof normalized["sourceTable"] === "string"
-        ? normalized["sourceTable"]
-        : undefined,
-    copiedToLocalValidatedStore:
-      typeof normalized["copiedToLocalValidatedStore"] === "boolean"
-        ? normalized["copiedToLocalValidatedStore"]
-        : undefined,
-    operationId:
-      typeof normalized["operationId"] === "string"
-        ? normalized["operationId"]
-        : undefined,
-  };
+  return buildModerationSuccessResponse(body);
 }

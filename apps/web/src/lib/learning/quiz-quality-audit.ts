@@ -262,17 +262,6 @@ const LOCAL_RULE_KEYWORDS = [
   /\bbac de tri\b/i,
 ];
 
-const SAFETY_KEYWORDS = [
-  /\bseringue\b/i,
-  /\bbidon\b/i,
-  /\bgaz\b/i,
-  /\bcoupant\b/i,
-  /\bsouillé\b/i,
-  /\bouvrir\b/i,
-  /\bmanipuler\b/i,
-  /\bblesse\b/i,
-];
-
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
@@ -337,10 +326,6 @@ function hasEstimationCue(question: QuizQuestion): boolean {
 
 function hasLocalRuleCue(question: QuizQuestion): boolean {
   return containsPattern(getQuestionSummary(question), LOCAL_RULE_KEYWORDS);
-}
-
-function hasSafetyCue(question: QuizQuestion): boolean {
-  return containsPattern(getQuestionSummary(question), SAFETY_KEYWORDS);
 }
 
 function explanationTeaches(question: QuizQuestion): boolean {

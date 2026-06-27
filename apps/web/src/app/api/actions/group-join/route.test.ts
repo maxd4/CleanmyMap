@@ -44,8 +44,13 @@ type ParticipantRow = {
   participation_source?: "group_form" | "admin" | "import";
 };
 
-type QueryResult<T> = {
+type ManyResult<T> = {
   data: T[];
+  error: null;
+};
+
+type SingleResult<T> = {
+  data: T | null;
   error: null;
 };
 
@@ -54,10 +59,10 @@ type ActionsChain = {
   eq: (field: string, value: string) => ActionsChain;
   in: (field: string, values: string[]) => ActionsChain;
   order: (field: string, options?: { ascending?: boolean }) => ActionsChain;
-  limit: (value: number) => Promise<QueryResult<ActionRow>>;
-  maybeSingle: () => Promise<QueryResult<ActionRow | null>>;
+  limit: (value: number) => Promise<ManyResult<ActionRow>>;
+  maybeSingle: () => Promise<SingleResult<ActionRow>>;
   then: (
-    resolve: (value: QueryResult<ActionRow>) => void,
+    resolve: (value: ManyResult<ActionRow>) => void,
     reject: (reason: unknown) => void,
   ) => Promise<void>;
 };
@@ -68,9 +73,9 @@ type ParticipantsChain = {
   eq: (field: string, value: string) => ParticipantsChain;
   in: (field: string, values: string[]) => ParticipantsChain;
   order: (field: string, options?: { ascending?: boolean }) => ParticipantsChain;
-  limit: (value: number) => Promise<QueryResult<ParticipantRow>>;
-  maybeSingle: () => Promise<QueryResult<ParticipantRow | null>>;
-  single: () => Promise<QueryResult<ParticipantRow | null>>;
+  limit: (value: number) => Promise<ManyResult<ParticipantRow>>;
+  maybeSingle: () => Promise<SingleResult<ParticipantRow>>;
+  single: () => Promise<SingleResult<ParticipantRow>>;
   insert: (values: {
     action_id: string;
     user_id: string;
@@ -104,7 +109,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     inFilters: {},
     limitValue: null,
   };
-  const chain = {
+  const chain: ActionsChain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
@@ -154,7 +159,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
         error: null,
       };
     }),
-    then: (resolve: (value: QueryResult<ActionRow>) => void, reject: (reason: unknown) => void) =>
+    then: (resolve: (value: ManyResult<ActionRow>) => void, reject: (reason: unknown) => void) =>
       Promise.resolve({
         data: actions.filter((action) => {
           if (state.filters.id && action.id !== state.filters.id) {
@@ -171,7 +176,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
         }),
         error: null,
       }).then(resolve, reject),
-  } as ActionsChain;
+  };
 
   return chain;
 }
@@ -222,7 +227,7 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
       return true;
     });
 
-  const chain = {
+  const chain: ParticipantsChain = {
     select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
       state.headCount = Boolean(options?.head);
       return chain;
@@ -333,7 +338,7 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
         error: null,
       }).then(resolve, reject);
     },
-  } as ParticipantsChain;
+  };
 
   return chain;
 }

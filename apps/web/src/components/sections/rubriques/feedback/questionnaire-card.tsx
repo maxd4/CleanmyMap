@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -225,19 +225,17 @@ export function QuestionnaireCard({
               ? "Le retour est enregistré dans l'espace de feedback interne, avec un vrai suivi."
               : "The feedback is recorded in the internal feedback space with real follow-up."}
           </p>
-          <SignInButton mode="modal">
-            <CmmButton
-              type="button"
-              tone="secondary"
-              variant="pill"
-              className={cn(
-                "mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2",
-                accentClasses.button,
-              )}
-            >
-              {locale === "fr" ? "Se connecter" : "Sign in"}
-            </CmmButton>
-          </SignInButton>
+          <CmmButton
+            href="/sign-in"
+            tone="secondary"
+            variant="pill"
+            className={cn(
+              "mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2",
+              accentClasses.button,
+            )}
+          >
+            {locale === "fr" ? "Se connecter" : "Sign in"}
+          </CmmButton>
         </div>
       ) : null}
 

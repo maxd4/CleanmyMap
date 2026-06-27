@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { loadGamificationBadgesList } from "./listing";
 
@@ -72,7 +73,7 @@ describe("gamification badges listing", () => {
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    };
+    } as unknown as SupabaseClient;
 
     const payload = await loadGamificationBadgesList(supabase, "user-1");
 

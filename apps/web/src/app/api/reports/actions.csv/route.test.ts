@@ -7,6 +7,50 @@ const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
 const buildActionsCsvMock = vi.hoisted(() => vi.fn());
 const buildActionsCsvFilenameMock = vi.hoisted(() => vi.fn());
 
+function createSupabaseMock(options?: {
+  cacheHit?: boolean;
+}) {
+  const createSignedUrlMock = vi.fn();
+  if (options?.cacheHit) {
+    createSignedUrlMock.mockResolvedValue({
+      data: {
+        signedUrl:
+          "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
+      },
+      error: null,
+    });
+  } else {
+    createSignedUrlMock
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: "not found" },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          signedUrl:
+            "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
+        },
+        error: null,
+      });
+  }
+
+  const uploadMock = vi.fn(async () => ({
+    data: { path: "actions-csv/cache.csv" },
+    error: null,
+  }));
+
+  return {
+    storage: {
+      from: vi.fn(() => ({
+        createSignedUrl: createSignedUrlMock,
+        upload: uploadMock,
+      })),
+    },
+    createSignedUrlMock,
+    uploadMock,
+  };
+}
+
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
 }));
@@ -46,7 +90,7 @@ describe("GET /api/reports/actions.csv", () => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
-    getSupabaseServerClientMock.mockReturnValue({});
+    getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
     fetchUnifiedActionContractsMock.mockResolvedValue({
       items: [
         {
@@ -78,26 +122,54 @@ describe("GET /api/reports/actions.csv", () => {
     buildActionsCsvFilenameMock.mockReturnValue("export_actions_cmm_13-05-2026.csv");
   });
 
-  it("returns a csv attachment with warning headers", async () => {
+  it("redirects to a cached csv asset without rebuilding it", async () => {
+    const cachedSupabase = createSupabaseMock({ cacheHit: true });
+    getSupabaseServerClientMock.mockReturnValue(cachedSupabase);
     const { GET } = await import("./route");
+
     const response = await GET(
       new Request("http://localhost/api/reports/actions.csv?limit=1&days=30"),
     );
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("text/csv");
-    expect(response.headers.get("Content-Disposition")).toContain(
-      'filename="export_actions_cmm_13-05-2026.csv"',
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
     );
-    expect(response.headers.get("X-Deliverable-Name")).toBe(
-      "export_actions_cmm_13-05-2026.csv",
+    expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(buildActionsCsvMock).not.toHaveBeenCalled();
+    expect(cachedSupabase.storage.from).toHaveBeenCalledWith("reports");
+    expect(cachedSupabase.createSignedUrlMock).toHaveBeenCalledTimes(1);
+    expect(cachedSupabase.createSignedUrlMock).toHaveBeenCalledWith(
+      expect.any(String),
+      60 * 60 * 24,
+      { download: "export_actions_cmm_13-05-2026.csv" },
     );
-    expect(response.headers.get("X-Deliverable-Format")).toBe("csv");
-    expect(response.headers.get("X-Export-Warning")).toBe(
-      "Dataset truncated to limit",
+    expect(cachedSupabase.uploadMock).not.toHaveBeenCalled();
+  });
+
+  it("uploads a missing csv artifact before redirecting to it", async () => {
+    const cachedSupabase = createSupabaseMock();
+    getSupabaseServerClientMock.mockReturnValue(cachedSupabase);
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request("http://localhost/api/reports/actions.csv?limit=1&days=30"),
     );
-    expect(response.headers.get("X-Data-Warning")).toBe("sheet lag");
-    expect(await response.text()).toContain("action-1");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
+    );
+    expect(fetchUnifiedActionContractsMock).toHaveBeenCalledTimes(1);
+    expect(buildActionsCsvMock).toHaveBeenCalledTimes(1);
+    expect(cachedSupabase.uploadMock).toHaveBeenCalledTimes(1);
+    expect(cachedSupabase.createSignedUrlMock).toHaveBeenCalledTimes(2);
+    expect(cachedSupabase.createSignedUrlMock).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      60 * 60 * 24,
+      { download: "export_actions_cmm_13-05-2026.csv" },
+    );
   });
 
   it("returns 403 when access is denied", async () => {

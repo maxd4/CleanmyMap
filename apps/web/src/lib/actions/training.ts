@@ -39,6 +39,56 @@ export function isVisionTrainingEnabled(): boolean {
   return env.VISION_TRAINING_ENABLED === true;
 }
 
+function resolveTrainingExampleStatus(
+  visionEstimate: ActionVisionEstimate | null,
+): TrainingExampleStatus {
+  if (!visionEstimate) {
+    return "pending_label";
+  }
+  return visionEstimate.provisional ? "needs_review" : "labelled";
+}
+
+function buildTrainingVisionSignals(
+  visionEstimate: ActionVisionEstimate,
+): Record<string, unknown> {
+  return {
+    bagsCount: visionEstimate.bagsCount.value,
+    fillLevel: visionEstimate.fillLevel.value,
+    density: visionEstimate.density.value,
+  };
+}
+
+function buildTrainingExamplePayload(params: {
+  actionId: string;
+  photos: ActionPhotoAsset[];
+  realWeightKg: number | null;
+  visionEstimate: ActionVisionEstimate | null;
+  metadata: Record<string, unknown> | undefined;
+}): TrainingExampleInsert {
+  const visionEstimate = params.visionEstimate;
+  const visionSignals = visionEstimate
+    ? buildTrainingVisionSignals(visionEstimate)
+    : null;
+
+  return {
+    action_id: params.actionId,
+    photos: params.photos,
+    poids_reel: params.realWeightKg,
+    poids_estime: visionEstimate?.wasteKg.value ?? null,
+    intervalle: visionEstimate?.wasteKg.interval ?? null,
+    confiance: visionEstimate?.wasteKg.confidence ?? null,
+    metadata: {
+      ...(params.metadata ?? {}),
+      trainingObjective: "predict_waste_mass_from_bag_photos",
+      labelSource: "form_real_weight",
+      visionSignals,
+      photoCount: params.photos.length,
+    },
+    model_version: visionEstimate?.modelVersion ?? "vision-hybrid-v1",
+    status: resolveTrainingExampleStatus(visionEstimate),
+  };
+}
+
 export function buildTrainingExampleInsert(params: {
   actionId: string;
   photos?: ActionPhotoAsset[] | null;
@@ -56,38 +106,87 @@ export function buildTrainingExampleInsert(params: {
     return null;
   }
 
-  const confidence = visionEstimate?.wasteKg.confidence ?? null;
-  const estimated = visionEstimate?.wasteKg.value ?? null;
-  const interval = visionEstimate?.wasteKg.interval ?? null;
-  const status: TrainingExampleStatus = visionEstimate
-    ? visionEstimate.provisional
-      ? "needs_review"
-      : "labelled"
-    : "pending_label";
-
-  return {
-    action_id: params.actionId,
+  return buildTrainingExamplePayload({
+    actionId: params.actionId,
     photos,
-    poids_reel: params.realWeightKg,
-    poids_estime: estimated,
-    intervalle: interval,
-    confiance: confidence,
-    metadata: {
-      ...(params.metadata ?? {}),
-      trainingObjective: "predict_waste_mass_from_bag_photos",
-      labelSource: "form_real_weight",
-      visionSignals: visionEstimate
-        ? {
-            bagsCount: visionEstimate.bagsCount.value,
-            fillLevel: visionEstimate.fillLevel.value,
-            density: visionEstimate.density.value,
-          }
-        : null,
-      photoCount: photos.length,
-    },
-    model_version: visionEstimate?.modelVersion ?? "vision-hybrid-v1",
-    status: status,
+    realWeightKg: params.realWeightKg,
+    visionEstimate,
+    metadata: params.metadata,
+  });
+}
+
+type TrainingMetricsAccumulator = {
+  totalAbsError: number;
+  totalSquaredError: number;
+  labelledCount: number;
+  latestModelVersion: string | null;
+  latestTimestamp: number;
+  statusCounts: VisionTrainingMetrics["statusCounts"];
+};
+
+function createTrainingStatusCounts(): VisionTrainingMetrics["statusCounts"] {
+  return {
+    pending_label: 0,
+    labelled: 0,
+    needs_review: 0,
+    no_photo: 0,
   };
+}
+
+function buildTrainingMetricsAccumulator(): TrainingMetricsAccumulator {
+  return {
+    totalAbsError: 0,
+    totalSquaredError: 0,
+    labelledCount: 0,
+    latestModelVersion: null,
+    latestTimestamp: 0,
+    statusCounts: createTrainingStatusCounts(),
+  };
+}
+
+function updateTrainingStatusCounts(
+  statusCounts: VisionTrainingMetrics["statusCounts"],
+  status: TrainingExampleStatus | null,
+): void {
+  if (status && status in statusCounts) {
+    statusCounts[status] += 1;
+  }
+}
+
+function updateTrainingLatestModelVersion(
+  accumulator: TrainingMetricsAccumulator,
+  row: {
+    model_version: string | null;
+    created_at: string | null;
+  },
+): void {
+  if (!row.model_version || !row.created_at) {
+    return;
+  }
+  const timestamp = Date.parse(row.created_at);
+  if (Number.isFinite(timestamp) && timestamp >= accumulator.latestTimestamp) {
+    accumulator.latestTimestamp = timestamp;
+    accumulator.latestModelVersion = row.model_version;
+  }
+}
+
+function accumulateTrainingError(
+  accumulator: TrainingMetricsAccumulator,
+  row: {
+    poids_reel: number | null;
+    poids_estime: number | null;
+  },
+): void {
+  if (
+    typeof row.poids_reel !== "number" ||
+    typeof row.poids_estime !== "number"
+  ) {
+    return;
+  }
+  const error = row.poids_reel - row.poids_estime;
+  accumulator.totalAbsError += Math.abs(error);
+  accumulator.totalSquaredError += error * error;
+  accumulator.labelledCount += 1;
 }
 
 export async function recordTrainingExample(
@@ -147,17 +246,7 @@ export async function loadVisionTrainingMetrics(
     return fallback;
   }
 
-  let totalAbsError = 0;
-  let totalSquaredError = 0;
-  let labelledCount = 0;
-  let latestModelVersion: string | null = null;
-  let latestTimestamp = 0;
-  const statusCounts: VisionTrainingMetrics["statusCounts"] = {
-    pending_label: 0,
-    labelled: 0,
-    needs_review: 0,
-    no_photo: 0,
-  };
+  const accumulator = buildTrainingMetricsAccumulator();
 
   for (const row of result.data as Array<{
     poids_reel: number | null;
@@ -166,38 +255,25 @@ export async function loadVisionTrainingMetrics(
     status: TrainingExampleStatus | null;
     created_at: string | null;
   }>) {
-    if (row.status && row.status in statusCounts) {
-      statusCounts[row.status] += 1;
-    }
-    if (row.model_version && row.created_at) {
-      const timestamp = Date.parse(row.created_at);
-      if (Number.isFinite(timestamp) && timestamp >= latestTimestamp) {
-        latestTimestamp = timestamp;
-        latestModelVersion = row.model_version;
-      }
-    }
-    if (
-      typeof row.poids_reel === "number" &&
-      typeof row.poids_estime === "number"
-    ) {
-      const error = row.poids_reel - row.poids_estime;
-      totalAbsError += Math.abs(error);
-      totalSquaredError += error * error;
-      labelledCount += 1;
-    }
+    updateTrainingStatusCounts(accumulator.statusCounts, row.status);
+    updateTrainingLatestModelVersion(accumulator, row);
+    accumulateTrainingError(accumulator, row);
   }
 
   return {
     count: result.data.length,
-    labelledCount,
-    mae: labelledCount > 0 ? totalAbsError / labelledCount : null,
-    rmse:
-      labelledCount > 0
-        ? Math.sqrt(totalSquaredError / labelledCount)
+    labelledCount: accumulator.labelledCount,
+    mae:
+      accumulator.labelledCount > 0
+        ? accumulator.totalAbsError / accumulator.labelledCount
         : null,
-    latestModelVersion,
+    rmse:
+      accumulator.labelledCount > 0
+        ? Math.sqrt(accumulator.totalSquaredError / accumulator.labelledCount)
+        : null,
+    latestModelVersion: accumulator.latestModelVersion,
     lowDataWarning: result.data.length < 20,
     paused: result.data.length === 0,
-    statusCounts,
+    statusCounts: accumulator.statusCounts,
   };
 }

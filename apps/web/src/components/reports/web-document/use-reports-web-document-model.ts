@@ -82,7 +82,7 @@ export function useReportsWebDocumentModel({
   );
   const community = useSWR(
     initialCommunityEvents ? null : ["report-web-community-events"],
-    () => fetchCommunityEvents({ limit: 240 }),
+    () => fetchCommunityEvents({ limit: 120 }),
     swrRecentViewOptions,
   );
   const weather = useSWR(
@@ -95,6 +95,7 @@ export function useReportsWebDocumentModel({
       if (!response.ok) throw new Error("weather_unavailable");
       return (await response.json()) as ReportsWeather;
     },
+    swrRecentViewOptions,
   );
 
   const actionsAllItems = useMemo(

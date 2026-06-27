@@ -21,8 +21,8 @@ vi.mock("@/config/gamification.config", () => ({
     minLevelForInfiniteXp: 999999,
     wasteMilestoneStepKg: 1,
     buttsMilestoneStepCount: 1,
-    calculateWasteXp: (n: number) => 0,
-    calculateButtsXp: (n: number) => 0,
+    calculateWasteXp: (_n: number) => 0,
+    calculateButtsXp: (_n: number) => 0,
     version: "test",
   },
 }));

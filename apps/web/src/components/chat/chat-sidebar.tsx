@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
-import { MessageCircle, Bell, Star, Map, Leaf } from "lucide-react";
+import { Leaf } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
@@ -23,7 +23,6 @@ export type ChatSidebarChannel = {
 
 export type ChatSidebarTopic = ChatTopicDefinition & {
   active: boolean;
-  onSelect: () => void;
 };
 
 type ChatSidebarProps = {
@@ -91,13 +90,14 @@ export const ChatSidebar = memo(function ChatSidebar({
           {topics.map((topic) => {
             const TopicIcon = topic.icon;
             const isActive = currentChannelType === "community" && topic.active;
+            const mockCount = ((topic.id.charCodeAt(0) + topic.label.length) % 5) + 1;
             return (
               <button
                 key={topic.id}
                 type="button"
                 onClick={() => {
                   onSelectChannel("community");
-                  topic.onSelect();
+                  onSelectTopic(topic.id);
                 }}
                 className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 ${
                   isActive 
@@ -122,7 +122,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                 </div>
                 {/* Mock count for visual parity with mockup */}
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
-                  {Math.floor(Math.random() * 5) + 1}
+                  {mockCount}
                 </span>
               </button>
             );
@@ -147,7 +147,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         {renderButton(dmChannel, {
           label: "Discussions privées",
           description: "Échanges confidentiels en tête-à-tête",
-          count: 5
+          count: 5,
         })}
       </section>
 
@@ -185,7 +185,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           Impact ensemble <Leaf size={12} />
         </h4>
         <p className={`text-[10px] leading-relaxed z-10 font-medium ${isLight ? "text-emerald-600/80" : "text-emerald-300/70"}`}>
-          Chaque message partagé rapproche notre territoire d'un environnement plus propre.
+          Chaque message partagé rapproche notre territoire d&apos;un environnement plus propre.
         </p>
       </div>
 

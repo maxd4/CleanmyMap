@@ -8,6 +8,12 @@ import {
 } from "./progression-tracking";
 import { runActionQuery } from "@/lib/actions/query";
 
+type ClerkIdRow = {
+  created_by_clerk_id?: string | null;
+  participant_clerk_id?: string | null;
+  organizer_clerk_id?: string | null;
+};
+
 async function backfillUserActions(
   supabase: SupabaseClient,
   userId: string,
@@ -146,6 +152,28 @@ async function backfillUserCommunityOps(
   }
 }
 
+function throwIfQueryError(error: { message: string } | null): void {
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+function addUserId(userIds: Set<string>, userId: string | null | undefined): void {
+  if (typeof userId === "string" && userId.trim().length > 0) {
+    userIds.add(userId);
+  }
+}
+
+function collectUserIds<T extends ClerkIdRow>(
+  rows: T[],
+  selectUserId: (row: T) => string | null | undefined,
+  userIds: Set<string>,
+): void {
+  for (const row of rows) {
+    addUserId(userIds, selectUserId(row));
+  }
+}
+
 export async function backfillUserProgression(
   supabase: SupabaseClient,
   userId: string,
@@ -169,33 +197,15 @@ export async function backfillAllProgression(
     supabase.from("community_events").select("organizer_clerk_id").limit(10000),
   ]);
 
-  for (const result of [spotsUsers, rsvpUsers, eventUsers]) {
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-  }
+  throwIfQueryError(spotsUsers.error);
+  throwIfQueryError(rsvpUsers.error);
+  throwIfQueryError(eventUsers.error);
 
   const userIds = new Set<string>();
-  for (const row of actionsUsers) {
-    if ((row.created_by_clerk_id ?? "").trim()) {
-      userIds.add(row.created_by_clerk_id);
-    }
-  }
-  for (const row of (spotsUsers.data ?? []) as Array<{ created_by_clerk_id: string }>) {
-    if ((row.created_by_clerk_id ?? "").trim()) {
-      userIds.add(row.created_by_clerk_id);
-    }
-  }
-  for (const row of (rsvpUsers.data ?? []) as Array<{ participant_clerk_id: string }>) {
-    if ((row.participant_clerk_id ?? "").trim()) {
-      userIds.add(row.participant_clerk_id);
-    }
-  }
-  for (const row of (eventUsers.data ?? []) as Array<{ organizer_clerk_id: string }>) {
-    if ((row.organizer_clerk_id ?? "").trim()) {
-      userIds.add(row.organizer_clerk_id);
-    }
-  }
+  collectUserIds(actionsUsers, (row) => row.created_by_clerk_id, userIds);
+  collectUserIds((spotsUsers.data ?? []) as Array<{ created_by_clerk_id?: string | null }>, (row) => row.created_by_clerk_id, userIds);
+  collectUserIds((rsvpUsers.data ?? []) as Array<{ participant_clerk_id?: string | null }>, (row) => row.participant_clerk_id, userIds);
+  collectUserIds((eventUsers.data ?? []) as Array<{ organizer_clerk_id?: string | null }>, (row) => row.organizer_clerk_id, userIds);
 
   for (const userId of userIds) {
     await backfillUserProgression(supabase, userId);

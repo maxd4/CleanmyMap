@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
+import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
 const DeferredLearnArtworkAccordionComponent = dynamic(
   () =>
@@ -117,5 +118,24 @@ export function DeferredSustainableGoalsInteractive() {
 }
 
 export function DeferredEnvironmentalQuiz() {
-  return <DeferredEnvironmentalQuizComponent />;
+  const { ref, isInView } = useInViewOnce<HTMLDivElement>({
+    rootMargin: "240px 0px",
+  });
+
+  return (
+    <div ref={ref} className="min-h-[760px]">
+      {isInView ? (
+        <DeferredEnvironmentalQuizComponent />
+      ) : (
+        <div className="flex h-[760px] items-center justify-center rounded-[2rem] border border-amber-200/70 bg-white/80">
+          <div className="space-y-3 text-center">
+            <div className="mx-auto h-12 w-12 animate-pulse rounded-full border-2 border-amber-500/20" />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+              Le quiz s&apos;active à l&apos;approche de la section.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

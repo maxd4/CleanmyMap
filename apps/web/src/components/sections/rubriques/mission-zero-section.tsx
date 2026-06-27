@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { 
   Building2, Users, Trash2, Leaf, Target, 
-  Shield, ArrowRight, CheckCircle2, Sparkles, MapPin, BarChart3
+  Shield, ArrowRight, CheckCircle2, Sparkles
 } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -104,12 +103,12 @@ export function MissionZeroSection() {
                  <Sparkles size={32} />
               </div>
               <div className="space-y-2">
-                 <h3 className="text-2xl font-black text-white tracking-tight">Standard d'Excellence</h3>
-                 <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Protocole d'engagement territorial</p>
+                 <h3 className="text-2xl font-black text-white tracking-tight">Standard d&apos;Excellence</h3>
+                 <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Protocole d&apos;engagement territorial</p>
               </div>
            </div>
            <p className="relative z-10 text-sm font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
-              CleanMyMap accompagne les territoires dans une démarche de labellisation informelle basée sur 5 piliers fondamentaux de l'action publique environnementale.
+              CleanMyMap accompagne les territoires dans une démarche de labellisation informelle basée sur 5 piliers fondamentaux de l&apos;action publique environnementale.
            </p>
         </RubriqueCard>
 
@@ -179,7 +178,7 @@ export function MissionZeroSection() {
            </div>
 
            <CmmButton type="button" tone="primary" variant="pill" className="relative z-10 flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-[0.3em] shadow-2xl transition-all">
-              Démarrer l'audit
+              Démarrer l&apos;audit
               <ArrowRight size={18} />
            </CmmButton>
         </RubriqueCard>

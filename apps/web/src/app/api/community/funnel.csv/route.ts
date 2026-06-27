@@ -5,15 +5,25 @@ import {
  formatCleanupWasteTypesLabel,
  parseCommunityEventDescription,
 } from"@/lib/community/event-ops";
+import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
 import { escapeCsvCell } from"@/lib/reports/csv";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
-import type { CommunityEventRow, EventRsvpRow } from"@/types/database";
+import type { CommunityEventRow } from"@/types/database";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import { toActionListItem } from"@/lib/actions/data-contract";
 import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
 
 export const runtime ="nodejs";
 
+
+function formatParisDate(date: Date): string {
+ return new Intl.DateTimeFormat("en-CA", {
+ timeZone:"Europe/Paris",
+ year:"numeric",
+ month:"2-digit",
+ day:"2-digit",
+ }).format(date);
+}
 
 function parsePositiveInteger(
  raw: string | null,
@@ -45,6 +55,9 @@ export async function GET(request: Request) {
  400,
  );
  const eventId = url.searchParams.get("eventId");
+ const floorDate = formatParisDate(
+ new Date(Date.now() - days * 24 * 60 * 60 * 1000),
+ );
 
  try {
  const supabase = getSupabaseServerClient();
@@ -56,6 +69,7 @@ export async function GET(request: Request) {
  if (eventId && eventId.trim() !=="") {
  query = query.eq("id", eventId.trim());
  } else {
+ query = query.gte("event_date", floorDate);
  query = query.order("event_date", { ascending: false }).limit(limit);
  }
 
@@ -70,32 +84,15 @@ export async function GET(request: Request) {
  const events = (eventsResult.data ?? []) as CommunityEventRow[];
  const eventIds = events.map((item) => item.id);
 
- const rsvpsResult = eventIds.length
- ? await supabase
- .from("event_rsvps")
- .select("event_id, participant_clerk_id, status")
- .in("event_id", eventIds)
- : { data: [] as EventRsvpRow[], error: null };
-
- if (rsvpsResult.error) {
- return new Response("Export unavailable", {
-  status: 500,
+ const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+  eventIds,
+  userId: null,
  });
- }
-
- const grouped = new Map<string, EventRsvpRow[]>();
- for (const row of (rsvpsResult.data ?? []) as EventRsvpRow[]) {
- const previous = grouped.get(row.event_id) ?? [];
- previous.push(row);
- grouped.set(row.event_id, previous);
- }
+ const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
 
  const items = events.map((event) => {
  const ops = parseCommunityEventDescription(event.description).ops;
- const rsvps = grouped.get(event.id) ?? [];
- const yes = rsvps.filter((item) => item.status ==="yes").length;
- const maybe = rsvps.filter((item) => item.status ==="maybe").length;
- const no = rsvps.filter((item) => item.status ==="no").length;
+ const summary = summaryByEventId.get(event.id) ?? null;
  return {
  id: event.id,
  createdAt: event.created_at,
@@ -113,18 +110,18 @@ export async function GET(request: Request) {
  cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
  cleanupSupportLevel: ops.cleanupSupportLevel,
  cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
- rsvpCounts: { yes, maybe, no, total: yes + maybe + no },
+ rsvpCounts: {
+  yes: summary?.yesCount ?? 0,
+  maybe: summary?.maybeCount ?? 0,
+  no: summary?.noCount ?? 0,
+  total: summary?.totalCount ?? 0,
+ },
  myRsvpStatus: null,
  };
- });
+});
 
  const now = new Date();
- const floorMs = now.getTime() - days * 24 * 60 * 60 * 1000;
- const filteredEvents = items.filter((item) => {
- if (eventId && eventId.trim() !=="") return true; // Bypass date constraint if specific event
- const eventMs = new Date(`${item.eventDate}T12:00:00`).getTime();
- return Number.isFinite(eventMs) && eventMs >= floorMs;
- });
+ const filteredEvents = items;
 
  const { items: contracts, isTruncated: isActionsTruncated } =
  await fetchUnifiedActionContracts(supabase, {

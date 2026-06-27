@@ -6,23 +6,28 @@ import {
 } from "./progression-impact";
 import type { ActionRow } from "./progression-types";
 
+const DEFAULT_ACTION_ROW: ActionRow = {
+  id: "action_1",
+  created_at: "2026-04-18T10:00:00.000Z",
+  created_by_clerk_id: "user_1",
+  actor_name: "Alex",
+  action_date: "2026-04-18",
+  location_label: "France",
+  latitude: 48.85,
+  longitude: 2.35,
+  waste_kg: 0,
+  cigarette_butts: 0,
+  volunteers_count: 1,
+  duration_minutes: 0,
+  status: "approved",
+  notes: null,
+  manual_drawing: null,
+};
+
 function actionRow(input: Partial<ActionRow>): ActionRow {
   return {
-    id: input.id ?? "action_1",
-    created_at: input.created_at ?? "2026-04-18T10:00:00.000Z",
-    created_by_clerk_id: input.created_by_clerk_id ?? "user_1",
-    actor_name: input.actor_name ?? "Alex",
-    action_date: input.action_date ?? "2026-04-18",
-    location_label: input.location_label ?? "Paris",
-    latitude: input.latitude ?? 48.85,
-    longitude: input.longitude ?? 2.35,
-    waste_kg: input.waste_kg ?? 0,
-    cigarette_butts: input.cigarette_butts ?? 0,
-    volunteers_count: input.volunteers_count ?? 1,
-    duration_minutes: input.duration_minutes ?? 0,
-    status: input.status ?? "approved",
-    notes: input.notes ?? null,
-    manual_drawing: input.manual_drawing ?? null,
+    ...DEFAULT_ACTION_ROW,
+    ...input,
   };
 }
 

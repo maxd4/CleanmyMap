@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   loadGamificationFunnelCounts,
   loadGamificationUserCounters,
@@ -21,7 +22,7 @@ describe("gamification counters", () => {
           error: null,
         };
       }),
-    };
+    } as unknown as SupabaseClient;
 
     await expect(loadGamificationFunnelCounts(supabase)).resolves.toEqual({
       totalUsers: 12,
@@ -50,7 +51,7 @@ describe("gamification counters", () => {
           error: null,
         };
       }),
-    };
+    } as unknown as SupabaseClient;
 
     await expect(loadGamificationUserCounters(supabase, "user-1")).resolves.toEqual({
       totalPoints: 14.5,

@@ -16,11 +16,11 @@ const payload: PdfReportPayload = {
   rubrique: "Historique terrain",
   periode: "Année 2026",
   organizationType: "association",
-  organizationName: "Clean Paris",
+  organizationName: "Clean France",
   data: {
     summary: ["Synthèse visible depuis la page."],
     stats: [{ label: "Actions", value: 12 }],
-    rows: [{ Date: "2026-05-10", Lieu: "Paris", Kg: 4.5 }],
+    rows: [{ Date: "2026-05-10", Lieu: "France", Kg: 4.5 }],
     columns: [
       { key: "Date", label: "Date" },
       { key: "Lieu", label: "Lieu" },
@@ -53,7 +53,7 @@ describe("simple PDF export", () => {
     expect(lines).toContain("Rubrique: Historique terrain");
     expect(lines).toContain("- Actions: 12");
     expect(lines).toContain("Date | Lieu | Kg");
-    expect(lines).toContain("2026-05-10 | Paris | 4.5");
+    expect(lines).toContain("2026-05-10 | France | 4.5");
   });
 
   it("generates a PDF byte stream", () => {

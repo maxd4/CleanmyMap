@@ -8,19 +8,15 @@ import {
   COMPOST_POINTS,
   COMPOST_RULE_CARDS,
   COMPOST_TERRITORY_LINKS,
-  type CompostPoint,
 } from "@/lib/learning/compost-guide-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import {
   CompostReflexGrid,
   CompostRulesList,
-  CompostStepCards,
   OfficialMapsList,
   SelectedPointsGrid,
 } from "./compost-components";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 
@@ -227,6 +223,3 @@ export function CompostSection() {
     </SectionShell>
   );
 }
-
-// Helper component for internal links since 'Link' wasn't imported in previous thought
-import Link from "next/link";

@@ -16,6 +16,7 @@ import { buildPersonalizationSnapshot } from "./personalization-panel";
 import { buildRoleStatusCards } from "./roles-status-panel";
 import type { MeResponse } from "./gamification-types";
 import type { DisplayMode } from "@/lib/ui/preferences";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -1024,7 +1025,11 @@ export function GamificationSection() {
     data: meData,
     isLoading: meLoading,
     error: meError,
-  } = useSWR("gamification-me", () => fetchJson<MeResponse>("/api/gamification/me"));
+  } = useSWR(
+    "gamification-me",
+    () => fetchJson<MeResponse>("/api/gamification/me"),
+    swrRecentViewOptions,
+  );
 
   const progression = meData?.progression;
   const personalization = useMemo(

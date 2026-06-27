@@ -70,8 +70,7 @@ export async function GET(request: Request) {
 
   try {
     return NextResponse.json(await buildCodexAdminPayload(historyLimit));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "error",
@@ -103,8 +102,7 @@ export async function POST(request: Request) {
       triggeredBy: "admin-manual",
       snapshot,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         status: "error",

@@ -12,9 +12,9 @@ import {
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
+import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
 
 export const runtime ="nodejs";
-
 const updateEventOpsSchema = z
  .object({
  eventId: z.string().trim().min(1).max(120),
@@ -34,37 +34,18 @@ type CommunityEventRow = {
  description: string | null;
 };
 
-type EventRsvpRow = {
- event_id: string;
- status:"yes" |"maybe" |"no";
- participant_clerk_id: string;
-};
-
 function toEventResponseItem(
  event: CommunityEventRow,
- rsvps: EventRsvpRow[],
- userId: string | null,
+ summary: {
+  yesCount: number;
+  maybeCount: number;
+  noCount: number;
+  totalCount: number;
+  myRsvpStatus: "yes" | "maybe" | "no" | null;
+ } | null,
 ) {
  const parsedDescription = parseCommunityEventDescription(event.description);
  const ops = parsedDescription.ops ?? defaultCommunityEventOps();
-
- let yes = 0;
- let maybe = 0;
- let no = 0;
- let myRsvpStatus:"yes" |"maybe" |"no" | null = null;
-
- for (const rsvp of rsvps) {
- if (rsvp.status ==="yes") {
- yes += 1;
- } else if (rsvp.status ==="maybe") {
- maybe += 1;
- } else {
- no += 1;
- }
- if (userId && rsvp.participant_clerk_id === userId) {
- myRsvpStatus = rsvp.status;
- }
- }
 
  return {
  id: event.id,
@@ -80,15 +61,15 @@ function toEventResponseItem(
  cleanupObjective: ops.cleanupObjective,
  cleanupZone: ops.cleanupZone,
  cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
- cleanupSupportLevel: ops.cleanupSupportLevel,
- cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
- rsvpCounts: {
-  yes,
-  maybe,
- no,
- total: yes + maybe + no,
- },
- myRsvpStatus,
+  cleanupSupportLevel: ops.cleanupSupportLevel,
+  cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
+  rsvpCounts: {
+  yes: summary?.yesCount ?? 0,
+  maybe: summary?.maybeCount ?? 0,
+ no: summary?.noCount ?? 0,
+ total: summary?.totalCount ?? 0,
+  },
+  myRsvpStatus: summary?.myRsvpStatus ?? null,
  };
 }
 
@@ -167,19 +148,14 @@ export async function POST(request: Request) {
  return handleApiError(updated.error, "POST /api/community/events/ops (update)");
  }
 
- const rsvpsResult = await supabase
- .from("event_rsvps")
- .select("event_id, participant_clerk_id, status")
- .eq("event_id", parsed.data.eventId);
-
- if (rsvpsResult.error) {
- return handleApiError(rsvpsResult.error, "POST /api/community/events/ops (rsvps)");
- }
+ const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+  eventIds: [parsed.data.eventId],
+  userId: userId ?? null,
+ });
 
  const item = toEventResponseItem(
- updated.data as CommunityEventRow,
- (rsvpsResult.data ?? []) as EventRsvpRow[],
- userId,
+  updated.data as CommunityEventRow,
+  summaries[0] ?? null,
  );
 
  if (userId) {

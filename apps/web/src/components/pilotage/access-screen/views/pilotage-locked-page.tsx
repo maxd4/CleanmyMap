@@ -141,6 +141,7 @@ export function PilotageLockedPage({
               </Link>
               <Link
                 href="/actions/map"
+                prefetch={false}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-white/14"
               >
                 <Compass size={16} aria-hidden="true" />

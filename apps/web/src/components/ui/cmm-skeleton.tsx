@@ -38,7 +38,7 @@ function CmmSkeleton({
   )
 }
 
-function SkeletonStat({ className, ...props }: SkeletonProps) {
+function SkeletonStat({ className }: SkeletonProps) {
   return (
     <div className={cn("space-y-2", className)}>
       <CmmSkeleton variant="stat" />
@@ -47,7 +47,7 @@ function SkeletonStat({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonCard({ className, ...props }: SkeletonProps) {
+function SkeletonCard({ className }: SkeletonProps) {
   return (
     <div className={cn("space-y-3 p-4", className)}>
       <div className="flex items-center gap-3">
@@ -63,7 +63,7 @@ function SkeletonCard({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonChart({ className, ...props }: SkeletonProps) {
+function SkeletonChart({ className }: SkeletonProps) {
   return (
     <div className={cn("space-y-2", className)}>
       <CmmSkeleton variant="chart" />
@@ -71,7 +71,7 @@ function SkeletonChart({ className, ...props }: SkeletonProps) {
   )
 }
 
-function SkeletonList({ count = 3, className, ...props }: { count?: number } & SkeletonProps) {
+function SkeletonList({ count = 3, className }: { count?: number } & SkeletonProps) {
   return (
     <div className={cn("space-y-2", className)}>
       {[...Array(count)].map((_, i) => (
@@ -81,7 +81,7 @@ function SkeletonList({ count = 3, className, ...props }: { count?: number } & S
   )
 }
 
-function SkeletonGrid({ count = 4, className, ...props }: { count?: number } & SkeletonProps) {
+function SkeletonGrid({ count = 4, className }: { count?: number } & SkeletonProps) {
   return (
     <div className={cn("grid gap-4", className)}>
       {[...Array(count)].map((_, i) => (

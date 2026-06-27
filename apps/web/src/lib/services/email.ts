@@ -91,6 +91,90 @@ async function recordEmailEvent(params: {
   }
 }
 
+async function sendMockEmail(params: {
+  actorUserId: string | null;
+  recipientCount: number;
+  subject: string;
+  meta?: Record<string, unknown>;
+  from: string | undefined;
+  replyTo: string | undefined;
+  reason: "missing_resend" | "missing_sender";
+}) {
+  if (params.reason === "missing_resend") {
+    logWarning("EmailService", "RESEND_API_KEY missing, logging email instead", {
+      subject: params.subject,
+      from: params.from,
+      replyTo: params.replyTo,
+    });
+  } else {
+    logFailure("EmailService", "Missing sender configuration", undefined, {
+      subject: params.subject,
+    });
+  }
+
+  await recordEmailEvent({
+    actorUserId: params.actorUserId,
+    provider: "mock",
+    recipientCount: params.recipientCount,
+    subject: params.subject,
+    status: params.reason === "missing_resend" ? "mocked" : "missing_config",
+    messageId: params.reason === "missing_resend" ? "mock_id" : null,
+    meta: params.meta,
+  });
+
+  return params.reason === "missing_resend"
+    ? { id: "mock_id", status: "mocked" as const }
+    : { id: null, status: "missing_config" as const };
+}
+
+async function sendRealEmail(params: {
+  actorUserId: string | null;
+  recipientCount: number;
+  to: string | string[];
+  subject: string;
+  html: string;
+  from: string;
+  replyTo: string | undefined;
+  meta?: Record<string, unknown>;
+}) {
+  const resend = getResendClient();
+  if (!resend) {
+    return sendMockEmail({
+      actorUserId: params.actorUserId,
+      recipientCount: params.recipientCount,
+      subject: params.subject,
+      meta: params.meta,
+      from: params.from,
+      replyTo: params.replyTo,
+      reason: "missing_resend",
+    });
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: params.from,
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    replyTo: params.replyTo,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  await recordEmailEvent({
+    actorUserId: params.actorUserId,
+    provider: "resend",
+    recipientCount: params.recipientCount,
+    subject: params.subject,
+    status: "sent",
+    messageId: data?.id ?? null,
+    meta: params.meta,
+  });
+
+  return { id: data?.id, status: "sent" as const };
+}
+
 /**
  * Unified Email Service.
  * Centralizes sending logic, error handling and dev-mode mocking.
@@ -105,68 +189,29 @@ export async function sendEmail(payload: EmailPayload) {
     await ensureEmailQuotaAvailable(actorUserId);
   }
 
-  const resend = getResendClient();
-
-  if (!resend) {
-    logWarning("EmailService", "RESEND_API_KEY missing, logging email instead", {
-      to: payload.to,
+  if (!from) {
+    return sendMockEmail({
+      actorUserId,
+      recipientCount,
       subject: payload.subject,
+      meta: payload.meta,
       from,
       replyTo,
+      reason: "missing_sender",
     });
-    await recordEmailEvent({
-      actorUserId,
-      provider: "mock",
-      recipientCount,
-      subject: payload.subject,
-      status: "mocked",
-      messageId: "mock_id",
-      meta: payload.meta,
-    });
-    return { id: "mock_id", status: "mocked" };
-  }
-
-  if (!from) {
-    logFailure("EmailService", "Missing sender configuration", undefined, {
-      to: payload.to,
-      subject: payload.subject,
-    });
-    await recordEmailEvent({
-      actorUserId,
-      provider: "mock",
-      recipientCount,
-      subject: payload.subject,
-      status: "missing_config",
-      messageId: null,
-      meta: payload.meta,
-    });
-    return { id: null, status: "missing_config" };
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from,
+    return await sendRealEmail({
+      actorUserId,
+      recipientCount,
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
+      from: from!,
       replyTo,
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    await recordEmailEvent({
-      actorUserId,
-      provider: "resend",
-      recipientCount,
-      subject: payload.subject,
-      status: "sent",
-      messageId: data?.id ?? null,
       meta: payload.meta,
     });
-
-    return { id: data?.id, status: "sent" };
   } catch (error) {
     logFailure("EmailService", "Send failed", error, {
       to: payload.to,

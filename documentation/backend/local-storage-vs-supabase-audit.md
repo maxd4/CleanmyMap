@@ -6,9 +6,23 @@ Après inspection des routes API, des stores serveur et des préférences UI, je
 
 Le projet utilise déjà `localStorage` pour les préférences d'interface. Les changements appliqués ici ont surtout pour but de centraliser ces états locaux dans une couche typée et SSR-safe, pas de déplacer des données métier hors de Supabase.
 
+Référence canonique à garder en tête:
+
+- [Guide développeur Supabase](../development/supabase-quota-guide.md)
+
+## Où stocker quoi
+
+| Type de donnée | Emplacement par défaut | Point d'attention |
+| --- | --- | --- |
+| Contenus pédagogiques, guides, décisions, checklists durables | Repo Markdown / Git | Versionner et publier comme contenu statique dès que possible |
+| Préférences UI, brouillons non critiques, quiz anonymes, états temporaires | `localStorage` | Garder ces états côté navigateur tant qu'ils n'ont pas de valeur métier durable |
+| Données métier vivantes, comptes, rôles, actions, participations, agrégats persistés | Supabase | Soumettre aux RLS, borner les lectures et ne pas dupliquer le calcul côté client |
+| Données dérivées lues souvent mais recalculables | Cache HTTP, ISR, `SWR`, cache applicatif | Utiliser le cache pour réduire les recalculs, jamais comme source de vérité |
+| Fichiers téléchargeables, images uploadées, PDF générés, exports réutilisables | Fichier préparé / Storage | Conserver seulement les métadonnées minimales en base si le fichier doit rester utile |
+
 ## Doit rester dans Supabase
 
-- `profiles` et synchronisation Clerk -> Supabase : identité, rôle, avatar, arrondissement.
+- `profiles` et synchronisation Clerk -> Supabase : identité, rôle, avatar, données de territoire et compatibilité `arrondissement` héritée.
 - `actions` et `spots` : déclarations, géométrie, dates, volumes, notes, photos et métadonnées.
 - `newsletter_subscriptions` : email et consentement RGPD.
 - `community_events` / `event_rsvps` : événements, RSVP et compteurs.
@@ -21,6 +35,13 @@ Le projet utilise déjà `localStorage` pour les préférences d'interface. Les 
 - `runbook_checks` : données opérationnelles et d'exploitation.
 - `training_examples` : données de supervision liées aux images et à l'estimation.
 - `app_notifications` : notifications destinées à l'utilisateur.
+
+## Compatibilité territoire
+
+- les nouveaux champs de localisation doivent vivre dans `profiles.metadata` et rester synchronisés avec `paris_arrondissement` tant que des comptes historiques existent ;
+- les champs `territory*` sont la source de vérité fonctionnelle ;
+- `arrondissement`, `zoneName` et `parisArrondissement` restent des alias de lecture ou de migration, pas le modèle principal ;
+- un backfill progressif est préférable à une réécriture brutale des comptes existants.
 
 ## Contenus pédagogiques et quiz
 

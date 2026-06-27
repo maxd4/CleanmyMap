@@ -37,29 +37,28 @@ function createActionsChain(action: {
     notes: action.notes,
   };
 
+  type SingleResult<T> = {
+    data: T | null;
+    error: null;
+  };
+
   type ActionChain = {
     select: (columns: string) => ActionChain;
     eq: (field: string, value: string) => ActionChain;
-    maybeSingle: () => Promise<{
-      data: {
-        id: string;
-        created_by_clerk_id: string | null;
-        status: "pending" | "approved" | "rejected";
-        notes: string | null;
-      };
-      error: null;
-    }>;
+    maybeSingle: () => Promise<SingleResult<{
+      id: string;
+      created_by_clerk_id: string | null;
+      status: "pending" | "approved" | "rejected";
+      notes: string | null;
+    }>>;
     update: (payload: { notes: string | null }) => ActionChain;
-    single: () => Promise<{
-      data: {
-        id: string;
-        notes: string | null;
-      };
-      error: null;
-    }>;
+    single: () => Promise<SingleResult<{
+      id: string;
+      notes: string | null;
+    }>>;
   };
 
-  const chain = {
+  const chain: ActionChain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     maybeSingle: vi.fn(async () => ({
@@ -82,7 +81,7 @@ function createActionsChain(action: {
       },
       error: null,
     })),
-  } as ActionChain;
+  };
 
   return chain;
 }
@@ -101,6 +100,7 @@ function createParticipantsChain(participants: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
     limitValue: number | null;
+    inserting?: ParticipantRow;
     pendingUpdate?: Record<string, unknown>;
   } = {
     filters: {},
@@ -152,15 +152,25 @@ function createParticipantsChain(participants: {
     participation_source?: "group_form" | "admin" | "import";
   };
 
+  type ManyResult<T> = {
+    data: T[];
+    error: null;
+  };
+
+  type SingleResult<T> = {
+    data: T | null;
+    error: null;
+  };
+
   type ParticipantChain = {
     select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantChain;
     eq: (field: string, value: string) => ParticipantChain;
     in: (field: string, values: string[]) => ParticipantChain;
     order: (field: string, options?: { ascending?: boolean }) => ParticipantChain;
-    limit: (limit: number) => Promise<{ data: ParticipantRow[]; error: null }>;
-    maybeSingle: () => Promise<{ data: ParticipantRow | null; error: null }>;
+    limit: (limit: number) => Promise<ManyResult<ParticipantRow>>;
+    maybeSingle: () => Promise<SingleResult<ParticipantRow>>;
     update: (values: Record<string, unknown>) => ParticipantChain;
-    single: () => Promise<{ data: ParticipantRow | null; error: null }>;
+    single: () => Promise<SingleResult<ParticipantRow>>;
     insert: (values: {
       action_id: string;
       user_id: string;
@@ -178,7 +188,7 @@ function createParticipantsChain(participants: {
     ) => Promise<void>;
   };
 
-  const chain = {
+  const chain: ParticipantChain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
@@ -204,6 +214,27 @@ function createParticipantsChain(participants: {
         error: null,
       };
     }),
+    insert: vi.fn(
+      (values: {
+        action_id: string;
+        user_id: string;
+        joined_at?: string;
+        participation_status?: "pending" | "confirmed" | "cancelled";
+        participation_source?: "group_form" | "admin" | "import";
+      }) => {
+        const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
+        state.inserting = {
+          id: `participant-${participants.length + 1}`,
+          created_at: joinedAt,
+          joined_at: joinedAt,
+          participation_status: values.participation_status ?? "confirmed",
+          participation_source: values.participation_source ?? "group_form",
+          action_id: values.action_id,
+          user_id: values.user_id,
+        };
+        return chain;
+      },
+    ),
     update: vi.fn((values: Record<string, unknown>) => {
       state.pendingUpdate = values;
       return chain;
@@ -265,7 +296,7 @@ function createParticipantsChain(participants: {
           .map((row) => normalizeRow(row)),
         error: null,
       }).then(resolve, reject),
-  } as ParticipantChain;
+  };
 
   return chain;
 }

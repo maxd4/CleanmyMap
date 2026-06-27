@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
-import { loadEnvironmentalImpactDashboard } from "@/lib/environmental-impact-estimator/dashboard-capture";
+import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
 
 export const runtime = "nodejs";
 
@@ -24,10 +24,18 @@ export async function GET(request: Request) {
   const historyLimit = parseHistoryLimit(url.searchParams.get("historyLimit"));
 
   try {
-    const result = await loadEnvironmentalImpactDashboard({
-      userId: null,
-      historyLimit,
-    });
+    const result = await loadEnvironmentalImpactDashboardSnapshotOnly({ historyLimit });
+
+    if (!result) {
+      return NextResponse.json(
+        {
+          status: "error",
+          error: "Aucun snapshot d'impact environnemental n'est encore disponible.",
+          details: "Unavailable",
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json({
       ...result,

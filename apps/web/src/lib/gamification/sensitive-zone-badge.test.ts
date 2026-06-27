@@ -39,14 +39,14 @@ describe("deriveSensitiveAreasFromContracts", () => {
       ...Array.from({ length: 5 }, (_, index) =>
         buildContract({
           id: `zone-10-${index}`,
-          locationLabel: `Paris 10e - Rue ${index}`,
+          locationLabel: `Lyon 10e - Rue ${index}`,
           observedAt: "2026-05-10",
           wasteKg: 18,
         }),
       ),
       buildContract({
         id: "zone-11-1",
-        locationLabel: "Paris 11e - Rue B",
+        locationLabel: "Lyon 11e - Rue B",
         observedAt: "2026-05-10",
         wasteKg: 1,
       }),
@@ -68,27 +68,27 @@ describe("computeSensitiveZoneApaisementSummary", () => {
       rows: [
         {
           id: "action-1",
-          location_label: "Paris 10e - Rue A",
+          location_label: "Lyon 10e - Rue A",
           status: "approved",
         },
         {
           id: "action-2",
-          location_label: "Paris 10e - Rue B",
+          location_label: "Lyon 10e - Rue B",
           status: "approved",
         },
         {
           id: "action-3",
-          location_label: "Paris 10e - Rue C",
+          location_label: "Lyon 10e - Rue C",
           status: "approved",
         },
         {
           id: "action-4",
-          location_label: "Paris 11e - Rue D",
+          location_label: "Lyon 11e - Rue D",
           status: "approved",
         },
         {
           id: "action-5",
-          location_label: "Paris 10e - Rue E",
+          location_label: "Lyon 10e - Rue E",
           status: "rejected",
         },
       ],

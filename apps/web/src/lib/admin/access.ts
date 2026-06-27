@@ -18,7 +18,7 @@ export async function checkAdminAccess() {
     if (!userRole || (userRole.role !== 'admin' && userRole.role !== 'godmode')) {
       redirect('/');
     }
-  } catch (e) {
+  } catch {
     // If role check fails, deny access
     redirect('/');
   }

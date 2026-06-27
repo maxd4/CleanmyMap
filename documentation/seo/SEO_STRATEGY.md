@@ -1,6 +1,6 @@
 # Stratégie SEO/AEO/GEO/AIO/SXO CleanMyMap
 
-Ce document définit la stratégie de visibilité web pour CleanMyMap, différenciation avec "CleanMyMac" et optimisation pour les moteurs de recherche et assistants IA.
+Ce document définit la stratégie de visibilité web pour CleanMyMap, la différenciation avec "CleanMyMac" et l'optimisation pour les moteurs de recherche et assistants IA sur un périmètre national.
 
 ## Axes d'optimisation
 
@@ -15,11 +15,13 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, différen
 ## Mots-clés stratégiques
 
 ### Mots-clés principaux (France)
-- cleanwalk Paris
-- dépollution urbaine Paris
-- carte propreté Paris
-- signalement déchets Paris
-- benevolat proprete
+- cleanwalk France
+- dépollution urbaine
+- carte propreté
+- signalement déchets
+- bénévolat propreté
+- actions citoyennes locales
+- réseau propreté nationale
 
 ### Lexique écologique
 - écologie, développement durable
@@ -31,8 +33,8 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, différen
 - impact terrain, valorisation des déchets
 
 ### Différenciation CleanMyMac
-- Focus sur "carte" + "France/Paris"
-- Vocabulaire: dépollution, propreté, signalement
+- Focus sur "carte" + "France"
+- Vocabulaire: dépollution, propreté, signalement, coordination, impact
 - Pas de mention "Mac" ou "cleanup software"
 
 ## Fichiers clés
@@ -79,7 +81,7 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 ## Maintenance SEO
 
 ### Checklist mensuelle
-- [ ] Vérifier le sitemap (16 pages)
+- [ ] Vérifier le sitemap
 - [ ] Tester les мета descriptions
 - [ ] Valider les schemas JSON-LD
 - [ ] Checker les redirections .com → .fr
@@ -131,15 +133,16 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 
 ## Notes
 
-- Toujours utiliser .fr pour les URLs françaises
-- Préférer les mots-clés longue traine
-- Maintenir un ratio mots-clés densité naturelle
-- Prioriser le contenu de qualité >= quantité
+- Toujours utiliser `.fr` pour les URLs françaises
+- Préférer les mots-clés longue traîne
+- Maintenir un ratio mots-clés / densité naturelle
+- Prioriser le contenu de qualité sur la quantité
+- Garder `arrondissement` comme terme de compatibilité ou de précision locale, pas comme cadre principal de positionnement
 
 ## Roadmap 2026
 
 ### Mi-Mai (15-31 Mai)
-- [ ] Audit pages sitemap (16 pages)
+- [ ] Audit pages sitemap
 - [ ] Test Rich Results complet
 - [ ] Vérification indexation
 - [ ] Ajouter schema Event
@@ -158,6 +161,13 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 - [ ] Audit backlinks
 - [ ] Mise à jour mots-clés été
 - [ ] Vérification redirections .com → .fr
+
+## Cadre éditorial cible
+
+- Périmètre principal: France entière
+- Périmètres secondaires: région, département, commune, quartier, arrondissement si pertinent
+- Dans les titres et descriptions, privilégier les usages métier plutôt qu'un ancrage géographique unique
+- Réserver les mentions locales à des pages, filtres ou exemples réellement ciblés
 
 ---
 

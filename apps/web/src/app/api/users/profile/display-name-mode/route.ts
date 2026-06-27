@@ -14,24 +14,34 @@ import {
   setDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
+import { revalidateTag } from "next/cache";
 
 const updateDisplayNameModeSchema = z.object({
   displayNameMode: z.enum(["full_name", "pseudo"]),
 });
 
+const DISPLAY_NAME_MODE_CACHE_HEADERS = {
+  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+};
+
 export async function GET() {
   const identity = await getCurrentUserIdentity();
   if (!identity) return unauthorizedJsonResponse();
 
-  return NextResponse.json({
-    userId: identity.userId,
-    displayName: identity.displayName,
-    displayNameMode: identity.displayNameMode ?? "full_name",
-    handle: identity.handle,
-    username: identity.username,
-    firstName: identity.firstName,
-    email: identity.email,
-  });
+  return NextResponse.json(
+    {
+      userId: identity.userId,
+      displayName: identity.displayName,
+      displayNameMode: identity.displayNameMode ?? "full_name",
+      handle: identity.handle,
+      username: identity.username,
+      firstName: identity.firstName,
+      email: identity.email,
+    },
+    {
+      headers: DISPLAY_NAME_MODE_CACHE_HEADERS,
+    },
+  );
 }
 
 export async function PATCH(request: Request) {
@@ -122,6 +132,8 @@ export async function PATCH(request: Request) {
         error,
       );
     }
+
+    revalidateTag("admin-referral-lineage-export", "max");
 
     const response = NextResponse.json({
       status: "updated",

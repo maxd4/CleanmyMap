@@ -5,13 +5,13 @@ import {
 } from "./map-controls.utils";
 
 describe("map-controls utils", () => {
-  it("builds a bounded greater Paris nominatim url", () => {
+  it("builds a bounded national nominatim url", () => {
     const url = buildNominatimSearchUrl("  Rue de Rivoli  ");
     expect(url).toContain("https://nominatim.openstreetmap.org/search?");
     expect(url).toContain("q=Rue+de+Rivoli");
     expect(url).toContain("bounded=1");
     expect(url).toContain("countrycodes=fr");
-    expect(url).toContain("viewbox=2.12%2C48.98%2C2.55%2C48.74");
+    expect(url).toContain("viewbox=-5.5%2C51.5%2C10%2C41");
   });
 
   it("returns null for empty searches", () => {

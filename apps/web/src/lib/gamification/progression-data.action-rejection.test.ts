@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { syncUserActionProgression } from "./progression-data";
@@ -193,10 +194,9 @@ function createDeleteChain() {
     select: (columns: string) => DeleteChain;
   };
 
-  const chain = {
-    error: null,
-    eq: vi.fn(() => chain),
-  } as DeleteChain;
+  const chain = {} as DeleteChain;
+  chain.error = null;
+  chain.eq = vi.fn(() => chain);
   chain.delete = vi.fn(() => chain);
   chain.select = vi.fn(() => chain);
   return chain;
@@ -235,7 +235,7 @@ describe("syncUserActionProgression action rejection", () => {
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    };
+    } as unknown as SupabaseClient;
 
     const firstPass = await syncUserActionProgression(supabase, "user-1");
     const firstValidationEvents = insertedEvents.filter(

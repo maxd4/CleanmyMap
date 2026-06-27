@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from"react";
 import useSWR from"swr";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 
 type FunnelResponse = {
  status:"ok";
@@ -37,11 +38,12 @@ export function FunnelConversionPanel() {
  const response = await fetch(
   `/api/analytics/funnel?periodDays=${periodDays}`,
  );
- if (!response.ok) {
- throw new Error("funnel_unavailable");
- }
- return (await response.json()) as FunnelResponse;
+  if (!response.ok) {
+   throw new Error("funnel_unavailable");
+  }
+  return (await response.json()) as FunnelResponse;
  },
+  swrRecentViewOptions,
  );
 
  const quick = useMemo(

@@ -38,7 +38,7 @@ describe("posthog server integration", () => {
     const { trackServerEvent } = await import("./server");
 
     const result = await trackServerEvent("user_123", "spot_created", {
-      location: "Paris",
+      location: "France",
     }, {
       consentGranted: true,
     });
@@ -52,9 +52,9 @@ describe("posthog server integration", () => {
     expect(captureMock).toHaveBeenCalledWith(
       expect.objectContaining({
         distinctId: "user_123",
-        event: "spot_created",
-        properties: expect.objectContaining({ location: "Paris" }),
-      }),
+      event: "spot_created",
+      properties: expect.objectContaining({ location: "France" }),
+    }),
     );
     expect(shutdownMock).toHaveBeenCalledTimes(1);
   });
@@ -64,7 +64,7 @@ describe("posthog server integration", () => {
     const { trackServerEvent } = await import("./server");
 
     const result = await trackServerEvent("user_123", "spot_created", {
-      location: "Paris",
+      location: "France",
     }, {
       consentGranted: true,
     });
@@ -78,7 +78,7 @@ describe("posthog server integration", () => {
     const { trackServerEvent } = await import("./server");
 
     const result = await trackServerEvent("user_123", "spot_created", {
-      location: "Paris",
+      location: "France",
     });
 
     expect(result).toBe(false);

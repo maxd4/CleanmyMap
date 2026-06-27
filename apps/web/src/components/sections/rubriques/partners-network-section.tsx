@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 type Locale = "fr" | "en";
 type PartnerKindFilter = "all" | "association" | "collective" | "company" | "institution";
 type DomainFilter = "all" | "environnemental" | "social" | "humanitaire";
-type ZoneFilter = "all" | "paris" | "idf" | "france";
+type TerritoryFilter = "all" | "france" | "region" | "departement" | "ville";
 type CollaborationTone = "violet" | "indigo" | "sky" | "rose" | "amber";
 
 type CollaborationCard = {
@@ -264,10 +264,6 @@ function getTerritoryLabel(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): st
     return "France entière";
   }
 
-  if (/paris/i.test(entry.location)) {
-    return entry.location;
-  }
-
   if (entry.coveredArrondissements.length > 0) {
     return `${formatCount(entry.coveredArrondissements.length)} arrondissements`;
   }
@@ -333,22 +329,43 @@ function matchesKind(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], filter: P
   return entry.kind === "association";
 }
 
-function matchesZone(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], filter: ZoneFilter): boolean {
+function getTerritoryBucket(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): Exclude<TerritoryFilter, "all"> {
+  const text = normalizeText(
+    [
+      entry.name,
+      entry.description,
+      entry.location,
+      entry.legalIdentity,
+      ...(entry.tags ?? []),
+    ].join(" "),
+  );
+
+  if (entry.scope === "national" || entry.scope === "france" || text.includes("france") || text.includes("national")) {
+    return "france";
+  }
+
+  if (text.includes("region") || text.includes("regional") || text.includes("ile de france")) {
+    return "region";
+  }
+
+  if (
+    entry.coveredArrondissements.length > 0
+    || /\b\d{1,2}e\b/.test(text)
+    || text.includes("arrondissement")
+    || text.includes("departement")
+  ) {
+    return "departement";
+  }
+
+  return "ville";
+}
+
+function matchesTerritory(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], filter: TerritoryFilter): boolean {
   if (filter === "all") {
     return true;
   }
 
-  const text = normalizeText(entry.location);
-
-  if (filter === "paris") {
-    return text.includes("paris");
-  }
-
-  if (filter === "idf") {
-    return text.includes("paris") || text.includes("idf") || text.includes("ile de france");
-  }
-
-  return text.includes("france") || entry.scope === "national" || entry.scope === "france";
+  return getTerritoryBucket(entry) === filter;
 }
 
 export function PartnersNetworkSection({ fr }: { fr: boolean }) {
@@ -356,7 +373,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<PartnerKindFilter>("all");
   const [domainFilter, setDomainFilter] = useState<DomainFilter>("all");
-  const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
+  const [zoneFilter, setZoneFilter] = useState<TerritoryFilter>("all");
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const collaborationsRef = useRef<HTMLDivElement | null>(null);
 
@@ -385,7 +402,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
           return false;
         }
 
-        if (!matchesZone(entry, zoneFilter)) {
+        if (!matchesTerritory(entry, zoneFilter)) {
           return false;
         }
 
@@ -530,17 +547,18 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
 
               <label className="space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                  {fr ? "Zone géographique" : "Geographic area"}
+                  {fr ? "Niveau territorial" : "Territorial level"}
                 </span>
                 <select
                   value={zoneFilter}
-                  onChange={(event) => setZoneFilter(event.target.value as ZoneFilter)}
+                  onChange={(event) => setZoneFilter(event.target.value as TerritoryFilter)}
                   className="h-12 w-full rounded-2xl border border-violet-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                 >
                   <option value="all">{fr ? "Toutes" : "All"}</option>
-                  <option value="paris">{fr ? "Paris" : "Paris"}</option>
-                  <option value="idf">{fr ? "Île-de-France" : "Greater Paris"}</option>
-                  <option value="france">{fr ? "France entière" : "France-wide"}</option>
+                  <option value="france">{fr ? "France" : "National"}</option>
+                  <option value="region">{fr ? "Région" : "Region"}</option>
+                  <option value="departement">{fr ? "Département" : "Department"}</option>
+                  <option value="ville">{fr ? "Ville" : "City"}</option>
                 </select>
               </label>
 

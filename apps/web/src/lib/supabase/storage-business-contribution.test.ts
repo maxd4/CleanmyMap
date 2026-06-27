@@ -47,6 +47,14 @@ const currentObjects: StorageUsageObjectRow[] = [
   },
 ];
 
+const previousBusinessBreakdown: StorageUsageSnapshot["businessBreakdown"] = [
+  { key: "actions_terrain", label: "Actions terrain", bytes: 2_000, count: 1, sharePercent: 25, averageBytes: 2_000 },
+  { key: "pieces_jointes_document", label: "Pièces jointes document", bytes: 1_000, count: 1, sharePercent: 12.5, averageBytes: 1_000 },
+  { key: "socle_estimateur_impact", label: "Socle d’estimateur d’impact", bytes: 2_000, count: 1, sharePercent: 25, averageBytes: 2_000 },
+  { key: "pieces_jointes_photo", label: "Pièces jointes photo", bytes: 1_000, count: 1, sharePercent: 12.5, averageBytes: 1_000 },
+  { key: "donnees_utilisateur", label: "Données utilisateur", bytes: 800, count: 1, sharePercent: 10, averageBytes: 800 },
+];
+
 describe("storage business contributions", () => {
   it("builds per-domain contributions with monthly deltas and top files", () => {
     const current = buildStorageUsageSnapshot(currentObjects, quotaInfo, "2026-05-20T12:00:00.000Z");
@@ -60,13 +68,7 @@ describe("storage business contributions", () => {
       remainingBytes: 12_000,
       remainingLabel: "11.72 KB",
       usagePercent: 40,
-      businessBreakdown: [
-        { key: "actions_terrain", label: "Actions terrain", bytes: 2_000, count: 1, sharePercent: 25, averageBytes: 2_000 },
-        { key: "pieces_jointes_document", label: "Pièces jointes document", bytes: 1_000, count: 1, sharePercent: 12.5, averageBytes: 1_000 },
-        { key: "socle_estimateur_impact", label: "Socle d’estimateur d’impact", bytes: 2_000, count: 1, sharePercent: 25, averageBytes: 2_000 },
-        { key: "pieces_jointes_photo", label: "Pièces jointes photo", bytes: 1_000, count: 1, sharePercent: 12.5, averageBytes: 1_000 },
-        { key: "donnees_utilisateur", label: "Données utilisateur", bytes: 800, count: 1, sharePercent: 10, averageBytes: 800 },
-      ],
+      businessBreakdown: previousBusinessBreakdown,
     };
 
     const report = buildStorageBusinessContributions({
@@ -75,19 +77,25 @@ describe("storage business contributions", () => {
       previousSnapshot: previous,
     });
 
-    expect(report.previousSnapshotMonth).toBe("2026-04-01");
-    expect(report.items[0]?.id).toBe("actions_terrain");
-    expect(report.items[0]?.deltaBytes).toBe(2_000);
-    expect(report.items[0]?.deltaPercent).toBe(100);
-    expect(report.items[1]?.id).toBe("socle_estimateur_impact");
-    expect(report.items[1]?.deltaCount).toBe(1);
-    expect(report.items[1]?.topFiles[0]?.name).toBe("reports/rapport-1.pdf");
-    expect(report.items[1]?.topFiles[1]?.name).toBe("reports/rapport-2.pdf");
-    expect(report.items[1]?.mimeSubtypes[0]?.label).toBe("application/pdf");
-    expect(report.items[1]?.mimeSubtypes[0]?.count).toBe(2);
-    expect(report.items[2]?.id).toBe("pieces_jointes_document");
-    expect(report.items[2]?.currentBytes).toBe(3_000);
-    expect(report.items[4]?.id).toBe("donnees_utilisateur");
-    expect(report.items[4]?.deltaBytes).toBe(0);
+    expectStorageBusinessContributionReport(report);
   });
 });
+
+function expectStorageBusinessContributionReport(
+  report: ReturnType<typeof buildStorageBusinessContributions>,
+): void {
+  expect(report.previousSnapshotMonth).toBe("2026-04-01");
+  expect(report.items[0]?.id).toBe("actions_terrain");
+  expect(report.items[0]?.deltaBytes).toBe(2_000);
+  expect(report.items[0]?.deltaPercent).toBe(100);
+  expect(report.items[1]?.id).toBe("socle_estimateur_impact");
+  expect(report.items[1]?.deltaCount).toBe(1);
+  expect(report.items[1]?.topFiles[0]?.name).toBe("reports/rapport-1.pdf");
+  expect(report.items[1]?.topFiles[1]?.name).toBe("reports/rapport-2.pdf");
+  expect(report.items[1]?.mimeSubtypes[0]?.label).toBe("application/pdf");
+  expect(report.items[1]?.mimeSubtypes[0]?.count).toBe(2);
+  expect(report.items[2]?.id).toBe("pieces_jointes_document");
+  expect(report.items[2]?.currentBytes).toBe(3_000);
+  expect(report.items[4]?.id).toBe("donnees_utilisateur");
+  expect(report.items[4]?.deltaBytes).toBe(0);
+}

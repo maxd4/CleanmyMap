@@ -1,3 +1,5 @@
+"use client";
+
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { LearnPracticeGuideIntro } from "@/components/learn/learn-practice-guide-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
@@ -6,10 +8,10 @@ import { LearnTriContextSection } from "@/components/learn/learn-tri-context-sec
 import { LearnVisualCard } from "@/components/learn/learn-visual-card";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_PRACTICE_LINKS } from "@/lib/learning/learn-rubric-data";
-import { getServerLocale } from "@/lib/server-preferences";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
-export default async function LearnTriComposteComportementsPage() {
-  const locale = await getServerLocale();
+export default function LearnTriComposteComportementsPage() {
+  const { locale } = useSitePreferences();
   const links = LEARN_PRACTICE_LINKS[locale];
   const introTitle = {
     fr: "Tri, composte, comportements",

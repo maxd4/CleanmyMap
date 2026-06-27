@@ -1,41 +1,40 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import {
   buildStorageBusinessMetadata,
   classifyStorageBusinessObject,
   extractStorageBusinessClassificationContext,
 } from "./storage-business-classification";
 
-describe("storage business classification", () => {
-  it("extracts metadata context from storage objects", () => {
-    const context = extractStorageBusinessClassificationContext({
-      business_domain: "messages",
+it("extracts metadata context from storage objects", () => {
+  const context = extractStorageBusinessClassificationContext({
+    business_domain: "messages",
+    sourceTable: "messages",
+    businessContext: "chat_attachment",
+  });
+
+  expect(context.businessDomain).toBe("messages");
+  expect(context.sourceTable).toBe("messages");
+  expect(context.businessContext).toBe("chat_attachment");
+});
+
+it("uses the explicit business domain before other signals", () => {
+  const classification = classifyStorageBusinessObject({
+    bucketId: "archives",
+    name: "nested/report.pdf",
+    mimeType: "application/pdf",
+    metadata: buildStorageBusinessMetadata({
+      businessDomain: "socle_estimateur_impact",
       sourceTable: "messages",
       businessContext: "chat_attachment",
-    });
-
-    expect(context.businessDomain).toBe("messages");
-    expect(context.sourceTable).toBe("messages");
-    expect(context.businessContext).toBe("chat_attachment");
+    }),
   });
 
-  it("uses the explicit business domain before other signals", () => {
-    const classification = classifyStorageBusinessObject({
-      bucketId: "archives",
-      name: "nested/report.pdf",
-      mimeType: "application/pdf",
-      metadata: buildStorageBusinessMetadata({
-        businessDomain: "socle_estimateur_impact",
-        sourceTable: "messages",
-        businessContext: "chat_attachment",
-      }),
-    });
-
-    expect(classification.id).toBe("socle_estimateur_impact");
-    expect(classification.signal).toBe("businessDomain");
-    expect(classification.matchedSignals.map((item) => item.signal)).toContain(
-      "businessDomain",
-    );
-  });
+  expect(classification.id).toBe("socle_estimateur_impact");
+  expect(classification.signal).toBe("businessDomain");
+  expect(classification.matchedSignals.map((item) => item.signal)).toContain(
+    "businessDomain",
+  );
+});
 
   it("uses business context before generic bucket heuristics", () => {
     const classification = classifyStorageBusinessObject({
@@ -270,5 +269,4 @@ describe("storage business classification", () => {
     expect(classification.matchedSignals.map((item) => item.signal)).toContain(
       "bucket",
     );
-  });
 });

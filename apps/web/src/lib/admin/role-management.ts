@@ -69,25 +69,32 @@ function escapeLikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
-type ProfileQuery = {
-  eq: (column: string, value: string) => any;
-  or: (expression: string) => any;
-  order: (column: string, options?: { ascending?: boolean }) => any;
-  limit: (count: number) => Promise<{
-    data: RoleAccountRow[] | null;
-    error: { message: string } | null;
-  }>;
-  maybeSingle: () => Promise<{
-    data: RoleAccountRow | null;
-    error: { message: string } | null;
-  }>;
+type ProfileQueryResult<TData = unknown> = {
+  data: TData | null;
+  error: { message: string } | null;
+};
+
+type ProfileArrayQuery = PromiseLike<ProfileQueryResult<RoleAccountRow[]>> & {
+  select: (columns: string) => ProfileArrayQuery;
+  eq: (column: string, value: string) => ProfileArrayQuery;
+  or: (expression: string) => ProfileArrayQuery;
+  order: (column: string, options?: { ascending?: boolean }) => ProfileArrayQuery;
+  in: (column: string, values: string[]) => ProfileArrayQuery;
+  limit: (count: number) => PromiseLike<ProfileQueryResult<RoleAccountRow[]>>;
+};
+
+type ProfileSingleQuery = PromiseLike<ProfileQueryResult<RoleAccountRow>> & {
+  select: (columns: string) => ProfileSingleQuery;
+  eq: (column: string, value: string) => ProfileSingleQuery;
+  maybeSingle: () => PromiseLike<ProfileQueryResult<RoleAccountRow>>;
 };
 
 async function queryProfilesByFilter(
   supabase: SupabaseClient,
-  filter: (query: ProfileQuery) => any,
+  filter: (query: ProfileArrayQuery) => PromiseLike<ProfileQueryResult<RoleAccountRow[]>>,
 ): Promise<RoleAccountRecord[]> {
-  const query = filter(supabase.from("profiles").select(PROFILE_SELECT) as any);
+  const profilesQuery = supabase.from("profiles") as unknown as ProfileArrayQuery;
+  const query = filter(profilesQuery.select(PROFILE_SELECT));
   const { data, error } = await query;
   if (error || !data) {
     return [];
@@ -97,8 +104,8 @@ async function queryProfilesByFilter(
 
 export async function listManagedRoleAccounts(): Promise<RoleAccountRecord[]> {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("profiles")
+  const profilesQuery = supabase.from("profiles") as unknown as ProfileArrayQuery;
+  const { data, error } = await profilesQuery
     .select(PROFILE_SELECT)
     .in("role_label", ["admin", "elu"])
     .order("role_label", { ascending: true })
@@ -108,7 +115,7 @@ export async function listManagedRoleAccounts(): Promise<RoleAccountRecord[]> {
     return [];
   }
 
-  return (data as RoleAccountRow[]).map(normalizeProfileRow);
+  return data.map(normalizeProfileRow);
 }
 
 export async function searchManagedRoleAccounts(
@@ -131,8 +138,8 @@ export async function searchManagedRoleAccounts(
   }
 
   const pattern = `%${escapeLikePattern(term)}%`;
-  const { data, error } = await supabase
-    .from("profiles")
+  const profilesQuery = supabase.from("profiles") as unknown as ProfileArrayQuery;
+  const { data, error } = await profilesQuery
     .select(PROFILE_SELECT)
     .or(`handle.ilike.${pattern},display_name.ilike.${pattern}`)
     .order("display_name", { ascending: true })
@@ -142,15 +149,15 @@ export async function searchManagedRoleAccounts(
     return [];
   }
 
-  return dedupeRecords((data as RoleAccountRow[]).map(normalizeProfileRow));
+  return dedupeRecords(data.map(normalizeProfileRow));
 }
 
 export async function getManagedRoleAccountById(
   userId: string,
 ): Promise<RoleAccountRecord | null> {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("profiles")
+  const profilesQuery = supabase.from("profiles") as unknown as ProfileSingleQuery;
+  const { data, error } = await profilesQuery
     .select(PROFILE_SELECT)
     .eq("id", userId)
     .maybeSingle();
@@ -159,5 +166,5 @@ export async function getManagedRoleAccountById(
     return null;
   }
 
-  return normalizeProfileRow(data as RoleAccountRow);
+  return normalizeProfileRow(data);
 }

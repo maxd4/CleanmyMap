@@ -29,3 +29,19 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/prints(.*)",
   `${SPONSOR_PORTAL_ROUTE}(.*)`,
 ] as const;
+
+function normalizeProtectedRoutePattern(pattern: string): string {
+  return pattern.replace(/\(\.\*\)$/, "");
+}
+
+export function isProtectedRoutePath(pathname: string): boolean {
+  const normalizedPathname = pathname.split("?")[0]?.split("#")[0] ?? pathname;
+
+  return PROTECTED_ROUTE_PATTERNS.some((pattern) => {
+    const basePath = normalizeProtectedRoutePattern(pattern);
+    return (
+      normalizedPathname === basePath ||
+      normalizedPathname.startsWith(`${basePath}/`)
+    );
+  });
+}

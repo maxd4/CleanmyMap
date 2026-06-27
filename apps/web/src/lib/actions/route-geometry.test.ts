@@ -1,189 +1,187 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { deriveAutoDrawingFromLocation } from "./route-geometry";
 
-describe("deriveAutoDrawingFromLocation", () => {
-  it("reuses reference geometry for known places without network", async () => {
-    const drawing = await deriveAutoDrawingFromLocation({
-      locationLabel: "Jardin du Luxembourg",
+it("reuses reference geometry for known places without network", async () => {
+  const drawing = await deriveAutoDrawingFromLocation({
+    locationLabel: "Jardin du Luxembourg",
+  });
+
+  expect(drawing).not.toBeNull();
+  expect(drawing?.kind).toBe("polygon");
+  expect(drawing?.coordinates.length).toBeGreaterThanOrEqual(4);
+});
+
+it("switches between direct and souple route profiles", async () => {
+  const originalFetch = global.fetch;
+  const fetchCalls: string[] = [];
+  global.fetch = (async (input: RequestInfo | URL) => {
+    const urlString = String(input);
+    fetchCalls.push(urlString);
+    // Safe URL validation: parse and check hostname exactly
+    const url = new URL(urlString);
+    if (url.hostname === "nominatim.openstreetmap.org") {
+      const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
+      const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
+      return new Response(JSON.stringify([{ lat, lon }]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(
+      JSON.stringify({
+        code: "Ok",
+        routes: [
+          {
+            geometry: {
+              coordinates: [
+                [2.35, 48.85],
+                [2.36, 48.855],
+                [2.37, 48.86],
+              ],
+            },
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }) as typeof fetch;
+
+  try {
+    await deriveAutoDrawingFromLocation({
+      locationLabel: "depart",
+      departureLocationLabel: "depart",
+      arrivalLocationLabel: "arrivee",
+      routeStyle: "direct",
+    });
+    const nominatimCall = fetchCalls.find((url) => {
+      try {
+        return new URL(url).hostname === "nominatim.openstreetmap.org";
+      } catch {
+        return false;
+      }
+    });
+    expect(nominatimCall).toContain("bounded=1");
+    expect(nominatimCall).toContain("viewbox=-5.5%2C51.5%2C10%2C41");
+    // Safe URL validation: parse and check hostname exactly
+    const directRouteCall = fetchCalls.find((url) => {
+      try {
+        return new URL(url).hostname === "router.project-osrm.org";
+      } catch {
+        return false;
+      }
+    });
+    expect(directRouteCall).toContain(
+      "2.350000,48.850000;2.370000,48.851000;2.370000,48.860000",
+    );
+
+    fetchCalls.length = 0;
+    await deriveAutoDrawingFromLocation({
+      locationLabel: "depart",
+      departureLocationLabel: "depart",
+      arrivalLocationLabel: "arrivee",
+      routeStyle: "souple",
+    });
+    // Safe URL validation: parse and check hostname exactly
+    const soupleRouteCall = fetchCalls.find((url) => {
+      try {
+        return new URL(url).hostname === "router.project-osrm.org";
+      } catch {
+        return false;
+      }
+    });
+    expect(soupleRouteCall).toContain(";");
+    expect(soupleRouteCall?.split(";").length).toBeGreaterThan(2);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+it("rejects geocoding results outside the national territory", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    if (url.hostname === "nominatim.openstreetmap.org") {
+      return new Response(JSON.stringify([{ lat: "52.0", lon: "2.7" }]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response("Unexpected", { status: 500 });
+  }) as typeof fetch;
+
+  try {
+    await expect(
+      deriveAutoDrawingFromLocation({
+        locationLabel: "lieu hors zone",
+        departureLocationLabel: "lieu hors zone",
+        arrivalLocationLabel: "autre lieu hors zone",
+        routeStyle: "direct",
+      }),
+    ).resolves.toBeNull();
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+it("falls back to a raw or flexible polyline when OSRM fails", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = (async (input: RequestInfo | URL) => {
+    const urlString = String(input);
+    // Safe URL validation: parse and check hostname exactly
+    const url = new URL(urlString);
+    if (url.hostname === "nominatim.openstreetmap.org") {
+      const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
+      const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
+      return new Response(JSON.stringify([{ lat, lon }]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response("Service unavailable", { status: 503 });
+  }) as typeof fetch;
+
+  try {
+    const directFallback = await deriveAutoDrawingFromLocation({
+      locationLabel: "depart",
+      departureLocationLabel: "depart",
+      arrivalLocationLabel: "arrivee",
+      routeStyle: "direct",
     });
 
-    expect(drawing).not.toBeNull();
-    expect(drawing?.kind).toBe("polygon");
-    expect(drawing?.coordinates.length).toBeGreaterThanOrEqual(4);
-  });
+    expect(directFallback).not.toBeNull();
+    expect(directFallback?.kind).toBe("polyline");
+    const directFallbackCoordinates = directFallback?.coordinates ?? [];
+    expect(directFallbackCoordinates.length).toBeGreaterThanOrEqual(3);
+    expect(directFallbackCoordinates[0]).toEqual([48.85, 2.35]);
+    expect(directFallbackCoordinates[directFallbackCoordinates.length - 1]).toEqual([
+      48.86,
+      2.37,
+    ]);
+    expect(directFallbackCoordinates).not.toEqual([
+      [48.85, 2.35],
+      [48.86, 2.37],
+    ]);
 
-  it("switches between direct and souple route profiles", async () => {
-    const originalFetch = global.fetch;
-    const fetchCalls: string[] = [];
-    global.fetch = (async (input: RequestInfo | URL) => {
-      const urlString = String(input);
-      fetchCalls.push(urlString);
-      // Safe URL validation: parse and check hostname exactly
-      const url = new URL(urlString);
-      if (url.hostname === "nominatim.openstreetmap.org") {
-        const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
-        const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
-        return new Response(JSON.stringify([{ lat, lon }]), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      return new Response(
-        JSON.stringify({
-          code: "Ok",
-          routes: [
-            {
-              geometry: {
-                coordinates: [
-                  [2.35, 48.85],
-                  [2.36, 48.855],
-                  [2.37, 48.86],
-                ],
-              },
-            },
-          ],
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }) as typeof fetch;
+    const soupleFallback = await deriveAutoDrawingFromLocation({
+      locationLabel: "depart",
+      departureLocationLabel: "depart",
+      arrivalLocationLabel: "arrivee",
+      routeStyle: "souple",
+    });
 
-    try {
-      await deriveAutoDrawingFromLocation({
-        locationLabel: "depart",
-        departureLocationLabel: "depart",
-        arrivalLocationLabel: "arrivee",
-        routeStyle: "direct",
-      });
-      const nominatimCall = fetchCalls.find((url) => {
-        try {
-          return new URL(url).hostname === "nominatim.openstreetmap.org";
-        } catch {
-          return false;
-        }
-      });
-      expect(nominatimCall).toContain("bounded=1");
-      expect(nominatimCall).toContain("viewbox=2.12%2C48.98%2C2.55%2C48.74");
-      // Safe URL validation: parse and check hostname exactly
-      const directRouteCall = fetchCalls.find((url) => {
-        try {
-          return new URL(url).hostname === "router.project-osrm.org";
-        } catch {
-          return false;
-        }
-      });
-      expect(directRouteCall).toContain(
-        "2.350000,48.850000;2.370000,48.851000;2.370000,48.860000",
-      );
-
-      fetchCalls.length = 0;
-      await deriveAutoDrawingFromLocation({
-        locationLabel: "depart",
-        departureLocationLabel: "depart",
-        arrivalLocationLabel: "arrivee",
-        routeStyle: "souple",
-      });
-      // Safe URL validation: parse and check hostname exactly
-      const soupleRouteCall = fetchCalls.find((url) => {
-        try {
-          return new URL(url).hostname === "router.project-osrm.org";
-        } catch {
-          return false;
-        }
-      });
-      expect(soupleRouteCall).toContain(";");
-      expect(soupleRouteCall?.split(";").length).toBeGreaterThan(2);
-    } finally {
-      global.fetch = originalFetch;
-    }
-  });
-
-  it("rejects geocoding results outside the greater paris perimeter", async () => {
-    const originalFetch = global.fetch;
-    global.fetch = (async (input: RequestInfo | URL) => {
-      const url = new URL(String(input));
-      if (url.hostname === "nominatim.openstreetmap.org") {
-        return new Response(JSON.stringify([{ lat: "49.5", lon: "2.7" }]), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      return new Response("Unexpected", { status: 500 });
-    }) as typeof fetch;
-
-    try {
-      await expect(
-        deriveAutoDrawingFromLocation({
-          locationLabel: "lieu hors zone",
-          departureLocationLabel: "lieu hors zone",
-          arrivalLocationLabel: "autre lieu hors zone",
-          routeStyle: "direct",
-        }),
-      ).resolves.toBeNull();
-    } finally {
-      global.fetch = originalFetch;
-    }
-  });
-
-  it("falls back to a raw or flexible polyline when OSRM fails", async () => {
-    const originalFetch = global.fetch;
-    global.fetch = (async (input: RequestInfo | URL) => {
-      const urlString = String(input);
-      // Safe URL validation: parse and check hostname exactly
-      const url = new URL(urlString);
-      if (url.hostname === "nominatim.openstreetmap.org") {
-        const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
-        const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
-        return new Response(JSON.stringify([{ lat, lon }]), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      return new Response("Service unavailable", { status: 503 });
-    }) as typeof fetch;
-
-    try {
-      const directFallback = await deriveAutoDrawingFromLocation({
-        locationLabel: "depart",
-        departureLocationLabel: "depart",
-        arrivalLocationLabel: "arrivee",
-        routeStyle: "direct",
-      });
-
-      expect(directFallback).not.toBeNull();
-      expect(directFallback?.kind).toBe("polyline");
-      const directFallbackCoordinates = directFallback?.coordinates ?? [];
-      expect(directFallbackCoordinates.length).toBeGreaterThanOrEqual(3);
-      expect(directFallbackCoordinates[0]).toEqual([48.85, 2.35]);
-      expect(directFallbackCoordinates[directFallbackCoordinates.length - 1]).toEqual([
-        48.86,
-        2.37,
-      ]);
-      expect(directFallbackCoordinates).not.toEqual([
-        [48.85, 2.35],
-        [48.86, 2.37],
-      ]);
-
-      const soupleFallback = await deriveAutoDrawingFromLocation({
-        locationLabel: "depart",
-        departureLocationLabel: "depart",
-        arrivalLocationLabel: "arrivee",
-        routeStyle: "souple",
-      });
-
-      expect(soupleFallback).not.toBeNull();
-      expect(soupleFallback?.kind).toBe("polyline");
-      const soupleFallbackCoordinates = soupleFallback?.coordinates ?? [];
-      expect(soupleFallbackCoordinates.length).toBeGreaterThanOrEqual(5);
-      expect(soupleFallbackCoordinates[0]).toEqual([48.85, 2.35]);
-      expect(soupleFallbackCoordinates[soupleFallbackCoordinates.length - 1]).toEqual([
-        48.86,
-        2.37,
-      ]);
-    } finally {
-      global.fetch = originalFetch;
-    }
-  });
+    expect(soupleFallback).not.toBeNull();
+    expect(soupleFallback?.kind).toBe("polyline");
+    const soupleFallbackCoordinates = soupleFallback?.coordinates ?? [];
+    expect(soupleFallbackCoordinates.length).toBeGreaterThanOrEqual(5);
+    expect(soupleFallbackCoordinates[0]).toEqual([48.85, 2.35]);
+    expect(soupleFallbackCoordinates[soupleFallbackCoordinates.length - 1]).toEqual([
+      48.86,
+      2.37,
+    ]);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

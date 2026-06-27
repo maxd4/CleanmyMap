@@ -1,6 +1,7 @@
 import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
 import { isAdminRole, isMaxRole } from "@/lib/authz";
 import {
   normalizeDisplayNameMode,
@@ -10,7 +11,14 @@ import {
 } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
-import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
+import {
+  extractParisArrondissementFromLabel,
+  isParisArrondissementLabel,
+  isParisArrondissement,
+  getParisArrondissementLabel,
+  parseParisArrondissement,
+} from "@/lib/geo/paris-arrondissements";
+import { createTerritoryLocationMetadataFromLabel } from "@/lib/user-location-preference";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -18,6 +26,9 @@ type ProfileRow = {
   id: string;
   handle: string | null;
   display_name_mode: string | null;
+  avatar_url: string | null;
+  metadata: Record<string, unknown> | null;
+  paris_arrondissement: number | null;
 };
 
 type ProfileMetadata = Record<string, unknown> | null;
@@ -44,6 +55,14 @@ function readMetadataString(
   return typeof value === "string" ? value : null;
 }
 
+function readMeaningfulMetadataString(
+  metadata: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = metadata[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
 function extractDisplayNameModeFromMetadata(
   metadata: MetadataSource,
 ): DisplayNameMode | null {
@@ -62,7 +81,17 @@ function extractProfileMetadataFromSource(
   }
 
   const keys = [
+    "territoryCountry",
+    "territoryLevel",
+    "territoryLabel",
+    "territorySubtitle",
+    "territoryArrondissement",
+    "territoryArrondissementCity",
+    "territoryLocationType",
+    "territoryRegion",
+    "territoryDepartment",
     "zoneName",
+    "zoneLevel",
     "zoneDepartment",
     "zoneAreaType",
     "zoneLocationType",
@@ -131,13 +160,10 @@ function resolveSyncRoleContext(
 }
 
 function resolveProfileArrondissement(
-  user: User,
   profileMetadata: Record<string, unknown>,
 ): number | null {
-  const rawArrondissement = readMetadataValue(
-    user.publicMetadata as MetadataSource,
-    "parisArrondissement",
-  );
+  const rawArrondissement =
+    profileMetadata.territoryArrondissement ?? profileMetadata.parisArrondissement;
 
   const parsedArrondissement =
     typeof rawArrondissement === "number"
@@ -147,11 +173,13 @@ function resolveProfileArrondissement(
         : null;
 
   const metadataZoneName =
-    typeof profileMetadata.zoneName === "string"
-      ? profileMetadata.zoneName
-      : null;
+    typeof profileMetadata.territoryLabel === "string"
+      ? profileMetadata.territoryLabel
+      : typeof profileMetadata.zoneName === "string"
+        ? profileMetadata.zoneName
+        : null;
   const inferredArrondissement = metadataZoneName
-    ? extractArrondissementFromLabel(metadataZoneName)
+    ? extractParisArrondissementFromLabel(metadataZoneName)
     : null;
 
   return parsedArrondissement &&
@@ -159,6 +187,117 @@ function resolveProfileArrondissement(
     parsedArrondissement <= 20
     ? parsedArrondissement
     : inferredArrondissement;
+}
+
+function normalizeProfileMetadataRecord(
+  metadata: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  return metadata ? { ...metadata } : {};
+}
+
+function normalizeUserLocationType(value: string | null): "residence" | "work" {
+  return value === "work" ? "work" : "residence";
+}
+
+function hasMeaningfulMetadataValue(value: unknown): boolean {
+  return (
+    value !== undefined &&
+    value !== null &&
+    !(typeof value === "string" && value.trim().length === 0)
+  );
+}
+
+function buildCompatibilityProfileMetadata(
+  existingProfile: ProfileRow | null,
+  profileMetadata: Record<string, unknown>,
+): Record<string, unknown> {
+  const mergedMetadata = normalizeProfileMetadataRecord(existingProfile?.metadata);
+
+  for (const [key, value] of Object.entries(profileMetadata)) {
+    if (!hasMeaningfulMetadataValue(mergedMetadata[key])) {
+      mergedMetadata[key] = value;
+    }
+  }
+
+  const resolvedArrondissement =
+    resolveProfileArrondissement(mergedMetadata) ?? existingProfile?.paris_arrondissement ?? null;
+  const resolvedParisArrondissement = parseParisArrondissement(resolvedArrondissement);
+  const resolvedLocationType = normalizeUserLocationType(
+    readMeaningfulMetadataString(mergedMetadata, "territoryLocationType") ??
+    readMeaningfulMetadataString(mergedMetadata, "zoneLocationType") ??
+    readMeaningfulMetadataString(mergedMetadata, "parisLocationType") ??
+    "residence",
+  );
+  const resolvedSubtitle =
+    readMeaningfulMetadataString(mergedMetadata, "territorySubtitle") ??
+    readMeaningfulMetadataString(mergedMetadata, "zoneDepartment") ??
+    readMeaningfulMetadataString(mergedMetadata, "zoneAreaType");
+  const resolvedLabel =
+    readMeaningfulMetadataString(mergedMetadata, "territoryLabel") ??
+    readMeaningfulMetadataString(mergedMetadata, "zoneName") ??
+    (isParisArrondissement(resolvedParisArrondissement)
+      ? getParisArrondissementLabel(resolvedParisArrondissement)
+      : null);
+
+  if (!resolvedLabel) {
+    return mergedMetadata;
+  }
+
+  const territoryMetadata = createTerritoryLocationMetadataFromLabel(
+    resolvedLabel,
+    resolvedLocationType,
+    {
+      subtitle: resolvedSubtitle,
+      arrondissement: resolvedArrondissement ?? undefined,
+      level: resolvedArrondissement ? "arrondissement" : "commune",
+    },
+  );
+
+  if (territoryMetadata) {
+    for (const [key, value] of Object.entries(territoryMetadata)) {
+      if (!hasMeaningfulMetadataValue(mergedMetadata[key])) {
+        mergedMetadata[key] = value;
+      }
+    }
+  }
+
+  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneName)) {
+    mergedMetadata.zoneName = resolvedLabel;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneDepartment) && resolvedSubtitle) {
+    mergedMetadata.zoneDepartment = resolvedSubtitle;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneLocationType)) {
+    mergedMetadata.zoneLocationType = resolvedLocationType;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territorySubtitle) && resolvedSubtitle) {
+    mergedMetadata.territorySubtitle = resolvedSubtitle;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLocationType)) {
+    mergedMetadata.territoryLocationType = resolvedLocationType;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryCountry)) {
+    mergedMetadata.territoryCountry = "France";
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLevel)) {
+    mergedMetadata.territoryLevel = resolvedArrondissement ? "arrondissement" : "commune";
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLabel)) {
+    mergedMetadata.territoryLabel = resolvedLabel;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryArrondissement) && resolvedArrondissement !== null) {
+    mergedMetadata.territoryArrondissement = resolvedArrondissement;
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.parisArrondissement) && resolvedArrondissement !== null) {
+    if (isParisArrondissementLabel(resolvedLabel)) {
+      mergedMetadata.parisArrondissement = resolvedArrondissement;
+    }
+  }
+  if (!hasMeaningfulMetadataValue(mergedMetadata.parisLocationType)) {
+    mergedMetadata.parisLocationType = resolvedLocationType;
+  }
+
+  return mergedMetadata;
 }
 
 function resolveDisplayNameModeForUser(
@@ -197,7 +336,7 @@ async function loadExistingProfile(
 ): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, handle, display_name_mode")
+    .select("id, handle, display_name_mode, avatar_url, metadata, paris_arrondissement")
     .eq("id", userId)
     .maybeSingle<ProfileRow>();
 
@@ -218,7 +357,7 @@ async function upsertSyncedProfile(
     displayNameMode: DisplayNameMode;
     handle: string;
     persistedProfile: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
     profileMetadata: Record<string, unknown>;
     parisArrondissement: number | null;
   },
@@ -393,6 +532,13 @@ export async function syncClerkUserToSupabase(
   const persistedProfile = resolvePersistedProfileLabel(profile);
   const profileMetadata = extractProfileMetadata(user);
   const existingProfile = await loadExistingProfile(supabase, user.id);
+  const metadata = buildCompatibilityProfileMetadata(existingProfile, profileMetadata);
+  const avatarUrl = await prepareProfileAvatarUrl({
+    supabase,
+    userId: user.id,
+    sourceUrl: user.imageUrl || null,
+    existingAvatarUrl: existingProfile?.avatar_url ?? null,
+  });
 
   const handle = await resolveUniqueHandle(
     supabase,
@@ -407,8 +553,9 @@ export async function syncClerkUserToSupabase(
     displayNameMode,
     handle,
     persistedProfile,
-    avatarUrl: user.imageUrl,
-    profileMetadata,
-    parisArrondissement: resolveProfileArrondissement(user, profileMetadata),
+    avatarUrl: avatarUrl ?? user.imageUrl,
+    profileMetadata: metadata,
+    parisArrondissement:
+      resolveProfileArrondissement(metadata) ?? existingProfile?.paris_arrondissement ?? null,
   });
 }

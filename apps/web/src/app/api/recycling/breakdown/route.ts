@@ -1,94 +1,56 @@
-import { NextResponse } from"next/server";
-import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
-import { requireAuthenticatedAccess } from"@/lib/authz";
-import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError } from"@/lib/http/api-errors";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
+import { requireAuthenticatedAccess } from "@/lib/authz";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { handleApiError } from "@/lib/http/api-errors";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { buildRecyclingBreakdown } from "@/lib/recycling/breakdown";
+import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 
-export const runtime ="nodejs";
+export const runtime = "nodejs";
 
-type WasteCategory ="megots" |"plastique" |"verre" |"metal" |"mixte";
+const RECYCLING_BREAKDOWN_TTL_MINUTES = 60;
+const RECYCLING_BREAKDOWN_VERSION = "public-recycling-breakdown-v1";
+const RECYCLING_BREAKDOWN_SNAPSHOT_KEY = "recycling-breakdown";
 
 export async function GET() {
- const access = await requireAuthenticatedAccess();
- if (!access.ok) {
- return unauthorizedJsonResponse();
- }
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
+    return unauthorizedJsonResponse();
+  }
 
- try {
- const supabase = getSupabaseServerClient();
- const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
- limit: 2000,
- status:"approved",
- floorDate: null,
- requireCoordinates: false,
- types: ["action","clean_place","spot"],
- });
+  try {
+    const snapshot = await loadOrRefreshPublicSurfaceSnapshot({
+      snapshotKey: RECYCLING_BREAKDOWN_SNAPSHOT_KEY,
+      title: "Répartition recyclage",
+      version: RECYCLING_BREAKDOWN_VERSION,
+      ttlMinutes: RECYCLING_BREAKDOWN_TTL_MINUTES,
+      buildPayload: async () => {
+        const supabase = getSupabaseServerClient();
+        const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
+          limit: 2000,
+          status: "approved",
+          floorDate: null,
+          requireCoordinates: false,
+          types: ["action", "clean_place", "spot"],
+        });
 
- const categories: Record<WasteCategory, { kg: number; entries: number }> = {
- megots: { kg: 0, entries: 0 },
- plastique: { kg: 0, entries: 0 },
- verre: { kg: 0, entries: 0 },
- metal: { kg: 0, entries: 0 },
- mixte: { kg: 0, entries: 0 },
- };
+        const breakdown = buildRecyclingBreakdown(contracts);
+        return {
+          status: "ok" as const,
+          totalKg: breakdown.totalKg,
+          lines: breakdown.lines,
+          triQuality: breakdown.triQuality,
+          generatedAt: new Date().toISOString(),
+        };
+      },
+      meta: {
+        route: "api/recycling/breakdown",
+      },
+    });
 
- let triQualityHigh = 0;
- let triQualityMedium = 0;
- let triQualityLow = 0;
-
- for (const contract of contracts) {
- const breakdown = contract.metadata.wasteBreakdown;
- if (!breakdown) {
- categories.mixte.kg += Number(contract.metadata.wasteKg || 0);
- categories.mixte.entries += 1;
- continue;
- }
- const add = (category: WasteCategory, value: number | undefined) => {
- const kg = Number(value ?? 0);
- if (kg <= 0) {
- return;
- }
- categories[category].kg += kg;
- categories[category].entries += 1;
- };
- add("megots", breakdown.megotsKg);
- add("plastique", breakdown.plastiqueKg);
- add("verre", breakdown.verreKg);
- add("metal", breakdown.metalKg);
- add("mixte", breakdown.mixteKg);
-
- if (breakdown.triQuality ==="elevee") triQualityHigh += 1;
- else if (breakdown.triQuality ==="moyenne") triQualityMedium += 1;
- else if (breakdown.triQuality ==="faible") triQualityLow += 1;
- }
-
- const totalKg =
- Object.values(categories).reduce((acc, entry) => acc + entry.kg, 0) || 0;
- const lines = (
- Object.entries(categories) as Array<
- [WasteCategory, { kg: number; entries: number }]
- >
- ).map(([category, entry]) => ({
- category,
- kg: Number(entry.kg.toFixed(2)),
- sharePercent:
- totalKg > 0 ? Number(((entry.kg / totalKg) * 100).toFixed(1)) : 0,
- entries: entry.entries,
- }));
-
- return NextResponse.json({
- status:"ok",
- totalKg: Number(totalKg.toFixed(2)),
- lines,
- triQuality: {
- elevee: triQualityHigh,
- moyenne: triQualityMedium,
- faible: triQualityLow,
- },
- generatedAt: new Date().toISOString(),
- });
- } catch (error) {
- return handleApiError(error, "GET /api/recycling/breakdown");
- }
+    return NextResponse.json(snapshot.payload);
+  } catch (error) {
+    return handleApiError(error, "GET /api/recycling/breakdown");
+  }
 }

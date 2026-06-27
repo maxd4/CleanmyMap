@@ -110,6 +110,10 @@ type ProfileRow = {
   created_at: string;
 };
 
+type ProfileCreatedAtRow = {
+  created_at: string;
+};
+
 type ProjectSignalRows = {
   profiles: ProfileRow[];
   actions: ActionRow[];
@@ -127,7 +131,8 @@ type ProjectSignalRows = {
 const PROJECT_SIGNAL_VOLUME_NOTE =
   `Volumes plafonnés à ${new Intl.NumberFormat("fr-FR").format(PROJECT_SIGNAL_ROW_LIMIT)} lignes par table; au-delà, la lecture reste indicative.`;
 
-async function limitProjectSignalRows<T>(
+// Keep the cap inline in callers so the static quota audit can see each bounded query.
+async function orderProjectSignalRows<T>(
   query: ProjectSignalQueryBuilder,
   orderings: Array<[column: string, ascending?: boolean]>,
 ): Promise<{ data: T[] | null; error: { message: string } | null }> {
@@ -137,7 +142,7 @@ async function limitProjectSignalRows<T>(
     orderedQuery = orderedQuery.order(column, { ascending });
   }
 
-  return (await orderedQuery.limit(PROJECT_SIGNAL_ROW_LIMIT)) as unknown as {
+  return (await orderedQuery) as unknown as {
     data: T[] | null;
     error: { message: string } | null;
   };
@@ -427,11 +432,6 @@ function buildScopeInputFromRows(
 
 function buildProjectSignalsHighlights(
   rows: ProjectSignalRows,
-  params: {
-    generatedAt: string;
-    accountCreatedAt: string | null;
-    userId: string | null;
-  },
 ): EnvironmentalImpactProjectSignal[] {
   const actionById = new Map(rows.actions.map((row) => [row.id, row.created_by_clerk_id]));
   const detailedPageViews = rows.funnelEvents.filter((row) => row.step === "page_view");
@@ -581,7 +581,7 @@ function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
   };
 }
 
-function buildInfrastructureUsageInput(params: {
+export function buildInfrastructureUsageInput(params: {
   recentRows: ProjectSignalRows;
   previousRows: ProjectSignalRows;
 }): EnvironmentalImpactInfrastructureInput["usage"] {
@@ -768,7 +768,45 @@ function buildProjectSignalRows(
   };
 }
 
-function findEarliestDate(rows: ProjectSignalRows): string | null {
+async function loadOldestProfileCreatedAt(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  const result = await supabase
+    .from("profiles")
+    .select("created_at")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const row = (result.data ?? [])[0] as ProfileCreatedAtRow | undefined;
+  return row?.created_at ?? null;
+}
+
+async function loadProfileCreatedAtById(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  const result = await supabase
+    .from("profiles")
+    .select("created_at")
+    .eq("id", userId)
+    .limit(1);
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const row = (result.data ?? [])[0] as ProfileCreatedAtRow | undefined;
+  return row?.created_at ?? null;
+}
+
+function findEarliestDate(
+  rows: ProjectSignalRows,
+  oldestProfileCreatedAt: string | null,
+): string | null {
   const timestamps = [
     ...rows.actions.map((row) => toMs(row.created_at)),
     ...rows.spots.map((row) => toMs(row.created_at)),
@@ -781,6 +819,7 @@ function findEarliestDate(rows: ProjectSignalRows): string | null {
     ...rows.eventRsvps.map((row) => toMs(row.updated_at)),
     ...rows.appNotifications.map((row) => toMs(row.created_at)),
     ...rows.profiles.map((row) => toMs(row.created_at)),
+    ...(oldestProfileCreatedAt ? [toMs(oldestProfileCreatedAt)] : []),
   ].filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
   if (timestamps.length === 0) {
@@ -790,7 +829,15 @@ function findEarliestDate(rows: ProjectSignalRows): string | null {
   return new Date(Math.min(...timestamps)).toISOString();
 }
 
-function findAccountCreatedAt(rows: ProjectSignalRows, userId: string): string | null {
+function findAccountCreatedAt(
+  rows: ProjectSignalRows,
+  userId: string,
+  accountCreatedAt: string | null,
+): string | null {
+  if (accountCreatedAt) {
+    return accountCreatedAt;
+  }
+
   const profile = rows.profiles.find((entry) => entry.id === userId);
   if (profile) {
     return profile.created_at;
@@ -1080,13 +1127,17 @@ export function buildEnvironmentalImpactProjectSignals(
   params: {
     generatedAt: string;
     userId: string | null;
+    oldestProfileCreatedAt?: string | null;
+    accountCreatedAt?: string | null;
   },
   codexSnapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[] = [],
   githubRepositoryStats: GitHubRepositoryStats | null = null,
 ): EnvironmentalImpactProjectSignals {
   const generatedAtDate = parseDateOrNull(params.generatedAt) ?? new Date(params.generatedAt);
-  const launchedAt = findEarliestDate(rows);
-  const accountCreatedAt = params.userId ? findAccountCreatedAt(rows, params.userId) : null;
+  const launchedAt = findEarliestDate(rows, params.oldestProfileCreatedAt ?? null);
+  const accountCreatedAt = params.userId
+    ? findAccountCreatedAt(rows, params.userId, params.accountCreatedAt ?? null)
+    : null;
   const codexUsage = calculateCodexMonthlyUsageInput(codexSnapshots);
   const githubWorkflowRunsCount30d = githubRepositoryStats?.workflowRunsCount30d ?? null;
   const siteInput = calculateAllTimeScopeInput(rows, {
@@ -1129,11 +1180,7 @@ export function buildEnvironmentalImpactProjectSignals(
       },
     },
     highlights: [
-      ...buildProjectSignalsHighlights(rows, {
-        generatedAt: generatedAtDate.toISOString(),
-        accountCreatedAt,
-        userId: params.userId,
-      }),
+      ...buildProjectSignalsHighlights(rows),
       ...(codexUsage.codexUsage.weekCount > 0
         ? [
             {
@@ -1182,7 +1229,8 @@ export async function loadEnvironmentalImpactProjectSignals(
 ): Promise<EnvironmentalImpactProjectSignals> {
   const generatedAt = params.generatedAt ?? new Date().toISOString();
   const [
-    profiles,
+    oldestProfileCreatedAt,
+    accountCreatedAt,
     actions,
     spots,
     funnelEvents,
@@ -1194,19 +1242,23 @@ export async function loadEnvironmentalImpactProjectSignals(
     eventRsvps,
     appNotifications,
   ] = await Promise.all([
-    limitProjectSignalRows<ProfileRow>(supabase.from("profiles").select("id, created_at"), [
-      ["created_at", false],
-      ["id", false],
-    ]),
-    limitProjectSignalRows<ActionRow>(
-      supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status"),
+    loadOldestProfileCreatedAt(supabase),
+    params.userId ? loadProfileCreatedAtById(supabase, params.userId) : Promise.resolve(null),
+    orderProjectSignalRows<ActionRow>(
+      supabase
+        .from("actions")
+        .select("id, created_at, created_by_clerk_id, latitude, longitude, status")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["id", false],
       ],
     ),
-    limitProjectSignalRows<SpotRow>(
-      supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status"),
+    orderProjectSignalRows<SpotRow>(
+      supabase
+        .from("spots")
+        .select("created_at, created_by_clerk_id, latitude, longitude, status")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["created_by_clerk_id", false],
@@ -1215,8 +1267,11 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["status", false],
       ],
     ),
-    limitProjectSignalRows<FunnelRow>(
-      supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta"),
+    orderProjectSignalRows<FunnelRow>(
+      supabase
+        .from("funnel_events")
+        .select("at, user_id, session_id, step, mode, meta")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["at", false],
         ["session_id", false],
@@ -1225,8 +1280,11 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["user_id", false],
       ],
     ),
-    limitProjectSignalRows<ProgressionRow>(
-      supabase.from("progression_events").select("created_at, user_id, event_type, status_phase"),
+    orderProjectSignalRows<ProgressionRow>(
+      supabase
+        .from("progression_events")
+        .select("created_at, user_id, event_type, status_phase")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["user_id", false],
@@ -1234,24 +1292,33 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["status_phase", false],
       ],
     ),
-    limitProjectSignalRows<ReportRow>(
-      supabase.from("reports").select("created_at, owner_clerk_id, file_kind"),
+    orderProjectSignalRows<ReportRow>(
+      supabase
+        .from("reports")
+        .select("created_at, owner_clerk_id, file_kind")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["owner_clerk_id", false],
         ["file_kind", false],
       ],
     ),
-    limitProjectSignalRows<TrainingRow>(
-      supabase.from("training_examples").select("action_id, created_at, photos, status"),
+    orderProjectSignalRows<TrainingRow>(
+      supabase
+        .from("training_examples")
+        .select("action_id, created_at, photos, status")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["action_id", false],
         ["status", false],
       ],
     ),
-    limitProjectSignalRows<ServiceEmailRow>(
-      supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status"),
+    orderProjectSignalRows<ServiceEmailRow>(
+      supabase
+        .from("service_email_events")
+        .select("created_at, actor_user_id, recipient_count, status")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["actor_user_id", false],
@@ -1259,8 +1326,11 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["status", false],
       ],
     ),
-    limitProjectSignalRows<CommunityEventRow>(
-      supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description"),
+    orderProjectSignalRows<CommunityEventRow>(
+      supabase
+        .from("community_events")
+        .select("id, created_at, organizer_clerk_id, title, event_date, location_label, description")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["id", false],
@@ -1269,8 +1339,11 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["title", false],
       ],
     ),
-    limitProjectSignalRows<EventRsvpRow>(
-      supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at"),
+    orderProjectSignalRows<EventRsvpRow>(
+      supabase
+        .from("event_rsvps")
+        .select("event_id, participant_clerk_id, status, updated_at")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["updated_at", false],
         ["event_id", false],
@@ -1278,8 +1351,11 @@ export async function loadEnvironmentalImpactProjectSignals(
         ["status", false],
       ],
     ),
-    limitProjectSignalRows<AppNotificationRow>(
-      supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at"),
+    orderProjectSignalRows<AppNotificationRow>(
+      supabase
+        .from("app_notifications")
+        .select("id, user_id, type, title, content, read_at, created_at")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
         ["id", false],
@@ -1291,7 +1367,6 @@ export async function loadEnvironmentalImpactProjectSignals(
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
 
   const error = [
-    profiles.error,
     actions.error,
     spots.error,
     funnelEvents.error,
@@ -1310,7 +1385,7 @@ export async function loadEnvironmentalImpactProjectSignals(
 
   return buildEnvironmentalImpactProjectSignals(
     {
-      profiles: (profiles.data ?? []) as ProfileRow[],
+      profiles: [],
       actions: (actions.data ?? []) as ActionRow[],
       spots: (spots.data ?? []) as SpotRow[],
       funnelEvents: (funnelEvents.data ?? []) as FunnelRow[],
@@ -1322,7 +1397,12 @@ export async function loadEnvironmentalImpactProjectSignals(
       eventRsvps: (eventRsvps.data ?? []) as EventRsvpRow[],
       appNotifications: (appNotifications.data ?? []) as AppNotificationRow[],
     },
-    { generatedAt, userId: params.userId },
+    {
+      generatedAt,
+      userId: params.userId,
+      oldestProfileCreatedAt,
+      accountCreatedAt,
+    },
     codexSnapshots,
     params.githubRepositoryStats ?? null,
   );

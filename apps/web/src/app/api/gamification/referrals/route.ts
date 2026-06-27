@@ -1,12 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   ensureReferralInviteForUser,
-  loadReferralSummary,
 } from "@/lib/gamification/referrals";
+import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 
 export const runtime = "nodejs";
 
@@ -17,8 +17,7 @@ export async function GET() {
   }
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const summary = await loadReferralSummary(supabase, userId);
+    const summary = await fetchCachedReferralSummary(userId);
     return NextResponse.json({ status: "ok", summary });
   } catch (error) {
     return handleApiError(error, "GET /api/gamification/referrals");

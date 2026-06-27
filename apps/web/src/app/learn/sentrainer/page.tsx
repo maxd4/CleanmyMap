@@ -1,3 +1,5 @@
+"use client";
+
 import { LearnPracticeVisualIntro } from "@/components/learn/learn-practice-visual-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
@@ -5,10 +7,10 @@ import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-stri
 import { DeferredEnvironmentalQuiz } from "@/components/learn/learn-deferred-panels";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
-import { getServerLocale } from "@/lib/server-preferences";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
-export default async function LearnSentrainerPage() {
-  const locale = await getServerLocale();
+export default function LearnSentrainerPage() {
+  const { locale } = useSitePreferences();
   const practiceCard = LEARN_OVERVIEW_CARDS[locale][1];
 
   return (

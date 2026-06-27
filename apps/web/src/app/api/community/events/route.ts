@@ -9,7 +9,7 @@ import {
  serializeCommunityEventDescription,
 } from"@/lib/community/event-ops";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
-import type { CommunityEventRow, EventRsvpRow } from"@/types/database";
+import type { CommunityEventRow } from"@/types/database";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { getCurrentUserIdentity, getRoleBadge, getProfileBadge } from"@/lib/authz";
@@ -19,12 +19,18 @@ import {
 } from"@/lib/community/discussion-rate-limit";
 import {
  getCommunityEventNotificationTargets,
+ loadCommunityEventNotificationProfiles,
  isProfileEligibleForCommunityEvent,
 } from"@/lib/community/event-notification-targets";
+import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
+
+const COMMUNITY_EVENTS_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
+};
 
 function parsePositiveInteger(
  raw: string | null,
@@ -44,31 +50,17 @@ function parsePositiveInteger(
 
 function toEventResponseItem(
  event: CommunityEventRow,
- rsvps: EventRsvpRow[],
- userId: string | null,
+ summary: {
+  yesCount: number;
+  maybeCount: number;
+  noCount: number;
+  totalCount: number;
+  myRsvpStatus: "yes" | "maybe" | "no" | null;
+ } | null,
  organizerIdentity: OrganizerIdentity,
 ) {
  const parsedDescription = parseCommunityEventDescription(event.description);
  const ops = parsedDescription.ops ?? defaultCommunityEventOps();
-
- let yes = 0;
- let maybe = 0;
- let no = 0;
- let myRsvpStatus:"yes" |"maybe" |"no" | null = null;
-
- for (const rsvp of rsvps) {
- if (rsvp.status ==="yes") {
- yes += 1;
- } else if (rsvp.status ==="maybe") {
- maybe += 1;
- } else {
- no += 1;
- }
-
- if (userId && rsvp.participant_clerk_id === userId) {
- myRsvpStatus = rsvp.status;
- }
- }
 
  return {
  id: event.id,
@@ -84,16 +76,16 @@ function toEventResponseItem(
  cleanupObjective: ops.cleanupObjective,
  cleanupZone: ops.cleanupZone,
  cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
- cleanupSupportLevel: ops.cleanupSupportLevel,
- cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
- rsvpCounts: {
-  yes,
-  maybe,
- no,
- total: yes + maybe + no,
- },
- myRsvpStatus,
- organizer: organizerIdentity,
+  cleanupSupportLevel: ops.cleanupSupportLevel,
+  cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
+  rsvpCounts: {
+  yes: summary?.yesCount ?? 0,
+  maybe: summary?.maybeCount ?? 0,
+ no: summary?.noCount ?? 0,
+ total: summary?.totalCount ?? 0,
+  },
+  myRsvpStatus: summary?.myRsvpStatus ?? null,
+  organizer: organizerIdentity,
  };
 }
 
@@ -120,7 +112,7 @@ export async function GET(request: Request) {
  const limit = parsePositiveInteger(
  url.searchParams.get("limit"),
  1,
- 300,
+ 120,
  120,
  );
  const supabase = getSupabaseServerClient();
@@ -141,25 +133,18 @@ export async function GET(request: Request) {
 
  const events = (eventsResult.data ?? []) as CommunityEventRow[];
  if (events.length === 0) {
- return NextResponse.json({ status:"ok", count: 0, items: [] });
+ return NextResponse.json(
+  { status:"ok", count: 0, items: [] },
+  { headers: COMMUNITY_EVENTS_CACHE_HEADERS },
+ );
  }
 
  const eventIds = events.map((event) => event.id);
- const rsvpsResult = await supabase
- .from("event_rsvps")
- .select("event_id, participant_clerk_id, status")
- .in("event_id", eventIds);
-
- if (rsvpsResult.error) {
- return handleApiError(rsvpsResult.error,"GET /api/community/events (rsvps)");
- }
-
- const grouped = new Map<string, EventRsvpRow[]>();
- for (const row of (rsvpsResult.data ?? []) as EventRsvpRow[]) {
- const previous = grouped.get(row.event_id) ?? [];
- previous.push(row);
- grouped.set(row.event_id, previous);
- }
+ const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+  eventIds,
+  userId: userId ?? null,
+ });
+ const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
 
  const organizerIds = Array.from(
  new Set(
@@ -179,14 +164,16 @@ export async function GET(request: Request) {
  roleBadge: getRoleBadge("benevole"),
  profileBadge: getProfileBadge("benevole"),
  };
- return toEventResponseItem(
+  return toEventResponseItem(
  event,
- grouped.get(event.id) ?? [],
- userId ?? null,
+ summaryByEventId.get(event.id) ?? null,
  organizer,
+  );
+  });
+ return NextResponse.json(
+  { status:"ok", count: items.length, items },
+  { headers: COMMUNITY_EVENTS_CACHE_HEADERS },
  );
- });
- return NextResponse.json({ status:"ok", count: items.length, items });
  } catch (error) {
  return handleApiError(error, "GET /api/community/events");
  }
@@ -299,12 +286,12 @@ export async function POST(request: Request) {
  try {
  const notificationTargets = getCommunityEventNotificationTargets(parsed.data.locationLabel);
  if (notificationTargets) {
- const { data: nearbyProfiles } = await supabase
- .from("profiles")
- .select("id, paris_arrondissement, metadata")
- .not("id","eq", userId);
+ const nearbyProfiles = await loadCommunityEventNotificationProfiles(supabase, {
+ excludedProfileId: userId,
+ targets: notificationTargets,
+ });
 
- const targetProfiles = (nearbyProfiles ?? []).filter((profile) =>
+ const targetProfiles = nearbyProfiles.filter((profile) =>
  isProfileEligibleForCommunityEvent(profile, notificationTargets),
  );
 

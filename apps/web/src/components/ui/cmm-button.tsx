@@ -12,6 +12,7 @@ export type ButtonVariant ="default" |"pill" |"ghost";
 export interface CmmButtonProps {
  children: ReactNode;
  href?: string;
+ prefetch?: boolean;
  onClick?: () => void;
  tone?: ButtonTone | "muted";
  size?: ButtonSize;
@@ -51,6 +52,7 @@ const baseClasses =
 export function CmmButton({
  children,
  href,
+ prefetch = false,
  onClick,
  tone ="secondary",
  size ="md",
@@ -73,11 +75,11 @@ export function CmmButton({
 
  if (href) {
  return (
- <Link href={href} className={classes} aria-label={ariaLabel} title={title}>
+ <Link href={href} prefetch={prefetch} className={classes} aria-label={ariaLabel} title={title}>
  {children}
  </Link>
  );
- }
+}
 
  if (asChild && isValidElement(children)) {
    const child = children as ReactElement<{ className?: string; onClick?: () => void }>;

@@ -9,6 +9,8 @@ Point d'entrée du registre documentaire route-first.
 
 Ce dossier sert de source de vérité documentaire pour les pages du site. Le détail de chaque route vit dans sa présentation détaillée canonique.
 
+Le site est documenté comme une plateforme nationale. Les mentions Paris, Île-de-France et arrondissement restent uniquement quand elles servent de cas métier, de compatibilité legacy ou de précision géographique ponctuelle.
+
 Chaque page modifiée doit être vérifiée par un duo de contrôles :
 
 - capture écran desktop pour le rendu visuel

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { loadValidatedCompleteActionCountForUser } from "./progression-data";
+import type { ActionRow } from "./progression-types";
 
 type QueryResult<T> = {
   data: T[];
@@ -28,12 +29,6 @@ type FormsQuery<T> = {
     field: string,
     options?: { ascending?: boolean },
   ) => Promise<QueryResult<T>>;
-};
-
-type OrganizerQuery = {
-  select: (columns: string) => OrganizerQuery;
-  eq: (field: string, value: string) => OrganizerQuery;
-  limit: (value: number) => Promise<QueryResult<never>>;
 };
 
 function createActionsQuery<T>(data: T[]): ActionsQuery<T> {
@@ -76,118 +71,146 @@ function createFormsQuery<T extends { action_id?: string }>(data: T[]): FormsQue
   return chain;
 }
 
-describe("loadValidatedCompleteActionCountForUser", () => {
-  it("counts only validated approved actions with complete data", async () => {
-    const completeNotes = appendActionMetadataToNotes("Action de terrain", {
-      associationName: "Action spontanée",
-    });
+function createOrganizerQuery() {
+  type OrganizerQuery = {
+    select: (columns: string) => OrganizerQuery;
+    eq: (field: string, value: string) => OrganizerQuery;
+    limit: (value: number) => Promise<QueryResult<never>>;
+  };
 
-    const actions = [
-      {
-        id: "action-1",
-        created_at: "2026-01-01",
-        created_by_clerk_id: "user-1",
-        actor_name: "Alice",
-        action_date: "2026-01-01",
-        location_label: "Parc A",
-        latitude: 48.85,
-        longitude: 2.35,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "approved",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-      {
-        id: "action-2",
-        created_at: "2026-01-02",
-        created_by_clerk_id: "user-1",
-        actor_name: null,
-        action_date: "2026-01-02",
-        location_label: "Parc B",
-        latitude: 48.86,
-        longitude: 2.34,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "approved",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-      {
-        id: "action-3",
-        created_at: "2026-01-03",
-        created_by_clerk_id: "user-1",
-        actor_name: "Alice",
-        action_date: "2026-01-03",
-        location_label: "Parc C",
-        latitude: 48.87,
-        longitude: 2.33,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "pending",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-    ];
+  const chain = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    limit: vi.fn(async () => ({ data: [], error: null })),
+  } as OrganizerQuery;
+  return chain;
+}
 
-    const forms = [
-      {
-        action_id: "action-1",
-        group_id: "g1",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-      {
-        action_id: "action-2",
-        group_id: "g2",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-      {
-        action_id: "action-3",
-        group_id: "g3",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-    ];
+function buildCompleteActionRows(): ActionRow[] {
+  const completeNotes = appendActionMetadataToNotes("Action de terrain", {
+    associationName: "Action spontanée",
+  });
 
-    const supabase = {
+  return [
+    {
+      id: "action-1",
+      created_at: "2026-01-01",
+      created_by_clerk_id: "user-1",
+      actor_name: "Alice",
+      action_date: "2026-01-01",
+      location_label: "Parc A",
+      latitude: 48.85,
+      longitude: 2.35,
+      waste_kg: 3,
+      cigarette_butts: 12,
+      volunteers_count: 4,
+      duration_minutes: 45,
+      status: "approved",
+      notes: completeNotes,
+      manual_drawing: null,
+    },
+    {
+      id: "action-2",
+      created_at: "2026-01-02",
+      created_by_clerk_id: "user-1",
+      actor_name: null,
+      action_date: "2026-01-02",
+      location_label: "Parc B",
+      latitude: 48.86,
+      longitude: 2.34,
+      waste_kg: 3,
+      cigarette_butts: 12,
+      volunteers_count: 4,
+      duration_minutes: 45,
+      status: "approved",
+      notes: completeNotes,
+      manual_drawing: null,
+    },
+    {
+      id: "action-3",
+      created_at: "2026-01-03",
+      created_by_clerk_id: "user-1",
+      actor_name: "Alice",
+      action_date: "2026-01-03",
+      location_label: "Parc C",
+      latitude: 48.87,
+      longitude: 2.33,
+      waste_kg: 3,
+      cigarette_butts: 12,
+      volunteers_count: 4,
+      duration_minutes: 45,
+      status: "pending",
+      notes: completeNotes,
+      manual_drawing: null,
+    },
+  ];
+}
+
+function buildCompleteForms() {
+  return [
+    {
+      action_id: "action-1",
+      group_id: "g1",
+      status: "validated",
+      created_at: "2026-01-04",
+      validated_by_admin: true,
+      is_duplicate: false,
+      is_deleted: false,
+      is_test: false,
+    },
+    {
+      action_id: "action-2",
+      group_id: "g2",
+      status: "validated",
+      created_at: "2026-01-04",
+      validated_by_admin: true,
+      is_duplicate: false,
+      is_deleted: false,
+      is_test: false,
+    },
+    {
+      action_id: "action-3",
+      group_id: "g3",
+      status: "validated",
+      created_at: "2026-01-04",
+      validated_by_admin: true,
+      is_duplicate: false,
+      is_deleted: false,
+      is_test: false,
+    },
+  ];
+}
+
+function createCompleteActionsSupabase(options: { throwOnActions?: boolean } = {}) {
+  const actions = buildCompleteActionRows();
+  const forms = buildCompleteForms();
+  const throwOnActions = options.throwOnActions ?? false;
+
+  return {
+    actions,
+    supabase: {
       from: vi.fn((table: string) => {
         if (table === "actions") {
+          if (throwOnActions) {
+            throw new Error("actions table should not be queried when rows are preloaded");
+          }
           return createActionsQuery(actions);
         }
         if (table === "action_organizers") {
-          const chain = {
-            select: vi.fn(() => chain),
-            eq: vi.fn(() => chain),
-            limit: vi.fn(async () => ({ data: [], error: null })),
-          } as OrganizerQuery;
-          return chain;
+          return createOrganizerQuery();
         }
         if (table === "forms") {
           return createFormsQuery(forms);
         }
         throw new Error(`Unexpected table: ${table}`);
       }),
-    } as unknown as SupabaseClient;
+    } as unknown as SupabaseClient,
+  };
+}
+
+describe("loadValidatedCompleteActionCountForUser", () => {
+  it("counts only validated approved actions with complete data", async () => {
+    const { supabase } = createCompleteActionsSupabase();
 
     const count = await loadValidatedCompleteActionCountForUser(supabase, "user-1");
 
@@ -195,136 +218,10 @@ describe("loadValidatedCompleteActionCountForUser", () => {
   });
 
   it("returns the same count when approved rows are preloaded", async () => {
-    const completeNotes = appendActionMetadataToNotes("Action de terrain", {
-      associationName: "Action spontanée",
+    const { actions, supabase: directSupabase } = createCompleteActionsSupabase();
+    const { supabase: preloadedSupabase } = createCompleteActionsSupabase({
+      throwOnActions: true,
     });
-
-    const actions = [
-      {
-        id: "action-1",
-        created_at: "2026-01-01",
-        created_by_clerk_id: "user-1",
-        actor_name: "Alice",
-        action_date: "2026-01-01",
-        location_label: "Parc A",
-        latitude: 48.85,
-        longitude: 2.35,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "approved",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-      {
-        id: "action-2",
-        created_at: "2026-01-02",
-        created_by_clerk_id: "user-1",
-        actor_name: null,
-        action_date: "2026-01-02",
-        location_label: "Parc B",
-        latitude: 48.86,
-        longitude: 2.34,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "approved",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-      {
-        id: "action-3",
-        created_at: "2026-01-03",
-        created_by_clerk_id: "user-1",
-        actor_name: "Alice",
-        action_date: "2026-01-03",
-        location_label: "Parc C",
-        latitude: 48.87,
-        longitude: 2.33,
-        waste_kg: 3,
-        cigarette_butts: 12,
-        volunteers_count: 4,
-        duration_minutes: 45,
-        status: "pending",
-        notes: completeNotes,
-        manual_drawing: null,
-      },
-    ];
-
-    const forms = [
-      {
-        action_id: "action-1",
-        group_id: "g1",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-      {
-        action_id: "action-2",
-        group_id: "g2",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-      {
-        action_id: "action-3",
-        group_id: "g3",
-        status: "validated",
-        created_at: "2026-01-04",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-    ];
-
-    const directSupabase = {
-      from: vi.fn((table: string) => {
-        if (table === "actions") {
-          return createActionsQuery(actions);
-        }
-        if (table === "action_organizers") {
-          const chain = {
-            select: vi.fn(() => chain),
-            eq: vi.fn(() => chain),
-            limit: vi.fn(async () => ({ data: [], error: null })),
-          } as OrganizerQuery;
-          return chain;
-        }
-        if (table === "forms") {
-          return createFormsQuery(forms);
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      }),
-    } as unknown as SupabaseClient;
-
-    const preloadedSupabase = {
-      from: vi.fn((table: string) => {
-        if (table === "actions") {
-          throw new Error("actions table should not be queried when rows are preloaded");
-        }
-        if (table === "action_organizers") {
-          const chain = {
-            select: vi.fn(() => chain),
-            eq: vi.fn(() => chain),
-            limit: vi.fn(async () => ({ data: [], error: null })),
-          } as OrganizerQuery;
-          return chain;
-        }
-        if (table === "forms") {
-          return createFormsQuery(forms);
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      }),
-    } as unknown as SupabaseClient;
 
     const directCount = await loadValidatedCompleteActionCountForUser(directSupabase, "user-1");
     const preloadedCount = await loadValidatedCompleteActionCountForUser(preloadedSupabase, "user-1", {

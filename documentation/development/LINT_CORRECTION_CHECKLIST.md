@@ -2,6 +2,12 @@
 
 Guide de travail pour corriger des warnings ESLint sans introduire de régression.
 
+Référence complémentaire :
+- [Plan de priorité des warnings ESLint](./LINT_WARNING_PRIORITY.md)
+- [Guide de refactorisation lint](./lint-refactor-playbook.md)
+
+Utiliser d'abord le plan de priorité pour choisir le lot à traiter, puis cette checklist pour exécuter la correction sans régression.
+
 ---
 
 ## 1. Avant De Commencer

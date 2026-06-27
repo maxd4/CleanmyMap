@@ -1,8 +1,12 @@
+import { Buffer } from "node:buffer";
+import { buildSimplePdf } from "@/lib/pdf-export/simple-pdf";
 import { buildDeliverableHeaders } from "@/lib/reports/http";
 import type { EnvironmentalImpactCaptureResult } from "@/lib/environmental-impact-estimator/dashboard-capture";
 import { buildServiceThresholdAlerts } from "@/lib/environmental-impact-estimator/service-risk";
 import type { StorageUsageReport } from "@/lib/supabase/storage-usage-service";
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
+import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildGovernanceMethodologyLinks,
 } from "./governance-links";
@@ -13,12 +17,14 @@ import {
 } from "./governance-monthly-report-business";
 import {
   GOVERNANCE_MONTHLY_REPORT_KEY,
+  listGovernanceMonthlyReports,
   upsertGovernanceMonthlyReport,
   type GovernanceMonthlyReportPayload,
   type GovernanceMonthlyReportRecord,
 } from "./governance-monthly-report-store";
 
 export const GOVERNANCE_MONTHLY_REPORT_VERSION = "governance-monthly-report-2026.05-v1";
+const GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET = "reports";
 const GOVERNANCE_RISK_BANNER_THRESHOLD = 70;
 
 function normalizeNumber(value: number | null | undefined): number | null {
@@ -58,6 +64,10 @@ function getReportMonth(generatedAt: string): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${year}-${month}-01`;
+}
+
+function buildGovernanceMonthlyReportPdfPath(reportMonth: string): string {
+  return `governance-monthly/${buildGovernanceMonthlyReportFilename(reportMonth)}`;
 }
 
 function getSnapshotServiceCharge(
@@ -101,49 +111,6 @@ function getInfrastructureServicePriorityScore(service: GovernanceInfrastructure
   const confidencePenalty = Math.max(0, 18 - Math.round((service.confidencePercent - 70) * 0.4));
 
   return statusScore + shareScore + uncertaintyScore + confidencePenalty;
-}
-
-function buildGovernanceServiceAlert(service: {
-  label: string;
-  deltaKgCo2eProxy: number;
-  previousKgCo2eProxy: number;
-  currentKgCo2eProxy: number;
-}): {
-  label: string;
-  severity: "warning" | "critical";
-  title: string;
-  message: string;
-  signal: "growth";
-} | null {
-  if (service.deltaKgCo2eProxy <= 0) {
-    return null;
-  }
-
-  const severity: "warning" | "critical" =
-    service.deltaKgCo2eProxy >= 1.5 ? "critical" : "warning";
-
-  return {
-    label: service.label,
-    severity,
-    title: "Croissance la plus rapide",
-    message: `${service.label} passe de ${formatNumber(service.previousKgCo2eProxy, 2)} kg à ${formatNumber(service.currentKgCo2eProxy, 2)} kg ce mois-ci.`,
-    signal: "growth",
-  };
-}
-
-function buildGovernanceServiceAlertFromHighlight(
-  highlight: {
-    label: string;
-    previousKgCo2eProxy: number;
-    currentKgCo2eProxy: number;
-    deltaKgCo2eProxy: number;
-  } | null | undefined,
-): ReturnType<typeof buildGovernanceServiceAlert> {
-  if (!highlight || highlight.deltaKgCo2eProxy <= 0) {
-    return null;
-  }
-
-  return buildGovernanceServiceAlert(highlight);
 }
 
 function buildMonthlyStorageSummaryLines(
@@ -745,6 +712,41 @@ export function buildGovernanceMonthlyReportDownloadHeaders(record: GovernanceMo
   });
 }
 
+async function bestEffort<T>(fallback: T, task: () => Promise<T>): Promise<T> {
+  try {
+    return await task();
+  } catch {
+    return fallback;
+  }
+}
+
+async function persistGovernanceMonthlyReportPdf(record: GovernanceMonthlyReportRecord): Promise<string | null> {
+  const supabase = getSupabaseServerClient();
+  const recentReports = await listGovernanceMonthlyReports(3);
+  const pdfBytes = buildSimplePdf(buildGovernanceMonthlyReportLines(record, recentReports));
+  const pdfPath = buildGovernanceMonthlyReportPdfPath(record.reportMonth);
+  const pdfBlob = new Blob([Buffer.from(pdfBytes)], { type: "application/pdf" });
+  const { error } = await supabase.storage.from(GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET).upload(
+    pdfPath,
+    pdfBlob,
+    {
+      upsert: true,
+      cacheControl: "3600",
+      metadata: buildStorageBusinessMetadata({
+        businessDomain: "socle_estimateur_impact",
+        sourceTable: "governance_monthly_reports",
+        businessContext: "governance_report",
+        extra: {
+          reportMonth: record.reportMonth,
+          version: record.version,
+        },
+      }),
+    },
+  );
+
+  return error ? null : pdfPath;
+}
+
 export async function captureGovernanceMonthlyReport(params: {
   environmentalImpact: EnvironmentalImpactCaptureResult;
   storageUsage: StorageUsageReport;
@@ -762,7 +764,28 @@ export async function captureGovernanceMonthlyReport(params: {
   };
 
   await upsertGovernanceMonthlyReport(record);
-  return record;
+
+  const pdfStoragePath = await bestEffort<string | null>(null, () =>
+    persistGovernanceMonthlyReportPdf(record),
+  );
+
+  if (!pdfStoragePath) {
+    return record;
+  }
+
+  const recordWithAsset: GovernanceMonthlyReportRecord = {
+    ...record,
+    payload: {
+      ...record.payload,
+      artifacts: {
+        pdfStoragePath,
+        pdfGeneratedAt: record.generatedAt,
+      },
+    },
+  };
+
+  await upsertGovernanceMonthlyReport(recordWithAsset);
+  return recordWithAsset;
 }
 
 export { listGovernanceMonthlyReports, loadGovernanceMonthlyReport } from "./governance-monthly-report-store";

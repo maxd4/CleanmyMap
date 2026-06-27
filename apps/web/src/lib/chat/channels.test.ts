@@ -142,6 +142,15 @@ describe("getTerritoryFilter", () => {
     expect(filter.arrondissementIds).toBeNull();
     expect(filter.zoneNames).toBeNull();
   });
+
+  it("ignores non-Paris arrondissement labels in territory filters", () => {
+    const filter = getTerritoryFilter({
+      zoneName: "Lyon 2e",
+      arrondissementId: 2,
+    });
+    expect(filter.arrondissementIds).toBeNull();
+    expect(filter.zoneNames).toBeNull();
+  });
 });
 
 describe("extractZoneContextFromMetadata", () => {
@@ -154,6 +163,24 @@ describe("extractZoneContextFromMetadata", () => {
   it("extracts zone name from metadata", () => {
     const ctx = extractZoneContextFromMetadata({ zoneName: "Boulogne-Billancourt" });
     expect(ctx.zoneName).toBe("Boulogne-Billancourt");
+    expect(ctx.arrondissementId).toBeNull();
+  });
+
+  it("extracts territory metadata from the new compatibility fields", () => {
+    const ctx = extractZoneContextFromMetadata({
+      territoryLabel: "Paris 15e",
+      territoryArrondissement: 15,
+    });
+    expect(ctx.zoneName).toBe("Paris 15e");
+    expect(ctx.arrondissementId).toBe(15);
+  });
+
+  it("does not infer a Paris arrondissement from a non-Paris city label", () => {
+    const ctx = extractZoneContextFromMetadata({
+      territoryLabel: "Lyon 2e",
+      territoryArrondissement: 2,
+    });
+    expect(ctx.zoneName).toBe("Lyon 2e");
     expect(ctx.arrondissementId).toBeNull();
   });
 

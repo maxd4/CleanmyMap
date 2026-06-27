@@ -43,26 +43,44 @@ function emptyStore(): StorePayload {
   return { updatedAt: new Date().toISOString(), records: [] };
 }
 
+function normalizeTextField(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function normalizeOptionalTextField(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function isContactRequestType(value: unknown): value is ContactRequestType {
+  return (
+    value === "access" ||
+    value === "rectification" ||
+    value === "erasure" ||
+    value === "portability" ||
+    value === "other"
+  );
+}
+
+function normalizeContactRequestStatus(
+  value: unknown,
+): ContactRequestStatus {
+  return value === "queued" || value === "sent" || value === "failed"
+    ? value
+    : "queued";
+}
+
 function normalizeContactRequest(record: Record<string, unknown>): ContactRequestRecord | null {
-  const id = typeof record["id"] === "string" ? record["id"] : "";
-  const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
-  const submittedByEmail =
-    typeof record["submittedByEmail"] === "string" ? record["submittedByEmail"] : "";
+  const id = normalizeTextField(record["id"]);
+  const createdAt = normalizeTextField(record["createdAt"]);
+  const submittedByEmail = normalizeTextField(record["submittedByEmail"]);
   const requestType = record["requestType"];
-  const subject = typeof record["subject"] === "string" ? record["subject"] : "";
-  const message = typeof record["message"] === "string" ? record["message"] : "";
-  const pagePath = typeof record["pagePath"] === "string" ? record["pagePath"] : null;
-  const submittedByUserId =
-    typeof record["submittedByUserId"] === "string" ? record["submittedByUserId"] : null;
-  const source = record["source"] === "contact_page" ? "contact_page" : "contact_page";
-  const status =
-    record["status"] === "queued" ||
-    record["status"] === "sent" ||
-    record["status"] === "failed"
-      ? record["status"]
-      : "queued";
-  const notificationError =
-    typeof record["notificationError"] === "string" ? record["notificationError"] : null;
+  const subject = normalizeTextField(record["subject"]);
+  const message = normalizeTextField(record["message"]);
+  const pagePath = normalizeOptionalTextField(record["pagePath"]);
+  const submittedByUserId = normalizeOptionalTextField(record["submittedByUserId"]);
+  const source = "contact_page";
+  const status = normalizeContactRequestStatus(record["status"]);
+  const notificationError = normalizeOptionalTextField(record["notificationError"]);
 
   if (
     !id ||
@@ -70,11 +88,7 @@ function normalizeContactRequest(record: Record<string, unknown>): ContactReques
     !submittedByEmail ||
     !subject ||
     !message ||
-    (requestType !== "access" &&
-      requestType !== "rectification" &&
-      requestType !== "erasure" &&
-      requestType !== "portability" &&
-      requestType !== "other")
+    !isContactRequestType(requestType)
   ) {
     return null;
   }
@@ -224,4 +238,3 @@ export async function deleteContactRequest(requestId: string): Promise<boolean> 
   });
   return true;
 }
-

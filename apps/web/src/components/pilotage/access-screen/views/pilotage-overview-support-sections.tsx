@@ -41,6 +41,7 @@ export function PilotageOverviewSupportSections({
           </Link>
           <Link
             href="/reports"
+            prefetch={false}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-orange-200/30 bg-[rgba(44,28,15,0.60)] px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:border-orange-300/50"
           >
             {locale === "fr" ? "Rapports" : "Reports"}
@@ -93,6 +94,7 @@ export function PilotageOverviewSupportSections({
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             href="/reports"
+            prefetch={false}
             className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:-translate-y-[1px]"
           >
             {locale === "fr" ? "Ouvrir les rapports" : "Open reports"}
@@ -100,6 +102,7 @@ export function PilotageOverviewSupportSections({
           </Link>
           <Link
             href="/admin"
+            prefetch={false}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-orange-200/30 bg-[rgba(44,28,15,0.60)] px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:border-orange-300/50"
           >
             {locale === "fr" ? "Aller à l'administration" : "Go to administration"}

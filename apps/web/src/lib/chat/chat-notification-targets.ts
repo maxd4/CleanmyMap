@@ -31,6 +31,21 @@ function readNumber(value: unknown): number | null {
   return null;
 }
 
+function readNotificationAliases(raw: Record<string, unknown>): {
+  conversationPartnerId?: string;
+  conversationPartnerLabel?: string;
+  conversationPartnerHandle?: string;
+} {
+  return {
+    conversationPartnerId:
+      readString(raw.conversationPartnerId) ?? readString(raw.recipientId) ?? undefined,
+    conversationPartnerLabel:
+      readString(raw.conversationPartnerLabel) ?? readString(raw.recipientLabel) ?? undefined,
+    conversationPartnerHandle:
+      readString(raw.conversationPartnerHandle) ?? readString(raw.recipientHandle) ?? undefined,
+  };
+}
+
 export function normalizeChatNotificationPayload(
   payload: unknown,
 ): ChatNotificationPayload | null {
@@ -39,6 +54,7 @@ export function normalizeChatNotificationPayload(
   }
 
   const raw = payload as Record<string, unknown>;
+  const aliases = readNotificationAliases(raw);
 
   return {
     href: readString(raw.href) ?? undefined,
@@ -46,16 +62,46 @@ export function normalizeChatNotificationPayload(
     messageId: readString(raw.messageId) ?? undefined,
     zoneName: readString(raw.zoneName),
     arrondissementId: readNumber(raw.arrondissementId),
-    conversationPartnerId:
-      readString(raw.conversationPartnerId) ?? readString(raw.recipientId) ?? undefined,
-    conversationPartnerLabel:
-      readString(raw.conversationPartnerLabel) ?? readString(raw.recipientLabel) ?? undefined,
-    conversationPartnerHandle:
-      readString(raw.conversationPartnerHandle) ?? readString(raw.recipientHandle) ?? undefined,
+    conversationPartnerId: aliases.conversationPartnerId,
+    conversationPartnerLabel: aliases.conversationPartnerLabel,
+    conversationPartnerHandle: aliases.conversationPartnerHandle,
     recipientId: readString(raw.recipientId) ?? undefined,
     recipientLabel: readString(raw.recipientLabel) ?? undefined,
     recipientHandle: readString(raw.recipientHandle) ?? undefined,
   };
+}
+
+function appendDmNotificationParams(
+  params: URLSearchParams,
+  normalized: NonNullable<ReturnType<typeof normalizeChatNotificationPayload>>,
+): void {
+  const conversationPartnerId =
+    normalized.conversationPartnerId ?? normalized.recipientId ?? null;
+  if (conversationPartnerId) {
+    params.set("recipientId", conversationPartnerId);
+  }
+
+  const label = normalized.conversationPartnerLabel ?? normalized.recipientLabel;
+  if (label) {
+    params.set("recipientLabel", label);
+  }
+
+  const handle = normalized.conversationPartnerHandle ?? normalized.recipientHandle;
+  if (handle) {
+    params.set("recipientHandle", handle);
+  }
+}
+
+function appendTerritoryNotificationParams(
+  params: URLSearchParams,
+  normalized: NonNullable<ReturnType<typeof normalizeChatNotificationPayload>>,
+): void {
+  if (normalized.zoneName) {
+    params.set("zoneName", normalized.zoneName);
+  }
+  if (typeof normalized.arrondissementId === "number") {
+    params.set("arrondissementId", String(normalized.arrondissementId));
+  }
 }
 
 export function buildChatNotificationHref(payload: unknown): string | null {
@@ -80,28 +126,11 @@ export function buildChatNotificationHref(payload: unknown): string | null {
   params.set("channel", normalized.channelType);
 
   if (normalized.channelType === "dm") {
-    const conversationPartnerId =
-      normalized.conversationPartnerId ?? normalized.recipientId ?? null;
-    if (conversationPartnerId) {
-      params.set("recipientId", conversationPartnerId);
-    }
-    const label = normalized.conversationPartnerLabel ?? normalized.recipientLabel;
-    if (label) {
-      params.set("recipientLabel", label);
-    }
-    const handle = normalized.conversationPartnerHandle ?? normalized.recipientHandle;
-    if (handle) {
-      params.set("recipientHandle", handle);
-    }
+    appendDmNotificationParams(params, normalized);
   }
 
   if (normalized.channelType === "territory") {
-    if (normalized.zoneName) {
-      params.set("zoneName", normalized.zoneName);
-    }
-    if (typeof normalized.arrondissementId === "number") {
-      params.set("arrondissementId", String(normalized.arrondissementId));
-    }
+    appendTerritoryNotificationParams(params, normalized);
   }
 
   const query = params.toString();

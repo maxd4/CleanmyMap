@@ -169,6 +169,7 @@ export type StorageUsageSnapshotRecord = {
   extension_breakdown: unknown;
   business_breakdown: unknown;
   largest_files: unknown;
+  business_contributions: unknown;
   warnings: unknown;
 };
 

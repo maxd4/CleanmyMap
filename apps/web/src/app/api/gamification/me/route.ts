@@ -6,6 +6,9 @@ import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
+const GAMIFICATION_ME_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+};
 
 export async function GET() {
  const { userId } = await auth();
@@ -19,6 +22,8 @@ export async function GET() {
  return NextResponse.json({
  status:"ok",
  progression,
+ }, {
+  headers: GAMIFICATION_ME_CACHE_HEADERS,
  });
  } catch (error) {
  return handleApiError(error, "GET /api/gamification/me");

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-const loadEnvironmentalImpactDashboardMock = vi.hoisted(() =>
+const loadEnvironmentalImpactDashboardSnapshotOnlyMock = vi.hoisted(() =>
   vi.fn(async () => ({
     status: "ok",
     model: {
@@ -28,7 +28,7 @@ vi.mock("@/lib/http/auth-responses", () => ({
 }));
 
 vi.mock("@/lib/environmental-impact-estimator/dashboard-capture", () => ({
-  loadEnvironmentalImpactDashboard: loadEnvironmentalImpactDashboardMock,
+  loadEnvironmentalImpactDashboardSnapshotOnly: loadEnvironmentalImpactDashboardSnapshotOnlyMock,
 }));
 
 import { GET } from "./route";
@@ -48,10 +48,7 @@ describe("admin free plan services route", () => {
     expect(payload.status).toBe("ok");
     expect(payload.focus).toBe("free-tier-services");
     expect(payload.snapshots).toHaveLength(0);
-    expect(loadEnvironmentalImpactDashboardMock).toHaveBeenCalledWith({
-      userId: null,
-      historyLimit: 6,
-    });
+    expect(loadEnvironmentalImpactDashboardSnapshotOnlyMock).toHaveBeenCalledWith({ historyLimit: 6 });
     expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
   });
 });

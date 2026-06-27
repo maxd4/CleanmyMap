@@ -8,7 +8,7 @@ import {
 describe("dry-run proof", () => {
   it("verifies a valid proof", () => {
     const payload = {
-      items: [{ actionDate: "2026-04-10", locationLabel: "Paris", wasteKg: 1 }],
+      items: [{ actionDate: "2026-04-10", locationLabel: "France", wasteKg: 1 }],
     };
     const hash = hashImportPayload(payload);
     const proof = createDryRunProof({

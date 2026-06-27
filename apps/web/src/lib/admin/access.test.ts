@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NextRequest } from 'next/server';
 
 // Mock Clerk auth
 vi.mock('@clerk/nextjs/server', () => ({

@@ -4,7 +4,10 @@ import {
   getSuburbsForDistrict,
   isGreaterParisZone,
 } from "@/lib/geo/paris-neighborhood";
-import { getAffectedArrondissements } from "@/lib/geo/paris-arrondissements";
+import {
+  getAffectedArrondissements,
+  isParisArrondissementLabel,
+} from "@/lib/geo/paris-arrondissements";
 
 export type ChatChannelType =
   | "community"
@@ -121,6 +124,37 @@ export function getDefaultChatChannelType(
   );
 }
 
+function buildDistrictTerritoryFilter(districtNumber: number): {
+  arrondissementIds: number[] | null;
+  zoneNames: string[] | null;
+} {
+  return {
+    arrondissementIds: getAffectedArrondissements(districtNumber),
+    zoneNames: getSuburbsForDistrict(districtNumber),
+  };
+}
+
+function buildGreaterParisTerritoryFilter(zoneName: string): {
+  arrondissementIds: number[] | null;
+  zoneNames: string[] | null;
+} {
+  return {
+    arrondissementIds: null,
+    zoneNames: [zoneName, ...getNeighbors(zoneName)],
+  };
+}
+
+function buildArrondissementTerritoryFilter(arrondissementId: number): {
+  arrondissementIds: number[] | null;
+  zoneNames: string[] | null;
+} {
+  const neighboringSuburbs = getSuburbsForDistrict(arrondissementId);
+  return {
+    arrondissementIds: getAffectedArrondissements(arrondissementId),
+    zoneNames: neighboringSuburbs.length > 0 ? neighboringSuburbs : null,
+  };
+}
+
 export function getTerritoryFilter(
   zoneContext: ZoneContext | null,
 ): { arrondissementIds: number[] | null; zoneNames: string[] | null } {
@@ -131,27 +165,22 @@ export function getTerritoryFilter(
   if (zoneContext.zoneName) {
     const district = findDistrictByName(zoneContext.zoneName);
     if (district) {
-      return {
-        arrondissementIds: getAffectedArrondissements(district.number),
-        zoneNames: getSuburbsForDistrict(district.number),
-      };
+      return buildDistrictTerritoryFilter(district.number);
+    }
+    if (isGreaterParisZone(zoneContext.zoneName)) {
+      return buildGreaterParisTerritoryFilter(zoneContext.zoneName);
     }
   }
 
-  if (zoneContext.zoneName && isGreaterParisZone(zoneContext.zoneName)) {
-    const neighbors = getNeighbors(zoneContext.zoneName);
-    return {
-      arrondissementIds: null,
-      zoneNames: [zoneContext.zoneName, ...neighbors],
-    };
-  }
-
-  if (zoneContext.arrondissementId && zoneContext.arrondissementId >= 1 && zoneContext.arrondissementId <= 20) {
-    const neighboringSuburbs = getSuburbsForDistrict(zoneContext.arrondissementId);
-    return {
-      arrondissementIds: getAffectedArrondissements(zoneContext.arrondissementId),
-      zoneNames: neighboringSuburbs.length > 0 ? neighboringSuburbs : null,
-    };
+  if (zoneContext.arrondissementId) {
+    const zoneIsParis = zoneContext.zoneName ? isParisArrondissementLabel(zoneContext.zoneName) : false;
+    if (
+      zoneContext.arrondissementId >= 1 &&
+      zoneContext.arrondissementId <= 20 &&
+      (zoneIsParis || !zoneContext.zoneName)
+    ) {
+      return buildArrondissementTerritoryFilter(zoneContext.arrondissementId);
+    }
   }
 
   return { arrondissementIds: null, zoneNames: null };
@@ -187,22 +216,60 @@ export function getZoneLabel(zoneContext: ZoneContext | null): string {
   return "Aucune zone définie";
 }
 
+function readZoneName(metadata: Record<string, unknown> | null | undefined): string | null {
+  const zoneNameRaw = metadata?.["territoryLabel"] ?? metadata?.["zoneName"];
+  return typeof zoneNameRaw === "string" && zoneNameRaw.length > 0 ? zoneNameRaw : null;
+}
+
+function readArrondissementCandidate(
+  metadata: Record<string, unknown> | null | undefined,
+): unknown {
+  return metadata?.["territoryArrondissement"] ?? metadata?.["parisArrondissement"] ?? null;
+}
+
+function resolveDirectArrondissementId(
+  arrondissementRaw: unknown,
+  canUseArrondissement: boolean,
+): number | null {
+  if (!canUseArrondissement) {
+    return null;
+  }
+
+  if (typeof arrondissementRaw === "number") {
+    return arrondissementRaw >= 1 && arrondissementRaw <= 20 ? arrondissementRaw : null;
+  }
+
+  if (typeof arrondissementRaw === "string") {
+    const parsed = Number.parseInt(arrondissementRaw, 10);
+    return Number.isFinite(parsed) && parsed >= 1 && parsed <= 20 ? parsed : null;
+  }
+
+  return null;
+}
+
+function resolveArrondissementFromParisLabel(zoneName: string): number | null {
+  const district = findDistrictByName(zoneName);
+  return district ? district.number : null;
+}
+
 export function extractZoneContextFromMetadata(
   metadata: Record<string, unknown> | null | undefined,
 ): ZoneContext {
-  const zoneNameRaw = metadata?.["zoneName"];
-  const zoneName = typeof zoneNameRaw === "string" && zoneNameRaw.length > 0 ? zoneNameRaw : null;
+  const zoneName = readZoneName(metadata);
+  const arrondissementRaw = readArrondissementCandidate(metadata);
+  const zoneIsParis = zoneName ? isParisArrondissementLabel(zoneName) : false;
+  const arrondissementId = resolveDirectArrondissementId(
+    arrondissementRaw,
+    zoneIsParis || zoneName === null,
+  );
 
-  const arrondissementRaw = metadata?.["parisArrondissement"];
-  let arrondissementId: number | null = null;
-  if (typeof arrondissementRaw === "number" && arrondissementRaw >= 1 && arrondissementRaw <= 20) {
-    arrondissementId = arrondissementRaw;
-  } else if (typeof arrondissementRaw === "string") {
-    const parsed = parseInt(arrondissementRaw, 10);
-    if (!isNaN(parsed) && parsed >= 1 && parsed <= 20) {
-      arrondissementId = parsed;
-    }
+  if (arrondissementId !== null) {
+    return { zoneName, arrondissementId };
   }
 
-  return { zoneName, arrondissementId };
+  if (zoneName && zoneIsParis) {
+    return { zoneName, arrondissementId: resolveArrondissementFromParisLabel(zoneName) };
+  }
+
+  return { zoneName, arrondissementId: null };
 }

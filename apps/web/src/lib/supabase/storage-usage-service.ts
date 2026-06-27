@@ -21,6 +21,8 @@ import {
 } from "@/lib/supabase/storage-usage";
 import {
   buildStorageBusinessContributions,
+  type StorageBusinessContributionAlert,
+  type StorageBusinessContributionItem,
   type StorageBusinessContributionReport,
 } from "@/lib/supabase/storage-business-contribution";
 
@@ -42,6 +44,43 @@ export type StorageUsageReport = {
   cron: StorageUsageCronStatus;
 };
 
+type StorageUsageSnapshotRow = StorageUsageSnapshotRecord & {
+  business_contributions: unknown;
+};
+
+function emptyStorageBusinessContributionReport(): StorageBusinessContributionReport {
+  return {
+    previousSnapshotMonth: null,
+    historyMonths: [],
+    alerts: [],
+    items: [],
+  };
+}
+
+function normalizeStorageBusinessContributionReport(
+  value: unknown,
+): StorageBusinessContributionReport {
+  if (!value || typeof value !== "object") {
+    return emptyStorageBusinessContributionReport();
+  }
+
+  const report = value as Partial<StorageBusinessContributionReport> & {
+    alerts?: unknown;
+    historyMonths?: unknown;
+    items?: unknown;
+  };
+
+  return {
+    previousSnapshotMonth:
+      typeof report.previousSnapshotMonth === "string" ? report.previousSnapshotMonth : null,
+    historyMonths: Array.isArray(report.historyMonths)
+      ? report.historyMonths.filter((item): item is string => typeof item === "string")
+      : [],
+    alerts: Array.isArray(report.alerts) ? (report.alerts as StorageBusinessContributionAlert[]) : [],
+    items: Array.isArray(report.items) ? (report.items as StorageBusinessContributionItem[]) : [],
+  };
+}
+
 function getCurrentSnapshotMonth(now = new Date()): string {
   const year = now.getUTCFullYear();
   const month = String(now.getUTCMonth() + 1).padStart(2, "0");
@@ -50,6 +89,25 @@ function getCurrentSnapshotMonth(now = new Date()): string {
 
 function toStorageObjectsQuery(supabase: ReturnType<typeof getSupabaseServerClient>) {
   return supabase.schema("storage").from("objects");
+}
+
+async function readStorageUsageSnapshotRecords(
+  supabase = getSupabaseServerClient(),
+  limit = getStorageHistoryLimit(),
+): Promise<StorageUsageSnapshotRow[]> {
+  const { data, error } = await supabase
+    .from("supabase_storage_usage_snapshots")
+    .select(
+      "snapshot_month,generated_at,quota_bytes,total_bytes,remaining_bytes,usage_percent,object_count,bucket_breakdown,extension_breakdown,business_breakdown,largest_files,business_contributions,warnings",
+    )
+    .order("snapshot_month", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as StorageUsageSnapshotRow[];
 }
 
 async function buildStorageUsageReport(params: {
@@ -70,7 +128,20 @@ async function buildStorageUsageReport(params: {
     quotaInfo,
     generatedAt,
   );
-
+  const historyLimit = getStorageHistoryLimit();
+  const historyRecordsForMetrics = await readStorageUsageSnapshotRecords(supabase, historyLimit);
+  const previousRecordForMetrics = historyRecordsForMetrics.find(
+    (record) => record.snapshot_month !== currentSnapshot.snapshotMonth,
+  );
+  const previousSnapshotForMetrics = previousRecordForMetrics
+    ? toStorageUsageSnapshot(previousRecordForMetrics, quotaInfo.source)
+    : null;
+  const businessContributionsReport = buildStorageBusinessContributions({
+    objects: storageObjects,
+    currentSnapshot,
+    previousSnapshot: previousSnapshotForMetrics,
+    historyRecords: historyRecordsForMetrics,
+  });
   const snapshotPayload = {
     snapshot_month: snapshotMonth,
     generated_at: generatedAt,
@@ -80,6 +151,7 @@ async function buildStorageUsageReport(params: {
     usage_percent: Number(currentSnapshot.usagePercent.toFixed(2)),
     object_count: currentSnapshot.objectCount,
     ...serializeStorageUsageBreakdowns(currentSnapshot),
+    business_contributions: businessContributionsReport,
   };
 
   const snapshotError = params.persistSnapshot
@@ -89,22 +161,9 @@ async function buildStorageUsageReport(params: {
         })
       ).error
     : null;
-
-  const historyLimit = getStorageHistoryLimit();
-  const { data: historyData, error: historyError } = await supabase
-    .from("supabase_storage_usage_snapshots")
-    .select(
-      "snapshot_month,generated_at,quota_bytes,total_bytes,remaining_bytes,usage_percent,object_count,bucket_breakdown,extension_breakdown,business_breakdown,largest_files,warnings",
-    )
-    .order("snapshot_month", { ascending: false })
-    .limit(historyLimit);
-
-  if (historyError) {
-    throw new Error(historyError.message);
-  }
-
-  const historyRecords = (historyData ?? []) as StorageUsageSnapshotRecord[];
-  const history = buildStorageUsageHistory(historyRecords);
+  const historyRecords = params.persistSnapshot
+    ? await readStorageUsageSnapshotRecords(supabase, historyLimit)
+    : historyRecordsForMetrics;
   const historyRecordsByMonth = new Map(
     historyRecords.map((record) => [record.snapshot_month, record] as const),
   );
@@ -114,13 +173,7 @@ async function buildStorageUsageReport(params: {
   const previousSnapshot = previousRecord
     ? toStorageUsageSnapshot(previousRecord, quotaInfo.source)
     : null;
-
-  const businessContributions = buildStorageBusinessContributions({
-    objects: storageObjects,
-    currentSnapshot: currentSnapshot,
-    previousSnapshot,
-    historyRecords,
-  });
+  const history = buildStorageUsageHistory(historyRecords);
 
   const comparison = buildStorageUsageComparison(
     currentSnapshot,
@@ -129,7 +182,7 @@ async function buildStorageUsageReport(params: {
 
   return {
     current: currentSnapshot,
-    businessContributions,
+    businessContributions: businessContributionsReport,
     history: history.map((point) => {
       const record = historyRecordsByMonth.get(point.snapshotMonth);
       return {
@@ -163,6 +216,86 @@ export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
   return buildStorageUsageReport({ persistSnapshot: true });
 }
 
+async function buildStoredStorageUsageReport(): Promise<StorageUsageReport> {
+  const quotaInfo = resolveSupabaseStorageQuotaInfo();
+  const generatedAt = new Date().toISOString();
+  const snapshotMonth = getCurrentSnapshotMonth(new Date(generatedAt));
+  const cron = buildStorageUsageCronStatus(isCronSecretConfigured(), new Date(generatedAt));
+  const historyLimit = getStorageHistoryLimit();
+  const supabase = getSupabaseServerClient();
+  const historyRecords = await readStorageUsageSnapshotRecords(supabase, historyLimit);
+
+  if (historyRecords.length === 0) {
+    const currentSnapshot = buildStorageUsageSnapshot([], quotaInfo, generatedAt);
+
+    return {
+      current: currentSnapshot,
+      businessContributions: emptyStorageBusinessContributionReport(),
+      history: [],
+      comparison: buildStorageUsageComparison(currentSnapshot, null),
+      warnings: [
+        ...currentSnapshot.warnings,
+        "Aucun snapshot de stockage n'a encore été enregistré. Le prochain refresh planifié remplira cette vue.",
+      ],
+      timestamp: generatedAt,
+      snapshotMonth,
+      snapshotPersisted: false,
+      cron,
+    };
+  }
+
+  const historyRecordsByMonth = new Map(
+    historyRecords.map((record) => [record.snapshot_month, record] as const),
+  );
+  const currentRecord = historyRecords[0] as StorageUsageSnapshotRow;
+  const currentSnapshot = toStorageUsageSnapshot(currentRecord, quotaInfo.source);
+  const persistedBusinessContributions = normalizeStorageBusinessContributionReport(
+    currentRecord.business_contributions,
+  );
+  const history = buildStorageUsageHistory(historyRecords);
+  const previousRecord = historyRecords.find(
+    (record) => record.snapshot_month !== currentSnapshot.snapshotMonth,
+  );
+  const previousSnapshot = previousRecord
+    ? toStorageUsageSnapshot(previousRecord, quotaInfo.source)
+    : null;
+  const businessContributions =
+    persistedBusinessContributions.items.length > 0
+      ? persistedBusinessContributions
+      : buildStorageBusinessContributions({
+          objects: [],
+          currentSnapshot,
+          previousSnapshot,
+          historyRecords,
+        });
+
+  return {
+    current: currentSnapshot,
+    businessContributions,
+    history: history.map((point) => {
+      const record = historyRecordsByMonth.get(point.snapshotMonth);
+      return {
+        ...point,
+        bucketBreakdown: Array.isArray(record?.bucket_breakdown)
+          ? (record.bucket_breakdown as unknown[])
+          : [],
+        extensionBreakdown: Array.isArray(record?.extension_breakdown)
+          ? (record.extension_breakdown as unknown[])
+          : [],
+        businessBreakdown: Array.isArray(record?.business_breakdown)
+          ? (record.business_breakdown as unknown[])
+          : [],
+      };
+    }),
+    comparison: buildStorageUsageComparison(currentSnapshot, previousSnapshot),
+    warnings: [...currentSnapshot.warnings],
+    timestamp: currentSnapshot.generatedAt,
+    snapshotMonth: currentSnapshot.snapshotMonth,
+    snapshotPersisted: true,
+    cron,
+  };
+}
+
 export async function loadStorageUsageReport(): Promise<StorageUsageReport> {
-  return buildStorageUsageReport({ persistSnapshot: false });
+  return buildStoredStorageUsageReport();
 }

@@ -1,9 +1,8 @@
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { Star, MapPin, ArrowRight, Quote, Sparkles, Building2 } from "lucide-react";
+import { Star, MapPin, ArrowRight, Quote } from "lucide-react";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface AnnuaireFeaturedSectionProps {
   fr: boolean;

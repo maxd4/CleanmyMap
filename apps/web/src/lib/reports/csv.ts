@@ -77,21 +77,29 @@ export function parseReportScopeValueParam(raw: string | null): string | null {
   return value.length > 0 ? value.slice(0, 120) : null;
 }
 
-export function resolveReportScopeFromQuery(url: URL): ReportScope {
-  const scopeKind = (
+function resolveReportScopeKindFromQuery(url: URL): ReportScopeKind {
+  return (
     parseReportScopeKindParam(url.searchParams.get("scopeKind")) ??
     parseReportScopeKindParam(url.searchParams.get("scope")) ??
     (url.searchParams.get("arrondissement") ? "arrondissement" : null) ??
     (url.searchParams.get("account") ? "account" : null) ??
     (url.searchParams.get("association") ? "association" : null) ??
     "global"
-  ) as ReportScopeKind;
+  );
+}
 
-  const scopeValue =
+function resolveReportScopeValueFromQuery(url: URL, scopeKind: ReportScopeKind): string | null {
+  return (
     parseReportScopeValueParam(url.searchParams.get("scopeValue")) ??
     parseReportScopeValueParam(url.searchParams.get(scopeKind)) ??
     parseReportScopeValueParam(url.searchParams.get("association")) ??
-    null;
+    null
+  );
+}
+
+export function resolveReportScopeFromQuery(url: URL): ReportScope {
+  const scopeKind = resolveReportScopeKindFromQuery(url);
+  const scopeValue = resolveReportScopeValueFromQuery(url, scopeKind);
 
   return scopeKind === "global"
     ? { kind: "global", value: null }
@@ -152,7 +160,21 @@ export function escapeCsvCell(value: unknown, delimiter = ","): string {
 }
 
 export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
-  const header = [
+  const header = buildActionsCsvHeader();
+
+  const lines = [header.join(",")];
+  for (const row of rows) {
+    lines.push(buildActionsCsvRow(row));
+  }
+  return lines.join("\n");
+}
+
+function toCsvCellValue(value: string | number | null | undefined): string | number | null {
+  return value ?? null;
+}
+
+function buildActionsCsvHeader(): string[] {
+  return [
     "id",
     "created_at",
     "action_date",
@@ -179,42 +201,42 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
     "manual_drawing_coordinates_json",
     "manual_drawing_geojson",
   ];
+}
 
-  const lines = [header.join(",")];
-  for (const row of rows) {
-    lines.push(
-      [
-        row.id,
-        row.created_at,
-        row.action_date,
-        row.actor_name,
-        row.association_name ?? null,
-        row.location_label,
-        row.latitude,
-        row.longitude,
-        row.waste_kg,
-        row.cigarette_butts,
-        row.volunteers_count,
-        row.duration_minutes,
-        row.status,
-        row.notes,
-        row.notes_plain ?? null,
-        row.record_type ?? null,
-        row.source ?? null,
-        row.observed_at ?? null,
-        row.geometry_kind ?? null,
-        row.geometry_geojson ?? null,
-        row.geometry_confidence ?? null,
-        row.manual_drawing_kind ?? null,
-        row.manual_drawing_points ?? null,
-        row.manual_drawing_coordinates_json ?? null,
-        row.manual_drawing_geojson ?? null,
-      ]
-        .map((cell) => escapeCsvCell(cell as string | number | null))
-        .join(","),
-    );
-  }
-  return lines.join("\n");
+function buildActionsCsvRow(row: ActionCsvRowWithDrawing): string {
+  return buildActionsCsvCells(row)
+    .map((cell) => escapeCsvCell(cell))
+    .join(",");
+}
+
+function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | number | null> {
+  return [
+    row.id,
+    row.created_at,
+    row.action_date,
+    row.actor_name,
+    toCsvCellValue(row.association_name),
+    row.location_label,
+    row.latitude,
+    row.longitude,
+    row.waste_kg,
+    row.cigarette_butts,
+    row.volunteers_count,
+    row.duration_minutes,
+    row.status,
+    row.notes,
+    toCsvCellValue(row.notes_plain),
+    toCsvCellValue(row.record_type),
+    toCsvCellValue(row.source),
+    toCsvCellValue(row.observed_at),
+    toCsvCellValue(row.geometry_kind),
+    toCsvCellValue(row.geometry_geojson),
+    toCsvCellValue(row.geometry_confidence),
+    toCsvCellValue(row.manual_drawing_kind),
+    toCsvCellValue(row.manual_drawing_points),
+    toCsvCellValue(row.manual_drawing_coordinates_json),
+    toCsvCellValue(row.manual_drawing_geojson),
+  ];
 }
 
 export function buildActionsCsvFilename(now: Date = new Date()): string {

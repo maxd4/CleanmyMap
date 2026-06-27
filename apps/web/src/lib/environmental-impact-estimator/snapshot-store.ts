@@ -12,6 +12,25 @@ type SnapshotStore = {
   records: EnvironmentalImpactSnapshotRecord[];
 };
 
+type EnvironmentalImpactSnapshotRow = {
+  id: number | string;
+  snapshot_key: string;
+  snapshot_date: string;
+  generated_at: string;
+  version: string;
+  total_kg_co2e_proxy: number;
+  monthly_kg_co2e_proxy: number;
+  annual_kg_co2e_proxy: number;
+  site_kg_co2e_proxy: number | null;
+  user_kg_co2e_proxy: number | null;
+  confidence_percent: number | null;
+  uncertainty_percent: number | null;
+  launched_at: string | null;
+  account_created_at: string | null;
+  model: unknown;
+  signals: unknown;
+};
+
 const FILE_PATH = join(process.cwd(), "data", "local-db", "environmental_impact_snapshots.json");
 const SNAPSHOT_KEY = "cleanmymap-project";
 
@@ -43,6 +62,44 @@ export function getEnvironmentalImpactSnapshotDate(generatedAt: string): string 
     return new Date().toISOString().slice(0, 10);
   }
   return date.toISOString().slice(0, 10);
+}
+
+function getSnapshotModelProxyTotal(
+  model: Partial<EnvironmentalImpactSnapshotRecord["model"]> | null,
+  scope: "site" | "user",
+): number | null {
+  if (scope === "site") {
+    return model?.site?.totalKgCo2eProxy ?? null;
+  }
+
+  return model?.user?.totalKgCo2eProxy ?? null;
+}
+
+function normalizeEnvironmentalImpactSnapshotRow(
+  row: EnvironmentalImpactSnapshotRow,
+): EnvironmentalImpactSnapshotRecord {
+  const model = row.model as Partial<EnvironmentalImpactSnapshotRecord["model"]> | null;
+  const siteKgCo2eProxy = row.site_kg_co2e_proxy ?? getSnapshotModelProxyTotal(model, "site");
+  const userKgCo2eProxy = row.user_kg_co2e_proxy ?? getSnapshotModelProxyTotal(model, "user");
+
+  return {
+    id: String(row.id),
+    snapshotKey: row.snapshot_key,
+    snapshotDate: row.snapshot_date,
+    generatedAt: row.generated_at,
+    version: row.version,
+    totalKgCo2eProxy: row.total_kg_co2e_proxy,
+    monthlyKgCo2eProxy: row.monthly_kg_co2e_proxy,
+    annualKgCo2eProxy: row.annual_kg_co2e_proxy,
+    siteKgCo2eProxy,
+    userKgCo2eProxy,
+    confidencePercent: Number(row.confidence_percent ?? 0),
+    uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
+    launchedAt: row.launched_at ?? null,
+    accountCreatedAt: row.account_created_at ?? null,
+    model: row.model as EnvironmentalImpactSnapshotRecord["model"],
+    signals: row.signals as EnvironmentalImpactSnapshotRecord["signals"],
+  };
 }
 
 export async function upsertEnvironmentalImpactSnapshot(
@@ -117,28 +174,9 @@ export async function listEnvironmentalImpactSnapshots(
         .limit(limit);
 
       if (!result.error) {
-        return (result.data ?? []).map((row) => {
-          const model = row.model as Partial<EnvironmentalImpactSnapshotRecord["model"]> | null;
-
-          return {
-            id: String(row.id),
-            snapshotKey: row.snapshot_key,
-            snapshotDate: row.snapshot_date,
-            generatedAt: row.generated_at,
-            version: row.version,
-            totalKgCo2eProxy: row.total_kg_co2e_proxy,
-            monthlyKgCo2eProxy: row.monthly_kg_co2e_proxy,
-            annualKgCo2eProxy: row.annual_kg_co2e_proxy,
-            siteKgCo2eProxy: row.site_kg_co2e_proxy ?? model?.site?.totalKgCo2eProxy ?? null,
-            userKgCo2eProxy: row.user_kg_co2e_proxy ?? model?.user?.totalKgCo2eProxy ?? null,
-            confidencePercent: Number(row.confidence_percent ?? 0),
-            uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
-            launchedAt: row.launched_at ?? null,
-            accountCreatedAt: row.account_created_at ?? null,
-            model: row.model as EnvironmentalImpactSnapshotRecord["model"],
-            signals: row.signals as EnvironmentalImpactSnapshotRecord["signals"],
-          };
-        });
+        return (result.data ?? []).map((row) =>
+          normalizeEnvironmentalImpactSnapshotRow(row as EnvironmentalImpactSnapshotRow),
+        );
       }
       if (!allowLocalFileStoreFallback()) {
         return [];

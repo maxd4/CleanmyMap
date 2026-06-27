@@ -96,135 +96,169 @@ function createDeleteChain(): DeleteChain {
   const chain = {
     error: null,
     eq: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    select: vi.fn(() => chain),
   } as DeleteChain;
-  chain.delete = vi.fn(() => chain);
-  chain.select = vi.fn(() => chain);
   return chain;
+}
+
+function createProgressionDataOrganizersFixtures() {
+  const action = buildAction();
+  const organizerRows = [
+    {
+      action_id: "action-1",
+      organizer_clerk_id: "user-creator",
+      organizer_label: "Alice",
+      organizer_handle: "alice",
+      is_primary: true,
+      created_at: "2026-01-01",
+    },
+    {
+      action_id: "action-1",
+      organizer_clerk_id: "user-co",
+      organizer_label: "Bob",
+      organizer_handle: "bob",
+      is_primary: false,
+      created_at: "2026-01-01",
+    },
+    {
+      action_id: "action-1",
+      organizer_clerk_id: "user-third",
+      organizer_label: "Chloé",
+      organizer_handle: "chloe",
+      is_primary: false,
+      created_at: "2026-01-01",
+    },
+  ];
+  const forms = [
+    {
+      action_id: "action-1",
+      group_id: "g1",
+      status: "validated",
+      created_at: "2026-01-02",
+      validated_by_admin: true,
+      is_duplicate: false,
+      is_deleted: false,
+      is_test: false,
+    },
+  ];
+
+  return {
+    action,
+    organizerRows,
+    forms,
+  };
+}
+
+function createProgressionDataOrganizersSupabase(
+  fixtures: ReturnType<typeof createProgressionDataOrganizersFixtures>,
+  progressionEventsInserted: Array<Record<string, unknown>>,
+  pointsInsert: ReturnType<typeof vi.fn>,
+  auditInsert: ReturnType<typeof vi.fn>,
+) {
+  const { action, organizerRows, forms } = fixtures;
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "actions") {
+        return createQueryChain((state) => {
+          const createdBy = state.eq["created_by_clerk_id"];
+          const ids = state.in["id"] ?? [];
+          if (createdBy && createdBy === "user-co") {
+            return { data: [], error: null };
+          }
+          if (createdBy && createdBy !== "user-co") {
+            return { data: [action], error: null };
+          }
+          if (ids.length > 0) {
+            return {
+              data: ids.includes("action-1") ? [action] : [],
+              error: null,
+            };
+          }
+          return { data: [], error: null };
+        });
+      }
+      if (table === "action_organizers") {
+        return createQueryChain((state) => {
+          if (state.eq["organizer_clerk_id"]) {
+            return {
+              data: organizerRows.filter(
+                (row) => row.organizer_clerk_id === state.eq["organizer_clerk_id"],
+              ),
+              error: null,
+            };
+          }
+          if (state.eq["action_id"]) {
+            return {
+              data: organizerRows.filter((row) => row.action_id === state.eq["action_id"]),
+              error: null,
+            };
+          }
+          return { data: [], error: null };
+        });
+      }
+      if (table === "forms") {
+        return createQueryChain((state) => {
+          const actionIds = state.in["action_id"] ?? [];
+          return {
+            data: forms.filter(
+              (row) =>
+                actionIds.length === 0 || actionIds.includes(row.action_id as string),
+            ),
+            error: null,
+          };
+        });
+      }
+      if (table === "progression_events") {
+        return {
+          delete: () => createDeleteChain(),
+          insert: vi.fn(async (row: Record<string, unknown>) => {
+            progressionEventsInserted.push(row);
+            return { error: null };
+          }),
+        };
+      }
+      if (table === "points_ledger") {
+        return {
+          select: () => createQueryChain(() => ({ data: [], error: null })),
+          insert: pointsInsert,
+        };
+      }
+      if (table === "xp_audit") {
+        return {
+          insert: auditInsert,
+        };
+      }
+      throw new Error(`Unexpected table ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+}
+
+function createProgressionDataOrganizersScenario() {
+  const fixtures = createProgressionDataOrganizersFixtures();
+  const progressionEventsInserted: Array<Record<string, unknown>> = [];
+  const pointsInsert = vi.fn(async () => ({ error: null }));
+  const auditInsert = vi.fn(async () => ({ error: null }));
+  const supabase = createProgressionDataOrganizersSupabase(
+    fixtures,
+    progressionEventsInserted,
+    pointsInsert,
+    auditInsert,
+  );
+
+  return {
+    supabase,
+    progressionEventsInserted,
+    pointsInsert,
+    auditInsert,
+  };
 }
 
 describe("syncUserActionProgression", () => {
   it("splits validated action XP between co-organizers", async () => {
-    const action = buildAction();
-    const organizerRows = [
-      {
-        action_id: "action-1",
-        organizer_clerk_id: "user-creator",
-        organizer_label: "Alice",
-        organizer_handle: "alice",
-        is_primary: true,
-        created_at: "2026-01-01",
-      },
-      {
-        action_id: "action-1",
-        organizer_clerk_id: "user-co",
-        organizer_label: "Bob",
-        organizer_handle: "bob",
-        is_primary: false,
-        created_at: "2026-01-01",
-      },
-      {
-        action_id: "action-1",
-        organizer_clerk_id: "user-third",
-        organizer_label: "Chloé",
-        organizer_handle: "chloe",
-        is_primary: false,
-        created_at: "2026-01-01",
-      },
-    ];
-    const forms = [
-      {
-        action_id: "action-1",
-        group_id: "g1",
-        status: "validated",
-        created_at: "2026-01-02",
-        validated_by_admin: true,
-        is_duplicate: false,
-        is_deleted: false,
-        is_test: false,
-      },
-    ];
-
-    const progressionEventsInserted: Array<Record<string, unknown>> = [];
-    const pointsInsert = vi.fn(async () => ({ error: null }));
-    const auditInsert = vi.fn(async () => ({ error: null }));
-
-    const supabase = {
-      from: vi.fn((table: string) => {
-        if (table === "actions") {
-          return createQueryChain((state) => {
-            const createdBy = state.eq["created_by_clerk_id"];
-            const ids = state.in["id"] ?? [];
-            if (createdBy && createdBy === "user-co") {
-              return { data: [], error: null };
-            }
-            if (createdBy && createdBy !== "user-co") {
-              return { data: [action], error: null };
-            }
-            if (ids.length > 0) {
-              return {
-                data: ids.includes("action-1") ? [action] : [],
-                error: null,
-              };
-            }
-            return { data: [], error: null };
-          });
-        }
-        if (table === "action_organizers") {
-          return createQueryChain((state) => {
-            if (state.eq["organizer_clerk_id"]) {
-              return {
-                data: organizerRows.filter(
-                  (row) => row.organizer_clerk_id === state.eq["organizer_clerk_id"],
-                ),
-                error: null,
-              };
-            }
-            if (state.eq["action_id"]) {
-              return {
-                data: organizerRows.filter(
-                  (row) => row.action_id === state.eq["action_id"],
-                ),
-                error: null,
-              };
-            }
-            return { data: [], error: null };
-          });
-        }
-        if (table === "forms") {
-          return createQueryChain((state) => {
-            const actionIds = state.in["action_id"] ?? [];
-            return {
-              data: forms.filter(
-                (row) =>
-                  actionIds.length === 0 || actionIds.includes(row.action_id as string),
-              ),
-              error: null,
-            };
-          });
-        }
-        if (table === "progression_events") {
-          return {
-            delete: () => createDeleteChain(),
-            insert: vi.fn(async (row: Record<string, unknown>) => {
-              progressionEventsInserted.push(row);
-              return { error: null };
-            }),
-          };
-        }
-        if (table === "points_ledger") {
-          return {
-            select: () => createQueryChain(() => ({ data: [], error: null })),
-            insert: pointsInsert,
-          };
-        }
-        if (table === "xp_audit") {
-          return {
-            insert: auditInsert,
-          };
-        }
-        throw new Error(`Unexpected table ${table}`);
-      }),
-    } as unknown as SupabaseClient;
+    const { supabase, progressionEventsInserted, pointsInsert, auditInsert } =
+      createProgressionDataOrganizersScenario();
 
     const validatedCount = await syncUserActionProgression(supabase, "user-co");
 

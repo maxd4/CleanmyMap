@@ -7,7 +7,7 @@ Ce rapport est généré à partir de l'arbre courant du dépôt. Il sert à vis
 | Surface | Entrées | Invocations | Edge Requests | Origin Transfer |
 | --- | --- | --- | --- | --- |
 | API routes | 70 | élevé | faible | moyen |
-| Pages dynamiques | 22 | moyen | faible | faible |
+| Pages dynamiques | 19 | moyen | faible | faible |
 | Middleware / proxy | 1 | élevé | élevé | faible |
 | Clerk | 80 | élevé | moyen | faible |
 | Supabase | 118 | élevé | faible | moyen |
@@ -26,6 +26,7 @@ Ce rapport est généré à partir de l'arbre courant du dépôt. Il sert à vis
 Risque estimé: Invocations **élevé** / Edge Requests **faible** / Origin Transfer **moyen**.
 
 Chaque route API peut déclencher une invocation Vercel. Les exports, les routes auth et les endpoints no-store augmentent surtout la fréquence d'appels et le coût d'origine.
+Les lectures de profil et de gamification montées au rendu doivent privilégier un cache `private` court et des bornes modestes, plutôt qu'un rafraîchissement systématique au montage.
 
 ### Inventaire
 
@@ -62,15 +63,15 @@ Chaque route API peut déclencher une invocation Vercel. Les exports, les routes
 - `apps/web/src/app/api/email/test/route.ts`
 - `apps/web/src/app/api/environmental-impact/route.ts` — auth
 - `apps/web/src/app/api/gamification/analytics/funnel/route.ts`
-- `apps/web/src/app/api/gamification/analytics/points/route.ts` — auth
+- `apps/web/src/app/api/gamification/analytics/points/route.ts` — auth, cache court
 - `apps/web/src/app/api/gamification/badges/[userId]/increment/route.ts` — auth
 - `apps/web/src/app/api/gamification/badges/[userId]/route.ts` — auth
 - `apps/web/src/app/api/gamification/badges/list/route.ts` — auth
-- `apps/web/src/app/api/gamification/leaderboard/route.ts` — auth
-- `apps/web/src/app/api/gamification/me/route.ts` — auth
+- `apps/web/src/app/api/gamification/leaderboard/route.ts` — auth, cache court
+- `apps/web/src/app/api/gamification/me/route.ts` — auth, cache court
 - `apps/web/src/app/api/gamification/points/add/route.ts` — auth
-- `apps/web/src/app/api/gamification/points/history/route.ts` — auth
-- `apps/web/src/app/api/gamification/points/me/route.ts` — auth
+- `apps/web/src/app/api/gamification/points/history/route.ts` — auth, cache court
+- `apps/web/src/app/api/gamification/points/me/route.ts` — auth, cache court
 - `apps/web/src/app/api/gamification/quiz/progress/route.ts` — auth
 - `apps/web/src/app/api/gamification/referrals/route.ts` — auth
 - `apps/web/src/app/api/gamification/xp_audit/admin/route.ts`
@@ -97,7 +98,7 @@ Chaque route API peut déclencher une invocation Vercel. Les exports, les routes
 - `apps/web/src/app/api/system/backpressure/route.ts`
 - `apps/web/src/app/api/uptime/route.ts`
 - `apps/web/src/app/api/users/checklist-progress/route.ts` — auth
-- `apps/web/src/app/api/users/profile/display-name-mode/route.ts`
+- `apps/web/src/app/api/users/profile/display-name-mode/route.ts` — cache court
 - `apps/web/src/app/api/users/profile/handle/route.ts` — auth
 
 ## Pages dynamiques
@@ -105,6 +106,7 @@ Chaque route API peut déclencher une invocation Vercel. Les exports, les routes
 Risque estimé: Invocations **faible** / Edge Requests **faible** / Origin Transfer **faible**.
 
 Les pages dynamiques font remonter les recalculs côté serveur ; elles deviennent sensibles quand elles chargent des métriques temps réel ou des données protégées.
+Les pages publiques Learn ont été sorties de cette catégorie: `apps/web/src/app/learn/bonnes-pratiques/page.tsx`, `apps/web/src/app/learn/comprendre/page.tsx` et `apps/web/src/app/learn/sentrainer/page.tsx` lisent maintenant la langue côté client, donc elles ne dépendent plus des cookies serveur.
 
 ### Pages détectées
 
@@ -125,9 +127,6 @@ Les pages dynamiques font remonter les recalculs côté serveur ; elles devienne
 - `apps/web/src/app/(app)/signalement/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/sponsor-portal/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/admin/gamification/xp-audit/page.tsx` — auth
-- `apps/web/src/app/learn/bonnes-pratiques/page.tsx` — cookies
-- `apps/web/src/app/learn/comprendre/page.tsx` — cookies
-- `apps/web/src/app/learn/sentrainer/page.tsx` — cookies
 - `apps/web/src/app/onboarding/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/reglages/page.tsx` — auth, cookies, headers
 
@@ -149,6 +148,8 @@ Dans CleanMyMap, la règle cible est plus stricte: le middleware ne doit couvrir
 Risque estimé: Invocations **élevé** / Edge Requests **moyen** / Origin Transfer **faible**.
 
 Clerk se trouve à la frontière auth. Les usages serveur et middleware augmentent les invocations et ajoutent du travail sur les requêtes protégées.
+Le shell de navigation global a été séparé: les pages publiques rendent maintenant une variante sans `useUser`, et la branche Clerk complète ne se monte que sur les routes protégées via `isProtectedRoutePath`.
+Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées: les listes d'événements, les suggestions de chat et les checklists ne doivent plus tourner en live permanent.
 
 ### Fichiers
 
@@ -213,8 +214,8 @@ Clerk se trouve à la frontière auth. Les usages serveur et middleware augmente
 - `apps/web/src/components/chat/hooks/use-chat-submit.ts` — Clerk client
 - `apps/web/src/components/gamification/ExplorerBadgeWrapper.tsx` — Clerk client, Clerk hook
 - `apps/web/src/components/learn/environmental-quiz.tsx` — Clerk client, Clerk hook
-- `apps/web/src/components/navigation/app-navigation-ribbon.tsx` — Clerk client
-- `apps/web/src/components/navigation/notification-bell.tsx` — Clerk client, Clerk hook
+- `apps/web/src/components/navigation/app-navigation-ribbon.tsx` — Clerk client, route-gated shell
+- `apps/web/src/components/navigation/notification-bell.tsx` — Clerk client, Clerk hook, protected routes only
 - `apps/web/src/components/partners/onboarding/use-partner-onboarding.ts` — Clerk client
 - `apps/web/src/components/profil/impact-profile-page.tsx` — Clerk gate
 - `apps/web/src/components/sections/rubriques/feedback-section.tsx` — Clerk client
@@ -418,6 +419,16 @@ La bonne pratique dans CleanMyMap est de ne déclencher le chunk Leaflet que qua
 
 ## Lecture prioritaire
 
-- `proxy.ts` reste la surface la plus sensible pour `Edge Requests`.
-- Les routes d'export et les pages cache-bypassées dominent le risque `Invocations`.
-- Les composants Leaflet et PostHog sont les premiers contributeurs au `Origin Transfer` côté client, mais ils doivent désormais être chargés seulement quand le consentement ou la visibilité les justifient.
+Ordre de correction recommandé:
+
+1. `proxy.ts` et le matcher Clerk, parce que c'est la surface la plus sensible pour `Edge Requests` et qu'un mauvais périmètre paie chaque visite.
+2. Les routes API appelées au montage ou en polling, parce qu'elles dominent le risque `Invocations` quand elles sont répétées.
+3. Les pages dynamiques et les gros Server Components, parce qu'elles font monter le coût de rendu et le transfert origine.
+4. Les surfaces Leaflet et PostHog, parce qu'elles pèsent surtout sur le bundle client et le transfert, pas sur le middleware.
+
+En pratique:
+
+- garder le middleware réduit aux vraies routes protégées et au proxy Clerk;
+- déplacer les rate limits route-locales hors du proxy quand elles ne matche plus aucune route;
+- rendre les chats, panneaux communauté et trackers plus paresseux au montage;
+- laisser Leaflet et les trackers à la fin de la revue Edge Requests, sauf preuve qu'ils traversent vraiment le matcher.

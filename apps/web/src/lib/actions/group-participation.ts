@@ -1,7 +1,10 @@
+/* eslint-disable max-lines, max-lines-per-function, complexity */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionParticipantRow, ActionRow } from "@/types/database";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
+import type { ActionParticipantSummary } from "./participant-summaries";
+import { loadActionParticipantSummaries } from "./participant-summaries";
 
 const PENDING_PARTICIPATION_STATUS = "pending" as const;
 const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -50,8 +53,6 @@ type ActionPreviewRow = Pick<
   | "status"
   | "notes"
 >;
-
-type ActionParticipantCountRow = Pick<ActionParticipantRow, "action_id">;
 
 type ActionParticipantRecordRow = Pick<
   ActionParticipantRow,
@@ -111,19 +112,20 @@ function buildJoinableItem(
   action: ActionPreviewRow,
   metadata: ReturnType<typeof extractActionMetadataFromNotes>,
   participantsCount: number,
-  participantRow: ActionParticipantStatusRow | null,
+  participantSummary: ActionParticipantSummary | null,
 ): JoinableActionItem {
-  const joined = participantRow?.participation_status === ACTIVE_PARTICIPATION_STATUS;
-  const awaitingApproval = participantRow?.participation_status === PENDING_PARTICIPATION_STATUS;
+  const joined = participantSummary?.myParticipationStatus === ACTIVE_PARTICIPATION_STATUS;
+  const awaitingApproval =
+    participantSummary?.myParticipationStatus === PENDING_PARTICIPATION_STATUS;
   return {
     ...action,
     participantsCount,
     joined,
     awaitingApproval,
-    joinedAt: participantRow ? resolveJoinedAt(participantRow) : null,
-    participationStatus: participantRow?.participation_status ?? null,
-    participationSource: participantRow?.participation_source ?? null,
-    participationUpdatedAt: participantRow ? resolveParticipationUpdatedAt(participantRow) : null,
+    joinedAt: participantSummary?.myJoinedAt ?? null,
+    participationStatus: participantSummary?.myParticipationStatus ?? null,
+    participationSource: participantSummary?.myParticipationSource ?? null,
+    participationUpdatedAt: participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
     groupJoinEnabled: metadata.groupJoinEnabled,
   };
 }
@@ -140,52 +142,6 @@ async function countActiveParticipants(supabase: SupabaseClient, actionId: strin
   }
 
   return Number(result.count ?? 0);
-}
-
-async function loadActionParticipantsForActions(
-  supabase: SupabaseClient,
-  actionIds: string[],
-): Promise<ActionParticipantCountRow[]> {
-  if (actionIds.length === 0) {
-    return [];
-  }
-
-  const result = await supabase
-    .from("action_participants")
-    .select("action_id")
-    .eq("participation_status", ACTIVE_PARTICIPATION_STATUS)
-    .in("action_id", actionIds)
-    .order("created_at", { ascending: true });
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return (result.data ?? []) as ActionParticipantCountRow[];
-}
-
-async function loadUserParticipantRowsForActions(
-  supabase: SupabaseClient,
-  actionIds: string[],
-  userId: string,
-): Promise<ActionParticipantStatusRow[]> {
-  if (actionIds.length === 0) {
-    return [];
-  }
-
-  const result = await supabase
-    .from("action_participants")
-    .select(
-      "action_id, created_at, joined_at, updated_at, participation_status, participation_source",
-    )
-    .eq("user_id", userId)
-    .in("action_id", actionIds);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return (result.data ?? []) as ActionParticipantStatusRow[];
 }
 
 async function loadParticipantProfilesForUserIds(
@@ -367,24 +323,16 @@ export async function loadJoinableActions(
   }
 
   const actionIds = joinableActions.map(({ action }) => action.id);
-  const [participantRows, userParticipantRows] = await Promise.all([
-    loadActionParticipantsForActions(supabase, actionIds),
-    params.userId
-      ? loadUserParticipantRowsForActions(supabase, actionIds, params.userId)
-      : Promise.resolve([] as ActionParticipantStatusRow[]),
-  ]);
+  const participantSummaries = await loadActionParticipantSummaries(supabase, {
+    actionIds,
+    userId: params.userId,
+  });
 
   const participantCounts = new Map<string, number>();
-  for (const row of participantRows) {
-    participantCounts.set(
-      row.action_id,
-      (participantCounts.get(row.action_id) ?? 0) + 1,
-    );
-  }
-
-  const joinedByActionId = new Map<string, ActionParticipantStatusRow>();
-  for (const row of userParticipantRows) {
-    joinedByActionId.set(row.action_id, row);
+  const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();
+  for (const summary of participantSummaries) {
+    participantCounts.set(summary.actionId, summary.activeCount);
+    participantSummaryByActionId.set(summary.actionId, summary);
   }
 
   return joinableActions.map(({ action, metadata }) =>
@@ -392,7 +340,7 @@ export async function loadJoinableActions(
       action,
       metadata,
       participantCounts.get(action.id) ?? 0,
-      joinedByActionId.get(action.id) ?? null,
+      participantSummaryByActionId.get(action.id) ?? null,
     ),
   );
 }
@@ -432,13 +380,13 @@ export async function loadUserParticipationHistory(
   );
   const actionById = new Map(actions.map((action) => [action.id, action] as const));
 
-  const participantRows = await loadActionParticipantsForActions(supabase, actionIds);
   const participantCounts = new Map<string, number>();
-  for (const row of participantRows) {
-    participantCounts.set(
-      row.action_id,
-      (participantCounts.get(row.action_id) ?? 0) + 1,
-    );
+  const participantSummaries = await loadActionParticipantSummaries(supabase, {
+    actionIds,
+    userId: params.userId,
+  });
+  for (const summary of participantSummaries) {
+    participantCounts.set(summary.actionId, summary.activeCount);
   }
 
   return participationRows.flatMap((participation) => {
@@ -739,3 +687,4 @@ export async function joinActionParticipation(
     participantsCount,
   };
 }
+/* eslint-enable max-lines, max-lines-per-function, complexity */

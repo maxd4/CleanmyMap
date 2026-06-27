@@ -27,7 +27,6 @@ type TooltipPosition = {
 const SHOW_DELAY_MS = 300;
 const GAP = 12;
 const EDGE_PADDING = 12;
-const MAX_WIDTH = 300;
 const TOOLTIP_ID = "cmm-global-tooltip";
 
 function normalizeTooltipContent(raw: string) {
@@ -148,7 +147,7 @@ function computePosition(trigger: HTMLElement, tooltipEl: HTMLElement, preferred
 }
 
 export function SiteTooltips() {
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(() => typeof window !== "undefined");
   const [activeTooltip, setActiveTooltip] = useState<ActiveTooltip | null>(null);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -246,10 +245,6 @@ export function SiteTooltips() {
       setPosition(null);
     }, SHOW_DELAY_MS);
   }, [clearTimer]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const getTrigger = (target: EventTarget | null) => {
@@ -390,7 +385,7 @@ export function SiteTooltips() {
       window.removeEventListener("resize", onScrollOrResize);
       window.removeEventListener("scroll", onScrollOrResize, true);
     };
-  }, [activeTooltip, hideTooltip, showTooltip, updatePosition]);
+  }, [activeTooltip, clearTimer, hideTooltip, showTooltip, updatePosition]);
 
   useLayoutEffect(() => {
     if (!activeTooltip || !tooltipRef.current) {

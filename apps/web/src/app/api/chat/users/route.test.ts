@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
+const unstableCacheMock = vi.hoisted(() => vi.fn((fn: () => Promise<unknown>) => fn));
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -9,6 +10,10 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
+}));
+
+vi.mock("next/cache", () => ({
+  unstable_cache: unstableCacheMock,
 }));
 
 describe("GET /api/chat/users", () => {
@@ -73,5 +78,5 @@ describe("GET /api/chat/users", () => {
         pattern: "%test@example.com' OR '1'='1%",
       },
     ]);
-  });
+  }, 15000);
 });

@@ -89,7 +89,7 @@ export const ChatHeader = memo(function ChatHeader({
               </p>
             ) : null}
           </div>
-        </div>
+          </div>
 
         {showControls ? (
         <div className="flex items-center gap-2">
@@ -139,9 +139,31 @@ export const ChatHeader = memo(function ChatHeader({
           >
             <User size={18} />
           </button>
+          <button
+            type="button"
+            onClick={() => setShowMeta((current) => !current)}
+            aria-label={showMeta ? "Masquer les métadonnées" : "Afficher les métadonnées"}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isLight ? "bg-white/80 text-slate-500 hover:text-indigo-500 shadow-sm" : "cmm-surface-muted cmm-text-muted hover:text-indigo-500 hover:shadow-lg"}`}
+          >
+            <Info size={18} />
+          </button>
         </div>
         ) : null}
       </div>
+
+      {showMeta && metaItems.length > 0 ? (
+        <div className={`px-5 py-3 border-b flex flex-wrap gap-2 ${isLight ? "border-rose-100/60 bg-white/50" : "border-pink-100/70 dark:border-slate-800 bg-slate-950/30"}`}>
+          {metaItems.map((item) => (
+            <span
+              key={item.label}
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}
+            >
+              <span className="opacity-70">{item.label}</span>
+              <span className={isLight ? "text-slate-900" : "text-white"}>{item.value}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {isEditingHandle ? (
         <div className={`p-5 border-b flex items-center gap-4 animate-in slide-in-from-top-4 relative z-20 ${isLight ? "bg-rose-50/80 border-rose-100" : "bg-pink-50 dark:bg-pink-950/20 border-pink-100 dark:border-pink-900/50"}`}>

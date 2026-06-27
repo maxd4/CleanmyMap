@@ -17,31 +17,54 @@ const USER_ERROR_MESSAGES = {
   unknown: "Une erreur inattendue est survenue. Réessayez.",
 };
 
+type ErrorCategory = keyof typeof USER_ERROR_MESSAGES | "server";
+
+const ERROR_CATEGORY_RULES: Array<{
+  category: Exclude<ErrorCategory, "server">;
+  patterns: RegExp[];
+}> = [
+  {
+    category: "validation",
+    patterns: [/validation/i, /invalid/i, /schema/i],
+  },
+  {
+    category: "auth",
+    patterns: [/unauthorized/i, /not authenticated/i, /session/i],
+  },
+  {
+    category: "forbidden",
+    patterns: [/forbidden/i, /permission/i, /access denied/i],
+  },
+  {
+    category: "notFound",
+    patterns: [/not found/i, /does not exist/i],
+  },
+  {
+    category: "conflict",
+    patterns: [/conflict/i, /already exists/i],
+  },
+  {
+    category: "rateLimit",
+    patterns: [/rate limit/i, /too many requests/i],
+  },
+];
+
+function matchesAny(message: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(message));
+}
+
 /**
  * Determine error category based on error type/message
  */
-function categorizeError(error: unknown): string {
+function categorizeError(error: unknown): ErrorCategory {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  
-  if (message.includes("validation") || message.includes("invalid") || message.includes("schema")) {
-    return "validation";
+
+  for (const rule of ERROR_CATEGORY_RULES) {
+    if (matchesAny(message, rule.patterns)) {
+      return rule.category;
+    }
   }
-  if (message.includes("unauthorized") || message.includes("not authenticated") || message.includes("session")) {
-    return "auth";
-  }
-  if (message.includes("forbidden") || message.includes("permission") || message.includes("access denied")) {
-    return "forbidden";
-  }
-  if (message.includes("not found") || message.includes("does not exist")) {
-    return "notFound";
-  }
-  if (message.includes("conflict") || message.includes("already exists")) {
-    return "conflict";
-  }
-  if (message.includes("rate limit") || message.includes("too many requests")) {
-    return "rateLimit";
-  }
-  
+
   return "server";
 }
 

@@ -36,6 +36,24 @@ export function minCollectiveEvents(level: number): number {
   return Math.floor(level / 4);
 }
 
+function addBadgeIfEligible(
+  badges: string[],
+  condition: boolean,
+  label: string,
+): void {
+  if (condition) {
+    badges.push(label);
+  }
+}
+
+function addLevelBadges(badges: string[], currentLevel: number): void {
+  for (const levelBadge of NON_GAME_BADGE_LEVELS) {
+    if (currentLevel >= levelBadge.minLevel) {
+      badges.push(levelBadge.label);
+    }
+  }
+}
+
 export function deriveBadges(params: {
   currentLevel: number;
   qualityAverage: number;
@@ -46,12 +64,7 @@ export function deriveBadges(params: {
 }): string[] {
   const badges: string[] = [];
 
-  // Tiers de Niveau
-  for (const levelBadge of NON_GAME_BADGE_LEVELS) {
-    if (params.currentLevel >= levelBadge.minLevel) {
-      badges.push(levelBadge.label);
-    }
-  }
+  addLevelBadges(badges, params.currentLevel);
 
   // Tiers Mégots
   if (params.totalButts >= 10000) badges.push("Expert Mégots (Or)");
@@ -63,9 +76,10 @@ export function deriveBadges(params: {
   else if (params.totalKg >= 100) badges.push("Force de la Nature (Argent)");
   else if (params.totalKg >= 10) badges.push("Bras Armé (Bronze)");
 
-  // Qualité
-  if (params.qualityAverage >= 90) badges.push("Sentinelle Exemplaire");
-  else if (params.qualityAverage >= 75) badges.push("Données de Qualité");
+  addBadgeIfEligible(badges, params.qualityAverage >= 90, "Sentinelle Exemplaire");
+  if (params.qualityAverage < 90) {
+    addBadgeIfEligible(badges, params.qualityAverage >= 75, "Données de Qualité");
+  }
 
   // Collectif
   if (params.collectiveEvents >= 10) badges.push("Pilier de Communauté");

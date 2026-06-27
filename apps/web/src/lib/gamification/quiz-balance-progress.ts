@@ -84,11 +84,15 @@ export async function syncQuizQuestionTypeBalanceProgress(
 ): Promise<QuizBalanceSyncResult> {
   const questionTypeLabel = getQuizPedagogicalTypeLabel(params.questionType);
   const questionTypes = listQuizQuestionFormatIds();
+  const balancedQuestionTypeLimit = Math.max(1, questionTypes.length);
 
   const { data: rows, error } = await supabase
     .from("quiz_type_progress")
     .select("user_id, question_type, correct_count")
-    .eq("user_id", params.userId);
+    .eq("user_id", params.userId)
+    .in("question_type", questionTypes)
+    .order("question_type", { ascending: true })
+    .limit(balancedQuestionTypeLimit);
 
   if (error) {
     throw error;

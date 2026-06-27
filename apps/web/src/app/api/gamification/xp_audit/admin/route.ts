@@ -4,6 +4,18 @@ import { handleApiError } from '@/lib/http/api-errors';
 
 export const runtime = 'nodejs';
 
+function clampInteger(
+  value: number,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
 // Query params: userId, from, to, limit, offset
 export async function GET(req: Request) {
   try {
@@ -12,8 +24,8 @@ export async function GET(req: Request) {
     const userId = url.searchParams.get('userId');
     const from = url.searchParams.get('from');
     const to = url.searchParams.get('to');
-    const limit = Number(url.searchParams.get('limit') || 50);
-    const offset = Number(url.searchParams.get('offset') || 0);
+    const limit = clampInteger(Number(url.searchParams.get('limit') || 50), 1, 200, 50);
+    const offset = clampInteger(Number(url.searchParams.get('offset') || 0), 0, 10000, 0);
 
     let q = supabase
       .from('xp_audit')

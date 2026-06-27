@@ -90,3 +90,7 @@ Le bon résultat est:
 - une seule reprise de build après un lot de corrections;
 - un diagnostic clair entre code, cache et configuration;
 - aucune création manuelle de manifests internes Next.js.
+
+Pour les anti-patterns déjà rencontrés pendant la correction de build, voir aussi:
+
+- [Anti-patterns de build Vercel / Next.js](./vercel-next-build-anti-patterns.md)

@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
-  title: "CleanMyMap | Urban Cleanup & Environmental Action Platform",
+  title: "CleanMyMap | Urban Cleanup & Citizen Action",
   description:
-    "CMM: the cleanliness map for Paris and France. Report pollution, organize cleanwalks, declare your cleanup actions. Join 10,000+ volunteers for a cleaner city. Ecology, sustainable development, citizen action.",
+    "CleanMyMap is a national citizen platform for urban cleanup in France. Report pollution, organize cleanwalks, and declare your cleanup actions across regions, departments, and cities. Ecology, sustainable development, citizen action.",
   keywords: [
     "CleanMyMap",
     "CMM",
@@ -13,12 +13,15 @@ export const metadata: Metadata = {
     "urban cleanup",
     "pollution reporting",
     "environmental action",
-    "Paris",
+    "France",
     "citizen engagement",
     "sustainable development",
     "volunteer",
     "litter collection",
     "urban cleanliness",
+    "region",
+    "department",
+    "city",
   ],
   alternates: {
     canonical: "/en",
@@ -31,16 +34,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/en",
-    siteName: "CleanMyMap - Urban Cleanup",
-    title: "CleanMyMap - Urban Cleanup & Environmental Action",
+    siteName: "CleanMyMap",
+    title: "CleanMyMap - Urban cleanup & citizen action",
     description:
-      "The citizen platform for urban cleanup. Report, clean, act for the environment. Sustainable development, volunteer action, community coordination.",
+      "The national citizen platform for urban cleanup in France. Report pollution, organize cleanwalks, and act for the environment. Sustainable development, volunteer action, community coordination.",
     images: [
       {
         url: "/brand/nouveau-logo.svg",
         width: 1200,
         height: 630,
-        alt: "CleanMyMap - Urban cleanup map and cleanwalks - Ecology",
+        alt: "CleanMyMap - Urban cleanup map and cleanwalks in France",
       },
     ],
   },

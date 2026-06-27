@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { buildContributorRecognitionIndex } from "./contributor-recognition";
 import type { ActionRow } from "./progression-types";
 
@@ -24,118 +24,133 @@ function createRow(
   };
 }
 
-describe("buildContributorRecognitionIndex", () => {
-  it("builds verified contributor cards with zone, regularity and mentor status", () => {
-    const rows: ActionRow[] = [
-      createRow({
-        id: "alice-1",
-        created_by_clerk_id: "user-alice",
-        actor_name: "Alice",
-        action_date: "2026-01-12",
-        location_label: "Paris 11e",
-        notes: "association: Action spontanée\nrelais de communication",
-        volunteers_count: 2,
-      }),
-      createRow({
-        id: "alice-2",
-        created_by_clerk_id: "user-alice",
-        actor_name: "Alice",
-        action_date: "2026-02-18",
-        location_label: "Paris 11e",
-        notes: "association: Action spontanée\nrelais de communication",
-        volunteers_count: 2,
-      }),
-      createRow({
-        id: "bob-1",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-01-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-2",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-02-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-3",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-03-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-4",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-04-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-5",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-05-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-6",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-06-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-7",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-07-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-      createRow({
-        id: "bob-8",
-        created_by_clerk_id: "user-bob",
-        actor_name: "Bob",
-        action_date: "2026-08-05",
-        location_label: "Paris 12e",
-        notes: "association: Action spontanée\ncoordination terrain",
-        volunteers_count: 7,
-        duration_minutes: 90,
-      }),
-    ];
+function buildAliceContributorRecognitionRows(): ActionRow[] {
+  return [
+    createRow({
+      id: "alice-1",
+      created_by_clerk_id: "user-alice",
+      actor_name: "Alice",
+      action_date: "2026-01-12",
+      location_label: "Lyon 11e",
+      notes: "association: Action spontanée\nrelais de communication",
+      volunteers_count: 2,
+    }),
+    createRow({
+      id: "alice-2",
+      created_by_clerk_id: "user-alice",
+      actor_name: "Alice",
+      action_date: "2026-02-18",
+      location_label: "Lyon 11e",
+      notes: "association: Action spontanée\nrelais de communication",
+      volunteers_count: 2,
+    }),
+  ];
+}
 
-    const recognition = buildContributorRecognitionIndex(rows, "user-bob");
+function buildBobContributorRecognitionRows(): ActionRow[] {
+  return [
+    createRow({
+      id: "bob-1",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-01-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-2",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-02-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-3",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-03-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-4",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-04-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-5",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-05-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-6",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-06-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-7",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-07-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+    createRow({
+      id: "bob-8",
+      created_by_clerk_id: "user-bob",
+      actor_name: "Bob",
+      action_date: "2026-08-05",
+      location_label: "Lyon 12e",
+      notes: "association: Action spontanée\ncoordination terrain",
+      volunteers_count: 7,
+      duration_minutes: 90,
+    }),
+  ];
+}
 
-    expect(recognition.topContributors[0]?.userId).toBe("user-bob");
-    expect(recognition.topContributors[0]?.mentorEligible).toBe(true);
-    expect(recognition.topContributors[0]?.topZone).toBe("12e");
-    expect(recognition.topContributors[0]?.regularityLabel).toBe("Régulier");
-    expect(recognition.currentContributor?.userId).toBe("user-bob");
-    expect(recognition.currentContributor?.thanksMessage).toContain("Action spontanée");
-    expect(recognition.currentContributor?.badges).toContain("Mentor local");
-    expect(recognition.currentContributor?.badges).toContain("Coordination vérifiée");
-  });
+function buildContributorRecognitionRows(): ActionRow[] {
+  return [
+    ...buildAliceContributorRecognitionRows(),
+    ...buildBobContributorRecognitionRows(),
+  ];
+}
+
+it("builds verified contributor cards with zone, regularity and mentor status", () => {
+  const recognition = buildContributorRecognitionIndex(
+    buildContributorRecognitionRows(),
+    "user-bob",
+  );
+
+  expect(recognition.topContributors[0]?.userId).toBe("user-bob");
+  expect(recognition.topContributors[0]?.mentorEligible).toBe(true);
+  expect(recognition.topContributors[0]?.topZone).toBe("12e");
+  expect(recognition.topContributors[0]?.regularityLabel).toBe("Régulier");
+  expect(recognition.currentContributor?.userId).toBe("user-bob");
+  expect(recognition.currentContributor?.thanksMessage).toContain("Action spontanée");
+  expect(recognition.currentContributor?.badges).toContain("Mentor local");
+  expect(recognition.currentContributor?.badges).toContain("Coordination vérifiée");
 });

@@ -112,6 +112,114 @@ function confidenceFromSource(source: ActionGeometrySource): number {
   }
 }
 
+function buildReferenceGeometryResolution(anchorLabel: string): GeometryResolution | null {
+  const referenceDrawing = findMatchingGeometry(anchorLabel);
+  if (!referenceDrawing || !isRenderableDrawing(referenceDrawing)) {
+    return null;
+  }
+
+  return {
+    kind: referenceDrawing.kind,
+    coordinates: referenceDrawing.coordinates,
+    geojson: toGeoJsonString(referenceDrawing),
+    confidence: GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY,
+    geometrySource: "reference",
+  };
+}
+
+function buildCoordinateGeometryResolution(params: {
+  latitude?: number | null;
+  longitude?: number | null;
+  routeStyle?: "direct" | "souple" | null;
+  anchorLabel: string;
+  departureLocationLabel: string | null;
+  arrivalLocationLabel: string | null;
+}): GeometryResolution | null {
+  if (!hasCoordinates(params.latitude ?? null, params.longitude ?? null)) {
+    return null;
+  }
+
+  const center = {
+    latitude: Number(params.latitude),
+    longitude: Number(params.longitude),
+  };
+
+  if (params.departureLocationLabel && params.arrivalLocationLabel) {
+    const drawing = buildSyntheticRoute(center, params.routeStyle);
+    return {
+      kind: drawing.kind,
+      coordinates: drawing.coordinates,
+      geojson: toGeoJsonString(drawing),
+      confidence: GEOMETRY_CONFIDENCE.SYNTHETIC_ROUTE,
+      geometrySource: "routed",
+    };
+  }
+
+  if (hasPreciseLocationLabel(params.anchorLabel)) {
+    const drawing = buildEllipsePolygon(center, 85, 55);
+    return {
+      kind: drawing.kind,
+      coordinates: drawing.coordinates,
+      geojson: toGeoJsonString(drawing),
+      confidence: GEOMETRY_CONFIDENCE.LABEL_POLYGON,
+      geometrySource: "estimated_area",
+    };
+  }
+
+  const drawing = buildEllipsePolygon(center, 110, 72);
+  return {
+    kind: drawing.kind,
+    coordinates: drawing.coordinates,
+    geojson: toGeoJsonString(drawing),
+    confidence: GEOMETRY_CONFIDENCE.COORDINATE_ELLIPSE,
+    geometrySource: "estimated_area",
+  };
+}
+
+function buildFallbackPointResolution(params: {
+  latitude?: number | null;
+  longitude?: number | null;
+}): GeometryResolution {
+  return {
+    kind: "point",
+    coordinates: toPointCoordinates(params.latitude ?? null, params.longitude ?? null),
+    geojson: null,
+    confidence: GEOMETRY_CONFIDENCE.POINT_FALLBACK,
+    geometrySource: "fallback_point",
+  };
+}
+
+function resolveDrawingGeometrySource(
+  params: ResolveBestGeometryParams,
+): ActionGeometrySource {
+  if (params.geometrySourceHint) {
+    return params.geometrySourceHint;
+  }
+
+  if (params.confidence == null) {
+    return "manual";
+  }
+
+  return resolveGeometrySourceFromConfidence(params.confidence);
+}
+
+function buildResolvedDrawingGeometry(params: {
+  drawing: ActionDrawing;
+  geometrySource: ActionGeometrySource;
+  geojson?: string | null;
+  confidence?: number | null;
+}): GeometryResolution {
+  return {
+    kind: params.drawing.kind,
+    coordinates: params.drawing.coordinates,
+    geojson: params.geojson ?? toGeoJsonString(params.drawing),
+    confidence:
+      clampConfidence(params.confidence) ??
+      confidenceFromSource(params.geometrySource),
+    geometrySource: params.geometrySource,
+  };
+}
+
 function deriveFallbackResolution(params: {
   latitude?: number | null;
   longitude?: number | null;
@@ -126,92 +234,46 @@ function deriveFallbackResolution(params: {
   const anchorLabel =
     locationLabel || departureLocationLabel || arrivalLocationLabel;
 
-  if (anchorLabel) {
-    const referenceDrawing = findMatchingGeometry(anchorLabel);
-    if (referenceDrawing && isRenderableDrawing(referenceDrawing)) {
-      return {
-        kind: referenceDrawing.kind,
-        coordinates: referenceDrawing.coordinates,
-        geojson: toGeoJsonString(referenceDrawing),
-        confidence: GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY,
-        geometrySource: "reference",
-      };
-    }
+  return (
+    (anchorLabel ? buildReferenceGeometryResolution(anchorLabel) : null) ??
+    buildCoordinateGeometryResolution({
+      latitude: params.latitude ?? null,
+      longitude: params.longitude ?? null,
+      routeStyle: params.routeStyle ?? null,
+      anchorLabel,
+      departureLocationLabel,
+      arrivalLocationLabel,
+    }) ??
+    buildFallbackPointResolution({
+      latitude: params.latitude ?? null,
+      longitude: params.longitude ?? null,
+    })
+  );
+}
+
+function resolveDrawingGeometry(params: ResolveBestGeometryParams): GeometryResolution {
+  const drawing = isRenderableDrawing(params.drawing) ? params.drawing : null;
+  if (!drawing) {
+    return deriveFallbackResolution({
+      latitude: params.latitude ?? null,
+      longitude: params.longitude ?? null,
+      locationLabel: params.locationLabel ?? null,
+      departureLocationLabel: params.departureLocationLabel ?? null,
+      arrivalLocationLabel: params.arrivalLocationLabel ?? null,
+      routeStyle: params.routeStyle ?? null,
+    });
   }
 
-  if (hasCoordinates(params.latitude ?? null, params.longitude ?? null)) {
-    const center = {
-      latitude: Number(params.latitude),
-      longitude: Number(params.longitude),
-    };
-
-    if (departureLocationLabel && arrivalLocationLabel) {
-      const drawing = buildSyntheticRoute(center, params.routeStyle);
-      return {
-        kind: drawing.kind,
-        coordinates: drawing.coordinates,
-        geojson: toGeoJsonString(drawing),
-        confidence: GEOMETRY_CONFIDENCE.SYNTHETIC_ROUTE,
-        geometrySource: "routed",
-      };
-    }
-
-    if (hasPreciseLocationLabel(anchorLabel)) {
-      const drawing = buildEllipsePolygon(center, 85, 55);
-      return {
-        kind: drawing.kind,
-        coordinates: drawing.coordinates,
-        geojson: toGeoJsonString(drawing),
-        confidence: GEOMETRY_CONFIDENCE.LABEL_POLYGON,
-        geometrySource: "estimated_area",
-      };
-    }
-
-    const drawing = buildEllipsePolygon(center, 110, 72);
-    return {
-      kind: drawing.kind,
-      coordinates: drawing.coordinates,
-      geojson: toGeoJsonString(drawing),
-      confidence: GEOMETRY_CONFIDENCE.COORDINATE_ELLIPSE,
-      geometrySource: "estimated_area",
-    };
-  }
-
-  return {
-    kind: "point",
-    coordinates: toPointCoordinates(params.latitude ?? null, params.longitude ?? null),
-    geojson: null,
-    confidence: GEOMETRY_CONFIDENCE.POINT_FALLBACK,
-    geometrySource: "fallback_point",
-  };
+  return buildResolvedDrawingGeometry({
+    drawing,
+    geometrySource: resolveDrawingGeometrySource(params),
+    geojson: params.geojson ?? null,
+    confidence: params.confidence ?? null,
+  });
 }
 
 export function resolveBestGeometry(
   params: ResolveBestGeometryParams,
 ): GeometryResolution {
-  const drawing = isRenderableDrawing(params.drawing) ? params.drawing : null;
-  if (drawing) {
-    const geometrySource =
-      params.geometrySourceHint ??
-      (params.confidence == null
-        ? "manual"
-        : resolveGeometrySourceFromConfidence(params.confidence));
-    return {
-      kind: drawing.kind,
-      coordinates: drawing.coordinates,
-      geojson: params.geojson ?? toGeoJsonString(drawing),
-      confidence:
-        clampConfidence(params.confidence) ?? confidenceFromSource(geometrySource),
-      geometrySource,
-    };
-  }
-
-  return deriveFallbackResolution({
-    latitude: params.latitude ?? null,
-    longitude: params.longitude ?? null,
-    locationLabel: params.locationLabel ?? null,
-    departureLocationLabel: params.departureLocationLabel ?? null,
-    arrivalLocationLabel: params.arrivalLocationLabel ?? null,
-    routeStyle: params.routeStyle ?? null,
-  });
+  return resolveDrawingGeometry(params);
 }

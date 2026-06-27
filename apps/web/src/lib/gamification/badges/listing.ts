@@ -22,6 +22,8 @@ import {
 } from "./families";
 import type { CleanZoneSpotRow } from "../clean-zones";
 
+const CLEAN_ZONE_SOURCE_LIMIT = 1000;
+
 export type GamificationBadgesListPayload = {
   totalPoints: number;
   badges: GamificationBadgeEntry[];
@@ -146,7 +148,8 @@ async function loadCleanZoneSourcesForUser(
       .not("latitude", "is", null)
       .not("longitude", "is", null)
       .not("notes", "is", null)
-      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
+      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
+      .limit(CLEAN_ZONE_SOURCE_LIMIT);
 
     const cleanPlaceRows = toCleanZoneSpotRows(cleanPlaces);
     const { data: spots } = await supabase
@@ -157,7 +160,8 @@ async function loadCleanZoneSourcesForUser(
       .not("latitude", "is", null)
       .not("longitude", "is", null)
       .not("notes", "is", null)
-      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
+      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
+      .limit(CLEAN_ZONE_SOURCE_LIMIT);
 
     return collectEligibleCleanZoneSources({
       cleanPlaces: cleanPlaceRows,

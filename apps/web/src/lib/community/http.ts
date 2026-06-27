@@ -185,11 +185,54 @@ function parseCommunityEventsPayload(
   };
 }
 
+type CommunityRsvpPayloadBody = {
+  eventId?: unknown;
+  participantClerkId?: unknown;
+  rsvpStatus?: unknown;
+  updatedAt?: unknown;
+};
+
+function isCommunityRsvpStatus(value: unknown): value is CommunityRsvpStatus {
+  return value === "yes" || value === "maybe" || value === "no";
+}
+
+function parseCommunityRsvpPayload(payload: unknown): {
+  eventId: string;
+  participantClerkId: string;
+  rsvpStatus: CommunityRsvpStatus;
+  updatedAt: string;
+} {
+  if (!payload || typeof payload !== "object") {
+    throw new CommunityClientError(
+      "server_error",
+      defaultMessageForKind("server"),
+    );
+  }
+  const body = payload as CommunityRsvpPayloadBody;
+  if (
+    typeof body.eventId !== "string" ||
+    typeof body.participantClerkId !== "string" ||
+    !isCommunityRsvpStatus(body.rsvpStatus) ||
+    typeof body.updatedAt !== "string"
+  ) {
+    throw new CommunityClientError(
+      "server_error",
+      defaultMessageForKind("server"),
+    );
+  }
+  return {
+    eventId: body.eventId,
+    participantClerkId: body.participantClerkId,
+    rsvpStatus: body.rsvpStatus,
+    updatedAt: body.updatedAt,
+  };
+}
+
 export function buildCommunityEventsQueryString(
   params: { limit?: number } = {},
 ): string {
   const query = new URLSearchParams();
-  query.set("limit", String(parsePositiveInteger(params.limit, 1, 300, 120)));
+  query.set("limit", String(parsePositiveInteger(params.limit, 1, 120, 120)));
   return query.toString();
 }
 
@@ -199,10 +242,7 @@ export async function fetchCommunityEvents(
   let response: Response;
   try {
     const query = buildCommunityEventsQueryString(params);
-    response = await fetch(`/api/community/events?${query}`, {
-      method: "GET",
-      cache: "no-store",
-    });
+    response = await fetch(`/api/community/events?${query}`);
   } catch {
     throw new CommunityClientError(
       "network_error",
@@ -356,30 +396,5 @@ export async function upsertCommunityRsvp(payload: {
   }
 
   const item = (body as { item?: unknown }).item;
-  if (!item || typeof item !== "object") {
-    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
-  }
-  const normalized = item as {
-    eventId?: unknown;
-    participantClerkId?: unknown;
-    rsvpStatus?: unknown;
-    updatedAt?: unknown;
-  };
-  if (
-    typeof normalized.eventId !== "string" ||
-    typeof normalized.participantClerkId !== "string" ||
-    (normalized.rsvpStatus !== "yes" &&
-      normalized.rsvpStatus !== "maybe" &&
-      normalized.rsvpStatus !== "no") ||
-    typeof normalized.updatedAt !== "string"
-  ) {
-    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
-  }
-
-  return {
-    eventId: normalized.eventId,
-    participantClerkId: normalized.participantClerkId,
-    rsvpStatus: normalized.rsvpStatus,
-    updatedAt: normalized.updatedAt,
-  };
+  return parseCommunityRsvpPayload(item);
 }

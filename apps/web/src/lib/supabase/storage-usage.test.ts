@@ -120,6 +120,7 @@ describe("storage usage monitoring", () => {
         extension_breakdown: [],
         business_breakdown: [],
         largest_files: [],
+        business_contributions: {},
         warnings: [],
       },
       {
@@ -134,6 +135,7 @@ describe("storage usage monitoring", () => {
         extension_breakdown: [],
         business_breakdown: [],
         largest_files: [],
+        business_contributions: {},
         warnings: [],
       },
     ]);

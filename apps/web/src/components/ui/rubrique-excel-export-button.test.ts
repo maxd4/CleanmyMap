@@ -12,7 +12,7 @@ describe("RubriqueExcelExportButton", () => {
     const markup = renderToStaticMarkup(
       React.createElement(RubriqueExcelExportButton, {
         rubriqueTitle: "Mon espace",
-        data: [{ label: "Paris", value: 12 }],
+        data: [{ label: "France", value: 12 }],
       }),
     );
 

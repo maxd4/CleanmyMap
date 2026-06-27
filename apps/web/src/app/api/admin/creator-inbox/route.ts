@@ -39,7 +39,7 @@ export async function GET() {
   try {
     const items = await loadCreatorInboxItems();
     return NextResponse.json({ status: "ok", count: items.length, items });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         error: "Unable to load creator inbox.",
@@ -261,7 +261,7 @@ export async function PATCH(request: Request) {
       },
     });
     return NextResponse.json({ status: "ok", item: buildPartnerInboxItem(updated) });
-  } catch (error) {
+  } catch {
     await appendAdminOperationAudit({
       operationId,
       at: new Date().toISOString(),

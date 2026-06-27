@@ -1,8 +1,16 @@
 # Token and context optimization exclusions
+# Generated and editor-state folders that slow task startup.
+node_modules/
+**/node_modules/
 apps/web/node_modules/
 apps/web/.next/
-**/__pycache__/
-.pytest_cache/
+**/.next/
+.vercel/
+.playwright-mcp/
+.codex-remote-attachments/
+.cursor/
+.devcontainer/
+**/.turbo/
 playwright-report/
 test-results/
 artifacts/

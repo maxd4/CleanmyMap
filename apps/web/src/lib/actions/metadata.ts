@@ -34,6 +34,277 @@ function safeParseMeta(raw: string): ActionNotesMeta | null {
   }
 }
 
+type ActionNotesExtractionState = {
+  submissionMode: ActionSubmissionMode | null;
+  wasteBreakdown: ActionWasteBreakdown | null;
+  associationName: string | null;
+  groupJoinEnabled: boolean;
+  placeType: string | null;
+  departureLocationLabel: string | null;
+  arrivalLocationLabel: string | null;
+  routeStyle: "direct" | "souple" | null;
+  routeAdjustmentMessage: string | null;
+  photos: ActionNotesMeta["photos"] | null;
+  visionEstimate: ActionVisionEstimate | null;
+  cleanLines: string[];
+};
+
+function hasNonEmptyText(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasStructuredActionMetadata(metadata: {
+  wasteBreakdown?: ActionWasteBreakdown;
+  associationName?: string;
+  groupJoinEnabled?: boolean;
+  placeType?: string;
+  departureLocationLabel?: string;
+  arrivalLocationLabel?: string;
+}): boolean {
+  const associationName = metadata.associationName?.trim();
+  const hasWasteBreakdown =
+    metadata.wasteBreakdown &&
+    Object.values(metadata.wasteBreakdown).some(
+      (value) => value !== undefined && value !== null,
+    );
+  return Boolean(
+    hasWasteBreakdown ||
+      associationName ||
+      metadata.groupJoinEnabled === false ||
+      metadata.placeType ||
+      metadata.departureLocationLabel ||
+      metadata.arrivalLocationLabel,
+  );
+}
+
+function hasContentActionMetadata(metadata: {
+  submissionMode?: ActionSubmissionMode;
+  routeStyle?: "direct" | "souple";
+  routeAdjustmentMessage?: string;
+  photos?: ActionNotesMeta["photos"];
+  visionEstimate?: ActionVisionEstimate | null;
+}): boolean {
+  return Boolean(
+    metadata.submissionMode ||
+      metadata.routeStyle ||
+      hasNonEmptyText(metadata.routeAdjustmentMessage) ||
+      metadata.photos?.length ||
+      metadata.visionEstimate,
+  );
+}
+
+function hasActionMetadata(
+  metadata: {
+    submissionMode?: ActionSubmissionMode;
+    wasteBreakdown?: ActionWasteBreakdown;
+    associationName?: string;
+    groupJoinEnabled?: boolean;
+    placeType?: string;
+    departureLocationLabel?: string;
+    arrivalLocationLabel?: string;
+    routeStyle?: "direct" | "souple";
+    routeAdjustmentMessage?: string;
+    photos?: ActionNotesMeta["photos"];
+    visionEstimate?: ActionVisionEstimate | null;
+  },
+): boolean {
+  return (
+    hasStructuredActionMetadata(metadata) || hasContentActionMetadata(metadata)
+  );
+}
+
+function buildStructuredMetadataPayload(
+  metadata: {
+    submissionMode?: ActionSubmissionMode;
+    wasteBreakdown?: ActionWasteBreakdown;
+    associationName?: string;
+    groupJoinEnabled?: boolean;
+    placeType?: string;
+    departureLocationLabel?: string;
+    arrivalLocationLabel?: string;
+  },
+): ActionNotesMeta {
+  const metaPayload: ActionNotesMeta = {};
+  if (metadata.submissionMode) {
+    metaPayload.submissionMode = metadata.submissionMode;
+  }
+  if (
+    metadata.wasteBreakdown &&
+    Object.values(metadata.wasteBreakdown).some(
+      (value) => value !== undefined && value !== null,
+    )
+  ) {
+    metaPayload.wasteBreakdown = metadata.wasteBreakdown;
+  }
+  if (metadata.associationName?.trim()) {
+    metaPayload.associationName = metadata.associationName.trim();
+  }
+  if (metadata.groupJoinEnabled === false) {
+    metaPayload.groupJoinEnabled = false;
+  }
+  if (metadata.placeType) {
+    metaPayload.placeType = metadata.placeType;
+  }
+  if (metadata.departureLocationLabel) {
+    metaPayload.departureLocationLabel = metadata.departureLocationLabel;
+  }
+  if (metadata.arrivalLocationLabel) {
+    metaPayload.arrivalLocationLabel = metadata.arrivalLocationLabel;
+  }
+  return metaPayload;
+}
+
+function buildContentMetadataPayload(
+  metadata: {
+    routeStyle?: "direct" | "souple";
+    routeAdjustmentMessage?: string;
+    photos?: ActionNotesMeta["photos"];
+    visionEstimate?: ActionVisionEstimate | null;
+  },
+): Pick<
+  ActionNotesMeta,
+  "routeStyle" | "routeAdjustmentMessage" | "photos" | "visionEstimate"
+> {
+  const metaPayload: Pick<
+    ActionNotesMeta,
+    "routeStyle" | "routeAdjustmentMessage" | "photos" | "visionEstimate"
+  > = {};
+  if (metadata.routeStyle) {
+    metaPayload.routeStyle = "souple";
+  }
+  if (hasNonEmptyText(metadata.routeAdjustmentMessage)) {
+    metaPayload.routeAdjustmentMessage = metadata.routeAdjustmentMessage.trim();
+  }
+  if (metadata.photos?.length) {
+    metaPayload.photos = metadata.photos;
+  }
+  if (metadata.visionEstimate) {
+    metaPayload.visionEstimate = metadata.visionEstimate;
+  }
+  return metaPayload;
+}
+
+function appendMetadataLine(
+  lines: string[],
+  line: string,
+  metadataUpdated: boolean,
+  groupJoinEnabled: boolean,
+): { lines: string[]; metadataUpdated: boolean } {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith(META_PREFIX)) {
+    return { lines: [...lines, line], metadataUpdated };
+  }
+
+  const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
+  if (!parsed) {
+    return { lines: [...lines, line], metadataUpdated };
+  }
+
+  const nextParsed = { ...parsed };
+  if (groupJoinEnabled) {
+    delete nextParsed.groupJoinEnabled;
+  } else {
+    nextParsed.groupJoinEnabled = false;
+  }
+
+  if (Object.keys(nextParsed).length === 0) {
+    return { lines, metadataUpdated: true };
+  }
+
+  return {
+    lines: [...lines, `${META_PREFIX}${JSON.stringify(nextParsed)}`],
+    metadataUpdated: true,
+  };
+}
+
+function initializeActionNotesExtractionState(): ActionNotesExtractionState {
+  return {
+    submissionMode: null,
+    wasteBreakdown: null,
+    associationName: null,
+    groupJoinEnabled: true,
+    placeType: null,
+    departureLocationLabel: null,
+    arrivalLocationLabel: null,
+    routeStyle: null,
+    routeAdjustmentMessage: null,
+    photos: null,
+    visionEstimate: null,
+    cleanLines: [],
+  };
+}
+
+function applyParsedActionNotesMeta(
+  parsed: ActionNotesMeta,
+  state: ActionNotesExtractionState,
+): void {
+  applyParsedStructuredActionNotesMeta(parsed, state);
+  applyParsedContentActionNotesMeta(parsed, state);
+}
+
+function applyParsedStructuredActionNotesMeta(
+  parsed: ActionNotesMeta,
+  state: ActionNotesExtractionState,
+): void {
+  if (
+    parsed.submissionMode === "quick" ||
+    parsed.submissionMode === "complete"
+  ) {
+    state.submissionMode = parsed.submissionMode;
+  }
+  if (parsed.wasteBreakdown && typeof parsed.wasteBreakdown === "object") {
+    state.wasteBreakdown = parsed.wasteBreakdown;
+  }
+  if (
+    typeof parsed.associationName === "string" &&
+    parsed.associationName.trim().length > 0
+  ) {
+    state.associationName = parsed.associationName.trim();
+  }
+  if (typeof parsed.groupJoinEnabled === "boolean") {
+    state.groupJoinEnabled = parsed.groupJoinEnabled;
+  }
+  if (
+    typeof parsed.departureLocationLabel === "string" &&
+    parsed.departureLocationLabel.trim().length > 0
+  ) {
+    state.departureLocationLabel = parsed.departureLocationLabel.trim();
+  }
+  if (
+    typeof parsed.arrivalLocationLabel === "string" &&
+    parsed.arrivalLocationLabel.trim().length > 0
+  ) {
+    state.arrivalLocationLabel = parsed.arrivalLocationLabel.trim();
+  }
+}
+
+function applyParsedContentActionNotesMeta(
+  parsed: ActionNotesMeta,
+  state: ActionNotesExtractionState,
+): void {
+  if (parsed.routeStyle === "direct" || parsed.routeStyle === "souple") {
+    state.routeStyle = "souple";
+  }
+  if (
+    typeof parsed.routeAdjustmentMessage === "string" &&
+    parsed.routeAdjustmentMessage.trim().length > 0
+  ) {
+    state.routeAdjustmentMessage = parsed.routeAdjustmentMessage.trim();
+  }
+  if (
+    typeof parsed.placeType === "string" &&
+    parsed.placeType.trim().length > 0
+  ) {
+    state.placeType = parsed.placeType.trim();
+  }
+  if (Array.isArray(parsed.photos)) {
+    state.photos = parsed.photos;
+  }
+  if (parsed.visionEstimate && typeof parsed.visionEstimate === "object") {
+    state.visionEstimate = parsed.visionEstimate;
+  }
+}
+
 export function appendActionMetadataToNotes(
   baseNotes: string | undefined,
   metadata: {
@@ -51,63 +322,14 @@ export function appendActionMetadataToNotes(
   },
 ): string | null {
   const trimmedBase = (baseNotes ?? "").trim();
-  const associationName = metadata.associationName?.trim();
-  const hasWasteBreakdown =
-    metadata.wasteBreakdown &&
-    Object.values(metadata.wasteBreakdown).some(
-      (value) => value !== undefined && value !== null,
-    );
-  const hasMetadata =
-    metadata.submissionMode ||
-    hasWasteBreakdown ||
-    associationName ||
-    metadata.groupJoinEnabled === false ||
-    metadata.placeType ||
-    metadata.departureLocationLabel ||
-    metadata.arrivalLocationLabel ||
-    metadata.routeStyle ||
-    Boolean(metadata.routeAdjustmentMessage?.trim()) ||
-    Boolean(metadata.photos?.length) ||
-    Boolean(metadata.visionEstimate);
-  if (!hasMetadata) {
+  if (!hasActionMetadata(metadata)) {
     return trimmedBase || null;
   }
 
-  const metaPayload: ActionNotesMeta = {};
-  if (metadata.submissionMode) {
-    metaPayload.submissionMode = metadata.submissionMode;
-  }
-  if (hasWasteBreakdown) {
-    metaPayload.wasteBreakdown = metadata.wasteBreakdown;
-  }
-  if (associationName) {
-    metaPayload.associationName = associationName;
-  }
-  if (metadata.groupJoinEnabled === false) {
-    metaPayload.groupJoinEnabled = false;
-  }
-  if (metadata.placeType) {
-    metaPayload.placeType = metadata.placeType;
-  }
-  if (metadata.departureLocationLabel) {
-    metaPayload.departureLocationLabel = metadata.departureLocationLabel;
-  }
-  if (metadata.arrivalLocationLabel) {
-    metaPayload.arrivalLocationLabel = metadata.arrivalLocationLabel;
-  }
-  if (metadata.routeStyle) {
-    metaPayload.routeStyle = "souple";
-  }
-  if (metadata.routeAdjustmentMessage?.trim()) {
-    metaPayload.routeAdjustmentMessage = metadata.routeAdjustmentMessage.trim();
-  }
-  if (metadata.photos?.length) {
-    metaPayload.photos = metadata.photos;
-  }
-  if (metadata.visionEstimate) {
-    metaPayload.visionEstimate = metadata.visionEstimate;
-  }
-
+  const metaPayload = {
+    ...buildStructuredMetadataPayload(metadata),
+    ...buildContentMetadataPayload(metadata),
+  };
   const encoded = `${META_PREFIX}${JSON.stringify(metaPayload)}`;
   return trimmedBase ? `${trimmedBase}\n${encoded}` : encoded;
 }
@@ -146,18 +368,7 @@ export function extractActionMetadataFromNotes(
   }
 
   const lines = notes.split(/\r?\n/);
-  let submissionMode: ActionSubmissionMode | null = null;
-  let wasteBreakdown: ActionWasteBreakdown | null = null;
-  let associationName: string | null = null;
-  let groupJoinEnabled = true;
-  let placeType: string | null = null;
-  let departureLocationLabel: string | null = null;
-  let arrivalLocationLabel: string | null = null;
-  let routeStyle: "direct" | "souple" | null = null;
-  let routeAdjustmentMessage: string | null = null;
-  let photos: ActionNotesMeta["photos"] | null = null;
-  let visionEstimate: ActionVisionEstimate | null = null;
-  const cleanLines: string[] = [];
+  const state = initializeActionNotesExtractionState();
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -166,88 +377,38 @@ export function extractActionMetadataFromNotes(
       if (legacyAssociationMatch) {
         const legacyAssociation = legacyAssociationMatch[1]?.trim();
         if (legacyAssociation) {
-          associationName = legacyAssociation;
+          state.associationName = legacyAssociation;
         }
         continue;
       }
-      cleanLines.push(line);
+      state.cleanLines.push(line);
       continue;
     }
     const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
     if (!parsed) {
       continue;
     }
-    if (
-      parsed.submissionMode === "quick" ||
-      parsed.submissionMode === "complete"
-    ) {
-      submissionMode = parsed.submissionMode;
-    }
-    if (parsed.wasteBreakdown && typeof parsed.wasteBreakdown === "object") {
-      wasteBreakdown = parsed.wasteBreakdown;
-    }
-    if (
-      typeof parsed.associationName === "string" &&
-      parsed.associationName.trim().length > 0
-    ) {
-      associationName = parsed.associationName.trim();
-    }
-    if (typeof parsed.groupJoinEnabled === "boolean") {
-      groupJoinEnabled = parsed.groupJoinEnabled;
-    }
-    if (
-      typeof parsed.departureLocationLabel === "string" &&
-      parsed.departureLocationLabel.trim().length > 0
-    ) {
-      departureLocationLabel = parsed.departureLocationLabel.trim();
-    }
-    if (
-      typeof parsed.arrivalLocationLabel === "string" &&
-      parsed.arrivalLocationLabel.trim().length > 0
-    ) {
-      arrivalLocationLabel = parsed.arrivalLocationLabel.trim();
-    }
-    if (parsed.routeStyle === "direct" || parsed.routeStyle === "souple") {
-      routeStyle = "souple";
-    }
-    if (
-      typeof parsed.routeAdjustmentMessage === "string" &&
-      parsed.routeAdjustmentMessage.trim().length > 0
-    ) {
-      routeAdjustmentMessage = parsed.routeAdjustmentMessage.trim();
-    }
-    if (
-      typeof parsed.placeType === "string" &&
-      parsed.placeType.trim().length > 0
-    ) {
-      placeType = parsed.placeType.trim();
-    }
-    if (Array.isArray(parsed.photos)) {
-      photos = parsed.photos;
-    }
-    if (parsed.visionEstimate && typeof parsed.visionEstimate === "object") {
-      visionEstimate = parsed.visionEstimate;
-    }
+    applyParsedActionNotesMeta(parsed, state);
   }
 
-  const cleanNotes = cleanLines
-    .map((line) => line.trim() === INGESTION_SYNC_MARKER ? "" : line)
+  const cleanNotes = state.cleanLines
+    .map((line) => (line.trim() === INGESTION_SYNC_MARKER ? "" : line))
     .filter((line) => line.trim().length > 0)
     .join("\n")
     .trim();
   return {
     cleanNotes: cleanNotes.length > 0 ? cleanNotes : null,
-    submissionMode,
-    wasteBreakdown,
-    associationName,
-    groupJoinEnabled,
-    placeType,
-    departureLocationLabel,
-    arrivalLocationLabel,
-    routeStyle,
-    routeAdjustmentMessage,
-    photos,
-    visionEstimate,
+    submissionMode: state.submissionMode,
+    wasteBreakdown: state.wasteBreakdown,
+    associationName: state.associationName,
+    groupJoinEnabled: state.groupJoinEnabled,
+    placeType: state.placeType,
+    departureLocationLabel: state.departureLocationLabel,
+    arrivalLocationLabel: state.arrivalLocationLabel,
+    routeStyle: state.routeStyle,
+    routeAdjustmentMessage: state.routeAdjustmentMessage,
+    photos: state.photos,
+    visionEstimate: state.visionEstimate,
   };
 }
 
@@ -261,28 +422,9 @@ export function setActionGroupJoinEnabledInNotes(
   let metadataUpdated = false;
 
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith(META_PREFIX)) {
-      outputLines.push(line);
-      continue;
-    }
-
-    const parsed = safeParseMeta(trimmed.slice(META_PREFIX.length));
-    if (!parsed) {
-      outputLines.push(line);
-      continue;
-    }
-
-    metadataUpdated = true;
-    if (groupJoinEnabled) {
-      delete parsed.groupJoinEnabled;
-    } else {
-      parsed.groupJoinEnabled = false;
-    }
-
-    if (Object.keys(parsed).length > 0) {
-      outputLines.push(`${META_PREFIX}${JSON.stringify(parsed)}`);
-    }
+    const updated = appendMetadataLine(outputLines, line, metadataUpdated, groupJoinEnabled);
+    outputLines.splice(0, outputLines.length, ...updated.lines);
+    metadataUpdated = updated.metadataUpdated;
   }
 
   if (!metadataUpdated && !groupJoinEnabled) {

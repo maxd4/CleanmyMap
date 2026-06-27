@@ -1,6 +1,6 @@
-import { getSupabaseServerClient } from"@/lib/supabase/server";
+import type { Metadata } from "next";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
-import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
+import { fetchCachedUnifiedActionContracts } from"@/lib/actions/unified-source-cache";
 import { aggregateMonthlyAnalytics } from"@/lib/pilotage/analytics-data-utils";
 import { AnalyticsCockpit } from"@/components/reports/analytics-cockpit";
 import Image from"next/image";
@@ -10,17 +10,27 @@ import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-com
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+ title: "Rapport d'impact imprimable - CleanMyMap",
+ description:
+  "Rapport d'impact imprimable et synthèse documentaire réservés aux comptes connectés.",
+ robots: {
+  index: false,
+  follow: false,
+ },
+};
 
 async function loadFullAuditData() {
   const supabase = getSupabaseServerClient();
-  
   const [overview, contractsResult] = await Promise.all([
     loadPilotageOverview({
       supabase,
       periodDays: 90,
       limit: 1500,
     }),
-    fetchUnifiedActionContracts(supabase, {
+    fetchCachedUnifiedActionContracts({
       limit: 500,
       status:"approved",
       floorDate: null,

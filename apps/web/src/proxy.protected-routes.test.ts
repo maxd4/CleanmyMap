@@ -39,12 +39,7 @@ describe("proxy protected routes", () => {
     const required = [
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
-      "/actions/history(.*)",
-      "/actions/new(.*)",
-      "/form-comparison(.*)",
-      "/prints/report(.*)",
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
-      "/__clerk/(.*)",
     ];
 
     for (const pattern of required) {
@@ -60,6 +55,10 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/history(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/new(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/form-comparison(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/prints/report(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/newsletter/subscribe(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/analytics/funnel(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/bug-reports(.*)");
@@ -67,6 +66,7 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/promotion-requests(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/partners/onboarding-requests(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/chat(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/__clerk/(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/(api|trpc)(.*)");
   });
 });

@@ -22,6 +22,71 @@ export const PARIS_ARRONDISSEMENTS = [
 ] as const;
 
 export type ParisArrondissement = (typeof PARIS_ARRONDISSEMENTS)[number]["value"];
+export type TerritoryArrondissement = ParisArrondissement;
+export type ArrondissementCity = "Paris" | "Lyon" | "Marseille";
+export type MarseilleSector = "1/7" | "2/3" | "4/5" | "6/8" | "9/10" | "11/12" | "13/14" | "15/16";
+
+export type ArrondissementCityOption = {
+  value: ArrondissementCity;
+  label: string;
+  arrondissementCount: number;
+  description: string;
+};
+
+export const ARRONDISSEMENT_CITY_OPTIONS: ArrondissementCityOption[] = [
+  {
+    value: "Paris",
+    label: "Paris",
+    arrondissementCount: 20,
+    description: "20 arrondissements municipaux",
+  },
+  {
+    value: "Lyon",
+    label: "Lyon",
+    arrondissementCount: 9,
+    description: "9 arrondissements municipaux",
+  },
+  {
+    value: "Marseille",
+    label: "Marseille",
+    arrondissementCount: 16,
+    description: "16 arrondissements municipaux, 8 mairies de secteur",
+  },
+];
+
+const ARRONDISSEMENT_CITY_CENTERS: Record<ArrondissementCity, { lat: number; lng: number }> = {
+  Paris: {
+    lat: 48.8566,
+    lng: 2.3522,
+  },
+  Lyon: {
+    lat: 45.764,
+    lng: 4.8357,
+  },
+  Marseille: {
+    lat: 43.2965,
+    lng: 5.3698,
+  },
+};
+
+const MARSEILLE_SECTOR_BY_ARRONDISSEMENT: Record<number, MarseilleSector> = {
+  1: "1/7",
+  7: "1/7",
+  2: "2/3",
+  3: "2/3",
+  4: "4/5",
+  5: "4/5",
+  6: "6/8",
+  8: "6/8",
+  9: "9/10",
+  10: "9/10",
+  11: "11/12",
+  12: "11/12",
+  13: "13/14",
+  14: "13/14",
+  15: "15/16",
+  16: "15/16",
+};
 
 const ARRONDISSEMENT_LOOKUP = new Map(
   PARIS_ARRONDISSEMENTS.map((item) => [item.value, item]),
@@ -40,10 +105,97 @@ export function parseParisArrondissement(value: unknown): ParisArrondissement | 
   return parsed as ParisArrondissement;
 }
 
+export function parseTerritoryArrondissement(
+  value: unknown,
+): TerritoryArrondissement | null {
+  return parseParisArrondissement(value);
+}
+
+export function getArrondissementCityOptions(): ArrondissementCityOption[] {
+  return ARRONDISSEMENT_CITY_OPTIONS;
+}
+
+export function formatArrondissementLabel(
+  city: ArrondissementCity | null,
+  arrondissement: number,
+): string {
+  const suffix = arrondissement === 1 ? "1er" : `${arrondissement}e`;
+  return city ? `${city} ${suffix}` : `Arrondissement ${suffix}`;
+}
+
+export function getArrondissementMunicipalLabel(
+  city: ArrondissementCity | null,
+  arrondissement: number,
+): string {
+  if (city === "Marseille") {
+    return `Marseille ${arrondissement === 1 ? "1er" : `${arrondissement}e`} arrondissement`;
+  }
+
+  if (city === "Paris") {
+    return `Paris ${arrondissement === 1 ? "1er" : `${arrondissement}e`} arrondissement`;
+  }
+
+  if (city === "Lyon") {
+    return `Lyon ${arrondissement === 1 ? "1er" : `${arrondissement}e`} arrondissement`;
+  }
+
+  return formatArrondissementLabel(city, arrondissement);
+}
+
+export function getArrondissementHelpLabel(
+  city: ArrondissementCity | null,
+  arrondissement: number,
+): string | null {
+  if (city === "Marseille") {
+    const sector = MARSEILLE_SECTOR_BY_ARRONDISSEMENT[arrondissement];
+    return sector ? `Mairie de secteur ${sector}` : "Mairie de secteur";
+  }
+
+  if (city === "Paris" || city === "Lyon") {
+    return "Mairie d'arrondissement";
+  }
+
+  return null;
+}
+
+export function normalizeArrondissementCityLabel(
+  city: ArrondissementCity,
+): string {
+  return city;
+}
+
+export function getArrondissementCityCount(city: ArrondissementCity): number {
+  return ARRONDISSEMENT_CITY_OPTIONS.find((option) => option.value === city)?.arrondissementCount ?? 0;
+}
+
+export function getArrondissementCityCenter(
+  city: ArrondissementCity,
+): { lat: number; lng: number } {
+  return ARRONDISSEMENT_CITY_CENTERS[city];
+}
+
+export function isParisArrondissement(
+  value: number | null | undefined,
+): value is ParisArrondissement {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 20;
+}
+
+export function isTerritoryArrondissement(
+  value: number | null | undefined,
+): value is TerritoryArrondissement {
+  return isParisArrondissement(value);
+}
+
 export function getParisArrondissementLabel(
   arrondissement: ParisArrondissement,
 ): string {
   return ARRONDISSEMENT_LOOKUP.get(arrondissement)?.label ?? `Paris ${arrondissement}e`;
+}
+
+export function getTerritoryArrondissementLabel(
+  arrondissement: TerritoryArrondissement,
+): string {
+  return getParisArrondissementLabel(arrondissement);
 }
 
 export function getParisArrondissementCenter(
@@ -53,6 +205,12 @@ export function getParisArrondissementCenter(
     lat: 48.8566,
     lng: 2.3522,
   };
+}
+
+export function getTerritoryArrondissementCenter(
+  arrondissement: TerritoryArrondissement,
+): { lat: number; lng: number } {
+  return getParisArrondissementCenter(arrondissement);
 }
 
 function toRadians(value: number): number {
@@ -88,6 +246,14 @@ export function distanceToParisArrondissementKm(
     return Number.POSITIVE_INFINITY;
   }
   return haversineDistanceKm(lat, lng, center.lat, center.lng);
+}
+
+export function distanceToTerritoryArrondissementKm(
+  lat: number,
+  lng: number,
+  arrondissement: TerritoryArrondissement,
+): number {
+  return distanceToParisArrondissementKm(lat, lng, arrondissement);
 }
 
 /**
@@ -140,4 +306,64 @@ export function extractArrondissementFromLabel(label: string): number | null {
   }
   
   return null;
+}
+
+function normalizeLabel(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isParisPostalCodeLabel(normalizedLabel: string): boolean {
+  return /\b750\d{2}\b/.test(normalizedLabel);
+}
+
+function isLyonPostalCodeLabel(normalizedLabel: string): boolean {
+  return /\b6900[1-9]\b/.test(normalizedLabel);
+}
+
+function isMarseillePostalCodeLabel(normalizedLabel: string): boolean {
+  return /\b130(?:0[1-9]|1[0-6])\b/.test(normalizedLabel);
+}
+
+export function inferArrondissementCityFromLabel(
+  label: string,
+): ArrondissementCity | null {
+  const normalized = normalizeLabel(label);
+  if (!normalized) {
+    return null;
+  }
+
+  if (
+    normalized.includes("marseille") ||
+    isMarseillePostalCodeLabel(normalized)
+  ) {
+    return "Marseille";
+  }
+
+  if (normalized.includes("lyon") || isLyonPostalCodeLabel(normalized)) {
+    return "Lyon";
+  }
+
+  if (normalized.includes("paris") || isParisPostalCodeLabel(normalized)) {
+    return "Paris";
+  }
+
+  return null;
+}
+
+export function isParisArrondissementLabel(label: string): boolean {
+  const normalized = normalizeLabel(label);
+  return (
+    normalized.includes("paris") ||
+    /^750\d{2}\b/.test(normalized) ||
+    /\b(?:[1-9]|1[0-9]|20)(?:er|e)?\s+arrondissement\b/.test(normalized) ||
+    PARIS_ARRONDISSEMENTS.some((item) => normalized.includes(normalizeLabel(item.label)))
+  );
+}
+
+export function extractParisArrondissementFromLabel(label: string): number | null {
+  return isParisArrondissementLabel(label) ? extractArrondissementFromLabel(label) : null;
 }

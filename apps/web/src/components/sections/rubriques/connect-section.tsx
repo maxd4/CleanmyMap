@@ -3,7 +3,7 @@
 import { MessageSquare } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChatShell } from "@/components/chat/chat-shell";
+import { DeferredChatShell } from "@/components/chat/deferred-chat-shell";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useConnectData } from "./use-connect-data";
 import { ConnectTabs } from "./connect-components";
@@ -58,7 +58,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               transition={{ duration: 0.15 }}
               className="h-[calc(100vh-140px)] min-h-[500px]"
             >
-              <ChatShell
+              <DeferredChatShell
                 key={discussionShellKey}
                 initialChannelType={initialChannelType}
                 initialArrondissement={initialArrondissement}
@@ -77,7 +77,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               transition={{ duration: 0.15 }}
               className="h-[calc(100vh-140px)] min-h-[500px]"
             >
-              <ChatShell
+              <DeferredChatShell
                 key={dmShellKey}
                 initialChannelType="dm"
                 initialRecipient={initialRecipient}

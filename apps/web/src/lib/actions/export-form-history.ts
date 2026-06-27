@@ -22,25 +22,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isHistoryEntry(value: unknown): value is ActionDeclarationExportHistoryEntry {
-  if (!isRecord(value)) {
-    return false;
-  }
+function isActionDeclarationExportTargetId(
+  value: unknown,
+): value is ActionDeclarationExportHistoryTargetId {
+  return value === "pdf" || value === "png" || value === "story-instagram" || value === "publication-facebook" || value === "publication-x";
+}
 
+function hasValidHistoryEntryBase(value: Record<string, unknown>): boolean {
   return (
     typeof value.id === "string" &&
     typeof value.generatedAt === "string" &&
     typeof value.filename === "string" &&
     typeof value.label === "string" &&
     typeof value.sourceLabel === "string" &&
-    (value.targetId === "pdf" ||
-      value.targetId === "png" ||
-      value.targetId === "story-instagram" ||
-      value.targetId === "publication-facebook" ||
-      value.targetId === "publication-x") &&
     typeof value.actorName === "string" &&
     isRecord(value.form)
   );
+}
+
+function isHistoryEntry(value: unknown): value is ActionDeclarationExportHistoryEntry {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return hasValidHistoryEntryBase(value) && isActionDeclarationExportTargetId(value.targetId);
 }
 
 export function readActionDeclarationExportHistory(): ActionDeclarationExportHistoryEntry[] {

@@ -1,29 +1,29 @@
 "use client";
 
 import React from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
 import CleanZonesBadge from "./CleanZonesBadge";
 import type { GemGrade } from "@/lib/gamification/types";
 import { announceGamificationGain } from "@/lib/gamification/announcements";
-import { loadGamificationBadgesListClient } from "@/lib/gamification/badges/badge-list-client";
+import { loadGamificationCountersClient } from "@/lib/gamification/counters-client";
+import { CLEAN_ZONES_TIERS } from "@/lib/gamification/badges/families";
 
-type BadgeListItem = {
-  id?: string;
-  name?: string;
-  progress?: {
-    current?: number;
-    target?: number;
-  };
-  icon?: string;
-  visualVariant?: string;
-  tooltip?: string;
-};
+type CleanZonesGrade = GemGrade;
 
-type CleanZonesBadgeItem = BadgeListItem & {
-  id: string;
-  name: string;
-};
+function buildCleanZonesGrades(): CleanZonesGrade[] {
+  return CLEAN_ZONES_TIERS.map((tier) => ({
+    id: tier.id,
+    label: tier.label,
+    threshold: tier.threshold,
+    iconVariant: tier.iconVariant,
+    visualVariant: tier.visualVariant,
+    tooltip: tier.tooltip,
+  }));
+}
 
 export default function CleanZonesBadgeWrapper() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [cleanZonesData, setCleanZonesData] = React.useState<{
@@ -32,37 +32,22 @@ export default function CleanZonesBadgeWrapper() {
   } | null>(null);
 
   React.useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn || !user?.id) {
+      setIsLoading(false);
+      setError("access_denied");
+      return;
+    }
+
     (async () => {
       try {
         setIsLoading(true);
-        const data = await loadGamificationBadgesListClient();
-
-        // Extract clean zones badges from response
-        const cleanZonesBadges =
-          data.badges?.filter(
-            (badge: BadgeListItem): badge is CleanZonesBadgeItem =>
-              typeof badge.id === "string" &&
-              typeof badge.name === "string" &&
-              badge.id.startsWith("clean-zones-"),
-          ) ?? [];
-
-        if (cleanZonesBadges.length === 0) {
-          setCleanZonesData(null);
-          return;
-        }
-
-        // Extract current clean zones count from progress
-        const currentCount = cleanZonesBadges[0]?.progress?.current ?? 0;
-
-        // Map badges to grades format
-        const grades: GemGrade[] = cleanZonesBadges.map((badge) => ({
-          id: badge.id,
-          label: badge.name,
-          threshold: badge.progress?.target ?? 1,
-          iconVariant: badge.icon,
-          visualVariant: badge.visualVariant,
-          tooltip: badge.tooltip,
-        }));
+        const data = await loadGamificationCountersClient(user.id, getToken);
+        const currentCount = data.counters?.visitedPlacesCount ?? 0;
+        const grades = buildCleanZonesGrades();
 
         setCleanZonesData({
           current: currentCount,
@@ -80,23 +65,7 @@ export default function CleanZonesBadgeWrapper() {
         setIsLoading(false);
       }
     })();
-  }, []);
-
-  // Empty state
-  if (!isLoading && !cleanZonesData && !error) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          textAlign: "center",
-          color: "var(--gray-500, #999)",
-          fontSize: 14,
-        }}
-      >
-        Aucune zone propre documentée pour le moment
-      </div>
-    );
-  }
+  }, [getToken, isLoaded, isSignedIn, user?.id]);
 
   // Loading state
   if (isLoading) {

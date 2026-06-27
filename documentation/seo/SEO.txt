@@ -13,6 +13,11 @@ Définitions de travail :
 - AIO = AI Optimization ;
 - SXO = Search Experience Optimization.
 
+Cadre éditorial cible :
+- périmètre principal : France entière ;
+- périmètres secondaires : région, département, commune, quartier, arrondissement si utile ;
+- réserver les mentions Paris / IDF aux pages, exemples ou compatibilités qui en ont réellement besoin.
+
 Ce que tu dois faire :
 1. Auditer l'existant sur tout le site.
 2. Pour chaque acronyme, lister :
@@ -68,4 +73,3 @@ Format de sortie obligatoire :
 - Patches proposés
 - Risques / points de vigilance
 - Étapes suivantes
-

@@ -51,7 +51,7 @@ import {
 } from "./chat-shell.utils";
 import { logFailure } from "@/lib/logging/failure-log";
 
-type ChatShellProps = {
+export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
   initialArrondissement?: number;
   initialZoneName?: string | null;
@@ -446,9 +446,8 @@ export function ChatShell({
       channelTopics.map((topic) => ({
         ...topic,
         active: topic.id === activeTopicId,
-        onSelect: () => setActiveTopicId(topic.id),
       })),
-    [activeTopicId, channelTopics, setActiveTopicId],
+    [activeTopicId, channelTopics],
   );
 
   const sidebarTopicSectionTitle = useMemo(() => {

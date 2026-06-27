@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import type { PackType } from "./weather-types";
+
+function serializeChecks(checks: Record<string, boolean>): string {
+  return JSON.stringify(
+    Object.keys(checks)
+      .sort()
+      .map((key) => [key, checks[key]]),
+  );
+}
 
 export function useKitData(fr: boolean) {
   const { isLoaded, user } = useUser();
@@ -12,6 +20,8 @@ export function useKitData(fr: boolean) {
     briefing: false,
   });
   const [kitReadyForUser, setKitReadyForUser] = useState<boolean>(false);
+  const lastSavedSnapshotRef = useRef<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kitReady = !isLoaded || !user || kitReadyForUser;
 
   const packItems = useMemo(() => {
@@ -63,14 +73,12 @@ export function useKitData(fr: boolean) {
     }
 
     let active = true;
-    void fetch("/api/users/checklist-progress?checklistId=kit-main", {
-      method: "GET",
-      cache: "no-store",
-    })
+    void fetch("/api/users/checklist-progress?checklistId=kit-main")
       .then(async (res) => {
         if (!res.ok) return;
         const payload = (await res.json()) as { entry?: { checks?: Record<string, boolean> } };
         if (active && payload.entry?.checks) {
+          lastSavedSnapshotRef.current = serializeChecks(payload.entry.checks);
           setKitChecks((prev) => ({ ...prev, ...payload.entry?.checks }));
         }
       })
@@ -84,11 +92,40 @@ export function useKitData(fr: boolean) {
 
   useEffect(() => {
     if (!kitReady || !user) return;
-    void fetch("/api/users/checklist-progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checklistId: "kit-main", checks: kitChecks }),
-    }).catch(() => undefined);
+
+    const snapshot = serializeChecks(kitChecks);
+    if (snapshot === lastSavedSnapshotRef.current) {
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      void fetch("/api/users/checklist-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklistId: "kit-main", checks: kitChecks }),
+      })
+        .then(() => {
+          lastSavedSnapshotRef.current = snapshot;
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+          }
+        });
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
   }, [kitChecks, kitReady, user]);
 
   return {

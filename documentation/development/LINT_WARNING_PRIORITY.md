@@ -1,61 +1,121 @@
 # Priorité des warnings ESLint restants
 
-**Date du snapshot** : 2026-06-25  
-**Source** : scan ESLint courant sur `apps/web/src`  
-**Résultat** : 378 warnings, 0 erreur
+**Date du snapshot** : 2026-06-27  
+**Source** : `npm run lint -w apps/web`  
+**Résultat** : 191 warnings, 0 erreur
 
-L'ordre ci-dessous suit le risque technique et l'impact potentiel sur le comportement du code, pas seulement le volume.
+Ce document sert de plan d'action. L'objectif n'est pas de faire baisser un chiffre pour lui-même, mais de corriger les warnings dans l'ordre qui réduit le plus vite le risque de régression et la dette de maintenance.
 
-## 1. Risque d'exécution
+## Règle de tri
 
-Ces warnings peuvent masquer des bugs d'état ou des effets de bord involontaires.
+Corriger d'abord:
 
-- `react-hooks/set-state-in-effect` : 9 occurrences
-  - Priorité la plus haute, car un `setState` mal placé peut créer des boucles de rendu ou des états incohérents.
-- `react-hooks/exhaustive-deps` : 5 occurrences
-  - Les dépendances incomplètes rendent les effets fragiles et peuvent figer des valeurs obsolètes.
-- `react-hooks/purity` : 2 occurrences
-  - Toute logique non pure dans le rendu mérite d'être traitée tôt.
+1. les warnings qui peuvent changer le comportement à l'exécution;
+2. les warnings présents dans les modules centraux ou très partagés;
+3. les warnings qui signalent des fonctions trop longues ou trop complexes;
+4. les warnings de rendu, de texte et de code mort;
+5. les warnings de tests ou de fichiers périphériques.
 
-## 2. Typage et dette logique
+## Lot 1 - Runtime et hooks
 
-Ces warnings dégradent la sûreté du code et cachent souvent des branches mortes ou des contrats flous.
+Traiter en premier les warnings qui peuvent figer des valeurs ou déclencher des effets de bord.
 
-- `@typescript-eslint/no-explicit-any` : 14 occurrences
-  - À garder sous contrôle même après la grosse purge, car chaque `any` réintroduit une zone aveugle.
-- `@typescript-eslint/no-unused-vars` : 110 occurrences
-  - Très volumineux, mais prioritaire après les warnings de runtime car il masque souvent des contrats obsolètes ou du code mort.
+- `react-hooks/purity`
+  - Fichier concerné: `apps/web/src/hooks/use-form-analytics.ts`
+  - Pourquoi en premier: le rendu doit rester pur, sinon les états deviennent instables.
+- `react-hooks/exhaustive-deps`
+  - Fichiers concernés: `apps/web/src/hooks/use-form-analytics.ts`, `apps/web/src/lib/geo/greater-paris-filter.tsx`, `apps/web/src/lib/geo/greater-paris-select.tsx`
+  - Pourquoi en premier: une dépendance oubliée ou en trop peut produire des données obsolètes ou des rerenders inutiles.
 
-## 3. Maintenabilité structurelle
+## Lot 2 - Modules centraux à forte dette structurelle
 
-Ces warnings n'indiquent pas forcément un bug immédiat, mais ils signalent des fichiers plus difficiles à relire, tester et faire évoluer.
+Découper ensuite les gros fichiers partagés. Ce sont les corrections qui font disparaître plusieurs warnings d'un coup.
 
-- `complexity` : 126 occurrences
-  - C'est le plus gros volume du snapshot actuel.
-- `max-lines-per-function` : 72 occurrences
-  - Signale des fonctions trop longues et souvent trop chargées.
-- `max-lines` : 18 occurrences
-  - Indique des fichiers trop denses pour rester simples à maintenir.
-- `react/jsx-max-depth` : 1 occurrence
-  - Alerte sur un composant trop imbriqué.
+- `apps/web/src/lib/environmental-impact-estimator/project-signals.ts`
+- `apps/web/src/lib/governance/governance-monthly-report.ts`
+- `apps/web/src/lib/environmental-impact-estimator/service-risk.ts`
+- `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts`
+- `apps/web/src/lib/environmental-impact-estimator/services/usage-profile.ts`
+- `apps/web/src/lib/pdf-export/simple-pdf.ts`
+- `apps/web/src/lib/pdf-export/generate-pdf-html.ts`
+- `apps/web/src/lib/pdf-export/official-report-html.ts`
+- `apps/web/src/lib/authz.ts`
+- `apps/web/src/lib/supabase/storage-business-contribution.ts`
 
-## 4. Qualité de rendu et contenu
+Pourquoi ce lot passe avant les autres:
 
-Ces warnings sont moins risqués fonctionnellement, mais ils gardent l'UI plus propre et plus cohérente.
+- ces fichiers sont centraux dans le runtime métier;
+- ils cumulent souvent `complexity`, `max-lines-per-function` et `max-lines`;
+- les décomposer réduit le coût des prochains changements;
+- chaque extraction bien nommée clarifie le domaine au lieu d'ajouter un patch cosmétique.
 
-- `react/no-unescaped-entities` : 20 occurrences
-  - À corriger progressivement dans le texte visible.
-- `@next/next/no-img-element` : 1 occurrence
-  - À traiter quand le composant concerné est repris.
+## Lot 3 - Routes et helpers partagés
 
-## Ordre recommandé
+Corriger les routes et les helpers qui servent plusieurs écrans, surtout quand ils portent encore des variables mortes ou des branches de contrôle difficiles à lire.
+
+- `apps/web/src/app/api/admin/creator-inbox/route.ts`
+- `apps/web/src/components/actions/action-declaration-form/action-declaration-form.tsx`
+- `apps/web/src/components/admin/quiz-bank-admin-view.tsx`
+- `apps/web/src/components/reports/analytics-cockpit.tsx`
+- `apps/web/src/components/sections/rubriques/academie-climat-workshops-panel.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire-governance-panel.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire-sidebar.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire-thematic-exploration.tsx`
+- `apps/web/src/components/sections/rubriques/discussion-badges-panel.tsx`
+- `apps/web/src/components/sections/rubriques/legal-section.tsx`
+- `apps/web/src/components/ui/backpressure-feedback.tsx`
+- `apps/web/src/lib/chat/channels.ts`
+- `apps/web/src/lib/chat/chat-notification-targets.ts`
+- `apps/web/src/lib/reports/csv.ts`
+- `apps/web/src/lib/services/email.ts`
+- `apps/web/src/lib/partners/onboarding-requests-store.ts`
+- `apps/web/src/lib/profiles.ts`
+
+Règle de travail:
+
+- supprimer les imports et variables inutilisés au passage;
+- extraire une fonction si elle dépasse la taille lisible plutôt que d'empiler des conditions;
+- garder les règles métier dans des helpers nommés, pas dans des blocs imbriqués.
+
+## Lot 4 - UI et texte visible
+
+Une fois les modules centraux assainis, terminer les warnings plus locaux.
+
+- `react/no-unescaped-entities`
+- `react/jsx-max-depth`
+- `@next/next/no-img-element`
+- les `no-unused-vars` des composants UI secondaires
+
+Pourquoi après:
+
+- ces warnings sont utiles, mais ils cassent moins souvent la logique métier;
+- ils se corrigent bien en fin de session, quand les gros refactors sont déjà faits;
+- ils sont nombreux dans les composants et les tests, donc moins rentables au tout début.
+
+## Lot 5 - Tests et surfaces périphériques
+
+Finir par les fichiers de test et les modules de moindre criticité, sauf s'ils touchent un chemin critique.
+
+- tests avec fonctions trop longues;
+- tests avec nombreuses assertions répétées;
+- helpers de fixture trop volumineux;
+- scripts ou fichiers de support peu exposés au runtime.
+
+## Ordre d'exécution recommandé
 
 1. Corriger les warnings de hooks.
-2. Réduire les `any` restants.
-3. Élaguer les variables non utilisées.
-4. Découper les fonctions trop complexes ou trop longues.
-5. Nettoyer ensuite les warnings de rendu et de contenu.
+2. Décomposer les 10 modules centraux les plus lourds.
+3. Nettoyer les routes et helpers partagés.
+4. Corriger les warnings UI et texte.
+5. Terminer par les tests et fichiers périphériques.
+6. Relancer `npm run lint -w apps/web`.
+7. Relancer `npm run typecheck -w apps/web`.
 
-## Remarque
+## Règle de validation
 
-Le snapshot courant montre encore des `any` résiduels. Le gros du travail est fait, mais le dépôt n'est pas encore à zéro sur ce point dans l'état lint actuel.
+Après chaque lot:
+
+- lancer un lint ciblé sur les fichiers modifiés;
+- lancer le typecheck si un type, un helper partagé ou une route a changé;
+- ne pas empiler plusieurs gros refactors sans point de contrôle;
+- arrêter le lot si une extraction ajoute une nouvelle complexité sans réduire la dette globale.

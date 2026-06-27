@@ -1,4 +1,7 @@
-import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
+import {
+  extractArrondissementFromLabel,
+  isParisArrondissementLabel,
+} from "@/lib/geo/paris-arrondissements";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 
@@ -115,7 +118,7 @@ export function formatReportScopeLabel(
     return option?.label ?? scope.value;
   }
   const option = options?.arrondissements.find((item) => item.value === scope.value);
-  return option?.label ?? `Paris ${scope.value}e`;
+  return option?.label ?? `Arrondissement ${scope.value}e`;
 }
 
 function countByValue<T>(
@@ -161,15 +164,17 @@ export function buildReportScopeOptions(
     arrondissements: countByValue(
       items,
       (item) => {
-        const arrondissement = extractArrondissementFromLabel(
-          getScopeLocationLabel(item) ?? "",
-        );
+        const locationLabel = getScopeLocationLabel(item) ?? "";
+        const arrondissement = isParisArrondissementLabel(locationLabel)
+          ? extractArrondissementFromLabel(locationLabel)
+          : null;
         return arrondissement ? String(arrondissement) : null;
       },
       (item) => {
-        const arrondissement = extractArrondissementFromLabel(
-          getScopeLocationLabel(item) ?? "",
-        );
+        const locationLabel = getScopeLocationLabel(item) ?? "";
+        const arrondissement = isParisArrondissementLabel(locationLabel)
+          ? extractArrondissementFromLabel(locationLabel)
+          : null;
         return arrondissement ? `Paris ${arrondissement}e` : "Hors arrondissement";
       },
     ),
@@ -225,7 +230,9 @@ function matchesArrondissementScope(
   if (!label) {
     return false;
   }
-  const arrondissement = extractArrondissementFromLabel(label);
+  const arrondissement = isParisArrondissementLabel(label)
+    ? extractArrondissementFromLabel(label)
+    : null;
   return arrondissement !== null && String(arrondissement) === target.trim();
 }
 
@@ -294,7 +301,9 @@ export function filterCommunityEventsByScope(
   }
   if (scope.kind === "arrondissement") {
     return items.filter((item) => {
-      const arrondissement = extractArrondissementFromLabel(item.locationLabel);
+      const arrondissement = isParisArrondissementLabel(item.locationLabel)
+        ? extractArrondissementFromLabel(item.locationLabel)
+        : null;
       return arrondissement !== null && String(arrondissement) === scope.value;
     });
   }

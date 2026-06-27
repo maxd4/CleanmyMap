@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import Image from "next/image";
+import { useState, type ReactNode } from "react";
 import { MapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -57,11 +58,7 @@ const createActionIcon = (icon: ReactNode, color: string) => {
 };
 
 export function MissionMap({ points, actions = [] }: MissionMapProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [mounted] = useState(() => typeof window !== "undefined");
 
   if (!mounted) {
     return <div className="h-[500px] w-full animate-pulse rounded-[3rem] bg-slate-100" />;
@@ -135,13 +132,14 @@ export function MissionMap({ points, actions = [] }: MissionMapProps) {
                   </div>
                   {action.content && <p className="text-xs text-slate-600">{action.content}</p>}
                   {action.image_url && (
-                    <div className="mt-2 overflow-hidden rounded-xl border border-slate-100">
-                      <img
+                    <div className="relative mt-2 h-32 overflow-hidden rounded-xl border border-slate-100">
+                      <Image
                         src={action.image_url}
-                        className="h-32 w-full object-cover"
-                        alt="Action captured"
-                        loading="lazy"
-                        decoding="async"
+                        alt="Action capturée"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 384px"
+                        className="object-cover"
+                        unoptimized
                       />
                     </div>
                   )}
