@@ -8,7 +8,7 @@ import { auth } from "@clerk/nextjs/server";
 export const runtime = "nodejs";
 
 const MAP_VIEWPORT_FALLBACK_CACHE_HEADERS = {
-  "Cache-Control": "private, no-store",
+  "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
 };
 
 export async function GET() {

@@ -59,6 +59,7 @@ describe("GET /api/services", () => {
     };
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("private");
     expect(payload.status).toBe("degraded");
     expect(payload.summary.globalState).toBe("degraded");
     expect(payload.summary.criticalAlertCount).toBeGreaterThan(0);
@@ -81,6 +82,7 @@ describe("GET /api/services", () => {
     };
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("private");
     expect(payload.services.resend?.state).toBe("ready");
   });
 

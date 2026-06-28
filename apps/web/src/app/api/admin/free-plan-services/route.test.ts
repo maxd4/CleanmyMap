@@ -45,6 +45,7 @@ describe("admin free plan services route", () => {
     };
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("private");
     expect(payload.status).toBe("ok");
     expect(payload.focus).toBe("free-tier-services");
     expect(payload.snapshots).toHaveLength(0);

@@ -7,10 +7,10 @@ import {
  type ServicesPayload,
  type UptimePayload,
 } from"@/lib/dashboard/status";
-import { swrRecentViewOptions } from"@/lib/swr-config";
+import { swrSupervisionOptions } from"@/lib/swr-config";
 
 const fetcher = async <T,>(url: string): Promise<T> => {
- const response = await fetch(url, { method:"GET", cache:"no-store" });
+ const response = await fetch(url, { method:"GET" });
  if (!response.ok) {
  throw new Error(`Erreur API (${response.status}) sur ${url}`);
  }
@@ -21,12 +21,12 @@ export function SystemStatusPanel() {
  const uptime = useSWR<UptimePayload>(
 "/api/uptime",
  fetcher,
- swrRecentViewOptions,
+ swrSupervisionOptions,
  );
  const services = useSWR<ServicesPayload>(
 "/api/services",
  fetcher,
- swrRecentViewOptions,
+ swrSupervisionOptions,
  );
 
  const isLoading = uptime.isLoading || services.isLoading;

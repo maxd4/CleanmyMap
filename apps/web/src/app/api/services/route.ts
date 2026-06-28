@@ -12,6 +12,9 @@ import {
 } from"@/lib/services/health";
 
 export const runtime ="nodejs";
+const SERVICE_STATUS_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=300, stale-while-revalidate=3600",
+};
 
 function getServiceState(id: string): ServiceHealthState {
  switch (id) {
@@ -86,5 +89,5 @@ export async function GET() {
  summary,
  timeline,
  timestamp: generatedAt,
- });
+ }, { headers: SERVICE_STATUS_CACHE_HEADERS });
 }

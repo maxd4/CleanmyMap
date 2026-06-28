@@ -68,11 +68,11 @@ const CHAT_REFRESH_INTERVALS_MS: Record<
     fallback: number;
   }
 > = {
-  community: { realtime: 60_000, fallback: 120_000 },
-  dm: { realtime: 30_000, fallback: 60_000 },
-  admin_elu: { realtime: 60_000, fallback: 120_000 },
-  territory: { realtime: 45_000, fallback: 90_000 },
-  bug_report: { realtime: 30_000, fallback: 60_000 },
+  community: { realtime: 300_000, fallback: 900_000 },
+  dm: { realtime: 180_000, fallback: 600_000 },
+  admin_elu: { realtime: 300_000, fallback: 900_000 },
+  territory: { realtime: 240_000, fallback: 720_000 },
+  bug_report: { realtime: 180_000, fallback: 600_000 },
 };
 
 export function getChatRefreshIntervalMs({
@@ -201,8 +201,8 @@ export function useChatData({
         isVisible: isPageVisible,
         isOnline,
       }),
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
   });
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

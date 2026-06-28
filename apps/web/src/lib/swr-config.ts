@@ -11,10 +11,15 @@ export const swrRecentViewOptions: SWRConfiguration = {
   keepPreviousData: true,
 };
 
+export const swrSupervisionOptions: SWRConfiguration = {
+  ...swrRecentViewOptions,
+  dedupingInterval: 300_000,
+};
+
 export const swrLiveFeedOptions: SWRConfiguration = {
   ...swrRecentViewOptions,
   revalidateOnFocus: true,
   refreshWhenHidden: false,
   refreshWhenOffline: false,
-  refreshInterval: 120_000, // Live feeds are kept warm without hammering Vercel every 30s.
+  refreshInterval: 300_000, // Live feeds stay warm without retrying every couple of minutes.
 };

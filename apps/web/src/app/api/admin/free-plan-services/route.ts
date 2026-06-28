@@ -4,6 +4,9 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
 
 export const runtime = "nodejs";
+const FREE_PLAN_SERVICES_CACHE_HEADERS = {
+  "Cache-Control": "private, max-age=300, stale-while-revalidate=3600",
+};
 
 function parseHistoryLimit(raw: string | null): number {
   const parsed = Number(raw);
@@ -37,10 +40,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      ...result,
-      focus: "free-tier-services",
-    });
+    return NextResponse.json(
+      {
+        ...result,
+        focus: "free-tier-services",
+      },
+      {
+        headers: FREE_PLAN_SERVICES_CACHE_HEADERS,
+      },
+    );
   } catch {
     return NextResponse.json(
       {
