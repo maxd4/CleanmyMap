@@ -46,7 +46,11 @@ export type QuizUiCopyKey =
   | "session.school.errorsLabel"
   | "session.school.messagesLabel"
   | "session.school.recommendedModeLabel"
+  | "session.school.masteredSkillsLabel"
+  | "session.school.skillsToReviewLabel"
   | "session.school.revisionLabel"
+  | "session.modeToReplayLabel"
+  | "session.errorTypesLabel"
   | "session.school.sessionLabel"
   | "session.school.workshopTitle"
   | "session.adaptiveTitle"
@@ -157,7 +161,11 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "session.school.errorsLabel": { fr: "Erreurs fréquentes", en: "Common errors" },
   "session.school.messagesLabel": { fr: "Messages clés", en: "Key messages" },
   "session.school.recommendedModeLabel": { fr: "Mode conseillé", en: "Recommended mode" },
+  "session.school.masteredSkillsLabel": { fr: "Compétences maîtrisées", en: "Mastered skills" },
+  "session.school.skillsToReviewLabel": { fr: "Compétences à revoir", en: "Skills to review" },
   "session.school.revisionLabel": { fr: "Revoir cette notion", en: "Review this notion" },
+  "session.modeToReplayLabel": { fr: "Mode à rejouer", en: "Mode to replay" },
+  "session.errorTypesLabel": { fr: "Types d'erreurs fréquentes", en: "Frequent error types" },
   "session.school.sessionLabel": { fr: "Bilan de l’atelier", en: "Workshop recap" },
   "session.school.workshopTitle": { fr: "Atelier en classe", en: "Class workshop" },
   "session.adaptiveTitle": { fr: "Apprentissage Adaptatif", en: "Adaptive learning" },
