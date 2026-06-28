@@ -1,7 +1,10 @@
+import { getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
 import type { QuizQuestionFormatId } from "@/components/learn/quiz-question-formats";
 import {
+  QUIZ_REVIEW_TARGETS,
   getQuizReviewTarget,
+  getQuizReviewFollowUp,
   type QuizQuestionCategory,
   type QuizReviewTarget,
 } from "./quiz-review-targets.ts";
@@ -37,6 +40,12 @@ export type QuizErrorGridEntry = {
   feedbackCorrect: string;
   feedbackWrong: string;
   reviewTarget: QuizReviewTarget;
+};
+
+export type QuizErrorFollowUp = QuizReviewTarget & {
+  modeId: QuizAccessTypeId;
+  modeLabel: string;
+  reason: string;
 };
 
 const SAFETY_KEYWORDS = /(seringue|bidon|liquide inconnu|coupant|souillé|danger|risque|manipuler|ouvrir)/i;
@@ -115,6 +124,104 @@ const ERROR_TYPE_METADATA: Record<
   },
 };
 
+const ERROR_REVIEW_TARGET_BY_TYPE: Record<QuizErrorTypeId, QuizReviewTarget> = {
+  "idée reçue": QUIZ_REVIEW_TARGETS.comprendre,
+  "erreur de sécurité": {
+    label: "Organiser une action",
+    href: "/sections/weather",
+  },
+  "mauvaise estimation": {
+    label: "Méthodologie",
+    href: "/methodologie",
+  },
+  "confusion entre recyclabilité et recyclage réel": {
+    label: "Guide du tri",
+    href: "/sections/recycling",
+  },
+  "mauvais réflexe terrain": {
+    label: "Organiser une action",
+    href: "/sections/weather",
+  },
+  "confusion entre biodégradable et sans impact": QUIZ_REVIEW_TARGETS.comprendre,
+  "mauvaise compréhension d'une filière de tri": {
+    label: "Guide du tri",
+    href: "/sections/recycling",
+  },
+  "raisonnement trop simpliste": QUIZ_REVIEW_TARGETS.comprendre,
+  "manque de nuance": QUIZ_REVIEW_TARGETS.sentrainer,
+  "impact indirect ignoré": QUIZ_REVIEW_TARGETS.comprendre,
+};
+
+const ERROR_FOLLOW_UP_BY_TYPE: Record<
+  QuizErrorTypeId,
+  {
+    modeId: QuizAccessTypeId;
+    reason: string;
+  }
+> = {
+  "idée reçue": {
+    modeId: "sensibilisation",
+    reason: "Cette rubrique remet le cadre juste avant de relancer une session plus claire.",
+  },
+  "erreur de sécurité": {
+    modeId: "tri-securite",
+    reason: "La page terrain recadre les gestes sûrs avant de rejouer le cas.",
+  },
+  "mauvaise estimation": {
+    modeId: "ordres-de-grandeur",
+    reason: "Le bon réflexe est de reprendre l'échelle avant de refaire l'estimation.",
+  },
+  "confusion entre recyclabilité et recyclage réel": {
+    modeId: "tri-securite",
+    reason: "Le guide du tri distingue ce qui est théorique de ce qui est réellement appliqué.",
+  },
+  "mauvais réflexe terrain": {
+    modeId: "terrain",
+    reason: "La page d'action rappelle les contraintes du site et les bons gestes.",
+  },
+  "confusion entre biodégradable et sans impact": {
+    modeId: "donnees-scientifiques",
+    reason: "Le cadre scientifique évite de confondre biodégradable et absence d'impact.",
+  },
+  "mauvaise compréhension d'une filière de tri": {
+    modeId: "tri-securite",
+    reason: "La filière locale doit être rechargée avant de rejouer le quiz.",
+  },
+  "raisonnement trop simpliste": {
+    modeId: "donnees-scientifiques",
+    reason: "Le cas demande de remettre plusieurs facteurs en relation avant de conclure.",
+  },
+  "manque de nuance": {
+    modeId: "mixte",
+    reason: "Une session mêlée aide à tester la même notion sous plusieurs angles.",
+  },
+  "impact indirect ignoré": {
+    modeId: "donnees-scientifiques",
+    reason: "La méthodologie aide à voir les effets en cascade avant la prochaine tentative.",
+  },
+};
+
+export function getQuizErrorReviewTarget(errorType: QuizErrorTypeId): QuizReviewTarget {
+  return ERROR_REVIEW_TARGET_BY_TYPE[errorType] ?? QUIZ_REVIEW_TARGETS.comprendre;
+}
+
+export function getQuizErrorFollowUp(errorType: QuizErrorTypeId): QuizErrorFollowUp {
+  const target = getQuizErrorReviewTarget(errorType);
+  const followUp = ERROR_FOLLOW_UP_BY_TYPE[errorType] ?? {
+    modeId: "mixte" as const,
+    reason: "Cette rubrique reste le meilleur point d'appui pour reprendre la notion.",
+  };
+
+  const targetAdvice = getQuizReviewFollowUp(target);
+
+  return {
+    ...target,
+    modeId: followUp.modeId,
+    modeLabel: getQuizAccessType(followUp.modeId).label,
+    reason: followUp.reason || targetAdvice.reason,
+  };
+}
+
 function classifyErrorType(source: QuizErrorGridSource): QuizErrorTypeId {
   switch (source.reasoningType) {
     case "idée reçue":
@@ -162,6 +269,10 @@ export function buildQuizErrorGrid(source: QuizErrorGridSource): QuizErrorGridEn
     severity: meta.severity,
     feedbackCorrect: meta.feedbackCorrect,
     feedbackWrong: meta.feedbackWrong,
-    reviewTarget: source.reviewTarget ?? source.review ?? getQuizReviewTarget(source.category, undefined, source.reasoningType),
+    reviewTarget:
+      source.reviewTarget ??
+      source.review ??
+      getQuizErrorReviewTarget(errorType) ??
+      getQuizReviewTarget(source.category, undefined, source.reasoningType),
   };
 }

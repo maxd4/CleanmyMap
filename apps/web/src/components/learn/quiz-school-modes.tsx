@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
-import { Calculator, GraduationCap, MapPin, Megaphone, Repeat2 } from "lucide-react";
+import { Calculator, MapPin, Megaphone, Repeat2 } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
+import type { QuizUiCopyKey } from "@/lib/learning/quiz-i18n";
+import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
 
 export type QuizSchoolTrackId =
   | "debat-classe"
@@ -11,6 +13,7 @@ export type QuizSchoolTrackId =
 export type QuizSchoolTrackDefinition = {
   id: QuizSchoolTrackId;
   label: string;
+  labelKey: QuizUiCopyKey;
   description: Record<SupportedLocale, string>;
   focus: Record<SupportedLocale, string[]>;
   keyMessages: Record<SupportedLocale, string[]>;
@@ -22,6 +25,7 @@ export const QUIZ_SCHOOL_TRACKS: readonly QuizSchoolTrackDefinition[] = [
   {
     id: "debat-classe",
     label: "Débat en classe",
+    labelKey: "school.debat-classe.label",
     description: {
       fr: "Questions qui font voter, hésiter et argumenter avant de révéler la réponse.",
       en: "Questions that invite a vote, hesitation and discussion before the answer is revealed.",
@@ -48,6 +52,7 @@ export const QUIZ_SCHOOL_TRACKS: readonly QuizSchoolTrackDefinition[] = [
   {
     id: "mission-terrain",
     label: "Mission terrain",
+    labelKey: "school.mission-terrain.label",
     description: {
       fr: "Situations concrètes de cleanwalk, sécurité et organisation sur le terrain.",
       en: "Concrete cleanwalk situations, safety and field organization.",
@@ -74,6 +79,7 @@ export const QUIZ_SCHOOL_TRACKS: readonly QuizSchoolTrackDefinition[] = [
   {
     id: "ordres-de-grandeur",
     label: "Ordres de grandeur",
+    labelKey: "school.ordres-de-grandeur.label",
     description: {
       fr: "Estimations de durée, masse, volume et pollution pour raisonner approximativement.",
       en: "Estimates of time, mass, volume and pollution to reason approximately.",
@@ -100,6 +106,7 @@ export const QUIZ_SCHOOL_TRACKS: readonly QuizSchoolTrackDefinition[] = [
   {
     id: "gestes-du-quotidien",
     label: "Gestes du quotidien",
+    labelKey: "school.gestes-du-quotidien.label",
     description: {
       fr: "Consommation, emballages, habitudes et réduction des déchets au quotidien.",
       en: "Consumption, packaging, habits and daily waste reduction.",
@@ -141,8 +148,8 @@ export function getQuizSchoolKeyMessages(trackId: QuizSchoolTrackId, locale: Sup
   return QUIZ_SCHOOL_TRACK_BY_ID[trackId].keyMessages[locale];
 }
 
-export function getQuizSchoolTrackLabel(trackId: QuizSchoolTrackId): string {
-  return QUIZ_SCHOOL_TRACK_BY_ID[trackId].label;
+export function getQuizSchoolTrackLabel(trackId: QuizSchoolTrackId, locale: SupportedLocale): string {
+  return getQuizUiCopy(locale, QUIZ_SCHOOL_TRACK_BY_ID[trackId].labelKey);
 }
 
 export function getQuizSchoolTrackDescription(trackId: QuizSchoolTrackId, locale: SupportedLocale): string {

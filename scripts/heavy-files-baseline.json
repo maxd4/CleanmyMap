@@ -47,6 +47,8 @@
   "apps/web/src/lib/profiles.ts",
   "apps/web/src/components/sections/rubriques/weather-section.tsx",
   "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.tsx",
-  "apps/web/src/components/sections/rubriques/gamification/index.tsx"
+  "apps/web/src/components/sections/rubriques/gamification/index.tsx",
+  "apps/web/src/components/learn/quiz-session-panel.tsx",
+  "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx"
   ]
 }

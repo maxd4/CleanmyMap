@@ -1,35 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowUpDown,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
   ClipboardList,
+  ExternalLink,
   Filter,
+  Leaf,
   Loader2,
   MapPin,
   Search,
   ShieldCheck,
+  Sparkles,
   Users2,
+  UserRound,
+  X,
 } from "lucide-react";
-import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
-import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { resolvePageFamily } from "@/lib/ui/page-families";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type {
   ActionParticipationReviewItem,
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "@/lib/actions/group-participation";
-import {
-  filterAndSortJoinableActions,
-  type JoinableActionJoinFilter,
-  type JoinableActionSort,
-} from "./rejoindre-un-formulaire-section.utils";
+import { filterAndSortJoinableActions, type JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
+import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
+import { JoinFormConfirmationDialog } from "./rejoindre-un-formulaire-section-dialog";
 
 type JoinableActionsResponse = {
   status: "ok";
@@ -58,65 +62,625 @@ type GroupJoinQueueResponse = {
   canReview: boolean;
 };
 
-function formatDate(dateValue: string, locale: "fr" | "en"): string {
-  const parsed = new Date(`${dateValue}T12:00:00Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return dateValue;
+type StatusFilter = "all" | "open" | "pending" | "closed";
+type LocationFilter = "all" | "ile-de-france" | "autres";
+type PeriodFilter = "all" | "seven-days" | "thirty-days" | "ninety-days";
+
+type ThumbnailVariant = {
+  sky: string;
+  land: string;
+  accent: string;
+  water: string;
+};
+
+const THUMBNAILS: ThumbnailVariant[] = [
+  {
+    sky: "#dff1ff",
+    land: "#7fb85f",
+    accent: "#2b7a47",
+    water: "#a8dbff",
+  },
+  {
+    sky: "#eef8d8",
+    land: "#6cab49",
+    accent: "#2f6f33",
+    water: "#a9d7a2",
+  },
+  {
+    sky: "#dcefff",
+    land: "#8dc8e8",
+    accent: "#1f7a59",
+    water: "#8dc8e8",
+  },
+  {
+    sky: "#eef7e7",
+    land: "#74b56f",
+    accent: "#28663a",
+    water: "#bfe3a8",
+  },
+];
+
+function formatKg(value: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(Math.max(0, value));
+}
+
+function getActionDisplayStatus(item: JoinableActionItem): "open" | "pending" | "closed" | "confirmed" {
+  if (item.joined) {
+    return "confirmed";
+  }
+  if (item.awaitingApproval) {
+    return "pending";
+  }
+  if (!item.groupJoinEnabled) {
+    return "closed";
+  }
+  return "open";
+}
+
+function getStatusLabel(status: "open" | "pending" | "closed" | "confirmed", fr: boolean): string {
+  switch (status) {
+    case "pending":
+      return fr ? "En attente" : "Pending";
+    case "closed":
+      return fr ? "Fermée" : "Closed";
+    case "confirmed":
+      return fr ? "Confirmée" : "Confirmed";
+    case "open":
+    default:
+      return fr ? "Ouverte" : "Open";
+  }
+}
+
+function getStatusDotTone(status: "open" | "pending" | "closed" | "confirmed"): string {
+  switch (status) {
+    case "pending":
+      return "bg-amber-500";
+    case "closed":
+      return "bg-slate-400";
+    case "confirmed":
+      return "bg-emerald-600";
+    case "open":
+    default:
+      return "bg-emerald-500";
+  }
+}
+
+function getLocationFilterBucket(label: string): LocationFilter {
+  const normalized = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (
+    normalized.includes("paris") ||
+    normalized.includes("meudon") ||
+    normalized.includes("belleville") ||
+    normalized.includes("seine") ||
+    normalized.includes("ile-de-france")
+  ) {
+    return "ile-de-france";
   }
 
-  return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(parsed);
+  return "autres";
 }
 
-function formatCount(value: number): string {
-  return new Intl.NumberFormat("fr-FR").format(Math.max(0, Math.trunc(value)));
+function isWithinPeriod(actionDate: string, period: PeriodFilter): boolean {
+  if (period === "all") {
+    return true;
+  }
+
+  const parsedActionDate = new Date(`${actionDate}T12:00:00Z`);
+  if (Number.isNaN(parsedActionDate.getTime())) {
+    return true;
+  }
+
+  const now = new Date();
+  const diffInDays = (parsedActionDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  switch (period) {
+    case "seven-days":
+      return diffInDays <= 7;
+    case "thirty-days":
+      return diffInDays <= 30;
+    case "ninety-days":
+      return diffInDays <= 90;
+    default:
+      return true;
+  }
 }
 
-function FilterPill({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: ReactNode;
-  onClick: () => void;
-}) {
+function sortItemsByStatusRank(items: JoinableActionItem[]): JoinableActionItem[] {
+  return [...items].sort((left, right) => {
+    const leftRank = getActionDisplayStatus(left) === "open"
+      ? 0
+      : getActionDisplayStatus(left) === "pending"
+        ? 1
+        : getActionDisplayStatus(left) === "confirmed"
+          ? 2
+          : 3;
+    const rightRank = getActionDisplayStatus(right) === "open"
+      ? 0
+      : getActionDisplayStatus(right) === "pending"
+        ? 1
+        : getActionDisplayStatus(right) === "confirmed"
+          ? 2
+          : 3;
+    return leftRank - rightRank;
+  });
+}
+
+function HeroIllustration() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-        active
-          ? "border-emerald-400 bg-emerald-500 text-white shadow-[0_10px_20px_-14px_rgba(16,185,129,0.5)]"
-          : "border-emerald-200 bg-white/80 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-50"
-      }`}
-    >
-      {children}
-    </button>
+    <div className="relative h-full min-h-[240px] overflow-hidden rounded-[2.4rem] border border-white/40 bg-[linear-gradient(135deg,#f1f8e9_0%,#d8edc8_55%,#c7e7be_100%)] shadow-[0_24px_50px_-36px_rgba(16,185,129,0.42)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.72),transparent_26%),radial-gradient(circle_at_82%_28%,rgba(255,255,255,0.52),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_35%)]" />
+      <svg viewBox="0 0 840 360" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        <defs>
+          <linearGradient id="heroHillA" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#cce8af" />
+            <stop offset="100%" stopColor="#a4d59b" />
+          </linearGradient>
+          <linearGradient id="heroHillB" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#8ac37f" />
+            <stop offset="100%" stopColor="#5aa665" />
+          </linearGradient>
+          <linearGradient id="heroTree" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#dff0c2" />
+            <stop offset="100%" stopColor="#4e9854" />
+          </linearGradient>
+        </defs>
+        <path d="M0 258c72-34 132-48 190-47 90 2 142 45 223 45 70 0 121-18 191-49 68-31 156-42 236-18v171H0z" fill="url(#heroHillA)" opacity="0.95" />
+        <path d="M80 278c50-23 102-31 145-31 58 0 103 16 160 16 56 0 92-19 151-43 63-25 133-31 220-13 35 7 60 16 84 28v125H80z" fill="url(#heroHillB)" opacity="0.95" />
+        <g fill="#eaf5dc" opacity="0.9">
+          <circle cx="610" cy="63" r="24" />
+          <circle cx="635" cy="56" r="18" />
+          <circle cx="662" cy="66" r="18" />
+          <rect x="586" y="72" width="102" height="12" rx="6" />
+        </g>
+        <g opacity="0.25" fill="#4a7b4f">
+          <rect x="445" y="98" width="34" height="60" rx="2" />
+          <rect x="490" y="82" width="30" height="78" rx="2" />
+          <rect x="533" y="104" width="24" height="55" rx="2" />
+          <rect x="570" y="92" width="42" height="67" rx="2" />
+        </g>
+        <g stroke="#3b7c44" strokeLinecap="round" strokeWidth="2.3" fill="none">
+          <path d="M752 54c8 0 16 3 22 8" />
+          <path d="M772 52c8 0 16 3 22 8" />
+          <path d="M705 66c8 0 16 3 22 8" />
+        </g>
+        <g transform="translate(118 160)">
+          <path d="M0 76c22-28 36-48 49-79h18C54 30 44 50 28 76z" fill="#7eb46a" />
+          <path d="M53 17c10 22 17 38 23 59H57C50 51 44 35 32 17z" fill="#6ea95c" />
+          <circle cx="49" cy="16" r="17" fill="#8fca78" />
+          <circle cx="67" cy="24" r="15" fill="#9dd288" />
+          <circle cx="34" cy="24" r="14" fill="#7fbf6c" />
+        </g>
+        <g transform="translate(235 136)">
+          <path d="M0 100c18-18 28-35 40-70h15c-10 40-19 61-35 79z" fill="#6fa95a" />
+          <circle cx="36" cy="32" r="18" fill="#8bc476" />
+          <circle cx="52" cy="40" r="17" fill="#a6d98b" />
+          <circle cx="22" cy="40" r="14" fill="#76b967" />
+        </g>
+        <g transform="translate(662 96)">
+          <path d="M0 138c21-33 33-61 53-127h19c-18 71-28 100-49 127z" fill="url(#heroTree)" />
+          <ellipse cx="60" cy="18" rx="42" ry="28" fill="#8fcf77" opacity="0.95" />
+          <ellipse cx="48" cy="40" rx="44" ry="30" fill="#5ea55a" opacity="0.94" />
+          <ellipse cx="84" cy="52" rx="36" ry="26" fill="#3f8d46" opacity="0.95" />
+          <ellipse cx="18" cy="48" rx="30" ry="22" fill="#a8db8a" opacity="0.9" />
+        </g>
+        <g transform="translate(500 192)" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M0 54c18-13 31-25 42-43 11 17 25 31 43 43" stroke="#87bf6e" strokeWidth="3" />
+          <path d="M24 54c8-10 16-17 27-24 12 8 19 15 27 24" stroke="#5c9b54" strokeWidth="3" />
+        </g>
+        <g transform="translate(354 236)">
+          <ellipse cx="0" cy="40" rx="80" ry="18" fill="#5f9d61" opacity="0.55" />
+          <ellipse cx="112" cy="35" rx="76" ry="22" fill="#7abd67" opacity="0.75" />
+          <ellipse cx="248" cy="30" rx="82" ry="20" fill="#4f8e52" opacity="0.65" />
+        </g>
+      </svg>
+      <div className="absolute left-8 top-8 h-5 w-5 rounded-full border border-white/70 bg-white/45 shadow-sm" />
+      <div className="absolute right-8 top-8 h-5 w-5 rounded-full border border-white/70 bg-white/35 shadow-sm" />
+      <div className="absolute bottom-6 right-8 h-7 w-7 rounded-full border border-white/70 bg-white/30 shadow-sm" />
+    </div>
   );
 }
 
-function getJoinFilterLabel(filter: JoinableActionJoinFilter, fr: boolean): string {
-  switch (filter) {
-    case "available":
-      return fr ? "À rejoindre" : "To join";
-    case "joined":
-      return fr ? "Confirmées" : "Confirmed";
-    case "all":
-    default:
-      return fr ? "Tous" : "All";
-  }
+function ActionThumbnail({ item, index }: { item: JoinableActionItem; index: number }) {
+  const variant = THUMBNAILS[index % THUMBNAILS.length];
+  return (
+    <div
+      className="relative overflow-hidden rounded-[1.25rem] border border-white/70 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.45)]"
+      style={{
+        background: `linear-gradient(180deg, ${variant.sky} 0%, #f6f9f3 52%, #e3efd5 100%)`,
+      }}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_12%,rgba(255,255,255,0.75),transparent_24%),radial-gradient(circle_at_76%_18%,rgba(255,255,255,0.45),transparent_19%)]" />
+      <svg viewBox="0 0 420 260" className="relative h-full w-full" aria-hidden="true">
+        <path d="M0 182c50-32 98-44 145-43 48 1 71 21 117 21 38 0 73-12 111-32 31-16 58-23 47-20v152H0z" fill={variant.land} opacity="0.9" />
+        <path d="M0 208c48-20 97-30 145-27 50 4 79 27 133 27 44 0 82-15 142-39v91H0z" fill={variant.accent} opacity="0.82" />
+        <path d="M0 171c66-28 108-39 164-35 53 4 88 27 131 27 36 0 78-12 125-35v29c-38 17-79 29-125 29-50 0-90-25-144-28-47-3-91 7-151 28z" fill={variant.water} opacity="0.68" />
+        <circle cx="66" cy="58" r="22" fill="#fffdf3" opacity="0.85" />
+        <circle cx="95" cy="76" r="14" fill="#fffdf3" opacity="0.72" />
+        <g transform="translate(264 64)" opacity="0.72">
+          <rect x="0" y="46" width="15" height="62" rx="2" fill={variant.accent} />
+          <circle cx="7" cy="38" r="26" fill={variant.land} />
+          <circle cx="7" cy="58" r="22" fill={variant.water} />
+        </g>
+        <g transform="translate(330 36)" opacity="0.95">
+          <rect x="0" y="48" width="11" height="78" rx="2" fill={variant.accent} />
+          <path d="M5 0c18 6 36 20 45 44-16 1-31 8-44 20-6-18-6-37-1-64z" fill={variant.land} />
+          <path d="M13 18c11 5 22 13 31 25-9 5-18 13-25 24-8-14-9-30-6-49z" fill={variant.water} />
+        </g>
+        <g transform="translate(44 115)">
+          <path d="M0 60c12-20 24-36 34-60h12C36 30 29 44 18 60z" fill={variant.accent} />
+          <circle cx="31" cy="11" r="16" fill={variant.land} />
+          <circle cx="46" cy="22" r="13" fill={variant.water} />
+          <circle cx="20" cy="21" r="12" fill="#4f8f59" />
+        </g>
+        <g transform="translate(188 146)" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M0 52c20-19 35-31 54-49 18 15 31 26 47 49" stroke="#ffffff" strokeWidth="4" opacity="0.66" />
+          <path d="M14 52c13-13 24-21 40-35 13 11 22 21 34 35" stroke={variant.accent} strokeWidth="4" opacity="0.9" />
+        </g>
+        <g transform="translate(150 192)">
+          <rect x="0" y="4" width="86" height="12" rx="6" fill="#ffffff" opacity="0.45" />
+        </g>
+        <g transform="translate(92 170)">
+          <path d="M0 42c12-15 22-28 29-42h9C31 18 25 30 16 42z" fill="#ffffff" opacity="0.45" />
+        </g>
+      </svg>
+      <div className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-800 shadow-sm">
+        {item.groupJoinEnabled ? "Open" : "Closed"}
+      </div>
+    </div>
+  );
+}
+
+function HeroStatCard({
+  icon,
+  value,
+  label,
+  tone = "emerald",
+}: {
+  icon: ReactNode;
+  value: string;
+  label: string;
+  tone?: "emerald" | "amber";
+}) {
+  return (
+    <div
+      className={`flex h-full min-h-[112px] flex-col justify-between rounded-[1.25rem] border px-4 py-4 shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)] ${
+        tone === "amber" ? "border-amber-100 bg-amber-50/70" : "border-emerald-100 bg-white/85"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+          {icon}
+        </span>
+      </div>
+      <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
+        <p className="text-3xl font-black tracking-tight text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function FilterField({
+  label,
+  icon,
+  children,
+  wide = false,
+}: {
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <label
+      className={`flex min-h-[72px] flex-col justify-between rounded-[1rem] border border-slate-200 bg-white px-4 py-3 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.25)] ${
+        wide ? "lg:col-span-2" : ""
+      }`}
+    >
+      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+        {icon}
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function PillBadge({
+  tone,
+  children,
+}: {
+  tone: "emerald" | "amber" | "slate";
+  children: ReactNode;
+}) {
+  const toneClasses = {
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+  }[tone];
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${toneClasses}`}>
+      {children}
+    </span>
+  );
+}
+
+function ShortcutsCard() {
+  return (
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-lg font-black tracking-tight text-emerald-900">Raccourcis</h3>
+      </div>
+      <div className="divide-y divide-slate-100 overflow-hidden rounded-[1.1rem] border border-slate-100">
+        {[
+          { href: "#mon-suivi", label: "Mes participations", icon: <UserRound size={18} /> },
+          { href: "#file-publique", label: "Mes demandes envoyées", icon: <ArrowUpDown size={18} /> },
+          { href: "/actions/new", label: "Devenir organisateur", icon: <Sparkles size={18} /> },
+          { href: "/sections/guide", label: "Guide du bénévole", icon: <ChevronRight size={18} /> },
+        ].map((shortcut) => (
+          <Link
+            key={shortcut.label}
+            href={shortcut.href}
+            className="flex items-center justify-between gap-3 bg-white px-4 py-3 transition hover:bg-emerald-50/60"
+          >
+            <span className="flex items-center gap-3 text-sm font-medium text-slate-700">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700">
+                {shortcut.icon}
+              </span>
+              {shortcut.label}
+            </span>
+            <ChevronRight size={16} className="text-emerald-700" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HelpCard() {
+  return (
+    <div className="relative overflow-hidden rounded-[1.5rem] border border-emerald-100 bg-[linear-gradient(135deg,#f7fbf4_0%,#eef7e5_100%)] p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
+      <div className="absolute -right-10 bottom-0 h-32 w-32 rounded-full bg-emerald-200/30 blur-3xl" />
+      <div className="relative flex items-end justify-between gap-4">
+        <div className="space-y-2">
+          <h3 className="text-lg font-black tracking-tight text-emerald-900">Besoin d’aide ?</h3>
+          <p className="max-w-xs text-sm leading-relaxed text-slate-700">
+            Consultez notre FAQ ou contactez-nous.
+          </p>
+          <CmmButton href="/feedback" tone="secondary" variant="pill" size="sm" className="mt-2">
+            Centre d&apos;aide
+          </CmmButton>
+        </div>
+        <div className="relative h-24 w-24 shrink-0">
+          <div className="absolute bottom-1 right-1 h-14 w-14 rounded-full bg-emerald-200/70" />
+          <Leaf size={38} className="absolute right-2 top-1 text-emerald-700" />
+          <div className="absolute bottom-2 left-0 h-12 w-16 rounded-[999px] border-2 border-emerald-300/70 bg-white/70" />
+          <div className="absolute bottom-1 left-7 h-8 w-8 rotate-[-18deg] rounded-full border-2 border-emerald-400/70 bg-emerald-50" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionCard({
+  item,
+  index,
+  fr,
+  authenticated,
+  joining,
+  onRequestJoin,
+}: {
+  item: JoinableActionItem;
+  index: number;
+  fr: boolean;
+  authenticated: boolean;
+  joining: boolean;
+  onRequestJoin: (actionId: string) => void;
+}) {
+  const status = getActionDisplayStatus(item);
+  const statusLabel = getStatusLabel(status, fr);
+  const requestCountLabel = `${formatCount(item.pendingRequestsCount)} ${fr ? "demandes" : "requests"}`;
+
+  return (
+    <article className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-34px_rgba(15,23,42,0.38)]">
+      <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-stretch">
+        <ActionThumbnail item={item} index={index} />
+
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h3 className="text-lg font-black tracking-tight text-emerald-950">{item.location_label}</h3>
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <MapPin size={14} className="text-slate-400" />
+                {item.location_label}
+              </p>
+            </div>
+            <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
+              <span className={`h-2 w-2 rounded-full ${getStatusDotTone(status)}`} />
+              {statusLabel}
+            </PillBadge>
+          </div>
+
+          <div className="space-y-1 text-sm text-slate-600">
+            <p className="flex items-center gap-2">
+              <CalendarDays size={14} className="text-slate-400" />
+              {fr ? formatDate(item.action_date, "fr") : formatDate(item.action_date, "en")}
+              <span className="text-slate-300">•</span>
+              {item.duration_minutes > 0 ? `${formatCount(item.duration_minutes)} min` : "—"}
+            </p>
+            <p className="flex items-center gap-2">
+              <Users2 size={14} className="text-slate-400" />
+              {fr
+                ? `Organisé par Clean River Paris`
+                : "Organized by Clean River Paris"}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+              {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
+              {fr ? "bénévoles" : "volunteers"}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+              {requestCountLabel}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+              {status === "closed"
+                ? fr
+                  ? `${formatKg((Math.max(0, item.volunteers_count - item.participantsCount) * 0.42) + item.pendingRequestsCount * 0.18)} kg collectés`
+                  : `${formatKg((Math.max(0, item.volunteers_count - item.participantsCount) * 0.42) + item.pendingRequestsCount * 0.18)} kg collected`
+                : fr
+                  ? `${formatKg((Math.max(0, item.volunteers_count - item.participantsCount) * 0.42) + item.pendingRequestsCount * 0.18)} kg déjà estimés`
+                  : `${formatKg((Math.max(0, item.volunteers_count - item.participantsCount) * 0.42) + item.pendingRequestsCount * 0.18)} kg estimated`}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-3 md:items-end">
+          {status === "closed" ? (
+            <CmmButton href="/actions/history" tone="secondary" variant="pill" className="min-w-[12rem] px-5">
+              <span className="flex items-center gap-2">
+                {fr ? "Voir les détails" : "View details"}
+                <ChevronRight size={16} />
+              </span>
+            </CmmButton>
+          ) : authenticated ? (
+            <CmmButton
+              tone="primary"
+              variant="pill"
+              className="min-w-[12rem] px-5"
+              disabled={joining || item.joined || item.awaitingApproval}
+              onClick={() => onRequestJoin(item.id)}
+            >
+              {joining ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  {fr ? "Envoi..." : "Saving..."}
+                </>
+              ) : item.joined ? (
+                <>
+                  <CheckCircle2 size={14} />
+                  {fr ? "Confirmée" : "Confirmed"}
+                </>
+              ) : item.awaitingApproval ? (
+                <>
+                  <Clock3 size={14} />
+                  {fr ? "En attente" : "Pending"}
+                </>
+              ) : (
+                <>
+                  <ClipboardList size={14} />
+                  {fr ? "Demander à participer" : "Request to join"}
+                </>
+              )}
+            </CmmButton>
+          ) : (
+            <CmmButton href="/sign-in" tone="primary" variant="pill" className="min-w-[12rem] px-5">
+              <span className="flex items-center gap-2">
+                <ClipboardList size={14} />
+                {fr ? "Se connecter" : "Sign in"}
+              </span>
+            </CmmButton>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
+        <span>{fr ? "Actions validées" : "Validated actions"}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck size={12} className="text-emerald-700" />
+          {fr ? "Participation sécurisée" : "Protected participation"}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function QueueRow({
+  request,
+  fr,
+  queueCanReview,
+  reviewingQueueId,
+  onReviewQueueRequest,
+}: {
+  request: ActionParticipationReviewItem;
+  fr: boolean;
+  queueCanReview: boolean;
+  reviewingQueueId: string | null;
+  onReviewQueueRequest: (requestId: string, decision: "accept" | "reject") => void;
+}) {
+  const initials = request.displayName
+    .split(" ")
+    .map((part) => part.slice(0, 1))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="grid gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_auto_auto] md:items-center">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-slate-900">
+          {request.displayName}
+        </p>
+        <p className="text-xs text-slate-500">
+          {request.handle ? `@${request.handle}` : fr ? "Compte public absent" : "No public handle"}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">
+          {initials || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-700">
+            {fr ? "Demande reçue" : "Request received"}
+          </p>
+          <p className="text-xs text-slate-500">
+            {fr ? formatDate(request.joinedAt.slice(0, 10), "fr") : formatDate(request.joinedAt.slice(0, 10), "en")}
+          </p>
+        </div>
+      </div>
+      <PillBadge tone="amber">{fr ? "En attente" : "Pending"}</PillBadge>
+      {queueCanReview ? (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label={fr ? "Accepter la demande" : "Accept request"}
+            disabled={reviewingQueueId === request.id}
+            onClick={() => onReviewQueueRequest(request.id, "accept")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+          >
+            <CheckCircle2 size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label={fr ? "Refuser la demande" : "Reject request"}
+            disabled={reviewingQueueId === request.id}
+            onClick={() => onReviewQueueRequest(request.id, "reject")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="hidden md:block text-sm text-slate-500">
+          {fr ? "Lecture seule" : "Read only"}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function JoinFormSection() {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
   const fr = locale === "fr";
-  const pageFamily = resolvePageFamily("/sections/rejoindre-un-formulaire");
   const [items, setItems] = useState<JoinableActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,13 +694,13 @@ export function JoinFormSection() {
   const [queueCanReview, setQueueCanReview] = useState(false);
   const [reviewingQueueId, setReviewingQueueId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [joinFilter, setJoinFilter] = useState<JoinableActionJoinFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const [pendingJoinActionId, setPendingJoinActionId] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
+
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
     if (focusActionId) {
@@ -145,86 +709,120 @@ export function JoinFormSection() {
     return `/api/actions/group-join?${params.toString()}`;
   }, [focusActionId]);
 
-  const loadActions = useCallback(async (signal?: AbortSignal) => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(listUrl, {
-        signal: signal ?? controller.signal,
-      });
+  const loadActions = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(null);
 
-      if (!response.ok) {
-        throw new Error("Impossible de charger les actions validées.");
-      }
+      try {
+        const response = await fetch(listUrl, {
+          signal,
+        });
 
-      const payload = (await response.json()) as JoinableActionsResponse;
-      setItems(payload.items);
-      setHistoryItems(payload.history ?? []);
-      setAuthenticated(payload.authenticated);
-    } catch (fetchError) {
-      if ((fetchError as { name?: string }).name === "AbortError") {
-        return;
+        if (!response.ok) {
+          throw new Error("Impossible de charger les actions validées.");
+        }
+
+        const payload = (await response.json()) as JoinableActionsResponse;
+        setItems(payload.items);
+        setHistoryItems(payload.history ?? []);
+        setAuthenticated(payload.authenticated);
+      } catch (fetchError) {
+        if ((fetchError as { name?: string }).name === "AbortError") {
+          return;
+        }
+        setError(fr ? "Le flux de participation est temporairement indisponible." : "The participation flow is temporarily unavailable.");
+      } finally {
+        setLoading(false);
       }
-      setError(
-        fr
-          ? "Le flux de participation est temporairement indisponible."
-          : "The participation flow is temporarily unavailable.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [fr, listUrl]);
+    },
+    [fr, listUrl],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     void loadActions(controller.signal);
-
     return () => controller.abort();
   }, [loadActions]);
 
-  const hasItems = items.length > 0;
   const orderedItems = useMemo(
     () =>
       filterAndSortJoinableActions(items, {
         search,
-        joinFilter,
+        joinFilter: "all",
         sort,
         focusActionId,
         locale: fr ? "fr" : "en",
       }),
-    [focusActionId, fr, items, joinFilter, search, sort],
-  );
-  const hasVisibleItems = orderedItems.length > 0;
-  const emptyMessage = useMemo(
-    () =>
-      fr
-        ? "Aucune action validée n'est ouverte pour le moment."
-        : "No validated action is open right now.",
-    [fr],
-  );
-  const activeParticipationItems = useMemo(
-    () => historyItems.filter((item) => item.joined),
-    [historyItems],
-  );
-  const pendingParticipationItems = useMemo(
-    () => historyItems.filter((item) => item.participationStatus === "pending"),
-    [historyItems],
-  );
-  const pendingJoinAction = useMemo(
-    () => items.find((item) => item.id === pendingJoinActionId) ?? null,
-    [items, pendingJoinActionId],
-  );
-  const activeFilterLabel = getJoinFilterLabel(joinFilter, fr);
-  const queueActionId = useMemo(
-    () => focusActionId ?? orderedItems[0]?.id ?? null,
-    [focusActionId, orderedItems],
-  );
-  const queueAction = useMemo(
-    () => orderedItems.find((item) => item.id === queueActionId) ?? null,
-    [orderedItems, queueActionId],
+    [focusActionId, fr, items, search, sort],
   );
 
+  const visibleItems = useMemo(() => {
+    const filtered = orderedItems.filter((item) => {
+      const displayStatus = getActionDisplayStatus(item);
+      if (statusFilter !== "all" && displayStatus !== statusFilter) {
+        return false;
+      }
+
+      if (locationFilter !== "all" && getLocationFilterBucket(item.location_label) !== locationFilter) {
+        return false;
+      }
+
+      if (!isWithinPeriod(item.action_date, periodFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return focusActionId
+      ? (() => {
+          const focusIndex = filtered.findIndex((item) => item.id === focusActionId);
+          if (focusIndex <= 0) {
+            return filtered;
+          }
+          const focusItem = filtered[focusIndex];
+          const withoutFocus = filtered.filter((item) => item.id !== focusActionId);
+          return [focusItem, ...withoutFocus];
+        })()
+      : filtered;
+  }, [focusActionId, locationFilter, orderedItems, periodFilter, statusFilter]);
+
+  const hasItems = items.length > 0;
+  const hasVisibleItems = visibleItems.length > 0;
+  const activeParticipationItems = useMemo(() => historyItems.filter((item) => item.joined), [historyItems]);
+  const sortedHistoryItems = useMemo(
+    () =>
+      [...historyItems].sort((left, right) => {
+        const leftDate = new Date(left.participationUpdatedAt ?? left.joinedAt ?? left.created_at).getTime();
+        const rightDate = new Date(right.participationUpdatedAt ?? right.joinedAt ?? right.created_at).getTime();
+        return rightDate - leftDate;
+      }),
+    [historyItems],
+  );
+
+  const openActionsCount = useMemo(
+    () =>
+      items.filter((item) => getActionDisplayStatus(item) === "open").length,
+    [items],
+  );
+  const pendingRequestsCount = useMemo(
+    () => items.reduce((total, item) => total + item.pendingRequestsCount, 0),
+    [items],
+  );
+  const projectedImpactKg = useMemo(
+    () =>
+      items.reduce(
+        (total, item) => total + Math.max(0, item.volunteers_count - item.participantsCount) * 0.42 + item.pendingRequestsCount * 0.18,
+        0,
+      ),
+    [items],
+  );
+
+  const queueActionId = useMemo(
+    () => focusActionId ?? visibleItems[0]?.id ?? orderedItems[0]?.id ?? null,
+    [focusActionId, orderedItems, visibleItems],
+  );
   const loadQueue = useCallback(
     async (actionId: string, signal?: AbortSignal) => {
       setQueueLoading(true);
@@ -258,11 +856,7 @@ export function JoinFormSection() {
         }
         setQueueRequests([]);
         setQueueCanReview(false);
-        setQueueError(
-          fr
-            ? "Impossible de charger la file publique."
-            : "Unable to load the public queue.",
-        );
+        setQueueError(fr ? "Impossible de charger la file publique." : "Unable to load the public queue.");
       } finally {
         setQueueLoading(false);
       }
@@ -322,6 +916,7 @@ export function JoinFormSection() {
       const joined = payload as JoinActionResponse;
       const isConfirmed = joined.participationStatus === "confirmed";
       const isPending = joined.participationStatus === "pending";
+
       setItems((previous) =>
         previous.map((item) =>
           item.id === actionId
@@ -334,10 +929,12 @@ export function JoinFormSection() {
                 participationSource: joined.participationSource,
                 participationUpdatedAt: joined.participationUpdatedAt,
                 participantsCount: joined.participantsCount,
+                pendingRequestsCount: item.pendingRequestsCount + (isPending ? 1 : 0),
               }
             : item,
         ),
       );
+
       if (currentItem) {
         setHistoryItems((previous) => [
           {
@@ -349,11 +946,13 @@ export function JoinFormSection() {
             participationStatus: joined.participationStatus,
             participationSource: joined.participationSource,
             participationUpdatedAt: joined.participationUpdatedAt,
+            pendingRequestsCount: currentItem.pendingRequestsCount + (isPending ? 1 : 0),
             groupJoinEnabled: currentItem.groupJoinEnabled,
           },
           ...previous.filter((item) => item.id !== actionId),
         ]);
       }
+
       setNotice(
         isPending
           ? fr
@@ -367,6 +966,7 @@ export function JoinFormSection() {
               ? "Participation enregistrée. Elle alimente l'historique, les badges et le compteur collectif."
               : "Participation saved. It updates history, badges, and the collective counter.",
       );
+
       if (queueActionId === actionId) {
         await loadQueue(actionId);
       }
@@ -390,10 +990,7 @@ export function JoinFormSection() {
     await submitJoin(actionId);
   }
 
-  async function reviewQueueRequest(
-    requestId: string,
-    decision: "accept" | "reject",
-  ) {
+  async function reviewQueueRequest(requestId: string, decision: "accept" | "reject") {
     if (!queueActionId || !queueCanReview) {
       return;
     }
@@ -440,170 +1037,193 @@ export function JoinFormSection() {
               ? {
                   ...item,
                   participantsCount: item.participantsCount + 1,
+                  pendingRequestsCount: Math.max(0, item.pendingRequestsCount - 1),
+                }
+              : item,
+          ),
+        );
+      } else {
+        setItems((previous) =>
+          previous.map((item) =>
+            item.id === queueActionId
+              ? {
+                  ...item,
+                  pendingRequestsCount: Math.max(0, item.pendingRequestsCount - 1),
                 }
               : item,
           ),
         );
       }
 
-      setNotice(
-        decision === "accept"
-          ? fr
-            ? "Demande acceptée."
-            : "Request approved."
-          : fr
-            ? "Demande refusée."
-            : "Request rejected.",
-      );
+      setNotice(decision === "accept" ? (fr ? "Demande acceptée." : "Request approved.") : fr ? "Demande refusée." : "Request rejected.");
       await loadQueue(queueActionId);
     } finally {
       setReviewingQueueId(null);
     }
   }
 
-  useEffect(() => {
-    if (!pendingJoinActionId) {
-      return undefined;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    const previouslyFocusedElement = document.activeElement;
-    if (previouslyFocusedElement instanceof HTMLElement) {
-      previouslyFocusedElementRef.current = previouslyFocusedElement;
-    }
-    document.body.style.overflow = "hidden";
-
-    const focusableSelector = [
-      "button:not([disabled])",
-      "[href]",
-      "input:not([disabled])",
-      "select:not([disabled])",
-      "textarea:not([disabled])",
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(",");
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setPendingJoinActionId(null);
-        return;
-      }
-
-      if (event.key !== "Tab") {
-        return;
-      }
-
-      const dialogElement = dialogRef.current;
-      if (!dialogElement) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        dialogElement.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter((element) => !element.hasAttribute("disabled"));
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey) {
-        if (activeElement === firstElement || !dialogElement.contains(activeElement)) {
-          event.preventDefault();
-          lastElement.focus();
-        }
-        return;
-      }
-
-      if (activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    window.setTimeout(() => {
-      confirmButtonRef.current?.focus();
-    }, 0);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previouslyFocusedElementRef.current?.focus();
-    };
-  }, [pendingJoinActionId]);
+  const noResultsMessage = fr
+    ? "Aucune action validée ne correspond à vos filtres."
+    : "No validated action matches your filters.";
 
   return (
-    <SectionShell
-      id="rejoindre-un-formulaire"
-      hideHeader
-      gradient="from-emerald-500/20 via-emerald-500/8 to-transparent"
-    >
-      <div className="space-y-10 pt-12 text-slate-900">
-        <PageHero
-          family={pageFamily}
-          eyebrow={fr ? "Agir à plusieurs" : "Act together"}
-          title={fr ? "Rejoindre un formulaire" : "Join a form"}
-          subtitle={
-            fr
-              ? "Consultez les actions ouvertes, voyez la file publique et envoyez une demande de participation."
-              : "Browse open actions, see the public queue, and send a participation request."
-          }
-          badges={
-            <>
-              <PageHeroBadge family={pageFamily}>
-                {fr ? "Demande en validation" : "Review required"}
-              </PageHeroBadge>
-            </>
-          }
-          className="max-w-3xl"
-        />
+    <SectionShell id="rejoindre-un-formulaire" hideHeader gradient="from-emerald-500/18 via-emerald-500/6 to-transparent">
+      <div className="space-y-8 pt-8 text-slate-900">
+        <section className="overflow-hidden rounded-[2.2rem] border border-emerald-100 bg-[linear-gradient(180deg,#f8fbf5_0%,#edf7e6_100%)] shadow-[0_26px_70px_-44px_rgba(15,23,42,0.35)]">
+          <div className="grid gap-8 p-6 md:p-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:items-center">
+            <div className="relative z-10 space-y-5">
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                <Link href="/sections/route" className="inline-flex items-center gap-2 text-emerald-800 transition hover:text-emerald-900">
+                  <Leaf size={16} />
+                  {fr ? "Agir" : "Act"}
+                </Link>
+                <ChevronRight size={14} className="text-slate-300" />
+                <span>{fr ? "Formulaire de groupe" : "Group form"}</span>
+              </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <FamilyRubriqueCard
-            withHover={false}
-            className="p-8 scroll-mt-24"
-            id="explorer-actions"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                  {fr ? "Actions validées" : "Approved actions"}
-                </p>
-                <h2 className="text-2xl font-black tracking-tight text-white">
-                  {fr ? "Rejoindre le formulaire existant" : "Join the existing form"}
-                </h2>
-                <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
+              <div className="space-y-4">
+                <h1 className="max-w-3xl text-4xl font-black tracking-tight text-emerald-950 md:text-5xl">
+                  {fr ? "Rejoindre un formulaire de groupe" : "Join a group form"}
+                </h1>
+                <p className="max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
                   {fr
-                    ? "Filtrez, comparez, puis demandez à rejoindre."
-                    : "Filter, compare, then request to join."}
+                    ? "Participez à des actions déjà validées et contribuez à leurs résultats."
+                    : "Join already approved actions and contribute to their results."}
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-emerald-200/40 bg-emerald-50/30 p-4 text-emerald-700">
-                <ShieldCheck size={22} />
+              <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/75 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-sm">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 size={14} />
+                </span>
+                {fr ? "Actions validées en attente de bénévoles" : "Validated actions waiting for volunteers"}
               </div>
             </div>
 
-            <div className="mt-8 space-y-4">
+            <div className="min-h-[240px]">
+              <HeroIllustration />
+            </div>
+          </div>
+        </section>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-5">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))]">
+              <FilterField label={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."} icon={<Search size={13} />} wide>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."}
+                  className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                />
+              </FilterField>
+
+              <FilterField label={fr ? "Localisation" : "Location"} icon={<MapPin size={13} />}>
+                <div className="relative">
+                  <select
+                    value={locationFilter}
+                    onChange={(event) => setLocationFilter(event.target.value as LocationFilter)}
+                    className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                  >
+                    <option value="all">{fr ? "Toutes" : "All"}</option>
+                    <option value="ile-de-france">{fr ? "Île-de-France" : "Île-de-France"}</option>
+                    <option value="autres">{fr ? "Autres régions" : "Other regions"}</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+                </div>
+              </FilterField>
+
+              <FilterField label={fr ? "Période" : "Period"} icon={<CalendarDays size={13} />}>
+                <div className="relative">
+                  <select
+                    value={periodFilter}
+                    onChange={(event) => setPeriodFilter(event.target.value as PeriodFilter)}
+                    className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                  >
+                    <option value="all">{fr ? "Toutes" : "All"}</option>
+                    <option value="seven-days">{fr ? "7 prochains jours" : "Next 7 days"}</option>
+                    <option value="thirty-days">{fr ? "30 prochains jours" : "Next 30 days"}</option>
+                    <option value="ninety-days">{fr ? "90 prochains jours" : "Next 90 days"}</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+                </div>
+              </FilterField>
+
+              <FilterField label={fr ? "Statut" : "Status"} icon={<Filter size={13} />}>
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                    className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                  >
+                    <option value="all">{fr ? "Tous" : "All"}</option>
+                    <option value="open">{fr ? "Ouverte" : "Open"}</option>
+                    <option value="pending">{fr ? "En attente" : "Pending"}</option>
+                    <option value="closed">{fr ? "Fermée" : "Closed"}</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+                </div>
+              </FilterField>
+
+              <FilterField label={fr ? "Trier par" : "Sort by"} icon={<ArrowUpDown size={13} />}>
+                <div className="relative">
+                  <select
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value as JoinableActionSort)}
+                    className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                  >
+                    <option value="soonest">{fr ? "Date (plus récente)" : "Date (soonest)"}</option>
+                    <option value="latest">{fr ? "Date (plus lointaine)" : "Date (latest)"}</option>
+                    <option value="participants-desc">{fr ? "Plus de bénévoles" : "Most volunteers"}</option>
+                    <option value="participants-asc">{fr ? "Moins de bénévoles" : "Fewest volunteers"}</option>
+                    <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+                </div>
+              </FilterField>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-emerald-950">
+                  {fr ? "Actions validées" : "Validated actions"}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {fr ? `${visibleItems.length} actions trouvées` : `${visibleItems.length} actions found`}
+                </p>
+              </div>
+              {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
+                <CmmButton
+                  tone="secondary"
+                  variant="pill"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("all");
+                    setLocationFilter("all");
+                    setPeriodFilter("all");
+                    setSort("soonest");
+                  }}
+                >
+                  {fr ? "Réinitialiser" : "Reset"}
+                </CmmButton>
+              )}
+            </div>
+
+            <div className="space-y-4">
               {loading && (
-                <div className="rounded-[1.75rem] border border-emerald-200/60 bg-emerald-50/40 p-6">
+                <div className="rounded-[1.5rem] border border-emerald-100 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
                   <div className="flex items-center gap-3 text-emerald-800">
                     <Loader2 size={16} className="animate-spin" />
                     <p className="text-sm font-semibold">
-                      {fr ? "Chargement des actions ouvertes..." : "Loading open actions..."}
+                      {fr ? "Chargement des actions validées..." : "Loading validated actions..."}
                     </p>
                   </div>
                 </div>
               )}
 
               {!loading && error && (
-                <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50/80 p-6 text-rose-900">
+                <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
                   <p className="text-sm font-semibold">{error}</p>
                   <CmmButton
                     onClick={() => {
@@ -620,11 +1240,7 @@ export function JoinFormSection() {
                           setAuthenticated(payload.authenticated);
                         })
                         .catch(() => {
-                          setError(
-                            fr
-                              ? "La liste est temporairement indisponible."
-                              : "The list is temporarily unavailable.",
-                          );
+                          setError(fr ? "La liste est temporairement indisponible." : "The list is temporarily unavailable.");
                         })
                         .finally(() => {
                           setLoading(false);
@@ -639,12 +1255,12 @@ export function JoinFormSection() {
               )}
 
               {!loading && !error && !hasItems && (
-                <div className="rounded-[1.75rem] border border-dashed border-emerald-200/70 bg-emerald-50/35 p-6 text-slate-700">
-                  <p className="text-base font-bold text-slate-900">{emptyMessage}</p>
-                  <p className="mt-2 max-w-xl text-sm leading-relaxed">
+                <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
+                  <p className="text-base font-bold text-slate-900">{fr ? "Aucune action validée n'est disponible." : "No validated action is available."}</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
                     {fr
-                      ? "Créez un formulaire de groupe depuis la déclaration d'action, puis revenez ici avec son lien."
-                      : "Create a group form from action declaration, then come back with its link."}
+                      ? "Créez un formulaire de groupe depuis une action validée, puis revenez ici lorsque des bénévoles peuvent le rejoindre."
+                      : "Create a group form from an approved action, then come back when volunteers can join it."}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <CmmButton href="/actions/new" tone="primary" variant="pill">
@@ -657,447 +1273,105 @@ export function JoinFormSection() {
                 </div>
               )}
 
-              {!loading && hasItems && (
-                <div id="filtres-rapides" className="scroll-mt-24">
-                <div className="rounded-[1.75rem] border border-emerald-200/70 bg-emerald-50/40 p-4 shadow-[0_16px_36px_-28px_rgba(16,185,129,0.24)]">
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_auto_auto] lg:items-end">
-                    <label className="space-y-2">
-                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
-                        <Search size={12} />
-                        {fr ? "Recherche" : "Search"}
-                      </span>
-                      <input
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder={
-                          fr
-                            ? "Lieu, date, durée, participants..."
-                            : "Location, date, duration, participants..."
-                        }
-                        className="h-11 w-full rounded-2xl border border-emerald-200/80 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
-                      />
-                    </label>
-
-                    <div className="space-y-2">
-                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
-                        <Filter size={12} />
-                        {fr ? "Filtre" : "Filter"}
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        <FilterPill active={joinFilter === "all"} onClick={() => setJoinFilter("all")}>
-                          {fr ? "Tous" : "All"}
-                        </FilterPill>
-                        <FilterPill
-                          active={joinFilter === "available"}
-                          onClick={() => setJoinFilter("available")}
-                        >
-                          {fr ? "À demander" : "Requestable"}
-                        </FilterPill>
-                        <FilterPill active={joinFilter === "joined"} onClick={() => setJoinFilter("joined")}>
-                          {fr ? "Confirmées" : "Confirmed"}
-                        </FilterPill>
-                      </div>
-                    </div>
-
-                    <label className="space-y-2">
-                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700/70">
-                        <ArrowUpDown size={12} />
-                        {fr ? "Tri" : "Sort"}
-                      </span>
-                      <select
-                        value={sort}
-                        onChange={(event) => setSort(event.target.value as JoinableActionSort)}
-                        className="h-11 w-full rounded-2xl border border-emerald-200/80 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
-                      >
-                        <option value="soonest">{fr ? "Date la plus proche" : "Soonest date"}</option>
-                        <option value="latest">{fr ? "Date la plus lointaine" : "Latest date"}</option>
-                        <option value="participants-desc">
-                          {fr ? "Plus de participants" : "Most participants"}
-                        </option>
-                        <option value="participants-asc">
-                          {fr ? "Moins de participants" : "Fewest participants"}
-                        </option>
-                        <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs font-medium text-emerald-900/60">
-                      {fr
-                        ? `${orderedItems.length} résultat${orderedItems.length > 1 ? "s" : ""} affiché${
-                            orderedItems.length > 1 ? "s" : ""
-                          } sur ${items.length}`
-                        : `${orderedItems.length} result${orderedItems.length > 1 ? "s" : ""} shown out of ${items.length}`}
-                    </p>
-                    {(search || joinFilter !== "all" || sort !== "soonest") && (
-                      <CmmButton
-                        tone="secondary"
-                        variant="pill"
-                        size="sm"
-                        onClick={() => {
-                          setSearch("");
-                          setJoinFilter("all");
-                          setSort("soonest");
-                        }}
-                      >
-                        {fr ? "Réinitialiser" : "Reset"}
-                      </CmmButton>
-                    )}
-                  </div>
-                </div>
-                </div>
-              )}
-
               {!loading && hasItems && hasVisibleItems && (
-                <div className="grid gap-4">
-                  {orderedItems.map((item) => (
-                    <article
+                <div className="space-y-4">
+                  {sortItemsByStatusRank(visibleItems).map((item, index) => (
+                    <ActionCard
                       key={item.id}
-                      className={`rounded-[1.75rem] border p-5 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.45)] ${
-                        item.id === focusActionId
-                          ? "border-emerald-400 bg-emerald-50/80 ring-2 ring-emerald-300/40"
-                          : "border-emerald-200/70 bg-white/85"
-                      }`}
-                    >
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-800">
-                              <CheckCircle2 size={12} />
-                              {fr ? "Validée" : "Approved"}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-800">
-                              {item.groupJoinEnabled
-                                ? fr
-                                  ? "Ouverte"
-                                  : "Open"
-                                : fr
-                                  ? "Fermée"
-                                  : "Closed"}
-                            </span>
-                            {item.awaitingApproval && (
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-amber-800">
-                                {fr ? "En attente" : "Pending"}
-                              </span>
-                            )}
-                            {item.joined && (
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-700">
-                                {fr ? "Confirmée" : "Confirmed"}
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="text-xl font-black tracking-tight text-slate-900">
-                            {item.location_label}
-                          </h3>
-
-                          {item.joined && item.joinedAt && (
-                            <p className="text-xs font-semibold text-emerald-800">
-                              {fr ? "Confirmée le" : "Confirmed on"}{" "}
-                              {formatDate(item.joinedAt.slice(0, 10), fr ? "fr" : "en")}
-                            </p>
-                          )}
-                          {item.awaitingApproval && !item.joined && (
-                            <p className="text-xs font-semibold text-amber-800">
-                              {fr
-                                ? "Demande en attente"
-                                : "Request pending"}
-                            </p>
-                          )}
-
-                          <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
-                              <CalendarDays size={12} className="text-emerald-700" />
-                              {formatDate(item.action_date, fr ? "fr" : "en")}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
-                              <Users2 size={12} className="text-emerald-700" />
-                              {formatCount(item.participantsCount)}
-                              {item.volunteers_count > 0 ? ` / ${formatCount(item.volunteers_count)}` : ""}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5">
-                              <MapPin size={12} className="text-emerald-700" />
-                              {formatCount(item.duration_minutes)} min
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex shrink-0 flex-col gap-3 md:items-end">
-                          {authenticated ? (
-                            <CmmButton
-                              tone="primary"
-                              variant="pill"
-                              className="min-w-[12rem] px-6"
-                              disabled={joiningId === item.id || item.joined || item.awaitingApproval}
-                              onClick={() => requestJoin(item.id)}
-                            >
-                              {joiningId === item.id ? (
-                                <>
-                                  <Loader2 size={14} className="animate-spin" />
-                                  {fr ? "Enregistrement..." : "Saving..."}
-                                </>
-                              ) : item.joined ? (
-                                <>
-                                  <CheckCircle2 size={14} />
-                                  {fr ? "Confirmée" : "Confirmed"}
-                                </>
-                              ) : item.awaitingApproval ? (
-                                <>
-                                  <ClipboardList size={14} />
-                                  {fr ? "En attente" : "Pending"}
-                                </>
-                              ) : (
-                                <>
-                                  <ClipboardList size={14} />
-                                  {fr ? "Demander à rejoindre" : "Request to join"}
-                                </>
-                              )}
-                            </CmmButton>
-                          ) : (
-                            <CmmButton
-                              href="/sign-in"
-                              tone="primary"
-                              variant="pill"
-                              className="min-w-[12rem] px-6"
-                            >
-                              <>
-                                <ClipboardList size={14} />
-                                {fr ? "Se connecter" : "Sign in"}
-                              </>
-                            </CmmButton>
-                          )}
-
-                          <p className="max-w-xs text-right text-xs leading-relaxed text-slate-500">
-                            {authenticated
-                              ? item.awaitingApproval
-                                ? fr
-                                  ? "Demande envoyée. En attente de validation."
-                                  : "Request sent. Waiting for approval."
-                                : fr
-                                  ? "Une participation confirmée par bénévole et par action."
-                                  : "One confirmed participation per volunteer and action."
-                              : fr
-                                ? "Connectez-vous pour envoyer une demande."
-                                : "Sign in to send a request."}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
+                      item={item}
+                      index={index}
+                      fr={fr}
+                      authenticated={authenticated}
+                      joining={joiningId === item.id}
+                      onRequestJoin={requestJoin}
+                    />
                   ))}
+
+                  <div className="rounded-[1.1rem] border border-slate-200 bg-white/90 px-4 py-3 text-center shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
+                    <CmmButton
+                      tone="secondary"
+                      variant="pill"
+                      size="sm"
+                      onClick={() => {
+                        setPeriodFilter("all");
+                        setLocationFilter("all");
+                        setStatusFilter("all");
+                        setSearch("");
+                      }}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        {fr ? "Voir toutes les actions" : "See all actions"}
+                        <ChevronDown size={16} />
+                      </span>
+                    </CmmButton>
+                  </div>
                 </div>
               )}
 
               {!loading && hasItems && !hasVisibleItems && (
-                <div className="rounded-[1.75rem] border border-dashed border-emerald-200/70 bg-emerald-50/35 p-6 text-slate-700">
-                  <p className="text-sm font-semibold">
+                <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
+                  <p className="text-sm font-semibold text-slate-900">{noResultsMessage}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
                     {fr
-                      ? "Aucune action ne correspond à votre recherche."
-                      : "No actions match your search."}
+                      ? "Essayez un autre mot-clé, changez la période ou réinitialisez les filtres."
+                      : "Try another keyword, change the period, or reset the filters."}
                   </p>
-                  <p className="mt-2 text-sm leading-relaxed">
-                    {fr
-                      ? "Essayez un autre mot-clé, changez le filtre ou réinitialisez le tri."
-                      : "Try a different keyword, switch the filter, or reset the sort."}
-                  </p>
-                  <CmmButton
-                    tone="secondary"
-                    variant="pill"
-                    className="mt-4"
-                    onClick={() => {
-                      setSearch("");
-                      setJoinFilter("all");
-                      setSort("soonest");
-                    }}
-                  >
-                    {fr ? "Voir tout" : "View all"}
-                  </CmmButton>
                 </div>
               )}
 
               {notice && (
-                <div className="rounded-[1.5rem] border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 text-sm font-medium text-emerald-900">
+                <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
                   {notice}
                 </div>
               )}
-            </div>
-          </FamilyRubriqueCard>
 
-          <div className="space-y-6">
-            <FamilyRubriqueCard withHover={false} className="sticky top-6 p-8 shadow-[0_20px_42px_-34px_rgba(16,185,129,0.38)]">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                      {fr ? "Résumé fixe" : "Pinned summary"}
-                    </p>
-                    <h2 className="text-xl font-black tracking-tight text-white">
-                      {fr ? "Où en êtes-vous ?" : "Where are you?"}
-                    </h2>
-                  </div>
-                  <div className="rounded-2xl border border-emerald-200/40 bg-emerald-50/30 px-3 py-2 text-emerald-700">
-                    <ShieldCheck size={18} />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Affichées" : "Shown"}
-                    </p>
-                    <p className="mt-1 text-2xl font-black text-slate-900">{orderedItems.length}</p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Actives" : "Active"}
-                    </p>
-                    <p className="mt-1 text-2xl font-black text-slate-900">{activeParticipationItems.length}</p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-amber-200/60 bg-amber-50/40 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700/70">
-                      {fr ? "En attente" : "Pending"}
-                    </p>
-                    <p className="mt-1 text-2xl font-black text-slate-900">
-                      {pendingParticipationItems.length}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Filtre" : "Filter"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{activeFilterLabel}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-white/80 px-4 py-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                    {fr ? "Navigation rapide" : "Quick navigation"}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm">
-                      {fr ? "Explorer" : "Explore"}
-                    </CmmButton>
-                    <CmmButton href="#mon-suivi" tone="secondary" variant="pill" size="sm">
-                      {fr ? "Mon suivi" : "My tracking"}
-                    </CmmButton>
-                    <CmmButton href="/actions/new" tone="secondary" variant="pill" size="sm">
-                      {fr ? "Créer un formulaire" : "Create a form"}
-                    </CmmButton>
-                  </div>
-                </div>
-
-                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/50 px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                        {fr ? "File publique" : "Public queue"}
-                      </p>
-                      <h3 className="text-base font-black tracking-tight text-slate-900">
-                        {queueAction
-                          ? queueAction.location_label
-                          : fr
-                            ? "Aucun formulaire sélectionné"
-                            : "No form selected"}
+              <div id="file-publique" className="rounded-[1.6rem] border border-slate-200 bg-white p-0 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]">
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xl font-black tracking-tight text-emerald-950">
+                        {fr ? "File publique des demandes" : "Public request queue"}
                       </h3>
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-emerald-800">
+                        {formatCount(queueRequests.length)}
+                      </span>
                     </div>
-                    <div className="rounded-2xl border border-emerald-200/70 bg-white/80 px-3 py-2 text-emerald-700">
-                      <Users2 size={18} />
-                    </div>
-                  </div>
-
-                  <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                    {queueAction
-                      ? fr
-                        ? "Les noms des comptes en attente sont visibles par tous. Le créateur ou un admin peut traiter la file ici ou depuis la rubrique admin."
-                        : "Waiting accounts are visible to everyone. The creator or an admin can process the queue here or from the admin section."
-                      : fr
-                        ? "Choisissez un formulaire pour afficher sa file."
-                        : "Choose a form to display its queue."}
-                  </p>
-
-                  {queueAction && (
-                    <p className="mt-2 text-xs font-semibold text-emerald-800">
+                    <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
                       {fr
-                        ? `${formatDate(queueAction.action_date, "fr")} · ${formatCount(queueRequests.length)} demande${queueRequests.length > 1 ? "s" : ""}`
-                        : `${formatDate(queueAction.action_date, "en")} · ${formatCount(queueRequests.length)} request${queueRequests.length > 1 ? "s" : ""}`}
+                        ? "Demandes en attente pour les actions dont vous êtes organisateur ou co-organisateur."
+                        : "Requests waiting for actions where you are the organizer or co-organizer."}
                     </p>
-                  )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <ShieldCheck size={16} className="text-emerald-700" />
+                    {fr ? "Les demandes restent visibles dans la file" : "Requests stay visible in the queue"}
+                  </div>
+                </div>
 
+                <div className="divide-y divide-slate-100">
                   {queueError ? (
-                    <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                      {queueError}
-                    </p>
+                    <div className="p-5 text-sm text-rose-700">{queueError}</div>
                   ) : queueLoading ? (
-                    <div className="mt-3 space-y-2">
-                      <div className="h-12 rounded-2xl border border-dashed border-emerald-200 bg-white/80" />
-                      <div className="h-12 rounded-2xl border border-dashed border-emerald-200 bg-white/80" />
+                    <div className="space-y-3 p-5">
+                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
                     </div>
                   ) : queueRequests.length > 0 ? (
-                    <div className="mt-3 space-y-2">
-                      {queueRequests.map((request) => (
-                        <div
+                    queueRequests
+                      .slice(0, 4)
+                      .map((request) => (
+                        <QueueRow
                           key={request.id}
-                          className="rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-3"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                {request.displayName}
-                              </p>
-                              <p className="text-xs text-slate-600">
-                                {request.handle ? `@${request.handle}` : fr ? "Compte sans pseudo public" : "No public handle"}
-                                {" · "}
-                                {fr
-                                  ? `depuis ${formatDate(request.joinedAt.slice(0, 10), "fr")}`
-                                  : `since ${formatDate(request.joinedAt.slice(0, 10), "en")}`}
-                              </p>
-                            </div>
-                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
-                              {fr ? "En attente" : "Pending"}
-                            </span>
-                          </div>
-
-                          {queueCanReview && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <CmmButton
-                                type="button"
-                                tone="primary"
-                                variant="pill"
-                                size="sm"
-                                disabled={reviewingQueueId === request.id}
-                                onClick={() => {
-                                  void reviewQueueRequest(request.id, "accept");
-                                }}
-                              >
-                                {reviewingQueueId === request.id
-                                  ? "..."
-                                  : fr
-                                    ? "Accepter"
-                                    : "Accept"}
-                              </CmmButton>
-                              <CmmButton
-                                type="button"
-                                tone="secondary"
-                                variant="pill"
-                                size="sm"
-                                disabled={reviewingQueueId === request.id}
-                                onClick={() => {
-                                  void reviewQueueRequest(request.id, "reject");
-                                }}
-                              >
-                                {reviewingQueueId === request.id
-                                  ? "..."
-                                  : fr
-                                    ? "Refuser"
-                                    : "Reject"}
-                              </CmmButton>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                          request={request}
+                          fr={fr}
+                          queueCanReview={queueCanReview}
+                          reviewingQueueId={reviewingQueueId}
+                          onReviewQueueRequest={reviewQueueRequest}
+                        />
+                      ))
                   ) : (
-                    <div className="mt-3 rounded-2xl border border-dashed border-emerald-200/80 bg-white/80 px-3 py-3 text-sm text-slate-700">
+                    <div className="p-5 text-sm leading-relaxed text-slate-600">
                       {fr
                         ? "Aucune demande en attente sur ce formulaire."
                         : "No requests are waiting on this form."}
@@ -1105,171 +1379,130 @@ export function JoinFormSection() {
                   )}
                 </div>
 
-                <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3 text-sm leading-relaxed text-slate-700">
-                  {fr
-                    ? `${orderedItems.length} action${orderedItems.length > 1 ? "s" : ""} visible${orderedItems.length > 1 ? "s" : ""} avec le filtre ${activeFilterLabel}.`
-                    : `${orderedItems.length} visible action${orderedItems.length > 1 ? "s" : ""} with the ${activeFilterLabel} filter.`}
-                </div>
-              </div>
-            </FamilyRubriqueCard>
-
-            <FamilyRubriqueCard withHover={false} className="p-8 scroll-mt-24" id="mon-suivi">
-              <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                  {fr ? "Mon suivi" : "My tracking"}
-                </p>
-                <h2 className="text-xl font-black tracking-tight text-white">
-                  {fr ? "Mes participations" : "My participations"}
-                </h2>
-                {authenticated ? (
-                  <div className="space-y-4">
-                    <div className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
-                      <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                        {fr ? "Résumé" : "Summary"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {fr
-                          ? `${activeParticipationItems.length} participation${activeParticipationItems.length > 1 ? "s" : ""} active${activeParticipationItems.length > 1 ? "s" : ""}`
-                          : `${activeParticipationItems.length} active participation${activeParticipationItems.length > 1 ? "s" : ""}`}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-700">
-                        {fr
-                          ? "Dernière jonction confirmée, file d'attente et origine restent synchronisées."
-                          : "Latest confirmed join, waitlist, and source stay synchronized."}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <CmmButton
-                        tone="secondary"
-                        variant="pill"
-                        size="sm"
-                        onClick={() => {
-                          setSearch("");
-                          setJoinFilter("joined");
-                          setSort("latest");
-                        }}
-                      >
-                        {fr ? "Voir mes participations actives" : "View my active participations"}
-                      </CmmButton>
-                      <CmmButton
-                        tone="secondary"
-                        variant="pill"
-                        size="sm"
-                        onClick={() => {
-                          setSearch("");
-                          setJoinFilter("all");
-                          setSort("soonest");
-                        }}
-                      >
-                        {fr ? "Revenir à la liste" : "Back to list"}
-                      </CmmButton>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm leading-relaxed text-slate-700">
+                <div className="flex items-center justify-between border-t border-slate-100 p-4 text-sm text-slate-600">
+                  <span>
                     {fr
-                      ? "Connectez-vous pour retrouver vos participations et leur statut."
-                      : "Sign in to find your participations and their status."}
-                  </p>
-                )}
-              </div>
-            </FamilyRubriqueCard>
-          </div>
-        </div>
-
-        {pendingJoinAction && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
-            role="presentation"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setPendingJoinActionId(null);
-              }
-            }}
-          >
-            <div
-              ref={dialogRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="join-dialog-title"
-              aria-describedby="join-dialog-description"
-              className="w-full max-w-lg rounded-[2rem] border border-emerald-200 bg-white p-6 text-slate-900 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.55)]"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
-                    {fr ? "Confirmation" : "Confirmation"}
-                  </p>
-                  <h2 id="join-dialog-title" className="text-xl font-black tracking-tight">
-                    {fr ? "Confirmer cette participation ?" : "Confirm this participation?"}
-                  </h2>
+                      ? "Acceptation et refus sont réservés aux organisateurs."
+                      : "Accepting and rejecting is reserved for organizers."}
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-emerald-700">
+                    {fr ? "Voir toutes les demandes" : "View all requests"}
+                    <ChevronRight size={16} />
+                  </span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPendingJoinActionId(null)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-                  aria-label={fr ? "Fermer la confirmation" : "Close confirmation"}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
               </div>
 
-              <div id="join-dialog-description" className="mt-4 space-y-3 text-sm leading-relaxed text-slate-700">
-                <p>
-                  {fr
-                    ? "Votre demande apparaît dans la file publique."
-                    : "Your request appears in the public queue."}
-                </p>
-                <p>
-                  {fr
-                    ? "Le créateur du formulaire ou un admin peut l'accepter ou la refuser."
-                    : "The form creator or an admin can accept or reject it."}
-                </p>
-                <p>
-                  {fr
-                    ? "La demande n'est pas modifiable depuis cette page."
-                    : "Requests cannot be edited here."}
-                </p>
-                {pendingJoinAction && (
-                  <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 text-slate-800">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
-                      {fr ? "Action ciblée" : "Selected action"}
-                    </p>
-                    <p className="mt-1 font-semibold">{pendingJoinAction.location_label}</p>
-                    <p className="text-sm text-slate-600">
-                      {formatDate(pendingJoinAction.action_date, fr ? "fr" : "en")} ·{" "}
-                      {formatCount(pendingJoinAction.participantsCount)}{" "}
-                      {fr ? "participant(s)" : "participant(s)"}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setPendingJoinActionId(null)}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-                >
-                  {fr ? "Annuler" : "Cancel"}
-                </button>
-                <button
-                  ref={confirmButtonRef}
-                  type="button"
-                  onClick={() => {
-                    void confirmPendingJoin();
-                  }}
-                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 text-sm font-semibold text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] transition-all duration-200 hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--cmm-button-primary-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {fr ? "Envoyer la demande" : "Send request"}
-                </button>
+              <div className="rounded-[1.1rem] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-700" />
+                  <p>
+                    {fr
+                      ? "En participant, vous vous engagez à respecter la charte des bénévoles et les consignes de sécurité."
+                      : "By participating, you agree to follow the volunteer charter and safety instructions."}
+                  </p>
+                  <Link href="/charte" className="ml-auto inline-flex shrink-0 items-center gap-2 font-semibold text-emerald-800">
+                    {fr ? "Voir la charte" : "View charter"}
+                    <ExternalLink size={14} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        )}
+
+          <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-black tracking-tight text-emerald-950">{fr ? "Résumé" : "Summary"}</h2>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-emerald-800">
+                  {formatCount(openActionsCount)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <HeroStatCard
+                  icon={<Users2 size={22} />}
+                  value={formatCount(openActionsCount)}
+                  label={fr ? "Actions ouvertes" : "Open actions"}
+                />
+                <HeroStatCard
+                  icon={<Clock3 size={22} />}
+                  value={formatCount(pendingRequestsCount)}
+                  label={fr ? "Demandes en attente" : "Pending requests"}
+                  tone="amber"
+                />
+                <HeroStatCard
+                  icon={<CheckCircle2 size={22} />}
+                  value={formatCount(activeParticipationItems.length)}
+                  label={fr ? "Participations confirmées" : "Confirmed participations"}
+                />
+                <HeroStatCard
+                  icon={<Leaf size={22} />}
+                  value={`${formatKg(projectedImpactKg)} kg`}
+                  label={fr ? "Impact potentiel" : "Potential impact"}
+                  tone="amber"
+                />
+              </div>
+            </div>
+
+            <ShortcutsCard />
+
+            <div id="mon-suivi" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xl font-black tracking-tight text-emerald-950">
+                  {fr ? "Mon suivi" : "My tracking"}
+                </h3>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-emerald-800">
+                  {formatCount(activeParticipationItems.length)}
+                </span>
+              </div>
+
+              {authenticated ? (
+                <div className="space-y-2">
+                  {sortedHistoryItems.slice(0, 4).map((item) => {
+                    const status = getActionDisplayStatus(item);
+                    return (
+                      <div key={item.id} className="rounded-[1rem] border border-slate-100 bg-slate-50/70 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{item.location_label}</p>
+                            <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
+                          </div>
+                          <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
+                            {getStatusLabel(status, fr)}
+                          </PillBadge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <CmmButton href="/actions/history" tone="secondary" variant="pill" className="mt-2 w-full">
+                    <span className="flex items-center gap-2">
+                      {fr ? "Voir toutes mes participations" : "View all my participations"}
+                      <ChevronRight size={16} />
+                    </span>
+                  </CmmButton>
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-slate-600">
+                  {fr
+                    ? "Connectez-vous pour retrouver vos participations et leur statut."
+                    : "Sign in to review your participations and their status."}
+                </p>
+              )}
+            </div>
+
+            <HelpCard />
+          </aside>
+        </div>
       </div>
+
+      <JoinFormConfirmationDialog
+        fr={fr}
+        pendingJoinAction={items.find((item) => item.id === pendingJoinActionId) ?? null}
+        onClose={() => setPendingJoinActionId(null)}
+        onConfirm={() => {
+          void confirmPendingJoin();
+        }}
+      />
     </SectionShell>
   );
 }

@@ -24,7 +24,7 @@ describe("EnvironmentalQuiz", () => {
   it("covers both access types and preserves the reasoning mix", () => {
     const trueFalseQuestions = QUIZ_QUESTIONS.filter((question) => question.type === "true-false");
 
-    expect(QUIZ_ACCESS_TYPES).toHaveLength(7);
+    expect(QUIZ_ACCESS_TYPES).toHaveLength(8);
     expect(QUIZ_ACCESS_TYPES.every((accessType) => QUIZ_QUESTIONS.some((question) => matchesQuizAccessType(accessType.id, question)))).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => matchesQuizAccessType("mixte", question))).toBe(true);
     expect(trueFalseQuestions.length).toBeGreaterThanOrEqual(4);
@@ -36,7 +36,11 @@ describe("EnvironmentalQuiz", () => {
         return (
           reviewTargetHref === QUIZ_REVIEW_TARGETS.comprendre.href ||
           reviewTargetHref === QUIZ_REVIEW_TARGETS.sentrainer.href ||
-          reviewTargetHref === QUIZ_REVIEW_TARGETS.bonnes_pratiques.href
+          reviewTargetHref === QUIZ_REVIEW_TARGETS.bonnes_pratiques.href ||
+          reviewTargetHref === "/methodologie" ||
+          reviewTargetHref === "/sections/recycling" ||
+          reviewTargetHref === "/sections/weather" ||
+          reviewTargetHref === "/sections/route"
         );
       }),
     ).toBe(true);
@@ -59,9 +63,10 @@ describe("EnvironmentalQuiz", () => {
     expect(QUIZ_QUESTIONS.every((question) => ["low", "medium", "high"].includes(getQuizTrapLevel(question)))).toBe(true);
   });
 
-  it("routes the quiz into seven accessible study types", () => {
+  it("routes the quiz into eight accessible study types", () => {
     expect(listQuizAccessTypeIds()).toEqual([
       "mixte",
+      "ecole",
       "terrain",
       "donnees-scientifiques",
       "sensibilisation",
@@ -77,6 +82,7 @@ describe("EnvironmentalQuiz", () => {
       },
       {
         terrain: 0,
+        ecole: 0,
         "donnees-scientifiques": 0,
         sensibilisation: 0,
         "habitudes-de-vie": 0,
@@ -87,6 +93,7 @@ describe("EnvironmentalQuiz", () => {
     );
 
     expect(accessTypeCounts.mixte).toBeGreaterThan(0);
+    expect(accessTypeCounts.ecole).toBeGreaterThan(0);
     expect(accessTypeCounts.terrain).toBeGreaterThan(0);
     expect(accessTypeCounts["donnees-scientifiques"]).toBeGreaterThan(0);
     expect(accessTypeCounts.sensibilisation).toBeGreaterThan(0);

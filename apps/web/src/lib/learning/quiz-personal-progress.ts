@@ -2,6 +2,7 @@ import { createLocalStorageStore, isRecord } from "@/lib/storage/local-storage";
 import { QUIZ_ACCESS_TYPES, getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
 import { getQuizReviewTarget, type QuizQuestionCategory, type QuizReviewTarget } from "@/components/learn/quiz-review-targets";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizUiCopyKey } from "@/lib/learning/quiz-i18n";
 
 type QuizPersonalModeProgress = {
   sessions: number;
@@ -97,16 +98,51 @@ export type QuizPersonalProgressTargetStat = {
 
 export type QuizPersonalProgressRecommendation = {
   id: QuizAccessTypeId;
-  label: string;
+  labelKey: QuizUiCopyKey;
   reason: string;
+};
+
+export type QuizProgressTone = "emerald" | "sky" | "amber" | "violet";
+
+export type QuizPersonalProgressSignal = {
+  id: "score" | "regularity" | "improvement";
+  label: string;
+  value: string;
+  detail: string;
+  tone: QuizProgressTone;
+};
+
+export type QuizPersonalModeLevelStat = QuizPersonalProgressModeStat & {
+  level: number;
+  levelLabel: string;
+  detail: string;
+  nextLabel: string | null;
+  nextSessions: number | null;
+};
+
+export type QuizPersonalBadgeStat = {
+  id: string;
+  label: string;
+  description: string;
+  href: string;
+  attempts: number;
+  targetAttempts: number;
+  accuracy: number;
+  thresholdAccuracy: number;
+  unlocked: boolean;
+  tone: QuizProgressTone;
+  detail: string;
 };
 
 export type QuizPersonalProgressSnapshot = {
   modeStats: QuizPersonalProgressModeStat[];
+  modeLevels: QuizPersonalModeLevelStat[];
   masteredSkills: QuizPersonalProgressSkillStat[];
   skillsToReview: QuizPersonalProgressSkillStat[];
   errorStats: QuizPersonalProgressErrorStat[];
   reviewTargets: QuizPersonalProgressTargetStat[];
+  progressSignals: QuizPersonalProgressSignal[];
+  badges: QuizPersonalBadgeStat[];
   recommendedMode: QuizPersonalProgressRecommendation | null;
 };
 
@@ -269,6 +305,238 @@ function getAccuracy(correctAnswers: number, totalQuestions: number): number {
   return correctAnswers / totalQuestions;
 }
 
+const QUIZ_MODE_LEVELS = [
+  { level: 0, label: "Démarrage", minSessions: 0, minAccuracy: 0 },
+  { level: 1, label: "Découverte", minSessions: 1, minAccuracy: 0.45 },
+  { level: 2, label: "Consolidation", minSessions: 3, minAccuracy: 0.55 },
+  { level: 3, label: "Rythme stable", minSessions: 5, minAccuracy: 0.65 },
+  { level: 4, label: "Maîtrise", minSessions: 8, minAccuracy: 0.75 },
+  { level: 5, label: "Référence", minSessions: 12, minAccuracy: 0.82 },
+] as const;
+
+function formatPercentage(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatDeltaPoints(value: number): string {
+  const rounded = Math.round(value * 100);
+  return `${rounded > 0 ? "+" : ""}${rounded} points`;
+}
+
+function getRecentDistinctDays(recentSessions: QuizPersonalProgressState["recentSessions"]): string[] {
+  const distinctDays = new Set<string>();
+
+  for (const session of recentSessions) {
+    const playedAt = new Date(session.playedAt);
+    if (Number.isNaN(playedAt.getTime())) {
+      continue;
+    }
+
+    distinctDays.add(playedAt.toISOString().slice(0, 10));
+  }
+
+  return [...distinctDays].sort((left, right) => right.localeCompare(left, "fr"));
+}
+
+function countSessionsSince(recentSessions: QuizPersonalProgressState["recentSessions"], days: number): number {
+  const limit = Date.now() - days * 24 * 60 * 60 * 1000;
+  return recentSessions.filter((session) => {
+    const playedAt = new Date(session.playedAt);
+    return !Number.isNaN(playedAt.getTime()) && playedAt.getTime() >= limit;
+  }).length;
+}
+
+function computeImprovementDelta(recentSessions: QuizPersonalProgressState["recentSessions"]): number | null {
+  const lastSix = recentSessions.slice(0, 6);
+  if (lastSix.length < 4) {
+    return null;
+  }
+
+  const recentWindow = lastSix.slice(0, 3);
+  const previousWindow = lastSix.slice(3, 6);
+  if (previousWindow.length === 0) {
+    return null;
+  }
+
+  const recentAverage = recentWindow.reduce((sum, session) => sum + session.accuracy, 0) / recentWindow.length;
+  const previousAverage = previousWindow.reduce((sum, session) => sum + session.accuracy, 0) / previousWindow.length;
+  return recentAverage - previousAverage;
+}
+
+function resolveModeLevel(mode: QuizPersonalProgressModeStat): QuizPersonalModeLevelStat {
+  const eligibleLevel = [...QUIZ_MODE_LEVELS]
+    .reverse()
+    .find((level) => mode.sessions >= level.minSessions && mode.accuracy >= level.minAccuracy) ?? QUIZ_MODE_LEVELS[0];
+
+  const nextLevel = QUIZ_MODE_LEVELS.find((level) => level.level === eligibleLevel.level + 1) ?? null;
+  const nextSessions = nextLevel ? Math.max(0, nextLevel.minSessions - mode.sessions) : null;
+
+  return {
+    ...mode,
+    level: eligibleLevel.level,
+    levelLabel: eligibleLevel.label,
+    detail:
+      mode.sessions === 0
+        ? "Aucune séance enregistrée."
+        : `${mode.sessions} session${mode.sessions > 1 ? "s" : ""} • ${formatPercentage(mode.accuracy)} de réussite`,
+    nextLabel: nextLevel ? nextLevel.label : null,
+    nextSessions,
+  };
+}
+
+function buildProgressSignals(
+  progress: QuizPersonalProgressState,
+): QuizPersonalProgressSignal[] {
+  const recentSession = progress.recentSessions[0];
+  const activeDays = getRecentDistinctDays(progress.recentSessions);
+  const sessionsThisWeek = countSessionsSince(progress.recentSessions, 7);
+  const improvementDelta = computeImprovementDelta(progress.recentSessions);
+
+  const scoreSignal: QuizPersonalProgressSignal = recentSession
+    ? {
+        id: "score",
+        label: "Score récent",
+        value: `${recentSession.score}/${recentSession.totalQuestions}`,
+        detail: `Dernière séance: ${formatPercentage(recentSession.accuracy)} de réussite.`,
+        tone: "emerald",
+      }
+    : {
+        id: "score",
+        label: "Score récent",
+        value: "Aucun score",
+        detail: "Commence une première séance pour ouvrir le suivi.",
+        tone: "emerald",
+      };
+
+  const regularitySignal: QuizPersonalProgressSignal = {
+    id: "regularity",
+    label: "Régularité",
+    value: activeDays.length > 0 ? `${activeDays.length} jour${activeDays.length > 1 ? "s" : ""}` : "0 jour",
+    detail:
+      sessionsThisWeek > 0
+        ? `${sessionsThisWeek} séance${sessionsThisWeek > 1 ? "s" : ""} sur les 7 derniers jours.`
+        : "Aucune séance enregistrée cette semaine.",
+    tone: "sky",
+  };
+
+  const improvementSignal: QuizPersonalProgressSignal = improvementDelta === null
+    ? {
+        id: "improvement",
+        label: "Amélioration",
+        value: "À venir",
+        detail: "Il faut au moins quelques séances pour mesurer une tendance.",
+        tone: "violet",
+      }
+    : {
+        id: "improvement",
+        label: "Amélioration",
+        value: formatDeltaPoints(improvementDelta),
+        detail:
+          improvementDelta > 0
+            ? "La moyenne des trois dernières séances progresse."
+            : improvementDelta < 0
+              ? "La moyenne récente baisse légèrement. Le prochain cycle doit rester centré."
+              : "La moyenne récente est stable.",
+        tone: improvementDelta > 0 ? "emerald" : improvementDelta < 0 ? "amber" : "violet",
+      };
+
+  return [scoreSignal, regularitySignal, improvementSignal];
+}
+
+function buildBadgeFromStat(params: {
+  id: string;
+  label: string;
+  description: string;
+  href: string;
+  stat: { attempts: number; accuracy: number } | null;
+  targetAttempts: number;
+  thresholdAccuracy: number;
+  tone: QuizProgressTone;
+}): QuizPersonalBadgeStat {
+  const attempts = params.stat?.attempts ?? 0;
+  const accuracy = params.stat?.accuracy ?? 0;
+  const unlocked = attempts >= params.targetAttempts && accuracy >= params.thresholdAccuracy;
+  const detail =
+    attempts === 0
+      ? "Aucune séance enregistrée."
+      : `${attempts}/${params.targetAttempts} séances • ${formatPercentage(accuracy)}`;
+
+  return {
+    id: params.id,
+    label: params.label,
+    description: params.description,
+    href: params.href,
+    attempts,
+    targetAttempts: params.targetAttempts,
+    accuracy,
+    thresholdAccuracy: params.thresholdAccuracy,
+    unlocked,
+    tone: params.tone,
+    detail,
+  };
+}
+
+function buildProgressBadges(
+  skillStats: QuizPersonalProgressSkillStat[],
+  reviewTargets: QuizPersonalProgressTargetStat[],
+): QuizPersonalBadgeStat[] {
+  const skillLookup = new Map(skillStats.map((skill) => [skill.label, skill] as const));
+  const reviewTargetLookup = new Map(reviewTargets.map((target) => [target.href, target] as const));
+
+  return [
+    buildBadgeFromStat({
+      id: "quiz-security-terrain",
+      label: "Sécurité terrain",
+      description: "Réflexes fiables pour les décisions de terrain et la sécurité.",
+      href: "/sections/weather",
+      stat: skillLookup.get("terrain") ?? null,
+      targetAttempts: 3,
+      thresholdAccuracy: 0.75,
+      tone: "emerald",
+    }),
+    buildBadgeFromStat({
+      id: "quiz-tri-fiable",
+      label: "Tri fiable",
+      description: "Repères solides pour suivre la bonne filière de tri.",
+      href: "/learn/bonnes-pratiques",
+      stat: reviewTargetLookup.get("/learn/bonnes-pratiques") ?? null,
+      targetAttempts: 3,
+      thresholdAccuracy: 0.75,
+      tone: "sky",
+    }),
+    buildBadgeFromStat({
+      id: "quiz-ordres-grandeur",
+      label: "Ordres de grandeur",
+      description: "Estimations cohérentes et comparaison à la bonne échelle.",
+      href: "/learn/comprendre",
+      stat: skillLookup.get("estimation") ?? null,
+      targetAttempts: 3,
+      thresholdAccuracy: 0.75,
+      tone: "violet",
+    }),
+    buildBadgeFromStat({
+      id: "quiz-idees-recues",
+      label: "Idées reçues",
+      description: "Lecture prudente face aux affirmations trop rapides.",
+      href: "/learn/comprendre",
+      stat: skillLookup.get("idée reçue") ?? null,
+      targetAttempts: 3,
+      thresholdAccuracy: 0.75,
+      tone: "amber",
+    }),
+    buildBadgeFromStat({
+      id: "quiz-impact-local",
+      label: "Impact local",
+      description: "Prise en compte des effets indirects et des conséquences locales.",
+      href: "/learn/comprendre",
+      stat: skillLookup.get("conséquences indirectes") ?? null,
+      targetAttempts: 3,
+      thresholdAccuracy: 0.75,
+      tone: "emerald",
+    }),
+  ].sort((left, right) => Number(right.unlocked) - Number(left.unlocked) || right.attempts - left.attempts || left.label.localeCompare(right.label, "fr"));
+}
+
 function getPlayedModeStats(progress: QuizPersonalProgressState): QuizPersonalProgressModeStat[] {
   return QUIZ_ACCESS_TYPES.map((accessType) => {
     const entry = progress.modes[accessType.id];
@@ -333,7 +601,7 @@ function buildRecommendation(modeStats: QuizPersonalProgressModeStat[]): QuizPer
   if (playedModes.length === 0) {
     return {
       id: "mixte",
-      label: getQuizAccessType("mixte").label,
+      labelKey: getQuizAccessType("mixte").labelKey,
       reason: "Aucun historique personnel encore enregistré. Le mode mixte reste le meilleur point de départ.",
     };
   }
@@ -341,7 +609,7 @@ function buildRecommendation(modeStats: QuizPersonalProgressModeStat[]): QuizPer
   const weakestMode = [...playedModes].sort((left, right) => left.accuracy - right.accuracy || left.sessions - right.sessions || left.label.localeCompare(right.label, "fr"))[0];
   return {
     id: weakestMode.id,
-    label: weakestMode.label,
+    labelKey: getQuizAccessType(weakestMode.id).labelKey,
     reason: `C'est ton mode le plus fragile dans l'historique (${Math.round(weakestMode.accuracy * 100)}% de réussite sur ${weakestMode.sessions} session${weakestMode.sessions > 1 ? "s" : ""}).`,
   };
 }
@@ -449,6 +717,9 @@ export function buildQuizPersonalProgressSnapshot(
   const skillStats = getSkillStats(progress);
   const errorStats = getErrorStats(progress);
   const reviewTargets = getReviewTargetStats(progress);
+  const modeLevels = modeStats.map(resolveModeLevel);
+  const progressSignals = buildProgressSignals(progress);
+  const badges = buildProgressBadges(skillStats, reviewTargets);
   const masteredSkills = skillStats.filter((skill) => skill.attempts >= 2 && skill.accuracy >= 0.75).slice(0, 3);
   const skillsToReview = skillStats.filter((skill) => skill.attempts >= 1 && skill.accuracy < 0.75).slice(0, 3);
   const recommendedMode = buildRecommendation(modeStats);
@@ -465,10 +736,13 @@ export function buildQuizPersonalProgressSnapshot(
 
   return {
     modeStats,
+    modeLevels,
     masteredSkills,
     skillsToReview,
     errorStats: errorStats.slice(0, 4),
     reviewTargets: reviewTargets.slice(0, 4),
+    progressSignals,
+    badges,
     recommendedMode,
   };
 }
