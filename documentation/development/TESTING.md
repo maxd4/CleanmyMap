@@ -14,15 +14,22 @@
    - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
    - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild` (includes `next build`)
 
-3. Focused low-noise logs:
+3. TypeScript diagnostic flow:
+   - `npm run typecheck`
+   - `npx tsc --noEmit --pretty false`
+   - `npx tsc --noEmit --pretty false > typescript-errors.txt`
+   - if the output still looks truncated, use `npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt`
+   - read the file, group the errors by root cause, fix the shared blocker first, then rerun `npm run typecheck`
+
+4. Focused low-noise logs:
    - `npm run logs:focus:test`
    - `npm run logs:focus:build`
    - `npm run logs:focus:checks`
 
-4. Python only:
+5. Python only:
    - `pytest -q`
 
-5. QA page par page sur une route visible modifiée:
+6. QA page par page sur une route visible modifiée:
    - lancer la page en local
    - capturer le rendu écran
    - exporter la page avec `.MD this page` via `Alt+M`
@@ -91,6 +98,8 @@ Expected order:
 1. Read the full error log.
 2. Classify the failure: TypeScript, import, Next route, Vercel config, cache, Supabase, env vars, Turbopack/Webpack.
 3. Run the fast checks: typecheck, lint, targeted tests.
+   - Prefer `npm run typecheck` or `npx tsc --noEmit --pretty false` for TypeScript triage.
+   - If the compiler output is long, capture it to `typescript-errors.txt` and group by root cause before editing.
 4. Fix grouped errors.
 5. Run one full local/sandbox build.
 6. Trigger Vercel only once the local/sandbox build is clean.

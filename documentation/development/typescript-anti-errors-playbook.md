@@ -20,6 +20,36 @@ Quand une erreur TypeScript apparaît, la correction doit:
 - Tout accès dynamique doit être normalisé avant d'entrer dans la logique métier.
 - Si une donnée est stable, elle mérite un type nommé.
 
+## Protocole de diagnostic TypeScript
+
+Quand il faut diagnostiquer des erreurs TypeScript, utiliser un vrai check `noEmit` plutôt qu'un outil qui s'arrête trop tôt sur un cas isolé.
+
+Commande de base:
+
+- `npm run typecheck`
+- ou `npx tsc --noEmit --pretty false`
+
+Quand on veut conserver toute la sortie dans un fichier:
+
+- `npx tsc --noEmit --pretty false > typescript-errors.txt`
+
+Si la sortie semble tronquée par le terminal, le script ou Codex:
+
+- `npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt`
+
+Méthode de correction:
+
+1. lire `typescript-errors.txt` en entier;
+2. regrouper les erreurs par cause racine;
+3. corriger d'abord les erreurs bloquantes communes;
+4. relancer `npm run typecheck`;
+5. ne revenir au build qu'après un typecheck propre ou après avoir confirmé qu'une erreur est externe au code.
+
+Règle pratique:
+
+- si TypeScript affiche plusieurs erreurs dans plusieurs fichiers, ne corrige pas fichier par fichier au hasard;
+- corrige la source commune, puis relance le check complet.
+
 ## Codes fréquents
 
 ### `TS4111` - propriété issue d'un index signature
