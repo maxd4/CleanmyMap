@@ -4,6 +4,7 @@ import { filterAndSortJoinableActions } from "./rejoindre-un-formulaire-section.
 
 function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionItem, "id" | "action_date" | "location_label">): JoinableActionItem {
   return {
+    ...partial,
     created_at: `${partial.action_date}T10:00:00Z`,
     volunteers_count: partial.volunteers_count ?? 12,
     duration_minutes: partial.duration_minutes ?? 30,
@@ -16,7 +17,7 @@ function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionIt
     participationSource: partial.participationSource ?? null,
     participationUpdatedAt: partial.participationUpdatedAt ?? null,
     groupJoinEnabled: partial.groupJoinEnabled ?? true,
-    ...partial,
+    pendingRequestsCount: partial.pendingRequestsCount ?? 0,
   };
 }
 
