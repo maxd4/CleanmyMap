@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Globe, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  getLocalGeoAddressSuggestions,
+  mergeGeoAddressSuggestions,
+  type GeoAddressSuggestion,
+} from "@/lib/geo/address-suggestions";
+import {
   extractArrondissementFromLabel,
   getArrondissementCityOptions,
   getArrondissementCityCount,
@@ -19,14 +24,6 @@ import type {
 } from "@/lib/user-location-preference";
 
 export type { TerritoryLocationLevel, TerritoryLocationSelection };
-
-type TerritorySuggestion = {
-  label: string;
-  subtitle: string;
-  latitude: number;
-  longitude: number;
-  importance: number | null;
-};
 
 const LEVEL_OPTIONS: Array<{
   value: TerritoryLocationLevel;
@@ -93,7 +90,7 @@ function parseSelectedArrondissementCity(value: unknown): ArrondissementCity | n
 
 function buildSelectionFromSuggestion(
   level: TerritoryLocationLevel,
-  suggestion: TerritorySuggestion,
+  suggestion: GeoAddressSuggestion,
   arrondissementValue: string,
   arrondissementCity: ArrondissementCity | null,
 ): TerritoryLocationSelection {
@@ -118,8 +115,26 @@ function buildSelectionFromSuggestion(
   };
 }
 
+function filterSuggestionsForLevel(
+  items: GeoAddressSuggestion[],
+  level: TerritoryLocationLevel,
+): GeoAddressSuggestion[] {
+  return level === "arrondissement"
+    ? items
+        .filter((item) => {
+          const label = normalizeText(item.label);
+          return Boolean(extractArrondissementFromLabel(item.label)) || label.includes("arrondissement");
+        })
+        .sort((left, right) => {
+          const leftScore = extractArrondissementFromLabel(left.label) ? 1 : 0;
+          const rightScore = extractArrondissementFromLabel(right.label) ? 1 : 0;
+          return rightScore - leftScore;
+        })
+    : items;
+}
+
 function useTerritorySuggestions(query: string, level: TerritoryLocationLevel) {
-  const [suggestions, setSuggestions] = useState<TerritorySuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<GeoAddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const trimmedQuery = query.trim();
@@ -138,6 +153,17 @@ function useTerritorySuggestions(query: string, level: TerritoryLocationLevel) {
       setIsLoading(true);
       setErrorMessage(null);
 
+      const localSuggestions = filterSuggestionsForLevel(
+        getLocalGeoAddressSuggestions(nextTrimmedQuery, 8),
+        level,
+      );
+      setSuggestions(localSuggestions);
+
+      if (localSuggestions.length >= 8) {
+        setIsLoading(false);
+        return;
+      }
+
       fetch(`/api/geo/address-suggestions?q=${encodeURIComponent(nextTrimmedQuery)}&limit=8`, {
         signal: controller.signal,
         headers: {
@@ -149,35 +175,23 @@ function useTerritorySuggestions(query: string, level: TerritoryLocationLevel) {
             throw new Error("Impossible de charger les suggestions.");
           }
           return (await response.json()) as {
-            items?: TerritorySuggestion[];
+            items?: GeoAddressSuggestion[];
           };
         })
         .then((payload) => {
           const items = Array.isArray(payload.items) ? payload.items : [];
-          const levelAwareItems =
-            level === "arrondissement"
-              ? items
-                  .filter((item) => {
-                    const label = normalizeText(item.label);
-                    return (
-                      Boolean(extractArrondissementFromLabel(item.label)) ||
-                      label.includes("arrondissement")
-                    );
-                  })
-                  .sort((left, right) => {
-                    const leftScore = extractArrondissementFromLabel(left.label) ? 1 : 0;
-                    const rightScore = extractArrondissementFromLabel(right.label) ? 1 : 0;
-                    return rightScore - leftScore;
-                  })
-              : items;
-
-          setSuggestions(levelAwareItems);
+          setSuggestions(
+            mergeGeoAddressSuggestions(
+              localSuggestions,
+              filterSuggestionsForLevel(items, level),
+              8,
+            ),
+          );
         })
         .catch((error) => {
           if (controller.signal.aborted) {
             return;
           }
-          setSuggestions([]);
           setErrorMessage(
             error instanceof Error && error.message
               ? error.message
@@ -302,7 +316,7 @@ export function TerritoryLocationSelector({
     onChange(null);
   };
 
-  const handlePickSuggestion = (suggestion: TerritorySuggestion) => {
+  const handlePickSuggestion = (suggestion: GeoAddressSuggestion) => {
     const nextSelection = buildSelectionFromSuggestion(
       selectedLevel,
       suggestion,

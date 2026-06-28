@@ -13,7 +13,6 @@ import {
   type ReportScope,
 } from "@/lib/reports/scope";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
 import { AppError } from "@/lib/errors/app-errors";
 import { buildActionInsights } from "./insights";
 import { parseDrawingFromNotes } from "./drawing";
@@ -23,7 +22,6 @@ import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "./pollution-score";
-import { loadLocalActionContracts } from "@/lib/data/map-records";
 import type { ActionDataContract, ActionEntityType } from "./contract-model";
 import { buildActionDataContract } from "./data-contract";
 import { toActionMapItem } from "./contract-mappers";
@@ -303,18 +301,15 @@ function buildMapItems(
 }
 
 function buildMapSourceHealth(
-  localStoreAllowed: boolean,
   localUnavailable: boolean,
 ): NonNullable<ActionMapResponse["sourceHealth"]> {
   return {
     partial: localUnavailable,
     failedSources: localUnavailable
-      ? ["local"]
+      ? ["actions"]
       : ([] as NonNullable<ActionMapResponse["sourceHealth"]>["failedSources"]),
-    availableSources: localStoreAllowed
-      ? ["actions", "spots", "local"]
-      : ["actions", "spots"],
-    warnings: localUnavailable ? ["Partial data: source(s) unavailable (local)."] : [],
+    availableSources: ["actions", "spots"],
+    warnings: localUnavailable ? ["Partial data: source(s) unavailable."] : [],
   };
 }
 
@@ -356,7 +351,7 @@ function normalizeMapActionError(rpcPayload: ActionsMapRpcResult): AppError {
   });
 }
 
-async function loadMapActionSources(config: MapFetchConfig, localStoreAllowed: boolean) {
+async function loadMapActionSources(config: MapFetchConfig) {
   const supabase = getSupabaseBrowserClient();
 
   return Promise.allSettled([
@@ -373,14 +368,6 @@ async function loadMapActionSources(config: MapFetchConfig, localStoreAllowed: b
       p_limit: config.rpcLimit,
     }),
     fetchActionPollutionScoreReferences(supabase),
-    localStoreAllowed
-      ? loadLocalActionContracts({
-          status: config.status,
-          floorDate: config.floorDate,
-          limit: config.rpcLimit,
-          requireCoordinates: true,
-        })
-      : Promise.resolve([] as ActionDataContract[]),
   ] as const);
 }
 
@@ -474,18 +461,13 @@ export async function fetchMapActions(
   }
 
   const config = resolveMapFetchConfig(params);
-  const localStoreAllowed = allowLocalActionStoreInCurrentRuntime();
-  const [rpcResult, refsResult, localResult] = await loadMapActionSources(
-    config,
-    localStoreAllowed,
-  );
+  const [rpcResult, refsResult] = await loadMapActionSources(config);
 
   const rpcPayload = unwrapMapRpcResult(rpcResult);
   const pollutionScoreReferences: PollutionScoreReferences =
     refsResult.status === "fulfilled"
       ? refsResult.value
       : DEFAULT_POLLUTION_SCORE_REFERENCES;
-  const localContracts = localResult.status === "fulfilled" ? localResult.value : [];
 
   const remoteContracts = Array.isArray(rpcPayload.data)
     ? (rpcPayload.data as ActionsMapFeedRow[]).map((row) => toActionContractFromMapFeedRow(row))
@@ -493,7 +475,7 @@ export async function fetchMapActions(
 
   const mergedContracts = buildMapContracts(
     remoteContracts,
-    localContracts,
+    [],
     config.scope,
     config.types,
   );
@@ -510,10 +492,7 @@ export async function fetchMapActions(
     count: items.length,
     daysWindow: config.floorDate === null ? null : config.days,
     items,
-    partialSource: localResult.status === "rejected",
-    sourceHealth: buildMapSourceHealth(
-      localStoreAllowed,
-      localResult.status === "rejected",
-    ),
+    partialSource: false,
+    sourceHealth: buildMapSourceHealth(false),
   };
 }

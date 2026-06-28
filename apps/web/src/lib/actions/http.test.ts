@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   rpcMock: vi.fn(),
   getSupabaseBrowserClientMock: vi.fn(),
   fetchActionPollutionScoreReferencesMock: vi.fn(),
-  loadLocalActionContractsMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -13,10 +12,6 @@ vi.mock("@/lib/supabase/client", () => ({
 
 vi.mock("./pollution-score-references", () => ({
   fetchActionPollutionScoreReferences: mocks.fetchActionPollutionScoreReferencesMock,
-}));
-
-vi.mock("@/lib/data/map-records", () => ({
-  loadLocalActionContracts: mocks.loadLocalActionContractsMock,
 }));
 
 import {
@@ -31,8 +26,45 @@ afterEach(() => {
   mocks.rpcMock.mockReset();
   mocks.getSupabaseBrowserClientMock.mockReset();
   mocks.fetchActionPollutionScoreReferencesMock.mockReset();
-  mocks.loadLocalActionContractsMock.mockReset();
 });
+
+function expectFetchPostMethods(fetchMock: ReturnType<typeof vi.fn>): void {
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual(
+    expect.objectContaining({
+      method: "POST",
+    }),
+  );
+  expect(fetchMock.mock.calls[1]?.[1]).toEqual(
+    expect.objectContaining({
+      method: "POST",
+    }),
+  );
+}
+
+function expectMapActionsFallbackResult(
+  result: Awaited<ReturnType<typeof fetchMapActions>>,
+): void {
+  expect(result.status).toBe("ok");
+  expect(result.count).toBe(1);
+  expect(result.daysWindow).toBe(15);
+  expect(result.partialSource).toBe(false);
+  expect(result.sourceHealth?.availableSources).toEqual([
+    "actions",
+    "spots",
+  ]);
+  expect(result.items[0]?.id).toBe("map-1");
+  expect(result.items[0]?.waste_pollution_score).toBe(40);
+  expect(result.items[0]?.cigarette_butts_pollution_score).toBe(100);
+  expect(result.items[0]?.impact_level).toBe("fort");
+  expect(result.items[0]?.contract?.metadata.associationName).toBe("Collectif Demo");
+  expect(result.items[0]?.contract?.metadata.manualDrawing).toEqual({
+    kind: "polyline",
+    coordinates: [
+      [48.8566, 2.3522],
+      [48.857, 2.353],
+    ],
+  });
+}
 
 describe("createAction", () => {
   it("retries with the legacy payload when the contract payload is rejected", async () => {
@@ -67,16 +99,7 @@ describe("createAction", () => {
 
     expect(result).toEqual({ id: "action-1", retentionLoop: null });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0]?.[1]).toEqual(
-      expect.objectContaining({
-        method: "POST",
-      }),
-    );
-    expect(fetchMock.mock.calls[1]?.[1]).toEqual(
-      expect.objectContaining({
-        method: "POST",
-      }),
-    );
+    expectFetchPostMethods(fetchMock);
   });
 });
 
@@ -174,7 +197,6 @@ describe("fetchMapActions", () => {
       wastePerVolunteer: 5,
       buttsPerVolunteer: 50,
     });
-    mocks.loadLocalActionContractsMock.mockResolvedValue([]);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -204,7 +226,6 @@ describe("fetchMapActions", () => {
     expect(global.fetch).not.toHaveBeenCalled();
     expect(mocks.getSupabaseBrowserClientMock).toHaveBeenCalledTimes(1);
     expect(mocks.fetchActionPollutionScoreReferencesMock).toHaveBeenCalledTimes(1);
-    expect(mocks.loadLocalActionContractsMock).toHaveBeenCalledTimes(1);
     expect(mocks.rpcMock).toHaveBeenCalledTimes(1);
     expect(mocks.rpcMock).toHaveBeenCalledWith(
       "actions_map_feed",
@@ -219,29 +240,6 @@ describe("fetchMapActions", () => {
         p_zoom: 13,
       }),
     );
-
-    expect(result.status).toBe("ok");
-    expect(result.count).toBe(1);
-    expect(result.daysWindow).toBe(15);
-    expect(result.partialSource).toBe(false);
-    expect(result.sourceHealth?.availableSources).toEqual([
-      "actions",
-      "spots",
-      "local",
-    ]);
-    expect(result.items[0]?.id).toBe("map-1");
-    expect(result.items[0]?.waste_pollution_score).toBe(40);
-    expect(result.items[0]?.cigarette_butts_pollution_score).toBe(100);
-    expect(result.items[0]?.impact_level).toBe("fort");
-    expect(result.items[0]?.contract?.metadata.associationName).toBe(
-      "Collectif Demo",
-    );
-    expect(result.items[0]?.contract?.metadata.manualDrawing).toEqual({
-      kind: "polyline",
-      coordinates: [
-        [48.8566, 2.3522],
-        [48.857, 2.353],
-      ],
-    });
+    expectMapActionsFallbackResult(result);
   });
 });
