@@ -98,7 +98,7 @@ export type QuizPersonalProgressTargetStat = {
 
 export type QuizPersonalProgressRecommendation = {
   id: QuizAccessTypeId;
-  labelKey: QuizUiCopyKey;
+  label: string;
   reason: string;
 };
 
@@ -601,7 +601,7 @@ function buildRecommendation(modeStats: QuizPersonalProgressModeStat[]): QuizPer
   if (playedModes.length === 0) {
     return {
       id: "mixte",
-      labelKey: getQuizAccessType("mixte").labelKey,
+      label: getQuizAccessType("mixte").label,
       reason: "Aucun historique personnel encore enregistré. Le mode mixte reste le meilleur point de départ.",
     };
   }
@@ -609,7 +609,7 @@ function buildRecommendation(modeStats: QuizPersonalProgressModeStat[]): QuizPer
   const weakestMode = [...playedModes].sort((left, right) => left.accuracy - right.accuracy || left.sessions - right.sessions || left.label.localeCompare(right.label, "fr"))[0];
   return {
     id: weakestMode.id,
-    labelKey: getQuizAccessType(weakestMode.id).labelKey,
+    label: getQuizAccessType(weakestMode.id).label,
     reason: `C'est ton mode le plus fragile dans l'historique (${Math.round(weakestMode.accuracy * 100)}% de réussite sur ${weakestMode.sessions} session${weakestMode.sessions > 1 ? "s" : ""}).`,
   };
 }
