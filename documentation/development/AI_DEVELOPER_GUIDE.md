@@ -41,6 +41,7 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 6. **Icons Lucide-React** : Standard unique pour les icônes.
 7. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
 8. **Précision TypeScript** : `any` est un dernier recours interdit par défaut, les casts doivent être prouvés, `Record<string, unknown>` ne sert qu'aux frontières brutes, et tout accès dynamique doit être normalisé avant d'atteindre la logique métier.
+9. **Diagnostic TypeScript** : pour les erreurs de compilation, privilégie `npm run typecheck` ou `npx tsc --noEmit --pretty false`; si la sortie est trop longue ou semble tronquée, redirige-la vers `typescript-errors.txt` puis regroupe les erreurs par cause racine avant de corriger.
 
 ## 5. Scripts et Automatisation
 Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.

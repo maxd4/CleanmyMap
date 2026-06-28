@@ -56,6 +56,18 @@ Le chemin de correction doit rester groupé:
 - `npm run test:regression-gates -w apps/web`
 - `npm run audit:vercel:ci`
 
+## Règle TypeScript no-emit
+
+Quand le build remonte des erreurs TypeScript, ne passe pas par un outil qui s'arrête au premier fichier ou qui masque la sortie utile.
+
+Ordre recommandé:
+
+1. `npm run typecheck`
+2. ou `npx tsc --noEmit --pretty false`
+3. si la sortie doit être relue hors terminal: `npx tsc --noEmit --pretty false > typescript-errors.txt`
+4. si la sortie paraît tronquée: `npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt`
+5. lire le fichier, regrouper les erreurs par cause racine, corriger le blocage commun, puis relancer `npm run typecheck`
+
 ## Quand nettoyer le cache
 
 Utiliser `npm run build:clean -w apps/web` si:
