@@ -36,6 +36,74 @@ function normalizeSummaryRows(
   }));
 }
 
+async function countEventRsvpRows(
+  supabase: SupabaseClient,
+  eventId: string,
+  status?: "yes" | "maybe" | "no",
+): Promise<number> {
+  let query = supabase
+    .from("event_rsvps")
+    .select("event_id", { count: "exact", head: true })
+    .eq("event_id", eventId);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const result = await query;
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Number(result.count ?? 0);
+}
+
+async function loadMyRsvpStatusForEvent(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string | null,
+): Promise<"yes" | "maybe" | "no" | null> {
+  if (!userId) {
+    return null;
+  }
+
+  const result = await supabase
+    .from("event_rsvps")
+    .select("status")
+    .eq("event_id", eventId)
+    .eq("participant_clerk_id", userId)
+    .maybeSingle();
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data as { status: "yes" | "maybe" | "no" } | null)?.status ?? null;
+}
+
+async function loadEventRsvpSummaryFallback(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string | null,
+): Promise<CommunityEventRsvpSummary> {
+  const [yesCount, maybeCount, noCount, totalCount, myRsvpStatus] = await Promise.all([
+    countEventRsvpRows(supabase, eventId, "yes"),
+    countEventRsvpRows(supabase, eventId, "maybe"),
+    countEventRsvpRows(supabase, eventId, "no"),
+    countEventRsvpRows(supabase, eventId),
+    loadMyRsvpStatusForEvent(supabase, eventId, userId),
+  ]);
+
+  return {
+    eventId,
+    yesCount,
+    maybeCount,
+    noCount,
+    totalCount,
+    myRsvpStatus,
+  };
+}
+
 async function loadCommunityEventRsvpSummariesFromRpc(
   supabase: SupabaseClient,
   params: {
@@ -62,52 +130,13 @@ async function loadCommunityEventRsvpSummariesFallback(
     userId: string | null;
   },
 ): Promise<CommunityEventRsvpSummary[]> {
-  const result = await supabase
-    .from("event_rsvps")
-    .select("event_id, participant_clerk_id, status")
-    .in("event_id", params.eventIds);
+  const summaries = await Promise.all(
+    params.eventIds.map((eventId) =>
+      loadEventRsvpSummaryFallback(supabase, eventId, params.userId),
+    ),
+  );
 
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  const summaries = new Map<string, CommunityEventRsvpSummary>();
-  for (const eventId of params.eventIds) {
-    summaries.set(eventId, {
-      eventId,
-      yesCount: 0,
-      maybeCount: 0,
-      noCount: 0,
-      totalCount: 0,
-      myRsvpStatus: null,
-    });
-  }
-
-  for (const row of (result.data ?? []) as Array<{
-    event_id: string;
-    participant_clerk_id: string;
-    status: "yes" | "maybe" | "no";
-  }>) {
-    const summary = summaries.get(row.event_id);
-    if (!summary) {
-      continue;
-    }
-
-    summary.totalCount += 1;
-    if (row.status === "yes") {
-      summary.yesCount += 1;
-    } else if (row.status === "maybe") {
-      summary.maybeCount += 1;
-    } else {
-      summary.noCount += 1;
-    }
-
-    if (params.userId && row.participant_clerk_id === params.userId) {
-      summary.myRsvpStatus = row.status;
-    }
-  }
-
-  return [...summaries.values()];
+  return summaries;
 }
 
 export async function loadCommunityEventRsvpSummaries(

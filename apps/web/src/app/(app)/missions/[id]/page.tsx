@@ -1,5 +1,6 @@
 import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
 import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
+import { unstable_cache } from "next/cache";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -10,6 +11,7 @@ import { resolveMissionActionImageUrl } from "@/lib/missions/mission-images";
 const MISSION_ASSETS_BUCKET = "mission-assets";
 const MISSION_GPS_POINT_LIMIT = 1000;
 const MISSION_ACTION_LIMIT = 200;
+const MISSION_PAGE_CACHE_REVALIDATE_SECONDS = 60;
 
 const FALLBACK_STARTED_AT = new Date(Date.now() - 3600000).toISOString();
 
@@ -19,17 +21,132 @@ type MissionPageParams = {
   };
 };
 
+type MissionSummary = {
+  id: string;
+  label: string | null;
+  status: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+  distance_m: number | null;
+  duration_s: number | null;
+};
+
+type MissionGpsPoint = {
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+};
+
+type MissionActionRow = {
+  id: string;
+  type: string;
+  content: string | null;
+  image_url: string | null;
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+};
+
+type MissionPageData = {
+  mission: MissionSummary | null;
+  points: MissionGpsPoint[];
+  actions: MissionActionRow[];
+};
+
+type MissionMapAction = {
+  id: string;
+  type: string;
+  content?: string;
+  image_url?: string;
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+};
+
+function buildMissionPageCacheKey(id: string): string {
+  return `mission:${id}`;
+}
+
+async function loadCachedMissionPageData(id: string): Promise<MissionPageData> {
+  const cached = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      const [missionResult, pointsResult, actionsResult] = await Promise.all([
+        supabase
+          .from("missions")
+          .select("id, label, status, started_at, ended_at, distance_m, duration_s")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("gps_points")
+          .select("latitude, longitude, recorded_at")
+          .eq("mission_id", id)
+          .order("recorded_at")
+          .limit(MISSION_GPS_POINT_LIMIT),
+        supabase
+          .from("mission_actions")
+          .select("id, type, content, image_url, latitude, longitude, recorded_at")
+          .eq("mission_id", id)
+          .order("recorded_at", { ascending: true })
+          .limit(MISSION_ACTION_LIMIT),
+      ]);
+
+      const mission = (missionResult.data as MissionSummary | null) ?? null;
+      const points = (pointsResult.data ?? []) as MissionGpsPoint[];
+      const actions = (actionsResult.data ?? []) as MissionActionRow[];
+
+      const signedUrlCache = new Map<string, Promise<string | null>>();
+      const actionsWithResolvedImages = await Promise.all(
+        actions.map(async (action) => {
+          const imageUrl = await resolveMissionActionImageUrl(action.image_url, async (path) => {
+            const cachedSignedUrl = signedUrlCache.get(path);
+            if (cachedSignedUrl) {
+              return cachedSignedUrl;
+            }
+
+            const request = (async () => {
+              const { data, error } = await supabase.storage
+                .from(MISSION_ASSETS_BUCKET)
+                .createSignedUrl(path, 60 * 60 * 24);
+
+              if (error || !data?.signedUrl) {
+                return null;
+              }
+
+              return data.signedUrl;
+            })();
+
+            signedUrlCache.set(path, request);
+            return request;
+          });
+
+          return {
+            ...action,
+            image_url: imageUrl,
+          };
+        }),
+      );
+
+      return {
+        mission,
+        points,
+        actions: actionsWithResolvedImages,
+      };
+    },
+    ["mission-page", buildMissionPageCacheKey(id)],
+    {
+      revalidate: MISSION_PAGE_CACHE_REVALIDATE_SECONDS,
+      tags: [`mission-page:${id}`],
+    },
+  );
+
+  return cached();
+}
+
 export default async function MissionPage({ params }: MissionPageParams) {
   const { id } = params;
   const classes = getBlockClasses("act");
-  const supabase = getSupabaseServerClient();
-  const signedUrlCache = new Map<string, Promise<string | null>>();
-
-  const { data: mission } = await supabase
-    .from("missions")
-    .select("id, label, status, started_at, ended_at, distance_m, duration_s, profiles(name, avatar_url)")
-    .eq("id", id)
-    .maybeSingle();
+  const { mission, points, actions } = await loadCachedMissionPageData(id);
 
   const m = mission || {
     id,
@@ -39,53 +156,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
     ended_at: new Date().toISOString(),
     distance_m: 2450,
     duration_s: 3600,
-    volunteer: { name: "Alice", avatar: null },
   };
-
-  const { data: points } = await supabase
-    .from("gps_points")
-    .select("latitude, longitude, recorded_at")
-    .eq("mission_id", id)
-    .order("recorded_at")
-    .limit(MISSION_GPS_POINT_LIMIT);
-
-  const { data: actions } = await supabase
-    .from("mission_actions")
-    .select("id, type, content, image_url, latitude, longitude, recorded_at")
-    .eq("mission_id", id)
-    .order("recorded_at", { ascending: true })
-    .limit(MISSION_ACTION_LIMIT);
-
-  const actionsWithResolvedImages = await Promise.all(
-    (actions || []).map(async (action) => {
-      const imageUrl = await resolveMissionActionImageUrl(action.image_url, async (path) => {
-        const cached = signedUrlCache.get(path);
-        if (cached) {
-          return cached;
-        }
-
-        const request = (async () => {
-          const { data, error } = await supabase.storage
-            .from(MISSION_ASSETS_BUCKET)
-            .createSignedUrl(path, 60 * 60 * 24);
-
-          if (error || !data?.signedUrl) {
-            return null;
-          }
-
-          return data.signedUrl;
-        })();
-
-        signedUrlCache.set(path, request);
-        return request;
-      });
-
-      return {
-        ...action,
-        image_url: imageUrl ?? undefined,
-      };
-    }),
-  );
 
   const mockPoints = [
     { latitude: 48.8738, longitude: 2.3667, recorded_at: new Date().toISOString() },
@@ -93,7 +164,12 @@ export default async function MissionPage({ params }: MissionPageParams) {
     { latitude: 48.8765, longitude: 2.3695, recorded_at: new Date().toISOString() },
   ];
 
-  const gpsPoints = points && points.length > 0 ? points : mockPoints;
+  const gpsPoints = points.length > 0 ? points : mockPoints;
+  const missionMapActions: MissionMapAction[] = actions.map((action) => ({
+    ...action,
+    content: action.content ?? undefined,
+    image_url: action.image_url ?? undefined,
+  }));
   const isTracking = m.status === "tracking";
   const isPending = m.status === "pending";
   const statusLabel =
@@ -109,7 +185,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
         tone="emerald"
         contrast="inverse"
         eyebrow="Bloc Agir"
-        title={m.label}
+        title={m.label ?? "Mission terrain"}
         subtitle="Tracé terrain, preuves d’impact et indicateurs de mission."
         badges={
           <div className="flex flex-wrap gap-2">
@@ -211,7 +287,10 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 <div className="space-y-0.5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Départ le</p>
                   <p className="text-sm font-bold text-white/80">
-                    {new Date(m.started_at).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                    {new Date(m.started_at ?? FALLBACK_STARTED_AT).toLocaleString("fr-FR", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </p>
                 </div>
               </li>
@@ -231,7 +310,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
 
         <div className="space-y-6 lg:col-span-2">
           <div className="group relative overflow-hidden rounded-[3rem] border border-white/10 shadow-2xl">
-            <DeferredMissionMap points={gpsPoints} actions={actionsWithResolvedImages} />
+            <DeferredMissionMap points={gpsPoints} actions={missionMapActions} />
             <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
               Tracé GPS Certifié
             </div>

@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -10,6 +11,10 @@ import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { trackServerEvent } from"@/lib/analytics.server";
 
 export const runtime ="nodejs";
+const SPOTS_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+};
+const SPOTS_CACHE_REVALIDATE_SECONDS = 60;
 
 const spotStatuses = ["new","validated","cleaned"] as const;
 type SpotStatus = (typeof spotStatuses)[number];
@@ -45,6 +50,43 @@ function parsePositiveInteger(
  return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
+function buildSpotsCacheKey(limit: number, status: SpotStatus | null): string {
+ return [`limit:${limit}`, `status:${status ?? "all"}`].join("|");
+}
+
+async function loadCachedSpots(limit: number, status: SpotStatus | null) {
+ const cached = unstable_cache(
+  async () => {
+   const supabase = getSupabaseServerClient();
+   let query = supabase
+   .from("trash_spotter_spots")
+   .select(
+"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
+   )
+   .order("created_at", { ascending: false })
+   .limit(limit);
+
+   if (status) {
+    query = query.eq("status", status);
+   }
+
+   const result = await query;
+   if (result.error) {
+    throw result.error;
+   }
+
+   return result.data ?? [];
+  },
+  ["spots", buildSpotsCacheKey(limit, status)],
+  {
+   revalidate: SPOTS_CACHE_REVALIDATE_SECONDS,
+   tags: ["spots-map"],
+  },
+ );
+
+ return cached();
+}
+
 export async function GET(request: Request) {
  const { userId } = await auth();
  if (!userId) {
@@ -58,32 +100,15 @@ export async function GET(request: Request) {
  300,
  120,
  );
- const status = parseStatusParam(url.searchParams.get("status"));
+  const status = parseStatusParam(url.searchParams.get("status"));
 
- try {
- const supabase = getSupabaseServerClient();
- let query = supabase
- .from("trash_spotter_spots")
- .select(
-"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
- )
- .order("created_at", { ascending: false })
- .limit(limit);
-
- if (status) {
- query = query.eq("status", status);
- }
-
- const result = await query;
- if (result.error) {
- return handleApiError(result.error,"GET /api/spots (query)");
- }
-
+  try {
+ const items = await loadCachedSpots(limit, status);
  return NextResponse.json({
  status:"ok",
- count: (result.data ?? []).length,
- items: result.data ?? [],
- });
+ count: items.length,
+ items,
+ }, { headers: SPOTS_CACHE_HEADERS });
  } catch (error) {
  return handleApiError(error,"api/spots");
  }
@@ -139,6 +164,8 @@ export async function POST(request: Request) {
  if (inserted.error) {
  return handleApiError(inserted.error,"POST /api/spots (insert)");
  }
+
+ revalidateTag("spots-map", "max");
 
  try {
  await trackSpotCreated(supabase, {

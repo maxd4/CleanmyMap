@@ -9,22 +9,19 @@ import type { FormState } from "../action-declaration-form.model";
 import type { ActionDrawing } from "@/lib/actions/types";
 import type { UpdateFormField } from "./types";
 import {
+  getLocalGeoAddressSuggestions,
+  mergeGeoAddressSuggestions,
+  type GeoAddressSuggestion,
+} from "@/lib/geo/address-suggestions";
+import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
 } from "../map/actions-map-geometry.utils";
 
-type AddressSuggestion = {
-  label: string;
-  subtitle: string;
-  latitude: number;
-  longitude: number;
-  importance: number | null;
-};
-
 type AddressSuggestionsResponse = {
   status: "ok";
   query: string;
-  items: AddressSuggestion[];
+  items: GeoAddressSuggestion[];
 };
 
 const ActionDrawingMap = dynamic(
@@ -132,7 +129,7 @@ function AddressAutocompleteInput({
   helperText: string;
 }) {
   const listboxId = useId();
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<GeoAddressSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -153,10 +150,19 @@ function AddressAutocompleteInput({
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    let localSuggestions: GeoAddressSuggestion[] = [];
 
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       try {
+        localSuggestions = getLocalGeoAddressSuggestions(trimmedValue, 6);
+        setSuggestions(localSuggestions);
+        setHighlightedIndex(0);
+
+        if (localSuggestions.length >= 6) {
+          return;
+        }
+
         const response = await fetch(
           `/api/geo/address-suggestions?q=${encodeURIComponent(trimmedValue)}&limit=6`,
           {
@@ -166,18 +172,20 @@ function AddressAutocompleteInput({
           },
         );
         if (!response.ok) {
-          setSuggestions([]);
+          setSuggestions(localSuggestions);
           return;
         }
+
         const data = (await response.json()) as AddressSuggestionsResponse;
         if (controller.signal.aborted) {
           return;
         }
-        setSuggestions(data.items ?? []);
-        setHighlightedIndex(0);
+        setSuggestions(
+          mergeGeoAddressSuggestions(localSuggestions, data.items ?? [], 6),
+        );
       } catch {
         if (!controller.signal.aborted) {
-          setSuggestions([]);
+          setSuggestions(localSuggestions);
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -199,7 +207,7 @@ function AddressAutocompleteInput({
     abortRef.current?.abort();
   }, []);
 
-  const selectSuggestion = (suggestion: AddressSuggestion) => {
+  const selectSuggestion = (suggestion: GeoAddressSuggestion) => {
     onChange(suggestion.label);
     setIsOpen(false);
     setSuggestions([]);
