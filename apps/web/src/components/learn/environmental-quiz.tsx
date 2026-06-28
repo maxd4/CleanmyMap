@@ -121,7 +121,7 @@ export type QuizErrorTypeSummary = {
 
 export type QuizModeRecommendation = {
   id: QuizAccessTypeId;
-  labelKey: QuizUiCopyKey;
+  label: string;
   reason: string;
 };
 
@@ -388,18 +388,18 @@ export function EnvironmentalQuiz() {
       bestMode && bestMode.score > 0
         ? {
             id: bestMode.accessType.id,
-            labelKey: bestMode.accessType.labelKey,
+            label: bestMode.accessType.label,
             reason: `Ce mode couvre le mieux tes erreurs récentes (${bestMode.score} correspondance${bestMode.score > 1 ? "s" : ""}).`,
           }
         : selectedAccessType
           ? {
               id: selectedAccessType,
-              labelKey: getQuizAccessType(selectedAccessType).labelKey,
+              label: getQuizAccessType(selectedAccessType).label,
               reason: "Poursuis sur ce mode pour consolider la session sans changer de cadre.",
             }
           : {
               id: "mixte",
-              labelKey: getQuizAccessType("mixte").labelKey,
+              label: getQuizAccessType("mixte").label,
               reason: "Le mode mixte reste le plus utile pour repartir sur un parcours équilibré.",
             };
     const recommendedLearningTarget = nextReviewTarget;

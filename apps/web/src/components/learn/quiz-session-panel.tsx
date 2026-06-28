@@ -324,7 +324,7 @@ export function QuizSessionPanel({
 
           <div className="rounded-[2rem] border border-sky-100 bg-sky-50 p-6 shadow-sm">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-700 md:text-xs">
-              {getQuizUiCopy(locale, "session.school.notionsLabel")}
+              {getQuizUiCopy(locale, "session.modeToReplayLabel")}
             </p>
             {sessionSummary.themesSucceeded.length > 0 ? (
               <ul className="mt-3 space-y-2 text-sm font-medium text-sky-950">
@@ -340,10 +340,10 @@ export function QuizSessionPanel({
             )}
           </div>
 
-          <div className="rounded-[2rem] border border-amber-100 bg-amber-50 p-6 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
-              {getQuizUiCopy(locale, "session.school.recommendedModeLabel")}
-            </p>
+            <div className="rounded-[2rem] border border-amber-100 bg-amber-50 p-6 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+                {getQuizUiCopy(locale, "session.school.skillsToReviewLabel")}
+              </p>
             {sessionSummary.themesToReview.length > 0 ? (
               <div className="mt-3 space-y-3">
                 {sessionSummary.themesToReview.map((theme) => {
@@ -395,7 +395,7 @@ export function QuizSessionPanel({
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-[2rem] border border-violet-100 bg-violet-50 p-6 shadow-sm">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-700 md:text-xs">
-              {getQuizUiCopy(locale, "session.school.errorsLabel")}
+              {getQuizUiCopy(locale, "session.errorTypesLabel")}
             </p>
             {sessionSummary.frequentErrorTypes.length > 0 ? (
               <div className="mt-4 space-y-3">
@@ -435,21 +435,19 @@ export function QuizSessionPanel({
               </div>
             ) : (
               <p className="mt-3 text-sm text-violet-900/70">
-                {getQuizUiCopy(locale, "session.school.errorsLabel")}
+                {getQuizUiCopy(locale, "session.errorTypesLabel")}
               </p>
             )}
           </div>
 
           <div className="rounded-[2rem] border border-sky-100 bg-sky-50 p-6 shadow-sm">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-700 md:text-xs">
-              {getQuizUiCopy(locale, "session.school.recommendedModeLabel")}
+              {getQuizUiCopy(locale, "session.school.masteredSkillsLabel")}
             </p>
             {recommendedMode ? (
               <div className="mt-3 space-y-4">
                 <div>
-                  <p className="text-2xl font-black text-sky-950">
-                    {getQuizUiCopy(locale, recommendedMode.labelKey)}
-                  </p>
+                  <p className="text-2xl font-black text-sky-950">{recommendedMode.label}</p>
                   <p className="mt-2 text-sm text-sky-900/80">{recommendedMode.reason}</p>
                 </div>
                 <button

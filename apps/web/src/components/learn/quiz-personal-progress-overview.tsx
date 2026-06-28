@@ -53,7 +53,7 @@ export function QuizPersonalProgressOverview({
               {locale === "fr" ? "Prochain mode recommandé" : "Next recommended mode"}
             </p>
             <p className="mt-1 text-base font-black text-emerald-950">
-              {getQuizUiCopy(locale, snapshot.recommendedMode.labelKey)}
+              {snapshot.recommendedMode.label}
             </p>
             <p className="mt-1 max-w-sm text-xs font-medium leading-relaxed text-emerald-900/80">{snapshot.recommendedMode.reason}</p>
           </div>
