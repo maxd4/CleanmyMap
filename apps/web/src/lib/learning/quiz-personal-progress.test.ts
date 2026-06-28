@@ -74,5 +74,13 @@ describe("quiz personal progress", () => {
     );
     expect(snapshot?.reviewTargets.some((target) => target.href === QUIZ_REVIEW_TARGETS.sentrainer.href)).toBe(true);
     expect(snapshot?.recommendedMode?.id).toBe("donnees-scientifiques");
+    expect(snapshot?.modeLevels.some((mode) => mode.id === "terrain" && mode.level >= 1)).toBe(true);
+    expect(snapshot?.progressSignals.map((signal) => signal.id)).toEqual([
+      "score",
+      "regularity",
+      "improvement",
+    ]);
+    expect(snapshot?.badges.some((badge) => badge.label === "Sécurité terrain")).toBe(true);
+    expect(snapshot?.badges.some((badge) => badge.label === "Tri fiable")).toBe(true);
   });
 });

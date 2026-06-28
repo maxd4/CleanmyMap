@@ -25,6 +25,7 @@ import {
   matchesQuizTrapLevel,
   type QuizTrapLevelId,
 } from "@/components/learn/quiz-trap-levels";
+import type { QuizSchoolTrackId } from "@/components/learn/quiz-school-modes";
 
 export type QuizSelectionQuestionLike = {
   id: string;
@@ -43,6 +44,7 @@ export type QuizSelectionOptions = {
   mode?: QuizAccessTypeId;
   trapLevel?: QuizTrapLevelId | null;
   reasoningType?: QuizReasoningType | null;
+  schoolTrack?: QuizSchoolTrackId | null;
   sessionSize?: number;
   shuffleSession?: boolean;
   randomizer?: () => number;
@@ -51,6 +53,7 @@ export type QuizSelectionOptions = {
 
 const DEFAULT_SESSION_SIZE_BY_MODE: Record<QuizAccessTypeId, number> = {
   mixte: 10,
+  ecole: 15,
   terrain: 8,
   "donnees-scientifiques": 8,
   sensibilisation: 8,
@@ -59,8 +62,37 @@ const DEFAULT_SESSION_SIZE_BY_MODE: Record<QuizAccessTypeId, number> = {
   "tri-securite": 8,
 };
 
+const DEMO_SESSION_QUESTION_IDS = ["at8", "e1", "cb5", "at12", "cb17"] as const;
+
+const SCHOOL_SESSION_QUESTION_IDS: Record<QuizSchoolTrackId, readonly string[]> = {
+  "debat-classe": ["e1", "e2", "e3", "n1", "n2", "n5", "v4", "v5", "v3", "im1", "im4", "im5", "im6", "im9", "hb2"],
+  "mission-terrain": ["at7", "at8", "at9", "at10", "at11", "at12", "at13", "at14", "at15", "at16", "at17", "at18", "at19", "at20", "at21"],
+  "ordres-de-grandeur": ["n2", "cb5", "cb6", "i3", "i4", "i7", "i8", "v1", "v2", "v3", "v5", "x3", "x4", "im3", "im8"],
+  "gestes-du-quotidien": ["ec1", "ec2", "hb1", "hb2", "co1", "im6", "im11", "im12", "im13", "im14", "im15", "im16", "im17", "rc1", "rc2"],
+};
+
 export function getDefaultQuizSessionSize(mode: QuizAccessTypeId): number {
   return DEFAULT_SESSION_SIZE_BY_MODE[mode];
+}
+
+export function buildQuizDemoSessionDeck<T extends QuizSelectionQuestionLike>(questions: readonly T[]): T[] {
+  const questionById = new Map(questions.map((question) => [question.id, question] as const));
+  return DEMO_SESSION_QUESTION_IDS.map((questionId) => questionById.get(questionId)).filter(
+    (question): question is T => Boolean(question),
+  );
+}
+
+export function buildQuizSchoolSessionDeck<T extends QuizSelectionQuestionLike>(
+  questions: readonly T[],
+  track: QuizSchoolTrackId,
+  sessionSize = DEFAULT_SESSION_SIZE_BY_MODE.ecole,
+): T[] {
+  const questionById = new Map(questions.map((question) => [question.id, question] as const));
+  const ordered = SCHOOL_SESSION_QUESTION_IDS[track]
+    .map((questionId) => questionById.get(questionId))
+    .filter((question): question is T => Boolean(question));
+
+  return ordered.slice(0, sessionSize);
 }
 
 const STATE_PRIORITY: Record<CognitiveQuizStateId, number> = {
@@ -72,6 +104,7 @@ const STATE_PRIORITY: Record<CognitiveQuizStateId, number> = {
 
 const MODE_TRAP_SEQUENCE: Record<QuizAccessTypeId, readonly QuizTrapLevelId[]> = {
   mixte: ["low", "medium", "high"],
+  ecole: ["low", "medium", "high"],
   terrain: ["low", "medium", "high"],
   "donnees-scientifiques": ["low", "medium", "high"],
   sensibilisation: ["low", "medium", "high"],
@@ -300,6 +333,15 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
 ): T[] {
   const now = options.now ?? new Date();
   const selectedMode = getSelectedMode(options);
+
+  if (selectedMode === "ecole") {
+    const schoolTrack = options.schoolTrack;
+    if (!schoolTrack) {
+      return [];
+    }
+
+    return buildQuizSchoolSessionDeck(questions, schoolTrack, options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE.ecole);
+  }
 
   const filteredQuestions = questions.filter((question) => {
     if (!matchesQuizAccessType(selectedMode, question)) {

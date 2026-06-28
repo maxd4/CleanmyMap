@@ -32,14 +32,17 @@ type QuizReasoningPickerProps = {
 
 const REASONING_TYPES: Array<{
   id: ReasoningType;
-  label: string;
+  label: Record<SupportedLocale, string>;
   description: Record<SupportedLocale, string>;
   tone: string;
   icon: ReactNode;
 }> = [
   {
     id: "idée reçue",
-    label: "idée reçue",
+    label: {
+      fr: "idée reçue",
+      en: "misconception",
+    },
     description: {
       fr: "Corriger une croyance fréquente avec une phrase qui paraît plausible au premier regard.",
       en: "Correct a common misconception with a statement that feels plausible at first glance.",
@@ -49,7 +52,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "terrain",
-    label: "situations terrain",
+    label: {
+      fr: "situations terrain",
+      en: "field situations",
+    },
     description: {
       fr: "Tester le bon réflexe dans une situation réelle de cleanwalk, de tri ou de sécurité.",
       en: "Test the right reflex in a real cleanwalk, sorting or safety situation.",
@@ -59,7 +65,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "estimation",
-    label: "estimations",
+    label: {
+      fr: "estimations",
+      en: "estimates",
+    },
     description: {
       fr: "Lire un ordre de grandeur sans le confondre avec une valeur exacte.",
       en: "Read an order of magnitude without confusing it with an exact value.",
@@ -69,7 +78,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "comparaison",
-    label: "comparaisons",
+    label: {
+      fr: "comparaisons",
+      en: "comparisons",
+    },
     description: {
       fr: "Comparer deux cas proches pour éviter la réponse automatique.",
       en: "Compare two close cases to avoid an automatic answer.",
@@ -79,7 +91,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "conséquences indirectes",
-    label: "conséquences indirectes",
+    label: {
+      fr: "conséquences indirectes",
+      en: "indirect consequences",
+    },
     description: {
       fr: "Montrer des effets cachés, des chaînes de cause à effet et des impacts moins visibles.",
       en: "Show hidden effects, chains of cause and effect and less visible impacts.",
@@ -89,7 +104,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "questions contre-intuitives",
-    label: "questions contre-intuitives",
+    label: {
+      fr: "questions contre-intuitives",
+      en: "counter-intuitive questions",
+    },
     description: {
       fr: "Faire douter avant de répondre quand l'intuition initiale est trompeuse.",
       en: "Make the learner hesitate before answering when the initial intuition is misleading.",
@@ -99,7 +117,10 @@ const REASONING_TYPES: Array<{
   },
   {
     id: "cas-limites",
-    label: "cas limites",
+    label: {
+      fr: "cas limites",
+      en: "edge cases",
+    },
     description: {
       fr: "Traiter les zones grises, les consignes ambiguës et les arbitrages imparfaits du terrain.",
       en: "Handle gray areas, ambiguous instructions and imperfect field trade-offs.",
@@ -181,7 +202,7 @@ export function QuizReasoningPicker({
               {reasoningType.icon}
             </div>
             <h3 className="mb-2 text-xl font-black capitalize cmm-text-primary">
-              {reasoningType.label}
+              {reasoningType.label[locale]}
             </h3>
             <p className="text-sm font-medium leading-relaxed cmm-text-secondary">
               {reasoningType.description[locale]}

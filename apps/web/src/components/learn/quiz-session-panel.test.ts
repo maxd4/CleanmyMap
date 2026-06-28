@@ -30,6 +30,7 @@ describe("QuizSessionPanel", () => {
       severity: "medium",
       feedbackCorrect: "Bonne réponse : tu respectes la consigne locale.",
       feedbackWrong: "Erreur pédagogique : la filière locale prime sur l'intuition.",
+      takeaway: "La bonne filière dépend d'abord de la consigne locale.",
     };
 
     const markup = renderToStaticMarkup(
@@ -45,6 +46,7 @@ describe("QuizSessionPanel", () => {
         selectedOption: "Le jeter au compost",
         selectedOptions: [],
         showAnswer: true,
+        showChoices: true,
         lastCheckResult: false,
         score: 0,
         shouldOfferMiniChallenge: false,
@@ -53,6 +55,7 @@ describe("QuizSessionPanel", () => {
         onSelectOption: () => undefined,
         onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
@@ -63,10 +66,14 @@ describe("QuizSessionPanel", () => {
 
     expect(markup).toContain("Réponse incorrecte");
     expect(markup).toContain("Explication pédagogique");
+    expect(markup).toContain("À retenir");
+    expect(markup).toContain("La bonne filière dépend d&#x27;abord de la consigne locale.");
     expect(markup).toContain("À revoir dans");
     expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("/learn/bonnes-pratiques");
     expect(markup).toContain("Erreur pédagogique");
+    expect(markup).toContain("aria-live=\"polite\"");
+    expect(markup).toContain("type=\"button\"");
     expect(markup).toContain("mauvaise compréhension d&#x27;une filière de tri");
     expect(markup).toContain("Gravité: medium");
     expect(markup).toContain("Un emballage propre et vide suit généralement la filière des emballages");
@@ -101,6 +108,7 @@ describe("QuizSessionPanel", () => {
         selectedOption: "Vrai",
         selectedOptions: [],
         showAnswer: false,
+        showChoices: true,
         lastCheckResult: null,
         score: 0,
         shouldOfferMiniChallenge: false,
@@ -109,6 +117,7 @@ describe("QuizSessionPanel", () => {
         onSelectOption: () => undefined,
         onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
@@ -196,6 +205,7 @@ describe("QuizSessionPanel", () => {
         selectedOption: "",
         selectedOptions: [],
         showAnswer: false,
+        showChoices: true,
         lastCheckResult: null,
         score: 5,
         shouldOfferMiniChallenge: false,
@@ -205,6 +215,7 @@ describe("QuizSessionPanel", () => {
         onSelectOption: () => undefined,
         onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
@@ -220,11 +231,255 @@ describe("QuizSessionPanel", () => {
     expect(markup).toContain("Comprendre");
     expect(markup).toContain("Compétences à revoir");
     expect(markup).toContain("S&#x27;entraîner");
-    expect(markup).toContain("Revoir la rubrique");
+    expect(markup).toContain("Revoir cette notion");
+    expect(markup).toContain("Mode conseillé :");
     expect(markup).toContain("/learn/sentrainer");
     expect(markup).toContain("Types d&#x27;erreurs fréquentes");
     expect(markup).toContain("Mode à rejouer");
     expect(markup).toContain("Terrain");
+  });
+
+  it("renders a clear demo banner without personal-progress messaging", () => {
+    const question: QuizQuestion = {
+      id: "demo-1",
+      type: "true-false",
+      category: "action-terrain",
+      question: "Un déchet humide doit toujours être laissé au sol.",
+      answer: "Faux",
+      options: ["Vrai", "Faux"],
+      explanation:
+        "Un déchet humide n'a pas vocation à rester au sol: on l'évalue avec prudence et on suit la filière adaptée au contexte.",
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reasoningType: "terrain",
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizSessionPanel, {
+        locale: "fr",
+        isDemoMode: true,
+        question,
+        questionIndex: 0,
+        totalQuestions: 5,
+        currentQuestionState: null,
+        currentQuestionReviewDate: "Aujourd'hui",
+        currentQuestionStreak: 0,
+        currentQuestionMasteryLevel: 0,
+        selectedOption: "",
+        selectedOptions: [],
+        showAnswer: false,
+        showChoices: true,
+        lastCheckResult: null,
+        score: 0,
+        shouldOfferMiniChallenge: false,
+        nextReasoningType: null,
+        hasReviewedToday: true,
+        sessionSummary: null,
+        personalProgress: null,
+        onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
+        onCheckAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
+        onNextQuestion: () => undefined,
+        onResetQuiz: () => undefined,
+        onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
+        onHandleSRSUpdate: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Mode démo");
+    expect(markup).toContain("Session courte de cinq questions");
+    expect(markup).toContain("sans compte obligatoire");
+    expect(markup).not.toContain("Compétences maîtrisées");
+  });
+
+  it("renders the school workshop summary in collective mode", () => {
+    const question: QuizQuestion = {
+      id: "school-1",
+      type: "true-false",
+      category: "action-terrain",
+      question: "Question de test pour le mode école.",
+      answer: "Vrai",
+      options: ["Vrai", "Faux"],
+      explanation: "Explication de test.",
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reasoningType: "terrain",
+      errorType: "erreur de sécurité",
+      feedbackCorrect: "Bonne réponse.",
+      feedbackWrong: "Mauvaise réponse.",
+    };
+
+    const sessionSummary: QuizSessionSummary = {
+      score: 3,
+      totalQuestions: 4,
+      totalAnswered: 4,
+      themesSucceeded: [{ label: "Bonnes pratiques", href: "/learn/bonnes-pratiques", total: 2, correct: 2, accuracy: 1 }],
+      themesToReview: [],
+      frequentErrorTypes: [{ label: "erreur de sécurité", count: 2 }],
+      recommendedMode: null,
+      recommendedLearningTarget: null,
+      nextReviewTarget: null,
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizSessionPanel, {
+        locale: "fr",
+        isSchoolMode: true,
+        isCollectiveMode: true,
+        schoolTrackLabel: "Débat en classe",
+        schoolKeyMessages: ["On vote, on discute, puis on révèle."],
+        question,
+        questionIndex: 3,
+        totalQuestions: 4,
+        currentQuestionState: null,
+        currentQuestionReviewDate: "Aujourd'hui",
+        currentQuestionStreak: 0,
+        currentQuestionMasteryLevel: 0,
+        selectedOption: "",
+        selectedOptions: [],
+        showAnswer: false,
+        showChoices: false,
+        lastCheckResult: null,
+        score: 3,
+        shouldOfferMiniChallenge: false,
+        nextReasoningType: null,
+        hasReviewedToday: true,
+        sessionSummary,
+        onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
+        onCheckAnswer: () => undefined,
+        onRevealChoices: () => undefined,
+        onRevealAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
+        onNextQuestion: () => undefined,
+        onResetQuiz: () => undefined,
+        onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
+        onHandleSRSUpdate: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Mode École");
+    expect(markup).toContain("Mode collectif");
+    expect(markup).toContain("Bilan de l’atelier");
+    expect(markup).toContain("Notions vues");
+    expect(markup).toContain("Erreurs fréquentes");
+    expect(markup).toContain("Messages clés");
+  });
+
+  it("renders the school reveal controls before the answer is shown", () => {
+    const question: QuizQuestion = {
+      id: "school-hidden-1",
+      type: "true-false",
+      category: "action-terrain",
+      question: "Question cachée pour le mode école.",
+      answer: "Vrai",
+      options: ["Vrai", "Faux"],
+      explanation: "Explication cachée.",
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reasoningType: "terrain",
+      feedbackCorrect: "Bonne réponse.",
+      feedbackWrong: "Mauvaise réponse.",
+      takeaway: "On peut d'abord réfléchir avant d'afficher le corrigé.",
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizSessionPanel, {
+        locale: "fr",
+        isSchoolMode: true,
+        isCollectiveMode: true,
+        showChoices: false,
+        question,
+        questionIndex: 1,
+        totalQuestions: 4,
+        currentQuestionState: null,
+        currentQuestionReviewDate: "Aujourd'hui",
+        currentQuestionStreak: 0,
+        currentQuestionMasteryLevel: 0,
+        selectedOption: "",
+        selectedOptions: [],
+        showAnswer: false,
+        lastCheckResult: null,
+        score: 0,
+        shouldOfferMiniChallenge: false,
+        nextReasoningType: null,
+        hasReviewedToday: false,
+        onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
+        onCheckAnswer: () => undefined,
+        onRevealChoices: () => undefined,
+        onRevealAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
+        onNextQuestion: () => undefined,
+        onResetQuiz: () => undefined,
+        onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
+        onHandleSRSUpdate: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Réponses masquées");
+    expect(markup).toContain("Afficher les réponses");
+    expect(markup).toContain("Révéler la bonne réponse");
+  });
+
+  it("renders school navigation once the answer is revealed", () => {
+    const question: QuizQuestion = {
+      id: "school-nav-1",
+      type: "true-false",
+      category: "action-terrain",
+      question: "Question de navigation pour le mode école.",
+      answer: "Vrai",
+      options: ["Vrai", "Faux"],
+      explanation: "Explication de navigation.",
+      review: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reviewTarget: QUIZ_REVIEW_TARGETS.bonnes_pratiques,
+      reasoningType: "terrain",
+      feedbackCorrect: "Bonne réponse.",
+      feedbackWrong: "Mauvaise réponse.",
+      takeaway: "On peut maintenant passer à la question suivante.",
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(QuizSessionPanel, {
+        locale: "fr",
+        isSchoolMode: true,
+        isCollectiveMode: true,
+        showChoices: true,
+        question,
+        questionIndex: 2,
+        totalQuestions: 4,
+        currentQuestionState: null,
+        currentQuestionReviewDate: "Aujourd'hui",
+        currentQuestionStreak: 0,
+        currentQuestionMasteryLevel: 0,
+        selectedOption: "Vrai",
+        selectedOptions: [],
+        showAnswer: true,
+        lastCheckResult: true,
+        score: 1,
+        shouldOfferMiniChallenge: false,
+        nextReasoningType: null,
+        hasReviewedToday: false,
+        onSelectOption: () => undefined,
+        onToggleOption: () => undefined,
+        onCheckAnswer: () => undefined,
+        onRevealChoices: () => undefined,
+        onRevealAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
+        onNextQuestion: () => undefined,
+        onResetQuiz: () => undefined,
+        onStartMiniChallenge: () => undefined,
+        onReplayRecommendedMode: () => undefined,
+        onHandleSRSUpdate: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Question précédente");
+    expect(markup).toContain("Question suivante");
+    expect(markup).toContain("À retenir");
   });
 
   it("renders a checkbox-based question as multiple selectable answers", () => {
@@ -273,6 +528,7 @@ describe("QuizSessionPanel", () => {
         selectedOption: "",
         selectedOptions: ["Une seringue usagée", "Un verre cassé"],
         showAnswer: false,
+        showChoices: true,
         lastCheckResult: null,
         score: 0,
         shouldOfferMiniChallenge: false,
@@ -281,6 +537,7 @@ describe("QuizSessionPanel", () => {
         onSelectOption: () => undefined,
         onToggleOption: () => undefined,
         onCheckAnswer: () => undefined,
+        onPreviousQuestion: () => undefined,
         onNextQuestion: () => undefined,
         onResetQuiz: () => undefined,
         onStartMiniChallenge: () => undefined,
@@ -290,7 +547,7 @@ describe("QuizSessionPanel", () => {
     );
 
     expect(markup).toContain("Cases à cocher");
-    expect(markup).toContain("Vérifier mes réponses");
+    expect(markup).toContain("Vérifier la réponse");
     expect(markup).toContain("Une seringue usagée");
     expect(markup).toContain("Un emballage propre et sec");
   });

@@ -14,7 +14,11 @@ import {
   getQuizStateFromStats,
   summarizeQuizStates,
 } from "@/lib/learning/cognitive-principles";
-import { buildQuizSessionDeck } from "@/lib/learning/quiz-selection-engine";
+import {
+  buildQuizDemoSessionDeck,
+  buildQuizSchoolSessionDeck,
+  buildQuizSessionDeck,
+} from "@/lib/learning/quiz-selection-engine";
 import {
   type QuizDifficultyId,
   type QuizPedagogicalTypeId,
@@ -22,6 +26,7 @@ import {
 } from "@/lib/learning/quiz-taxonomy";
 import { QuizAccessPicker } from "@/components/learn/quiz-access-picker";
 import { QuizReasoningPicker } from "@/components/learn/quiz-reasoning-picker";
+import { QuizSchoolPicker } from "@/components/learn/quiz-school-picker";
 import { QuizSessionPanel } from "@/components/learn/quiz-session-panel";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz-adaptive";
 import {
@@ -41,12 +46,22 @@ import {
   type QuizAccessTypeId,
 } from "@/components/learn/quiz-access-types";
 import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
+import {
+  getQuizSchoolKeyMessages,
+  getQuizSchoolTrackLabel,
+  type QuizSchoolTrackId,
+} from "@/components/learn/quiz-school-modes";
 import type { QuizQuestionFormatId } from "@/components/learn/quiz-question-formats";
 import type {
   QuizConfidenceLevel,
   QuizLocalScope,
   QuizSourceType,
 } from "@/lib/learning/quiz-source-metadata";
+import {
+  getQuizUiCopy,
+  type QuizQuestionLocalizedFields,
+  type QuizUiCopyKey,
+} from "@/lib/learning/quiz-i18n";
 import {
   buildQuizPersonalProgressSnapshot,
   mergeQuizPersonalProgress,
@@ -79,6 +94,7 @@ export interface QuizQuestion {
   severity?: QuizErrorSeverityId;
   feedbackCorrect?: string;
   feedbackWrong?: string;
+  takeaway?: string;
   sourceUrl?: string;
   sourceLabel?: string;
   sourceType?: QuizSourceType;
@@ -87,6 +103,7 @@ export interface QuizQuestion {
   localScope?: QuizLocalScope;
   lastCheckedAt?: string;
   needsReview?: boolean;
+  localized?: QuizQuestionLocalizedFields;
 }
 
 export type QuizThemeSummary = {
@@ -104,7 +121,7 @@ export type QuizErrorTypeSummary = {
 
 export type QuizModeRecommendation = {
   id: QuizAccessTypeId;
-  label: string;
+  labelKey: QuizUiCopyKey;
   reason: string;
 };
 
@@ -129,14 +146,18 @@ export function EnvironmentalQuiz() {
   const [srsData, setSrsData] = useState<Record<string, SRSStats>>({});
   const [personalProgress, setPersonalProgress] = useState<QuizPersonalProgressState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(null);
   const [selectedTrapLevel, setSelectedTrapLevel] = useState<QuizTrapLevelId | null>(null);
   const [selectedReasoningType, setSelectedReasoningType] = useState<QuizReasoningType | null>(null);
+  const [selectedSchoolTrack, setSelectedSchoolTrack] = useState<QuizSchoolTrackId | null>(null);
+  const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(true);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
   const [selectedOption, setSelectedOption] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [showQuestionChoices, setShowQuestionChoices] = useState(false);
   const [score, setScore] = useState(0);
   const [correctStreak, setCorrectStreak] = useState(0);
   const [lastCheckResult, setLastCheckResult] = useState<boolean | null>(null);
@@ -188,6 +209,15 @@ export function EnvironmentalQuiz() {
     });
   }, [selectedAccessType, selectedReasoningType, selectedTrapLevel, srsData]);
 
+  const demoQuestions = useMemo(() => buildQuizDemoSessionDeck(QUIZ_QUESTIONS), []);
+  const schoolQuestions = useMemo(
+    () =>
+      selectedSchoolTrack
+        ? buildQuizSchoolSessionDeck(QUIZ_QUESTIONS, selectedSchoolTrack)
+        : [],
+    [selectedSchoolTrack],
+  );
+
   const eligibleQuestions = useMemo(() => {
     if (!selectedAccessType) {
       return [];
@@ -211,22 +241,28 @@ export function EnvironmentalQuiz() {
   }, [eligibleQuestions, selectedAccessType]);
 
   const initialQuestions = useMemo(() => {
+    if (isDemoMode) return demoQuestions;
+    if (selectedAccessType === "ecole") return schoolQuestions;
     if (loading || filteredQuestions.length === 0) return [];
     return filteredQuestions;
-  }, [loading, filteredQuestions]);
+  }, [demoQuestions, filteredQuestions, isDemoMode, loading, schoolQuestions, selectedAccessType]);
 
   useEffect(() => {
-    if (!selectedAccessType || loading || sessionQuestions.length > 0) {
+    if (!selectedAccessType || (loading && selectedAccessType !== "ecole" && !isDemoMode) || sessionQuestions.length > 0) {
       return;
     }
 
-    if (selectedAccessType !== "mixte" && !selectedReasoningType) {
+    if (!isDemoMode && selectedAccessType === "ecole" && !selectedSchoolTrack) {
+      return;
+    }
+
+    if (!isDemoMode && selectedAccessType !== "mixte" && selectedAccessType !== "ecole" && !selectedReasoningType) {
       return;
     }
 
     setSessionQuestions(initialQuestions);
     setCurrentQuestionIdx(0);
-  }, [initialQuestions, loading, selectedAccessType, selectedReasoningType, sessionQuestions.length]);
+  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolTrack, sessionQuestions.length]);
 
   const question = sessionQuestions[currentQuestionIdx];
   const quizSummary = useMemo(() => summarizeQuizStates(srsData, QUIZ_QUESTION_IDS), [srsData]);
@@ -352,20 +388,20 @@ export function EnvironmentalQuiz() {
       bestMode && bestMode.score > 0
         ? {
             id: bestMode.accessType.id,
-            label: bestMode.accessType.label,
+            labelKey: bestMode.accessType.labelKey,
             reason: `Ce mode couvre le mieux tes erreurs récentes (${bestMode.score} correspondance${bestMode.score > 1 ? "s" : ""}).`,
           }
         : selectedAccessType
           ? {
               id: selectedAccessType,
-              label: getQuizAccessType(selectedAccessType).label,
+              labelKey: getQuizAccessType(selectedAccessType).labelKey,
               reason: "Poursuis sur ce mode pour consolider la session sans changer de cadre.",
             }
           : {
-            id: "mixte",
-            label: getQuizAccessType("mixte").label,
-            reason: "Le mode mixte reste le plus utile pour repartir sur un parcours équilibré.",
-          };
+              id: "mixte",
+              labelKey: getQuizAccessType("mixte").labelKey,
+              reason: "Le mode mixte reste le plus utile pour repartir sur un parcours équilibré.",
+            };
     const recommendedLearningTarget = nextReviewTarget;
 
     return {
@@ -386,7 +422,14 @@ export function EnvironmentalQuiz() {
   );
 
   useEffect(() => {
-    if (!sessionCompleted || !sessionSummary || !selectedAccessType || persistedSessionRef.current) {
+    if (
+      isDemoMode ||
+      selectedAccessType === "ecole" ||
+      !sessionCompleted ||
+      !sessionSummary ||
+      !selectedAccessType ||
+      persistedSessionRef.current
+    ) {
       return;
     }
 
@@ -420,6 +463,7 @@ export function EnvironmentalQuiz() {
     }).catch(() => undefined);
   }, [
     personalProgress,
+    isDemoMode,
     selectedAccessType,
     sessionCompleted,
     sessionErrorCounts,
@@ -429,7 +473,7 @@ export function EnvironmentalQuiz() {
   ]);
 
   const handleSRSUpdate = async (quality: SRSQuality) => {
-    if (!question) return;
+    if (isDemoMode || selectedAccessType === "ecole" || !question) return;
 
     const currentStats = srsData[question.id] ?? createInitialSRSState(question.id);
     const nextStats = computeNextSRSState(currentStats, quality);
@@ -471,11 +515,13 @@ export function EnvironmentalQuiz() {
     if (isCorrect) {
       setScore((prev) => prev + 1);
       setCorrectStreak((prev) => prev + 1);
-      void recordQuizQuestionCorrectAnswer(
-        question.pedagogicalType ?? question.format ?? question.type,
-        question.id,
-        user?.id ?? null,
-      ).catch(() => undefined);
+      if (!isDemoMode && selectedAccessType !== "ecole") {
+        void recordQuizQuestionCorrectAnswer(
+          question.pedagogicalType ?? question.format ?? question.type,
+          question.id,
+          user?.id ?? null,
+        ).catch(() => undefined);
+      }
     } else {
       setCorrectStreak(0);
       const resolvedErrorType = question.errorType ?? buildQuizErrorGrid(question).errorType;
@@ -493,8 +539,25 @@ export function EnvironmentalQuiz() {
           (item) => item.reviewTarget?.href ?? getQuizReviewTarget(item.category, item.review, item.reasoningType).href,
         ),
       );
-      handleSRSUpdate(0);
+      void handleSRSUpdate(0);
     }
+  };
+
+  const revealAnswer = () => {
+    if (!question) return;
+
+    const hasSelection = isMultipleSelectQuestion ? selectedOptions.length > 0 : Boolean(selectedOption);
+    if (hasSelection) {
+      checkAnswer();
+      return;
+    }
+
+    setLastCheckResult(null);
+    setShowAnswer(true);
+  };
+
+  const revealChoices = () => {
+    setShowQuestionChoices(true);
   };
 
   const nextQuestion = () => {
@@ -504,10 +567,24 @@ export function EnvironmentalQuiz() {
       setSelectedOptions([]);
       setShowAnswer(false);
       setLastCheckResult(null);
+      setShowQuestionChoices(false);
       return;
     }
 
     setSessionCompleted(true);
+  };
+
+  const previousQuestion = () => {
+    if (currentQuestionIdx === 0) {
+      return;
+    }
+
+    setCurrentQuestionIdx((prev) => prev - 1);
+    setSelectedOption("");
+    setSelectedOptions([]);
+    setShowAnswer(false);
+    setShowQuestionChoices(false);
+    setLastCheckResult(null);
   };
 
   const resetSessionState = () => {
@@ -516,6 +593,7 @@ export function EnvironmentalQuiz() {
     setSelectedOption("");
     setSelectedOptions([]);
     setShowAnswer(false);
+    setShowQuestionChoices(false);
     setScore(0);
     setCorrectStreak(0);
     setLastCheckResult(null);
@@ -527,28 +605,41 @@ export function EnvironmentalQuiz() {
 
   const returnToAccessTypeSelection = () => {
     resetSessionState();
+    setIsDemoMode(false);
     setSelectedAccessType(null);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
   };
 
   const handleSelectAccessType = (accessType: QuizAccessTypeId) => {
     resetSessionState();
+    setIsDemoMode(false);
     setSelectedAccessType(accessType);
+    setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
   };
 
   const handleSelectTrapLevel = (trapLevel: QuizTrapLevelId | null) => {
     resetSessionState();
+    setIsDemoMode(false);
     setSelectedTrapLevel(trapLevel);
     setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
   };
 
   const resetQuiz = () => {
     resetSessionState();
+    setIsDemoMode(false);
     setSelectedAccessType(null);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
   };
 
   const replayRecommendedMode = () => {
@@ -557,9 +648,35 @@ export function EnvironmentalQuiz() {
     }
 
     resetSessionState();
+    setIsDemoMode(false);
     setSelectedAccessType(sessionSummary.recommendedMode.id);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
+  };
+
+  const startDemoSession = () => {
+    resetSessionState();
+    setIsDemoMode(true);
+    setSelectedAccessType("mixte");
+    setSelectedTrapLevel(null);
+    setSelectedReasoningType(null);
+    setSelectedSchoolTrack(null);
+    setIsSchoolCollectiveMode(true);
+  };
+
+  const handleSelectSchoolTrack = (track: QuizSchoolTrackId) => {
+    resetSessionState();
+    setIsDemoMode(false);
+    setSelectedAccessType("ecole");
+    setSelectedTrapLevel(null);
+    setSelectedSchoolTrack(track);
+    setSelectedReasoningType(null);
+  };
+
+  const handleToggleSchoolCollectiveMode = () => {
+    setIsSchoolCollectiveMode((current) => !current);
   };
 
   const startMiniChallenge = () => {
@@ -570,6 +687,7 @@ export function EnvironmentalQuiz() {
     setSelectedOption("");
     setSelectedOptions([]);
     setShowAnswer(false);
+    setShowQuestionChoices(false);
     setScore(0);
     setCorrectStreak(0);
     setLastCheckResult(null);
@@ -579,25 +697,33 @@ export function EnvironmentalQuiz() {
     setSessionCompleted(false);
   };
 
-  if ((selectedAccessType === "mixte" || selectedReasoningType) && !question && !loading && filteredQuestions.length > 0) {
+  if (
+    (selectedAccessType === "mixte" || selectedReasoningType || isDemoMode || selectedAccessType === "ecole") &&
+    !question &&
+    ((isDemoMode && demoQuestions.length > 0) ||
+      (selectedAccessType === "ecole" && schoolQuestions.length > 0) ||
+      (!isDemoMode && selectedAccessType !== "ecole" && !loading && filteredQuestions.length > 0))
+  ) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
         <Zap className="animate-pulse text-emerald-500" size={48} />
         <p className="cmm-text-secondary font-medium italic">
-          {locale === "fr"
-            ? "Préparation de la session de raisonnement..."
-            : "Preparing the reasoning session..."}
+          {isDemoMode
+            ? getQuizUiCopy(locale, "session.loadingDemo")
+            : selectedAccessType === "ecole"
+              ? getQuizUiCopy(locale, "session.loadingSchool")
+              : getQuizUiCopy(locale, "session.loadingAdaptive")}
         </p>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading && selectedAccessType && selectedAccessType !== "ecole" && !isDemoMode) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
         <Zap className="animate-pulse text-emerald-500" size={48} />
         <p className="cmm-text-secondary font-medium italic">
-          Chargement de votre parcours adaptatif...
+          {getQuizUiCopy(locale, "session.loadingAdaptive")}
         </p>
       </div>
     );
@@ -605,13 +731,26 @@ export function EnvironmentalQuiz() {
 
   if (!selectedAccessType) {
     return (
-    <QuizAccessPicker
-      locale={locale}
-      selectedTrapLevel={selectedTrapLevel}
-      personalProgress={personalProgressSnapshot}
-      onSelectTrapLevel={handleSelectTrapLevel}
-      onSelectAccessType={handleSelectAccessType}
-    />
+      <QuizAccessPicker
+        locale={locale}
+        selectedTrapLevel={selectedTrapLevel}
+        personalProgress={isDemoMode ? null : personalProgressSnapshot}
+        onSelectTrapLevel={handleSelectTrapLevel}
+        onSelectAccessType={handleSelectAccessType}
+        onStartDemoMode={startDemoSession}
+      />
+    );
+  }
+
+  if (selectedAccessType === "ecole" && !selectedSchoolTrack) {
+    return (
+      <QuizSchoolPicker
+        locale={locale}
+        collectiveMode={isSchoolCollectiveMode}
+        onToggleCollectiveMode={handleToggleSchoolCollectiveMode}
+        onSelectSchoolTrack={handleSelectSchoolTrack}
+        onBackToAccessType={returnToAccessTypeSelection}
+      />
     );
   }
 
@@ -632,22 +771,20 @@ export function EnvironmentalQuiz() {
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <Zap className="animate-pulse text-emerald-500" size={48} />
         <p className="font-medium italic cmm-text-secondary">
-          {locale === "fr"
-            ? "Aucune question disponible pour ce type de quiz et ce type de raisonnement."
-            : "No question available for this quiz type and reasoning type."}
+          {getQuizUiCopy(locale, "session.noQuestion")}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => setSelectedReasoningType(null)}
             className="rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-4 py-2 font-semibold cmm-text-primary"
           >
-            {locale === "fr" ? "Changer de raisonnement" : "Change reasoning"}
+          {getQuizUiCopy(locale, "session.changeReasoning")}
           </button>
           <button
             onClick={returnToAccessTypeSelection}
             className="rounded-xl border border-[color:var(--border-default)] bg-white px-4 py-2 font-semibold cmm-text-primary"
           >
-            {locale === "fr" ? "Changer de type" : "Change type"}
+            {getQuizUiCopy(locale, "session.changeType")}
           </button>
         </div>
       </div>
@@ -657,6 +794,11 @@ export function EnvironmentalQuiz() {
   return (
     <QuizSessionPanel
       locale={locale}
+      isSchoolMode={selectedAccessType === "ecole"}
+      isCollectiveMode={isSchoolCollectiveMode}
+      showChoices={selectedAccessType === "ecole" ? (isSchoolCollectiveMode ? showQuestionChoices : true) : true}
+      schoolTrackLabel={selectedSchoolTrack ? getQuizSchoolTrackLabel(selectedSchoolTrack, locale) : undefined}
+      schoolKeyMessages={selectedSchoolTrack ? getQuizSchoolKeyMessages(selectedSchoolTrack, locale) : undefined}
       question={question}
       questionIndex={currentQuestionIdx}
       totalQuestions={sessionQuestions.length}
@@ -671,17 +813,21 @@ export function EnvironmentalQuiz() {
       score={score}
       shouldOfferMiniChallenge={shouldOfferMiniChallenge}
       nextReasoningType={nextReasoningType}
-      hasReviewedToday={currentQuestionSeenToday}
+      hasReviewedToday={isDemoMode || selectedAccessType === "ecole" || currentQuestionSeenToday}
       sessionSummary={sessionSummary}
-      personalProgress={personalProgressSnapshot}
+      personalProgress={isDemoMode ? null : personalProgressSnapshot}
       onSelectOption={setSelectedOption}
       onToggleOption={toggleSelectedOption}
       onCheckAnswer={checkAnswer}
+      onRevealChoices={selectedAccessType === "ecole" ? revealChoices : undefined}
+      onRevealAnswer={selectedAccessType === "ecole" ? revealAnswer : undefined}
+      onPreviousQuestion={previousQuestion}
       onNextQuestion={nextQuestion}
       onResetQuiz={resetQuiz}
       onStartMiniChallenge={startMiniChallenge}
       onReplayRecommendedMode={replayRecommendedMode}
       onHandleSRSUpdate={handleSRSUpdate}
+      isDemoMode={isDemoMode}
     />
   );
 }

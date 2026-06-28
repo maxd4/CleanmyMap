@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 
 import type { SRSStats } from "@/lib/gamification/quiz-srs";
 import type { QuizSelectionQuestionLike } from "./quiz-selection-engine";
-import { buildQuizSessionDeck } from "./quiz-selection-engine";
+import { buildQuizDemoSessionDeck, buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
 
 function makeStats(
   questionId: string,
@@ -23,7 +23,125 @@ function makeStats(
 
 const now = new Date("2026-06-12T12:00:00.000Z");
 
-  it("prioritizes failed and due questions before the rest", () => {
+it("builds the stable five-question demo deck in the expected order", () => {
+  const questions: QuizSelectionQuestionLike[] = [
+    {
+      id: "e1",
+      type: "true-false" as const,
+      category: "climat-biodiversite",
+      reasoningType: "idée reçue",
+      skill: "idée reçue",
+      pedagogicalType: "true-false",
+      difficulty: "low",
+      trapLevel: "low" as const,
+    },
+    {
+      id: "at8",
+      type: "true-false" as const,
+      category: "action-terrain",
+      reasoningType: "terrain",
+      skill: "terrain",
+      pedagogicalType: "true-false",
+      difficulty: "medium",
+      trapLevel: "medium" as const,
+    },
+    {
+      id: "cb5",
+      type: "true-false" as const,
+      category: "climat-biodiversite",
+      reasoningType: "estimation",
+      skill: "estimation",
+      pedagogicalType: "true-false",
+      difficulty: "medium",
+      trapLevel: "medium" as const,
+    },
+    {
+      id: "at12",
+      type: "true-false" as const,
+      category: "action-terrain",
+      reasoningType: "cas-limites",
+      skill: "cas-limites",
+      pedagogicalType: "true-false",
+      difficulty: "medium",
+      trapLevel: "high" as const,
+    },
+    {
+      id: "cb17",
+      type: "true-false" as const,
+      category: "impact-methodologie",
+      reasoningType: "conséquences indirectes",
+      skill: "conséquences indirectes",
+      pedagogicalType: "true-false",
+      difficulty: "low",
+      trapLevel: "low" as const,
+    },
+    {
+      id: "ignored",
+      type: "true-false" as const,
+      category: "impact-methodologie",
+      reasoningType: "terrain",
+      skill: "terrain",
+      pedagogicalType: "true-false",
+      difficulty: "low",
+      trapLevel: "low" as const,
+    },
+  ];
+
+  const ordered = buildQuizDemoSessionDeck(questions);
+
+  expect(ordered.map((question) => question.id)).toEqual(["at8", "e1", "cb5", "at12", "cb17"]);
+  expect(ordered).toHaveLength(5);
+});
+
+it("builds a stable classroom deck for the school tracks", () => {
+  const questions: QuizSelectionQuestionLike[] = [
+    { id: "e1", type: "true-false" as const, category: "climat-biodiversite", reasoningType: "idée reçue", skill: "idée reçue", pedagogicalType: "true-false" },
+    { id: "e2", type: "true-false" as const, category: "climat-biodiversite", reasoningType: "idée reçue", skill: "idée reçue", pedagogicalType: "true-false" },
+    { id: "e3", type: "true-false" as const, category: "tri-recyclage", reasoningType: "cas-limites", skill: "cas-limites", pedagogicalType: "true-false" },
+    { id: "n1", type: "true-false" as const, category: "impact-methodologie", reasoningType: "questions contre-intuitives", skill: "questions contre-intuitives", pedagogicalType: "true-false" },
+    { id: "n2", type: "true-false" as const, category: "climat-biodiversite", reasoningType: "comparaison", skill: "comparaison", pedagogicalType: "true-false" },
+    { id: "n5", type: "true-false" as const, category: "impact-methodologie", reasoningType: "questions contre-intuitives", skill: "questions contre-intuitives", pedagogicalType: "true-false" },
+    { id: "v4", type: "true-false" as const, category: "impact-methodologie", reasoningType: "idée reçue", skill: "idée reçue", pedagogicalType: "true-false" },
+    { id: "v5", type: "true-false" as const, category: "impact-methodologie", reasoningType: "idée reçue", skill: "idée reçue", pedagogicalType: "true-false" },
+    { id: "v3", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "questions contre-intuitives", skill: "questions contre-intuitives", pedagogicalType: "multiple-choice" },
+    { id: "im1", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "im4", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "im5", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "im6", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "im9", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "im10", type: "multiple-choice" as const, category: "impact-methodologie", reasoningType: "conséquences indirectes", skill: "conséquences indirectes", pedagogicalType: "multiple-choice" },
+    { id: "hb2", type: "flashcard" as const, category: "impact-methodologie", reasoningType: "terrain", skill: "terrain", pedagogicalType: "flashcard" },
+    { id: "ec1", type: "true-false" as const, category: "impact-methodologie", reasoningType: "terrain", skill: "terrain", pedagogicalType: "true-false" },
+    { id: "ec2", type: "true-false" as const, category: "impact-methodologie", reasoningType: "terrain", skill: "terrain", pedagogicalType: "true-false" },
+    { id: "reg1", type: "flashcard" as const, category: "tri-recyclage", reasoningType: "terrain", skill: "terrain", pedagogicalType: "flashcard" },
+  ];
+
+  expect(buildQuizSchoolSessionDeck(questions, "debat-classe").map((question) => question.id)).toEqual([
+    "e1",
+    "e2",
+    "e3",
+    "n1",
+    "n2",
+    "n5",
+    "v4",
+    "v5",
+    "v3",
+    "im1",
+    "im4",
+    "im5",
+    "im6",
+    "im9",
+    "hb2",
+  ]);
+  expect(buildQuizSchoolSessionDeck(questions, "debat-classe")).toHaveLength(15);
+  expect(buildQuizSchoolSessionDeck(questions, "ordres-de-grandeur").map((question) => question.id)).toEqual([
+    "n2",
+    "v3",
+    "v5",
+  ]);
+});
+
+it("prioritizes failed and due questions before the rest", () => {
     const questions: QuizSelectionQuestionLike[] = [
       {
         id: "failed",
