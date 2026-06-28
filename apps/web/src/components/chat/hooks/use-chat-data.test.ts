@@ -30,7 +30,7 @@ describe("getChatRefreshIntervalMs", () => {
         isVisible: true,
         isOnline: true,
       }),
-    ).toBe(60_000);
+    ).toBe(600_000);
 
     expect(
       getChatRefreshIntervalMs({
@@ -39,7 +39,7 @@ describe("getChatRefreshIntervalMs", () => {
         isVisible: true,
         isOnline: true,
       }),
-    ).toBe(120_000);
+    ).toBe(900_000);
   });
 
   it("keeps a lighter reconciliation cadence when realtime is enabled", () => {
@@ -50,7 +50,7 @@ describe("getChatRefreshIntervalMs", () => {
         isVisible: true,
         isOnline: true,
       }),
-    ).toBe(30_000);
+    ).toBe(180_000);
 
     expect(
       getChatRefreshIntervalMs({
@@ -59,6 +59,6 @@ describe("getChatRefreshIntervalMs", () => {
         isVisible: true,
         isOnline: true,
       }),
-    ).toBe(45_000);
+    ).toBe(240_000);
   });
 });

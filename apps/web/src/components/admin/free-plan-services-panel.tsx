@@ -14,7 +14,7 @@ import {
   isDevelopmentAiServiceKey,
 } from "@/lib/environmental-impact-estimator/service-risk";
 import { getServicePlanInfo } from "@/lib/environmental-impact-estimator/service-plan";
-import { swrRecentViewOptions } from "@/lib/swr-config";
+import { swrSupervisionOptions } from "@/lib/swr-config";
 import type { ServicesPayload, ServiceStatusInfo } from "@/lib/dashboard/status";
 import type {
   EnvironmentalImpactEstimateModel,
@@ -36,7 +36,7 @@ type FreePlanServicesResponse = {
 };
 
 const fetcher = async <T,>(url: string): Promise<T> => {
-  const response = await fetch(url, { method: "GET", cache: "no-store" });
+  const response = await fetch(url, { method: "GET" });
   if (!response.ok) {
     throw new Error(`Erreur API (${response.status}) sur ${url}`);
   }
@@ -172,12 +172,12 @@ export function FreePlanServicesPanel() {
   const freePlan = useSWR<FreePlanServicesResponse>(
     ["/api/admin/free-plan-services"],
     () => fetcher<FreePlanServicesResponse>("/api/admin/free-plan-services?historyLimit=8"),
-    swrRecentViewOptions,
+    swrSupervisionOptions,
   );
   const servicesHealth = useSWR<ServicesPayload>(
     ["/api/services"],
     () => fetcher<ServicesPayload>("/api/services"),
-    swrRecentViewOptions,
+    swrSupervisionOptions,
   );
 
   const isLoading = freePlan.isLoading || servicesHealth.isLoading;

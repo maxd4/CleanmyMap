@@ -32,61 +32,70 @@ export function useActionsMapViewport(
   const hasManualViewportChangeRef = useRef(false);
   const hasGeolocationViewportAppliedRef = useRef(false);
   const hasFallbackViewportAppliedRef = useRef(false);
+  const isMountedRef = useRef(true);
   const pendingProgrammaticViewportRef = useRef<MapViewportState | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadFallbackViewport = useCallback(async () => {
+    if (
+      hasManualViewportChangeRef.current ||
+      hasGeolocationViewportAppliedRef.current ||
+      hasFallbackViewportAppliedRef.current
+    ) {
+      return;
+    }
 
-    void fetch("/api/users/map-viewport-fallback", {
-      headers: {
-        Accept: "application/json",
-      },
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-        return (await response.json()) as {
-          viewport?: MapViewportState | null;
-        };
-      })
-      .then((payload) => {
-        if (
-          cancelled ||
-          !payload?.viewport ||
-          hasManualViewportChangeRef.current ||
-          hasGeolocationViewportAppliedRef.current ||
-          hasFallbackViewportAppliedRef.current
-        ) {
-          return;
-        }
-        hasFallbackViewportAppliedRef.current = true;
-        pendingProgrammaticViewportRef.current = payload.viewport;
-        setViewport(payload.viewport);
-      })
-      .catch(() => {
-        /* Silent fallback: geolocation or the Paris default will remain available. */
+    try {
+      const response = await fetch("/api/users/map-viewport-fallback", {
+        headers: {
+          Accept: "application/json",
+        },
       });
 
-    return () => {
-      cancelled = true;
-    };
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        viewport?: MapViewportState | null;
+      };
+
+      if (
+        !isMountedRef.current ||
+        !payload?.viewport ||
+        hasManualViewportChangeRef.current ||
+        hasGeolocationViewportAppliedRef.current ||
+        hasFallbackViewportAppliedRef.current
+      ) {
+        return;
+      }
+
+      hasFallbackViewportAppliedRef.current = true;
+      pendingProgrammaticViewportRef.current = payload.viewport;
+      setViewport(payload.viewport);
+    } catch {
+      /* Silent fallback: geolocation or the Paris default will remain available. */
+    }
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    const cleanup = () => {
+      isMountedRef.current = false;
+    };
+
     if (!canRequestGeolocation() || hasManualViewportChangeRef.current) {
-      return;
+      void loadFallbackViewport();
+      return cleanup;
     }
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      return;
+      void loadFallbackViewport();
+      return cleanup;
     }
-
-    let cancelled = false;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (cancelled || hasManualViewportChangeRef.current) {
+        if (!isMountedRef.current || hasManualViewportChangeRef.current) {
           return;
         }
 
@@ -102,7 +111,7 @@ export function useActionsMapViewport(
         setViewport(nextViewport);
       },
       () => {
-        // Fallback silencieux vers Paris intramuros.
+        void loadFallbackViewport();
       },
       {
         enableHighAccuracy: true,
@@ -111,17 +120,15 @@ export function useActionsMapViewport(
       },
     );
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return cleanup;
+  }, [loadFallbackViewport]);
 
   const handleViewportChange = useCallback(
     (nextViewport: MapViewportState) => {
-    const isProgrammaticViewport = sameViewport(
-      nextViewport,
-      pendingProgrammaticViewportRef.current,
-    );
+      const isProgrammaticViewport = sameViewport(
+        nextViewport,
+        pendingProgrammaticViewportRef.current,
+      );
       const isAlreadySelectedViewport = sameViewport(viewport, nextViewport);
 
       if (!hasReceivedInitialViewportReportRef.current) {
