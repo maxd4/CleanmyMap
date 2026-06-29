@@ -1,0 +1,167 @@
+import { buildServiceThresholdAlerts } from "./service-risk";
+import type { EnvironmentalImpactSnapshotRecord } from "./types";
+
+export const thresholdAlertCurrentServices = [
+  {
+    key: "supabase",
+    label: "Supabase",
+    monthlyKgCo2eProxy: 2.8,
+    sharePercent: 78,
+    confidencePercent: 90,
+    metricEstimates: [],
+  },
+  {
+    key: "vercel",
+    label: "Vercel",
+    monthlyKgCo2eProxy: 1.6,
+    sharePercent: 35,
+    confidencePercent: 88,
+    metricEstimates: [],
+  },
+  {
+    key: "resend",
+    label: "Resend",
+    monthlyKgCo2eProxy: 1.0,
+    sharePercent: 20,
+    confidencePercent: 92,
+    metricEstimates: [],
+  },
+] as unknown as Parameters<typeof buildServiceThresholdAlerts>[0]["currentServices"];
+
+export const thresholdAlertSnapshots = [
+  {
+    snapshotDate: "2026-04-20",
+    generatedAt: "2026-04-20T12:00:00.000Z",
+    model: {
+      infrastructure: {
+        services: [
+          {
+            key: "supabase",
+            label: "Supabase",
+            monthlyKgCo2eProxy: 2.4,
+            sharePercent: 74,
+            confidencePercent: 88,
+            uncertaintyPercent: 12,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+          {
+            key: "vercel",
+            label: "Vercel",
+            monthlyKgCo2eProxy: 1.1,
+            sharePercent: 33,
+            confidencePercent: 87,
+            uncertaintyPercent: 13,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+          {
+            key: "resend",
+            label: "Resend",
+            monthlyKgCo2eProxy: 0.9,
+            sharePercent: 18,
+            confidencePercent: 91,
+            uncertaintyPercent: 9,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+        ],
+      },
+    },
+  },
+  {
+    snapshotDate: "2026-03-20",
+    generatedAt: "2026-03-20T12:00:00.000Z",
+    model: {
+      infrastructure: {
+        services: [
+          {
+            key: "supabase",
+            label: "Supabase",
+            monthlyKgCo2eProxy: 2.0,
+            sharePercent: 66,
+            confidencePercent: 86,
+            uncertaintyPercent: 14,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+          {
+            key: "vercel",
+            label: "Vercel",
+            monthlyKgCo2eProxy: 1.1,
+            sharePercent: 24,
+            confidencePercent: 84,
+            uncertaintyPercent: 16,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+          {
+            key: "resend",
+            label: "Resend",
+            monthlyKgCo2eProxy: 0.8,
+            sharePercent: 18,
+            confidencePercent: 90,
+            uncertaintyPercent: 10,
+            status: "ready",
+            annualKgCo2eProxy: 0,
+            sourceNote: "",
+            basis: "monthly",
+            metricCount: 0,
+            referenceMetricCount: 0,
+            metricEstimates: [],
+          },
+        ],
+      },
+    },
+  },
+] as unknown as EnvironmentalImpactSnapshotRecord[];
+
+export const quotaSummaryMetricEstimates = [
+  {
+    key: "supabaseStorageGbMonths",
+    label: "Stockage",
+    unitLabel: "GB-mois",
+    proxyKgCo2ePerUnit: 0.015,
+    referenceMonthlyQuantity: 100,
+    quantityPerMonth: 5,
+    estimatedKgCo2eProxy: 0.08,
+    source: "derived",
+  },
+  {
+    key: "supabaseEgressGb",
+    label: "Bande passante",
+    unitLabel: "GB",
+    proxyKgCo2ePerUnit: 0.02,
+    referenceMonthlyQuantity: 100,
+    quantityPerMonth: 92,
+    estimatedKgCo2eProxy: 1.84,
+    source: "input",
+  },
+];
+
+
