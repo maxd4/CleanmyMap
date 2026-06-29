@@ -19,7 +19,8 @@ export const runtime = "nodejs";
 
 const ACTIONS_CSV_BUCKET = "reports";
 const ACTIONS_CSV_SIGNED_URL_TTL_SECONDS = 60 * 60 * 24;
-const ACTIONS_CSV_REDIRECT_CACHE_CONTROL = "private, max-age=0, no-store";
+const ACTIONS_CSV_RESPONSE_CACHE_CONTROL =
+  "private, max-age=300, stale-while-revalidate=86400";
 
 function buildActionsCsvCachePath(params: {
   cacheDay: string;
@@ -64,7 +65,7 @@ async function createCsvRedirect(params: {
     status: 302,
     headers: {
       Location: data.signedUrl,
-      "Cache-Control": ACTIONS_CSV_REDIRECT_CACHE_CONTROL,
+      "Cache-Control": ACTIONS_CSV_RESPONSE_CACHE_CONTROL,
     },
   });
 }
@@ -189,6 +190,7 @@ export async function GET(request: Request) {
       extension: "csv",
       contentType: "text/csv; charset=utf-8",
       date: exportDate,
+      cacheControl: ACTIONS_CSV_RESPONSE_CACHE_CONTROL,
     });
     const headers: Record<string, string> = { ...responseHeaders };
     if (isTruncated) {
