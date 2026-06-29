@@ -27,6 +27,10 @@ vi.mock("@/lib/github/github-repository-stats", () => ({
   loadGitHubRepositoryStats: loadGitHubRepositoryStatsMock,
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: vi.fn(() => ({})),
+}));
+
 describe("dashboard capture", () => {
   it("uses the latest snapshot before recomputing live signals", async () => {
     const snapshot = {

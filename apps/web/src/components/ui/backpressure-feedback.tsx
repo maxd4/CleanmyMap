@@ -3,6 +3,18 @@
 import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, AlertCircle, Clock, XCircle } from "lucide-react";
 
+type BackpressureOperationType = "import" | "batch" | "event";
+
+type BackpressureStatus = {
+  active: number;
+  queued: number;
+  available: boolean;
+};
+
+type BackpressureStatusPayload = Record<BackpressureOperationType, BackpressureStatus> & {
+  timestamp: number;
+};
+
 export type ProgressStatus = "idle" | "loading" | "processing" | "success" | "error" | "queued";
 
 export interface BackpressureFeedbackProps {
@@ -25,15 +37,21 @@ export function BackpressureFeedback({
   showDetails = false,
 }: BackpressureFeedbackProps) {
   const [dots, setDots] = useState("");
+  const isPageVisible = usePageVisibility();
 
   useEffect(() => {
-    if (status === "loading" || status === "processing" || status === "queued") {
+    if (
+      !isPageVisible ||
+      !(status === "loading" || status === "processing" || status === "queued")
+    ) {
+      return;
+    }
+
       const interval = setInterval(() => {
         setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
       }, 500);
       return () => clearInterval(interval);
-    }
-  }, [status]);
+  }, [isPageVisible, status]);
 
   const getIcon = () => {
     switch (status) {
@@ -128,23 +146,58 @@ export function BackpressureFeedback({
   );
 }
 
-export function useBackpressureStatus(pollIntervalMs = 15000) {
-  const [status, setStatus] = useState<{
-    active: number;
-    queued: number;
-    available: boolean;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function usePageVisibility(): boolean {
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    const updateVisibility = () => {
+      setIsVisible(document.visibilityState === "visible");
+    };
+
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    window.addEventListener("focus", updateVisibility);
+    window.addEventListener("blur", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      window.removeEventListener("focus", updateVisibility);
+      window.removeEventListener("blur", updateVisibility);
+    };
+  }, []);
+
+  return isVisible;
+}
+
+export function useBackpressureStatus(
+  operationType: BackpressureOperationType = "event",
+  pollIntervalMs = 15000,
+) {
+  const [status, setStatus] = useState<BackpressureStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const isPageVisible = usePageVisibility();
+
+  useEffect(() => {
+    if (!isPageVisible) {
+      return;
+    }
+
     let mounted = true;
 
     const checkStatus = async () => {
       try {
-        const response = await fetch("/api/services?type=backpressure");
-        if (mounted && response.ok) {
-          const data = await response.json();
-          setStatus(data);
+        const response = await fetch("/api/system/backpressure", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur API (${response.status}) sur /api/system/backpressure`);
+        }
+
+        const data = (await response.json()) as BackpressureStatusPayload;
+        if (mounted) {
+          setStatus(data[operationType]);
+          setError(null);
         }
       } catch (err) {
         if (mounted) {
@@ -153,14 +206,14 @@ export function useBackpressureStatus(pollIntervalMs = 15000) {
       }
     };
 
-    // Polling is intentional here: the queue status must refresh while the user keeps the view open.
     checkStatus();
+    // Polling keeps the backpressure status fresh while the tab stays visible.
     const interval = setInterval(checkStatus, pollIntervalMs);
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, [pollIntervalMs]);
+  }, [isPageVisible, operationType, pollIntervalMs]);
 
   return { status, error };
 }
