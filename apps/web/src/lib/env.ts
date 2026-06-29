@@ -9,6 +9,9 @@ const emptyToUndefined = (value: unknown) => {
 
 const isProduction = process.env.NODE_ENV === "production";
 
+export const LOCAL_DEV_CLERK_PUBLISHABLE_KEY =
+  "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA";
+
 function normalizeUrlCandidate(raw: string): string {
   const value = raw.trim();
   // Use URL constructor instead of regex to avoid ReDoS (CodeQL: js/regex/dos)
@@ -113,9 +116,7 @@ const parsed = envSchema.safeParse({
     process.env["NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE"],
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
     process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"] ||
-    (!isProduction
-      ? "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA"
-      : undefined),
+    (!isProduction ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY : undefined),
   NEXT_PUBLIC_CLERK_PROXY_URL: process.env["NEXT_PUBLIC_CLERK_PROXY_URL"],
   NEXT_PUBLIC_POSTHOG_KEY: process.env["NEXT_PUBLIC_POSTHOG_KEY"],
   NEXT_PUBLIC_POSTHOG_TOKEN: process.env["NEXT_PUBLIC_POSTHOG_TOKEN"],

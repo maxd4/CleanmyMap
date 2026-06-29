@@ -1,7 +1,7 @@
-import { env } from "@/lib/env";
-
-const LOCAL_DEV_CLERK_PUBLISHABLE_KEY =
-  "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA";
+import {
+  env,
+  LOCAL_DEV_CLERK_PUBLISHABLE_KEY,
+} from "@/lib/env";
 
 function parseOrigin(raw: string | undefined): string | undefined {
   if (!raw || raw.trim().length === 0) {
