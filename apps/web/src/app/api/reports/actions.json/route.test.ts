@@ -118,6 +118,9 @@ describe("GET /api/reports/actions.json", () => {
     expect(response.headers.get("Location")).toBe(
       "https://supabase.test/storage/v1/object/sign/reports/actions-json/cache.json?token=abc123",
     );
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
     expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
     expect(cachedSupabase.storage.from).toHaveBeenCalledWith("reports");
     expect(cachedSupabase.createSignedUrlMock).toHaveBeenCalledTimes(1);
@@ -141,6 +144,9 @@ describe("GET /api/reports/actions.json", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
       "https://supabase.test/storage/v1/object/sign/reports/actions-json/cache.json?token=abc123",
+    );
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
     );
     expect(fetchUnifiedActionContractsMock).toHaveBeenCalledTimes(1);
     expect(cachedSupabase.uploadMock).toHaveBeenCalledTimes(1);

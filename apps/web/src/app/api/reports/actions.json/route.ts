@@ -17,7 +17,8 @@ export const runtime = "nodejs";
 
 const ACTIONS_JSON_BUCKET = "reports";
 const ACTIONS_JSON_SIGNED_URL_TTL_SECONDS = 60 * 60 * 24;
-const ACTIONS_JSON_REDIRECT_CACHE_CONTROL = "private, max-age=0, no-store";
+const ACTIONS_JSON_RESPONSE_CACHE_CONTROL =
+  "private, max-age=300, stale-while-revalidate=86400";
 
 function buildActionsJsonCachePath(params: {
   cacheDay: string;
@@ -62,7 +63,7 @@ async function createJsonRedirect(params: {
     status: 302,
     headers: {
       Location: data.signedUrl,
-      "Cache-Control": ACTIONS_JSON_REDIRECT_CACHE_CONTROL,
+      "Cache-Control": ACTIONS_JSON_RESPONSE_CACHE_CONTROL,
     },
   });
 }
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
       extension: "json",
       contentType: "application/json; charset=utf-8",
       date: exportDate,
+      cacheControl: ACTIONS_JSON_RESPONSE_CACHE_CONTROL,
     });
   const cachedJsonPath = buildActionsJsonCachePath({
     cacheDay,
