@@ -44,11 +44,6 @@ const DeferredCookieConsentBanner = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const DeferredHomeFooter = dynamic(
-  () => import("@/components/accueil/home-footer-no-ssr").then((module) => module.HomeFooterNoSSR),
-  { ssr: false, loading: () => null },
-);
-
 export function DeferredGlobalChrome() {
   return (
     <>
@@ -58,7 +53,15 @@ export function DeferredGlobalChrome() {
       <DeferredSiteTooltips />
       <DeferredConditionalAnalytics />
       <DeferredCookieConsentBanner />
-      <DeferredHomeFooter />
     </>
   );
+}
+
+const DeferredHomeFooter = dynamic(
+  () => import("@/components/accueil/home-footer-no-ssr").then((module) => module.HomeFooterNoSSR),
+  { ssr: false, loading: () => null },
+);
+
+export function DeferredGlobalFooter() {
+  return <DeferredHomeFooter />;
 }
