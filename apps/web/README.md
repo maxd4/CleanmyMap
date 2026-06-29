@@ -34,6 +34,7 @@ Localhost dev profile:
 - copy `.env.local.example` to `.env.local`
 - leave `NEXT_PUBLIC_CLERK_PROXY_URL` empty
 - omit `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` to use the built-in development fallback
+- if a live Clerk publishable key is present in a localhost profile, the app will ignore it and use the built-in development fallback
 - set `CMM_DEV_AUTH_BYPASS=1`
 - set `CMM_DEV_AUTH_BYPASS_ROLE=max` to get the IMU profile locally
 

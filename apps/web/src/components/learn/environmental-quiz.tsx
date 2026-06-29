@@ -19,22 +19,13 @@ import {
   buildQuizSchoolSessionDeck,
   buildQuizSessionDeck,
 } from "@/lib/learning/quiz-selection-engine";
-import {
-  type QuizDifficultyId,
-  type QuizPedagogicalTypeId,
-  type QuizSkillId,
-} from "@/lib/learning/quiz-taxonomy";
 import { QuizAccessPicker } from "@/components/learn/quiz-access-picker";
 import { QuizReasoningPicker } from "@/components/learn/quiz-reasoning-picker";
 import { QuizSchoolPicker } from "@/components/learn/quiz-school-picker";
 import { QuizSessionPanel } from "@/components/learn/quiz-session-panel";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz-adaptive";
-import {
-  getQuizReviewTarget,
-  type QuizReviewTarget,
-  type QuizQuestionCategory,
-} from "@/components/learn/quiz-review-targets";
-import { buildQuizErrorGrid, type QuizErrorSeverityId, type QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
+import { getQuizReviewTarget, type QuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import { buildQuizErrorGrid, type QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
 import {
   getNextReasoningType,
   type QuizReasoningType,
@@ -51,16 +42,8 @@ import {
   getQuizSchoolTrackLabel,
   type QuizSchoolTrackId,
 } from "@/components/learn/quiz-school-modes";
-import type { QuizQuestionFormatId } from "@/components/learn/quiz-question-formats";
-import type {
-  QuizConfidenceLevel,
-  QuizLocalScope,
-  QuizSourceType,
-} from "@/lib/learning/quiz-source-metadata";
 import {
   getQuizUiCopy,
-  type QuizQuestionLocalizedFields,
-  type QuizUiCopyKey,
 } from "@/lib/learning/quiz-i18n";
 import {
   buildQuizPersonalProgressSnapshot,
@@ -70,41 +53,10 @@ import {
   type QuizPersonalProgressState,
 } from "@/lib/learning/quiz-personal-progress";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz-question-bank";
+import type { QuizQuestion } from "@/lib/learning/quiz-question-contract";
 
 export { QUIZ_QUESTIONS };
-
-export interface QuizQuestion {
-  id: string;
-  type: "multiple-choice" | "multiple-select" | "true-false" | "flashcard";
-  category: QuizQuestionCategory;
-  question: string;
-  answer: string | string[];
-  options?: string[];
-  explanation: string;
-  review?: QuizReviewTarget;
-  reviewTarget?: QuizReviewTarget;
-  format?: QuizQuestionFormatId;
-  pedagogicalType?: QuizPedagogicalTypeId;
-  reasoningType: QuizReasoningType;
-  skill?: QuizSkillId;
-  difficulty?: QuizDifficultyId;
-  trapLevel?: QuizTrapLevelId;
-  errorType?: QuizErrorTypeId;
-  misconception?: string;
-  severity?: QuizErrorSeverityId;
-  feedbackCorrect?: string;
-  feedbackWrong?: string;
-  takeaway?: string;
-  sourceUrl?: string;
-  sourceLabel?: string;
-  sourceType?: QuizSourceType;
-  confidenceLevel?: QuizConfidenceLevel;
-  isLocalRule?: boolean;
-  localScope?: QuizLocalScope;
-  lastCheckedAt?: string;
-  needsReview?: boolean;
-  localized?: QuizQuestionLocalizedFields;
-}
+export type { QuizQuestion };
 
 export type QuizThemeSummary = {
   label: string;
