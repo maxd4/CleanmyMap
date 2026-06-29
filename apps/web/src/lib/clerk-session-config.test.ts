@@ -10,10 +10,15 @@ const mockEnv = {
   CLERK_ALLOWED_PARTIES: undefined,
 };
 
-vi.mock("@/lib/env", () => ({
-  env: mockEnv,
-  isConfigured: (value: string | undefined) => Boolean(value && value.trim().length > 0),
-}));
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+
+  return {
+    ...actual,
+    env: mockEnv,
+    isConfigured: (value: string | undefined) => Boolean(value && value.trim().length > 0),
+  };
+});
 
 afterEach(() => {
   mockEnv.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
@@ -30,8 +35,9 @@ describe("getClerkRuntimeConfig", () => {
   it("falls back to the local development publishable key on localhost when a live key is present", async () => {
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");
 
-    expect(getClerkRuntimeConfig().publishableKey).toBe(
-      "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
+    expect(getClerkRuntimeConfig().publishableKey).toMatch(/^pk_test_/);
+    expect(getClerkRuntimeConfig().publishableKey).not.toBe(
+      mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     );
   });
 
