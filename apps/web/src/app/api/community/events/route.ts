@@ -1,5 +1,6 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
+import { unstable_cache } from "next/cache";
 import { z } from"zod";
 import {
  defaultCommunityEventOps,
@@ -31,6 +32,7 @@ import { isIsoDateString } from"@/lib/security/validation";
 const COMMUNITY_EVENTS_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
 };
+const COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS = 60;
 
 function parsePositiveInteger(
  raw: string | null,
@@ -86,7 +88,85 @@ function toEventResponseItem(
   },
   myRsvpStatus: summary?.myRsvpStatus ?? null,
   organizer: organizerIdentity,
- };
+  };
+}
+
+function buildCommunityEventsCacheKey(userId: string, limit: number): string {
+ return [`user:${userId}`, `limit:${limit}`].join("|");
+}
+
+type CommunityEventsSuccessPayload = {
+ status: "ok";
+ count: number;
+ items: Array<ReturnType<typeof toEventResponseItem>>;
+};
+
+async function loadCachedCommunityEvents(
+ userId: string,
+ limit: number,
+): Promise<CommunityEventsSuccessPayload> {
+ const cached = unstable_cache(
+  async () => {
+   const supabase = getSupabaseServerClient();
+
+   const eventsResult = await supabase
+    .from("community_events")
+    .select(
+"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+    )
+    .order("event_date", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+   if (eventsResult.error) {
+    throw new Error(eventsResult.error.message);
+   }
+
+   const events = (eventsResult.data ?? []) as CommunityEventRow[];
+   if (events.length === 0) {
+    return { status: "ok" as const, count: 0, items: [] as Array<ReturnType<typeof toEventResponseItem>> };
+   }
+
+   const summaries = await loadCommunityEventRsvpSummaries(supabase, {
+    eventIds: events.map((event) => event.id),
+    userId,
+   });
+   const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
+
+   const organizerIds = Array.from(
+    new Set(
+     events
+      .map((event) => event.organizer_clerk_id)
+      .filter((id): id is string => typeof id ==="string" && id.length > 0),
+    ),
+   );
+   const clerk = await getClerkService();
+   const organizerById = await clerk.resolveUsers(organizerIds);
+
+   const items = events.map((event) => {
+    const organizer =
+     organizerById.get(event.organizer_clerk_id) ?? {
+      userId: null,
+      displayName:"Membre",
+      roleBadge: getRoleBadge("benevole"),
+      profileBadge: getProfileBadge("benevole"),
+     };
+    return toEventResponseItem(
+     event,
+     summaryByEventId.get(event.id) ?? null,
+     organizer,
+    );
+   });
+   return { status: "ok" as const, count: items.length, items };
+  },
+  ["community-events", buildCommunityEventsCacheKey(userId, limit)],
+  {
+   revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
+   tags: [`community-events:${userId}`, "community-events"],
+  },
+ );
+
+ return cached();
 }
 
 const createCommunityEventSchema = z.object({
@@ -108,72 +188,20 @@ const createCommunityEventSchema = z.object({
 
 export async function GET(request: Request) {
  const { userId } = await auth();
+ if (!userId) {
+ return unauthorizedJsonResponse();
+ }
  const url = new URL(request.url);
  const limit = parsePositiveInteger(
- url.searchParams.get("limit"),
- 1,
- 120,
- 120,
+  url.searchParams.get("limit"),
+  1,
+  300,
+  120,
  );
- const supabase = getSupabaseServerClient();
 
  try {
- const eventsResult = await supabase
- .from("community_events")
- .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
- )
- .order("event_date", { ascending: true })
- .order("created_at", { ascending: false })
- .limit(limit);
-
- if (eventsResult.error) {
- return handleApiError(eventsResult.error,"GET /api/community/events (query)");
- }
-
- const events = (eventsResult.data ?? []) as CommunityEventRow[];
- if (events.length === 0) {
- return NextResponse.json(
-  { status:"ok", count: 0, items: [] },
-  { headers: COMMUNITY_EVENTS_CACHE_HEADERS },
- );
- }
-
- const eventIds = events.map((event) => event.id);
- const summaries = await loadCommunityEventRsvpSummaries(supabase, {
-  eventIds,
-  userId: userId ?? null,
- });
- const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
-
- const organizerIds = Array.from(
- new Set(
- events
- .map((event) => event.organizer_clerk_id)
- .filter((id): id is string => typeof id ==="string" && id.length > 0),
- ),
- );
- const clerk = await getClerkService();
- const organizerById = await clerk.resolveUsers(organizerIds);
-
- const items = events.map((event) => {
- const organizer =
- organizerById.get(event.organizer_clerk_id) ?? {
- userId: null,
- displayName:"Membre",
- roleBadge: getRoleBadge("benevole"),
- profileBadge: getProfileBadge("benevole"),
- };
-  return toEventResponseItem(
- event,
- summaryByEventId.get(event.id) ?? null,
- organizer,
-  );
-  });
- return NextResponse.json(
-  { status:"ok", count: items.length, items },
-  { headers: COMMUNITY_EVENTS_CACHE_HEADERS },
- );
+ const payload = await loadCachedCommunityEvents(userId, limit);
+ return NextResponse.json(payload, { headers: COMMUNITY_EVENTS_CACHE_HEADERS });
  } catch (error) {
  return handleApiError(error, "GET /api/community/events");
  }

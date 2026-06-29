@@ -23,6 +23,10 @@ export const runtime ="nodejs";
 
 type ExportFormat ="json" |"md" |"pdf";
 const ELUS_DOSSIER_BUCKET ="reports";
+const ELUS_DOSSIER_RESPONSE_CACHE_CONTROL =
+  "private, max-age=300, stale-while-revalidate=86400";
+const ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL =
+  "private, max-age=300, stale-while-revalidate=86400";
 
 function parsePositiveInteger(
  raw: string | null,
@@ -329,8 +333,14 @@ export async function GET(request: Request) {
    );
 
    if (!signedPdf.error && signedPdf.data?.signedUrl) {
-    return Response.redirect(signedPdf.data.signedUrl, 302);
-   }
+     return new Response(null, {
+      status: 302,
+      headers: {
+       Location: signedPdf.data.signedUrl,
+       "Cache-Control": ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL,
+      },
+     });
+    }
   }
 
   return new Response(
@@ -339,9 +349,11 @@ export async function GET(request: Request) {
      "Le PDF de dossier élus est désormais généré côté navigateur. Utilisez l'export PDF depuis la page de rapports.",
    }),
    {
-    status: 409,
-    headers: {
+    // no-store: this fallback is per-request and must not be cached across admin sessions.
+   status: 409,
+   headers: {
      "Content-Type": "application/json; charset=utf-8",
+     // no-store: this fallback is per-request and must not be cached across admin sessions.
      "Cache-Control": "no-store",
     },
    },
@@ -438,6 +450,7 @@ export async function GET(request: Request) {
   contentType: format === "md"
  ? "text/markdown; charset=utf-8"
     : "application/json; charset=utf-8",
+  cacheControl: ELUS_DOSSIER_RESPONSE_CACHE_CONTROL,
  });
  const headers: Record<string, string> = { ...responseHeaders };
  if (isTruncated) {

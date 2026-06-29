@@ -232,7 +232,7 @@ export function buildCommunityEventsQueryString(
   params: { limit?: number } = {},
 ): string {
   const query = new URLSearchParams();
-  query.set("limit", String(parsePositiveInteger(params.limit, 1, 120, 120)));
+  query.set("limit", String(parsePositiveInteger(params.limit, 1, 300, 120)));
   return query.toString();
 }
 

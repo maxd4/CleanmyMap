@@ -311,6 +311,10 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
   type ProfilesChain = {
     select: (columns: string) => ProfilesChain;
     in: (field: string, values: string[]) => ProfilesChain;
+    limit: (limit: number) => Promise<{
+      data: { id: string; display_name: string | null; handle: string | null }[];
+      error: null;
+    }>;
     then: (
       resolve: (value: {
         data: { id: string; display_name: string | null; handle: string | null }[];
@@ -326,6 +330,18 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
       state.inFilters[field] = values;
       return chain;
     }),
+    limit: vi.fn(async (limit: number) => ({
+      data: profiles
+        .filter((profile) => {
+          const allowedIds = state.inFilters.id;
+          if (allowedIds && !allowedIds.includes(profile.id)) {
+            return false;
+          }
+          return true;
+        })
+        .slice(0, limit),
+      error: null,
+    })),
     then: (
       resolve: (value: {
         data: { id: string; display_name: string | null; handle: string | null }[];

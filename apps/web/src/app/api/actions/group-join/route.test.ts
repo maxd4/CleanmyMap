@@ -432,7 +432,7 @@ describe("GET /api/actions/group-join", () => {
     });
   }, 15000);
 
-  it("excludes approved actions that are not opened to participants", async () => {
+  it("includes approved actions even when the organizer has not opened participation", async () => {
     const supabase = createSupabaseMock({
       actions: [
         {
@@ -468,9 +468,9 @@ describe("GET /api/actions/group-join", () => {
     };
 
     expect(response.status).toBe(200);
-    expect(body.count).toBe(1);
+    expect(body.count).toBe(2);
     expect(body.items?.[0]?.id).toBe("action-open");
-    expect(body.items?.some((item) => item.id === "action-closed")).toBe(false);
+    expect(body.items?.some((item) => item.id === "action-closed")).toBe(true);
   }, 15000);
 
   it("prioritizes a requested approved action even when it is outside the default slice", async () => {
