@@ -7,6 +7,7 @@ import { ReactNode } from"react";
 
 interface ClerkLocalizationProviderProps {
  children: ReactNode;
+ publishableKey?: string;
  signInUrl?: string;
  signUpUrl?: string;
  signInFallbackRedirectUrl?: string;
@@ -28,6 +29,7 @@ export function ClerkLocalizationProvider({
  return (
  <ClerkProvider
  {...props}
+ publishableKey={props.publishableKey}
  proxyUrl={props.proxyUrl}
  domain={props.proxyUrl ? undefined : props.domain}
   localization={locale ==="fr" ? frFR : enUS}

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockEnv = {
   NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_123",
   NEXT_PUBLIC_CLERK_PROXY_URL: "/__clerk",
   CLERK_DOMAIN: "auth.cleanmymap.fr",
   CLERK_IS_SATELLITE: undefined,
@@ -16,6 +17,7 @@ vi.mock("@/lib/env", () => ({
 
 afterEach(() => {
   mockEnv.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+  mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_123";
   mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "/__clerk";
   mockEnv.CLERK_DOMAIN = "auth.cleanmymap.fr";
   mockEnv.CLERK_IS_SATELLITE = undefined;
@@ -25,6 +27,14 @@ afterEach(() => {
 });
 
 describe("getClerkRuntimeConfig", () => {
+  it("falls back to the local development publishable key on localhost when a live key is present", async () => {
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(getClerkRuntimeConfig().publishableKey).toBe(
+      "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
+    );
+  });
+
   it("keeps a relative proxy path relative", async () => {
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");
 

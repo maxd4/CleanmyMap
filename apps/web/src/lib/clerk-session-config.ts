@@ -1,5 +1,8 @@
 import { env } from "@/lib/env";
 
+const LOCAL_DEV_CLERK_PUBLISHABLE_KEY =
+  "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA";
+
 function parseOrigin(raw: string | undefined): string | undefined {
   if (!raw || raw.trim().length === 0) {
     return undefined;
@@ -9,6 +12,14 @@ function parseOrigin(raw: string | undefined): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function parsePublishableKey(raw: string | undefined): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const candidate = raw.trim();
+  return candidate.length > 0 ? candidate : undefined;
 }
 
 function parseDomain(raw: string | undefined): string | undefined {
@@ -44,6 +55,19 @@ function resolveProxyUrl(raw: string | undefined, appOrigin: string | undefined)
   }
 }
 
+function isLocalhostOrigin(origin: string | undefined): boolean {
+  if (!origin) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(origin).hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 function parseOriginCsv(raw: string | undefined): string[] {
   if (!raw) {
     return [];
@@ -62,6 +86,7 @@ function parseOriginCsv(raw: string | undefined): string[] {
 
 export type ClerkRuntimeConfig = {
   appOrigin?: string;
+  publishableKey?: string;
   domain?: string;
   proxyUrl?: string;
   isSatellite?: boolean;
@@ -75,12 +100,24 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
   const configuredOrigins = parseOriginCsv(env.CLERK_ALLOWED_PARTIES);
   const allowlistedOrigins = configuredOrigins;
 
+  const publishableKey = parsePublishableKey(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const isSatellite = env.CLERK_IS_SATELLITE === true;
   const domain = parseDomain(env.CLERK_DOMAIN);
   const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
+  const resolvedPublishableKey =
+    publishableKey &&
+    process.env.NODE_ENV !== "production" &&
+    isLocalhostOrigin(appOrigin) &&
+    publishableKey.startsWith("pk_live_")
+      ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
+      : publishableKey ??
+        (process.env.NODE_ENV !== "production"
+          ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
+          : undefined);
 
   return {
     appOrigin,
+    publishableKey: resolvedPublishableKey,
     domain,
     proxyUrl,
     isSatellite: isSatellite ? true : undefined,

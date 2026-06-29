@@ -4,6 +4,7 @@ import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from "@/components/seo/structured-data/";
 import { RootLayoutChrome } from "@/components/layout/root-layout-chrome";
+import { DeferredGlobalFooter } from "@/components/layout/deferred-global-chrome";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
@@ -27,7 +28,7 @@ export default function RootLayout({
         <WebSiteJsonLd />
         <FAQJsonLd />
       </head>
-      <body className="relative isolate min-h-full overflow-x-hidden bg-background font-sans text-foreground">
+      <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">
         <SitePreferencesProvider>
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
@@ -35,6 +36,7 @@ export default function RootLayout({
             signInFallbackRedirectUrl={PROFIL_ROUTE}
             signUpFallbackRedirectUrl="/onboarding/localisation"
             afterSignOutUrl="/"
+            publishableKey={clerkRuntime.publishableKey}
             proxyUrl={clerkRuntime.proxyUrl}
             domain={useClerkProxy ? undefined : clerkRuntime.domain}
             isSatellite={useClerkProxy ? undefined : clerkRuntime.isSatellite}
@@ -48,6 +50,7 @@ export default function RootLayout({
               <main className="cmm-site-frame flex flex-1 flex-col pt-2 sm:pt-0">
                 {children}
               </main>
+              <DeferredGlobalFooter />
             </PostHogProvider>
           </ClerkLocalizationProvider>
         </SitePreferencesProvider>
