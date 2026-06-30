@@ -3,6 +3,7 @@
  */
 
 export { HomeHero } from './accueil-hero';
+export { HomeNavigationSchema } from './accueil-navigation-schema';
 export { HomeImpactSummary } from './accueil-impact-summary';
 export { HomeBenefits } from './accueil-benefits';
 export { HomeCommunityActivity } from './accueil-community-activity';
