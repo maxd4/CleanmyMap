@@ -1,5 +1,6 @@
 import {
   HomeHero,
+  HomeNavigationSchema,
   HomeCommunityCredibility,
 } from "@/components/accueil";
 import {
@@ -130,6 +131,7 @@ export default async function HomePage() {
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
         <HomeHero metrics={metrics} />
+        <HomeNavigationSchema />
         <HomeCommunityCredibility
           activity={communityActivity}
           errorMessage={overviewLoadError}
