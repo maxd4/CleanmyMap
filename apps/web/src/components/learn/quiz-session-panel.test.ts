@@ -67,10 +67,13 @@ describe("QuizSessionPanel", () => {
     expect(markup).toContain("Réponse incorrecte");
     expect(markup).toContain("Explication pédagogique");
     expect(markup).toContain("À retenir");
+    expect(markup).toContain("Suite utile");
     expect(markup).toContain("La bonne filière dépend d&#x27;abord de la consigne locale.");
     expect(markup).toContain("À revoir dans");
     expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("/learn/bonnes-pratiques");
+    expect(markup).toContain("/sections/recycling");
+    expect(markup).toContain("Revoir la rubrique liée à l&#x27;erreur");
     expect(markup).toContain("Erreur pédagogique");
     expect(markup).toContain("aria-live=\"polite\"");
     expect(markup).toContain("type=\"button\"");

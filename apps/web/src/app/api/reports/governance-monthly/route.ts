@@ -1,19 +1,28 @@
 import {
   loadGovernanceMonthlyReport,
 } from "@/lib/governance/governance-monthly-report";
+import { requireAdminAccess } from "@/lib/authz";
+import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 const GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET = "reports";
 const GOVERNANCE_MONTHLY_REPORT_PDF_SIGNED_URL_TTL_SECONDS = 60 * 60 * 24;
 const GOVERNANCE_MONTHLY_REPORT_REDIRECT_CACHE_CONTROL =
-  "public, max-age=0, s-maxage=3600";
+  "private, max-age=300, stale-while-revalidate=86400";
+const GOVERNANCE_MONTHLY_REPORT_JSON_CACHE_CONTROL =
+  "private, max-age=300, stale-while-revalidate=86400";
 
 function parseFormat(raw: string | null): "pdf" | "json" {
   return raw === "json" ? "json" : "pdf";
 }
 
 export async function GET(request: Request) {
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
+  }
+
   const url = new URL(request.url);
   const format = parseFormat(url.searchParams.get("format"));
   const month = url.searchParams.get("month");
@@ -27,6 +36,10 @@ export async function GET(request: Request) {
     return Response.json({
       status: "ok",
       report,
+    }, {
+      headers: {
+        "Cache-Control": GOVERNANCE_MONTHLY_REPORT_JSON_CACHE_CONTROL,
+      },
     });
   }
 

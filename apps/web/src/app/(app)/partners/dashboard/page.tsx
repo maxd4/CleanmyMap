@@ -171,8 +171,6 @@ export default async function PartnersDashboardPage() {
     <ClerkRequiredGate
       isAuthenticated={Boolean(userId)}
       mode="disabled"
-      title="Pilotage réseau"
-      description="Cette vue reste lisible, mais les actions demandent une connexion."
     >
       <AccountCompletionGate state={accountCompletion}>
         {page}

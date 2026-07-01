@@ -45,7 +45,7 @@ export function NotificationBell() {
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications],
   );
-  const pollIntervalMs = isOpen ? 120_000 : 600_000;
+  const pollIntervalMs = isOpen ? 300_000 : 900_000;
 
   const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {

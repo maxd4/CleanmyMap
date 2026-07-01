@@ -22,8 +22,6 @@ export default async function SignalementPage() {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title="Signalement de terrain"
-        description="Cette fonctionnalité nécessite une connexion Clerk pour certifier votre position."
         lockedPreview={
           <div className={cn("space-y-4 rounded-[3rem] border p-12 bg-white/5 backdrop-blur-2xl border-white/5")}>
             <div className="rounded-[2rem] border border-white/5 bg-emerald-400/5 p-8">
@@ -46,8 +44,6 @@ export default async function SignalementPage() {
     <ClerkRequiredGate
       isAuthenticated={Boolean(userId)}
       mode="blur"
-      title="Signalement de terrain"
-      description="Cette fonctionnalité nécessite une connexion Clerk pour certifier votre position."
       lockedPreview={
         <div
           className={cn(

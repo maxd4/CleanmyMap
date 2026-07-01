@@ -28,11 +28,17 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 - `clerk-supabase-audit.md`
 - `clerk-supabase-audit.md` sert aussi de point d'entrée vers `npm run data:audit:clerk-supabase`
 
+### Mémoire de session
+- `agent-memory-governance.md` - doctrine de mémoire persistante, cycle de travail autonome et clôture de session
+- `../sessions/history/latest-session.md` - mémoire volatile de la dernière session
+- `../project_context.md` - contexte semi-stable du projet
+
 ### Sécurité publication et config
 - `pre-release-security-check.md`
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
 - `OPENAI_API_KEY` reste un secret local/serveur et ne doit jamais être traité comme un env public
 - les runbooks internes de mémoire et de session restent hors index public
+- `github-vercel-governance-audit.md` - audit synthétique de la gouvernance GitHub/Vercel
 
 ### Changelog
 - `CHANGELOG.md`

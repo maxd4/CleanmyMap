@@ -153,6 +153,9 @@ describe("GET /api/reports/elus-dossier", () => {
     expect(markdownResponse.headers.get("Content-Disposition")).toContain(
       'filename="reports_elus_dossier_',
     );
+    expect(markdownResponse.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
     expect(markdownResponse.headers.get("X-Deliverable-Format")).toBe("md");
     expect(await markdownResponse.text()).toContain("# Dossier elu - Pack institutionnel");
   });
@@ -190,6 +193,9 @@ describe("GET /api/reports/elus-dossier", () => {
     expect(response.headers.get("Location")).toBe(
       "https://supabase.test/storage/v1/object/sign/reports/elus-dossier/cache.pdf?token=abc123",
     );
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
     expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
     expect(await response.text()).toBe("");
   });
@@ -213,6 +219,9 @@ describe("GET /api/reports/elus-dossier", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("application/json");
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
 
     const body = (await response.json()) as {
       summary: { totalKg: number; totalVolunteers: number; geocoverageRate: number };

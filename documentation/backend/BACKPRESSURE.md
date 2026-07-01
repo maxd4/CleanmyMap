@@ -108,6 +108,9 @@ Check backpressure status via:
 curl https://cleanmymap.com/api/system/backpressure
 ```
 
+The client hook should only poll while the screen is visible. When the tab loses focus
+or the panel is not active, suspend refreshes instead of keeping a live interval running.
+
 ## Future Enhancements
 
 1. **Redis-backed queue** - For distributed systems

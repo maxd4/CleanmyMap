@@ -1,0 +1,35 @@
+name: Sujet quota
+description: Suivre une régression de coût, de trafic ou de quota technique.
+title: "[Quota] "
+labels:
+  - quota
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: Décrivez le coût ou le quota concerné.
+      placeholder: Invocations, lectures Supabase, bande passante, build, cache...
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Surface concernée
+      description: Indiquez la route, la page ou le flux à l'origine du coût.
+      placeholder: page, route API, cron, preview, import, map, polling...
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Limite ou réduction possible
+      description: Proposez une borne, un cache, une pagination ou une simplification.
+      placeholder: limit, pagination, revalidate, bbox, agrégat, suppression...
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Preuves utiles
+      description: Ajoutez mesures, logs, captures ou comparaison avant/après.
+      placeholder: métriques, erreurs de build, hausse de trafic, lien de preview.
+

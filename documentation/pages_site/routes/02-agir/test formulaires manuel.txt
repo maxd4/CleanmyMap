@@ -2,34 +2,34 @@ Avant de tester les deux formulaires sur le terrain
 
 1. Verrouiller le scénario de test
 - 1 action terrain réelle ou quasi réelle.
-- 1 formulaire d’action à créer/modifier.
+- 1 formulaire d'action à créer/modifier.
 - 1 formulaire de groupe à ouvrir/rejoindre/modérer.
 - 1 objectif de validation par formulaire, pas plus.
 
 2. Préparer les comptes
 - 1 admin.
-- 1 créateur d’action.
+- 1 créateur d'action.
 - 2 à 3 bénévoles.
-- 1 compte “participant déjà rejoint” pour tester les états déjà inscrits.
-- Vérifier que les pseudos et profils sont bien propres, car ils apparaissent dans les journaux et files d’attente.
+- 1 compte "participant déjà rejoint" pour tester les états déjà inscrits.
+- Vérifier que les pseudos et profils sont bien propres, car ils apparaissent dans les journaux et files d'attente.
 
 3. Vérifier les chemins critiques avant le terrain
-- Formulaire d’action :
+- Formulaire d'action :
   - création
   - édition admin sur ancien formulaire
   - journal des modifications visible
   - publication / validation
 - Formulaire de groupe :
   - ouverture / fermeture
-  - file d’attente visible
+  - file d'attente visible
   - acceptation / refus par créateur ou admin
   - accès direct admin sans attente
   - reprise du formulaire sur mobile
 
 4. Faire un test à blanc
 - Rejouer une séquence complète avec données factices.
-- Noter ce qui casse, ce qui est trop long, et ce qui n’est pas compréhensible.
-- Corriger les textes trop flous avant d’impliquer les bénévoles.
+- Noter ce qui casse, ce qui est trop long, et ce qui n'est pas compréhensible.
+- Corriger les textes trop flous avant d'impliquer les bénévoles.
 
 5. Préparer le protocole terrain
 - Une fiche avec 5 tâches courtes à demander aux bénévoles.
@@ -40,7 +40,7 @@ Avant de tester les deux formulaires sur le terrain
 6. Sécuriser le suivi
 - Garder un journal des erreurs et des retours.
 - Prévoir de quoi revenir en arrière si une modération ou un champ a été mal modifié.
-- Vérifier que les journaux de modifications affichent bien le pseudo de l’admin.
+- Vérifier que les journaux de modifications affichent bien le pseudo de l'admin.
 
 
 
@@ -48,4 +48,4 @@ Ce qui reste à confirmer en manuel:
 affichage du journal sur la fiche action
 lisibilité des blocs sur mobile
 états vide / chargement / erreur
-droits d’accès créateur vs admin vs bénévole
+droits d'accès créateur vs admin vs bénévole

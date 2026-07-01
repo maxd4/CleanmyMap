@@ -6,8 +6,8 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
 - `SECURITY.md` à la racine du dépôt.
 - Template de PR avec description, fichiers touchés et vérifications.
-- Templates d'issues pour bug, UI, sécurité et dette technique.
-- Labels de tri: `security`, `quota`, `ui`, `supabase`, `vercel`, `docs`.
+- Templates d'issues pour bug, UI, sécurité, dette technique, `refactor`, `supabase`, `vercel` et `quota`.
+- Labels de tri: `security`, `quota`, `ui`, `supabase`, `vercel`, `docs`, `refactor`.
 - Milestones pour les grandes étapes de travail.
 
 ## Protection de `main`

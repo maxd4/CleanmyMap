@@ -52,7 +52,15 @@ Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas
 - Ferme les commandes qui tournent pour un `localhost` dès que ce `localhost` n'est plus ouvert ou plus utilisé.
 - Les commandes `git` peuvent rester en arrière-plan car leur coût machine est généralement faible.
 
-## 6. Encodage et Accents Français (CRITIQUE)
+## 6. Mémoire persistante et cycle de travail
+
+- Lis `documentation/operations/agent-memory-governance.md` pour la doctrine de mémoire persistante et de clôture de session.
+- Avant de répondre sur une tâche complexe, planifie d'abord, puis décompose en sous-tâches logiques si nécessaire.
+- Après chaque modification, teste le cas nominal, les cas limites et les cas d'erreur quand le dépôt le permet.
+- En cas de bug, cherche la cause racine, corrige de manière ciblée et re-teste avant de conclure.
+- Conclus toujours par une synthèse explicite des changements, des validations et des risques restants.
+
+## 7. Encodage et Accents Français (CRITIQUE)
 - **Tous les fichiers doivent être encodés en UTF-8 sans BOM.** Le `.editorconfig` à la racine l'impose.
 - **Utilise systématiquement les vrais caractères accentués français** dans les strings visibles : `é`, `è`, `ê`, `à`, `ù`, `ç`, `ô`, `î`, etc.
 - **Interdit** : omettre les accents (ex: "Declarer" au lieu de "Déclarer") ou insérer des séquences mojibake (ex: "DÃ©clarer").

@@ -26,11 +26,10 @@ import {
   getServerDisplayMode,
   getServerLocale,
 } from "@/lib/server-preferences";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
-import { loadUserLabelSummary } from "@/lib/gamification/progression-data";
+import { loadUserLevelRankingSummary } from "@/lib/gamification/progression-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,34 +42,15 @@ export const metadata: Metadata = {
     "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
 };
 
-type DashboardOverviewLoaded =
-  | { status: "ok"; overview: Awaited<ReturnType<typeof loadPilotageOverview>> }
-  | { status: "error"; message: string };
-
-type UserLevelRankingItem = {
-  rank: number;
-  userId: string;
-  actorName: string;
-  currentLevel: number;
-  xpValidated: number;
-};
-
-type UserLevelRanking = {
-  topRows: UserLevelRankingItem[];
-  currentUserRow: UserLevelRankingItem | null;
-};
-
 type ReferralDashboardSummary = Awaited<
   ReturnType<typeof fetchCachedReferralSummary>
 >;
 
 async function loadDashboardOverviewResult(
   locale: "fr" | "en",
-): Promise<DashboardOverviewLoaded> {
+): Promise<{ status: "ok"; overview: Awaited<ReturnType<typeof loadPilotageOverview>> } | { status: "error"; message: string }> {
   try {
-    const supabase = getSupabaseServerClient();
     const overview = await loadPilotageOverview({
-      supabase,
       periodDays: 30,
       limit: 1800,
     });
@@ -84,50 +64,6 @@ async function loadDashboardOverviewResult(
           : "Dashboard data is temporarily unavailable.",
     };
   }
-}
-
-async function loadUserLevelRanking(
-  supabase: ReturnType<typeof getSupabaseServerClient>,
-  userId: string,
-): Promise<UserLevelRanking> {
-  const [profilesResult, labelsByUser] = await Promise.all([
-    supabase
-      .from("progression_profiles")
-      .select("user_id, current_level, xp_validated, xp_total")
-      .order("current_level", { ascending: false })
-      .order("xp_validated", { ascending: false })
-      .order("xp_total", { ascending: false })
-      .limit(120),
-    loadUserLabelSummary(supabase).catch(
-      () => new Map<string, { actorName: string }>(),
-    ),
-  ]);
-
-  if (profilesResult.error) {
-    return { topRows: [], currentUserRow: null };
-  }
-
-  const rows =
-    (profilesResult.data as Array<{
-      user_id: string;
-      current_level: number | null;
-      xp_validated: number | null;
-    }> | null) ?? [];
-
-  const rankedRows: UserLevelRankingItem[] = rows.map((row, index) => ({
-    rank: index + 1,
-    userId: row.user_id,
-    actorName:
-      labelsByUser.get(row.user_id)?.actorName?.trim() ||
-      `Utilisateur ${index + 1}`,
-    currentLevel: Math.max(1, Number(row.current_level ?? 1)),
-    xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
-  }));
-
-  return {
-    topRows: rankedRows.slice(0, 8),
-    currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
-  };
 }
 
 function DashboardReferralCard({
@@ -258,12 +194,6 @@ export default async function DashboardPage() {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title={locale === "fr" ? "Mon espace" : "Dashboard"}
-        description={
-          locale === "fr"
-            ? "Connectez-vous pour accéder à votre espace personnel."
-            : "Sign in to access your dashboard."
-        }
         lockedPreview={
           <div className="grid gap-3 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)] md:grid-cols-3">
             {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
@@ -296,9 +226,8 @@ export default async function DashboardPage() {
       : getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
-  const supabase = getSupabaseServerClient();
   const [userLevelRanking, referralSummary] = await Promise.all([
-    loadUserLevelRanking(supabase, userId),
+    loadUserLevelRankingSummary(userId),
     fetchCachedReferralSummary(userId).catch(() => null),
   ]);
   const profile = accountCompletion?.currentProfile ?? toProfile(role);

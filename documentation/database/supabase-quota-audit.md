@@ -4,6 +4,10 @@ Ce document sert de vue d'ensemble sur les causes probables de consommation des 
 
 Il ne remplace pas les dashboards Supabase, mais il permet de repérer les régressions avant qu'elles ne deviennent visibles en prod.
 
+Pour la stratégie d'accès qui évite d'exposer trop tôt les surfaces les plus coûteuses, voir aussi:
+
+- [`documentation/development/quota-access-tiering.md`](../development/quota-access-tiering.md)
+
 ## Méthode
 
 - inventaire statique du code `apps/web/src` et `apps/web/scripts`
@@ -213,7 +217,7 @@ Si l'audit remonte une table ou une route coûteuse, la séquence de correction 
 
 - une requête devient plus compliquée mais lit autant de lignes qu'avant;
 - un filtre a été déplacé côté React au lieu d'être rapproché de la base;
-- une règle métier disparaît pour “faire marcher” la requête;
+- une règle métier disparaît pour "faire marcher" la requête;
 - un `service_role` est introduit alors que l'accès public ou invoker suffisait;
 - une table critique est scannée alors qu'une sous-sélection ciblée était possible.
 

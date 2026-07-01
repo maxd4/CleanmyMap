@@ -1,4 +1,3 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
@@ -50,9 +49,7 @@ export function isLikelyTestContract(contract: ActionDataContract): boolean {
 }
 
 export async function loadLandingOverview() {
-  const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
-    supabase,
     periodDays: 365,
     limit: 5000,
   });

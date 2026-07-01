@@ -2,6 +2,14 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createInitialSRSState, SRSStats } from "@/lib/gamification/quiz-srs";
 
 const LOCAL_STORAGE_KEY = "cleanmymap_quiz_srs";
+const QUIZ_SRS_CACHE_TTL_MS = 60_000;
+
+type QuizSrsCacheEntry = {
+  cachedAt: number;
+  data: Record<string, SRSStats>;
+};
+
+const quizSrsCache = new Map<string, QuizSrsCacheEntry>();
 
 type QuizSrsRow = {
   question_id: string;
@@ -40,6 +48,51 @@ type QuizSrsTableClient = {
 
 type AccessTokenProvider = () => Promise<string | null>;
 
+function getQuizSrsCacheKey(userId: string, questionIds: string[]): string {
+  return `${userId}::${[...questionIds].sort().join("|")}`;
+}
+
+function cloneSrsData(data: Record<string, SRSStats>): Record<string, SRSStats> {
+  return Object.fromEntries(Object.entries(data).map(([questionId, stats]) => [questionId, { ...stats }]));
+}
+
+function seedQuizSrsCache(userId: string, questionIds: string[], data: Record<string, SRSStats>): void {
+  quizSrsCache.set(getQuizSrsCacheKey(userId, questionIds), {
+    cachedAt: Date.now(),
+    data: cloneSrsData(data),
+  });
+}
+
+function readQuizSrsCache(userId: string, questionIds: string[]): Record<string, SRSStats> | null {
+  const entry = quizSrsCache.get(getQuizSrsCacheKey(userId, questionIds));
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() - entry.cachedAt > QUIZ_SRS_CACHE_TTL_MS) {
+    quizSrsCache.delete(getQuizSrsCacheKey(userId, questionIds));
+    return null;
+  }
+
+  return cloneSrsData(entry.data);
+}
+
+function updateQuizSrsCache(userId: string, stats: SRSStats): void {
+  for (const [cacheKey, entry] of quizSrsCache.entries()) {
+    if (!cacheKey.startsWith(`${userId}::`)) {
+      continue;
+    }
+
+    quizSrsCache.set(cacheKey, {
+      cachedAt: Date.now(),
+      data: {
+        ...cloneSrsData(entry.data),
+        [stats.question_id]: { ...stats },
+      },
+    });
+  }
+}
+
 /**
  * Charge les données SRS pour une liste de questions
  */
@@ -51,6 +104,11 @@ export async function loadQuizSRSData(
   const data: Record<string, SRSStats> = {};
 
   if (userId) {
+    const cached = readQuizSrsCache(userId, questionIds);
+    if (cached) {
+      return cached;
+    }
+
     const supabase = getSupabaseBrowserClient(accessTokenProvider) as unknown as QuizSrsTableClient;
     const { data: dbData, error } = await supabase
       .from("quiz_srs")
@@ -72,6 +130,8 @@ export async function loadQuizSRSData(
         };
       });
     }
+
+    seedQuizSrsCache(userId, questionIds, data);
   } else {
     // LocalStorage fallback
     const local = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -118,6 +178,7 @@ export async function saveQuizSRSState(
       }, { onConflict: "user_id,question_id" });
     
     if (error) console.error("[QuizSRS] Error saving to DB:", error);
+    updateQuizSrsCache(userId, stats);
   } else {
     // LocalStorage fallback
     const local = localStorage.getItem(LOCAL_STORAGE_KEY);

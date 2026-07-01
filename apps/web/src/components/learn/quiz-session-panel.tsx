@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -26,15 +27,20 @@ import { buildQuizErrorGrid, type QuizErrorTypeId } from "@/components/learn/qui
 import { getQuizReviewFollowUp, getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
 import { getQuizErrorFollowUp } from "@/components/learn/quiz-error-grid";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import {
-  QuizPersonalProgressOverview,
-} from "@/components/learn/quiz-personal-progress-overview";
 import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 import {
   getQuizLocalizedTextFallback,
   getQuizLocalizedTextListFallback,
   getQuizUiCopy,
 } from "@/lib/learning/quiz-i18n";
+
+const QuizPersonalProgressOverview = dynamic(
+  () =>
+    import("@/components/learn/quiz-personal-progress-overview").then(
+      (module) => module.QuizPersonalProgressOverview,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 const INTERACTIVE_FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
@@ -143,6 +149,7 @@ export function QuizSessionPanel({
     () => question.errorType ?? buildQuizErrorGrid(question).errorType,
     [question],
   );
+  const errorTargetFollowUp = useMemo(() => getQuizErrorFollowUp(resolvedErrorType), [resolvedErrorType]);
   const sessionAccuracy = useMemo(() => {
     if (!sessionSummary || sessionSummary.totalAnswered === 0) {
       return 0;
@@ -198,7 +205,7 @@ export function QuizSessionPanel({
 
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
-              <GraduationCap className="text-amber-600" size={32} />
+              <GraduationCap className="text-amber-600" size={32} aria-hidden="true" />
               <h2 className="text-3xl font-black cmm-text-primary tracking-tight">
                 {getQuizUiCopy(locale, "session.schoolTitle")}
               </h2>
@@ -301,7 +308,7 @@ export function QuizSessionPanel({
 
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <Trophy className="text-violet-600" size={32} />
+            <Trophy className="text-violet-600" size={32} aria-hidden="true" />
             <h2 className="text-3xl font-black cmm-text-primary tracking-tight">
               {getQuizUiCopy(locale, "session.sessionTitle")}
             </h2>
@@ -577,9 +584,9 @@ export function QuizSessionPanel({
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3">
           {isSchoolMode ? (
-            <GraduationCap className="text-amber-600" size={32} />
+            <GraduationCap className="text-amber-600" size={32} aria-hidden="true" />
           ) : (
-            <Brain className="text-violet-600" size={32} />
+            <Brain className="text-violet-600" size={32} aria-hidden="true" />
           )}
           <h2 className={isSchoolMode ? "text-4xl font-black cmm-text-primary tracking-tight md:text-5xl" : "text-3xl font-black cmm-text-primary tracking-tight"}>
             {isSchoolMode
@@ -663,7 +670,7 @@ export function QuizSessionPanel({
           )}
         >
           <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-[0.03]">
-            <Brain size={200} />
+            <Brain size={200} aria-hidden="true" />
           </div>
 
           <div className="relative z-10 mb-8 flex items-center justify-between gap-4">
@@ -916,11 +923,11 @@ export function QuizSessionPanel({
                   )}
                 >
                   {lastCheckResult === true ? (
-                    <CheckCircle size={24} />
+                    <CheckCircle size={24} aria-hidden="true" />
                   ) : lastCheckResult === false ? (
-                    <XCircle size={24} />
+                    <XCircle size={24} aria-hidden="true" />
                   ) : (
-                    <Lightbulb size={24} />
+                    <Lightbulb size={24} aria-hidden="true" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -947,6 +954,30 @@ export function QuizSessionPanel({
                       ) : null}
                     </div>
                   ) : null}
+                  {lastCheckResult === false && resolvedErrorType ? (
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                        Suite utile
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white">{errorTargetFollowUp.label}</p>
+                          <p className="mt-1 text-sm text-white/80">{errorTargetFollowUp.reason}</p>
+                        </div>
+                        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/85">
+                          {getQuizUiCopy(locale, "session.school.recommendedModeLabel")} : {errorTargetFollowUp.modeLabel}
+                        </span>
+                      </div>
+                      <Link
+                        href={errorTargetFollowUp.href}
+                        aria-label={`${errorTargetFollowUp.label} - ${errorTargetFollowUp.reason}`}
+                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white transition hover:bg-white/15"
+                      >
+                        Revoir la rubrique liée à l&apos;erreur
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  ) : null}
                   {lastCheckResult === false ? (
                     <p className="mt-2 text-sm font-medium italic text-red-600">
                       Votre réponse : {question.type === "multiple-select" ? selectedOptionsLabel : selectedOption}
@@ -957,7 +988,7 @@ export function QuizSessionPanel({
 
               <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 p-6 text-sm leading-relaxed text-white/90 shadow-xl">
                 <div className="absolute right-0 top-0 p-4 opacity-5">
-                  <Lightbulb size={80} />
+                  <Lightbulb size={80} aria-hidden="true" />
                 </div>
                   <div className="relative z-10 space-y-4">
                     <div>
@@ -1012,6 +1043,7 @@ export function QuizSessionPanel({
                     </p>
                     <Link
                       href={reviewTargetFollowUp.href}
+                      aria-label={`${reviewTargetFollowUp.label} - ${reviewTargetFollowUp.reason}`}
                       className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white transition hover:bg-white/15"
                     >
                       {reviewTargetFollowUp.label}
@@ -1138,7 +1170,7 @@ export function QuizSessionPanel({
                     onClick={onResetQuiz}
                     className={`${INTERACTIVE_FOCUS_RING} rounded-2xl border border-slate-200 bg-white p-4 text-slate-400 transition-all duration-500 active:rotate-180 hover:border-slate-400 hover:text-slate-900`}
                   >
-                    <Shuffle size={24} />
+                    <Shuffle size={24} aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -1154,11 +1186,11 @@ export function QuizSessionPanel({
           className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-700 p-8 text-white shadow-2xl md:p-10"
         >
           <div className="absolute -bottom-10 -right-10 rotate-12 opacity-10">
-            <Trophy size={250} />
+            <Trophy size={250} aria-hidden="true" />
           </div>
           <div className="relative z-10 flex flex-col items-center gap-8 md:flex-row">
             <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/20 shadow-inner backdrop-blur-md">
-              <Trophy size={48} />
+              <Trophy size={48} aria-hidden="true" />
             </div>
             <div className="flex-1 text-center md:text-left">
               <h3 className="mb-2 text-3xl font-black tracking-tight">Progression de Maîtrise</h3>

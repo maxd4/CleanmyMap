@@ -6,12 +6,16 @@ import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-strip";
 import { DeferredEnvironmentalQuiz } from "@/components/learn/learn-deferred-panels";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
+import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz-entry-state";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { useSearchParams } from "next/navigation";
 
 export default function LearnSentrainerPage() {
   const { locale } = useSitePreferences();
+  const searchParams = useSearchParams();
   const practiceCard = LEARN_OVERVIEW_CARDS[locale][1];
+  const quizEntryState = parseQuizSentrainerEntryState(searchParams);
 
   return (
     <LearnRubricShell
@@ -70,7 +74,7 @@ export default function LearnSentrainerPage() {
         </section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <DeferredEnvironmentalQuiz />
+          <DeferredEnvironmentalQuiz {...quizEntryState} />
         </section>
       </div>
     </LearnRubricShell>

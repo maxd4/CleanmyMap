@@ -27,8 +27,19 @@ const joinSchema = z.object({
   actionId: z.string().trim().min(1),
 });
 
+async function resolveUserIdForGroupJoin(): Promise<string | null> {
+  try {
+    const { userId } = await auth();
+    return userId ?? null;
+  } catch (error) {
+    console.warn("[group-join] Clerk auth unavailable, continuing without user context", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
-  const { userId } = await auth();
   const url = new URL(request.url);
   const parsed = listQuerySchema.safeParse({
     limit: url.searchParams.get("limit"),
@@ -40,6 +51,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    const userId = await resolveUserIdForGroupJoin();
     const supabase = getSupabaseServerClient();
     const items = await loadJoinableActions(supabase, {
       limit: parsed.data.limit,
@@ -66,7 +78,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
+  const userId = await resolveUserIdForGroupJoin();
   if (!userId) {
     return unauthorizedJsonResponse();
   }

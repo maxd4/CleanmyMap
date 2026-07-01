@@ -1,8 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import type { QuizSentrainerEntryState } from "@/lib/learning/quiz-entry-state";
 
 const DeferredLearnArtworkAccordionComponent = dynamic(
   () =>
@@ -89,35 +92,196 @@ const DeferredEnvironmentalQuizComponent = dynamic(
   },
 );
 
+function DeferredLoadingShell({
+  accent,
+  message,
+  heightClassName,
+}: {
+  accent: "amber" | "violet";
+  message: string;
+  heightClassName: string;
+}) {
+  const borderClassName = accent === "violet" ? "border-violet-200/70" : "border-amber-200/70";
+  const pulseClassName = accent === "violet" ? "border-violet-500/20" : "border-amber-500/20";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className={cn(
+        "flex items-center justify-center rounded-[2rem] border bg-white/80",
+        borderClassName,
+        heightClassName,
+      )}
+    >
+      <div className="space-y-3 text-center">
+        <div className={cn("mx-auto h-12 w-12 animate-pulse rounded-full border-2", pulseClassName)} />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function DeferredSection({
+  children,
+  fallback,
+  className,
+  rootMargin = "260px 0px",
+}: {
+  children: ReactNode;
+  fallback: ReactNode;
+  className?: string;
+  rootMargin?: string;
+}) {
+  const { ref, isInView } = useInViewOnce<HTMLDivElement>({
+    rootMargin,
+  });
+
+  return (
+    <div ref={ref} className={className}>
+      {isInView ? children : fallback}
+    </div>
+  );
+}
+
+function getDeferredMessage(locale?: LearnLocale) {
+  return locale === "en" ? "Loading the deep dive" : "Chargement de l'approfondissement";
+}
+
+function getQuizDeferredMessage(locale?: LearnLocale) {
+  return locale === "en"
+    ? "The quiz activates as you approach the section."
+    : "Le quiz s'active à l'approche de la section.";
+}
+
 export function DeferredLearnArtworkAccordion({ locale }: { locale: LearnLocale }) {
-  return <DeferredLearnArtworkAccordionComponent locale={locale} />;
+  const message = locale === "en" ? "Loading the resources" : "Chargement des ressources";
+
+  return (
+    <DeferredSection
+      className="min-h-[860px]"
+      rootMargin="300px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="amber"
+          message={message}
+          heightClassName="h-[860px]"
+        />
+      }
+    >
+      <DeferredLearnArtworkAccordionComponent locale={locale} />
+    </DeferredSection>
+  );
 }
 
 export function DeferredLearnVulgarisationMagnitudeComparator({
   className,
+  locale,
 }: {
   className?: string;
+  locale?: LearnLocale;
 }) {
-  return <DeferredLearnVulgarisationMagnitudeComparatorComponent className={className} />;
+  return (
+    <DeferredSection
+      className={cn("min-h-[520px]", className)}
+      rootMargin="300px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="amber"
+          message={getDeferredMessage(locale)}
+          heightClassName="h-[520px]"
+        />
+      }
+    >
+      <DeferredLearnVulgarisationMagnitudeComparatorComponent className={className} />
+    </DeferredSection>
+  );
 }
 
-export function DeferredImpactOrderOfMagnitudeSection() {
-  return <DeferredImpactOrderOfMagnitudeSectionComponent />;
+export function DeferredImpactOrderOfMagnitudeSection({ locale }: { locale?: LearnLocale }) {
+  return (
+    <DeferredSection
+      className="min-h-[420px]"
+      rootMargin="300px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="amber"
+          message={getDeferredMessage(locale)}
+          heightClassName="h-[420px]"
+        />
+      }
+    >
+      <DeferredImpactOrderOfMagnitudeSectionComponent />
+    </DeferredSection>
+  );
 }
 
-export function DeferredGIECContent() {
-  return <DeferredGIECContentComponent />;
+export function DeferredGIECContent({ locale }: { locale?: LearnLocale }) {
+  return (
+    <DeferredSection
+      className="min-h-[540px]"
+      rootMargin="300px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="amber"
+          message={getDeferredMessage(locale)}
+          heightClassName="h-[540px]"
+        />
+      }
+    >
+      <DeferredGIECContentComponent />
+    </DeferredSection>
+  );
 }
 
-export function DeferredPlanetaryBoundariesInteractive() {
-  return <DeferredPlanetaryBoundariesInteractiveComponent />;
+export function DeferredPlanetaryBoundariesInteractive({ locale }: { locale?: LearnLocale }) {
+  return (
+    <DeferredSection
+      className="min-h-[760px]"
+      rootMargin="320px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="violet"
+          message={getDeferredMessage(locale)}
+          heightClassName="h-[760px]"
+        />
+      }
+    >
+      <DeferredPlanetaryBoundariesInteractiveComponent />
+    </DeferredSection>
+  );
 }
 
-export function DeferredSustainableGoalsInteractive() {
-  return <DeferredSustainableGoalsInteractiveComponent />;
+export function DeferredSustainableGoalsInteractive({ locale }: { locale?: LearnLocale }) {
+  return (
+    <DeferredSection
+      className="min-h-[520px]"
+      rootMargin="320px 0px"
+      fallback={
+        <DeferredLoadingShell
+          accent="violet"
+          message={getDeferredMessage(locale)}
+          heightClassName="h-[520px]"
+        />
+      }
+    >
+      <DeferredSustainableGoalsInteractiveComponent />
+    </DeferredSection>
+  );
 }
 
-export function DeferredEnvironmentalQuiz() {
+type DeferredEnvironmentalQuizProps = QuizSentrainerEntryState & {
+  locale?: LearnLocale;
+};
+
+export function DeferredEnvironmentalQuiz({
+  locale,
+  initialAccessType,
+  initialCollectiveMode,
+  initialDemoMode,
+  initialSchoolTrack,
+}: DeferredEnvironmentalQuizProps) {
   const { ref, isInView } = useInViewOnce<HTMLDivElement>({
     rootMargin: "240px 0px",
   });
@@ -125,16 +289,18 @@ export function DeferredEnvironmentalQuiz() {
   return (
     <div ref={ref} className="min-h-[760px]">
       {isInView ? (
-        <DeferredEnvironmentalQuizComponent />
+        <DeferredEnvironmentalQuizComponent
+          initialAccessType={initialAccessType}
+          initialCollectiveMode={initialCollectiveMode}
+          initialDemoMode={initialDemoMode}
+          initialSchoolTrack={initialSchoolTrack}
+        />
       ) : (
-        <div className="flex h-[760px] items-center justify-center rounded-[2rem] border border-amber-200/70 bg-white/80">
-          <div className="space-y-3 text-center">
-            <div className="mx-auto h-12 w-12 animate-pulse rounded-full border-2 border-amber-500/20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-              Le quiz s&apos;active à l&apos;approche de la section.
-            </p>
-          </div>
-        </div>
+        <DeferredLoadingShell
+          accent="amber"
+          message={getQuizDeferredMessage(locale)}
+          heightClassName="h-[760px]"
+        />
       )}
     </div>
   );

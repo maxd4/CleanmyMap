@@ -618,15 +618,30 @@ function AppNavigationRibbonPublic({
   profileLabel,
   pathname,
 }: AppNavigationRibbonProps & { pathname: string }) {
+  const { locale } = useSitePreferences();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const userResource = user ?? null;
+  const authLoaded = Boolean(isLoaded);
+  const authSignedIn = Boolean(isSignedIn);
+  const fallbackProfile = currentProfile ?? "benevole";
+  const userRole = readProfileRole(userResource?.publicMetadata);
+  const effectiveProfile =
+    userRole ? toProfile(userRole) : fallbackProfile;
+  const effectiveIdentity =
+    authLoaded && authSignedIn && userResource
+      ? buildIdentityFromUser(userResource, effectiveProfile, locale)
+      : null;
+
   return (
     <AppNavigationRibbonShell
-      currentProfile={currentProfile}
+      currentProfile={effectiveProfile}
       profileLabel={profileLabel}
+      identity={effectiveIdentity}
       pathname={pathname}
-      user={null}
-      isLoaded={false}
-      isSignedIn={false}
-      showAccountActions={false}
+      user={userResource}
+      isLoaded={authLoaded}
+      isSignedIn={authSignedIn}
+      showAccountActions
     />
   );
 }

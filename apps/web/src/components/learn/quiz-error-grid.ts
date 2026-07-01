@@ -1,6 +1,6 @@
-import { getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import type { QuizQuestionFormatId } from "@/components/learn/quiz-question-formats";
+import { getQuizAccessType, type QuizAccessTypeId } from "./quiz-access-types.ts";
+import type { QuizReasoningType } from "./quiz-reasoning-types.ts";
+import type { QuizQuestionFormatId } from "./quiz-question-formats.ts";
 import {
   QUIZ_REVIEW_TARGETS,
   getQuizReviewTarget,

@@ -32,6 +32,18 @@ const payloadSchema = z.union([
 
 type FunnelPayload = z.infer<typeof payloadSchema>;
 
+async function resolveFunnelUserId(): Promise<string | null> {
+  try {
+    const session = await auth();
+    return session.userId ?? null;
+  } catch (error) {
+    console.warn("[analytics/funnel] Clerk auth unavailable, storing anonymous events", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 function parsePeriodDays(raw: string | null): number {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) {
@@ -90,7 +102,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { userId } = await auth();
+  const userId = await resolveFunnelUserId();
   const events = normalizeEvents(parsed.data);
   for (const event of events) {
     await appendFunnelEvent({

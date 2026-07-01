@@ -65,7 +65,7 @@ Règle d'équilibre: on garde tout ce qui aide un collègue à comprendre, contr
 
 - Les dossiers marqués `✅` font partie du dépôt et peuvent donc être poussés si leur contenu change.
 - Les dossiers marqués `⚪` sont exclus du dépôt via `.gitignore` et ne partiront jamais dans un push.
-- Le dossier `partnerships/` de la fiche Pépite est en `⚪` parce qu’il est volontairement ignoré pour éviter toute publication involontaire.
+- Le dossier `partnerships/` de la fiche Pépite est en `⚪` parce qu'il est volontairement ignoré pour éviter toute publication involontaire.
 
 ## Mise à jour
 

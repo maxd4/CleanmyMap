@@ -18,6 +18,12 @@ type LearnPracticeGuideIntroProps = {
   title: { fr: string; en: string };
   question: { fr: string; en: string };
   clue: { fr: string; en: string };
+  entryLinks?: ReadonlyArray<{
+    href: string;
+    label: { fr: string; en: string };
+    detail: { fr: string; en: string };
+    icon: LucideIcon;
+  }>;
   cta: {
     href: string;
     label: { fr: string; en: string };
@@ -133,11 +139,72 @@ function QuickCue({
   );
 }
 
+function getEntryActionLabel(locale: LearnLocale, href: string) {
+  if (href.startsWith("#")) {
+    return locale === "fr" ? "Voir les repères" : "View cues";
+  }
+
+  if (href.includes("compost") || href.includes("recycling")) {
+    return locale === "fr" ? "Ouvrir le guide" : "Open guide";
+  }
+
+  return locale === "fr" ? "Ouvrir la section" : "Open section";
+}
+
+function EntryLinkCard({
+  locale,
+  href,
+  label,
+  detail,
+  icon,
+}: {
+  locale: LearnLocale;
+  href: string;
+  label: { fr: string; en: string };
+  detail: { fr: string; en: string };
+  icon: LucideIcon;
+}) {
+  const Icon = icon;
+
+  return (
+    <Link
+      href={href}
+      aria-label={`${label[locale]} - ${getEntryActionLabel(locale, href)}`}
+      className="group flex min-h-28 flex-col justify-between rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-emerald-200 hover:bg-emerald-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            {locale === "fr" ? "Entrée rapide" : "Quick entry"}
+          </p>
+          <h3 className="mt-1 text-lg font-black tracking-tight text-slate-900">
+            {label[locale]}
+          </h3>
+        </div>
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-slate-600">{detail[locale]}</p>
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 shadow-sm">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          {locale === "fr" ? "Accès direct" : "Direct access"}
+        </p>
+        <span className="mt-1 inline-flex items-center gap-2 text-sm font-bold text-slate-900">
+          {getEntryActionLabel(locale, href)}
+          <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export function LearnPracticeGuideIntro({
   locale,
   title,
   question,
   clue,
+  entryLinks,
   cta,
   className,
 }: LearnPracticeGuideIntroProps) {
@@ -174,7 +241,22 @@ export function LearnPracticeGuideIntro({
             </p>
           </div>
 
-          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4">
+          {entryLinks && entryLinks.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-3">
+              {entryLinks.map((entry) => (
+                <EntryLinkCard
+                  key={entry.href}
+                  locale={locale}
+                  href={entry.href}
+                  label={entry.label}
+                  detail={entry.detail}
+                  icon={entry.icon}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          <div className="hidden rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 sm:block">
             <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
               <span>{locale === "fr" ? "Séquence" : "Sequence"}</span>
               <span>{locale === "fr" ? "Avant / pendant / après" : "Before / during / after"}</span>

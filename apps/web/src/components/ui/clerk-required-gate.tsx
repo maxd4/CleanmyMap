@@ -14,11 +14,13 @@ import {
 
 type ClerkRequiredGateProps = {
  isAuthenticated: boolean;
- title: string;
- description: string;
+ title?: string;
+ description?: string;
  mode?:"blur" |"disabled";
  signInHref?: string;
  signInLabel?: string;
+ signUpHref?: string;
+ signUpLabel?: string;
  badge?: string;
  lockedPreview?: ReactNode;
  children: ReactNode;
@@ -26,11 +28,13 @@ type ClerkRequiredGateProps = {
 
 export function ClerkRequiredGate({
  isAuthenticated,
- title,
- description,
+ title ="Connexion requise",
+ description ="Connectez-vous à votre compte CleanMyMap pour accéder à cette fonctionnalité. Si vous n'en avez pas encore, créez-en un en quelques secondes.",
  mode ="blur",
  signInHref ="/sign-in",
  signInLabel ="Se connecter",
+ signUpHref ="/sign-up",
+ signUpLabel ="Créer un compte",
  badge ="Connexion requise",
  lockedPreview,
  children,
@@ -53,6 +57,9 @@ export function ClerkRequiredGate({
  <div className="mt-5 flex flex-wrap justify-center gap-3">
  <CmmButton href={signInHref} tone="primary">
  {signInLabel}
+ </CmmButton>
+ <CmmButton href={signUpHref} tone="secondary">
+ {signUpLabel}
  </CmmButton>
  </div>
  </div>
@@ -84,6 +91,9 @@ export function ClerkRequiredGate({
  <SystemStateAction>
  <CmmButton href={signInHref} tone="primary">
  {signInLabel}
+ </CmmButton>
+ <CmmButton href={signUpHref} tone="secondary">
+ {signUpLabel}
  </CmmButton>
  </SystemStateAction>
  </SystemStateLayout>

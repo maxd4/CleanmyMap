@@ -2,13 +2,13 @@
 
 Dernière mise à jour: 2026-06-27
 
-Ce document conserve la partie de l’audit Vercel qui n’a pas encore été traitée.  
+Ce document conserve la partie de l'audit Vercel qui n'a pas encore été traitée.  
 Les points déjà corrigés au moment de cette note sont exclus ici pour éviter les doublons.
 
 ## Déjà traités
 
-- `apps/web/src/app/layout.tsx` a été allégé pour éviter de recalculer des infos d’auth et de préférences côté serveur à chaque rendu du root layout.
-- `apps/web/src/app/(app)/layout.tsx` a été déplacé vers un shell client pour ne plus lire l’auth et les préférences côté serveur sur tout le groupe protégé.
+- `apps/web/src/app/layout.tsx` a été allégé pour éviter de recalculer des infos d'auth et de préférences côté serveur à chaque rendu du root layout.
+- `apps/web/src/app/(app)/layout.tsx` a été déplacé vers un shell client pour ne plus lire l'auth et les préférences côté serveur sur tout le groupe protégé.
 - `apps/web/src/app/api/reports/elus-dossier/route.ts` bascule sur un artefact PDF préexistant via cache et redirection signée.
 - `apps/web/src/app/api/reports/actions.csv/route.ts` sert désormais un artefact CSV cache-first, avec borne stricte et fallback direct seulement si nécessaire.
 - `apps/web/src/app/api/reports/actions.json/route.ts` applique la même stratégie cache-first que le CSV, avec artefact JSON pré-généré si disponible.
@@ -17,7 +17,7 @@ Les points déjà corrigés au moment de cette note sont exclus ici pour éviter
 
 | fichier | usage Vercel suspect | gravité | solution recommandée | risque de casse | priorité |
 | --- | --- | --- | --- | --- | --- |
-| [apps/web/src/app/api/reports/governance-monthly/route.ts](../../apps/web/src/app/api/reports/governance-monthly/route.ts) | Génération PDF serveur. | Moyenne à élevée | Garder serveur seulement si l’usage reste ponctuel; sinon passer à un livrable précompilé. | Moyen | P1 |
+| [apps/web/src/app/api/reports/governance-monthly/route.ts](../../apps/web/src/app/api/reports/governance-monthly/route.ts) | Génération PDF serveur. | Moyenne à élevée | Garder serveur seulement si l'usage reste ponctuel; sinon passer à un livrable précompilé. | Moyen | P1 |
 
 ## Acceptable provisoirement
 
@@ -38,8 +38,8 @@ Les points déjà corrigés au moment de cette note sont exclus ici pour éviter
 | [apps/web/src/components/ui/pdf-export/use-pdf-export.ts](../../apps/web/src/components/ui/pdf-export/use-pdf-export.ts) | Génération PDF côté client avec historique en `localStorage`. | Faible | Conserver ce pattern. | Faible | P3 |
 | [apps/web/src/components/actions/map/use-actions-map-filters.ts](../../apps/web/src/components/actions/map/use-actions-map-filters.ts) | Filtres carte persistés localement. | Faible | Garder côté navigateur. | Faible | P3 |
 | [apps/web/src/components/ui/site-preferences-provider.tsx](../../apps/web/src/components/ui/site-preferences-provider.tsx) | Préférences UI synchronisées localement. | Faible | Garder localStorage + cookie léger. | Faible | P3 |
-| [apps/web/src/lib/storage/ui-state-storage.ts](../../apps/web/src/lib/storage/ui-state-storage.ts) | Stockage local des préférences et de l’état UI. | Faible | Garder côté client. | Faible | P3 |
-| [apps/web/src/lib/learning/learn-progress.ts](../../apps/web/src/lib/learning/learn-progress.ts) | Progression d’apprentissage en local. | Faible | Garder le fallback local. | Faible | P3 |
+| [apps/web/src/lib/storage/ui-state-storage.ts](../../apps/web/src/lib/storage/ui-state-storage.ts) | Stockage local des préférences et de l'état UI. | Faible | Garder côté client. | Faible | P3 |
+| [apps/web/src/lib/learning/learn-progress.ts](../../apps/web/src/lib/learning/learn-progress.ts) | Progression d'apprentissage en local. | Faible | Garder le fallback local. | Faible | P3 |
 | [apps/web/src/lib/services/quiz-srs-service.ts](../../apps/web/src/lib/services/quiz-srs-service.ts) | SRS du quiz avec fallback local. | Faible | Ne pas remonter vers Vercel. | Faible | P3 |
 
 ## Notes de contexte
@@ -47,11 +47,11 @@ Les points déjà corrigés au moment de cette note sont exclus ici pour éviter
 - Les pages Markdown publiques doivent rester dans le dépôt.
 - La carte principale passe déjà directement par Supabase côté navigateur pour la lecture de données.
 - Le middleware Clerk doit rester limité aux routes réellement protégées.
-- Les états non critiques doivent rester en `localStorage` ou `IndexedDB` quand c’est possible.
+- Les états non critiques doivent rester en `localStorage` ou `IndexedDB` quand c'est possible.
 
 ## Reprise
 
-Quand on reprend ce dossier, l’ordre utile est:
+Quand on reprend ce dossier, l'ordre utile est:
 1. réduire les derniers points du root layout si un sous-shell public peut encore être isolé,
 2. décider si les exports PDF/CSV lourds doivent être pré-générés,
-3. n’optimiser les pages dynamiques de lecture que si la pression Vercel redevient visible.
+3. n'optimiser les pages dynamiques de lecture que si la pression Vercel redevient visible.

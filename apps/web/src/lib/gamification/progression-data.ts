@@ -12,6 +12,7 @@ import type {
 import {
   loadActionOrganizerIdsForAction,
 } from "@/lib/actions/organizers";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   actionRowToListItem,
   clampWeight,
@@ -40,6 +41,21 @@ const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_dat
 const USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";
 const USER_LABEL_SUMMARY_LIMIT = 10000;
+const USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS = 120;
+const USER_LEVEL_RANKING_CACHE_TAG = "gamification-user-level-ranking";
+
+export type UserLevelRankingItem = {
+  rank: number;
+  userId: string;
+  actorName: string;
+  currentLevel: number;
+  xpValidated: number;
+};
+
+export type UserLevelRankingSummary = {
+  topRows: UserLevelRankingItem[];
+  currentUserRow: UserLevelRankingItem | null;
+};
 
 type LoadValidatedActionIdsOptions = {
   actionRows?: ActionRow[];
@@ -400,6 +416,60 @@ export async function loadUserLabelSummary(
     {
       revalidate: USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS,
       tags: [USER_LABEL_SUMMARY_CACHE_TAG],
+    },
+  );
+
+  return cached();
+}
+
+export async function loadUserLevelRankingSummary(
+  userId: string,
+): Promise<UserLevelRankingSummary> {
+  const cached = unstable_cache(
+    async () => {
+      const supabase = getSupabaseServerClient();
+      const [profilesResult, labelsByUser] = await Promise.all([
+        supabase
+          .from("progression_profiles")
+          .select("user_id, current_level, xp_validated")
+          .order("current_level", { ascending: false })
+          .order("xp_validated", { ascending: false })
+          .limit(120),
+        loadUserLabelSummary(supabase).catch(
+          () => new Map<string, { actorName: string }>(),
+        ),
+      ]);
+
+      if (profilesResult.error) {
+        return { topRows: [], currentUserRow: null };
+      }
+
+      const rows =
+        (profilesResult.data as Array<{
+          user_id: string;
+          current_level: number | null;
+          xp_validated: number | null;
+        }> | null) ?? [];
+
+      const rankedRows: UserLevelRankingItem[] = rows.map((row, index) => ({
+        rank: index + 1,
+        userId: row.user_id,
+        actorName:
+          labelsByUser.get(row.user_id)?.actorName?.trim() ||
+          `Utilisateur ${index + 1}`,
+        currentLevel: Math.max(1, Number(row.current_level ?? 1)),
+        xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
+      }));
+
+      return {
+        topRows: rankedRows.slice(0, 8),
+        currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
+      };
+    },
+    ["gamification-user-level-ranking", `user:${userId}`],
+    {
+      revalidate: USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS,
+      tags: [`${USER_LEVEL_RANKING_CACHE_TAG}:${userId}`],
     },
   );
 

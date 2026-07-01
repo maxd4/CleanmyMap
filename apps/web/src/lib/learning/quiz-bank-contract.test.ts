@@ -8,6 +8,20 @@ import { buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selecti
 
 const NOW = new Date("2026-06-12T12:00:00.000Z");
 
+function hasStableQuizQuestionStructure(question: (typeof QUIZ_QUESTIONS)[number]): boolean {
+  return (
+    question.structure.content.prompt === question.question &&
+    question.structure.content.explanation === question.explanation &&
+    question.structure.taxonomy.reasoningType === question.reasoningType &&
+    question.structure.taxonomy.skill === (question.skill ?? question.reasoningType) &&
+    question.structure.source.sourceUrl.length > 0 &&
+    question.structure.review.target.href.length > 0 &&
+    question.structure.review.followUp.href.length > 0 &&
+    question.structure.review.feedbackCorrect.trim().length > 0 &&
+    question.structure.review.feedbackWrong.trim().length > 0
+  );
+}
+
 describe("quiz bank contract", () => {
   it("selects only questions that match each quiz mode", () => {
     for (const accessType of QUIZ_ACCESS_TYPES.filter((item) => item.id !== "mixte" && item.id !== "ecole")) {
@@ -68,6 +82,10 @@ describe("quiz bank contract", () => {
     ).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => question.type !== "multiple-select" || Array.isArray(question.answer))).toBe(true);
     expect(QUIZ_QUESTIONS.every((question) => question.type !== "true-false" || question.options?.length === 2)).toBe(true);
+  });
+
+  it("exposes a stable nested structure for content, source and review data", () => {
+    expect(QUIZ_QUESTIONS.every(hasStableQuizQuestionStructure)).toBe(true);
   });
 
   it("keeps skill, error type and review target coherent", () => {

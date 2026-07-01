@@ -9,9 +9,9 @@ Objectif:
 - réduire les coûts Vercel;
 - réduire les coûts Supabase;
 - éviter les lectures répétées au montage ou à chaque visite;
-- garder le comportement produit intact quand la donnée n’a pas besoin d’être temps réel.
+- garder le comportement produit intact quand la donnée n'a pas besoin d'être temps réel.
 
-Base d’analyse:
+Base d'analyse:
 
 - inventaire statique du code `apps/web/src` et `apps/web/scripts`;
 - audit Supabase local déjà généré dans `artifacts/supabase/quota-audit/`;
@@ -19,9 +19,16 @@ Base d’analyse:
 
 ## État d'avancement
 
-- Phase 4: réalisée sur les vues de supervision en refresh planifié.
-- Phase 1, premier lot: `dashboard` traité via cache court sur le résumé des labels utilisateurs.
-- Reste de la phase 1: `reports`, `admin`, `pilotage`, `sponsor portal`, `print report`.
+- Phase 1: exécutée sur `dashboard`, `reports`, `admin`, `pilotage`, `sponsor portal`, `print report`.
+- Phase 2: exécutée sur les snapshots publics et les agrégats visibles.
+- Phase 3: exécutée sur `profiles`, `event_rsvps`, `action_participants`, `community_events`.
+- Phase 4: exécutée sur les vues de supervision en refresh planifié.
+
+Reste à faire:
+
+- maintenir les refresh planifiés et les caches courts déjà mis en place;
+- surveiller les nouvelles requêtes Supabase ajoutées après cette passe;
+- relancer l'audit si une nouvelle surface à fort trafic réintroduit un scan large ou un `SELECT *`.
 
 Références locales:
 
@@ -38,7 +45,7 @@ Les surfaces les plus coûteuses ne sont pas les mutations utilisateur immédiat
 - `event_rsvps` et `action_participants` sont chargés sur des pages et exports récurrents;
 - `community_events`, `spots`, `trash_spotter_spots` et `points_ledger` alimentent des vues consultées souvent, mais pas forcément temps réel;
 - plusieurs dashboards serveur recalculent des agrégats à chaque visite;
-- plusieurs composants client refetchent au montage ou sur intervalle alors qu’un snapshot ou un cache court suffirait.
+- plusieurs composants client refetchent au montage ou sur intervalle alors qu'un snapshot ou un cache court suffirait.
 
 La règle utile pour la suite est simple:
 
@@ -51,7 +58,7 @@ La règle utile pour la suite est simple:
 
 | Type de donnée | Catégorie recommandée | Fréquence actuelle estimée | Fréquence recommandée | Gain attendu | Risque fonctionnel | Solution recommandée |
 |---|---|---|---|---|---|---|
-| Auth, mutations immédiates, formulaires | Données critiques temps réel | Appels directs au moment de l’action | Temps réel | Faible à moyen | Faible | Garder live |
+| Auth, mutations immédiates, formulaires | Données critiques temps réel | Appels directs au moment de l'action | Temps réel | Faible à moyen | Faible | Garder live |
 | `profiles` pour authz, handle, referrals, chat users | Critique, mais requêtes bornées seulement | À chaque visite de plusieurs écrans, avec scans non bornés détectés | Temps réel sur lookup exact, cache court ou snapshot pour synthèse | Fort | Moyen | Remplacer les scans larges par des requêtes exactes, RPC ou cache court |
 | `event_rsvps`, `action_participants` | Semi-statique | À chaque visite des pages communauté / participation / export | Quotidien ou cache privé court | Fort | Moyen | Compteurs via RPC, listes bornées, invalidation sur write |
 | `community_events` | Semi-statique | Chaque ouverture des pages et exports | Quotidien | Fort | Faible à moyen | Snapshot ou cache privé, POST live uniquement |
@@ -80,7 +87,7 @@ Fichiers concernés:
 
 Problèmes observés:
 
-- 3 scans non bornés détectés dans l’audit;
+- 3 scans non bornés détectés dans l'audit;
 - usage central mais parfois trop large;
 - risque de surcharger une table critique pour des synthèses ou listes secondaires.
 
@@ -91,14 +98,14 @@ Fréquence actuelle estimée:
 
 Fréquence recommandée:
 
-- lookup exact pour l’identité active;
+- lookup exact pour l'identité active;
 - cache court pour les vues de synthèse;
 - zéro scan global dans les chemins UI.
 
 Solution recommandée:
 
 - utiliser des requêtes exactes par `id`, `handle` ou `referral_code`;
-- s’appuyer sur des index adaptés;
+- s'appuyer sur des index adaptés;
 - déplacer les listes vers des RPC ou des vues matérialisées;
 - ne jamais faire de filtrage côté React après chargement complet.
 
@@ -147,7 +154,7 @@ Problèmes observés:
 
 - liste consultée fréquemment;
 - combinée avec RSVP et profil organisateur;
-- utilisée dans des écrans d’information, pas dans un flux critique temps réel.
+- utilisée dans des écrans d'information, pas dans un flux critique temps réel.
 
 Fréquence actuelle estimée:
 
@@ -174,7 +181,7 @@ Fichiers concernés:
 
 Problèmes observés:
 
-- agrégats et listes d’actions montés sur plusieurs surfaces;
+- agrégats et listes d'actions montés sur plusieurs surfaces;
 - la même base sert au dashboard, aux rapports, à la cartographie et aux widgets publics;
 - certaines vues lisent trop large pour une simple synthèse.
 
@@ -187,13 +194,13 @@ Fréquence actuelle estimée:
 Fréquence recommandée:
 
 - quotidien pour les synthèses;
-- live uniquement pour la création, la modération et les écrans d’édition.
+- live uniquement pour la création, la modération et les écrans d'édition.
 
 Solution recommandée:
 
 - matérialiser les agrégats;
-- garder les flux d’écriture live;
-- séparer les listes d’édition et les cartes publiques.
+- garder les flux d'écriture live;
+- séparer les listes d'édition et les cartes publiques.
 
 ### `spots` et `trash_spotter_spots`
 
@@ -233,8 +240,8 @@ Fichiers concernés:
 
 Problèmes observés:
 
-- lecture utile pour l’analytics, mais coûteuse si refaite souvent;
-- la valeur produit vient de l’agrégation, pas du ledger brut.
+- lecture utile pour l'analytics, mais coûteuse si refaite souvent;
+- la valeur produit vient de l'agrégation, pas du ledger brut.
 
 Fréquence actuelle estimée:
 
@@ -314,55 +321,37 @@ Exemples de traitement recommandé:
 - module TypeScript statique;
 - ISR si la page publique doit rester serviable sans live data.
 
-## Plan de correction progressif
+## Plan exécuté
 
 ### Phase 1
 
-Réduire le coût des vues à fort trafic, sans effet visible:
-
-- dashboard;
-- reports;
-- admin;
-- pilotage;
-- sponsor portal;
-- print report.
+Réduction du coût des vues à fort trafic, sans effet visible.
 
 ### Phase 2
 
-Remplacer les listes ou agrégats publics par des snapshots:
-
-- homepage stats;
-- business alerts;
-- community highlights;
-- recycling;
-- map feed;
-- funnel / analytics.
+Remplacement des listes ou agrégats publics par des snapshots.
 
 ### Phase 3
 
-Nettoyer les tables centrales mais mal bornées:
-
-- `profiles`;
-- `event_rsvps`;
-- `action_participants`;
-- `community_events`.
+Nettoyage des tables centrales mais mal bornées.
 
 ### Phase 4
 
-Passer les données de supervision en refresh planifié:
+Passage des données de supervision en refresh planifié.
 
-- storage usage;
-- free plan services;
-- environmental impact;
-- codex usage;
-- governance reports.
+### Suivi résiduel
+
+- vérifier qu'aucune nouvelle route ne réintroduit un chargement complet de table;
+- garder les mutations live sur les chemins d'écriture;
+- privilégier snapshot, cache court ou RPC pour toute synthèse non critique;
+- traiter toute future hausse de trafic comme un nouveau hotspot à borner avant ajout de données.
 
 ## Règles de travail à réutiliser
 
 - ne pas charger une table entière pour une vue;
 - déplacer le filtre dans la base;
 - garder les colonnes sélectionnées minimales;
-- préférer un snapshot ou un cache si la donnée n’est pas critique;
+- préférer un snapshot ou un cache si la donnée n'est pas critique;
 - garder les mutations live;
 - ne pas artificiellement simplifier une table pour faire baisser les warnings;
 - conserver une table centrale si son usage est légitime, mais borner ses requêtes.

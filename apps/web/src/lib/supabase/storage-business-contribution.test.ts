@@ -84,16 +84,34 @@ describe("storage business contributions", () => {
 function expectStorageBusinessContributionReport(
   report: ReturnType<typeof buildStorageBusinessContributions>,
 ): void {
+  expectStorageBusinessContributionSummary(report);
+  expectStorageBusinessContributionFiles(report);
+  expectStorageBusinessContributionTail(report);
+}
+
+function expectStorageBusinessContributionSummary(
+  report: ReturnType<typeof buildStorageBusinessContributions>,
+): void {
   expect(report.previousSnapshotMonth).toBe("2026-04-01");
   expect(report.items[0]?.id).toBe("actions_terrain");
   expect(report.items[0]?.deltaBytes).toBe(2_000);
   expect(report.items[0]?.deltaPercent).toBe(100);
   expect(report.items[1]?.id).toBe("socle_estimateur_impact");
   expect(report.items[1]?.deltaCount).toBe(1);
+}
+
+function expectStorageBusinessContributionFiles(
+  report: ReturnType<typeof buildStorageBusinessContributions>,
+): void {
   expect(report.items[1]?.topFiles[0]?.name).toBe("reports/rapport-1.pdf");
   expect(report.items[1]?.topFiles[1]?.name).toBe("reports/rapport-2.pdf");
   expect(report.items[1]?.mimeSubtypes[0]?.label).toBe("application/pdf");
   expect(report.items[1]?.mimeSubtypes[0]?.count).toBe(2);
+}
+
+function expectStorageBusinessContributionTail(
+  report: ReturnType<typeof buildStorageBusinessContributions>,
+): void {
   expect(report.items[2]?.id).toBe("pieces_jointes_document");
   expect(report.items[2]?.currentBytes).toBe(3_000);
   expect(report.items[4]?.id).toBe("donnees_utilisateur");

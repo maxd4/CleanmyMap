@@ -3,6 +3,10 @@ import { env, isConfigured } from"@/lib/env";
 
 type CheckState ="ok" |"configured" |"missing" |"warning";
 
+const UPTIME_CACHE_HEADERS = {
+ "Cache-Control": "public, max-age=0, s-maxage=120, stale-while-revalidate=300",
+};
+
 function detectClerkKeyMode(
  key: string | undefined,
 ):"live" |"test" |"unknown" {
@@ -71,7 +75,7 @@ export async function GET() {
 
  return NextResponse.json(
  {
- status: criticalStatus,
+  status: criticalStatus,
  criticalStatus,
  optionalStatus,
  checks: {
@@ -86,9 +90,9 @@ export async function GET() {
  clerk_publishable_mode: publishableMode,
  clerk_secret_mode: secretMode,
  node_env: process.env.NODE_ENV ??"unknown",
+  },
+  timestamp: new Date().toISOString(),
  },
- timestamp: new Date().toISOString(),
- },
- { status: 200 },
+ { status: 200, headers: UPTIME_CACHE_HEADERS },
  );
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 import { cn } from "@/lib/utils";
-import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
 
 type QuizPersonalProgressOverviewProps = {
   locale: SupportedLocale;
@@ -14,6 +13,14 @@ type QuizPersonalProgressOverviewProps = {
 
 function formatPercentage(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatBadgeCount(locale: SupportedLocale, count: number): string {
+  if (locale === "fr") {
+    return `${count} badge${count > 1 ? "s" : ""} débloqué${count > 1 ? "s" : ""}`;
+  }
+
+  return `${count} badge${count > 1 ? "s" : ""} unlocked`;
 }
 
 export function QuizPersonalProgressOverview({
@@ -33,6 +40,8 @@ export function QuizPersonalProgressOverview({
   const modeLevels = density === "compact" ? snapshot.modeLevels.slice(0, 2) : snapshot.modeLevels;
   const badges = density === "compact" ? snapshot.badges.slice(0, 3) : snapshot.badges;
   const progressSignals = density === "compact" ? snapshot.progressSignals.slice(0, 2) : snapshot.progressSignals;
+  const unlockedBadgeCount = snapshot.badges.filter((badge) => badge.unlocked).length;
+  const nextBadge = snapshot.badges.find((badge) => !badge.unlocked) ?? null;
   const heading =
     locale === "fr" ? "Progression personnelle" : "Personal progress";
   const subtitle =
@@ -139,9 +148,57 @@ export function QuizPersonalProgressOverview({
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
-            {locale === "fr" ? "Badges pédagogiques" : "Learning badges"}
-          </p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+                {locale === "fr" ? "Badges pédagogiques" : "Learning badges"}
+              </p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">
+                {locale === "fr"
+                  ? "Gamification sobre: la progression reste discrète, avec des badges et des paliers visibles sans compétition."
+                  : "Subtle gamification: the progression stays quiet, with visible badges and milestones but no competition."}
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+              {formatBadgeCount(locale, unlockedBadgeCount)}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-3">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700 md:text-xs">
+                {locale === "fr" ? "Rythme discret" : "Quiet rhythm"}
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-950">
+                {progressSignals[0]?.value ?? (locale === "fr" ? "Aucune séance" : "No session")}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-700">
+                {progressSignals[0]?.detail ??
+                  (locale === "fr"
+                    ? "Commence une première séance pour ouvrir le suivi."
+                    : "Start a first session to open the tracker.")}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/70 px-3 py-3">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-700 md:text-xs">
+                {locale === "fr" ? "Prochain badge" : "Next badge"}
+              </p>
+              {nextBadge ? (
+                <>
+                  <p className="mt-1 text-sm font-bold text-slate-950">{nextBadge.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-700">{nextBadge.detail}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-slate-700">
+                  {locale === "fr"
+                    ? "Tous les badges principaux sont débloqués."
+                    : "All main badges are unlocked."}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="mt-3 space-y-3">
             {badges.length > 0 ? (
               badges.map((badge) => (

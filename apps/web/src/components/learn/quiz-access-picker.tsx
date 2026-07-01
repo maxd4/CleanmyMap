@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   CheckCircle,
   Brain,
@@ -15,17 +16,21 @@ import {
   Repeat2,
   ShieldAlert,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
 import { getDefaultQuizSessionSize } from "@/lib/learning/quiz-selection-engine";
 import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
-import {
-  QuizPersonalProgressOverview,
-} from "@/components/learn/quiz-personal-progress-overview";
 import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
+
+const QuizPersonalProgressOverview = dynamic(
+  () =>
+    import("@/components/learn/quiz-personal-progress-overview").then(
+      (module) => module.QuizPersonalProgressOverview,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 const INTERACTIVE_FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
@@ -45,35 +50,35 @@ const ACCESS_TYPE_DISPLAY: Record<
 > = {
   mixte: {
     tone: "bg-violet-100 text-violet-700",
-    icon: <Shuffle size={28} />,
+    icon: <Shuffle size={28} aria-hidden="true" />,
   },
   ecole: {
     tone: "bg-amber-100 text-amber-800",
-    icon: <GraduationCap size={28} />,
+    icon: <GraduationCap size={28} aria-hidden="true" />,
   },
   terrain: {
     tone: "bg-emerald-100 text-emerald-700",
-    icon: <MapPin size={28} />,
+    icon: <MapPin size={28} aria-hidden="true" />,
   },
   "donnees-scientifiques": {
     tone: "bg-sky-100 text-sky-700",
-    icon: <FlaskConical size={28} />,
+    icon: <FlaskConical size={28} aria-hidden="true" />,
   },
   sensibilisation: {
     tone: "bg-rose-100 text-rose-700",
-    icon: <Megaphone size={28} />,
+    icon: <Megaphone size={28} aria-hidden="true" />,
   },
   "habitudes-de-vie": {
     tone: "bg-amber-100 text-amber-800",
-    icon: <Repeat2 size={28} />,
+    icon: <Repeat2 size={28} aria-hidden="true" />,
   },
   "ordres-de-grandeur": {
     tone: "bg-blue-100 text-blue-700",
-    icon: <Calculator size={28} />,
+    icon: <Calculator size={28} aria-hidden="true" />,
   },
   "tri-securite": {
     tone: "bg-slate-100 text-slate-700",
-    icon: <ShieldAlert size={28} />,
+    icon: <ShieldAlert size={28} aria-hidden="true" />,
   },
 };
 
@@ -90,16 +95,12 @@ export function QuizAccessPicker({
   return (
     <div className="space-y-12 py-10">
       <div className="space-y-4 text-center">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2"
-        >
-          <Brain className="text-emerald-600" size={20} />
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2">
+          <Brain className="text-emerald-600" size={20} aria-hidden="true" />
           <span className="text-sm font-black uppercase tracking-widest text-emerald-800">
             {getQuizUiCopy(locale, "access.bannerLabel")}
           </span>
-        </motion.div>
+        </div>
         <h2 className="text-4xl font-black tracking-tight cmm-text-primary md:text-5xl">
           {getQuizUiCopy(locale, "access.title")}
         </h2>
@@ -225,17 +226,14 @@ export function QuizAccessPicker({
       </div>
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {DISPLAY_ACCESS_TYPES.map((accessType, index) => {
+        {DISPLAY_ACCESS_TYPES.map((accessType) => {
           const display = ACCESS_TYPE_DISPLAY[accessType.id];
           const modeLevel = personalProgress?.modeLevels.find((mode) => mode.id === accessType.id);
 
           return (
-            <motion.button
+            <button
               key={accessType.id}
               type="button"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
               onClick={() => onSelectAccessType(accessType.id)}
               className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             >
@@ -287,9 +285,9 @@ export function QuizAccessPicker({
                 ))}
               </ul>
               <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
-                <CheckCircle className="text-emerald-500" size={32} />
+                <CheckCircle className="text-emerald-500" size={32} aria-hidden="true" />
               </div>
-            </motion.button>
+            </button>
           );
         })}
       </div>

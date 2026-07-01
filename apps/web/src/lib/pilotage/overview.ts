@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
 import { fetchCachedUnifiedActionContracts } from "../actions/unified-source-cache";
 import {
@@ -62,22 +62,48 @@ export function buildPilotageOverviewFromContracts(
   };
 }
 
-export async function loadPilotageOverview(
-  params: { supabase: SupabaseClient } & LoadPilotageOverviewParams,
-): Promise<PilotageOverview> {
-  void params.supabase;
-  const limit = params.limit ?? 1500;
-  const floorDate = buildDateFloor(Math.max(params.periodDays * 2, 730));
-  const { items: contracts } = await fetchCachedUnifiedActionContracts({
-    limit,
-    status: "approved",
-    floorDate,
-    requireCoordinates: false,
-    types: (params.types ?? null) as ActionEntityType[] | null,
-  });
+const PILOTAGE_OVERVIEW_CACHE_REVALIDATE_SECONDS = 600;
 
-  return buildPilotageOverviewFromContracts({
-    contracts,
-    periodDays: params.periodDays,
-  });
+function buildPilotageOverviewCacheKey(
+  params: LoadPilotageOverviewParams,
+): string {
+  const types =
+    params.types && params.types.length > 0
+      ? [...params.types].sort().join(",")
+      : "all";
+  return [
+    `period:${params.periodDays}`,
+    `limit:${params.limit ?? 1500}`,
+    `types:${types}`,
+  ].join("|");
+}
+
+export async function loadPilotageOverview(
+  params: LoadPilotageOverviewParams,
+): Promise<PilotageOverview> {
+  const cached = unstable_cache(
+    async () => {
+      const limit = params.limit ?? 1500;
+      const floorDate = buildDateFloor(Math.max(params.periodDays * 2, 730));
+      const { items: contracts } = await fetchCachedUnifiedActionContracts({
+        limit,
+        status: "approved",
+        floorDate,
+        requireCoordinates: false,
+        types: (params.types ?? null) as ActionEntityType[] | null,
+      });
+
+      return buildPilotageOverviewFromContracts({
+        contracts,
+        periodDays: params.periodDays,
+      });
+    },
+    ["pilotage-overview", buildPilotageOverviewCacheKey(params)],
+    {
+      revalidate: PILOTAGE_OVERVIEW_CACHE_REVALIDATE_SECONDS,
+      tags: ["pilotage-overview"],
+    },
+  );
+
+  return cached();
 }

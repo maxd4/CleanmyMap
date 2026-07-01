@@ -4,6 +4,8 @@ Ce document fixe les règles d'écriture des questions du quiz environnemental d
 
 Le système de répétition espacée n'est efficace que si la banque contient de vraies questions de raisonnement. Une question trop évidente mesure la reconnaissance, pas la compréhension.
 
+Pour la vue d'ensemble complète, les exemples et la procédure d'ajout, voir [Guide de contribution au quiz](./quiz-contributor-guide.md).
+
 La future banque de questions doit s'appuyer principalement sur 10 formats pédagogiques complémentaires. L'objectif est d'éviter qu'un seul format domine et de forcer des modes de raisonnement différents.
 
 ## Sept portes d'entrée utilisateur
@@ -187,7 +189,7 @@ Types de raisonnement de référence:
 Règle:
 - ne pas réintroduire une progression scolaire par niveaux;
 - utiliser uniquement ces catégories pour qualifier la nature de l'effort cognitif;
-- une question peut être technique sans être “plus difficile” au sens scolaire.
+- une question peut être technique sans être "plus difficile" au sens scolaire.
 
 ## Les 10 Formats Canoniques
 

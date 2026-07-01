@@ -9,7 +9,7 @@ But: reduce Supabase quota usage without changing UX, business rules, or visible
 - Repeating the same broad query on each mutation or page mount.
 - Using JSONB or derived fields without an index when they are part of the filter path.
 - Replacing a database-side filter with a client-side `.filter(...)`.
-- “Optimizing” by weakening RLS or by using `service_role` on a path that does not need it.
+- "Optimizing" by weakening RLS or by using `service_role` on a path that does not need it.
 
 ## Preferred order of fixes
 
@@ -34,7 +34,7 @@ const rows = await supabase.from("table").select("...")
 return rows.filter(...)
 ```
 
-then the first question is not “how do we make the filter faster?” but:
+then the first question is not "how do we make the filter faster?" but:
 
 - can the database apply the filter directly?
 - can the selection become an RPC?

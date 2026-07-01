@@ -1,5 +1,5 @@
-import { getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import { getQuizAccessType, type QuizAccessTypeId } from "./quiz-access-types.ts";
+import type { QuizReasoningType } from "./quiz-reasoning-types.ts";
 
 export type QuizQuestionCategory =
   | "tri-recyclage"

@@ -60,7 +60,7 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
     },
     focus: {
       fr: ["Atelier collectif sans compte", "Séances courtes de 15 questions"],
-      en: ["Collective workshop without account", "Short 10 to 15 question sessions"],
+      en: ["Collective workshop without account", "Short 15-question sessions"],
     },
     learningLabel: {
       fr: "Atelier en classe",

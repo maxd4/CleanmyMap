@@ -4,6 +4,10 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
 
+const HEALTH_CACHE_HEADERS = {
+ "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
+};
+
 function requiredConfigFlags() {
  return {
  NEXT_PUBLIC_SUPABASE_URL: isConfigured(env.NEXT_PUBLIC_SUPABASE_URL),
@@ -37,7 +41,7 @@ export async function GET() {
    const supabase = getSupabaseServerClient(false);
    const result = await supabase
    .from("actions")
-   .select("id", { count:"exact", head: true })
+   .select("id", { head: true })
    .limit(1);
    if (result.error) {
     supabaseError = "Unavailable";
@@ -63,5 +67,8 @@ export async function GET() {
  timestamp: new Date().toISOString(),
  };
 
- return NextResponse.json(payload, { status: ok ? 200 : 503 });
+ return NextResponse.json(payload, {
+  status: ok ? 200 : 503,
+  headers: HEALTH_CACHE_HEADERS,
+ });
 }

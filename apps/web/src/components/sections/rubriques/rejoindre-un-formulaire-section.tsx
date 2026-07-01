@@ -213,9 +213,9 @@ function sortItemsByStatusRank(items: JoinableActionItem[]): JoinableActionItem[
 
 function HeroIllustration() {
   return (
-    <div className="relative h-full min-h-[240px] overflow-hidden rounded-[2.4rem] border border-white/40 bg-[linear-gradient(135deg,#f1f8e9_0%,#d8edc8_55%,#c7e7be_100%)] shadow-[0_24px_50px_-36px_rgba(16,185,129,0.42)]">
+    <div className="relative h-full min-h-[142px] overflow-hidden rounded-[2rem] border border-white/50 bg-[linear-gradient(135deg,#f5faef_0%,#eaf5df_54%,#d9ecd1_100%)] opacity-70 shadow-[0_16px_30px_-30px_rgba(16,185,129,0.2)]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.72),transparent_26%),radial-gradient(circle_at_82%_28%,rgba(255,255,255,0.52),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_35%)]" />
-      <svg viewBox="0 0 840 360" className="absolute inset-0 h-full w-full" aria-hidden="true">
+      <svg viewBox="0 0 840 360" className="absolute inset-0 h-full w-full scale-[0.86]" aria-hidden="true">
         <defs>
           <linearGradient id="heroHillA" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#cce8af" />
@@ -279,9 +279,9 @@ function HeroIllustration() {
           <ellipse cx="248" cy="30" rx="82" ry="20" fill="#4f8e52" opacity="0.65" />
         </g>
       </svg>
-      <div className="absolute left-8 top-8 h-5 w-5 rounded-full border border-white/70 bg-white/45 shadow-sm" />
-      <div className="absolute right-8 top-8 h-5 w-5 rounded-full border border-white/70 bg-white/35 shadow-sm" />
-      <div className="absolute bottom-6 right-8 h-7 w-7 rounded-full border border-white/70 bg-white/30 shadow-sm" />
+      <div className="absolute left-6 top-6 h-4 w-4 rounded-full border border-white/70 bg-white/40 shadow-sm" />
+      <div className="absolute right-6 top-6 h-4 w-4 rounded-full border border-white/70 bg-white/30 shadow-sm" />
+      <div className="absolute bottom-4 right-6 h-6 w-6 rounded-full border border-white/70 bg-white/24 shadow-sm" />
     </div>
   );
 }
@@ -341,26 +341,28 @@ function HeroStatCard({
   value,
   label,
   tone = "emerald",
+  compact = false,
 }: {
   icon: ReactNode;
   value: string;
   label: string;
   tone?: "emerald" | "amber";
+  compact?: boolean;
 }) {
   return (
     <div
-      className={`flex h-full min-h-[112px] flex-col justify-between rounded-[1.25rem] border px-4 py-4 shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)] ${
+      className={`flex h-full ${compact ? "min-h-[80px] px-3 py-2.5" : "min-h-[102px] px-4 py-3"} flex-col justify-between rounded-[1.25rem] border shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)] ${
         tone === "amber" ? "border-amber-100 bg-amber-50/70" : "border-emerald-100 bg-white/85"
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+        <span className={`inline-flex ${compact ? "h-8 w-8" : "h-10 w-10"} items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm`}>
           {icon}
         </span>
       </div>
       <div className="space-y-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
-        <p className="text-3xl font-black tracking-tight text-slate-900">{value}</p>
+        <p className={`font-black uppercase tracking-[0.22em] text-slate-500 ${compact ? "text-[8px]" : "text-[10px]"}`}>{label}</p>
+        <p className={`${compact ? "text-[1.55rem]" : "text-[1.95rem]"} font-black tracking-tight text-slate-900`}>{value}</p>
       </div>
     </div>
   );
@@ -370,20 +372,18 @@ function FilterField({
   label,
   icon,
   children,
-  wide = false,
+  className = "",
 }: {
   label: string;
   icon: ReactNode;
   children: ReactNode;
-  wide?: boolean;
+  className?: string;
 }) {
   return (
     <label
-      className={`flex min-h-[72px] flex-col justify-between rounded-[1rem] border border-slate-200 bg-white px-4 py-3 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.25)] ${
-        wide ? "lg:col-span-2" : ""
-      }`}
+      className={`flex min-h-[56px] flex-col justify-between rounded-[1rem] border border-slate-200 bg-white px-3.5 py-2.5 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] ${className}`}
     >
-      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+      <span className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.22em] text-slate-500">
         {icon}
         {label}
       </span>
@@ -414,9 +414,9 @@ function PillBadge({
 
 function ShortcutsCard() {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
+    <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-lg font-black tracking-tight text-emerald-900">Raccourcis</h3>
+        <h3 className="text-base font-black tracking-tight text-emerald-900">Raccourcis</h3>
       </div>
       <div className="divide-y divide-slate-100 overflow-hidden rounded-[1.1rem] border border-slate-100">
         {[
@@ -446,11 +446,11 @@ function ShortcutsCard() {
 
 function HelpCard() {
   return (
-    <div className="relative overflow-hidden rounded-[1.5rem] border border-emerald-100 bg-[linear-gradient(135deg,#f7fbf4_0%,#eef7e5_100%)] p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
+    <div className="relative overflow-hidden rounded-[1.25rem] border border-emerald-100 bg-[linear-gradient(135deg,#f7fbf4_0%,#eef7e5_100%)] p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
       <div className="absolute -right-10 bottom-0 h-32 w-32 rounded-full bg-emerald-200/30 blur-3xl" />
       <div className="relative flex items-end justify-between gap-4">
         <div className="space-y-2">
-          <h3 className="text-lg font-black tracking-tight text-emerald-900">Besoin d’aide ?</h3>
+          <h3 className="text-base font-black tracking-tight text-emerald-900">Besoin d’aide ?</h3>
           <p className="max-w-xs text-sm leading-relaxed text-slate-700">
             Consultez notre FAQ ou contactez-nous.
           </p>
@@ -810,6 +810,7 @@ export function JoinFormSection() {
     () => items.reduce((total, item) => total + item.pendingRequestsCount, 0),
     [items],
   );
+  const summaryIsCompact = openActionsCount === 0 && pendingRequestsCount === 0 && activeParticipationItems.length === 0;
   const projectedImpactKg = useMemo(
     () =>
       items.reduce(
@@ -1068,10 +1069,10 @@ export function JoinFormSection() {
 
   return (
     <SectionShell id="rejoindre-un-formulaire" hideHeader gradient="from-emerald-500/18 via-emerald-500/6 to-transparent">
-      <div className="space-y-8 pt-8 text-slate-900">
-        <section className="overflow-hidden rounded-[2.2rem] border border-emerald-100 bg-[linear-gradient(180deg,#f8fbf5_0%,#edf7e6_100%)] shadow-[0_26px_70px_-44px_rgba(15,23,42,0.35)]">
-          <div className="grid gap-8 p-6 md:p-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:items-center">
-            <div className="relative z-10 space-y-5">
+      <div className="space-y-6 pt-4 text-slate-900">
+        <section className="overflow-hidden rounded-[2.1rem] border border-emerald-100 bg-[linear-gradient(180deg,#f8fbf5_0%,#edf7e6_100%)] shadow-[0_20px_56px_-42px_rgba(15,23,42,0.28)]">
+          <div className="grid gap-4 px-5 py-3.5 md:px-6 md:py-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(260px,0.88fr)] lg:items-center">
+            <div className="relative z-10 space-y-2.5">
               <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
                 <Link href="/sections/route" className="inline-flex items-center gap-2 text-emerald-800 transition hover:text-emerald-900">
                   <Leaf size={16} />
@@ -1081,35 +1082,35 @@ export function JoinFormSection() {
                 <span>{fr ? "Formulaire de groupe" : "Group form"}</span>
               </div>
 
-              <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl font-black tracking-tight text-emerald-950 md:text-5xl">
+              <div className="space-y-3">
+                <h1 className="max-w-3xl text-[2.2rem] font-black tracking-tight text-emerald-950 md:text-[2.95rem]">
                   {fr ? "Rejoindre un formulaire de groupe" : "Join a group form"}
                 </h1>
-                <p className="max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                <p className="max-w-2xl text-sm leading-relaxed text-slate-600 md:text-[1.02rem]">
                   {fr
                     ? "Participez à des actions déjà validées et contribuez à leurs résultats."
                     : "Join already approved actions and contribute to their results."}
                 </p>
               </div>
 
-              <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/75 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-sm">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                  <CheckCircle2 size={14} />
+              <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/75 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 shadow-sm">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 size={12} />
                 </span>
                 {fr ? "Actions validées en attente de bénévoles" : "Validated actions waiting for volunteers"}
               </div>
             </div>
 
-            <div className="min-h-[240px]">
+            <div className="min-h-[140px] self-end">
               <HeroIllustration />
             </div>
           </div>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-5">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))]">
-              <FilterField label={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."} icon={<Search size={13} />} wide>
+            <div className="grid gap-2.5 lg:grid-cols-[minmax(0,2.1fr)_repeat(4,minmax(0,1fr))]">
+              <FilterField label={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."} icon={<Search size={13} />}>
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
@@ -1183,13 +1184,18 @@ export function JoinFormSection() {
               </FilterField>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-black tracking-tight text-emerald-950">
-                  {fr ? "Actions validées" : "Validated actions"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {fr ? `${visibleItems.length} actions trouvées` : `${visibleItems.length} actions found`}
+            <div className="flex items-end justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-[2rem] font-black tracking-tight text-emerald-950 md:text-[2.15rem]">
+                    {fr ? "Actions validées" : "Validated actions"}
+                  </h2>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
+                    {`${formatCount(visibleItems.length)} actions`}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500">
+                  {fr ? "Les résultats publiés sont prêts à recevoir des bénévoles." : "Published results are ready for volunteers."}
                 </p>
               </div>
               {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
@@ -1212,7 +1218,7 @@ export function JoinFormSection() {
 
             <div className="space-y-4">
               {loading && (
-                <div className="rounded-[1.5rem] border border-emerald-100 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
+                <div className="rounded-[1.1rem] border border-emerald-100 bg-white px-4 py-3 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
                   <div className="flex items-center gap-3 text-emerald-800">
                     <Loader2 size={16} className="animate-spin" />
                     <p className="text-sm font-semibold">
@@ -1223,8 +1229,8 @@ export function JoinFormSection() {
               )}
 
               {!loading && error && (
-                <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
-                  <p className="text-sm font-semibold">{error}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-amber-100 bg-white px-4 py-3 text-slate-800 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.16)]">
+                  <p className="text-sm font-semibold text-slate-700">{error}</p>
                   <CmmButton
                     onClick={() => {
                       setLoading(true);
@@ -1247,7 +1253,7 @@ export function JoinFormSection() {
                         });
                     }}
                     tone="secondary"
-                    className="mt-4"
+                    size="sm"
                   >
                     {fr ? "Réessayer" : "Retry"}
                   </CmmButton>
@@ -1255,8 +1261,8 @@ export function JoinFormSection() {
               )}
 
               {!loading && !error && !hasItems && (
-                <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
-                  <p className="text-base font-bold text-slate-900">{fr ? "Aucune action validée n'est disponible." : "No validated action is available."}</p>
+                <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
+                  <p className="text-sm font-bold text-slate-900">{fr ? "Aucune action validée n'est disponible." : "No validated action is available."}</p>
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
                     {fr
                       ? "Créez un formulaire de groupe depuis une action validée, puis revenez ici lorsque des bénévoles peuvent le rejoindre."
@@ -1309,7 +1315,7 @@ export function JoinFormSection() {
               )}
 
               {!loading && hasItems && !hasVisibleItems && (
-                <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white p-6 shadow-[0_20px_50px_-40px_rgba(15,23,42,0.25)]">
+                <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
                   <p className="text-sm font-semibold text-slate-900">{noResultsMessage}</p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
                     {fr
@@ -1325,41 +1331,40 @@ export function JoinFormSection() {
                 </div>
               )}
 
-              <div id="file-publique" className="rounded-[1.6rem] border border-slate-200 bg-white p-0 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)]">
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5">
-                  <div className="space-y-2">
+              <div id="file-publique" className="rounded-[1.1rem] border border-slate-200 bg-white shadow-[0_16px_36px_-30px_rgba(15,23,42,0.16)]">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-xl font-black tracking-tight text-emerald-950">
+                      <h3 className="text-base font-black tracking-tight text-emerald-950">
                         {fr ? "File publique des demandes" : "Public request queue"}
                       </h3>
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-emerald-800">
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
                         {formatCount(queueRequests.length)}
                       </span>
                     </div>
-                    <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
+                    <p className="max-w-2xl text-xs leading-relaxed text-slate-600">
                       {fr
                         ? "Demandes en attente pour les actions dont vous êtes organisateur ou co-organisateur."
                         : "Requests waiting for actions where you are the organizer or co-organizer."}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <ShieldCheck size={16} className="text-emerald-700" />
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <ShieldCheck size={14} className="text-emerald-700" />
                     {fr ? "Les demandes restent visibles dans la file" : "Requests stay visible in the queue"}
                   </div>
                 </div>
 
                 <div className="divide-y divide-slate-100">
                   {queueError ? (
-                    <div className="p-5 text-sm text-rose-700">{queueError}</div>
+                    <div className="px-4 py-3 text-sm text-rose-700">{queueError}</div>
                   ) : queueLoading ? (
-                    <div className="space-y-3 p-5">
-                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
-                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
-                      <div className="h-14 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                    <div className="space-y-2.5 px-4 py-3">
+                      <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                      <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
                     </div>
                   ) : queueRequests.length > 0 ? (
                     queueRequests
-                      .slice(0, 4)
+                      .slice(0, 3)
                       .map((request) => (
                         <QueueRow
                           key={request.id}
@@ -1371,7 +1376,7 @@ export function JoinFormSection() {
                         />
                       ))
                   ) : (
-                    <div className="p-5 text-sm leading-relaxed text-slate-600">
+                    <div className="px-4 py-3 text-sm leading-relaxed text-slate-600">
                       {fr
                         ? "Aucune demande en attente sur ce formulaire."
                         : "No requests are waiting on this form."}
@@ -1379,20 +1384,20 @@ export function JoinFormSection() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-100 p-4 text-sm text-slate-600">
+                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-600">
                   <span>
                     {fr
                       ? "Acceptation et refus sont réservés aux organisateurs."
                       : "Accepting and rejecting is reserved for organizers."}
                   </span>
-                  <span className="inline-flex items-center gap-2 text-emerald-700">
+                  <span className="inline-flex items-center gap-1.5 text-emerald-700">
                     {fr ? "Voir toutes les demandes" : "View all requests"}
-                    <ChevronRight size={16} />
+                    <ChevronRight size={14} />
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-[1.1rem] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
+              <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
                 <div className="flex items-start gap-3">
                   <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-700" />
                   <p>
@@ -1410,79 +1415,94 @@ export function JoinFormSection() {
           </div>
 
           <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-black tracking-tight text-emerald-950">{fr ? "Résumé" : "Summary"}</h2>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-emerald-800">
+            <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-black tracking-tight text-emerald-950">{fr ? "Résumé" : "Summary"}</h2>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
                   {formatCount(openActionsCount)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2">
                 <HeroStatCard
-                  icon={<Users2 size={22} />}
+                  icon={<Users2 size={20} />}
                   value={formatCount(openActionsCount)}
                   label={fr ? "Actions ouvertes" : "Open actions"}
+                  compact={summaryIsCompact}
                 />
                 <HeroStatCard
-                  icon={<Clock3 size={22} />}
+                  icon={<Clock3 size={20} />}
                   value={formatCount(pendingRequestsCount)}
                   label={fr ? "Demandes en attente" : "Pending requests"}
                   tone="amber"
+                  compact={summaryIsCompact}
                 />
                 <HeroStatCard
-                  icon={<CheckCircle2 size={22} />}
+                  icon={<CheckCircle2 size={20} />}
                   value={formatCount(activeParticipationItems.length)}
                   label={fr ? "Participations confirmées" : "Confirmed participations"}
+                  compact={summaryIsCompact}
                 />
                 <HeroStatCard
-                  icon={<Leaf size={22} />}
+                  icon={<Leaf size={20} />}
                   value={`${formatKg(projectedImpactKg)} kg`}
                   label={fr ? "Impact potentiel" : "Potential impact"}
                   tone="amber"
+                  compact={summaryIsCompact}
                 />
               </div>
             </div>
 
             <ShortcutsCard />
 
-            <div id="mon-suivi" className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)]">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-black tracking-tight text-emerald-950">
+            <div id="mon-suivi" className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-lg font-black tracking-tight text-emerald-950">
                   {fr ? "Mon suivi" : "My tracking"}
                 </h3>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black uppercase tracking-[0.2em] text-emerald-800">
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
                   {formatCount(activeParticipationItems.length)}
                 </span>
               </div>
 
               {authenticated ? (
-                <div className="space-y-2">
-                  {sortedHistoryItems.slice(0, 4).map((item) => {
-                    const status = getActionDisplayStatus(item);
-                    return (
-                      <div key={item.id} className="rounded-[1rem] border border-slate-100 bg-slate-50/70 px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{item.location_label}</p>
-                            <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
+                sortedHistoryItems.length > 0 ? (
+                  <div className="space-y-2">
+                    {sortedHistoryItems.slice(0, 4).map((item) => {
+                      const status = getActionDisplayStatus(item);
+                      return (
+                        <div key={item.id} className="rounded-[1rem] border border-slate-100 bg-slate-50/70 px-3 py-2.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{item.location_label}</p>
+                              <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
+                            </div>
+                            <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
+                              {getStatusLabel(status, fr)}
+                            </PillBadge>
                           </div>
-                          <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
-                            {getStatusLabel(status, fr)}
-                          </PillBadge>
                         </div>
-                      </div>
-                    );
-                  })}
-                  <CmmButton href="/actions/history" tone="secondary" variant="pill" className="mt-2 w-full">
-                    <span className="flex items-center gap-2">
-                      {fr ? "Voir toutes mes participations" : "View all my participations"}
-                      <ChevronRight size={16} />
-                    </span>
-                  </CmmButton>
-                </div>
+                      );
+                    })}
+                    <CmmButton href="/actions/history" tone="secondary" variant="pill" size="sm" className="mt-1 w-full">
+                      <span className="flex items-center gap-2">
+                        {fr ? "Voir toutes mes participations" : "View all my participations"}
+                        <ChevronRight size={16} />
+                      </span>
+                    </CmmButton>
+                  </div>
+                ) : (
+                  <div className="rounded-[1rem] border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
+                    {fr
+                      ? "Aucune participation enregistrée pour le moment."
+                      : "No participation recorded yet."}
+                    <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm" className="mt-3">
+                      {fr ? "Voir les actions" : "See actions"}
+                    </CmmButton>
+                  </div>
+                )
               ) : (
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="rounded-[1rem] border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
                   {fr
                     ? "Connectez-vous pour retrouver vos participations et leur statut."
                     : "Sign in to review your participations and their status."}

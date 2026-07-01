@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: unknown) => fn,
+}));
+
 import { GET } from "./route";
 
 describe("/api/geo/address-suggestions", () => {
@@ -7,7 +12,12 @@ describe("/api/geo/address-suggestions", () => {
   });
 
   it("returns stable exact address labels within the national cache", async () => {
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [],
+      }),
+    });
     vi.stubGlobal("fetch", fetchMock as typeof fetch);
 
     const response = await GET(
@@ -27,7 +37,7 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.status).toBe("ok");
     expect(body.query).toBe("Rivoli");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       label: "12 Rue de Rivoli, 75004 Paris",

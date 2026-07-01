@@ -21,18 +21,12 @@ export default async function ParcoursProfilePage({
  notFound();
  }
 
- const { userId, clerkReachable } = await getSafeAuthSession();
+ const { userId } = await getSafeAuthSession();
  if (!userId) {
  return (
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Parcours personnalisé"
- description={
- clerkReachable
-              ?"Connectez-vous pour accéder au parcours associé à votre profil."
- :"Connexion Clerk temporairement indisponible. La vue reste lisible."
- }
  lockedPreview={
  <section className="space-y-4 rounded-3xl border border-amber-200/50 bg-amber-50/80 p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-3">

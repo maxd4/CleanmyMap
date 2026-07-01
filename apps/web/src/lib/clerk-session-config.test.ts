@@ -47,6 +47,14 @@ describe("getClerkRuntimeConfig", () => {
     expect(getClerkRuntimeConfig().proxyUrl).toBe("/__clerk");
   });
 
+  it("drops the production Clerk domain on localhost when no proxy URL is configured", async () => {
+    mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(getClerkRuntimeConfig().domain).toBeUndefined();
+  });
+
   it("preserves absolute proxy URLs", async () => {
     mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "https://auth.cleanmymap.fr/__clerk";
 

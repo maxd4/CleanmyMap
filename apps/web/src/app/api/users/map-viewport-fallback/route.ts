@@ -11,8 +11,20 @@ const MAP_VIEWPORT_FALLBACK_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400",
 };
 
+async function resolveMapViewportFallbackUserId(): Promise<string | null> {
+  try {
+    const session = await auth();
+    return session.userId ?? null;
+  } catch (error) {
+    console.warn("[map-viewport-fallback] Clerk auth unavailable", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 export async function GET() {
-  const { userId } = await auth();
+  const userId = await resolveMapViewportFallbackUserId();
   if (!userId) {
     return unauthorizedJsonResponse();
   }

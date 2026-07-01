@@ -61,19 +61,22 @@ export async function GET(request: Request) {
 
  try {
  const supabase = getSupabaseServerClient();
- 
- let query = supabase.from("community_events").select(
+ const eventsResult = eventId && eventId.trim() !==""
+ ? await supabase
+ .from("community_events")
+ .select(
 "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
- );
- 
- if (eventId && eventId.trim() !=="") {
- query = query.eq("id", eventId.trim());
- } else {
- query = query.gte("event_date", floorDate);
- query = query.order("event_date", { ascending: false }).limit(limit);
- }
-
- const eventsResult = await query;
+ )
+ .eq("id", eventId.trim())
+ .limit(1)
+ : await supabase
+ .from("community_events")
+ .select(
+"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+ )
+ .gte("event_date", floorDate)
+ .order("event_date", { ascending: false })
+ .limit(limit);
 
  if (eventsResult.error) {
  return new Response("Export unavailable", {
