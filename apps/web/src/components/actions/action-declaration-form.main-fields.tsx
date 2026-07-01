@@ -103,7 +103,7 @@ export function ActionDeclarationMainFields({
       {form.recordType === "action" && !isActionSpontanee && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-            Organisateurs
+            Organisateur / Référant ayant participé à l&apos;action
             <input
               type="text"
               className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
@@ -112,7 +112,7 @@ export function ActionDeclarationMainFields({
               placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
             />
             <p className="cmm-text-caption cmm-text-muted font-normal">
-              Hors action spontanée, indiquez les comptes qui ont réellement organisé l&apos;action.
+              Hors action spontanée, indiquez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé.
             </p>
           </label>
         </div>

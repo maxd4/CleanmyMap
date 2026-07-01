@@ -250,6 +250,72 @@ async function insertActionOrganizers(
   }
 }
 
+type ActionParticipantInsertRow = {
+  action_id: string;
+  user_id: string;
+  joined_at: string;
+  participation_status: "pending" | "confirmed";
+  participation_source: "group_form" | "admin" | "import";
+};
+
+export function buildInitialActionParticipantRows(params: {
+  actionId: string;
+  creatorUserId: string;
+  organizers: ResolvedActionOrganizer[];
+  participationSource?: ActionParticipantInsertRow["participation_source"];
+}): ActionParticipantInsertRow[] {
+  const joinedAt = new Date().toISOString();
+  const source = params.participationSource ?? "group_form";
+  const rows: ActionParticipantInsertRow[] = [];
+  const organizerIds = new Set<string>();
+
+  for (const organizer of params.organizers) {
+    if (organizerIds.has(organizer.userId)) {
+      continue;
+    }
+    organizerIds.add(organizer.userId);
+    rows.push({
+      action_id: params.actionId,
+      user_id: organizer.userId,
+      joined_at: joinedAt,
+      participation_status: "confirmed",
+      participation_source: source,
+    });
+  }
+
+  if (!organizerIds.has(params.creatorUserId)) {
+    rows.push({
+      action_id: params.actionId,
+      user_id: params.creatorUserId,
+      joined_at: joinedAt,
+      participation_status: "pending",
+      participation_source: source,
+    });
+  }
+
+  return rows;
+}
+
+async function insertActionParticipants(
+  supabase: SupabaseClient,
+  actionId: string,
+  rows: ActionParticipantInsertRow[],
+): Promise<void> {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const participantsInserted = await supabase
+    .from("action_participants")
+    .insert(rows);
+
+  if (participantsInserted.error) {
+    await supabase.from("action_organizers").delete().eq("action_id", actionId);
+    await supabase.from("actions").delete().eq("id", actionId);
+    throw participantsInserted.error;
+  }
+}
+
 async function recordCreateActionTrainingExample(
   supabase: SupabaseClient,
   params: {
@@ -300,6 +366,15 @@ export async function createAction(
   });
 
   await insertActionOrganizers(supabase, actionId, params.organizers);
+  await insertActionParticipants(
+    supabase,
+    actionId,
+    buildInitialActionParticipantRows({
+      actionId,
+      creatorUserId: params.userId,
+      organizers: params.organizers,
+    }),
+  );
   await recordCreateActionTrainingExample(supabase, { actionId, payload });
 
   return { id: String(actionId) };

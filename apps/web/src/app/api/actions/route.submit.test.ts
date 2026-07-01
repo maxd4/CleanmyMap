@@ -15,6 +15,7 @@ const resolveActionCreationStatusMock = vi.hoisted(() =>
   ),
 );
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
+const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
@@ -56,6 +57,7 @@ vi.mock("@/lib/actions/store", () => ({
 
 vi.mock("@/lib/actions/organizers", () => ({
   resolveActionOrganizers: resolveActionOrganizersMock,
+  resolveDefaultActionOrganizerIds: resolveDefaultActionOrganizerIdsMock,
 }));
 
 describe("POST /api/actions", () => {
@@ -76,6 +78,7 @@ describe("POST /api/actions", () => {
       ],
       unresolvedTokens: [],
     });
+    resolveDefaultActionOrganizerIdsMock.mockReturnValue(["user-admin-default"]);
     authMock.mockResolvedValue({ userId: "user-test-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "user-test-1",
@@ -149,7 +152,7 @@ describe("POST /api/actions", () => {
     expect(trackServerEventMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("rejects non-spontaneous actions without an explicit organizer", async () => {
+  it("falls back to the admin organizer when no organizer is provided", async () => {
     const { POST } = await import("./route");
 
     const payload = toContractCreatePayload({
@@ -172,11 +175,24 @@ describe("POST /api/actions", () => {
       }),
     );
 
-    const body = (await response.json()) as { details?: { organizerAccounts?: string[] } };
-    expect(response.status).toBe(422);
-    expect(body.details?.organizerAccounts?.[0]).toContain("Renseignez au moins un compte organisateur");
-    expect(createActionMock).not.toHaveBeenCalled();
-    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
+    const body = (await response.json()) as { id?: string; error?: string };
+    expect(response.status).toBe(201);
+    expect(body.id).toBe("action-test-1");
+    expect(resolveDefaultActionOrganizerIdsMock).toHaveBeenCalledWith({
+      creatorUserId: "user-test-1",
+      creatorIsAdminLike: false,
+    });
+    expect(resolveActionOrganizersMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizerAccounts: ["user-admin-default"],
+      }),
+    );
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "pending",
+      }),
+    );
   }, 15000);
 
   it("rejects volunteer actions without waste or cigarette butts", async () => {

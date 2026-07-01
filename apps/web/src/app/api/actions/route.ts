@@ -3,11 +3,17 @@ import { NextResponse } from "next/server";
 import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createActionSchema } from "@/lib/validation/action";
-import { createAction, resolveActionCreationStatus } from "@/lib/actions/store";
+import {
+  createAction,
+  resolveActionCreationStatus,
+} from "@/lib/actions/store";
 import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
 import { isAdminLikeProfile } from "@/lib/profiles";
 import { toActionListItem } from "@/lib/actions/data-contract";
-import { resolveActionOrganizers } from "@/lib/actions/organizers";
+import {
+  resolveActionOrganizers,
+  resolveDefaultActionOrganizerIds,
+} from "@/lib/actions/organizers";
 import {
   fetchUnifiedActionContracts,
   parseEntityTypesParam,
@@ -293,7 +299,7 @@ export async function POST(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
     const identity = await getCurrentUserIdentity();
-    const isAutoApprovedSubmission = identity ? isAdminLikeProfile(identity.role) : false;
+    const isCreatorAdminLike = identity ? isAdminLikeProfile(identity.role) : false;
     const resolvedIdentity = identity ?? {
       displayName: userId,
       handle: userId,
@@ -321,18 +327,16 @@ export async function POST(request: Request) {
     const isSpontaneousAction =
       normalizedPayload.recordType === "action" &&
       normalizedPayload.associationName === "Action spontanée";
-    const organizerAccounts = normalizedPayload.organizerAccounts ?? [];
-    if (
-      !isSpontaneousAction &&
-      organizerAccounts.length === 0 &&
-      normalizedPayload.recordType === "action"
-    ) {
-      return validationErrorResponse({
-        organizerAccounts: [
-          "Renseignez au moins un compte organisateur pour attribuer les récompenses de création.",
-        ],
-      });
-    }
+    const providedOrganizerAccounts = normalizedPayload.organizerAccounts ?? [];
+    const organizerAccounts =
+      providedOrganizerAccounts.length > 0
+        ? providedOrganizerAccounts
+        : normalizedPayload.recordType === "action" && !isSpontaneousAction
+          ? resolveDefaultActionOrganizerIds({
+              creatorUserId: userId,
+              creatorIsAdminLike: isCreatorAdminLike,
+            })
+          : [];
     const organizerResolution =
       normalizedPayload.recordType === "action"
         ? await resolveActionOrganizers({
@@ -344,7 +348,7 @@ export async function POST(request: Request) {
               username: resolvedIdentity.username,
               email: resolvedIdentity.email,
             },
-            organizerAccounts: isSpontaneousAction ? [] : organizerAccounts,
+            organizerAccounts,
             includeCreatorAsPrimary: isSpontaneousAction,
           })
         : { organizers: [], unresolvedTokens: [] as string[] };
@@ -422,7 +426,14 @@ export async function POST(request: Request) {
       userId,
       payload: normalizedPayload,
       organizers: organizerResolution.organizers,
-      status: resolveActionCreationStatus(isAutoApprovedSubmission),
+      status:
+        normalizedPayload.recordType === "action"
+          ? organizerResolution.organizers.some(
+              (organizer) => organizer.userId === userId,
+            ) && isCreatorAdminLike
+            ? "approved"
+            : "pending"
+          : resolveActionCreationStatus(isCreatorAdminLike),
     });
 
     emitActionCreated({
