@@ -4,7 +4,7 @@
 
 Ce fichier définit les règles de travail obligatoires pour tout agent IA intervenant sur le dépôt CleanMyMap.
 
-Les règles ci-dessous s’appliquent à l’ensemble du dépôt, sauf instruction plus spécifique donnée par l’utilisateur dans la conversation courante.
+Les règles ci-dessous s'appliquent à l'ensemble du dépôt, sauf instruction plus spécifique donnée par l'utilisateur dans la conversation courante.
 
 ## Canari de session
 
@@ -18,9 +18,9 @@ Cette règle s'applique seulement au message de clôture. Les mises à jour inte
 
 Ordre de priorité :
 
-1. Respect des consignes explicites de l’utilisateur.
+1. Respect des consignes explicites de l'utilisateur.
 2. Sécurité, données et authentification.
-3. Cohérence avec l’architecture existante.
+3. Cohérence avec l'architecture existante.
 4. Respect du design system CleanMyMap.
 5. Tests et validation.
 6. Simplicité des modifications.
@@ -34,9 +34,9 @@ Ne jamais privilégier une refonte large si une correction ciblée suffit.
 
 ### Interdiction de créer des dossiers projet parallèles
 
-Il est strictement interdit de créer un nouveau dossier sibling, une copie du dépôt, un worktree Git ou tout autre dossier projet parallèle à côté de `CleanmyMap-main` sans autorisation explicite de l’utilisateur.
+Il est strictement interdit de créer un nouveau dossier sibling, une copie du dépôt, un worktree Git ou tout autre dossier projet parallèle à côté de `CleanmyMap-main` sans autorisation explicite de l'utilisateur.
 
-Cette interdiction s’applique à tous les agents, modèles et automatisations travaillant sur ce projet.
+Cette interdiction s'applique à tous les agents, modèles et automatisations travaillant sur ce projet.
 
 Ne pas créer de dossier du type :
 
@@ -52,7 +52,7 @@ Tout travail doit rester dans :
 C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main
 ```
 
-Si une isolation Git est nécessaire, demander d’abord l’accord explicite de l’utilisateur et préciser :
+Si une isolation Git est nécessaire, demander d'abord l'accord explicite de l'utilisateur et préciser :
 
 * le nom du dossier qui serait créé ;
 * la raison exacte ;
@@ -64,7 +64,7 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 
 ### Hygiène de la racine
 
-Ne pas générer de nouveaux fichiers à la racine du dépôt sauf demande explicite de l’utilisateur.
+Ne pas générer de nouveaux fichiers à la racine du dépôt sauf demande explicite de l'utilisateur.
 
 Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent aller dans un dossier adapté, par exemple :
 
@@ -73,11 +73,11 @@ Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent 
 * `backups/`
 * un sous-dossier dédié déjà prévu par le dépôt
 
-Si un fichier doit absolument vivre à la racine, il doit être un fichier d’architecture, de configuration ou un livrable racine clairement justifié.
+Si un fichier doit absolument vivre à la racine, il doit être un fichier d'architecture, de configuration ou un livrable racine clairement justifié.
 
 Tout fichier racine ajouté sans demande explicite doit être considéré comme une régression de gouvernance et doit être nettoyé avant validation.
 
-Ne pas créer de fichiers ou dossiers miroir pour contourner une règle d’emplacement. Ne pas dupliquer un même contenu dans deux emplacements parallèles.
+Ne pas créer de fichiers ou dossiers miroir pour contourner une règle d'emplacement. Ne pas dupliquer un même contenu dans deux emplacements parallèles.
 
 ---
 
@@ -100,9 +100,9 @@ Avant toute modification importante, vérifier les versions réelles dans `packa
 * `apps/web/src/components/ui` contient les composants UI réutilisables.
 * `apps/web/src/components/sections/rubriques` contient les modules fonctionnels principaux.
 * `apps/web/src/components/accueil` contient les composants liés à la homepage.
-* `apps/web/src/lib/sections-registry/config.ts` centralise l’enregistrement des modules de rubriques, et `apps/web/src/lib/sections-registry/index.ts` ré-exporte le registre.
+* `apps/web/src/lib/sections-registry/config.ts` centralise l'enregistrement des modules de rubriques, et `apps/web/src/lib/sections-registry/index.ts` ré-exporte le registre.
 * `apps/web/src/lib/domain-language.ts` est la source de vérité pour les notions `Role`, `SessionRole` et `Parcours`.
-* `scripts/` et `maintenance/python/` contiennent les scripts d’ingestion, de maintenance et d’historique technique.
+* `scripts/` et `maintenance/python/` contiennent les scripts d'ingestion, de maintenance et d'historique technique.
 
 Quand un nouveau module est ajouté dans `apps/web/src/components/sections/rubriques`, il doit être enregistré dans `apps/web/src/lib/sections-registry/config.ts`.
 
@@ -116,7 +116,7 @@ Quand un nouveau module est ajouté dans `apps/web/src/components/sections/rubri
 * Utiliser les clients Supabase existants et les helpers du projet.
 * Ne jamais désactiver une protection de sécurité pour faire passer une fonctionnalité.
 * Ne jamais exposer de secret côté client.
-* Vérifier les règles d’accès, les validations et les erreurs pour tout flux manipulant des données utilisateur.
+* Vérifier les règles d'accès, les validations et les erreurs pour tout flux manipulant des données utilisateur.
 
 ### Règle de travail Supabase
 
@@ -135,10 +135,10 @@ Méthode obligatoire :
 1. Identifier si le changement concerne le schéma SQL, les policies RLS, les RPC, les triggers, les fonctions, les buckets Storage, les Edge Functions, les seeds ou les types TypeScript générés.
 2. Regrouper les corrections Supabase par catégorie avant de tester.
 3. Créer ou modifier une migration SQL versionnée dans `supabase/migrations`.
-4. Tester localement avec Supabase CLI quand c’est possible.
+4. Tester localement avec Supabase CLI quand c'est possible.
 5. Vérifier que la base peut être reconstruite proprement depuis les migrations.
 6. Régénérer les types Supabase si le schéma change.
-7. Vérifier les usages côté Next.js : imports, clients browser/server, variables d’environnement et appels RPC.
+7. Vérifier les usages côté Next.js : imports, clients browser/server, variables d'environnement et appels RPC.
 8. Vérifier les règles RLS : un utilisateur non autorisé ne doit pas pouvoir lire, écrire, modifier ou supprimer des données protégées.
 9. Ne jamais exposer `service_role` côté client.
 10. Appliquer les changements à distance seulement après validation locale ou environnement de preview/staging.
@@ -172,7 +172,7 @@ Ces fichiers structurent des notions centrales du domaine CleanMyMap. Toute modi
 ### Client Components et Server Components
 
 * Garder les Client Components (`"use client"`) aussi minces que possible.
-* Préférer les Server Components, Server Actions ou hooks de données existants lorsque c’est cohérent avec l’architecture.
+* Préférer les Server Components, Server Actions ou hooks de données existants lorsque c'est cohérent avec l'architecture.
 * Ne pas déplacer inutilement de logique serveur vers le client.
 * Ne pas ajouter `"use client"` à un composant sans raison précise.
 
@@ -193,14 +193,14 @@ Tout texte visible par les utilisateurs doit être écrit en français, notammen
 * `description`
 * boutons
 * états vides
-* messages d’erreur
+* messages d'erreur
 * aides contextuelles
 
 Exception : un objet multilingue explicite du type `{ fr: "...", en: "..." }`.
 
 ### Homepage
 
-Ne jamais modifier la homepage sans demande explicite de l’utilisateur.
+Ne jamais modifier la homepage sans demande explicite de l'utilisateur.
 
 Cela concerne notamment :
 
@@ -221,20 +221,20 @@ Ne pas introduire un style isolé si un composant ou une convention existe déj�
 
 Sur les héros et titres de page, éviter les retours à la ligne décoratifs.
 
-Priorité d’ajustement :
+Priorité d'ajustement :
 
 1. réduire la taille du texte ;
 2. réduire le tracking ;
 3. ajuster la largeur utile ;
 4. réorganiser le bloc sur mobile.
 
-Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard lorsque c’est possible sans nuire à la lisibilité.
+Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard lorsque c'est possible sans nuire à la lisibilité.
 
 ### Header et footer
 
-Ne pas modifier le header global ni le footer global sans demande explicite de l’utilisateur.
+Ne pas modifier le header global ni le footer global sans demande explicite de l'utilisateur.
 
-Lorsqu’une page doit être améliorée visuellement, travailler uniquement sur le contenu éditable de la page, sauf consigne contraire.
+Lorsqu'une page doit être améliorée visuellement, travailler uniquement sur le contenu éditable de la page, sauf consigne contraire.
 
 ### États système
 
@@ -251,14 +251,14 @@ Les états doivent être cohérents avec la palette et les conventions du projet
 
 ### Gamification et transparence
 
-Informer systématiquement l’utilisateur lorsqu’une action réalisée sur le site lui apporte :
+Informer systématiquement l'utilisateur lorsqu'une action réalisée sur le site lui apporte :
 
-* de l’XP ;
+* de l'XP ;
 * un badge ;
 * une progression visible ;
 * une récompense de gamification.
 
-Cette information doit être claire, mais ne doit pas rendre l’interface artificielle ou confuse.
+Cette information doit être claire, mais ne doit pas rendre l'interface artificielle ou confuse.
 
 ---
 
@@ -314,7 +314,7 @@ documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 
 ## 6. Markdown, documentation et Quarto
 
-Ne jamais mettre de numéros de section ou de titre en dur dans les fichiers Markdown destinés à l’export Quarto.
+Ne jamais mettre de numéros de section ou de titre en dur dans les fichiers Markdown destinés à l'export Quarto.
 
 Ne pas écrire :
 
@@ -332,7 +332,7 @@ Ne pas écrire :
 ### Section
 ```
 
-Les numéros sont générés automatiquement par Quarto lors de l’export.
+Les numéros sont générés automatiquement par Quarto lors de l'export.
 
 Pour les fichiers Markdown destinés au rapport CleanMyMap :
 
@@ -357,7 +357,7 @@ Pour les fichiers Markdown destinés au rapport CleanMyMap :
 * watchers de build
 * scripts de maintenance Python lourds
 
-Avant de lancer une commande lourde, vérifier qu’une autre tâche active sur le dépôt ne produit pas déjà la même charge.
+Avant de lancer une commande lourde, vérifier qu'une autre tâche active sur le dépôt ne produit pas déjà la même charge.
 
 Si une vérification ciblée suffit, préférer cette vérification à un scan global.
 
@@ -369,11 +369,11 @@ Ne pas laisser tourner inutilement :
 * scripts de maintenance ;
 * processus liés à un `localhost` inutilisé.
 
-Les commandes `git` peuvent rester en arrière-plan lorsqu’elles sont légères.
+Les commandes `git` peuvent rester en arrière-plan lorsqu'elles sont légères.
 
-Au lancement d’une tâche, éviter d’ouvrir ou de parcourir les dossiers générés ou d’outillage comme `node_modules`, `.next`, `.vercel`, `.playwright-mcp`, `.codex-remote-attachments`, `artifacts` ou `backups` sauf nécessité explicite.
+Au lancement d'une tâche, éviter d'ouvrir ou de parcourir les dossiers générés ou d'outillage comme `node_modules`, `.next`, `.vercel`, `.playwright-mcp`, `.codex-remote-attachments`, `artifacts` ou `backups` sauf nécessité explicite.
 
-Si un diagnostic demande un scan large, le justifier d’abord et privilégier une cible précise.
+Si un diagnostic demande un scan large, le justifier d'abord et privilégier une cible précise.
 
 Si `%TEMP%` grossit à cause des outils de dev ou de Codex, lancer `npm run clean:temp` avant de repartir sur une tâche lourde.
 
@@ -383,7 +383,7 @@ Si `%TEMP%` grossit à cause des outils de dev ou de Codex, lancer `npm run clea
 
 Après une modification significative, lancer les vérifications pertinentes disponibles dans le dépôt.
 
-Toute livraison doit se terminer par un push GitHub et une vérification globale du dépôt avant clôture. Quand c’est possible, cette vérification doit couvrir l’ensemble du repo avec la suite de validation disponible, pas seulement le périmètre modifié.
+Toute livraison doit se terminer par un push GitHub et une vérification globale du dépôt avant clôture. Quand c'est possible, cette vérification doit couvrir l'ensemble du repo avec la suite de validation disponible, pas seulement le périmètre modifié.
 
 Avant de lancer une commande, vérifier dans `package.json`, `turbo.json`, la documentation ou les scripts du projet quelle commande est adaptée.
 
@@ -393,13 +393,13 @@ Priorité :
 2. typecheck si la modification touche TypeScript ;
 3. lint si la modification touche du code applicatif ;
 4. tests si une logique fonctionnelle a été modifiée ;
-5. build si la modification touche l’architecture, les routes ou la configuration.
+5. build si la modification touche l'architecture, les routes ou la configuration.
 
-Ne jamais prétendre qu’un test a été exécuté s’il ne l’a pas été.
+Ne jamais prétendre qu'un test a été exécuté s'il ne l'a pas été.
 
 Si une commande échoue :
 
-1. lire l’erreur ;
+1. lire l'erreur ;
 2. identifier la cause racine ;
 3. corriger de manière ciblée ;
 4. relancer la commande pertinente.
@@ -408,7 +408,7 @@ Si les tests ne peuvent pas être lancés, expliquer précisément pourquoi dans
 
 ### Règle de debug build Vercel/Next.js
 
-Lorsqu’un build Vercel ou Next.js échoue, ne pas lancer une boucle de micro-corrections suivies d’un build complet à chaque fois.
+Lorsqu'un build Vercel ou Next.js échoue, ne pas lancer une boucle de micro-corrections suivies d'un build complet à chaque fois.
 
 Priorité :
 
@@ -420,33 +420,33 @@ Priorité :
 * utiliser les commandes rapides avant `next build` ;
 * lancer le build complet seulement après un groupe cohérent de corrections.
 
-Les problèmes Turbopack/Webpack doivent être isolés. En cas de doute, stabiliser d’abord le build de production avec le chemin le plus fiable, puis traiter l’optimisation de bundler dans une tâche séparée.
+Les problèmes Turbopack/Webpack doivent être isolés. En cas de doute, stabiliser d'abord le build de production avec le chemin le plus fiable, puis traiter l'optimisation de bundler dans une tâche séparée.
 
 ---
 
 ## 9. Vérification UI et navigateur
 
-Ne pas lancer de vérification web du rendu du site, d’inspection navigateur, de capture Playwright ou d’audit visuel sans demande explicite de l’utilisateur.
+Ne pas lancer de vérification web du rendu du site, d'inspection navigateur, de capture Playwright ou d'audit visuel sans demande explicite de l'utilisateur.
 
-Si l’utilisateur demande seulement une modification UI, appliquer les conventions du dépôt dans le code, puis signaler en fin de réponse qu’une vérification visuelle reste recommandée.
+Si l'utilisateur demande seulement une modification UI, appliquer les conventions du dépôt dans le code, puis signaler en fin de réponse qu'une vérification visuelle reste recommandée.
 
 ---
 
 ## 10. Réponse finale attendue
 
-La réponse finale de l’agent doit être concise et factuelle.
+La réponse finale de l'agent doit être concise et factuelle.
 
 Elle doit indiquer :
 
 * les modifications réalisées ;
 * les fichiers principaux modifiés ;
 * les vérifications lancées ;
-* les erreurs rencontrées, s’il y en a ;
-* les vérifications restantes, si certaines n’ont pas pu être faites.
+* les erreurs rencontrées, s'il y en a ;
+* les vérifications restantes, si certaines n'ont pas pu être faites.
 
 Ne pas donner de long raisonnement interne.
 Ne pas masquer une erreur.
-Ne pas annoncer une réussite si la validation n’a pas été faite.
+Ne pas annoncer une réussite si la validation n'a pas été faite.
 
 ---
 
