@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react";
+import { ActionBeforeDeclarationForm } from "./action-before-declaration-form";
 import { ActionDeclarationForm } from "./action-declaration-form";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -166,72 +167,6 @@ function ErrorPanel({
   );
 }
 
-function BeforeActionShell({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-[2rem] border border-emerald-200/80 bg-white/90 px-5 py-4 shadow-[0_16px_34px_-26px_rgba(34,197,94,0.22)] backdrop-blur-xl">
-        <div className="min-w-0 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <CmmPill tone="emerald" size="sm">
-              Succès
-            </CmmPill>
-            <p className="text-sm font-bold text-emerald-950">Déclarer avant l&apos;action</p>
-          </div>
-          <p className="text-sm leading-6 text-emerald-900/70">
-            Le futur formulaire de pré-déclaration de groupe sera branché ici ensuite. Aucune collecte incomplète n&apos;est validée à ce stade.
-          </p>
-        </div>
-        <CmmButton tone="tertiary" variant="pill" onClick={onBack} size="md" className="shrink-0">
-          <ArrowLeft size={14} />
-          Retour au choix
-        </CmmButton>
-      </div>
-
-      <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200/80 bg-[#ECF8EF] text-emerald-700 shadow-sm">
-                <ClipboardList size={20} />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight text-emerald-950">
-                  Pré-déclaration de groupe
-                </h2>
-                <p className="max-w-2xl text-sm leading-6 text-emerald-900/70">
-                  Cette entrée existe pour préparer un futur parcours avant action, sans toucher au formulaire actuel.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-emerald-200/80 bg-[#F3FBF6] p-4">
-              <ul className="space-y-2">
-                <EntryFeature>Les données de terrain ne sont pas encore demandées ici.</EntryFeature>
-                <EntryFeature>La validation ne peut pas se faire sur une collecte incomplète.</EntryFeature>
-                <EntryFeature>Le formulaire actuel reste disponible via le parcours après l&apos;action.</EntryFeature>
-              </ul>
-            </div>
-          </div>
-        </CmmCard>
-
-        <CmmCard tone="emerald" variant="outlined" size="lg" className="border-emerald-200/80 bg-white/85">
-          <div className="space-y-3">
-            <CmmPill tone="emerald" size="sm">
-              À créer ensuite
-            </CmmPill>
-            <p className="text-sm leading-6 text-emerald-900/70">
-              Le futur formulaire de pré-déclaration de groupe reprendra ce point d&apos;entrée. Il ne doit pas valider artificiellement une collecte incomplète.
-            </p>
-            <div className="rounded-2xl border border-emerald-200/70 bg-[#ECF8EF] p-3 text-sm font-medium text-emerald-950">
-              En attendant, vous pouvez revenir au choix puis ouvrir le parcours après l&apos;action.
-            </div>
-          </div>
-        </CmmCard>
-      </div>
-    </div>
-  );
-}
-
 export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProps) {
   const [screen, setScreen] = useState<EntryScreen>("choice");
   const [selection, setSelection] = useState<EntryPath | null>(null);
@@ -343,7 +278,19 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
   }
 
   if (screen === "success" && selection === "before") {
-    return <BeforeActionShell onBack={backToChoice} />;
+    return (
+      <ActionBeforeDeclarationForm
+        actorNameOptions={props.actorNameOptions}
+        defaultActorName={props.defaultActorName}
+        isAuthenticated={props.isAuthenticated}
+        isAutoApprovedSubmission={props.isAutoApprovedSubmission}
+        userMetadata={props.userMetadata}
+        linkedEventId={props.linkedEventId}
+        initialRecordType={props.initialRecordType}
+        onReturnToChoice={backToChoice}
+        onPassToComplete={() => startChoice("after")}
+      />
+    );
   }
 
   if (screen === "success" && selection === "after") {

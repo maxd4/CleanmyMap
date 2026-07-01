@@ -36,7 +36,7 @@ export type FormState = {
 };
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";
-export type DeclarationMode ="complete";
+export type DeclarationMode = "quick" | "complete";
 
 export type ValidationIssue = {
  field:

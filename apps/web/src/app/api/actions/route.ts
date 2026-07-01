@@ -311,18 +311,21 @@ export async function POST(request: Request) {
       ...parsed.data,
       actorName,
     };
-    const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
-    if (volunteerIssues.length > 0) {
-      const details = volunteerIssues.reduce<Record<string, string[]>>(
-        (acc, issue) => {
-          const current = acc[issue.field] ?? [];
-          current.push(issue.message);
-          acc[issue.field] = current;
-          return acc;
-        },
-        {},
-      );
-      return validationErrorResponse(details);
+    const isQuickSubmission = normalizedPayload.submissionMode === "quick";
+    if (!isQuickSubmission) {
+      const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
+      if (volunteerIssues.length > 0) {
+        const details = volunteerIssues.reduce<Record<string, string[]>>(
+          (acc, issue) => {
+            const current = acc[issue.field] ?? [];
+            current.push(issue.message);
+            acc[issue.field] = current;
+            return acc;
+          },
+          {},
+        );
+        return validationErrorResponse(details);
+      }
     }
     const isSpontaneousAction =
       normalizedPayload.recordType === "action" &&
@@ -428,11 +431,13 @@ export async function POST(request: Request) {
       organizers: organizerResolution.organizers,
       status:
         normalizedPayload.recordType === "action"
-          ? organizerResolution.organizers.some(
-              (organizer) => organizer.userId === userId,
-            ) && isCreatorAdminLike
+          ? isQuickSubmission
             ? "approved"
-            : "pending"
+            : organizerResolution.organizers.some(
+                (organizer) => organizer.userId === userId,
+              ) && isCreatorAdminLike
+              ? "approved"
+              : "pending"
           : resolveActionCreationStatus(isCreatorAdminLike),
     });
 

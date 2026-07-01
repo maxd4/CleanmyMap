@@ -45,9 +45,22 @@ describe("getVolunteerActionValidationIssues", () => {
     expect(issues).toEqual([]);
   });
 
+  it("ignores quick pre-action submissions", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "quick",
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteersCount: 0,
+    });
+
+    expect(issues).toEqual([]);
+  });
+
   it("accepts megots coming from the waste breakdown", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
+      submissionMode: "complete",
       wasteKg: 0,
       cigaretteButts: 0,
       volunteersCount: 1,
