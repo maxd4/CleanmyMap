@@ -121,7 +121,11 @@ export function ElusSection() {
   const { data, isLoading, error } = useSWR(
     "/api/pilotage/overview",
     fetchOverview,
-    { refreshInterval: 600000 }
+    {
+      refreshInterval: 1_800_000,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
   );
 
   if (error) {

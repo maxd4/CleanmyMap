@@ -1,0 +1,37 @@
+name: Sujet Vercel
+description: Signaler un problème de déploiement, de preview, de runtime ou de quota Vercel.
+title: "[Vercel] "
+labels:
+  - vercel
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: Décrivez le comportement observé sur Vercel.
+      placeholder: Preview rouge, build cassé, runtime inattendu, coût anormal...
+    validations:
+      required: true
+  - type: textarea
+    id: surface
+    attributes:
+      label: Surface concernée
+      description: Précisez la route, la fonction ou le workflow impliqué.
+      placeholder: apps/web/vercel.json, /api/cron/..., page, middleware, build
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Indiquez le risque produit ou le coût associé.
+      placeholder: Preview inutilisable, quota augmenté, délai de déploiement...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Preuves utiles
+      description: Ajoutez logs, lien de preview, message d'erreur ou capture.
+      placeholder: Extrait de log Vercel, lien vers la preview, code d'erreur.
+

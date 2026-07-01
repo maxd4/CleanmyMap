@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { distanceToParisArrondissementKm } from "@/lib/geo/paris-arrondissements";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
@@ -170,6 +171,24 @@ export async function loadEventPressureByArrondissement(
   };
 }
 
+export async function loadCachedEventPressureByArrondissement(
+  getSupabaseClient: () => SupabaseClient,
+): Promise<{
+  pressureByArrondissement: Map<number, number>;
+  eventSignals: string[];
+}> {
+  const cached = unstable_cache(
+    async () => loadEventPressureByArrondissement(getSupabaseClient()),
+    ["route-recommendation-event-pressure"],
+    {
+      revalidate: 300,
+      tags: ["route-recommendation-event-pressure"],
+    },
+  );
+
+  return cached();
+}
+
 export function buildHotspots(params: {
   candidates: StopCandidateInput[];
   pressureByArrondissement: Map<number, number>;
@@ -315,4 +334,3 @@ export function buildProactiveAssistant(params: {
 export function defaultRouteRecommendationFloorDate(): string {
   return isoDateDaysAgo(120);
 }
-

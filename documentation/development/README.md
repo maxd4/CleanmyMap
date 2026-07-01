@@ -11,11 +11,19 @@ Guides de développement pour agents IA.
 - **MATT_POCOCK_SKILLS_PLAYBOOK.md** ⭐ - Workflow des skills Matt Pocock adapte a CleanMyMap
 - **AI_DEVELOPER_GUIDE.md** ⭐ - Guide développeur IA
 - **AI_MINDSET_KAIZEN.md** ⭐ - Mindset amélioration continue
+- **agent-memory-governance.md** - mémoire persistante, cycle Planifier → Décomposer → Exécuter → Tester → Corriger → Logger → Répondre.
 
 ### Standards & Conventions
 - **api-standard.md** - Standards API
 - **conventions-composants.md** - Conventions composants React
 - **conventions-modularisation.md** - Conventions modularisation et lecture des warnings de densité
+
+### Diagnostic TypeScript
+- **typescript-anti-errors-playbook.md** - Procédure recommandée pour les erreurs TypeScript et les sorties tronquées.
+- Règle pratique: lancer d'abord `npm run typecheck` ou `npx tsc --noEmit --pretty false`.
+- Si la sortie est incomplète, rediriger vers `typescript-errors.txt` avec `npx tsc --noEmit --pretty false > typescript-errors.txt`.
+- Si le terminal tronque encore, relancer avec `npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt`.
+- Corriger par cause racine, puis relancer `npm run typecheck` avant de passer au build.
 
 ### Qualité & Tests
 - **TESTING.md** - Guide de tests
@@ -61,7 +69,8 @@ Guides de développement pour agents IA.
 2. Lire **MATT_POCOCK_SKILLS_PLAYBOOK.md** si la tâche implique plan, debug, TDD ou transfert de session
 3. Lire **AI_DEVELOPER_GUIDE.md** pour les règles IA
 4. Consulter **AI_MINDSET_KAIZEN.md** pour l'esprit d'amélioration
-5. Vérifier **conventions-composants.md** pour les patterns
+5. Consulter **agent-memory-governance.md** pour la boucle de travail et la clôture de session
+6. Vérifier **conventions-composants.md** pour les patterns
 
 ### Lors du Développement
 1. Respecter **api-standard.md** pour les APIs

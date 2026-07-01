@@ -432,6 +432,39 @@ describe("GET /api/actions/group-join", () => {
     });
   }, 15000);
 
+  it("keeps the list available when Clerk auth cannot resolve the session", async () => {
+    authMock.mockRejectedValueOnce(new Error("Clerk auth unavailable"));
+
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-1",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+        },
+      ],
+      participants: [],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/group-join?limit=6"));
+    const body = (await response.json()) as {
+      authenticated?: boolean;
+      count?: number;
+      items?: Array<{ id: string }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.authenticated).toBe(false);
+    expect(body.count).toBe(1);
+    expect(body.items?.[0]?.id).toBe("action-1");
+  }, 15000);
+
   it("includes approved actions even when the organizer has not opened participation", async () => {
     const supabase = createSupabaseMock({
       actions: [
@@ -819,6 +852,20 @@ describe("POST /api/actions/group-join", () => {
 
   it("rejects unauthenticated users", async () => {
     authMock.mockResolvedValueOnce({ userId: null });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ actionId: "action-1" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects Clerk auth failures on POST", async () => {
+    authMock.mockRejectedValueOnce(new Error("Clerk auth unavailable"));
 
     const { POST } = await import("./route");
     const response = await POST(

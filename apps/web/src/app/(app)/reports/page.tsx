@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 
 export const metadata: Metadata = {
   title: 'Rapports d\'impact - CleanMyMap',
@@ -19,16 +20,17 @@ import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-ga
 import { isFeatureEnabled } from"@/lib/feature-flags";
 import { getActionOperationalContext, type ActionDataContract } from"@/lib/actions/data-contract";
 import { fetchCachedUnifiedActionContracts } from"@/lib/actions/unified-source-cache";
-import { fetchCommunityEvents } from "@/lib/community/http";
+import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
+import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import {
- getProfilePrimaryAction,
- getProfileSecondaryAction,
+  getProfilePrimaryAction,
+  getProfileSecondaryAction,
   getProfileLabel,
+  isAdminLikeProfile,
   toProfile,
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { ReportsPageV1Layout } from "@/components/reports/page-sections/reports-page-v1-layout";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -43,11 +45,8 @@ type ReportsSummaryKpi = {
 };
 
 async function loadReportsData() {
-  const supabase = getSupabaseServerClient();
-
   const [overview, contractsResult, communityEvents, weather] = await Promise.all([
     loadPilotageOverview({
-      supabase,
       periodDays: 90,
       limit: 2200,
     }),
@@ -58,10 +57,10 @@ async function loadReportsData() {
       requireCoordinates: false,
       types: null,
     }),
-    fetchCommunityEvents({ limit: 120 }).then((result) => result.items).catch(() => []),
+    loadCachedReportCommunityEvents(120).catch(() => []),
     fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
-      { cache: "no-store" },
+      { next: { revalidate: 900 } },
     )
       .then(async (response) => {
         if (!response.ok) {
@@ -117,29 +116,66 @@ export default async function ReportsPage() {
       ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
       : ("anonymous" as const);
   const profile = toProfile(role);
+  const canAccessReportsPage = Boolean(userId);
+  const canAccessDetailedReports = isAdminLikeProfile(profile);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const roleLabel =
     userId ? getProfileLabel(profile, locale) : locale === "fr" ? "Visiteur" : "Visitor";
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
 
+  if (!canAccessReportsPage) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        lockedPreview={
+          <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
+              Niveau connecté requis
+            </p>
+            <p className="mt-3 text-sm leading-6 text-red-900">
+              Les rapports détaillés sont réservés aux comptes connectés pour éviter de charger
+              des données lourdes côté visiteur.
+            </p>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const [data, utils] = await Promise.all([
     loadReportsData().catch(() => null),
     import("@/lib/pilotage/analytics-data-utils"),
   ]);
   const { aggregateMonthlyAnalytics } = utils;
-  
+
   const overview = data?.overview ?? null;
   const contracts = data?.contracts ?? [];
   const communityEvents = data?.communityEvents ?? [];
   const weather = data?.weather ?? null;
   const monthlyData = aggregateMonthlyAnalytics(contracts);
-  const publicAccessBanner = !userId ? (
-    <section className="rounded-2xl border border-red-200 bg-red-50 p-4 cmm-text-small text-red-900 shadow-sm">
-      Lecture publique: parcourez les rapports et exportez un livrable sans
-      compte. La connexion sert aux vues personnalisées et à la modération.
+  const generationContent = canAccessDetailedReports ? (
+    <DeferredReportsWebDocument
+      contracts={contracts}
+      communityEvents={communityEvents}
+      weather={weather}
+      overview={overview}
+    />
+  ) : (
+    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">Génération réservée</p>
+      <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+        Aperçu détaillé verrouillé
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Le document complet, les exports et les vues de génération restent réservés aux profils
+        administratifs.
+      </p>
     </section>
-  ) : null;
+  );
   
   const headerActions = userId
     ? [
@@ -260,6 +296,9 @@ export default async function ReportsPage() {
           roleLabel={roleLabel}
           primaryAction={primaryAction}
           secondaryAction={secondaryAction}
+          generationContent={generationContent}
+          defaultTab={canAccessDetailedReports ? "generation" : "pilotage"}
+          canAccessExports={canAccessDetailedReports}
           summaryKpis={summaryKpis}
           navigationItems={navigationItems}
           overview={overview}
@@ -268,7 +307,6 @@ export default async function ReportsPage() {
           weather={weather}
           monthlyData={monthlyData}
           toReportsExportRow={toReportsExportRow}
-          publicAccessBanner={publicAccessBanner}
         />
       </AccountCompletionGate>
     );
@@ -281,13 +319,13 @@ export default async function ReportsPage() {
         roleLabel={roleLabel}
         profile={profile}
         primaryAction={primaryAction}
+        generationContent={generationContent}
+        defaultTab={canAccessDetailedReports ? "generation" : "pilotage"}
         summaryKpis={summaryKpis}
         headerActions={headerActions}
-        overview={overview}
         contracts={contracts}
         communityEvents={communityEvents}
         weather={weather}
-        publicAccessBanner={publicAccessBanner}
       />
     </AccountCompletionGate>
   );

@@ -2,6 +2,74 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { loadActionParticipantSummaries } from "./participant-summaries";
 
+function createFallbackParticipantSupabaseMock() {
+  const rows = [
+    {
+      action_id: "action-1",
+      user_id: "user-1",
+      participation_status: "confirmed",
+      participation_source: "group_form",
+      joined_at: "2026-06-01T12:00:00Z",
+      updated_at: "2026-06-02T12:00:00Z",
+    },
+    {
+      action_id: "action-1",
+      user_id: "user-2",
+      participation_status: "pending",
+      participation_source: "admin",
+      joined_at: "2026-06-03T12:00:00Z",
+      updated_at: "2026-06-04T12:00:00Z",
+    },
+  ];
+
+  const createParticipantChain = () => {
+    const state = {
+      participationStatus: null as "confirmed" | "pending" | null,
+    };
+    const participantChain = {
+      select: vi.fn(() => participantChain),
+      eq: vi.fn((field: string, value: string) => {
+        if (field === "participation_status") {
+          state.participationStatus = value as "confirmed" | "pending";
+        }
+        return participantChain;
+      }),
+      maybeSingle: vi.fn(async () => ({
+        data: rows[0] ?? null,
+        error: null,
+      })),
+      then: (
+        resolve: (value: {
+          data: typeof rows | null;
+          count?: number;
+          error: null;
+        }) => void,
+        reject: (reason: unknown) => void,
+      ) =>
+        Promise.resolve({
+          data: rows,
+          count: state.participationStatus ? 1 : 2,
+          error: null,
+        }).then(resolve, reject),
+    };
+
+    return participantChain;
+  };
+
+  const rpc = vi.fn(async () => ({
+    data: null,
+    error: { message: "rpc unavailable" },
+  }));
+  const from = vi.fn(() => ({
+    select: vi.fn(() => createParticipantChain()),
+  }));
+
+  return {
+    rpc,
+    from,
+  } as unknown as SupabaseClient;
+}
+
 describe("action participant summaries", () => {
   it("loads action summaries through the RPC", async () => {
     const rpc = vi.fn(async () => ({
@@ -44,46 +112,13 @@ describe("action participant summaries", () => {
   });
 
   it("falls back to a bounded action_participants read when the RPC fails", async () => {
-    const rpc = vi.fn(async () => ({
-      data: null,
-      error: { message: "rpc unavailable" },
-    }));
-    const inMock = vi.fn(async () => ({
-      data: [
-        {
-          action_id: "action-1",
-          user_id: "user-1",
-          participation_status: "confirmed",
-          participation_source: "group_form",
-          joined_at: "2026-06-01T12:00:00Z",
-          updated_at: "2026-06-02T12:00:00Z",
-        },
-        {
-          action_id: "action-1",
-          user_id: "user-2",
-          participation_status: "pending",
-          participation_source: "admin",
-          joined_at: "2026-06-03T12:00:00Z",
-          updated_at: "2026-06-04T12:00:00Z",
-        },
-      ],
-      error: null,
-    }));
-    const from = vi.fn(() => ({
-      select: vi.fn(() => ({
-        in: inMock,
-      })),
-    }));
-
-    const supabase = { rpc, from } as unknown as SupabaseClient;
+    const supabase = createFallbackParticipantSupabaseMock();
 
     const summaries = await loadActionParticipantSummaries(supabase, {
       actionIds: ["action-1"],
       userId: "user-1",
     });
 
-    expect(from).toHaveBeenCalledWith("action_participants");
-    expect(inMock).toHaveBeenCalledWith("action_id", ["action-1"]);
     expect(summaries).toEqual([
       {
         actionId: "action-1",

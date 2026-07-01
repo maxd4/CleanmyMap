@@ -74,6 +74,23 @@ function getLocaleText(locale: LearnLocale, text: { fr: string; en: string }) {
   return text[locale];
 }
 
+function getActionLabel(locale: LearnLocale, motif: LearnCardVisual["motif"]) {
+  switch (motif) {
+    case "path":
+      return locale === "fr" ? "Ouvrir la carte" : "Open map";
+    case "quiz":
+      return locale === "fr" ? "Lancer le quiz" : "Start quiz";
+    case "calendar":
+      return locale === "fr" ? "Voir le calendrier" : "View calendar";
+    case "guides":
+      return locale === "fr" ? "Ouvrir le guide" : "Open guide";
+    case "resources":
+      return locale === "fr" ? "Voir la ressource" : "View resource";
+    default:
+      return locale === "fr" ? "Explorer le contexte" : "Explore context";
+  }
+}
+
 function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["tone"]) {
   const Icon = MOTIF_ICONS[motif];
   const iconTone = TONE_CLASSES[tone].accent;
@@ -187,9 +204,11 @@ export function LearnVisualCard({
   return (
     <Link
       href={card.href}
+      aria-label={`${card.title} - ${getActionLabel(locale, card.visual.motif)}`}
       className={cn(
         "group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition duration-150 ease-out hover:-translate-y-1 hover:shadow-lg",
         tone.border,
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
         className,
       )}
     >
@@ -259,15 +278,20 @@ export function LearnVisualCard({
           <h3 className="line-clamp-2 text-lg font-black tracking-tight cmm-text-primary">
             {card.title}
           </h3>
-          <p className="line-clamp-2 text-sm leading-relaxed cmm-text-secondary">
+          <p className="line-clamp-3 text-sm leading-relaxed cmm-text-secondary sm:line-clamp-2">
             {card.detail}
           </p>
         </div>
 
-        <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-slate-900">
-          {locale === "fr" ? "Ouvrir la page" : "Open page"}
-          <ArrowRight size={14} aria-hidden="true" />
-        </span>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            {locale === "fr" ? "Accès direct" : "Direct access"}
+          </p>
+          <span className="mt-1 inline-flex items-center gap-2 text-sm font-bold text-slate-900">
+            {getActionLabel(locale, card.visual.motif)}
+            <ArrowRight size={14} aria-hidden="true" />
+          </span>
+        </div>
       </div>
     </Link>
   );

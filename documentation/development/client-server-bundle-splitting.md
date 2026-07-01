@@ -2,7 +2,7 @@
 
 Dernière mise à jour: 2026-06-06
 
-Ce guide capture les erreurs qui ont gonflé les routes `learn` et `missions` afin d’éviter de les répéter.
+Ce guide capture les erreurs qui ont gonflé les routes `learn` et `missions` afin d'éviter de les répéter.
 
 ## Objectif
 
@@ -25,9 +25,9 @@ Réduire le JavaScript initial sans changer le comportement fonctionnel:
 
 - `page.tsx` marqué `"use client"` alors qu'il ne fait que composer du JSX et lire une locale.
 - `useSitePreferences()` utilisé dans une page entière pour un simple choix `fr/en`.
-- `recordLearnPageVisit()` appelé dans la page complète au lieu d’un tracker client indépendant.
-- composants de présentation gardés en client alors qu’ils n’avaient ni état ni effets.
-- gros widgets importés statiquement dans la page alors qu’ils ne sont visibles qu’après le premier écran.
+- `recordLearnPageVisit()` appelé dans la page complète au lieu d'un tracker client indépendant.
+- composants de présentation gardés en client alors qu'ils n'avaient ni état ni effets.
+- gros widgets importés statiquement dans la page alors qu'ils ne sont visibles qu'après le premier écran.
 - `next/dynamic(..., { ssr: false })` déclaré dans un serveur component.
 
 ## Pattern recommandé
@@ -42,7 +42,7 @@ Réduire le JavaScript initial sans changer le comportement fonctionnel:
 - Transformer la page en client seulement si:
   - elle dépend de plusieurs hooks UI,
   - elle pilote un comportement local complexe,
-  - la logique d’interaction ne peut pas être extraite proprement.
+  - la logique d'interaction ne peut pas être extraite proprement.
 
 ### Widgets lourds
 
@@ -69,7 +69,7 @@ les gros widgets sont maintenant chargés par wrappers dédiés, ce qui garde le
 
 ## Checklist avant de toucher une page lourde
 
-- Est-ce que la page a vraiment besoin d’être client ?
+- Est-ce que la page a vraiment besoin d'être client ?
 - Est-ce que la locale peut venir du serveur ?
 - Est-ce que le tracking peut vivre dans un micro-composant client ?
 - Est-ce que les sous-blocs lourds peuvent être différés ?
@@ -79,6 +79,6 @@ les gros widgets sont maintenant chargés par wrappers dédiés, ce qui garde le
 ## Validation conseillée
 
 - `npx next build`
-- vérifier que la route concernée n’embarque plus un gros chunk unique
+- vérifier que la route concernée n'embarque plus un gros chunk unique
 - mesurer à nouveau le manifest de route après le split
 

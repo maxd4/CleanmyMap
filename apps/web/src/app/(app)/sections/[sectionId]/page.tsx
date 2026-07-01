@@ -76,24 +76,13 @@ export default async function SectionPage({ params }: SectionPageProps) {
   }
 
   const accessMode = getSectionClerkAccessMode(section.id);
-  const { userId, clerkReachable } = await getSafeAuthSession();
-  const locale = await getServerLocale();
+  const { userId } = await getSafeAuthSession();
 
   if (!userId && accessMode === "blur") {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title={locale === "fr" ? section.label.fr : section.label.en}
-        description={
-          locale === "fr"
-            ? clerkReachable
-              ? "Cette fonctionnalité nécessite une connexion Clerk."
-              : "Connexion Clerk temporairement indisponible. La vue reste lisible."
-            : clerkReachable
-              ? "This feature requires Clerk sign-in."
-              : "Clerk sign-in is temporarily unavailable. This view stays readable."
-        }
         lockedPreview={<SectionRenderer section={section} />}
       >
         <SectionRenderer section={section} />
@@ -106,12 +95,6 @@ export default async function SectionPage({ params }: SectionPageProps) {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="disabled"
-        title={locale === "fr" ? section.label.fr : section.label.en}
-        description={
-          locale === "fr"
-            ? "Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
-            : "This view stays readable, but actions are reserved for signed-in accounts."
-        }
       >
         <SectionRenderer section={section} />
       </ClerkRequiredGate>

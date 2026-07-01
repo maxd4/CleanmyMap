@@ -1,0 +1,35 @@
+name: Refactorisation
+description: Demander une simplification ou une extraction sans changement fonctionnel.
+title: "[Refactor] "
+labels:
+  - refactor
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objectif
+      description: Décrivez la simplification recherchée.
+      placeholder: Ce qu'il faut clarifier, extraire ou réduire.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Périmètre
+      description: Listez les fichiers, composants ou routes concernées.
+      placeholder: apps/web/src/..., .github/..., documentation/...
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risque de régression
+      description: Indiquez ce qui pourrait casser si la refonte est trop large.
+      placeholder: Contrat, typage, comportement, accessibilité, coût, tests.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu
+      description: Décrivez le résultat concret après refactorisation.
+      placeholder: Moins de duplication, logique plus claire, code plus testable.
+

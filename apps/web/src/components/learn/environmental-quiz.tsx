@@ -91,19 +91,31 @@ export type QuizSessionSummary = {
 
 const QUIZ_QUESTION_IDS = QUIZ_QUESTIONS.map((question) => question.id);
 
-export function EnvironmentalQuiz() {
+export type EnvironmentalQuizProps = {
+  initialAccessType?: QuizAccessTypeId | null;
+  initialDemoMode?: boolean;
+  initialSchoolTrack?: QuizSchoolTrackId | null;
+  initialCollectiveMode?: boolean;
+};
+
+export function EnvironmentalQuiz({
+  initialAccessType = null,
+  initialDemoMode = false,
+  initialSchoolTrack = null,
+  initialCollectiveMode = true,
+}: EnvironmentalQuizProps = {}) {
   const { getToken } = useAuth();
   const { user } = useUser();
   const { locale } = useSitePreferences();
   const [srsData, setSrsData] = useState<Record<string, SRSStats>>({});
   const [personalProgress, setPersonalProgress] = useState<QuizPersonalProgressState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(initialDemoMode);
+  const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(initialAccessType);
   const [selectedTrapLevel, setSelectedTrapLevel] = useState<QuizTrapLevelId | null>(null);
   const [selectedReasoningType, setSelectedReasoningType] = useState<QuizReasoningType | null>(null);
-  const [selectedSchoolTrack, setSelectedSchoolTrack] = useState<QuizSchoolTrackId | null>(null);
-  const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(true);
+  const [selectedSchoolTrack, setSelectedSchoolTrack] = useState<QuizSchoolTrackId | null>(initialSchoolTrack);
+  const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(initialCollectiveMode);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
   const [selectedOption, setSelectedOption] = useState("");

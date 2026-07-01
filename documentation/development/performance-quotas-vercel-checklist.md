@@ -73,8 +73,9 @@ Utiliser cette checklist avant chaque PR pour éviter d'introduire une régressi
 - [ ] Nouvelle image distante ou média généré ?
   - Vérifier si `next/image` déclenche une optimisation serveur inutile.
   - Préférer des fichiers compressés avant upload et des tailles déjà préparées.
-  - Utiliser `unoptimized` si l'image est déjà optimisée, si la source est distante, ou si le flux doit rester gratuit.
-  - Ne pas compter sur un resize à la volée pour un usage courant.
+  - Utiliser `unoptimized` si l'image est déjà optimisée, si la source est distante et stable, ou si le flux doit rester gratuit.
+  - Réserver la transformation à la volée aux rares cas où elle apporte un gain réel d'UX.
+  - Ne pas compter sur un resize à la volée pour un usage courant ni pour un asset déjà prêt.
 
 - [ ] Nouveau PDF ou export ?
   - Vérifier la taille de sortie et la fréquence d'usage.
@@ -109,7 +110,7 @@ Utiliser cette checklist avant chaque PR pour éviter d'introduire une régressi
 - des contenus pédagogiques ou des pages "apprendre" ont été déplacés hors du dépôt alors qu'ils devraient rester dans Git.
 - une carte charge toute une table au lieu de limiter à la zone visible avec filtres et éventuels clusters.
 - une feature de chat est construite dans Supabase alors qu'un lien externe ou un formulaire de contact suffisait pour démarrer.
-- une image distante passe par `next/image` alors qu'un rendu non optimisé ou un asset préparé à l'avance suffirait.
+- une image distante ou déjà préparée passe par `next/image` alors qu'un rendu non optimisé, `unoptimized` ou un asset préparé à l'avance suffirait.
 - un tracker analytics ou PostHog part avant le consentement explicite.
 - une carte Leaflet est chargée alors qu'elle n'est pas encore visible à l'écran.
 

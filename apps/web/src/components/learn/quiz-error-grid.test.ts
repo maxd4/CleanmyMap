@@ -18,6 +18,12 @@ describe("quiz error grid follow-up", () => {
     expect(followUp.reason).toContain("méthodologie");
   });
 
+  it("routes tri and security errors to the matching field rubrics", () => {
+    expect(getQuizErrorFollowUp("mauvaise compréhension d'une filière de tri").href).toBe("/sections/recycling");
+    expect(getQuizErrorFollowUp("mauvaise compréhension d'une filière de tri").modeId).toBe("tri-securite");
+    expect(getQuizErrorFollowUp("erreur de sécurité").href).toBe("/sections/weather");
+  });
+
   it("builds a review target from the detected error when no explicit target is provided", () => {
     const grid = buildQuizErrorGrid({
       category: "action-terrain",

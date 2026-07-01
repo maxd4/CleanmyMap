@@ -5,11 +5,11 @@ import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
 import {
- buildHotspots,
- buildProactiveAssistant,
- defaultRouteAssistantPayload,
- defaultRouteRecommendationFloorDate,
- loadEventPressureByArrondissement,
+  buildHotspots,
+  buildProactiveAssistant,
+  defaultRouteAssistantPayload,
+  defaultRouteRecommendationFloorDate,
+  loadCachedEventPressureByArrondissement,
 } from"@/lib/route/recommendation-assistant";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
  const supabase = getSupabaseServerClient();
  const [locationPreference, eventPressureContext] = await Promise.all([
  getCurrentUserLocationPreference(),
- loadEventPressureByArrondissement(supabase),
+ loadCachedEventPressureByArrondissement(() => supabase),
  ]);
  const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
  limit: 600,

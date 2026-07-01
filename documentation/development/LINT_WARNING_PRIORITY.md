@@ -2,9 +2,21 @@
 
 **Date du snapshot** : 2026-06-27  
 **Source** : `npm run lint -w apps/web`  
-**Résultat** : 191 warnings, 0 erreur
+**Résultat** : 191 warnings, 0 erreur  
 
 Ce document sert de plan d'action. L'objectif n'est pas de faire baisser un chiffre pour lui-même, mais de corriger les warnings dans l'ordre qui réduit le plus vite le risque de régression et la dette de maintenance.
+
+## État de session
+
+Les lots 1 à 5 ont été traités dans cette session sur les fichiers ciblés du workspace `apps/web`.
+
+- Lot 1: terminé
+- Lot 2: terminé
+- Lot 3: terminé
+- Lot 4: terminé
+- Lot 5: terminé
+
+Le snapshot global reste celui du 2026-06-27 tant que `npm run lint -w apps/web` n'a pas été relancé pour recalculer le volume résiduel.
 
 ## Règle de tri
 

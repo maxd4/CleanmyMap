@@ -1,4 +1,4 @@
-import type { QuizQuestion } from "../src/components/learn/environmental-quiz";
+import type { QuizQuestion } from "../src/lib/learning/quiz-question-contract";
 import { QUIZ_REVIEW_TARGETS } from "../src/components/learn/quiz-review-targets.ts";
 
 export const QUIZ_QUESTION_BANK: QuizQuestion[] = [

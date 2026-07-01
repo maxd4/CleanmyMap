@@ -1,17 +1,16 @@
+import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 import {
-  searchLocalTerritoryAddressSuggestions,
-} from "@/lib/geo/territory";
+  getLocalGeoAddressSuggestions,
+  mergeGeoAddressSuggestions,
+  type GeoAddressSuggestion,
+} from "@/lib/geo/address-suggestions";
 
 export const runtime = "nodejs";
-
-type AddressSuggestion = {
-  label: string;
-  subtitle: string;
-  latitude: number;
-  longitude: number;
-  importance: number | null;
+const ADDRESS_SUGGESTIONS_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
 };
+const ADDRESS_SUGGESTIONS_REVALIDATE_SECONDS = 300;
 
 type GeoplateformeCompletionResult = {
   x?: number;
@@ -34,6 +33,10 @@ function parseLimit(value: string | null): number {
     return 6;
   }
   return Math.min(8, parsed);
+}
+
+function buildAddressSuggestionsCacheKey(query: string, limit: number): string {
+  return [`q:${query.trim().toLowerCase()}`, `limit:${limit}`].join("|");
 }
 
 function buildGeoplateformeCompletionUrl(query: string, limit: number): string | null {
@@ -100,6 +103,65 @@ function formatGeoplateformeImportance(result: GeoplateformeCompletionResult): n
   return null;
 }
 
+async function loadCachedRemoteAddressSuggestions(
+  query: string,
+  limit: number,
+): Promise<GeoAddressSuggestion[]> {
+  const cached = unstable_cache(
+    async () => {
+      const geoplateformeUrl = buildGeoplateformeCompletionUrl(query, limit);
+      if (!geoplateformeUrl) {
+        return [];
+      }
+
+      const response = await fetch(geoplateformeUrl, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
+      const seen = new Set<string>();
+      const items: GeoAddressSuggestion[] = [];
+
+      for (const item of data.results ?? []) {
+        if (typeof item.x !== "number" || typeof item.y !== "number") {
+          continue;
+        }
+
+        const label = formatGeoplateformeLabel(item);
+        const normalizedLabel = label.toLowerCase();
+        if (seen.has(normalizedLabel)) {
+          continue;
+        }
+        seen.add(normalizedLabel);
+
+        items.push({
+          label,
+          subtitle: formatGeoplateformeSubtitle(item),
+          latitude: item.y,
+          longitude: item.x,
+          importance: formatGeoplateformeImportance(item),
+        });
+      }
+
+      items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
+      return items;
+    },
+    ["geo-address-suggestions", buildAddressSuggestionsCacheKey(query, limit)],
+    {
+      revalidate: ADDRESS_SUGGESTIONS_REVALIDATE_SECONDS,
+      tags: ["geo-address-suggestions"],
+    },
+  );
+
+  return cached();
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q")?.trim() ?? "";
@@ -113,79 +175,28 @@ export async function GET(request: Request) {
     });
   }
 
-  const localSuggestions = searchLocalTerritoryAddressSuggestions(query, limit);
-  if (localSuggestions.length > 0) {
-    return NextResponse.json({
-      status: "ok",
-      query,
-      items: localSuggestions.map((item) => ({
-        ...item,
-        importance: item.importance,
-      })),
-    });
-  }
+  const localSuggestions = getLocalGeoAddressSuggestions(query, limit);
 
   try {
-    const geoplateformeUrl = buildGeoplateformeCompletionUrl(query, limit);
-    if (!geoplateformeUrl) {
-      return NextResponse.json({
-        status: "ok",
-        query,
-        items: [],
-      });
-    }
-
-    const response = await fetch(geoplateformeUrl, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({
-        status: "ok",
-        query,
-        items: [],
-      });
-    }
-
-    const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
-    const seen = new Set<string>();
-    const items: AddressSuggestion[] = [];
-
-    for (const item of data.results ?? []) {
-      if (typeof item.x !== "number" || typeof item.y !== "number") {
-        continue;
-      }
-
-      const label = formatGeoplateformeLabel(item);
-      const normalizedLabel = label.toLowerCase();
-      if (seen.has(normalizedLabel)) {
-        continue;
-      }
-      seen.add(normalizedLabel);
-
-      items.push({
-        label,
-        subtitle: formatGeoplateformeSubtitle(item),
-        latitude: item.y,
-        longitude: item.x,
-        importance: formatGeoplateformeImportance(item),
-      });
-    }
-
-    items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
+    const remoteSuggestions = localSuggestions.length >= limit
+      ? []
+      : await loadCachedRemoteAddressSuggestions(query, limit);
+    const items = mergeGeoAddressSuggestions(localSuggestions, remoteSuggestions, limit);
 
     return NextResponse.json({
       status: "ok",
       query,
       items,
+    }, {
+      headers: ADDRESS_SUGGESTIONS_CACHE_HEADERS,
     });
   } catch {
     return NextResponse.json({
       status: "ok",
       query,
       items: [],
+    }, {
+      headers: ADDRESS_SUGGESTIONS_CACHE_HEADERS,
     });
   }
 }

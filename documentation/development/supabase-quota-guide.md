@@ -287,7 +287,7 @@ Quand un hotspot Supabase est signalé, corriger dans cet ordre:
 4. convertir la requête répétée en RPC stable si plusieurs chemins la partagent;
 5. garder le filtre métier côté app seulement s'il protège encore une règle fonctionnelle.
 
-Le bon signal d'une correction réussie n'est pas seulement “ça marche”, mais:
+Le bon signal d'une correction réussie n'est pas seulement "ça marche", mais:
 
 - le nombre de lignes lues diminue;
 - la colonne filtrée est indexée ou sargable;
@@ -304,7 +304,7 @@ Le bon signal d'une correction réussie n'est pas seulement “ça marche”, ma
 | Faire une requête large pour un simple compteur | Utiliser `count`, `head: true`, ou un RPC agrégé |
 | Corriger un hotspot en désactivant RLS | Ajouter un index, une RPC ou une migration ciblée |
 | Corriger un hotspot en exposant `service_role` côté client | Garder la logique serveur et limiter la surface |
-| Chercher des profils avec `ilike` sans index trigram | Ajouter l’index trigram et garder une limite courte |
+| Chercher des profils avec `ilike` sans index trigram | Ajouter l'index trigram et garder une limite courte |
 
 ## Bonnes pratiques par surface
 

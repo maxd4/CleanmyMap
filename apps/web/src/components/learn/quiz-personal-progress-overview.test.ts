@@ -78,6 +78,8 @@ describe("QuizPersonalProgressOverview", () => {
     expect(markup).toContain("Progression récente");
     expect(markup).toContain("Niveau par mode");
     expect(markup).toContain("Badges pédagogiques");
+    expect(markup).toContain("Gamification sobre");
+    expect(markup).toContain("Prochain badge");
     expect(markup).toContain("Sécurité terrain");
     expect(markup).toContain("Tri fiable");
     expect(markup).toContain("Score récent");

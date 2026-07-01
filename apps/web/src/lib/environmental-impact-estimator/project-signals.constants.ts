@@ -1,1 +1,1 @@
-export const PROJECT_SIGNAL_ROW_LIMIT = 6000;
+export const PROJECT_SIGNAL_ROW_LIMIT = 3000;

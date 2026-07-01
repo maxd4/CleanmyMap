@@ -1,13 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
-import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { ReportsPageTabs } from "./reports-page-tabs";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { Locale } from "@/lib/ui/preferences";
 import type { AppProfile, ProfileAction } from "@/lib/profiles";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -25,6 +23,8 @@ type ReportsPageV1LayoutProps = {
   roleLabel: string;
   profile: AppProfile;
   primaryAction: ProfileAction;
+  generationContent: ReactNode;
+  defaultTab?: "generation" | "pilotage";
   summaryKpis: Array<{
     label: string;
     value: string;
@@ -34,11 +34,9 @@ type ReportsPageV1LayoutProps = {
     interpretation: "positive" | "negative" | "neutral";
   }>;
   headerActions: Array<{ href: string; label: string }>;
-  overview: PilotageOverview | null;
   contracts: ActionDataContract[];
   communityEvents: CommunityEventItem[];
   weather: ReportsWeather;
-  publicAccessBanner: ReactNode;
 };
 
 export function ReportsPageV1Layout({
@@ -46,20 +44,18 @@ export function ReportsPageV1Layout({
   roleLabel,
   profile,
   primaryAction,
+  generationContent,
+  defaultTab = "generation",
   summaryKpis,
   headerActions,
-  overview,
   contracts,
   communityEvents,
   weather,
-  publicAccessBanner,
 }: ReportsPageV1LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      {publicAccessBanner}
-
       <PageHero
         family={pageFamily}
         eyebrow={`Profil ${roleLabel}`}
@@ -91,14 +87,8 @@ export function ReportsPageV1Layout({
       </div>
 
       <ReportsPageTabs
-        generation={
-          <DeferredReportsWebDocument
-            contracts={contracts}
-            communityEvents={communityEvents}
-            weather={weather}
-            overview={overview}
-          />
-        }
+        defaultTab={defaultTab}
+        generation={generationContent}
         pilotage={
           <div className="space-y-6">
             <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">

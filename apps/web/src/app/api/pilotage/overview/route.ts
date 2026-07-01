@@ -2,7 +2,6 @@ import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { parseEntityTypesParam } from"@/lib/actions/unified-source";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 
@@ -46,9 +45,7 @@ export async function GET(request: Request) {
  const types = parseEntityTypesParam(url.searchParams.get("types"));
 
  try {
- const supabase = getSupabaseServerClient();
  const overview = await loadPilotageOverview({
- supabase,
  periodDays,
  limit,
  types,

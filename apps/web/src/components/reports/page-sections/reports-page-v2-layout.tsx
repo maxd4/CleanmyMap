@@ -6,7 +6,6 @@ import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigat
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
-import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { ReportsPageTabs } from "./reports-page-tabs";
 import { SectionHeader, CTAGroup } from "@/components/ui/page-structure";
@@ -39,6 +38,9 @@ type ReportsPageV2LayoutProps = {
   roleLabel: string;
   primaryAction: ProfileAction;
   secondaryAction?: ProfileAction | null;
+  generationContent: ReactNode;
+  defaultTab?: "generation" | "pilotage";
+  canAccessExports: boolean;
   summaryKpis: readonly [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi];
   navigationItems: NavigationGridItem[];
   overview: PilotageOverview | null;
@@ -47,7 +49,6 @@ type ReportsPageV2LayoutProps = {
   weather: ReportsWeather;
   monthlyData: MonthlyAnalyticsPoint[];
   toReportsExportRow: (contract: ActionDataContract) => Record<string, unknown>;
-  publicAccessBanner: ReactNode;
 };
 
 export function ReportsPageV2Layout({
@@ -55,6 +56,9 @@ export function ReportsPageV2Layout({
   roleLabel,
   primaryAction,
   secondaryAction,
+  generationContent,
+  defaultTab = "generation",
+  canAccessExports,
   summaryKpis,
   navigationItems,
   overview,
@@ -63,21 +67,12 @@ export function ReportsPageV2Layout({
   weather,
   monthlyData,
   toReportsExportRow,
-  publicAccessBanner,
 }: ReportsPageV2LayoutProps) {
   return (
     <div className="space-y-4">
-      {publicAccessBanner}
-
       <ReportsPageTabs
-        generation={
-          <DeferredReportsWebDocument
-            contracts={contracts}
-            communityEvents={communityEvents}
-            weather={weather}
-            overview={overview}
-          />
-        }
+        defaultTab={defaultTab}
+        generation={generationContent}
         pilotage={
           <div className="space-y-8">
             <PageReadingTemplate
@@ -175,12 +170,24 @@ export function ReportsPageV2Layout({
                   eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
                   subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
                 />
-                <CTAGroup>
-                  <RubriqueExcelExportButton
-                    rubriqueTitle="Reporting et pilotage"
-                    data={contracts.map(toReportsExportRow)}
-                  />
-                </CTAGroup>
+                {canAccessExports ? (
+                  <CTAGroup>
+                    <RubriqueExcelExportButton
+                      rubriqueTitle="Reporting et pilotage"
+                      data={contracts.map(toReportsExportRow)}
+                    />
+                  </CTAGroup>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+                    <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-700">
+                      Export réservé
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Les exports détaillés sont réservés aux profils administratifs pour éviter
+                      les téléchargements répétés et les réponses trop lourdes.
+                    </p>
+                  </div>
+                )}
               </section>
             </div>
           </div>

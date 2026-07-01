@@ -2,6 +2,8 @@
 
 Ce document complète le guide d'authoring du quiz.
 
+Pour une vue d'ensemble du système, des exemples et de la procédure de contribution, voir [Guide de contribution au quiz](./quiz-contributor-guide.md).
+
 Il sert à bloquer les questions trop évidentes, trop scolaires ou trop proches d'un réflexe de bon sens.
 
 La règle est simple.

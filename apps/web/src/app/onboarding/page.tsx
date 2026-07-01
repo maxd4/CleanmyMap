@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
 import { AccountSetupForm } from "@/components/account/account-setup-form";
 import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -47,6 +47,11 @@ export default async function OnboardingPage({
     redirect("/sign-in");
   }
 
+  const identity = await getCurrentUserIdentity({ userId });
+  if (!identity) {
+    redirect("/sign-in");
+  }
+
   const resolvedSearchParams = await searchParams;
   const referralCode = resolvedSearchParams.ref?.trim() ?? "";
   const isLocalHost = process.env.NODE_ENV !== "production";
@@ -61,11 +66,9 @@ export default async function OnboardingPage({
     });
   }
 
-  const [existingPreference, role] = await Promise.all([
-    getCurrentUserLocationPreference(),
-    getCurrentUserRoleLabel(),
-  ]);
-  const profile = toProfile(role);
+  const existingPreference =
+    identity.locationPreference ?? (await getCurrentUserLocationPreference());
+  const profile = toProfile(identity.role);
   const nextPath = sanitizeNextPath(resolvedSearchParams.next);
 
   return (

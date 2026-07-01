@@ -1,5 +1,30 @@
 # Change Log
 
+## 2026-06-28
+
+### Doctrine de mémoire persistante et cycle de travail autonome
+
+- **What changed**
+  - Added a consolidated memory/governance section in:
+    - `documentation/operations/agent-memory-governance.md`
+  - Added development-facing references in:
+    - `documentation/development/AI_MINDSET_KAIZEN.md`
+    - `documentation/development/AI_DEVELOPER_GUIDE.md`
+  - Surfaced the new entry point in the documentation indexes:
+    - `documentation/README.md`
+    - `documentation/development/README.md`
+    - `documentation/operations/README.md`
+
+- **Why**
+  - Make the expected work loop explicit: plan, decompose, execute, test, fix, learn, respond.
+  - Centralize the persistent-memory guidance where agents already look for session and development rules.
+
+- **Validation**
+  - Documentation links reviewed after the update.
+
+- **Compatibility notes**
+  - Documentation-only change. No runtime behavior changed.
+
 ## 2026-06-12
 
 ### Notifications: suppression du proxy Vercel au profit du client Supabase

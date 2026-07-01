@@ -1,5 +1,6 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
+import { unstable_cache } from"next/cache";
 import { z } from"zod";
 import { getGamificationLeaderboard } from"@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -10,9 +11,36 @@ export const runtime ="nodejs";
 const GAMIFICATION_LEADERBOARD_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
+const GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS = 120;
 
 const scopeSchema = z.enum(["individual","collective"]);
 const periodSchema = z.enum(["lifetime","yearToDate"]);
+
+function buildLeaderboardCacheKey(
+ scope: "individual" | "collective",
+ period: "lifetime" | "yearToDate",
+): string {
+ return [`scope:${scope}`, `period:${period}`].join("|");
+}
+
+async function loadCachedGamificationLeaderboard(
+ scope: "individual" | "collective",
+ period: "lifetime" | "yearToDate",
+) {
+ const cached = unstable_cache(
+  async () => {
+   const supabase = getSupabaseServerClient();
+   return getGamificationLeaderboard(supabase, scope, period);
+  },
+  ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period)],
+  {
+   revalidate: GAMIFICATION_LEADERBOARD_CACHE_REVALIDATE_SECONDS,
+   tags: ["gamification-leaderboard"],
+  },
+ );
+
+ return cached();
+}
 
 export async function GET(request: Request) {
  const { userId } = await auth();
@@ -36,9 +64,8 @@ export async function GET(request: Request) {
     );
   }
 
- try {
- const supabase = getSupabaseServerClient();
- const leaderboard = await getGamificationLeaderboard(supabase, parsed.data, period.data);
+  try {
+ const leaderboard = await loadCachedGamificationLeaderboard(parsed.data, period.data);
  return NextResponse.json({
  status:"ok",
  period: period.data,

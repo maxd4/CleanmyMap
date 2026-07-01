@@ -197,13 +197,13 @@ Le point de vigilance principal reste le suivant:
 
 - `next/image` reste utile pour les images locales ou déjà préparées;
 - pour les images distantes, les aperçus utilisateur et les médias déjà optimisés en amont, il vaut mieux éviter la transformation à la volée;
-- si le média doit rester gratuit ou peu coûteux, compresser avant upload et préparer les tailles nécessaires à l’avance;
+- si le média doit rester gratuit ou peu coûteux, compresser avant upload et préparer les tailles nécessaires à l'avance;
 - ne pas compter sur le redimensionnement dynamique de Vercel ou de Supabase Storage pour un flux courant, surtout si le plan utilisé ne le garantit pas.
 
 Exemples dans CleanMyMap:
 
 - [apps/web/src/app/learn/ressources/learn-ressources-client.tsx](../../apps/web/src/app/learn/ressources/learn-ressources-client.tsx) affiche des références artistiques distantes en `unoptimized` pour éviter un resize serveur inutile.
-- [apps/web/src/components/chat/ui/chat-message-item.tsx](../../apps/web/src/components/chat/ui/chat-message-item.tsx) rend les avatars et pièces jointes sans passer par un pipeline d’optimisation Vercel.
+- [apps/web/src/components/chat/ui/chat-message-item.tsx](../../apps/web/src/components/chat/ui/chat-message-item.tsx) rend les avatars et pièces jointes sans passer par un pipeline d'optimisation Vercel.
 
 Règle pratique:
 - si l'image est statique et locale, `next/image` reste acceptable;

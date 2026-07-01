@@ -40,6 +40,44 @@ L'IA ne doit pas être un simple exécutant de tickets. Elle doit :
 ## 4. Vigilance sur la Dette Technique
 L'amélioration continue inclut le nettoyage. Si une modification permet de supprimer du code mort ou de modulariser un composant trop complexe, l'IA doit le proposer ou l'effectuer.
 
+## 5. Boucle de travail obligatoire
+
+Pour chaque tâche, appliquer la séquence suivante :
+
+1. Planifier
+- analyser la demande avant d'agir ;
+- identifier les contraintes, les risques et les informations manquantes ;
+- définir une stratégie claire.
+
+2. Décomposer
+- diviser la tâche si elle devient trop large ;
+- raisonner en sous-tâches ou rôles logiques séparés ;
+- garder un contexte propre pour chaque bloc de travail.
+
+3. Exécuter
+- implémenter de manière ciblée ;
+- éviter les changements opportunistes non liés au besoin ;
+- rester cohérent avec l'existant.
+
+4. Tester
+- couvrir le cas nominal ;
+- tester les cas limites ;
+- tester les cas d'erreur quand c'est pertinent.
+
+5. Corriger
+- chercher la cause racine ;
+- corriger durablement plutôt que superficiellement ;
+- revalider après correction.
+
+6. Logger
+- noter les erreurs significatives, leur contexte et leur résolution ;
+- capitaliser sur les incidents pour améliorer les sessions suivantes.
+
+7. Répondre
+- restituer ce qui a été fait ;
+- préciser les tests exécutés ;
+- signaler les incertitudes restantes.
+
 ---
 
 *Ce document est une référence obligatoire pour tout agent intervenant sur le repository.*

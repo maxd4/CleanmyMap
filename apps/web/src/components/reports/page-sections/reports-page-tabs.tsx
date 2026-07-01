@@ -8,6 +8,7 @@ type ReportsPageTabId = "generation" | "pilotage";
 type ReportsPageTabsProps = {
   generation: ReactNode;
   pilotage: ReactNode;
+  defaultTab?: ReportsPageTabId;
 };
 
 const TAB_DEFINITIONS: Array<{
@@ -33,8 +34,12 @@ const TAB_DEFINITIONS: Array<{
   },
 ];
 
-export function ReportsPageTabs({ generation, pilotage }: ReportsPageTabsProps) {
-  const [activeTab, setActiveTab] = useState<ReportsPageTabId>("generation");
+export function ReportsPageTabs({
+  generation,
+  pilotage,
+  defaultTab = "generation",
+}: ReportsPageTabsProps) {
+  const [activeTab, setActiveTab] = useState<ReportsPageTabId>(defaultTab);
 
   return (
     <section className="space-y-4">

@@ -10,7 +10,6 @@ import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-com
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 import { resolvePageFamily } from "@/lib/ui/page-families";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
  title: "Rapport d'impact imprimable - CleanMyMap",
@@ -23,10 +22,8 @@ export const metadata: Metadata = {
 };
 
 async function loadFullAuditData() {
-  const supabase = getSupabaseServerClient();
   const [overview, contractsResult] = await Promise.all([
     loadPilotageOverview({
-      supabase,
       periodDays: 90,
       limit: 1500,
     }),
@@ -43,7 +40,7 @@ async function loadFullAuditData() {
 }
 
 export default async function PrintReportPage() {
- const { userId, clerkReachable } = await getSafeAuthSession();
+ const { userId } = await getSafeAuthSession();
  const pageFamily = resolvePageFamily("/prints/report");
  if (!userId) {
  return (
@@ -67,12 +64,6 @@ export default async function PrintReportPage() {
   <ClerkRequiredGate
    isAuthenticated={false}
    mode="blur"
-   title="Rapport d'impact imprimable"
-   description={
-    clerkReachable
-     ?"Cette fonctionnalité nécessite une connexion Clerk."
-     :"Connexion Clerk temporairement indisponible. La vue reste lisible."
-   }
    lockedPreview={
     <section className="space-y-4 rounded-3xl border border-stone-200 bg-stone-50/90 p-5 shadow-sm">
      <div className="grid gap-3 md:grid-cols-4">

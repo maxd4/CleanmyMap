@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
-import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { AdminAccessState } from "@/components/ui/admin-access-state";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import {
   AdminActionGrid,
@@ -75,9 +75,7 @@ type PendingSpotModerationRow = {
 };
 
 async function loadAdminOverview() {
-  const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
-    supabase,
     periodDays: 30,
     limit: 1800,
   });
@@ -323,44 +321,11 @@ export default async function AdminPage() {
 
   if (!userId) {
     return (
-      <ClerkRequiredGate
-        isAuthenticated={false}
-        mode="blur"
-        title="Administration"
-        description="Accès réservé aux comptes Clerk autorisés."
-        lockedPreview={
-          <div className="grid gap-6 rounded-[3rem] border border-stone-400/18 bg-[linear-gradient(145deg,rgba(36,24,16,0.94)_0%,rgba(94,58,29,0.88)_58%,rgba(245,158,11,0.22)_100%)] p-8 shadow-[0_24px_56px_-34px_rgba(69,45,28,0.36)] md:grid-cols-3">
-            {[
-              {
-                label: "Supervision",
-                desc: "Alertes et priorités de l'administration.",
-              },
-              {
-                label: "Modération",
-                desc: "Actions réservées au back-office connecté.",
-              },
-              {
-                label: "Export",
-                desc: "Les livrables d'administration nécessitent un compte autorisé.",
-              },
-            ].map((item) => (
-              <article
-                key={item.label}
-                className="rounded-[2rem] border border-white/8 bg-white/[0.06] p-6"
-              >
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-100/72">
-                  {item.label}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-amber-50/72">
-                  {item.desc}
-                </p>
-              </article>
-            ))}
-          </div>
-        }
-      >
-        <div />
-      </ClerkRequiredGate>
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl items-center justify-center">
+          <AdminAccessState className="w-full" />
+        </div>
+      </div>
     );
   }
 
@@ -388,39 +353,8 @@ export default async function AdminPage() {
   if (!isAdminLikeProfile(profile)) {
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-          <PageHeader
-            family={pageFamily}
-            eyebrow="Espace administratif"
-            title="Mon espace"
-            subtitle="Cockpit opérationnel de l'administration."
-            badges={
-              <>
-                <PageHeaderBadge family={pageFamily}>
-                  Console verrouillée
-                </PageHeaderBadge>
-                <PageHeaderBadge family={pageFamily} muted>
-                  Accès restreint
-                </PageHeaderBadge>
-              </>
-            }
-            action={
-              <AdminPillLink href="/sign-in">
-                Se connecter
-              </AdminPillLink>
-            }
-            className="max-w-none w-full"
-          />
-
-          <AdminInfoBanner
-            eyebrow="Accès restreint"
-            title="Privilèges d'administration requis"
-            description="Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk."
-            icon={ShieldCheck}
-            tone="light"
-            action={<AdminPillLink href="/sign-in">Se connecter</AdminPillLink>}
-            className="mt-8"
-          />
+        <div className="mx-auto flex max-w-4xl items-center justify-center">
+          <AdminAccessState className="w-full" />
         </div>
       </div>
     );

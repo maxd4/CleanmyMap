@@ -32,8 +32,6 @@ export default async function PartnerOnboardingPage() {
   <ClerkRequiredGate
    isAuthenticated={false}
    mode="blur"
-   title="Parcours partenaire"
-   description="Cette fonctionnalité nécessite une connexion Clerk."
    lockedPreview={
     <section className="space-y-4 rounded-3xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-5 shadow-sm">
      <div className="grid gap-3 md:grid-cols-2">
@@ -67,8 +65,6 @@ export default async function PartnerOnboardingPage() {
    <ClerkRequiredGate
     isAuthenticated={Boolean(userId)}
     mode="blur"
-    title="Parcours partenaire"
-    description="Cette fonctionnalité nécessite une connexion Clerk."
     lockedPreview={
      <section className="space-y-4 rounded-3xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-5 shadow-sm">
       <div className="grid gap-3 md:grid-cols-2">

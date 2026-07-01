@@ -18,13 +18,12 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import ImpactProfilePage from "@/components/profil/impact-profile-page";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
 import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
 import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
-import { loadReferralLineageView } from "@/lib/gamification/referral-lineage";
+import { loadCachedReferralLineageView } from "@/lib/gamification/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 
 type ProfilPageProps = {
@@ -47,8 +46,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title="Parcours personnalisé"
-        description="Connectez-vous pour accéder au parcours lié à votre profil."
         lockedPreview={
           <div className="rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
             <p className="text-[10px] font-bold uppercase tracking-wide text-amber-100">
@@ -79,7 +76,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const switchableProfiles = isAdmin
     ? getSwitchableProfiles(activeProfile)
     : [activeProfile];
-  const referralSupabase = getSupabaseServerClient(false);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -131,7 +127,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   let referralLineageView = null;
   let referralLineageError: string | null = null;
   try {
-    referralLineageView = await loadReferralLineageView(referralSupabase, userId);
+    referralLineageView = await loadCachedReferralLineageView(userId);
   } catch (error) {
     referralLineageError =
       error instanceof Error

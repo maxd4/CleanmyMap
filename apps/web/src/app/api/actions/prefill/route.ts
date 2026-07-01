@@ -1,5 +1,6 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
+import { unstable_cache } from"next/cache";
 import {
  ASSOCIATION_SELECTION_OPTIONS,
  normalizeAssociationSelectionForPrefill,
@@ -12,6 +13,10 @@ import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
+const ACTIONS_PREFILL_CACHE_HEADERS = {
+ "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+};
+const ACTIONS_PREFILL_CACHE_REVALIDATE_SECONDS = 60;
 
 function median(values: number[], fallback: number): number {
  if (values.length === 0) {
@@ -49,6 +54,25 @@ function pickMostFrequentLabel(counts: Map<string, number>): string | null {
  return topLabel;
 }
 
+async function loadCachedRecentActionsForPrefill(userId: string) {
+ const cached = unstable_cache(
+ async () => {
+   const supabase = getSupabaseServerClient();
+   return fetchRecentActionsByUser(supabase, {
+    userId,
+    limit: 25,
+   });
+  },
+  ["actions-prefill", `user:${userId}`],
+  {
+   revalidate: ACTIONS_PREFILL_CACHE_REVALIDATE_SECONDS,
+   tags: [`actions-prefill:${userId}`],
+  },
+ );
+
+ return cached();
+}
+
 export async function GET() {
  const { userId } = await auth();
  if (!userId) {
@@ -56,12 +80,8 @@ export async function GET() {
  }
 
  try {
- const supabase = getSupabaseServerClient();
  const identity = await getCurrentUserIdentity();
- const recent = await fetchRecentActionsByUser(supabase, {
- userId,
- limit: 25,
- });
+ const recent = await loadCachedRecentActionsForPrefill(userId);
 
  const locationCounts = new Map<string, number>();
  const associationCounts = new Map<string, number>();
@@ -115,6 +135,8 @@ export async function GET() {
   durationMinutes: median(durationSamples, 60),
   },
  basedOn: { recentDeclarations: recent.length },
+ }, {
+  headers: ACTIONS_PREFILL_CACHE_HEADERS,
  });
  } catch (error) {
  return handleApiError(error, "GET /api/actions/prefill");

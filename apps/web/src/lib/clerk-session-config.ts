@@ -104,24 +104,33 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
   const isSatellite = env.CLERK_IS_SATELLITE === true;
   const domain = parseDomain(env.CLERK_DOMAIN);
   const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
+  const isLocalDevOrigin = process.env.NODE_ENV !== "production" && isLocalhostOrigin(appOrigin);
   const resolvedPublishableKey =
     publishableKey &&
-    process.env.NODE_ENV !== "production" &&
-    isLocalhostOrigin(appOrigin) &&
+    isLocalDevOrigin &&
     publishableKey.startsWith("pk_live_")
       ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
       : publishableKey ??
         (process.env.NODE_ENV !== "production"
           ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
           : undefined);
+  // Do not leak the production Clerk domain into localhost unless an explicit proxy is configured.
+  const resolvedDomain =
+    isLocalDevOrigin && !proxyUrl ? undefined : domain;
+  const resolvedIsSatellite =
+    isLocalDevOrigin && !proxyUrl
+      ? undefined
+      : isSatellite
+        ? true
+        : undefined;
 
   return {
     appOrigin,
     publishableKey: resolvedPublishableKey,
-    domain,
+    domain: resolvedDomain,
     proxyUrl,
-    isSatellite: isSatellite ? true : undefined,
-    satelliteAutoSync: isSatellite
+    isSatellite: resolvedIsSatellite,
+    satelliteAutoSync: resolvedIsSatellite
       ? (env.CLERK_SATELLITE_AUTO_SYNC ?? true)
       : undefined,
     authorizedParties:

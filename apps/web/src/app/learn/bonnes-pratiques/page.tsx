@@ -9,6 +9,7 @@ import { LearnVisualCard } from "@/components/learn/learn-visual-card";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_PRACTICE_LINKS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { Recycle, Sprout, Users } from "lucide-react";
 
 export default function LearnTriComposteComportementsPage() {
   const { locale } = useSitePreferences();
@@ -18,24 +19,53 @@ export default function LearnTriComposteComportementsPage() {
     en: "Sorting, composting, behaviors",
   };
   const introQuestion = {
-    fr: "Comment trier juste, composter mieux et trancher vite selon le contexte sans perdre le rythme ?",
-    en: "How do we sort right, compost better and decide quickly by context without losing momentum?",
+    fr: "Comment trier juste, composter mieux et choisir vite le bon geste ?",
+    en: "How do we sort right, compost better and choose the right gesture quickly?",
   };
   const introClue = {
-    fr: "Terrain, plage, ville, événement, compost domestique: des chemins de décision courts et des cas limites à garder en tête.",
-    en: "Field, beach, city, event, home compost: short decision paths and edge cases to keep in mind.",
+    fr: "Après la vulgarisation et l'entraînement, cette page sert à trancher vite: le bon guide, la bonne filière, le bon comportement.",
+    en: "After explanation and practice, this page helps you decide fast: the right guide, the right stream, the right behavior.",
   };
+  const entryLinks = [
+    {
+      href: links[0]?.href ?? "/sections/recycling",
+      label: { fr: "Tri", en: "Sorting" },
+      detail: {
+        fr: "Ouvrir le guide court pour trier sans hésiter.",
+        en: "Open the short guide to sort without hesitating.",
+      },
+      icon: Recycle,
+    },
+    {
+      href: links[1]?.href ?? "/sections/compost",
+      label: { fr: "Composte", en: "Composting" },
+      detail: {
+        fr: "Voir le guide compost pour choisir la bonne filière.",
+        en: "See the compost guide and choose the right path.",
+      },
+      icon: Sprout,
+    },
+    {
+      href: "#ressources-utiles",
+      label: { fr: "Comportements utiles", en: "Useful behaviors" },
+      detail: {
+        fr: "Aller directement aux repères qui aident à agir juste.",
+        en: "Jump straight to the cues that help you act right.",
+      },
+      icon: Users,
+    },
+  ] as const;
 
   return (
     <LearnRubricShell
       title={{ fr: "Tri, composte, comportements", en: "Sorting, composting, behaviors" }}
       subtitle={{
-        fr: "Tri, compostage et comportements utiles",
-        en: "Sorting, composting and useful behaviors",
+        fr: "Point d'appui entre compréhension et action",
+        en: "A bridge between understanding and action",
       }}
       description={{
-        fr: "Des guides courts pour trier, composter et garder une conduite utile sans sortir du tri et du compost.",
-        en: "Short guides to sort, compost and keep useful behaviors without leaving sorting and composting behind.",
+        fr: "Les guides courts restent au premier plan; les pages voisines complètent le parcours quand il faut approfondir.",
+        en: "Short guides stay in front; nearby pages complete the route when you need to go deeper.",
       }}
       backHref="/explorer"
       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
@@ -57,15 +87,12 @@ export default function LearnTriComposteComportementsPage() {
           title={introTitle}
           question={introQuestion}
           clue={introClue}
+          entryLinks={entryLinks}
           cta={{
             href: links[0]?.href ?? "/sections/recycling",
             label: { fr: "Ouvrir le premier guide", en: "Open the first guide" },
           }}
         />
-
-        <LearnBlockJourneySection locale={locale} currentPageId="bonnes-pratiques" />
-        <LearnBehaviorAwarenessSection locale={locale} />
-        <LearnTriContextSection locale={locale} />
 
         <div id="guides-courts" className="flex items-end justify-between gap-3">
           <div>
@@ -100,6 +127,14 @@ export default function LearnTriComposteComportementsPage() {
             />
           ))}
         </div>
+
+        <LearnBehaviorAwarenessSection locale={locale} id="ressources-utiles" />
+        <LearnTriContextSection locale={locale} />
+        <LearnBlockJourneySection
+          locale={locale}
+          currentPageId="bonnes-pratiques"
+          compact
+        />
       </div>
     </LearnRubricShell>
   );

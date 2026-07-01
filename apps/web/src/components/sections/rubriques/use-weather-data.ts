@@ -8,6 +8,11 @@ import {
   evaluateWeatherRisk,
 } from "@/lib/weather/ops-weather";
 import { FRANCE_TERRITORY_CENTER } from "@/lib/geo/territory";
+import {
+  getLocalGeoAddressSuggestions,
+  mergeGeoAddressSuggestions,
+  type GeoAddressSuggestion,
+} from "@/lib/geo/address-suggestions";
 import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { formatDateShort } from "@/components/sections/rubriques/helpers";
@@ -33,7 +38,7 @@ const DEFAULT_LOCATION: WeatherLocation = {
 type AddressSuggestionsResponse = {
   status: string;
   query: string;
-  items: WeatherLocationSuggestion[];
+  items: GeoAddressSuggestion[];
 };
 
 type ReverseLocationResponse = {
@@ -105,6 +110,11 @@ async function resolveWeatherLocationFromPreference(
     return buildFallbackWeatherLocation(preference.label, preference.subtitle ?? "Vue nationale");
   }
 
+  const localSuggestion = getLocalGeoAddressSuggestions(preference.label, 1)[0];
+  if (localSuggestion) {
+    return localSuggestion;
+  }
+
   try {
     const response = await fetch(
       `/api/geo/address-suggestions?q=${encodeURIComponent(preference.label)}&limit=1`,
@@ -165,6 +175,11 @@ export function useWeatherData() {
       ? ["section-weather-location-suggestions", deferredLocationQuery]
       : null,
     async () => {
+      const localSuggestions = getLocalGeoAddressSuggestions(deferredLocationQuery, 6);
+      if (localSuggestions.length >= 6) {
+        return { status: "ok", query: deferredLocationQuery, items: localSuggestions };
+      }
+
       const response = await fetch(
         `/api/geo/address-suggestions?q=${encodeURIComponent(deferredLocationQuery)}&limit=6`,
         {
@@ -178,7 +193,11 @@ export function useWeatherData() {
         throw new Error("location_suggestions_unavailable");
       }
 
-      return (await response.json()) as AddressSuggestionsResponse;
+      const remote = (await response.json()) as AddressSuggestionsResponse;
+      return {
+        ...remote,
+        items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
+      };
     },
     swrRecentViewOptions,
   );

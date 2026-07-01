@@ -149,9 +149,18 @@ const TONE_CLASSES: Record<AwarenessCard["tone"], { shell: string; badge: string
     },
   };
 
-export function LearnBehaviorAwarenessSection({ locale }: { locale: LearnLocale }) {
+export function LearnBehaviorAwarenessSection({
+  locale,
+  id,
+}: {
+  locale: LearnLocale;
+  id?: string;
+}) {
   return (
-    <section className="rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6">
+    <section
+      id={id}
+      className="rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="max-w-3xl">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">

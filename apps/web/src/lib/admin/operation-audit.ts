@@ -119,7 +119,8 @@ async function loadActorLabelsByUserId(
   const result = await supabase
     .from("profiles")
     .select("id, display_name, handle")
-    .in("id", uniqueActorIds);
+    .in("id", uniqueActorIds)
+    .limit(uniqueActorIds.length);
 
   if (result.error) {
     return labels;

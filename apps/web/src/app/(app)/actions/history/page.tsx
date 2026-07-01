@@ -31,8 +31,6 @@ export default async function ActionsHistoryPage() {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Historique des actions validées"
- description="Cette fonctionnalité nécessite une connexion Clerk."
  lockedPreview={
  <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-3">

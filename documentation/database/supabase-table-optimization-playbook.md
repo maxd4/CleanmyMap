@@ -1,8 +1,8 @@
 # Supabase Table Optimization Playbook
 
-Guide central de marche à suivre pour optimiser une table Supabase sans casser le métier, l’UX ou la lisibilité du modèle.
+Guide central de marche à suivre pour optimiser une table Supabase sans casser le métier, l'UX ou la lisibilité du modèle.
 
-## Quand l’utiliser
+## Quand l'utiliser
 
 Utiliser ce guide avant de toucher une table qui:
 
@@ -10,19 +10,19 @@ Utiliser ce guide avant de toucher une table qui:
 - reçoit des lectures répétées ou non bornées;
 - sert à plusieurs features à la fois;
 - est branchée à un nouveau flux produit;
-- remonte des warnings que l’on pourrait être tenté de “faire baisser” artificiellement.
+- remonte des warnings que l'on pourrait être tenté de "faire baisser" artificiellement.
 
-## Ce qu’on perd si on optimise mal
+## Ce qu'on perd si on optimise mal
 
 Une mauvaise optimisation fait perdre surtout:
 
-- du temps de débogage, parce qu’on ne sait plus où la vérité métier vit;
-- de la flexibilité produit, parce que la table est simplifiée avant d’avoir été comprise;
-- de la lisibilité technique, parce qu’on masque une vraie charge derrière un faux gain;
+- du temps de débogage, parce qu'on ne sait plus où la vérité métier vit;
+- de la flexibilité produit, parce que la table est simplifiée avant d'avoir été comprise;
+- de la lisibilité technique, parce qu'on masque une vraie charge derrière un faux gain;
 - de la robustesse, si une règle métier disparaît juste pour faire baisser un warning;
-- de la traçabilité, si on corrige un symptôme au lieu du chemin de lecture ou d’écriture.
+- de la traçabilité, si on corrige un symptôme au lieu du chemin de lecture ou d'écriture.
 
-Le but n’est pas de faire baisser les warnings à tout prix. Le but est de réduire le coût réel sans perdre le sens métier.
+Le but n'est pas de faire baisser les warnings à tout prix. Le but est de réduire le coût réel sans perdre le sens métier.
 
 ## Règles à réutiliser pendant le développement
 
@@ -31,9 +31,9 @@ Le but n’est pas de faire baisser les warnings à tout prix. Le but est de ré
 Avant de raccorder une nouvelle feature:
 
 - identifier si elle lit, écrit, compte, recherche, exporte ou agrège la table;
-- vérifier si elle ajoute une fréquence d’accès;
+- vérifier si elle ajoute une fréquence d'accès;
 - vérifier si elle change les colonnes nécessaires;
-- vérifier si elle introduit une recherche partielle ou un tri qui aura besoin d’index.
+- vérifier si elle introduit une recherche partielle ou un tri qui aura besoin d'index.
 
 Si la feature se branche sur la table, elle hérite aussi de ses contraintes de quota.
 
@@ -50,7 +50,7 @@ Bon réflexe:
 
 - `eq`, `in`, `range`, `limit`, `head: true`;
 - index btree sur les colonnes exactes;
-- trigram ou index d’expression pour les recherches partielles;
+- trigram ou index d'expression pour les recherches partielles;
 - RPC stable si la logique est partagée ou coûteuse.
 
 Mauvais réflexe:
@@ -67,7 +67,7 @@ Ne pas supprimer artificiellement les warnings en:
 - retirant des colonnes métier utiles;
 - fusionnant des concepts distincts;
 - dénormalisant sans besoin réel;
-- dégradant une règle métier pour “faire passer” un audit;
+- dégradant une règle métier pour "faire passer" un audit;
 - cachant le problème derrière une pagination cosmétique.
 
 La vraie question est:
@@ -76,7 +76,7 @@ La vraie question est:
 2. quel index manque;
 3. quelle partie de la logique peut devenir un RPC;
 4. quelle colonne ne sert pas et peut être retirée;
-5. quelle fréquence d’accès est vraiment nécessaire.
+5. quelle fréquence d'accès est vraiment nécessaire.
 
 ## Marche à suivre
 
@@ -91,7 +91,7 @@ Déterminer si la table est:
 - archive;
 - de recherche.
 
-Une table centrale peut rester visible dans les audits si son usage est légitime. On ne cherche pas à la rendre “petite” à tout prix.
+Une table centrale peut rester visible dans les audits si son usage est légitime. On ne cherche pas à la rendre "petite" à tout prix.
 
 ### Étape 2. Qualifier les chemins
 
@@ -128,31 +128,31 @@ Ne pas simplifier la table si cela:
 
 ## Règle de décision
 
-Accepter une table qui reste “high” ou “critical” si:
+Accepter une table qui reste "high" ou "critical" si:
 
 - elle est centrale;
 - les requêtes sont bornées;
 - la colonne filtrée est indexée;
 - le comportement visible reste correct;
-- la table n’a pas été artificiellement appauvrie.
+- la table n'a pas été artificiellement appauvrie.
 
 Corriger en priorité si:
 
 - un scan complet est filtré côté application;
-- une recherche partielle n’a pas d’index adapté;
+- une recherche partielle n'a pas d'index adapté;
 - une table est lue à chaque montage sans limite;
 - une simplification du modèle a été faite juste pour faire baisser un warning.
 
 ## Checklist de validation
 
 - [ ] la table est qualifiée: centrale, support, admin, dérivée ou archive;
-- [ ] les chemins d’accès sont listés;
+- [ ] les chemins d'accès sont listés;
 - [ ] chaque requête runtime est bornée;
 - [ ] les colonnes retournées sont minimales;
 - [ ] les filtres sont faits dans la base;
 - [ ] les index nécessaires existent;
 - [ ] une RPC a été ajoutée si la logique est réutilisée;
-- [ ] aucun changement de modèle n’a été fait uniquement pour faire baisser les warnings;
+- [ ] aucun changement de modèle n'a été fait uniquement pour faire baisser les warnings;
 - [ ] un test protège le chemin optimisé;
 - [ ] la documentation est reliée au guide Supabase principal.
 

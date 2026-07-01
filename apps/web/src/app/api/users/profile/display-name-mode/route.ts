@@ -1,9 +1,12 @@
+import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getCurrentUserIdentity } from "@/lib/authz";
+import { getDevAuthBypassSession } from "@/lib/authz-identity";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -14,7 +17,6 @@ import {
   setDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
-import { revalidateTag } from "next/cache";
 
 const updateDisplayNameModeSchema = z.object({
   displayNameMode: z.enum(["full_name", "pseudo"]),
@@ -23,25 +25,64 @@ const updateDisplayNameModeSchema = z.object({
 const DISPLAY_NAME_MODE_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
+const DISPLAY_NAME_MODE_CACHE_REVALIDATE_SECONDS = 120;
 
-export async function GET() {
-  const identity = await getCurrentUserIdentity();
-  if (!identity) return unauthorizedJsonResponse();
+type DisplayNameModeResponse = {
+  userId: string;
+  displayName: string;
+  displayNameMode: "full_name" | "pseudo";
+  handle: string;
+  username: string;
+  firstName: string | null;
+  email: string | null;
+};
 
-  return NextResponse.json(
-    {
-      userId: identity.userId,
-      displayName: identity.displayName,
-      displayNameMode: identity.displayNameMode ?? "full_name",
-      handle: identity.handle,
-      username: identity.username,
-      firstName: identity.firstName,
-      email: identity.email,
+function buildDisplayNameModeCacheKey(userId: string): string {
+  return `user:${userId}`;
+}
+
+async function loadCachedDisplayNameMode(
+  userId: string,
+): Promise<DisplayNameModeResponse | null> {
+  const cached = unstable_cache(
+    async () => {
+      const identity = await getCurrentUserIdentity();
+      if (!identity || identity.userId !== userId) {
+        return null;
+      }
+
+      return {
+        userId: identity.userId,
+        displayName: identity.displayName,
+        displayNameMode: identity.displayNameMode ?? "full_name",
+        handle: identity.handle,
+        username: identity.username,
+        firstName: identity.firstName,
+        email: identity.email,
+      } satisfies DisplayNameModeResponse;
     },
+    ["display-name-mode", buildDisplayNameModeCacheKey(userId)],
     {
-      headers: DISPLAY_NAME_MODE_CACHE_HEADERS,
+      revalidate: DISPLAY_NAME_MODE_CACHE_REVALIDATE_SECONDS,
+      tags: [`display-name-mode:${userId}`],
     },
   );
+
+  return cached();
+}
+
+export async function GET() {
+  const devBypass = await getDevAuthBypassSession();
+  const clerkUserId = devBypass ? null : (await auth()).userId;
+  const userId = devBypass?.userId ?? clerkUserId;
+  if (!userId) return unauthorizedJsonResponse();
+
+  const payload = await loadCachedDisplayNameMode(userId);
+  if (!payload) return unauthorizedJsonResponse();
+
+  return NextResponse.json(payload, {
+    headers: DISPLAY_NAME_MODE_CACHE_HEADERS,
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -134,6 +175,7 @@ export async function PATCH(request: Request) {
     }
 
     revalidateTag("admin-referral-lineage-export", "max");
+    revalidateTag(`display-name-mode:${userId}`, "max");
 
     const response = NextResponse.json({
       status: "updated",

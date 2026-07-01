@@ -40,32 +40,30 @@ describe("proxy protected routes", () => {
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
+      "/actions/history(.*)",
+      "/actions/new(.*)",
+      "/api/actions(.*)",
+      "/api/admin(.*)",
+      "/api/analytics(.*)",
+      "/api/community(.*)",
+      "/api/gamification(.*)",
+      "/api/services(.*)",
+      "/api/users(.*)",
     ];
 
     for (const pattern of required) {
       expect(PROXY_MATCHER_PATTERNS).toContain(pattern);
     }
 
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/actions(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/admin(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/reports(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/users(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/services(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sections(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-in(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-up(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/reports(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/history(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/new(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/form-comparison(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/prints/report(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/newsletter/subscribe(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/analytics/funnel(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/bug-reports(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/events(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/community/promotion-requests(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/partners/onboarding-requests(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/chat(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/__clerk/(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/(api|trpc)(.*)");
   });

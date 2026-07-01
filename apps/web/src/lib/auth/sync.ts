@@ -338,7 +338,7 @@ async function loadExistingProfile(
     .from("profiles")
     .select("id, handle, display_name_mode, avatar_url, metadata, paris_arrondissement")
     .eq("id", userId)
-    .maybeSingle<ProfileRow>();
+    .maybeSingle();
 
   if (error) {
     console.warn(
@@ -346,7 +346,7 @@ async function loadExistingProfile(
     );
   }
 
-  return data ?? null;
+  return (data as ProfileRow | null) ?? null;
 }
 
 async function upsertSyncedProfile(

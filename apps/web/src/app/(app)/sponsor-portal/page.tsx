@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Activity
 } from "lucide-react";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
@@ -29,9 +28,7 @@ import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-ga
 const SPONSOR_WINDOW_DAYS = 730;
 
 async function loadSponsorOverview() {
-  const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
-    supabase, // Wider default view for sponsors
     periodDays: SPONSOR_WINDOW_DAYS,
     limit: 5000,
   });
@@ -243,12 +240,6 @@ export default async function SponsorPortalPage() {
     <ClerkRequiredGate
       isAuthenticated={Boolean(userId)}
       mode="disabled"
-      title="Accès Portail Décideur"
-      description={
-        clerkReachable
-          ? "Connectez-vous pour débloquer les fonctions d'export et les détails granulaires."
-          : "Le service d'authentification est indisponible. Lecture seule activée."
-      }
     >
       <AccountCompletionGate state={accountCompletion}>
         {page}

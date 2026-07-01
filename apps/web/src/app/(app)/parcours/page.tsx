@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { buildParcoursRoute } from "@/lib/accueil-pilotage-routes";
 
 export default async function ParcoursRootPage() {
-  const { userId, clerkReachable } = await getSafeAuthSession();
+  const { userId } = await getSafeAuthSession();
   const classes = getBlockClasses("home");
 
   if (!userId) {
@@ -16,12 +16,6 @@ export default async function ParcoursRootPage() {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title="Parcours personnalisé"
-        description={
-          clerkReachable
-            ? "Connectez-vous pour accéder au parcours associé à votre profil."
-            : "Connexion Clerk temporairement indisponible. La vue reste lisible."
-        }
         lockedPreview={
           <section className={cn("space-y-4 rounded-[2rem] border p-6", classes.surface)}>
             <div className="grid gap-4 md:grid-cols-3">

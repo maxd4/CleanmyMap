@@ -28,6 +28,10 @@ import {
   getDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import {
+  extractUserLocationPreferenceFromMetadata,
+  type UserLocationPreference,
+} from "@/lib/user-location-preference";
+import {
   getDevAuthBypassDisplayName,
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
@@ -50,6 +54,7 @@ export type UserIdentity = {
   actorNameOptions: string[];
   role: AppProfile;
   badges: AccountBadge[];
+  locationPreference?: UserLocationPreference | null;
 };
 
 
@@ -280,6 +285,7 @@ async function buildDevBypassIdentity(devBypass: {
     actorNameOptions: [devBypass.displayName, devBypass.username, devBypass.userId],
     role,
     badges: mapBadgeIdsToBadges([getRoleBadgeId(role), getProfileBadgeId(role)]),
+    locationPreference: null,
   };
 }
 
@@ -310,6 +316,7 @@ function buildFallbackIdentity(
       getRoleBadgeId(resolvedRole),
       getProfileBadgeId(resolvedRole),
     ]),
+    locationPreference: null,
   };
 }
 
@@ -399,6 +406,14 @@ function resolveIdentityBadges(
   return mapBadgeIdsToBadges([...badgeIds, getRoleBadgeId(role), getProfileBadgeId(role)]);
 }
 
+function resolveIdentityLocationPreference(user: User) {
+  return (
+    extractUserLocationPreferenceFromMetadata(user.unsafeMetadata) ??
+    extractUserLocationPreferenceFromMetadata(user.publicMetadata) ??
+    extractUserLocationPreferenceFromMetadata(user.privateMetadata)
+  );
+}
+
 function buildResolvedIdentity(params: {
   userId: string;
   fetchedUser: User;
@@ -433,6 +448,7 @@ function buildResolvedIdentity(params: {
     actorNameOptions,
     role: resolvedRole,
     badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole),
+    locationPreference: resolveIdentityLocationPreference(user),
   };
 }
 
@@ -468,13 +484,18 @@ async function buildAuthenticatedIdentity(
   }
 }
 
-export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
+export async function getCurrentUserIdentity(
+  options?: { userId?: string | null },
+): Promise<UserIdentity | null> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
     return buildDevBypassIdentity(devBypass);
   }
 
-  const { userId } = await auth();
+  const userId =
+    options && "userId" in options
+      ? options.userId ?? null
+      : (await auth()).userId ?? null;
   if (!userId) {
     return null;
   }

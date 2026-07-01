@@ -31,6 +31,18 @@ const reviewSchema = z.object({
   decision: z.enum(["accept", "reject"]),
 });
 
+async function resolveGroupJoinUserId(operation: string): Promise<string | null> {
+  try {
+    const session = await auth();
+    return session.userId ?? null;
+  } catch (error) {
+    console.warn(`[group-join] Clerk auth unavailable during ${operation}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
 async function resolveReviewerAccess(params: {
   supabase: ReturnType<typeof getSupabaseServerClient>;
   actionId: string;
@@ -73,7 +85,7 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const { userId } = await auth();
+  const userId = await resolveGroupJoinUserId("PATCH /api/actions/:actionId/group-join");
   if (!userId) {
     return unauthorizedJsonResponse();
   }
@@ -177,7 +189,7 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const { userId } = await auth();
+  const userId = await resolveGroupJoinUserId("GET /api/actions/:actionId/group-join");
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();
@@ -238,7 +250,7 @@ export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const { userId } = await auth();
+  const userId = await resolveGroupJoinUserId("POST /api/actions/:actionId/group-join");
   if (!userId) {
     return unauthorizedJsonResponse();
   }

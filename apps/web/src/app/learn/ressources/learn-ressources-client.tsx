@@ -1,33 +1,48 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
+  BellOff,
   ChevronDown,
   BookOpen,
   CalendarDays,
+  Clock3,
+  CloudOff,
+  Download,
+  Inbox,
   Leaf,
   Palette,
   Recycle,
+  RefreshCcw,
   Sparkles,
   TriangleAlert,
+  Trash2,
+  KeyRound,
+  BookmarkCheck,
+  Paperclip,
+  UserX,
 } from "lucide-react";
-import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, type Locale } from "date-fns";
+import { format, type Locale } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
+import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import { LEARN_RESOURCE_EVENTS } from "@/lib/learning/learn-rubric-data";
-import { recordLearnPageVisit } from "@/lib/learning/learn-progress";
 
-const locales = { fr, en: enUS };
-const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
+const DeferredLearnRessourcesCalendar = dynamic(
+  () => import("./learn-ressources-calendar").then((module) => module.LearnRessourcesCalendar),
+  {
+    ssr: false,
+    loading: () => <div className="h-[420px] rounded-[1.6rem] border border-slate-200 bg-slate-50/80" aria-hidden="true" />,
+  },
+);
 
 type LearnLocale = "fr" | "en";
 type LearnText = { fr: string; en: string };
@@ -63,6 +78,33 @@ type ArtworkReference = {
     href: string;
     label: LearnText;
   };
+};
+
+type ResourceShortcut = {
+  href: string;
+  eyebrow: { fr: string; en: string };
+  title: { fr: string; en: string };
+  detail: { fr: string; en: string };
+  label: { fr: string; en: string };
+};
+
+type MailboxCleanupStep = {
+  icon: LucideIcon;
+  title: { fr: string; en: string };
+  detail: { fr: string; en: string };
+};
+
+type BrowserHistoryCleanupStep = {
+  icon: LucideIcon;
+  title: { fr: string; en: string };
+  detail: { fr: string; en: string };
+};
+
+type DigitalMaintenanceTopic = {
+  icon: LucideIcon;
+  title: { fr: string; en: string };
+  detail: { fr: string; en: string };
+  cadence: { fr: string; en: string };
 };
 
 const RESOURCE_SPOTLIGHTS: ResourceSpotlight[] = [
@@ -116,6 +158,186 @@ const RESOURCE_SPOTLIGHTS: ResourceSpotlight[] = [
     action: {
       href: "#calendrier",
       label: { fr: "Voir le calendrier", en: "View calendar" },
+    },
+  },
+];
+
+const MAILBOX_CLEANUP_STEPS: MailboxCleanupStep[] = [
+  {
+    icon: Inbox,
+    title: {
+      fr: "Identifier les flux à couper",
+      en: "Identify the flows to cut",
+    },
+    detail: {
+      fr: "Dans Gmail, ouvre les messages récurrents que tu ne lis jamais et repère les expéditeurs à supprimer.",
+      en: "In Gmail, open recurring messages you never read and note the senders to remove.",
+    },
+  },
+  {
+    icon: BellOff,
+    title: {
+      fr: "Se désabonner depuis Gmail",
+      en: "Unsubscribe from Gmail",
+    },
+    detail: {
+      fr: "Passe par « More » puis « Manage subscriptions » ; si ton interface affiche le raccourci /sub#, tu peux l'utiliser aussi.",
+      en: "Open More, then Manage subscriptions; if your interface shows the /sub# shortcut, you can use it too.",
+    },
+  },
+  {
+    icon: Trash2,
+    title: {
+      fr: "Vider spam et corbeille",
+      en: "Empty spam and trash",
+    },
+    detail: {
+      fr: "Supprime les spams, vide la corbeille, puis garde ce nettoyage tous les trimestres pour éviter l'accumulation.",
+      en: "Delete spam, empty trash, and repeat the cleanup every quarter to avoid buildup.",
+    },
+  },
+];
+
+const BROWSER_HISTORY_CLEANUP_STEPS: BrowserHistoryCleanupStep[] = [
+  {
+    icon: Clock3,
+    title: {
+      fr: "Ouvrir l'écran de nettoyage",
+      en: "Open the cleanup screen",
+    },
+    detail: {
+      fr: "Va dans l'historique ou dans les paramètres de confidentialité du navigateur, puis choisis la suppression des données de navigation.",
+      en: "Open the browser history or privacy settings, then choose to delete browsing data.",
+    },
+  },
+  {
+    icon: Trash2,
+    title: {
+      fr: "Choisir « Toute durée »",
+      en: "Choose \"All time\"",
+    },
+    detail: {
+      fr: "Sélectionne la période « toute durée », puis coche seulement l'historique et, si utile, le cache. Ne coche pas tout par défaut.",
+      en: "Select the \"all time\" range, then tick only history and, if useful, the cache. Do not select everything by default.",
+    },
+  },
+  {
+    icon: KeyRound,
+    title: {
+      fr: "Garder les options sensibles décochées",
+      en: "Keep sensitive options off",
+    },
+    detail: {
+      fr: "Laisse décochés les mots de passe enregistrés et les paramètres de site, sauf cas particulier de dépannage ou d'appareil partagé.",
+      en: "Leave saved passwords and site settings unchecked, except for special troubleshooting or shared-device cases.",
+    },
+  },
+];
+
+const DIGITAL_MAINTENANCE_TOPICS: DigitalMaintenanceTopic[] = [
+  {
+    icon: Paperclip,
+    title: {
+      fr: "Pièces jointes volumineuses",
+      en: "Large attachments",
+    },
+    detail: {
+      fr: "Supprime les mails lourds, surtout les newsletters et pièces jointes que tu n'ouvres jamais.",
+      en: "Delete heavy emails, especially newsletters and attachments you never open.",
+    },
+    cadence: {
+      fr: "Tous les trimestres",
+      en: "Every quarter",
+    },
+  },
+  {
+    icon: Download,
+    title: {
+      fr: "Téléchargements et doublons",
+      en: "Downloads and duplicates",
+    },
+    detail: {
+      fr: "Vide le dossier Téléchargements et élimine les doublons de PDFs, images et archives.",
+      en: "Empty the Downloads folder and remove duplicate PDFs, images, and archives.",
+    },
+    cadence: {
+      fr: "Chaque mois ou au trimestre",
+      en: "Monthly or quarterly",
+    },
+  },
+  {
+    icon: CloudOff,
+    title: {
+      fr: "Corbeilles cloud",
+      en: "Cloud trash",
+    },
+    detail: {
+      fr: "Pense aux corbeilles de Google Drive, Photos, OneDrive ou iCloud qui gardent encore des fichiers supprimés.",
+      en: "Check the trash bins in Google Drive, Photos, OneDrive, or iCloud, which still keep deleted files.",
+    },
+    cadence: {
+      fr: "Tous les trimestres",
+      en: "Every quarter",
+    },
+  },
+  {
+    icon: RefreshCcw,
+    title: {
+      fr: "Synchro automatique",
+      en: "Automatic sync",
+    },
+    detail: {
+      fr: "Garde synchronisés seulement les dossiers utiles et coupe ce qui ne sert pas au quotidien.",
+      en: "Keep only the folders you actually need synchronized and turn off the rest.",
+    },
+    cadence: {
+      fr: "Une fois par semestre puis à chaque changement",
+      en: "Once per semester, then on change",
+    },
+  },
+  {
+    icon: BellOff,
+    title: {
+      fr: "Notifications inutiles",
+      en: "Unnecessary notifications",
+    },
+    detail: {
+      fr: "Désactive les alertes des newsletters, applis et sites qui ne méritent pas ton attention.",
+      en: "Disable alerts from newsletters, apps, and sites that do not deserve your attention.",
+    },
+    cadence: {
+      fr: "Une fois puis revue trimestrielle",
+      en: "Once, then a quarterly review",
+    },
+  },
+  {
+    icon: BookmarkCheck,
+    title: {
+      fr: "Onglets et favoris",
+      en: "Tabs and bookmarks",
+    },
+    detail: {
+      fr: "Ferme les onglets oubliés et trie les favoris pour éviter une accumulation inutile.",
+      en: "Close forgotten tabs and sort bookmarks to avoid unnecessary accumulation.",
+    },
+    cadence: {
+      fr: "Chaque mois",
+      en: "Every month",
+    },
+  },
+  {
+    icon: UserX,
+    title: {
+      fr: "Comptes inutiles",
+      en: "Unused accounts",
+    },
+    detail: {
+      fr: "Supprime les comptes secondaires qui ne servent plus, surtout sur les services peu utilisés.",
+      en: "Delete secondary accounts you no longer need, especially on rarely used services.",
+    },
+    cadence: {
+      fr: "Chaque semestre",
+      en: "Every semester",
     },
   },
 ];
@@ -403,6 +625,39 @@ const ARTWORK_REFERENCES: ArtworkReference[] = [
   },
 ];
 
+const RESOURCE_SHORTCUTS: ResourceShortcut[] = [
+  {
+    href: "/sections/recycling",
+    eyebrow: { fr: "Rubrique existante", en: "Existing rubric" },
+    title: { fr: "Assistant tri", en: "Sorting assistant" },
+    detail: {
+      fr: "Raccourci direct vers les consignes de tri déjà publiées.",
+      en: "Direct shortcut to the published sorting cues.",
+    },
+    label: { fr: "Ouvrir l'assistant tri", en: "Open sorting assistant" },
+  },
+  {
+    href: "/sections/compost",
+    eyebrow: { fr: "Rubrique existante", en: "Existing rubric" },
+    title: { fr: "Guide compost", en: "Compost guide" },
+    detail: {
+      fr: "Accès immédiat au guide compost pour agir sans détour.",
+      en: "Immediate access to the compost guide without detours.",
+    },
+    label: { fr: "Ouvrir le guide compost", en: "Open the compost guide" },
+  },
+  {
+    href: "/learn/comprendre",
+    eyebrow: { fr: "Retour de contexte", en: "Back to context" },
+    title: { fr: "Comprendre", en: "Understand" },
+    detail: {
+      fr: "Revenir à la vulgarisation quand il faut remettre le sujet en cadre.",
+      en: "Return to the explainer when the subject needs more framing.",
+    },
+    label: { fr: "Voir le contexte", en: "See the context" },
+  },
+];
+
 const RESOURCE_TONE_CLASSES: Record<
   ResourceTone,
   {
@@ -478,7 +733,7 @@ function ResourceSpotlightCard({
         <div className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", tone.badge)}>
           <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
-          <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
           {String(index).padStart(2, "0")}
         </span>
       </div>
@@ -520,97 +775,455 @@ function ResourceSpotlightCard({
   );
 }
 
-export function LearnArtworkAccordion({ locale }: { locale: LearnLocale }) {
+export function LearnArtworkAccordion({
+  locale,
+  defaultOpen = false,
+}: {
+  locale: LearnLocale;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
-    <section className="rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 shadow-sm md:p-6">
-      <div className="flex items-start justify-between gap-4">
+    <details
+      className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+      open={isOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-start justify-between gap-4 rounded-[1.35rem] px-3 py-2 outline-none transition hover:bg-slate-50/70 focus-visible:bg-slate-50/80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:min-h-14">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-            {locale === "fr" ? "Références artistiques" : "Art references"}
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Culture visuelle" : "Visual culture"}
           </p>
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-            {locale === "fr" ? "Déplier une oeuvre à la fois" : "Open one work at a time"}
+            {locale === "fr" ? "Références artistiques à ouvrir si besoin" : "Art references to open when needed"}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
             {locale === "fr"
-              ? "Clique sur le titre pour ouvrir la fiche. Chaque entrée donne le contexte, le matériau utilisé et une image de l'oeuvre."
-              : "Click the title to open the fiche. Each entry gives context, the material used, and an image of the work."}
+              ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
+              : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}
           </p>
         </div>
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
-          <Palette className="h-5 w-5" aria-hidden="true" />
+        <div className="flex items-center gap-3">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {ARTWORK_REFERENCES.length}
+          </span>
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+            <Palette className="h-5 w-5" aria-hidden="true" />
+          </span>
+        </div>
+      </summary>
+
+      <div className="mt-5">
+        {isOpen ? (
+          <div className="space-y-4">
+            {ARTWORK_REFERENCES.map((artwork, index) => (
+              <details
+                key={artwork.key}
+                className="group overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-50 shadow-sm"
+              >
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 outline-none transition hover:bg-slate-100/70 focus-visible:bg-slate-100/80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:min-h-14 md:px-5">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900 md:text-xl">
+                      {artwork.title[locale]}
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                      {artwork.artist[locale]} · {artwork.material[locale]}
+                    </p>
+                  </div>
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition duration-150 group-open:rotate-180">
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                </summary>
+
+                <div className="border-t border-slate-200 px-4 pb-4 pt-4 md:px-5 md:pb-5">
+                  <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+                    <figure className="relative h-64 overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-50 md:h-[22rem]">
+                      <Image
+                        src={artwork.image.src}
+                        alt={artwork.image.alt[locale]}
+                        fill
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                        unoptimized
+                        className="object-cover"
+                      />
+                      <figcaption className="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                        {artwork.image.caption[locale]}{" "}
+                        <a
+                          href={artwork.source.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-amber-700 transition hover:text-amber-800 hover:underline"
+                        >
+                          {artwork.source.label[locale]}
+                        </a>
+                      </figcaption>
+                    </figure>
+
+                    <div className="space-y-3">
+                      {artwork.context.map((paragraph) => (
+                        <p key={paragraph[locale]} className="text-sm leading-relaxed text-slate-700">
+                          {paragraph[locale]}
+                        </p>
+                      ))}
+
+                      <div className="rounded-[1.35rem] border border-slate-200 bg-white p-3.5">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                          {locale === "fr" ? "Intérêt pour CleanMyMap" : "Why it matters for CleanMyMap"}
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                          {artwork.interest[locale]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+            {locale === "fr"
+              ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
+              : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function LearnResourceShortcutsSection({ locale }: { locale: LearnLocale }) {
+  return (
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Raccourcis utiles" : "Useful shortcuts"}
+          </p>
+          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+            {locale === "fr" ? "Les liens directs vers les rubriques utiles" : "Direct links to the useful rubrics"}
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "Les liens restent groupés au même endroit pour ouvrir vite l'assistant tri, le guide compost ou le contexte."
+              : "The links stay grouped in one place so you can open the sorting assistant, compost guide or context quickly."}
+          </p>
+        </div>
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+          <ArrowRight className="h-5 w-5" aria-hidden="true" />
         </span>
       </div>
 
-      <div className="mt-5 space-y-4">
-        {ARTWORK_REFERENCES.map((artwork, index) => (
-          <details
-            key={artwork.key}
-            className="group overflow-hidden rounded-[1.7rem] border border-amber-100 bg-white shadow-sm transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md"
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {RESOURCE_SHORTCUTS.map((shortcut) => (
+          <article
+            key={shortcut.href}
+            className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-amber-300/40"
           >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 outline-none transition hover:bg-amber-50/60 md:px-5">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900 md:text-xl">
-                  {artwork.title[locale]}
-                </h4>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                  {artwork.artist[locale]} · {artwork.material[locale]}
-                </p>
-              </div>
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 transition duration-150 group-open:rotate-180">
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-              </span>
-            </summary>
-
-            <div className="border-t border-amber-100 px-4 pb-4 pt-4 md:px-5 md:pb-5">
-              <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-                <figure className="relative h-64 overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-50 md:h-[22rem]">
-                  <Image
-                    src={artwork.image.src}
-                    alt={artwork.image.alt[locale]}
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    unoptimized
-                    className="object-cover"
-                  />
-                  <figcaption className="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-500">
-                    {artwork.image.caption[locale]}{" "}
-                    <a
-                      href={artwork.source.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-bold text-amber-700 transition hover:text-amber-800 hover:underline"
-                    >
-                      {artwork.source.label[locale]}
-                    </a>
-                  </figcaption>
-                </figure>
-
-                <div className="space-y-3">
-                  {artwork.context.map((paragraph) => (
-                    <p key={paragraph[locale]} className="text-sm leading-relaxed text-slate-700">
-                      {paragraph[locale]}
-                    </p>
-                  ))}
-
-                  <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-3.5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                      {locale === "fr" ? "Intérêt pour CleanMyMap" : "Why it matters for CleanMyMap"}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                      {artwork.interest[locale]}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </details>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+              {shortcut.eyebrow[locale]}
+            </p>
+            <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{shortcut.title[locale]}</h4>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{shortcut.detail[locale]}</p>
+            <Link
+              href={shortcut.href}
+              className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-900 transition hover:-translate-y-[1px] hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
+            >
+              {shortcut.label[locale]}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function LearnMailboxCleanupSection({ locale }: { locale: LearnLocale }) {
+  return (
+    <section id="boite-mail" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Sobriété numérique" : "Digital sobriety"}
+          </p>
+          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+            {locale === "fr" ? "Nettoyer sa boîte mail et ses abonnements" : "Clean your mailbox and subscriptions"}
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "À faire tous les trimestres: ouvre Gmail, va dans « More » puis « Manage subscriptions » (ou le raccourci /sub# si ton interface le propose), désabonne-toi des expéditeurs inutiles, puis vide spam et corbeille."
+              : "Do this every quarter: open Gmail, go to More then Manage subscriptions (or the /sub# shortcut if your interface shows it), unsubscribe from useless senders, then empty spam and trash."}
+          </p>
+        </div>
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
+          <Inbox className="h-5 w-5" aria-hidden="true" />
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-3">
+          {MAILBOX_CLEANUP_STEPS.map((step, index) => {
+            const StepIcon = step.icon;
+            return (
+              <article key={step.title.fr} className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
+                    <StepIcon className="h-5 w-5 text-amber-700" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{step.title[locale]}</h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{step.detail[locale]}</p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <aside className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+            {locale === "fr" ? "Impact environnemental estimé" : "Estimated environmental impact"}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "L'impact direct d'un nettoyage ponctuel reste faible, mais il devient utile quand il est répété tous les trimestres. Le gain vient surtout de la baisse des emails stockés et des synchronisations inutiles, avec un effet cumulé plus net si tu coupes plusieurs newsletters récurrentes."
+              : "The direct impact of one cleanup stays low, but it becomes useful when repeated every quarter. The gain mainly comes from fewer stored emails and fewer unnecessary syncs, with a clearer cumulative effect if you cut several recurring newsletters."}
+          </p>
+          <div className="mt-3 rounded-[1.2rem] border border-amber-200 bg-white p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "Repère pratique" : "Practical reference"}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              {locale === "fr"
+                ? "L'ADEME recommande de supprimer les spams, nettoyer les listes de diffusion et se désabonner des newsletters jamais lues."
+                : "ADEME recommends deleting spam, cleaning mailing lists, and unsubscribing from newsletters you never read."}
+            </p>
+            <a
+              href="https://support.google.com/mail/answer/15621070?co=GENIE.Platform%3DDesktop&hl=fr"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-amber-100 px-4 py-2 text-sm font-black text-amber-900 transition hover:-translate-y-[1px] hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
+            >
+              {locale === "fr" ? "Aide Gmail" : "Gmail help"}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function LearnBrowserHistoryCleanupSection({ locale }: { locale: LearnLocale }) {
+  return (
+    <section
+      id="historique-navigateur"
+      className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Hygiène de navigation" : "Browsing hygiene"}
+          </p>
+          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+            {locale === "fr"
+              ? "Vider l'historique du navigateur sur « toute durée »"
+              : "Clear browser history on \"all time\""}
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "Le bon réflexe consiste à nettoyer l'historique sans tout cocher. Garde les mots de passe enregistrés et les paramètres de site uniquement si tu veux les réinitialiser volontairement."
+              : "The right reflex is to clean history without selecting everything. Keep saved passwords and site settings only if you intentionally want to reset them."}
+          </p>
+        </div>
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
+          <Clock3 className="h-5 w-5" aria-hidden="true" />
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-3">
+          {BROWSER_HISTORY_CLEANUP_STEPS.map((step, index) => {
+            const StepIcon = step.icon;
+            return (
+              <article key={step.title.fr} className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
+                    <StepIcon className="h-5 w-5 text-amber-700" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{step.title[locale]}</h4>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-700">{step.detail[locale]}</p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <aside className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+            {locale === "fr" ? "Impact écologique et rythme" : "Environmental impact and cadence"}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "L'impact direct d'un nettoyage d'historique est très faible. Le vrai bénéfice est modeste mais réel quand il évite d'accumuler des données locales et de forcer des synchronisations inutiles. La cadence optimale est tous les trimestres sur un poste personnel, et après chaque usage sur un appareil partagé ou public."
+              : "The direct impact of clearing history is very small. The real benefit is modest but real when it prevents local data buildup and unnecessary syncs. The optimal cadence is every quarter on a personal device, and after each use on a shared or public computer."}
+          </p>
+          <div className="mt-3 rounded-[1.2rem] border border-amber-200 bg-white p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "À éviter par défaut" : "Avoid by default"}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              {locale === "fr"
+                ? "Ne coche pas tous les éléments: laisse les mots de passe enregistrés et les paramètres de site décochés, sauf si tu fais un dépannage précis ou un nettoyage complet sur un appareil partagé."
+                : "Do not select every item: leave saved passwords and site settings unchecked unless you are doing precise troubleshooting or a full cleanup on a shared device."}
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function LearnDigitalMaintenanceSection({ locale }: { locale: LearnLocale }) {
+  return (
+    <section
+      id="entretien-numerique"
+      className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Entretien numérique" : "Digital maintenance"}
+          </p>
+          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+            {locale === "fr" ? "Les petits gestes qui évitent l'encombrement" : "Small gestures that prevent clutter"}
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "Ces gestes complètent le ménage de la boîte mail et du navigateur: ils réduisent les fichiers stockés, les synchronisations inutiles et l'attention gaspillée."
+              : "These gestures complement mailbox and browser cleanup: they reduce stored files, unnecessary syncs, and wasted attention."}
+          </p>
+        </div>
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
+          <CloudOff className="h-5 w-5" aria-hidden="true" />
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {DIGITAL_MAINTENANCE_TOPICS.map((topic) => {
+          const TopicIcon = topic.icon;
+          return (
+            <article key={topic.title.fr} className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
+                  <TopicIcon className="h-5 w-5 text-amber-700" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                    {topic.cadence[locale]}
+                  </p>
+                  <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{topic.title[locale]}</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-700">{topic.detail[locale]}</p>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <aside className="mt-4 rounded-[1.35rem] border border-amber-200 bg-amber-50 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+          {locale === "fr" ? "Impact écologique et cadence" : "Environmental impact and cadence"}
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+          {locale === "fr"
+            ? "L'impact d'un seul geste reste faible à moyen selon le volume de données concerné. L'effet devient plus visible quand tu combines un nettoyage trimestriel des gros volumes avec un entretien mensuel des téléchargements, favoris et notifications. La cadence optimale est donc hybride: mensuel pour le bruit du quotidien, trimestriel pour les gros stocks, semestriel pour les comptes et la synchro."
+            : "The impact of a single gesture stays low to medium depending on the data volume involved. The effect becomes more visible when you combine quarterly cleanup of large volumes with monthly maintenance of downloads, bookmarks, and notifications. The optimal cadence is therefore hybrid: monthly for daily noise, quarterly for large storage, and twice-yearly for accounts and sync."}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          {locale === "fr"
+            ? "Pour les pièces jointes, les doublons et les corbeilles cloud, l'ordre de priorité est: supprimer ce qui n'a plus d'usage, puis vider la corbeille associée."
+            : "For attachments, duplicates, and cloud trash, the priority is: delete what is no longer useful, then empty the associated trash."}
+        </p>
+      </aside>
+    </section>
+  );
+}
+
+function LearnRessourcesCalendarPanel({ locale }: { locale: LearnLocale }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <details
+      className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+      open={isOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-start justify-between gap-4 rounded-[1.35rem] px-3 py-2 outline-none transition hover:bg-slate-50/70 focus-visible:bg-slate-50/80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:min-h-14">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+            {locale === "fr" ? "Calendrier léger" : "Light calendar"}
+          </p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+            {locale === "fr" ? "Ouvrir le calendrier si besoin" : "Open the calendar when needed"}
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
+            {locale === "fr"
+              ? "Le calendrier se charge à la demande. Les trois blocs du haut suffisent pour l'entrée rapide."
+              : "The calendar loads on demand. The three blocks above are enough for the quick entry."}
+          </p>
+        </div>
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
+          <CalendarDays className="h-5 w-5" aria-hidden="true" />
+        </span>
+      </summary>
+
+      <div className="mt-4">
+        {isOpen ? (
+          <DeferredLearnRessourcesCalendar locale={locale} />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                {locale === "fr" ? "Charge" : "Load"}
+              </p>
+              <p className="mt-2 text-sm font-bold text-slate-900">
+                {locale === "fr" ? "À la demande" : "On demand"}
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                {locale === "fr" ? "Usage" : "Usage"}
+              </p>
+              <p className="mt-2 text-sm font-bold text-slate-900">
+                {locale === "fr" ? "Support secondaire" : "Secondary support"}
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+                {locale === "fr" ? "Accès" : "Access"}
+              </p>
+              <p className="mt-2 text-sm font-bold text-slate-900">
+                {locale === "fr" ? "Une ouverture manuelle" : "Manual opening"}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
 
@@ -637,12 +1250,12 @@ function EventRow({
     <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3.5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
             {dayLabel}
           </p>
           <p className="mt-1 text-sm font-bold text-slate-900">{title}</p>
         </div>
-        <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+        <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm">
           {timeLabel}
         </span>
       </div>
@@ -662,7 +1275,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
       <aside className="rounded-[1.85rem] border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
               {locale === "fr" ? "Aperçu immédiat" : "Immediate overview"}
             </p>
             <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -687,7 +1300,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
         </div>
 
         <div className="mt-4 rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
             {locale === "fr" ? "Orientation" : "Orientation"}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -711,10 +1324,6 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
 export function LearnRessourcesClient() {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
-
-  useEffect(() => {
-    recordLearnPageVisit("bonnes-pratiques");
-  }, []);
 
   const sortingCues = [
     {
@@ -785,73 +1394,27 @@ export function LearnRessourcesClient() {
         label: { fr: "Voir le contexte", en: "See the context" },
       }}
     >
-    <div className="space-y-6">
-      <LearnBlockJourneySection locale={locale} currentPageId="bonnes-pratiques" />
-      <LearnRessourcesOverview locale={locale} />
-      <LearnArtworkAccordion locale={locale} />
+      <LearnPageVisitTracker pageId="bonnes-pratiques" />
+      <div className="space-y-6">
+        <LearnRessourcesOverview locale={locale} />
+        <LearnBlockJourneySection locale={locale} currentPageId="bonnes-pratiques" />
 
-      <section id="calendrier" className="grid gap-4 lg:grid-cols-[0.98fr_1.02fr]">
-          <article className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {isFrench ? "Calendrier léger" : "Light calendar"}
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-                  {isFrench ? "Un support, pas le centre de gravité" : "Supportive, not the center of gravity"}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-                  {isFrench
-                    ? "Le mois courant reste lisible, mais les trois blocs du haut donnent l'entrée principale."
-                    : "The current month stays readable, but the three blocks above remain the main entry."}
-                </p>
-              </div>
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
-                <CalendarDays className="h-5 w-5" aria-hidden="true" />
-              </span>
-            </div>
+        <LearnResourceShortcutsSection locale={locale} />
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {isFrench ? "Événements" : "Events"}
-                </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-                  {LEARN_RESOURCE_EVENTS.length}
-                </p>
-              </div>
-              <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                  {isFrench ? "Repères" : "Cues"}
-                </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-amber-800">4</p>
-              </div>
-              <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-                  {isFrench ? "Support" : "Support"}
-                </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-amber-800">1</p>
-              </div>
-            </div>
+        <LearnMailboxCleanupSection locale={locale} />
 
-            <div className="mt-4 h-[420px] overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white p-3">
-              <Calendar
-                localizer={localizer}
-                events={LEARN_RESOURCE_EVENTS}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: "100%" }}
-                culture={locale}
-                defaultView="month"
-                views={["month"]}
-                toolbar={false}
-              />
-            </div>
-          </article>
+        <LearnBrowserHistoryCleanupSection locale={locale} />
 
+        <LearnDigitalMaintenanceSection locale={locale} />
+
+        <section id="calendrier">
+          <LearnRessourcesCalendarPanel locale={locale} />
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
           <article className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
                 {isFrench ? "Repères de tri" : "Sorting cues"}
               </p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
@@ -876,7 +1439,7 @@ export function LearnRessourcesClient() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
                             <Icon size={18} className={cueToneClasses[cue.tone]} aria-hidden="true" />
                           </span>
                           <div>
@@ -888,7 +1451,7 @@ export function LearnRessourcesClient() {
                             </p>
                           </div>
                         </div>
-                        <span className="hidden rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 sm:inline-flex">
+                        <span className="hidden rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 sm:inline-flex">
                           {String(cue.title.fr.length).padStart(2, "0")}
                         </span>
                       </div>
@@ -897,34 +1460,11 @@ export function LearnRessourcesClient() {
                 })}
               </div>
             </div>
-
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                {isFrench ? "Actions rapides" : "Quick actions"}
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <Link
-                  href="/sections/recycling"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
-                >
-                  {isFrench ? "Ouvrir l'assistant tri" : "Open the sorting assistant"}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/sections/compost"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-amber-200 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:from-amber-600 hover:to-orange-600"
-                >
-                  {isFrench ? "Ouvrir le guide compost" : "Open the compost guide"}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                {isFrench
-                  ? "Les deux destinations restent identiques. La page ne fait que mieux les présenter."
-                  : "Both destinations stay identical. The page only presents them more clearly."}
-              </p>
-            </div>
           </article>
+
+          <div className="space-y-4">
+            <LearnArtworkAccordion locale={locale} />
+          </div>
         </section>
       </div>
     </LearnRubricShell>

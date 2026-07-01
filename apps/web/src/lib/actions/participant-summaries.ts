@@ -40,6 +40,99 @@ function normalizeSummaryRows(
   }));
 }
 
+async function countActionParticipantRows(
+  supabase: SupabaseClient,
+  actionId: string,
+  participationStatus?: ActionParticipantRow["participation_status"],
+): Promise<number> {
+  let query = supabase
+    .from("action_participants")
+    .select("action_id", { count: "exact", head: true })
+    .eq("action_id", actionId);
+
+  if (participationStatus) {
+    query = query.eq("participation_status", participationStatus);
+  }
+
+  const result = await query;
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Number(result.count ?? 0);
+}
+
+async function loadActionParticipantDetailsForUser(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    userId: string | null;
+  },
+): Promise<Pick<
+  ActionParticipantSummary,
+  "myParticipationStatus" | "myParticipationSource" | "myJoinedAt" | "myUpdatedAt"
+>> {
+  if (!params.userId) {
+    return {
+      myParticipationStatus: null,
+      myParticipationSource: null,
+      myJoinedAt: null,
+      myUpdatedAt: null,
+    };
+  }
+
+  const result = await supabase
+    .from("action_participants")
+    .select("participation_status, participation_source, joined_at, updated_at")
+    .eq("action_id", params.actionId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const row = result.data as
+    | {
+        participation_status: ActionParticipantRow["participation_status"] | null;
+        participation_source: ActionParticipantRow["participation_source"] | null;
+        joined_at: string | null;
+        updated_at: string | null;
+      }
+    | null;
+
+  return {
+    myParticipationStatus: row?.participation_status ?? null,
+    myParticipationSource: row?.participation_source ?? null,
+    myJoinedAt: row?.joined_at ?? null,
+    myUpdatedAt: row?.updated_at ?? null,
+  };
+}
+
+async function loadActionParticipantSummaryFallback(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    userId: string | null;
+  },
+): Promise<ActionParticipantSummary> {
+  const [activeCount, totalCount, details] = await Promise.all([
+    countActionParticipantRows(supabase, params.actionId, "confirmed"),
+    countActionParticipantRows(supabase, params.actionId),
+    loadActionParticipantDetailsForUser(supabase, params),
+  ]);
+
+  return {
+    actionId: params.actionId,
+    activeCount,
+    totalCount,
+    myParticipationStatus: details.myParticipationStatus,
+    myParticipationSource: details.myParticipationSource,
+    myJoinedAt: details.myJoinedAt,
+    myUpdatedAt: details.myUpdatedAt,
+  };
+}
+
 async function loadActionParticipantSummariesFromRpc(
   supabase: SupabaseClient,
   params: {
@@ -66,55 +159,30 @@ async function loadActionParticipantSummariesFallback(
     userId: string | null;
   },
 ): Promise<ActionParticipantSummary[]> {
-  const result = await supabase
-    .from("action_participants")
-    .select("action_id, user_id, participation_status, participation_source, joined_at, updated_at")
-    .in("action_id", params.actionIds);
+  const uniqueActionIds = Array.from(
+    new Set(params.actionIds.map((value) => value.trim()).filter((value) => value.length > 0)),
+  );
 
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  const summaries = await Promise.all(
+    uniqueActionIds.map((actionId) =>
+      loadActionParticipantSummaryFallback(supabase, {
+        actionId,
+        userId: params.userId,
+      }),
+    ),
+  );
 
-  const summaries = new Map<string, ActionParticipantSummary>();
-  for (const actionId of params.actionIds) {
-    summaries.set(actionId, {
-      actionId,
-      activeCount: 0,
-      totalCount: 0,
-      myParticipationStatus: null,
-      myParticipationSource: null,
-      myJoinedAt: null,
-      myUpdatedAt: null,
-    });
-  }
-
-  for (const row of (result.data ?? []) as Array<{
-    action_id: string;
-    user_id: string;
-    participation_status: ActionParticipantRow["participation_status"] | null;
-    participation_source: ActionParticipantRow["participation_source"] | null;
-    joined_at: string | null;
-    updated_at: string | null;
-  }>) {
-    const summary = summaries.get(row.action_id);
-    if (!summary) {
-      continue;
-    }
-
-    summary.totalCount += 1;
-    if (row.participation_status === "confirmed") {
-      summary.activeCount += 1;
-    }
-
-    if (params.userId && row.user_id === params.userId) {
-      summary.myParticipationStatus = row.participation_status;
-      summary.myParticipationSource = row.participation_source;
-      summary.myJoinedAt = row.joined_at;
-      summary.myUpdatedAt = row.updated_at;
-    }
-  }
-
-  return [...summaries.values()];
+  return normalizeSummaryRows(
+    summaries.map((summary) => ({
+      action_id: summary.actionId,
+      active_count: summary.activeCount,
+      total_count: summary.totalCount,
+      my_participation_status: summary.myParticipationStatus,
+      my_participation_source: summary.myParticipationSource,
+      my_joined_at: summary.myJoinedAt,
+      my_updated_at: summary.myUpdatedAt,
+    })),
+  );
 }
 
 export async function loadActionParticipantSummaries(
@@ -130,7 +198,16 @@ export async function loadActionParticipantSummaries(
 
   try {
     return await loadActionParticipantSummariesFromRpc(supabase, params);
-  } catch {
-    return loadActionParticipantSummariesFallback(supabase, params);
+  } catch (error) {
+    try {
+      return await loadActionParticipantSummariesFallback(supabase, params);
+    } catch (fallbackError) {
+      console.warn("[group-participation] unable to load participation summaries", {
+        actionIds: params.actionIds.length,
+        rpcError: error instanceof Error ? error.message : String(error),
+        fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+      });
+      return [];
+    }
   }
 }

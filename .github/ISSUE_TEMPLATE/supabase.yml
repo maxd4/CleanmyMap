@@ -1,0 +1,37 @@
+name: Sujet Supabase
+description: Signaler un problème de schéma, RLS, requête, RPC ou quota Supabase.
+title: "[Supabase] "
+labels:
+  - supabase
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: Décrivez le problème ou la demande côté Supabase.
+      placeholder: Table, policy, fonction, requête, stockage ou migration.
+    validations:
+      required: true
+  - type: textarea
+    id: schema
+    attributes:
+      label: Table ou objet concerné
+      description: Précisez la table, la vue, la fonction ou le bucket.
+      placeholder: profiles, actions, RPC, bucket Storage, migration SQL...
+    validations:
+      required: true
+  - type: textarea
+    id: access
+    attributes:
+      label: Accès et RLS
+      description: Décrivez qui doit pouvoir lire ou écrire.
+      placeholder: public, connecté, propriétaire, admin, service role...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Preuves utiles
+      description: Ajoutez logs, requêtes, captures ou impact observé.
+      placeholder: Message d'erreur, SQL, capture Supabase, trace de requête.
+

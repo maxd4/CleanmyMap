@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuizQuestion } from "../../components/learn/environmental-quiz";
+import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { auditQuizSources } from "./quiz-source-audit";
 
 describe("quiz source audit", () => {
@@ -87,5 +88,14 @@ describe("quiz source audit", () => {
     expect(report.questionsToReview.map((item) => item.questionId)).toContain("needs-review");
     expect(report.weakOrVagueSources.map((item) => item.questionId)).toContain("weak-source");
     expect(report.blockingIssuesCount).toBe(3);
+  });
+
+  it("keeps the current quiz bank free of blocking source issues", () => {
+    const report = auditQuizSources(QUIZ_QUESTIONS);
+
+    expect(report.blockingIssuesCount).toBe(0);
+    expect(report.questionsWithoutSource).toHaveLength(0);
+    expect(report.questionsWithUnsourcedFigures).toHaveLength(0);
+    expect(report.questionsWithLocalRulesNotVariable).toHaveLength(0);
   });
 });

@@ -7,6 +7,6 @@ describe("gamification leaderboard route", () => {
 
     expect(source).toContain('const periodSchema = z.enum(["lifetime","yearToDate"]);');
     expect(source).toContain('period: period.data,');
-    expect(source).toContain('getGamificationLeaderboard(supabase, parsed.data, period.data)');
+    expect(source).toContain('loadCachedGamificationLeaderboard(parsed.data, period.data)');
   });
 });

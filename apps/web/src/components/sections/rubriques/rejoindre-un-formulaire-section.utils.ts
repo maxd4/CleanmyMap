@@ -77,6 +77,7 @@ function buildSearchableText(item: JoinableActionItem, locale: "fr" | "en"): str
       item.action_date,
       formatSearchableDate(item.action_date, locale),
       item.participantsCount.toString(),
+      item.pendingRequestsCount.toString(),
       item.volunteers_count.toString(),
       item.duration_minutes.toString(),
       item.awaitingApproval

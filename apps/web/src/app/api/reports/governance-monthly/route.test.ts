@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const adminAccessErrorJsonResponseMock = vi.hoisted(() => vi.fn());
 const governanceReportRecord = {
   id: "governance-2026-05-01",
   reportKey: "cleanmymap-governance",
@@ -59,6 +61,14 @@ vi.mock("@/lib/governance/governance-monthly-report", () => ({
   loadGovernanceMonthlyReport: loadGovernanceMonthlyReportMock,
 }));
 
+vi.mock("@/lib/authz", () => ({
+  requireAdminAccess: requireAdminAccessMock,
+}));
+
+vi.mock("@/lib/http/auth-responses", () => ({
+  adminAccessErrorJsonResponse: adminAccessErrorJsonResponseMock,
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
@@ -66,6 +76,13 @@ vi.mock("@/lib/supabase/server", () => ({
 import { GET } from "./route";
 
 describe("governance monthly report route", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
+    adminAccessErrorJsonResponseMock.mockReturnValue(new Response("forbidden", { status: 403 }));
+  });
+
   it("redirects to the precompiled PDF asset", async () => {
     getSupabaseServerClientMock.mockReturnValue({
       storage: {
@@ -82,9 +99,24 @@ describe("governance monthly report route", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(signedPdfUrl);
-    expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, s-maxage=3600");
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
+    expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
     expect(loadGovernanceMonthlyReportMock).toHaveBeenCalledWith(null);
     expect(getSupabaseServerClientMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns json with a short private cache control", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/reports/governance-monthly?format=json"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=300, stale-while-revalidate=86400",
+    );
+    expect(requireAdminAccessMock).toHaveBeenCalledTimes(1);
   });
 
   it("returns 409 when the pdf asset has not been prepared", async () => {
@@ -109,5 +141,16 @@ describe("governance monthly report route", () => {
     const response = await GET(new Request("http://localhost/api/reports/governance-monthly"));
 
     expect(response.status).toBe(404);
+  });
+
+  it("returns 403 when access is denied", async () => {
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/reports/governance-monthly"));
+
+    expect(response.status).toBe(403);
+    expect(adminAccessErrorJsonResponseMock).toHaveBeenCalledTimes(1);
+    expect(loadGovernanceMonthlyReportMock).not.toHaveBeenCalled();
   });
 });

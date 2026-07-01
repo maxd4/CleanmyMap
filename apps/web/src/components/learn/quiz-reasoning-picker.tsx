@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   ShieldAlert,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CognitivePrimer } from "@/components/learn/cognitive-primer";
 import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-strip";
@@ -48,7 +47,7 @@ const REASONING_TYPES: Array<{
       en: "Correct a common misconception with a statement that feels plausible at first glance.",
     },
     tone: "bg-amber-100 text-amber-600",
-    icon: <Sparkles size={28} />,
+    icon: <Sparkles size={28} aria-hidden="true" />,
   },
   {
     id: "terrain",
@@ -61,7 +60,7 @@ const REASONING_TYPES: Array<{
       en: "Test the right reflex in a real cleanwalk, sorting or safety situation.",
     },
     tone: "bg-emerald-100 text-emerald-600",
-    icon: <MapPin size={28} />,
+    icon: <MapPin size={28} aria-hidden="true" />,
   },
   {
     id: "estimation",
@@ -74,7 +73,7 @@ const REASONING_TYPES: Array<{
       en: "Read an order of magnitude without confusing it with an exact value.",
     },
     tone: "bg-blue-100 text-blue-600",
-    icon: <Calculator size={28} />,
+    icon: <Calculator size={28} aria-hidden="true" />,
   },
   {
     id: "comparaison",
@@ -87,7 +86,7 @@ const REASONING_TYPES: Array<{
       en: "Compare two close cases to avoid an automatic answer.",
     },
     tone: "bg-sky-100 text-sky-600",
-    icon: <Scale size={28} />,
+    icon: <Scale size={28} aria-hidden="true" />,
   },
   {
     id: "conséquences indirectes",
@@ -100,7 +99,7 @@ const REASONING_TYPES: Array<{
       en: "Show hidden effects, chains of cause and effect and less visible impacts.",
     },
     tone: "bg-violet-100 text-violet-600",
-    icon: <ArrowRightLeft size={28} />,
+    icon: <ArrowRightLeft size={28} aria-hidden="true" />,
   },
   {
     id: "questions contre-intuitives",
@@ -113,7 +112,7 @@ const REASONING_TYPES: Array<{
       en: "Make the learner hesitate before answering when the initial intuition is misleading.",
     },
     tone: "bg-rose-100 text-rose-600",
-    icon: <Lightbulb size={28} />,
+    icon: <Lightbulb size={28} aria-hidden="true" />,
   },
   {
     id: "cas-limites",
@@ -126,7 +125,7 @@ const REASONING_TYPES: Array<{
       en: "Handle gray areas, ambiguous instructions and imperfect field trade-offs.",
     },
     tone: "bg-slate-100 text-slate-700",
-    icon: <ShieldAlert size={28} />,
+    icon: <ShieldAlert size={28} aria-hidden="true" />,
   },
 ];
 
@@ -151,21 +150,17 @@ export function QuizReasoningPicker({
               onClick={onBackToAccessType}
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} aria-hidden="true" />
               Changer de type de quiz
             </button>
           </div>
         ) : null}
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-3 px-6 py-2 bg-emerald-50 rounded-full border border-emerald-100 mb-4"
-        >
-          <Brain className="text-emerald-600" size={20} />
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2">
+          <Brain className="text-emerald-600" size={20} aria-hidden="true" />
           <span className="text-sm font-black text-emerald-800 uppercase tracking-widest">
             Parcours Adaptatif
           </span>
-        </motion.div>
+        </div>
         <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">
           Choisissez votre type de raisonnement
         </h2>
@@ -184,12 +179,9 @@ export function QuizReasoningPicker({
       />
 
       <div className="grid grid-cols-1 gap-6 max-w-6xl mx-auto md:grid-cols-2 lg:grid-cols-3">
-        {visibleReasoningTypes.map((reasoningType, index) => (
-          <motion.button
+        {visibleReasoningTypes.map((reasoningType) => (
+          <button
             key={reasoningType.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
             onClick={() => onSelectReasoningType(reasoningType.id)}
             className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10"
           >
@@ -208,9 +200,9 @@ export function QuizReasoningPicker({
               {reasoningType.description[locale]}
             </p>
             <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
-              <CheckCircle className="text-emerald-500" size={32} />
+              <CheckCircle className="text-emerald-500" size={32} aria-hidden="true" />
             </div>
-          </motion.button>
+          </button>
         ))}
       </div>
 

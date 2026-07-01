@@ -37,6 +37,8 @@ describe("LearnVisualCard", () => {
     expect(markup).toContain("Vulgarisation");
     expect(markup).toContain("Contexte");
     expect(markup).toContain("Ordres de grandeur");
-    expect(markup).toContain("Ouvrir la page");
+    expect(markup).toContain("Accès direct");
+    expect(markup).toContain("Explorer le contexte");
+    expect(markup).toContain("aria-label=\"Vulgarisation - Explorer le contexte\"");
   });
 });

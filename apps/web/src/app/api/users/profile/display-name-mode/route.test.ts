@@ -5,6 +5,7 @@ const clerkClientMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const requireSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
+const getDevAuthBypassSessionMock = vi.hoisted(() => vi.fn());
 const revalidateTagMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -16,12 +17,17 @@ vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
 }));
 
+vi.mock("@/lib/authz-identity", () => ({
+  getDevAuthBypassSession: getDevAuthBypassSessionMock,
+}));
+
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
   requireSupabaseClerkRlsClient: requireSupabaseClerkRlsClientMock,
 }));
 
 vi.mock("next/cache", () => ({
+  unstable_cache: (fn: unknown) => fn,
   revalidateTag: revalidateTagMock,
 }));
 
@@ -30,6 +36,7 @@ describe("PATCH /api/users/profile/display-name-mode", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
+    getDevAuthBypassSessionMock.mockResolvedValue(null);
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "user-1",
       displayName: "Ada Admin",

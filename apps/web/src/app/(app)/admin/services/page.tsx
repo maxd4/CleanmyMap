@@ -1,4 +1,4 @@
-import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { AdminAccessState } from"@/components/ui/admin-access-state";
 import { CodexUsagePanel } from"@/components/admin/codex-usage-panel";
 import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental-impact-capture-panel";
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
@@ -17,22 +17,11 @@ export default async function AdminServicesPage() {
 
  if (!userId) {
  return (
- <ClerkRequiredGate
-  isAuthenticated={false}
-  mode="blur"
-  title="Services techniques"
-  description="Accès réservé aux administrateurs connectés."
- lockedPreview={
- <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
- <h2 className="text-xl font-semibold cmm-text-primary">Services techniques</h2>
- <p className="mt-3 cmm-text-small cmm-text-secondary">
- Connectez-vous avec un compte admin pour afficher l&apos;état des intégrations et services.
- </p>
- </section>
- }
- >
- <div />
- </ClerkRequiredGate>
+ <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+  <div className="mx-auto flex max-w-4xl items-center justify-center">
+   <AdminAccessState className="w-full" />
+  </div>
+ </div>
  );
  }
 
@@ -42,34 +31,10 @@ export default async function AdminServicesPage() {
 
  if (role !=="admin") {
  return (
- <div className="space-y-6">
- <PageHeader
-  family={pageFamily}
-  eyebrow="Supervision technique"
-  title="Services techniques"
-  subtitle="Accès réservé aux administrateurs connectés."
-  badges={
-    <>
-      <PageHeaderBadge family={pageFamily}>
-        Admin only
-      </PageHeaderBadge>
-      <PageHeaderBadge family={pageFamily} muted>
-        État des services
-      </PageHeaderBadge>
-    </>
-  }
- />
- <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">
- Accès admin requis
- </p>
- <h2 className="mt-2 text-2xl font-semibold text-amber-900">
- Supervision technique réservée aux admins
- </h2>
- <p className="mt-2 cmm-text-small text-amber-800">
- Vous devez disposer du rôle <span className="font-semibold">admin</span> pour voir cette page.
- </p>
- </section>
+ <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+  <div className="mx-auto flex max-w-4xl items-center justify-center">
+   <AdminAccessState className="w-full" />
+  </div>
  </div>
  );
  }

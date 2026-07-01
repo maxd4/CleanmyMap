@@ -4,7 +4,6 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerLocale } from "@/lib/server-preferences";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import {
   PilotageLockedPage,
@@ -14,9 +13,7 @@ import {
 } from "@/components/pilotage/pilotage-access-screen";
 
 async function loadOverview() {
-  const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
-    supabase,
     periodDays: 30,
     limit: 1800,
   });
