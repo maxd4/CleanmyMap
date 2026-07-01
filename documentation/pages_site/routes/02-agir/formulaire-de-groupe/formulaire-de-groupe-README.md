@@ -12,9 +12,9 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : finalisée
 - **Contexte nécessaire** : Compte connecté pour envoyer une demande, affichage public des actions validées ouvertes
-- **Objectif utilisateur principal** : Rejoindre une action de groupe déjà validée, consulter sa file publique et suivre les participations.
-- **Action principale attendue** : Trouver une action ouverte, envoyer une demande, puis suivre son statut et celui des autres participants.
-- **Contrat de participation** : `action_participants` conserve l'état actif, l'origine et la date de jonction.
+- **Objectif utilisateur principal** : Rejoindre une action de groupe déjà validée, consulter sa file publique, suivre les participations et corriger une erreur si besoin.
+- **Action principale attendue** : Trouver une action ouverte, envoyer une demande, puis suivre son statut, annuler une demande en attente ou quitter un formulaire accepté.
+- **Contrat de participation** : `action_participants` conserve l'état actif, l'origine, la date de jonction et la trace d'une annulation ou d'un départ.
 - **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet de fermer ou rouvrir les inscriptions après publication.
 - **Palette attendue** : emerald
 - **Scope** : finalisé
@@ -59,9 +59,10 @@
 - **Résumé** : colonne latérale avec compteurs synthétiques sur les actions ouvertes, les demandes en attente, les participations confirmées et l'impact estimé.
 - **Raccourcis** : accès rapides vers les participations, les demandes envoyées, le rôle d'organisateur et le guide bénévole.
 - **Mon suivi** : carte dédiée aux participations de l'utilisateur avec statuts courts et lien de navigation.
+- **Mon suivi** : carte dédiée aux participations de l'utilisateur avec statuts courts et lien de navigation, y compris les participations annulées comme trace.
 - **Aide** : carte secondaire avec renvoi vers le centre d'aide.
 - **File publique** : tableau des demandes en attente avec actions d'acceptation et de refus.
-- **Confirmation** : modale centrée avant l'envoi d'une demande de participation.
+- **Confirmation** : modale centrée avant l'envoi d'une demande de participation, ou avant l'annulation / sortie d'un formulaire.
 - **Bandeau bas de page** : rappel des engagements de sécurité et de la charte bénévole.
 
 ## États à documenter
@@ -87,4 +88,5 @@
 - La page ne liste que les actions approuvées dont `groupJoinEnabled` n'est pas désactivé.
 - La file publique des demandes n'apparaît que pour l'action ciblée sélectionnée.
 - Le lien avec `actionId` doit conserver la possibilité d'ouvrir directement la file d'une action depuis les cartes d'action et la déclaration.
+- La page doit permettre au bénévole de se retirer lui-meme d'une demande en attente ou d'une participation confirmée, sans suppression définitive de trace.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
