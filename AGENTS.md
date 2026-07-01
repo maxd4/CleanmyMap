@@ -383,6 +383,8 @@ Si `%TEMP%` grossit à cause des outils de dev ou de Codex, lancer `npm run clea
 
 Après une modification significative, lancer les vérifications pertinentes disponibles dans le dépôt.
 
+Toute livraison doit se terminer par un push GitHub et une vérification globale du dépôt avant clôture. Quand c’est possible, cette vérification doit couvrir l’ensemble du repo avec la suite de validation disponible, pas seulement le périmètre modifié.
+
 Avant de lancer une commande, vérifier dans `package.json`, `turbo.json`, la documentation ou les scripts du projet quelle commande est adaptée.
 
 Priorité :
