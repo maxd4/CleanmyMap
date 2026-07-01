@@ -311,7 +311,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                       Ouvrir le formulaire de groupe
                     </p>
                     <p className="text-xs leading-relaxed text-sky-900/70">
-                      L&apos;organisateur principal et les coorganisateurs peuvent partager le lien. L&apos;action devient rejoignable après validation, et chaque participation est enregistrée séparément.
+                      L&apos;organisateur / référant principal et les coorganisateurs peuvent partager le lien. L&apos;action devient rejoignable après validation, et chaque participation est enregistrée séparément.
                     </p>
                   </div>
                 </label>

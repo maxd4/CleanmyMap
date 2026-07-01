@@ -77,7 +77,7 @@ export function ActionDeclarationIdentityFields({
 
  {isActionMode && !isSpontaneousAction && (
  <label className="flex flex-col gap-2 cmm-text-small font-semibold cmm-text-secondary">
- Organisateurs
+ Organisateur / Référant ayant participé à l&apos;action
  <input
  name="organizerAccounts"
  autoComplete="off"
@@ -87,7 +87,7 @@ export function ActionDeclarationIdentityFields({
  placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
  />
  <span className="cmm-text-caption cmm-text-muted font-normal">
- Hors action spontanée, renseignez les comptes des organisateurs réels.
+ Hors action spontanée, renseignez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé.
  </span>
  </label>
  )}

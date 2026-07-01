@@ -408,18 +408,6 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     });
   }
 
-  if (
-    form.recordType === "action" &&
-    form.associationName !== "Action spontanée" &&
-    !form.organizerAccounts.trim()
-  ) {
-    issues.push({
-      field: "associationName",
-      message:
-        "Renseignez au moins un compte organisateur pour cette action.",
-    });
-  }
-
   if (!form.actionDate.trim()) {
     issues.push({
       field: "actionDate",

@@ -250,13 +250,13 @@ export function ActionStepReview({
           {payload.recordType === "action" && (
             <DataRow
               icon={Users}
-              label={payload.associationName === "Action spontanée" ? "Organisateur" : "Organisateurs"}
+              label="Organisateur / Référant ayant participé à l'action"
               value={
                 payload.associationName === "Action spontanée"
                   ? "Compte connecté automatiquement"
                   : payload.organizerAccounts && payload.organizerAccounts.length > 0
                     ? payload.organizerAccounts.join(", ")
-                    : "À renseigner"
+                    : "Compte admin par défaut"
               }
               valueClass="text-violet-700"
             />

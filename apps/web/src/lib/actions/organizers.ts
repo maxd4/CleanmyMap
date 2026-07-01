@@ -1,6 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { runSingleActionQuery } from "@/lib/actions/query";
+import { env } from "@/lib/env";
 
 type ProfileLookupRow = {
   id: string;
@@ -45,6 +46,15 @@ function normalizeComparable(value: string | null | undefined): string {
 
 function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens.map(normalizeToken).filter((token) => token.length > 0))];
+}
+
+function parseCsvUserIds(raw: string | undefined): string[] {
+  return uniqueTokens(
+    (raw ?? "")
+      .split(/[,;\n]+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0),
+  );
 }
 
 function buildClerkSearchParams(normalized: string): {
@@ -330,6 +340,11 @@ export async function loadActionOrganizerIdsForAction(
     return organizerIds;
   }
 
+  const configuredAdminIds = parseCsvUserIds(env.CLERK_ADMIN_USER_IDS);
+  if (configuredAdminIds.length > 0) {
+    return [configuredAdminIds[0]];
+  }
+
   const actionResult = await runSingleActionQuery<{
     created_by_clerk_id: string | null;
   }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", actionId).maybeSingle());
@@ -340,4 +355,20 @@ export async function loadActionOrganizerIdsForAction(
     null;
 
   return creatorId ? [creatorId] : [];
+}
+
+export function resolveDefaultActionOrganizerIds(params: {
+  creatorUserId: string;
+  creatorIsAdminLike: boolean;
+}): string[] {
+  if (params.creatorIsAdminLike) {
+    return [params.creatorUserId];
+  }
+
+  const configuredAdminIds = parseCsvUserIds(env.CLERK_ADMIN_USER_IDS);
+  if (configuredAdminIds.length > 0) {
+    return [configuredAdminIds[0]];
+  }
+
+  return [params.creatorUserId];
 }
