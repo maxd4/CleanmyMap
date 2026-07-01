@@ -20,6 +20,12 @@ type ProfileLookupRow = {
   handle: string | null;
 };
 
+type ParticipantSearchRow = {
+  id: string;
+  display_name: string | null;
+  handle: string | null;
+};
+
 export type JoinableActionItem = Pick<
   ActionRow,
   | "id"
@@ -451,19 +457,29 @@ export type ActionParticipationReviewItem = {
   participationSource: ParticipationSource;
 };
 
+export type ActionParticipationSearchItem = {
+  userId: string;
+  displayName: string;
+  handle: string | null;
+};
+
 export async function loadActionParticipationReviews(
   supabase: SupabaseClient,
   params: {
     actionId: string;
     limit?: number;
+    statuses?: ParticipationStatus[];
   },
 ): Promise<ActionParticipationReviewItem[]> {
   const reviewLimit = Math.max(1, Math.min(params.limit ?? 24, 100));
+  const statuses = params.statuses ?? [PENDING_PARTICIPATION_STATUS];
   const result = await supabase
     .from("action_participants")
-    .select("id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source")
+    .select(
+      "id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source",
+    )
     .eq("action_id", params.actionId)
-    .eq("participation_status", PENDING_PARTICIPATION_STATUS)
+    .in("participation_status", statuses)
     .order("created_at", { ascending: true })
     .limit(reviewLimit);
 
@@ -499,6 +515,68 @@ export async function loadActionParticipationReviews(
   });
 }
 
+export async function searchActionParticipationCandidates(
+  supabase: SupabaseClient,
+  searchTerm: string,
+  limit = 8,
+): Promise<ActionParticipationSearchItem[]> {
+  const term = searchTerm.trim();
+  if (term.length === 0) {
+    return [];
+  }
+
+  const cappedLimit = Math.max(1, Math.min(limit, 20));
+  const exactQueries = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, handle")
+      .eq("id", term)
+      .limit(cappedLimit),
+    supabase
+      .from("profiles")
+      .select("id, display_name, handle")
+      .eq("handle", term)
+      .limit(cappedLimit),
+  ]);
+
+  const exactRows = exactQueries.flatMap((result) =>
+    result.error ? [] : ((result.data ?? []) as ParticipantSearchRow[]),
+  );
+  const exactMatches = exactRows.filter((row, index, rows) =>
+    rows.findIndex((candidate) => candidate.id === row.id) === index,
+  );
+  if (exactMatches.length > 0) {
+    return exactMatches.slice(0, cappedLimit).map((row) => ({
+      userId: row.id,
+      displayName: row.display_name?.trim() || row.handle?.trim() || row.id,
+      handle: row.handle?.trim() || null,
+    }));
+  }
+
+  const pattern = `%${term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
+  const partial = await supabase
+    .from("profiles")
+    .select("id, display_name, handle")
+    .or(`handle.ilike.${pattern},display_name.ilike.${pattern}`)
+    .order("display_name", { ascending: true })
+    .limit(cappedLimit);
+
+  if (partial.error) {
+    return [];
+  }
+
+  const partialRows = (partial.data ?? []) as ParticipantSearchRow[];
+  return partialRows
+    .filter((row, index, rows) =>
+      rows.findIndex((candidate) => candidate.id === row.id) === index,
+    )
+    .map((row) => ({
+      userId: row.id,
+      displayName: row.display_name?.trim() || row.handle?.trim() || row.id,
+      handle: row.handle?.trim() || null,
+    }));
+}
+
 export async function reviewActionParticipation(
   supabase: SupabaseClient,
   params: {
@@ -513,6 +591,7 @@ export async function reviewActionParticipation(
   participationSource: ParticipationSource;
   joinedAt: string;
   updatedAt: string | null;
+  participantsCount: number;
 }> {
   const existing = await readParticipantRecordById(supabase, {
     actionId: params.actionId,
@@ -525,7 +604,7 @@ export async function reviewActionParticipation(
     throw notFoundError;
   }
 
-  if (existing.participation_status !== PENDING_PARTICIPATION_STATUS) {
+  if (existing.participation_status === "cancelled") {
     const validationError = new Error(
       "Cette participation a déjà été traitée.",
     );
@@ -534,6 +613,25 @@ export async function reviewActionParticipation(
   }
 
   const joinedAt = existing.joined_at ?? existing.created_at;
+  if (
+    params.decision === "accept" &&
+    existing.participation_status === ACTIVE_PARTICIPATION_STATUS
+  ) {
+    const participantsCount = await countParticipantsForAction(
+      supabase,
+      params.actionId,
+    );
+    return {
+      alreadyReviewed: true,
+      participantUserId: existing.user_id,
+      participationStatus: existing.participation_status,
+      participationSource: existing.participation_source,
+      joinedAt: resolveJoinedAt(existing),
+      updatedAt: resolveParticipationUpdatedAt(existing),
+      participantsCount,
+    };
+  }
+
   const nextStatus =
     params.decision === "accept"
       ? ACTIVE_PARTICIPATION_STATUS
@@ -545,6 +643,10 @@ export async function reviewActionParticipation(
     participationStatus: nextStatus,
     participationSource: existing.participation_source,
   });
+  const participantsCount = await countParticipantsForAction(
+    supabase,
+    params.actionId,
+  );
 
   return {
     alreadyReviewed: false,
@@ -553,6 +655,114 @@ export async function reviewActionParticipation(
     participationSource: updatedRecord.participation_source,
     joinedAt: resolveJoinedAt(updatedRecord),
     updatedAt: resolveParticipationUpdatedAt(updatedRecord),
+    participantsCount,
+  };
+}
+
+export async function addActionParticipationByAdmin(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    targetUserId: string;
+  },
+): Promise<{
+  alreadyJoined: boolean;
+  participantUserId: string;
+  participationStatus: ParticipationStatus;
+  participationSource: ParticipationSource;
+  joinedAt: string;
+  updatedAt: string | null;
+  participantsCount: number;
+}> {
+  const actionResult = await runSingleActionQuery<{
+    status: "pending" | "approved" | "rejected";
+    notes: string | null;
+  }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
+
+  if (!actionResult) {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  if (actionResult.status !== "approved") {
+    const validationError = new Error(
+      "L'action doit etre validée par un admin avant d'ajouter un participant.",
+    );
+    validationError.name = "ValidationError";
+    throw validationError;
+  }
+
+  const actionMetadata = extractActionMetadataFromNotes(actionResult.notes);
+  if (actionMetadata.groupJoinEnabled === false) {
+    const validationError = new Error(
+      "L'organisateur n'a pas ouvert ce formulaire.",
+    );
+    validationError.name = "ValidationError";
+    throw validationError;
+  }
+
+  const existing = await readParticipantRecord(supabase, {
+    actionId: params.actionId,
+    userId: params.targetUserId,
+  });
+
+  const joinedAt = existing?.joined_at ?? existing?.created_at ?? new Date().toISOString();
+  const targetStatus = ACTIVE_PARTICIPATION_STATUS;
+  const targetSource = ADMIN_PARTICIPATION_SOURCE;
+
+  if (existing) {
+    const updatedRecord =
+      existing.participation_status === targetStatus &&
+      existing.participation_source === targetSource
+        ? existing
+        : await updateParticipantRecord(supabase, {
+            actionId: params.actionId,
+            userId: params.targetUserId,
+            joinedAt,
+            participationStatus: targetStatus,
+            participationSource: targetSource,
+          });
+
+    const participantsCount = await countParticipantsForAction(
+      supabase,
+      params.actionId,
+    );
+
+    return {
+      alreadyJoined:
+        existing.participation_status === targetStatus &&
+        existing.participation_source === targetSource,
+      participantUserId: params.targetUserId,
+      participationStatus: updatedRecord.participation_status,
+      participationSource: updatedRecord.participation_source,
+      joinedAt: resolveJoinedAt(updatedRecord),
+      updatedAt: resolveParticipationUpdatedAt(updatedRecord),
+      participantsCount,
+    };
+  }
+
+  const insertedRecord = await insertParticipantRecord(supabase, {
+    actionId: params.actionId,
+    userId: params.targetUserId,
+    joinedAt,
+    participationStatus: targetStatus,
+    participationSource: targetSource,
+  });
+
+  const participantsCount = await countParticipantsForAction(
+    supabase,
+    params.actionId,
+  );
+
+  return {
+    alreadyJoined: false,
+    participantUserId: params.targetUserId,
+    participationStatus: insertedRecord.participation_status,
+    participationSource: insertedRecord.participation_source,
+    joinedAt: resolveJoinedAt(insertedRecord),
+    updatedAt: resolveParticipationUpdatedAt(insertedRecord),
+    participantsCount,
   };
 }
 

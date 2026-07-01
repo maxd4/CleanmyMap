@@ -132,6 +132,10 @@ function createParticipantsChain(participants: {
       ) {
         return false;
       }
+      const allowedStatuses = state.inFilters.participation_status;
+      if (allowedStatuses && !allowedStatuses.includes(normalized.participation_status)) {
+        return false;
+      }
       const allowedActionIds = state.inFilters.action_id;
       if (allowedActionIds && !allowedActionIds.includes(normalized.action_id)) {
         return false;
@@ -237,6 +241,7 @@ function createParticipantsChain(participants: {
           action_id: values.action_id,
           user_id: values.user_id,
         };
+        participants.push(state.inserting as ParticipantRow);
         return chain;
       },
     ),
@@ -311,14 +316,20 @@ function createParticipantsChain(participants: {
 
 function createProfilesChain(profiles: { id: string; display_name: string | null; handle: string | null }[]) {
   const state: {
+    eqFilters: Record<string, string>;
     inFilters: Record<string, string[]>;
+    orExpression: string | null;
   } = {
+    eqFilters: {},
     inFilters: {},
+    orExpression: null,
   };
 
   type ProfilesChain = {
     select: (columns: string) => ProfilesChain;
+    eq: (field: string, value: string) => ProfilesChain;
     in: (field: string, values: string[]) => ProfilesChain;
+    or: (expression: string) => ProfilesChain;
     limit: (limit: number) => Promise<{
       data: { id: string; display_name: string | null; handle: string | null }[];
       error: null;
@@ -334,16 +345,38 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
 
   const chain = {
     select: vi.fn(() => chain),
+    eq: vi.fn((field: string, value: string) => {
+      state.eqFilters[field] = value;
+      return chain;
+    }),
     in: vi.fn((field: string, values: string[]) => {
       state.inFilters[field] = values;
+      return chain;
+    }),
+    or: vi.fn((expression: string) => {
+      state.orExpression = expression;
       return chain;
     }),
     limit: vi.fn(async (limit: number) => ({
       data: profiles
         .filter((profile) => {
+          if (state.eqFilters.id && profile.id !== state.eqFilters.id) {
+            return false;
+          }
+          if (state.eqFilters.handle && profile.handle !== state.eqFilters.handle) {
+            return false;
+          }
           const allowedIds = state.inFilters.id;
           if (allowedIds && !allowedIds.includes(profile.id)) {
             return false;
+          }
+          if (state.orExpression) {
+            const needle = state.orExpression.match(/%([^%]+)%/)?.[1]?.toLowerCase() ?? "";
+            const display = (profile.display_name ?? "").toLowerCase();
+            const handle = (profile.handle ?? "").toLowerCase();
+            if (!display.includes(needle) && !handle.includes(needle)) {
+              return false;
+            }
           }
           return true;
         })
@@ -359,9 +392,23 @@ function createProfilesChain(profiles: { id: string; display_name: string | null
     ) =>
       Promise.resolve({
         data: profiles.filter((profile) => {
+          if (state.eqFilters.id && profile.id !== state.eqFilters.id) {
+            return false;
+          }
+          if (state.eqFilters.handle && profile.handle !== state.eqFilters.handle) {
+            return false;
+          }
           const allowedIds = state.inFilters.id;
           if (allowedIds && !allowedIds.includes(profile.id)) {
             return false;
+          }
+          if (state.orExpression) {
+            const needle = state.orExpression.match(/%([^%]+)%/)?.[1]?.toLowerCase() ?? "";
+            const display = (profile.display_name ?? "").toLowerCase();
+            const handle = (profile.handle ?? "").toLowerCase();
+            if (!display.includes(needle) && !handle.includes(needle)) {
+              return false;
+            }
           }
           return true;
         }),
@@ -569,7 +616,8 @@ describe("GET /api/actions/:actionId/group-join", () => {
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });
 
-  it("returns pending requests for the creator", async () => {
+  it("returns pending and confirmed participants for admin moderators", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
     const participants = [
       {
         id: "participant-1",
@@ -579,6 +627,15 @@ describe("GET /api/actions/:actionId/group-join", () => {
         participation_source: "group_form" as const,
         action_id: "action-1",
         user_id: "user-2",
+      },
+      {
+        id: "participant-2",
+        created_at: "2026-06-02T10:00:00Z",
+        joined_at: "2026-06-02T10:00:00Z",
+        participation_status: "confirmed" as const,
+        participation_source: "group_form" as const,
+        action_id: "action-1",
+        user_id: "user-3",
       },
     ];
     getSupabaseServerClientMock.mockReturnValue(
@@ -598,6 +655,11 @@ describe("GET /api/actions/:actionId/group-join", () => {
             display_name: "Alice",
             handle: "alice",
           },
+          {
+            id: "user-3",
+            display_name: "Bob",
+            handle: "bob",
+          },
         ],
       }),
     );
@@ -612,6 +674,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       status?: string;
       count?: number;
       pendingRequests?: Array<{ id?: string; displayName?: string }>;
+      confirmedParticipants?: Array<{ id?: string; displayName?: string }>;
       canReview?: boolean;
     };
 
@@ -621,9 +684,11 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.canReview).toBe(true);
     expect(body.pendingRequests?.[0]?.id).toBe("participant-1");
     expect(body.pendingRequests?.[0]?.displayName).toBe("Alice");
+    expect(body.confirmedParticipants?.[0]?.id).toBe("participant-2");
+    expect(body.confirmedParticipants?.[0]?.displayName).toBe("Bob");
   });
 
-  it("returns public pending requests even for anonymous visitors", async () => {
+  it("hides moderation rows for anonymous visitors", async () => {
     authMock.mockResolvedValue({ userId: null });
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
     getSupabaseServerClientMock.mockReturnValue(
@@ -667,15 +732,16 @@ describe("GET /api/actions/:actionId/group-join", () => {
       status?: string;
       count?: number;
       pendingRequests?: Array<{ id?: string; displayName?: string }>;
+      confirmedParticipants?: Array<{ id?: string; displayName?: string }>;
       canReview?: boolean;
     };
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
-    expect(body.count).toBe(1);
+    expect(body.count).toBe(0);
     expect(body.canReview).toBe(false);
-    expect(body.pendingRequests?.[0]?.id).toBe("participant-1");
-    expect(body.pendingRequests?.[0]?.displayName).toBe("Alice");
+    expect(body.pendingRequests).toEqual([]);
+    expect(body.confirmedParticipants).toEqual([]);
   });
 });
 
@@ -803,12 +869,193 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
   });
 });
 
+describe("GET /api/actions/:actionId/group-join?q=", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    authMock.mockResolvedValue({ userId: "elu-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "elu" });
+    refreshProgressionProfileMock.mockResolvedValue(undefined);
+  });
+
+  it("searches candidate accounts for admin moderators", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createSupabaseMock({
+        action: {
+          id: "action-1",
+          created_by_clerk_id: "user-1",
+          status: "approved",
+          notes: appendActionMetadataToNotes("Observation", {
+            groupJoinEnabled: true,
+          }),
+        },
+        profiles: [
+          {
+            id: "user-2",
+            display_name: "Alice Martin",
+            handle: "alice",
+          },
+          {
+            id: "user-3",
+            display_name: "Bob",
+            handle: "bob",
+          },
+        ],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    const body = (await response.json()) as {
+      status?: string;
+      mode?: string;
+      count?: number;
+      items?: Array<{ userId?: string; displayName?: string }>;
+      canReview?: boolean;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.mode).toBe("search");
+    expect(body.canReview).toBe(true);
+    expect(body.count).toBe(1);
+    expect(body.items?.[0]?.userId).toBe("user-2");
+  });
+});
+
+describe("POST /api/actions/:actionId/group-join admin moderation", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    authMock.mockResolvedValue({ userId: "elu-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "elu" });
+    refreshProgressionProfileMock.mockResolvedValue(undefined);
+  });
+
+  it("adds a participant directly from search", async () => {
+    const participants: Array<{
+      id: string;
+      created_at: string;
+      updated_at?: string;
+      action_id: string;
+      user_id: string;
+      joined_at?: string;
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "import";
+    }> = [];
+    getSupabaseServerClientMock.mockReturnValue(
+      createSupabaseMock({
+        action: {
+          id: "action-1",
+          created_by_clerk_id: "user-1",
+          status: "approved",
+          notes: appendActionMetadataToNotes("Observation", {
+            groupJoinEnabled: true,
+          }),
+        },
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    const body = (await response.json()) as {
+      status?: string;
+      participantId?: string;
+      participantUserId?: string;
+      participationStatus?: string;
+      participationSource?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.participantUserId).toBe("user-2");
+    expect(body.participationStatus).toBe("confirmed");
+    expect(body.participationSource).toBe("admin");
+    expect(body.participantsCount).toBe(1);
+    expect(participants[0]?.user_id).toBe("user-2");
+    expect(participants[0]?.participation_status).toBe("confirmed");
+  });
+
+  it("excludes an accepted participant through moderation", async () => {
+    const participants = [
+      {
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-01T10:00:00Z",
+        participation_status: "confirmed" as const,
+        participation_source: "group_form" as const,
+        action_id: "action-1",
+        user_id: "user-2",
+      },
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createSupabaseMock({
+        action: {
+          id: "action-1",
+          created_by_clerk_id: "user-1",
+          status: "approved",
+          notes: appendActionMetadataToNotes("Observation", {
+            groupJoinEnabled: true,
+          }),
+        },
+        participants,
+        profiles: [
+          {
+            id: "user-2",
+            display_name: "Alice",
+            handle: "alice",
+          },
+        ],
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantId: "participant-1",
+          decision: "reject",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    const body = (await response.json()) as {
+      status?: string;
+      participationStatus?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.participationStatus).toBe("cancelled");
+    expect(body.participantsCount).toBe(0);
+    expect(participants[0]?.participation_status).toBe("cancelled");
+  });
+});
+
 describe("POST /api/actions/:actionId/group-join", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
-    getCurrentUserIdentityMock.mockResolvedValue(null);
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });

@@ -28,6 +28,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type {
   ActionParticipationReviewItem,
+  ActionParticipationSearchItem,
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "@/lib/actions/group-participation";
@@ -70,7 +71,16 @@ type GroupJoinQueueResponse = {
   actionId: string;
   count: number;
   pendingRequests: ActionParticipationReviewItem[];
+  confirmedParticipants: ActionParticipationReviewItem[];
   canReview: boolean;
+};
+
+type GroupJoinSearchResponse = {
+  status: "ok";
+  mode: "search";
+  canReview: boolean;
+  count: number;
+  items: ActionParticipationSearchItem[];
 };
 
 type StatusFilter = "all" | "open" | "pending" | "closed";
@@ -667,12 +677,14 @@ function QueueRow({
   queueCanReview,
   reviewingQueueId,
   onReviewQueueRequest,
+  displayMode,
 }: {
   request: ActionParticipationReviewItem;
   fr: boolean;
   queueCanReview: boolean;
   reviewingQueueId: string | null;
   onReviewQueueRequest: (requestId: string, decision: "accept" | "reject") => void;
+  displayMode: "pending" | "confirmed";
 }) {
   const initials = request.displayName
     .split(" ")
@@ -704,21 +716,25 @@ function QueueRow({
           </p>
         </div>
       </div>
-      <PillBadge tone="amber">{fr ? "En attente" : "Pending"}</PillBadge>
+      <PillBadge tone={displayMode === "pending" ? "amber" : "emerald"}>
+        {displayMode === "pending" ? (fr ? "En attente" : "Pending") : fr ? "Confirmé" : "Confirmed"}
+      </PillBadge>
       {queueCanReview ? (
         <div className="flex items-center gap-2">
+          {displayMode === "pending" && (
+            <button
+              type="button"
+              aria-label={fr ? "Accepter la demande" : "Accept request"}
+              disabled={reviewingQueueId === request.id}
+              onClick={() => onReviewQueueRequest(request.id, "accept")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+            >
+              <CheckCircle2 size={16} />
+            </button>
+          )}
           <button
             type="button"
-            aria-label={fr ? "Accepter la demande" : "Accept request"}
-            disabled={reviewingQueueId === request.id}
-            onClick={() => onReviewQueueRequest(request.id, "accept")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
-          >
-            <CheckCircle2 size={16} />
-          </button>
-          <button
-            type="button"
-            aria-label={fr ? "Refuser la demande" : "Reject request"}
+            aria-label={fr ? "Exclure le compte" : "Remove account"}
             disabled={reviewingQueueId === request.id}
             onClick={() => onReviewQueueRequest(request.id, "reject")}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
@@ -748,10 +764,16 @@ export function JoinFormSection() {
   const [authenticated, setAuthenticated] = useState(false);
   const [historyItems, setHistoryItems] = useState<JoinableActionHistoryItem[]>([]);
   const [queueRequests, setQueueRequests] = useState<ActionParticipationReviewItem[]>([]);
+  const [queueConfirmedParticipants, setQueueConfirmedParticipants] = useState<ActionParticipationReviewItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [queueCanReview, setQueueCanReview] = useState(false);
   const [reviewingQueueId, setReviewingQueueId] = useState<string | null>(null);
+  const [addingQueueParticipantId, setAddingQueueParticipantId] = useState<string | null>(null);
+  const [queueSearchQuery, setQueueSearchQuery] = useState("");
+  const [queueSearchResults, setQueueSearchResults] = useState<ActionParticipationSearchItem[]>([]);
+  const [queueSearchLoading, setQueueSearchLoading] = useState(false);
+  const [queueSearchError, setQueueSearchError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
@@ -910,14 +932,18 @@ export function JoinFormSection() {
 
         const typedPayload = payload as GroupJoinQueueResponse;
         setQueueRequests(typedPayload.pendingRequests ?? []);
+        setQueueConfirmedParticipants(typedPayload.confirmedParticipants ?? []);
         setQueueCanReview(Boolean(typedPayload.canReview));
+        return typedPayload;
       } catch (queueFetchError) {
         if ((queueFetchError as { name?: string }).name === "AbortError") {
-          return;
+          return null;
         }
         setQueueRequests([]);
+        setQueueConfirmedParticipants([]);
         setQueueCanReview(false);
         setQueueError(fr ? "Impossible de charger la file publique." : "Unable to load the public queue.");
+        return null;
       } finally {
         setQueueLoading(false);
       }
@@ -928,9 +954,13 @@ export function JoinFormSection() {
   useEffect(() => {
     if (!queueActionId) {
       setQueueRequests([]);
+      setQueueConfirmedParticipants([]);
       setQueueCanReview(false);
       setQueueLoading(false);
       setQueueError(null);
+      setQueueSearchResults([]);
+      setQueueSearchError(null);
+      setQueueSearchQuery("");
       return undefined;
     }
 
@@ -939,6 +969,65 @@ export function JoinFormSection() {
 
     return () => controller.abort();
   }, [loadQueue, queueActionId]);
+
+  useEffect(() => {
+    if (!queueCanReview || !queueActionId) {
+      setQueueSearchResults([]);
+      setQueueSearchError(null);
+      setQueueSearchLoading(false);
+      return undefined;
+    }
+
+    const query = queueSearchQuery.trim();
+    if (query.length < 2) {
+      setQueueSearchResults([]);
+      setQueueSearchError(null);
+      setQueueSearchLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setQueueSearchLoading(true);
+      setQueueSearchError(null);
+      fetch(
+        `/api/actions/${encodeURIComponent(queueActionId)}/group-join?q=${encodeURIComponent(query)}&limit=8`,
+        { signal: controller.signal },
+      )
+        .then(async (response) => {
+          const payload = (await response.json()) as GroupJoinSearchResponse | { error?: string };
+          if (!response.ok) {
+            const message =
+              typeof payload === "object" && payload && "error" in payload && payload.error
+                ? payload.error
+                : fr
+                  ? "La recherche de comptes a échoué."
+                  : "Account search failed.";
+            setQueueSearchResults([]);
+            setQueueSearchError(message);
+            return;
+          }
+
+          const typedPayload = payload as GroupJoinSearchResponse;
+          setQueueSearchResults(typedPayload.items ?? []);
+        })
+        .catch((error) => {
+          if ((error as { name?: string }).name === "AbortError") {
+            return;
+          }
+          setQueueSearchResults([]);
+          setQueueSearchError(fr ? "La recherche de comptes a échoué." : "Account search failed.");
+        })
+        .finally(() => {
+          setQueueSearchLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [fr, queueActionId, queueCanReview, queueSearchQuery]);
 
   async function submitJoin(actionId: string) {
     const currentItem = items.find((item) => item.id === actionId) ?? null;
@@ -1184,6 +1273,7 @@ export function JoinFormSection() {
             participantId: string;
             participationStatus: "pending" | "confirmed" | "cancelled";
             participationSource: "group_form" | "admin" | "import";
+            participantsCount: number;
           }
         | { error?: string };
 
@@ -1198,35 +1288,92 @@ export function JoinFormSection() {
         return;
       }
 
-      if (decision === "accept") {
-        setItems((previous) =>
-          previous.map((item) =>
-            item.id === queueActionId
-              ? {
-                  ...item,
-                  participantsCount: item.participantsCount + 1,
-                  pendingRequestsCount: Math.max(0, item.pendingRequestsCount - 1),
-                }
-              : item,
-          ),
-        );
-      } else {
-        setItems((previous) =>
-          previous.map((item) =>
-            item.id === queueActionId
-              ? {
-                  ...item,
-                  pendingRequestsCount: Math.max(0, item.pendingRequestsCount - 1),
-                }
-              : item,
-          ),
-        );
-      }
+      const refreshedQueue = queueActionId ? await loadQueue(queueActionId) : null;
+      const refreshedPendingCount = refreshedQueue?.pendingRequests.length ?? 0;
+
+      setItems((previous) =>
+        previous.map((item) =>
+          item.id === queueActionId
+            ? {
+                ...item,
+                participantsCount:
+                  typeof payload === "object" && payload && "participantsCount" in payload
+                    ? payload.participantsCount
+                    : item.participantsCount,
+                pendingRequestsCount: refreshedPendingCount,
+              }
+            : item,
+        ),
+      );
 
       setNotice(decision === "accept" ? (fr ? "Demande acceptée." : "Request approved.") : fr ? "Demande refusée." : "Request rejected.");
-      await loadQueue(queueActionId);
     } finally {
       setReviewingQueueId(null);
+    }
+  }
+
+  async function addQueueParticipant(userId: string) {
+    if (!queueActionId || !queueCanReview) {
+      return;
+    }
+
+    setAddingQueueParticipantId(userId);
+    setQueueError(null);
+
+    try {
+      const response = await fetch(`/api/actions/${encodeURIComponent(queueActionId)}/group-join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          participantUserId: userId,
+        }),
+      });
+
+      const payload = (await response.json()) as
+        | {
+            status: "ok";
+            participantId: string;
+            participantUserId: string;
+            participationStatus: "pending" | "confirmed" | "cancelled";
+            participationSource: "group_form" | "admin" | "import";
+            participantsCount: number;
+          }
+        | { error?: string };
+
+      if (!response.ok) {
+        const message =
+          typeof payload === "object" && payload && "error" in payload && payload.error
+            ? payload.error
+            : fr
+              ? "L'ajout du compte a échoué."
+              : "Adding the account failed.";
+        setQueueError(message);
+        return;
+      }
+
+      const refreshedQueue = queueActionId ? await loadQueue(queueActionId) : null;
+      const refreshedPendingCount = refreshedQueue?.pendingRequests.length ?? 0;
+
+      setItems((previous) =>
+        previous.map((item) =>
+          item.id === queueActionId
+            ? {
+                ...item,
+                participantsCount:
+                  typeof payload === "object" && payload && "participantsCount" in payload
+                    ? payload.participantsCount
+                    : item.participantsCount,
+                pendingRequestsCount: refreshedPendingCount,
+              }
+            : item,
+        ),
+      );
+
+      setNotice(fr ? "Le compte a été ajouté à l'action." : "The account has been added to the action.");
+    } finally {
+      setAddingQueueParticipantId(null);
     }
   }
 
@@ -1508,59 +1655,205 @@ export function JoinFormSection() {
                         {fr ? "File publique des demandes" : "Public request queue"}
                       </h3>
                       <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
-                        {formatCount(queueRequests.length)}
+                        {formatCount(queueRequests.length + queueConfirmedParticipants.length)}
                       </span>
                     </div>
                     <p className="max-w-2xl text-xs leading-relaxed text-slate-600">
-                      {fr
-                        ? "Demandes en attente pour les actions dont vous êtes organisateur ou co-organisateur."
-                        : "Requests waiting for actions where you are the organizer or co-organizer."}
+                      {queueCanReview
+                        ? fr
+                          ? "Recherche, validation, exclusion et ajout manuel réservés aux admin et élus."
+                          : "Search, validation, exclusion and manual addition are reserved for admins and elected users."
+                        : fr
+                          ? "Seuls les admin et élus peuvent modérer cette file."
+                          : "Only admins and elected users can moderate this queue."}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <ShieldCheck size={14} className="text-emerald-700" />
-                    {fr ? "Les demandes restent visibles dans la file" : "Requests stay visible in the queue"}
+                    {queueCanReview
+                      ? fr
+                        ? "Accès de modération activé"
+                        : "Moderation access enabled"
+                      : fr
+                        ? "Lecture seule"
+                        : "Read only"}
                   </div>
                 </div>
 
-                <div className="divide-y divide-slate-100">
-                  {queueError ? (
-                    <div className="px-4 py-3 text-sm text-rose-700">{queueError}</div>
-                  ) : queueLoading ? (
-                    <div className="space-y-2.5 px-4 py-3">
-                      <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
-                      <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                <div className="space-y-4 px-4 py-4">
+                  {queueCanReview && (
+                    <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-emerald-950">
+                            {fr ? "Ajouter un compte" : "Add an account"}
+                          </p>
+                          <p className="text-xs text-slate-600">
+                            {fr
+                              ? "Recherchez un compte puis ajoutez-le directement à l'action."
+                              : "Search for an account and add it directly to the action."}
+                          </p>
+                        </div>
+                        {queueSearchLoading && <Loader2 size={16} className="animate-spin text-emerald-700" />}
+                      </div>
+
+                      <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="relative rounded-xl border border-emerald-200 bg-white px-3 py-2">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="search"
+                            value={queueSearchQuery}
+                            onChange={(event) => setQueueSearchQuery(event.target.value)}
+                            placeholder={fr ? "Nom, pseudo ou identifiant" : "Name, handle or ID"}
+                            className="w-full border-0 bg-transparent pl-8 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                          />
+                        </div>
+                        <CmmButton
+                          type="button"
+                          tone="secondary"
+                          variant="pill"
+                          size="sm"
+                          onClick={() => setQueueSearchQuery((current) => current.trim())}
+                        >
+                          {fr ? "Rechercher" : "Search"}
+                        </CmmButton>
+                      </div>
+
+                      {queueSearchError && (
+                        <p className="mt-2 text-xs font-medium text-rose-700">{queueSearchError}</p>
+                      )}
+
+                      {queueSearchQuery.trim().length >= 2 && (
+                        <div className="mt-3 space-y-2">
+                          {queueSearchResults.length > 0 ? (
+                            queueSearchResults.map((candidate) => (
+                              <div
+                                key={candidate.userId}
+                                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/80 bg-white px-3 py-2 shadow-sm"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-slate-900">{candidate.displayName}</p>
+                                  <p className="text-xs text-slate-500">
+                                    {candidate.handle ? `@${candidate.handle}` : candidate.userId}
+                                  </p>
+                                </div>
+                                <CmmButton
+                                  type="button"
+                                  tone="primary"
+                                  variant="pill"
+                                  size="sm"
+                                  disabled={addingQueueParticipantId === candidate.userId}
+                                  onClick={() => void addQueueParticipant(candidate.userId)}
+                                >
+                                  {addingQueueParticipantId === candidate.userId ? (
+                                    <>
+                                      <Loader2 size={14} className="animate-spin" />
+                                      {fr ? "Ajout..." : "Adding..."}
+                                    </>
+                                  ) : (
+                                    fr ? "Ajouter" : "Add"
+                                  )}
+                                </CmmButton>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-600">
+                              {fr ? "Aucun compte ne correspond à cette recherche." : "No account matches this search."}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ) : queueRequests.length > 0 ? (
-                    queueRequests
-                      .slice(0, 3)
-                      .map((request) => (
-                        <QueueRow
-                          key={request.id}
-                          request={request}
-                          fr={fr}
-                          queueCanReview={queueCanReview}
-                          reviewingQueueId={reviewingQueueId}
-                          onReviewQueueRequest={reviewQueueRequest}
-                        />
-                      ))
-                  ) : (
-                    <div className="px-4 py-3 text-sm leading-relaxed text-slate-600">
-                      {fr
-                        ? "Aucune demande en attente sur ce formulaire."
-                        : "No requests are waiting on this form."}
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="text-sm font-semibold text-slate-900">
+                        {fr ? "Demandes en attente" : "Pending requests"}
+                      </h4>
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-800">
+                        {formatCount(queueRequests.length)}
+                      </span>
+                    </div>
+                    {queueError ? (
+                      <div className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-sm text-rose-700">
+                        {queueError}
+                      </div>
+                    ) : queueLoading ? (
+                      <div className="space-y-2.5">
+                        <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                        <div className="h-9 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40" />
+                      </div>
+                    ) : queueRequests.length > 0 ? (
+                      <div className="divide-y divide-slate-100 rounded-[1rem] border border-slate-100">
+                        {queueRequests.map((request) => (
+                          <QueueRow
+                            key={request.id}
+                            request={request}
+                            fr={fr}
+                            queueCanReview={queueCanReview}
+                            reviewingQueueId={reviewingQueueId}
+                            onReviewQueueRequest={reviewQueueRequest}
+                            displayMode="pending"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
+                        {fr
+                          ? "Aucune demande en attente sur ce formulaire."
+                          : "No requests are waiting on this form."}
+                      </div>
+                    )}
+                  </div>
+
+                  {queueCanReview && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-semibold text-slate-900">
+                          {fr ? "Comptes confirmés" : "Confirmed accounts"}
+                        </h4>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-800">
+                          {formatCount(queueConfirmedParticipants.length)}
+                        </span>
+                      </div>
+                      {queueConfirmedParticipants.length > 0 ? (
+                        <div className="divide-y divide-slate-100 rounded-[1rem] border border-slate-100">
+                          {queueConfirmedParticipants.map((request) => (
+                            <QueueRow
+                              key={request.id}
+                              request={request}
+                              fr={fr}
+                              queueCanReview={queueCanReview}
+                              reviewingQueueId={reviewingQueueId}
+                              onReviewQueueRequest={reviewQueueRequest}
+                              displayMode="confirmed"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
+                          {fr
+                            ? "Aucun compte confirmé à afficher."
+                            : "No confirmed account to display."}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-600">
                   <span>
-                    {fr
-                      ? "Acceptation et refus sont réservés aux organisateurs."
-                      : "Accepting and rejecting is reserved for organizers."}
+                    {queueCanReview
+                      ? fr
+                        ? "Les admin et élus peuvent accepter, exclure et ajouter un compte."
+                        : "Admins and elected users can approve, remove and add an account."
+                      : fr
+                        ? "La modération des comptes est réservée aux admin et élus."
+                        : "Account moderation is reserved for admins and elected users."}
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-emerald-700">
-                    {fr ? "Voir toutes les demandes" : "View all requests"}
+                    {fr ? "Vue de modération" : "Moderation view"}
                     <ChevronRight size={14} />
                   </span>
                 </div>

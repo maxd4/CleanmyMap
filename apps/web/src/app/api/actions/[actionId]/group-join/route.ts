@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { isAdminLikeProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -13,9 +12,11 @@ import {
   setActionGroupJoinEnabledInNotes,
 } from "@/lib/actions/metadata";
 import {
+  addActionParticipationByAdmin,
   cancelActionParticipation,
   loadActionParticipationReviews,
   reviewActionParticipation,
+  searchActionParticipationCandidates,
 } from "@/lib/actions/group-participation";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
@@ -31,6 +32,19 @@ const reviewSchema = z.object({
   participantId: z.string().trim().min(1),
   decision: z.enum(["accept", "reject"]),
 });
+
+const addParticipantSchema = z.object({
+  participantUserId: z.string().trim().min(1),
+});
+
+const searchSchema = z.object({
+  q: z.string().trim().min(2).max(120),
+  limit: z.coerce.number().int().min(1).max(12).default(8),
+});
+
+function isGroupFormModeratorRole(role: string): boolean {
+  return role === "admin" || role === "elu" || role === "max";
+}
 
 async function resolveGroupJoinUserId(operation: string): Promise<string | null> {
   try {
@@ -51,7 +65,7 @@ async function resolveReviewerAccess(params: {
   creatorUserId?: string | null;
 }) {
   const identity = await getCurrentUserIdentity();
-  if (identity && isAdminLikeProfile(identity.role)) {
+  if (identity && isGroupFormModeratorRole(identity.role)) {
     return { ok: true as const, identity };
   }
 
@@ -80,6 +94,15 @@ async function resolveReviewerAccess(params: {
   }
 
   return { ok: false as const };
+}
+
+async function resolveAdminModerationAccess() {
+  const identity = await getCurrentUserIdentity();
+  if (identity && isGroupFormModeratorRole(identity.role)) {
+    return { ok: true as const, identity };
+  }
+
+  return { ok: false as const, identity };
 }
 
 export async function PATCH(
@@ -190,7 +213,12 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const userId = await resolveGroupJoinUserId("GET /api/actions/:actionId/group-join");
+  await resolveGroupJoinUserId("GET /api/actions/:actionId/group-join");
+  const url = new URL(_request.url);
+  const searchParsed = searchSchema.safeParse({
+    q: url.searchParams.get("q"),
+    limit: url.searchParams.get("limit") ?? undefined,
+  });
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();
@@ -221,25 +249,52 @@ export async function GET(
       );
     }
 
-    const access = userId
-      ? await resolveReviewerAccess({
-          supabase,
-          actionId: trimmedActionId,
-          userId,
-          creatorUserId: actionResult.created_by_clerk_id,
-        })
-      : { ok: false as const };
+    if (searchParsed.success && searchParsed.data.q.length > 0) {
+      const access = await resolveAdminModerationAccess();
+      if (!access.ok) {
+        return NextResponse.json(
+          { error: "Vous n'êtes pas autorisé à rechercher des comptes." },
+          { status: 403 },
+        );
+      }
 
-    const pendingRequests = await loadActionParticipationReviews(supabase, {
-      actionId: trimmedActionId,
-      limit: 50,
-    });
+      const items = await searchActionParticipationCandidates(
+        supabase,
+        searchParsed.data.q,
+        searchParsed.data.limit,
+      );
+
+      return NextResponse.json({
+        status: "ok",
+        mode: "search",
+        canReview: true,
+        count: items.length,
+        items,
+      });
+    }
+
+    const access = await resolveAdminModerationAccess();
+    const pendingRequests = access.ok
+      ? await loadActionParticipationReviews(supabase, {
+          actionId: trimmedActionId,
+          limit: 50,
+          statuses: ["pending"],
+        })
+      : [];
+    const confirmedParticipants = access.ok
+      ? await loadActionParticipationReviews(supabase, {
+          actionId: trimmedActionId,
+          limit: 50,
+          statuses: ["confirmed"],
+        })
+      : [];
 
     return NextResponse.json({
       status: "ok",
       actionId: trimmedActionId,
       count: pendingRequests.length,
       pendingRequests,
+      confirmedParticipants,
       canReview: Boolean(access.ok),
     });
   } catch (error) {
@@ -263,7 +318,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
-  const parsed = reviewSchema.safeParse(payload);
+  const parsed = z.union([reviewSchema, addParticipantSchema]).safeParse(payload);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
@@ -297,12 +352,7 @@ export async function POST(
       );
     }
 
-    const access = await resolveReviewerAccess({
-      supabase,
-      actionId: trimmedActionId,
-      userId,
-      creatorUserId: actionResult.created_by_clerk_id,
-    });
+    const access = await resolveAdminModerationAccess();
 
     if (!access.ok) {
       return NextResponse.json(
@@ -311,25 +361,43 @@ export async function POST(
       );
     }
 
-    const result = await reviewActionParticipation(supabase, {
-      actionId: trimmedActionId,
-      participantId: parsed.data.participantId,
-      decision: parsed.data.decision,
-    });
+    const result =
+      "participantUserId" in parsed.data
+        ? await addActionParticipationByAdmin(supabase, {
+            actionId: trimmedActionId,
+            targetUserId: parsed.data.participantUserId,
+          })
+        : await reviewActionParticipation(supabase, {
+            actionId: trimmedActionId,
+            participantId: parsed.data.participantId,
+            decision: parsed.data.decision,
+          });
 
-    if (parsed.data.decision === "accept") {
-      await refreshProgressionProfile(supabase, result.participantUserId).catch(() => null);
+    if (
+      "participantUserId" in parsed.data ||
+      parsed.data.decision === "accept"
+    ) {
+      await refreshProgressionProfile(
+        supabase,
+        result.participantUserId,
+      ).catch(() => null);
     }
 
     return NextResponse.json({
       status: "ok",
       actionId: trimmedActionId,
-      participantId: parsed.data.participantId,
-      decision: parsed.data.decision,
+      participantId:
+        "participantId" in parsed.data
+          ? parsed.data.participantId
+          : result.participantUserId,
+      participantUserId: result.participantUserId,
+      decision:
+        "decision" in parsed.data ? parsed.data.decision : "accept",
       participationStatus: result.participationStatus,
       participationSource: result.participationSource,
       joinedAt: result.joinedAt,
       updatedAt: result.updatedAt,
+      participantsCount: result.participantsCount,
     });
   } catch (error) {
     if (error instanceof Error) {
