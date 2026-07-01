@@ -7,7 +7,12 @@ export type VolunteerActionValidationIssue = {
 
 type VolunteerActionSubmissionLike = Pick<
   CreateActionPayload,
-  "recordType" | "wasteKg" | "cigaretteButts" | "volunteersCount" | "wasteBreakdown"
+  | "recordType"
+  | "submissionMode"
+  | "wasteKg"
+  | "cigaretteButts"
+  | "volunteersCount"
+  | "wasteBreakdown"
 >;
 
 function toNumber(value: number | null | undefined): number {
@@ -17,7 +22,7 @@ function toNumber(value: number | null | undefined): number {
 export function getVolunteerActionValidationIssues(
   payload: VolunteerActionSubmissionLike,
 ): VolunteerActionValidationIssue[] {
-  if (payload.recordType !== "action") {
+  if (payload.recordType !== "action" || payload.submissionMode === "quick") {
     return [];
   }
 

@@ -152,6 +152,40 @@ describe("POST /api/actions", () => {
     expect(trackServerEventMock).not.toHaveBeenCalled();
   }, 15000);
 
+  it("accepts quick pre-action submissions without waste and publishes them", async () => {
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Pré-formulaire test",
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteersCount: 1,
+      durationMinutes: 30,
+      notes: "Préparation avant action",
+      submissionMode: "quick",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = (await response.json()) as { id?: string; error?: string };
+    expect(response.status).toBe(201);
+    expect(body.id).toBe("action-test-1");
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "approved",
+      }),
+    );
+  }, 15000);
+
   it("falls back to the admin organizer when no organizer is provided", async () => {
     const { POST } = await import("./route");
 
@@ -190,7 +224,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        status: "pending",
+        status: "approved",
       }),
     );
   }, 15000);

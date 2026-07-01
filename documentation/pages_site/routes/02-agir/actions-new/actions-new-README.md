@@ -47,7 +47,7 @@
 - **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
 - **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
 - **choice initial** : deux cartes de parcours, lecture rapide, retour au choix possible.
-- **success** : parcours sélectionné et affichage du formulaire ou du shell avant action.
+- **success** : parcours sélectionné, affichage du formulaire avant ou après action, puis possibilité de basculer vers le formulaire complet.
 - **error** : panneau compact avec retour au choix.
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
@@ -63,4 +63,5 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée commence par le choix entre déclaration après action et pré-déclaration avant action.
+- Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe, puis propose un passage vers le formulaire complet.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
