@@ -54,6 +54,17 @@ type JoinActionResponse = {
   participantsCount: number;
 };
 
+type LeaveActionResponse = {
+  status: "ok";
+  actionId: string;
+  alreadyCancelled: boolean;
+  joinedAt: string;
+  participationStatus: "cancelled";
+  participationSource: "group_form" | "admin" | "import";
+  participationUpdatedAt: string | null;
+  participantsCount: number;
+};
+
 type GroupJoinQueueResponse = {
   status: "ok";
   actionId: string;
@@ -107,6 +118,8 @@ function formatKg(value: number): string {
   }).format(Math.max(0, value));
 }
 
+type ActionCardStatus = "open" | "pending" | "closed" | "confirmed" | "cancelled";
+
 function getActionDisplayStatus(item: JoinableActionItem): "open" | "pending" | "closed" | "confirmed" {
   if (item.joined) {
     return "confirmed";
@@ -120,7 +133,27 @@ function getActionDisplayStatus(item: JoinableActionItem): "open" | "pending" | 
   return "open";
 }
 
-function getStatusLabel(status: "open" | "pending" | "closed" | "confirmed", fr: boolean): string {
+function getCardDisplayStatus(item: JoinableActionItem): ActionCardStatus {
+  if (item.participationStatus === "cancelled") {
+    return "cancelled";
+  }
+
+  if (item.joined) {
+    return "confirmed";
+  }
+
+  if (item.awaitingApproval) {
+    return "pending";
+  }
+
+  if (!item.groupJoinEnabled) {
+    return "closed";
+  }
+
+  return "open";
+}
+
+function getStatusLabel(status: ActionCardStatus, fr: boolean): string {
   switch (status) {
     case "pending":
       return fr ? "En attente" : "Pending";
@@ -128,17 +161,20 @@ function getStatusLabel(status: "open" | "pending" | "closed" | "confirmed", fr:
       return fr ? "Fermée" : "Closed";
     case "confirmed":
       return fr ? "Confirmée" : "Confirmed";
+    case "cancelled":
+      return fr ? "Annulée" : "Cancelled";
     case "open":
     default:
       return fr ? "Ouverte" : "Open";
   }
 }
 
-function getStatusDotTone(status: "open" | "pending" | "closed" | "confirmed"): string {
+function getStatusDotTone(status: ActionCardStatus): string {
   switch (status) {
     case "pending":
       return "bg-amber-500";
     case "closed":
+    case "cancelled":
       return "bg-slate-400";
     case "confirmed":
       return "bg-emerald-600";
@@ -475,17 +511,22 @@ function ActionCard({
   fr,
   authenticated,
   joining,
+  leaving,
   onRequestJoin,
+  onRequestLeave,
 }: {
   item: JoinableActionItem;
   index: number;
   fr: boolean;
   authenticated: boolean;
   joining: boolean;
+  leaving: boolean;
   onRequestJoin: (actionId: string) => void;
+  onRequestLeave: (actionId: string) => void;
 }) {
   const status = getActionDisplayStatus(item);
-  const statusLabel = getStatusLabel(status, fr);
+  const cardStatus = getCardDisplayStatus(item);
+  const statusLabel = getStatusLabel(cardStatus, fr);
   const requestCountLabel = `${formatCount(item.pendingRequestsCount)} ${fr ? "demandes" : "requests"}`;
 
   return (
@@ -502,8 +543,8 @@ function ActionCard({
                 {item.location_label}
               </p>
             </div>
-            <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
-              <span className={`h-2 w-2 rounded-full ${getStatusDotTone(status)}`} />
+            <PillBadge tone={cardStatus === "pending" ? "amber" : cardStatus === "closed" || cardStatus === "cancelled" ? "slate" : "emerald"}>
+              <span className={`h-2 w-2 rounded-full ${getStatusDotTone(cardStatus)}`} />
               {statusLabel}
             </PillBadge>
           </div>
@@ -552,35 +593,52 @@ function ActionCard({
               </span>
             </CmmButton>
           ) : authenticated ? (
-            <CmmButton
-              tone="primary"
-              variant="pill"
-              className="min-w-[12rem] px-5"
-              disabled={joining || item.joined || item.awaitingApproval}
-              onClick={() => onRequestJoin(item.id)}
-            >
-              {joining ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  {fr ? "Envoi..." : "Saving..."}
-                </>
-              ) : item.joined ? (
-                <>
-                  <CheckCircle2 size={14} />
-                  {fr ? "Confirmée" : "Confirmed"}
-                </>
-              ) : item.awaitingApproval ? (
-                <>
-                  <Clock3 size={14} />
-                  {fr ? "En attente" : "Pending"}
-                </>
-              ) : (
-                <>
-                  <ClipboardList size={14} />
-                  {fr ? "Demander à participer" : "Request to join"}
-                </>
-              )}
-            </CmmButton>
+            item.joined || item.awaitingApproval ? (
+              <CmmButton
+                tone="secondary"
+                variant="pill"
+                className="min-w-[12rem] px-5"
+                disabled={leaving}
+                onClick={() => onRequestLeave(item.id)}
+              >
+                {leaving ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    {fr ? "Retrait..." : "Leaving..."}
+                  </>
+                ) : item.joined ? (
+                  <>
+                    <X size={14} />
+                    {fr ? "Quitter le formulaire" : "Leave the form"}
+                  </>
+                ) : (
+                  <>
+                    <X size={14} />
+                    {fr ? "Annuler ma demande" : "Cancel request"}
+                  </>
+                )}
+              </CmmButton>
+            ) : (
+              <CmmButton
+                tone="primary"
+                variant="pill"
+                className="min-w-[12rem] px-5"
+                disabled={joining}
+                onClick={() => onRequestJoin(item.id)}
+              >
+                {joining ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    {fr ? "Envoi..." : "Saving..."}
+                  </>
+                ) : (
+                  <>
+                    <ClipboardList size={14} />
+                    {fr ? "Demander à participer" : "Request to join"}
+                  </>
+                )}
+              </CmmButton>
+            )
           ) : (
             <CmmButton href="/sign-in" tone="primary" variant="pill" className="min-w-[12rem] px-5">
               <span className="flex items-center gap-2">
@@ -685,6 +743,7 @@ export function JoinFormSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [leavingId, setLeavingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [historyItems, setHistoryItems] = useState<JoinableActionHistoryItem[]>([]);
@@ -699,6 +758,7 @@ export function JoinFormSection() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const [pendingJoinActionId, setPendingJoinActionId] = useState<string | null>(null);
+  const [pendingLeaveActionId, setPendingLeaveActionId] = useState<string | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
 
   const listUrl = useMemo(() => {
@@ -976,8 +1036,99 @@ export function JoinFormSection() {
     }
   }
 
+  async function submitLeave(actionId: string) {
+    const currentItem = items.find((item) => item.id === actionId) ?? null;
+    setLeavingId(actionId);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/group-join`, {
+        method: "DELETE",
+      });
+
+      const payload = (await response.json()) as LeaveActionResponse | { error?: string };
+
+      if (!response.ok) {
+        const message =
+          typeof payload === "object" && payload && "error" in payload && payload.error
+            ? payload.error
+            : fr
+              ? "La participation n'a pas pu être retirée."
+              : "The participation could not be removed.";
+        setNotice(message);
+        return;
+      }
+
+      const cancelled = payload as LeaveActionResponse;
+      const wasPending = Boolean(currentItem?.awaitingApproval);
+      const wasConfirmed = Boolean(currentItem?.joined);
+      const nextPendingRequestsCount = Math.max(0, (currentItem?.pendingRequestsCount ?? 0) - (wasPending ? 1 : 0));
+
+      setItems((previous) =>
+        previous.map((item) =>
+          item.id === actionId
+            ? {
+                ...item,
+                joined: false,
+                awaitingApproval: false,
+                joinedAt: cancelled.joinedAt,
+                participationStatus: cancelled.participationStatus,
+                participationSource: cancelled.participationSource,
+                participationUpdatedAt: cancelled.participationUpdatedAt,
+                participantsCount: cancelled.participantsCount,
+                pendingRequestsCount: Math.max(0, item.pendingRequestsCount - (wasPending ? 1 : 0)),
+              }
+          : item,
+        ),
+      );
+
+      if (currentItem) {
+        setHistoryItems((previous) => [
+          {
+            ...currentItem,
+            joined: false,
+            awaitingApproval: false,
+            joinedAt: cancelled.joinedAt,
+            participationStatus: cancelled.participationStatus,
+            participationSource: cancelled.participationSource,
+            participationUpdatedAt: cancelled.participationUpdatedAt,
+            participantsCount: cancelled.participantsCount,
+            pendingRequestsCount: nextPendingRequestsCount,
+            groupJoinEnabled: currentItem.groupJoinEnabled,
+          },
+          ...previous.filter((item) => item.id !== actionId),
+        ]);
+      }
+
+      setNotice(
+        cancelled.alreadyCancelled
+          ? fr
+            ? "Votre participation était déjà annulée."
+            : "Your participation was already cancelled."
+          : wasPending
+            ? fr
+              ? "Votre demande a été annulée."
+              : "Your request has been cancelled."
+            : wasConfirmed
+              ? fr
+                ? "Vous avez quitté ce formulaire."
+                : "You left this form."
+              : fr
+                ? "La participation a été retirée."
+                : "The participation has been removed.",
+      );
+
+      if (queueActionId === actionId) {
+        await loadQueue(actionId);
+      }
+    } finally {
+      setLeavingId(null);
+    }
+  }
+
   function requestJoin(actionId: string) {
     setNotice(null);
+    setPendingLeaveActionId(null);
     setPendingJoinActionId(actionId);
   }
 
@@ -989,6 +1140,22 @@ export function JoinFormSection() {
     const actionId = pendingJoinActionId;
     setPendingJoinActionId(null);
     await submitJoin(actionId);
+  }
+
+  function requestLeave(actionId: string) {
+    setNotice(null);
+    setPendingJoinActionId(null);
+    setPendingLeaveActionId(actionId);
+  }
+
+  async function confirmPendingLeave() {
+    if (!pendingLeaveActionId) {
+      return;
+    }
+
+    const actionId = pendingLeaveActionId;
+    setPendingLeaveActionId(null);
+    await submitLeave(actionId);
   }
 
   async function reviewQueueRequest(requestId: string, decision: "accept" | "reject") {
@@ -1289,7 +1456,9 @@ export function JoinFormSection() {
                       fr={fr}
                       authenticated={authenticated}
                       joining={joiningId === item.id}
+                      leaving={leavingId === item.id}
                       onRequestJoin={requestJoin}
+                      onRequestLeave={requestLeave}
                     />
                   ))}
 
@@ -1467,9 +1636,9 @@ export function JoinFormSection() {
 
               {authenticated ? (
                 sortedHistoryItems.length > 0 ? (
-                  <div className="space-y-2">
-                    {sortedHistoryItems.slice(0, 4).map((item) => {
-                      const status = getActionDisplayStatus(item);
+                <div className="space-y-2">
+                  {sortedHistoryItems.slice(0, 4).map((item) => {
+                      const status = getCardDisplayStatus(item);
                       return (
                         <div key={item.id} className="rounded-[1rem] border border-slate-100 bg-slate-50/70 px-3 py-2.5">
                           <div className="flex items-center justify-between gap-3">
@@ -1477,7 +1646,7 @@ export function JoinFormSection() {
                               <p className="text-sm font-semibold text-slate-900">{item.location_label}</p>
                               <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
                             </div>
-                            <PillBadge tone={status === "pending" ? "amber" : status === "closed" ? "slate" : "emerald"}>
+                            <PillBadge tone={status === "pending" ? "amber" : status === "closed" || status === "cancelled" ? "slate" : "emerald"}>
                               {getStatusLabel(status, fr)}
                             </PillBadge>
                           </div>
@@ -1517,10 +1686,21 @@ export function JoinFormSection() {
 
       <JoinFormConfirmationDialog
         fr={fr}
-        pendingJoinAction={items.find((item) => item.id === pendingJoinActionId) ?? null}
-        onClose={() => setPendingJoinActionId(null)}
+        mode={pendingJoinActionId ? "join" : "leave"}
+        pendingAction={
+          items.find((item) => item.id === (pendingJoinActionId ?? pendingLeaveActionId)) ?? null
+        }
+        onClose={() => {
+          setPendingJoinActionId(null);
+          setPendingLeaveActionId(null);
+        }}
         onConfirm={() => {
-          void confirmPendingJoin();
+          if (pendingJoinActionId) {
+            void confirmPendingJoin();
+            return;
+          }
+
+          void confirmPendingLeave();
         }}
       />
     </SectionShell>

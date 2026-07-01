@@ -99,12 +99,14 @@ function createParticipantsChain(participants: {
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
+    countRequested: boolean;
     limitValue: number | null;
     inserting?: ParticipantRow;
     pendingUpdate?: Record<string, unknown>;
   } = {
     filters: {},
     inFilters: {},
+    countRequested: false,
     limitValue: null,
   };
 
@@ -189,7 +191,10 @@ function createParticipantsChain(participants: {
   };
 
   const chain: ParticipantChain = {
-    select: vi.fn(() => chain),
+    select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
+      state.countRequested = Boolean(options?.count || options?.head);
+      return chain;
+    }),
     eq: vi.fn((field: string, value: string) => {
       state.filters[field] = value;
       return chain;
@@ -291,9 +296,12 @@ function createParticipantsChain(participants: {
       reject: (reason: unknown) => void,
     ) =>
       Promise.resolve({
-        data: buildFiltered()
-          .slice(0, state.limitValue ?? undefined)
-          .map((row) => normalizeRow(row)),
+        data: state.countRequested
+          ? null
+          : buildFiltered()
+              .slice(0, state.limitValue ?? undefined)
+              .map((row) => normalizeRow(row)),
+        count: buildFiltered().length,
         error: null,
       }).then(resolve, reject),
   };
@@ -668,6 +676,130 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.canReview).toBe(false);
     expect(body.pendingRequests?.[0]?.id).toBe("participant-1");
     expect(body.pendingRequests?.[0]?.displayName).toBe("Alice");
+  });
+});
+
+describe("DELETE /api/actions/:actionId/group-join", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValue(null);
+    loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
+    refreshProgressionProfileMock.mockResolvedValue(undefined);
+  });
+
+  it("rejects anonymous requests", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("cancels a pending request without changing confirmed counts", async () => {
+    const participants = [
+      {
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-01T10:00:00Z",
+        updated_at: "2026-06-03T10:00:00Z",
+        participation_status: "pending" as const,
+        participation_source: "group_form" as const,
+        action_id: "action-1",
+        user_id: "user-1",
+      },
+    ];
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createSupabaseMock({
+        action: {
+          id: "action-1",
+          created_by_clerk_id: "user-1",
+          status: "approved",
+          notes: appendActionMetadataToNotes("Observation", {
+            groupJoinEnabled: true,
+          }),
+        },
+        participants,
+      }),
+    );
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    const body = (await response.json()) as {
+      alreadyCancelled?: boolean;
+      participationStatus?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.alreadyCancelled).toBe(false);
+    expect(body.participationStatus).toBe("cancelled");
+    expect(body.participantsCount).toBe(0);
+    expect(participants[0]?.participation_status).toBe("cancelled");
+    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-1");
+  });
+
+  it("lets a participant leave an accepted form", async () => {
+    const participants = [
+      {
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-01T10:00:00Z",
+        updated_at: "2026-06-03T10:00:00Z",
+        participation_status: "confirmed" as const,
+        participation_source: "group_form" as const,
+        action_id: "action-1",
+        user_id: "user-1",
+      },
+      {
+        id: "participant-2",
+        created_at: "2026-06-02T10:00:00Z",
+        joined_at: "2026-06-02T10:00:00Z",
+        updated_at: "2026-06-04T10:00:00Z",
+        participation_status: "confirmed" as const,
+        participation_source: "group_form" as const,
+        action_id: "action-1",
+        user_id: "user-2",
+      },
+    ];
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createSupabaseMock({
+        action: {
+          id: "action-1",
+          created_by_clerk_id: "user-1",
+          status: "approved",
+          notes: appendActionMetadataToNotes("Observation", {
+            groupJoinEnabled: true,
+          }),
+        },
+        participants,
+      }),
+    );
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    const body = (await response.json()) as {
+      alreadyCancelled?: boolean;
+      participationStatus?: string;
+      participantsCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.alreadyCancelled).toBe(false);
+    expect(body.participationStatus).toBe("cancelled");
+    expect(body.participantsCount).toBe(1);
+    expect(participants[0]?.participation_status).toBe("cancelled");
+    expect(participants[1]?.participation_status).toBe("confirmed");
   });
 });
 

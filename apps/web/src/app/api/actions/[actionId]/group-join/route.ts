@@ -13,6 +13,7 @@ import {
   setActionGroupJoinEnabledInNotes,
 } from "@/lib/actions/metadata";
 import {
+  cancelActionParticipation,
   loadActionParticipationReviews,
   reviewActionParticipation,
 } from "@/lib/actions/group-participation";
@@ -346,5 +347,53 @@ export async function POST(
     }
 
     return handleApiError(error, "POST /api/actions/:actionId/group-join");
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+) {
+  const userId = await resolveGroupJoinUserId("DELETE /api/actions/:actionId/group-join");
+  if (!userId) {
+    return unauthorizedJsonResponse();
+  }
+
+  const { actionId } = await ctx.params;
+  const trimmedActionId = actionId.trim();
+  if (!trimmedActionId) {
+    return validationErrorResponse({
+      actionId: ["Identifiant d'action manquant."],
+    });
+  }
+
+  try {
+    const supabase = getSupabaseServerClient();
+    const result = await cancelActionParticipation(supabase, {
+      actionId: trimmedActionId,
+      userId,
+    });
+
+    await refreshProgressionProfile(supabase, userId).catch(() => null);
+
+    return NextResponse.json({
+      status: "ok",
+      actionId: trimmedActionId,
+      alreadyCancelled: result.alreadyCancelled,
+      joinedAt: result.joinedAt,
+      participationStatus: result.participationStatus,
+      participationSource: result.participationSource,
+      participationUpdatedAt: result.participationUpdatedAt,
+      participantsCount: result.participantsCount,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "NotFoundError") {
+      return NextResponse.json(
+        { error: "Participation introuvable." },
+        { status: 404 },
+      );
+    }
+
+    return handleApiError(error, "DELETE /api/actions/:actionId/group-join");
   }
 }

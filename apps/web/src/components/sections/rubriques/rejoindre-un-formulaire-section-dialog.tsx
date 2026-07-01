@@ -6,14 +6,16 @@ import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.forma
 
 type JoinFormConfirmationDialogProps = {
   fr: boolean;
-  pendingJoinAction: JoinableActionItem | null;
+  mode: "join" | "leave";
+  pendingAction: JoinableActionItem | null;
   onClose: () => void;
   onConfirm: () => void;
 };
 
 export function JoinFormConfirmationDialog({
   fr,
-  pendingJoinAction,
+  mode,
+  pendingAction,
   onClose,
   onConfirm,
 }: JoinFormConfirmationDialogProps) {
@@ -22,7 +24,7 @@ export function JoinFormConfirmationDialog({
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!pendingJoinAction) {
+    if (!pendingAction) {
       return undefined;
     }
 
@@ -96,11 +98,46 @@ export function JoinFormConfirmationDialog({
       document.body.style.overflow = previousOverflow;
       previouslyFocusedElementRef.current?.focus();
     };
-  }, [onClose, pendingJoinAction?.id]);
+  }, [onClose, pendingAction, pendingAction?.id]);
 
-  if (!pendingJoinAction) {
+  if (!pendingAction) {
     return null;
   }
+
+  const isLeaveFlow = mode === "leave";
+  const dialogTitle = isLeaveFlow
+    ? pendingAction.awaitingApproval
+      ? fr
+        ? "Annuler cette demande ?"
+        : "Cancel this request?"
+      : fr
+        ? "Quitter ce formulaire ?"
+        : "Leave this form?"
+    : fr
+      ? "Confirmer cette participation ?"
+      : "Confirm this participation?";
+  const confirmLabel = isLeaveFlow
+    ? pendingAction.awaitingApproval
+      ? fr
+        ? "Annuler la demande"
+        : "Cancel request"
+      : fr
+        ? "Quitter le formulaire"
+        : "Leave the form"
+    : fr
+      ? "Envoyer la demande"
+      : "Send request";
+  const dialogDescription = isLeaveFlow
+    ? pendingAction.awaitingApproval
+      ? fr
+        ? "Votre demande disparaîtra de la file publique et pourra être refaite plus tard."
+        : "Your request will disappear from the public queue and can be submitted again later."
+      : fr
+        ? "Votre participation sera retirée du formulaire, tout en restant tracée dans votre historique."
+        : "Your participation will be removed from the form while remaining traceable in your history."
+    : fr
+      ? "Votre demande apparaît dans la file publique."
+      : "Your request appears in the public queue.";
 
   return (
     <div
@@ -126,7 +163,7 @@ export function JoinFormConfirmationDialog({
               {fr ? "Confirmation" : "Confirmation"}
             </p>
             <h2 id="join-dialog-title" className="text-xl font-black tracking-tight">
-              {fr ? "Confirmer cette participation ?" : "Confirm this participation?"}
+              {dialogTitle}
             </h2>
           </div>
 
@@ -141,20 +178,40 @@ export function JoinFormConfirmationDialog({
         </div>
 
         <div id="join-dialog-description" className="mt-4 space-y-3 text-sm leading-relaxed text-slate-700">
-          <p>{fr ? "Votre demande apparaît dans la file publique." : "Your request appears in the public queue."}</p>
-          <p>
-            {fr
-              ? "Le créateur du formulaire ou un admin peut l'accepter ou la refuser."
-              : "The form creator or an admin can accept or reject it."}
-          </p>
-          <p>{fr ? "La demande n'est pas modifiable depuis cette page." : "Requests cannot be edited here."}</p>
+          {isLeaveFlow ? (
+            <>
+              <p>
+                {pendingAction.awaitingApproval
+                  ? fr
+                    ? "Cette demande sera retirée de la file publique."
+                    : "This request will be removed from the public queue."
+                  : fr
+                    ? "Cette participation sera retirée du formulaire."
+                    : "This participation will be removed from the form."}
+              </p>
+              <p>
+                {fr
+                  ? "L'historique conservera la trace de cette modification."
+                  : "Your history will keep a trace of this change."}
+              </p>
+            </>
+          ) : (
+            <>
+              <p>{dialogDescription}</p>
+              <p>
+                {fr
+                  ? "Le créateur du formulaire ou un admin peut l'accepter ou la refuser."
+                  : "The form creator or an admin can accept or reject it."}
+              </p>
+            </>
+          )}
           <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-4 py-3 text-slate-800">
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700/70">
               {fr ? "Action ciblée" : "Selected action"}
             </p>
-            <p className="mt-1 font-semibold">{pendingJoinAction.location_label}</p>
+            <p className="mt-1 font-semibold">{pendingAction.location_label}</p>
             <p className="text-sm text-slate-600">
-              {formatDate(pendingJoinAction.action_date, fr ? "fr" : "en")} · {formatCount(pendingJoinAction.participantsCount)}{" "}
+              {formatDate(pendingAction.action_date, fr ? "fr" : "en")} · {formatCount(pendingAction.participantsCount)}{" "}
               {fr ? "participant(s)" : "participant(s)"}
             </p>
           </div>
@@ -174,7 +231,7 @@ export function JoinFormConfirmationDialog({
             onClick={onConfirm}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 text-sm font-semibold text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] transition-all duration-200 hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--cmm-button-primary-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {fr ? "Envoyer la demande" : "Send request"}
+            {confirmLabel}
           </button>
         </div>
       </div>

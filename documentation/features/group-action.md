@@ -13,6 +13,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 3. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
 4. Le bénévole rejoint ce formulaire existant.
 5. La participation est enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
+6. Si le bénévole s'est trompé, il peut annuler une demande en attente ou quitter un formulaire accepté, tout en conservant la trace historique.
 
 ## Placement dans le bloc Agir
 
@@ -36,7 +37,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - La jonction ne cree pas de nouveau formulaire.
 - Une seule participation active est conservee par benevole et par action.
 - L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
-- La participation est visible comme trace, mais n'est pas modifiable depuis la page benevole.
+- La participation reste tracée, mais la page benevole permet d'annuler une demande en attente ou de quitter un formulaire accepté.
 
 ## Données
 
@@ -50,6 +51,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
 - Verifier que la participation remonte dans les statistiques.
-- Verifier qu'une double participation est bloquee ou geree selon la regle retenue.
+- Verifier qu'une demande en attente peut etre annulée par son auteur.
+- Verifier qu'une participation acceptée peut etre quittée par son auteur.
 - Verifier qu'aucune action non validée n'affiche de CTA de jonction.
 - Verifier qu'un lien profond `actionId` affiche bien l'action cible, meme hors du lot par défaut.

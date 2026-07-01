@@ -556,6 +556,63 @@ export async function reviewActionParticipation(
   };
 }
 
+export async function cancelActionParticipation(
+  supabase: SupabaseClient,
+  params: {
+    actionId: string;
+    userId: string;
+  },
+): Promise<{
+  alreadyCancelled: boolean;
+  joinedAt: string;
+  participationStatus: ParticipationStatus;
+  participationSource: ParticipationSource;
+  participationUpdatedAt: string | null;
+  participantsCount: number;
+}> {
+  const existing = await readParticipantRecord(supabase, params);
+
+  if (!existing) {
+    const notFoundError = new Error("Participation request not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  const currentParticipantsCount = await countParticipantsForAction(supabase, params.actionId);
+
+  if (existing.participation_status === "cancelled") {
+    return {
+      alreadyCancelled: true,
+      joinedAt: resolveJoinedAt(existing),
+      participationStatus: existing.participation_status,
+      participationSource: existing.participation_source,
+      participationUpdatedAt: resolveParticipationUpdatedAt(existing),
+      participantsCount: currentParticipantsCount,
+    };
+  }
+
+  const updatedRecord = await updateParticipantRecord(supabase, {
+    actionId: params.actionId,
+    userId: params.userId,
+    joinedAt: resolveJoinedAt(existing),
+    participationStatus: "cancelled",
+    participationSource: existing.participation_source,
+  });
+
+  return {
+    alreadyCancelled: false,
+    joinedAt: resolveJoinedAt(updatedRecord),
+    participationStatus: updatedRecord.participation_status,
+    participationSource: updatedRecord.participation_source,
+    participationUpdatedAt: resolveParticipationUpdatedAt(updatedRecord),
+    participantsCount: Math.max(
+      0,
+      currentParticipantsCount -
+        (existing.participation_status === ACTIVE_PARTICIPATION_STATUS ? 1 : 0),
+    ),
+  };
+}
+
 export async function joinActionParticipation(
   supabase: SupabaseClient,
   params: { actionId: string; userId: string; isAdminLike: boolean },
