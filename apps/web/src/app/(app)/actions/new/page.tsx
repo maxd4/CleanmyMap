@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ActionDeclarationForm } from "@/components/actions/action-declaration-form/";
+import { ActionDeclarationEntryFlow } from "@/components/actions/action-declaration-entry-flow";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -71,7 +71,7 @@ export default async function NewActionPage({
   if (pageTemplateV2Enabled) {
     return (
       <div className="space-y-8">
-        <ActionDeclarationForm
+        <ActionDeclarationEntryFlow
           actorNameOptions={actorNameOptions}
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
@@ -86,7 +86,7 @@ export default async function NewActionPage({
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <ActionDeclarationForm
+      <ActionDeclarationEntryFlow
         actorNameOptions={actorNameOptions}
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}

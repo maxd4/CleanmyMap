@@ -10,7 +10,7 @@
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
-- **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
+- **Action principale attendue** : Choisir entre un parcours de déclaration après action et un parcours de pré-déclaration avant action, puis compléter le formulaire adapté.
 - **Palette attendue** : emerald
 - **Scope** : à corriger
 - **Terminée** : non
@@ -23,10 +23,12 @@
 - champs utiles
 - CTA principal
 - validation et erreurs
+- choix de parcours
 - **Textes à réduire ou supprimer** :
 - Aides répétées
 - cartes descriptives redondantes
 - contextes décoratifs
+- promesses de validation avant terrain
 - **Bulles / cartes / contextes trop nombreux** : Les formulaires et cartes de guidance peuvent multiplier les micro-blocs.
 - **Composants UI concernés** :
 - Formulaires
@@ -34,6 +36,7 @@
 - CTA
 - résultats de validation
 - navigation de section
+- écran de choix de parcours
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : faible
 
@@ -43,6 +46,9 @@
 - **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
 - **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
 - **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
+- **choice initial** : deux cartes de parcours, lecture rapide, retour au choix possible.
+- **success** : parcours sélectionné et affichage du formulaire ou du shell avant action.
+- **error** : panneau compact avec retour au choix.
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
@@ -56,4 +62,5 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
+- Le point d'entrée commence par le choix entre déclaration après action et pré-déclaration avant action.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
