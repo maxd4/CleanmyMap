@@ -93,7 +93,7 @@ describe("PrintReportPage", () => {
     expect(markup).toContain("cmm-print-report__section");
     expect(markup).toContain("data-testid=\"territory-map\"");
     expect(markup).toContain("data-testid=\"analytics-cockpit\"");
-    expect(markup).toContain(">Print<");
+    expect(markup).toContain(">Impression<");
     expect(markup).toContain(">Export<");
     expect(markup).toContain("Rapport d&#x27;impact imprimable");
     expect(markup).toContain("Masse récoltée");
