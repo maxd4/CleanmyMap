@@ -102,6 +102,20 @@ Ne pas le réutiliser si la demande porte d'abord sur:
 - Vérifier que les actions gardent des zones cliquables lisibles
 - Vérifier que la grille ne modifie ni la palette ni la hiérarchie de composants
 
+## Décision de généralisation
+
+- Conserver le système.
+- L'étendre seulement aux pages éditoriales, rapports, KPI et tableaux de bord.
+- Ne pas l'imposer aux cartes interactives ni aux formulaires complexes.
+
+Pages candidates, par bénéfice attendu:
+
+1. `/methodologie`
+2. `/gamification`
+3. `/dashboard`
+4. `/profil`
+5. `/learn/comprendre`
+
 ## Ce que ce guide n'est pas
 
 - pas une refonte visuelle globale
