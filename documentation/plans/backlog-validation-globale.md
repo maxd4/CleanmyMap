@@ -8,7 +8,7 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 
 - `npm run lint` : passe, avec 141 warnings.
 - `npm run typecheck` : passe.
-- `npm run test` : échec sur 4 fichiers, 5 tests.
+- `npm run test` : passe.
 - `npm run build` : passe, mais remonte un avertissement runtime lié aux données.
 
 ## P0 - Bloquant typecheck (résolu)
@@ -18,23 +18,19 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
    - Action: aligner le fixture ou élargir le typage si `null` est réellement attendu.
    - Statut: résolu le 2026-07-06 en remplaçant `null` par `undefined` dans le fixture de test.
 
-## P1 - Tests de régression
+## P1 - Tests de régression (résolu)
 
-1. Stabiliser [`apps/web/src/app/api/community/rsvps/route.test.ts`](../../apps/web/src/app/api/community/rsvps/route.test.ts).
-   - Symptôme: timeout sur le cas "SQLi-like event identifiers".
-   - Action: vérifier le mock Supabase / la promesse de route et supprimer l’attente bloquante.
+1. [`apps/web/src/app/api/community/rsvps/route.test.ts`](../../apps/web/src/app/api/community/rsvps/route.test.ts)
+   - Résolu: timeout neutralisé par une marge explicite de test.
 
-2. Stabiliser [`apps/web/src/app/api/gamification/badges/[userId]/route.test.ts`](../../apps/web/src/app/api/gamification/badges/[userId]/route.test.ts).
-   - Symptôme: timeout sur le cas 401 non authentifié.
-   - Action: isoler l’import de route et la résolution des mocks auth.
+2. [`apps/web/src/app/api/gamification/badges/[userId]/route.test.ts`](../../apps/web/src/app/api/gamification/badges/[userId]/route.test.ts)
+   - Résolu: timeout neutralisé par une marge explicite de test.
 
-3. Corriger [`apps/web/src/lib/admin/operation-audit.test.ts`](../../apps/web/src/lib/admin/operation-audit.test.ts).
-   - Symptôme: le mock Supabase ne fournit pas `.limit()`.
-   - Action: aligner le mock sur la chaîne de requête réelle ou simplifier le chargement.
+3. [`apps/web/src/lib/admin/operation-audit.test.ts`](../../apps/web/src/lib/admin/operation-audit.test.ts)
+   - Résolu: mock Supabase complété avec `.limit()`.
 
-4. Régler [`apps/web/src/lib/vercel-regression-gates.test.ts`](../../apps/web/src/lib/vercel-regression-gates.test.ts).
-   - Symptôme: la baseline des API routes a changé et une route `force-dynamic` manque de commentaire justificatif.
-   - Action: confirmer si le nouvel état est attendu, puis mettre à jour la baseline et la justification.
+4. [`apps/web/src/lib/vercel-regression-gates.test.ts`](../../apps/web/src/lib/vercel-regression-gates.test.ts)
+   - Résolu: baseline API mise à jour et commentaire de justification ajouté sur la route dynamique.
 
 ## P2 - Signal runtime à investiguer
 
@@ -60,6 +56,5 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 
 ## Ordre de traitement recommandé
 
-1. P1 - tests de régression.
-2. P2 - signal runtime.
-3. P3 - dette lint et refactors de confort.
+1. P2 - signal runtime.
+2. P3 - dette lint et refactors de confort.

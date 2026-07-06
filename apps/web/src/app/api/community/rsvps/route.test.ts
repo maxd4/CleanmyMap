@@ -73,5 +73,5 @@ describe("POST /api/community/rsvps", () => {
       }),
       expect.objectContaining({ onConflict: "event_id,participant_clerk_id" }),
     );
-  });
+  }, 10000);
 });

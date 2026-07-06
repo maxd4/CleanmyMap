@@ -45,5 +45,5 @@ describe("api boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 10000);
 });

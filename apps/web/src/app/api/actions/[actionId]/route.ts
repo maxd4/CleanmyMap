@@ -10,6 +10,7 @@ import { isAdminLikeProfile, type AppProfile } from "@/lib/profiles";
 import { updateActionSchema } from "@/lib/validation/action";
 
 export const runtime = "nodejs";
+// Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
 
 function canEditAction(params: {

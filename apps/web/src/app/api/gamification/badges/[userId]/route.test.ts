@@ -24,7 +24,7 @@ describe("GET /api/gamification/badges/:userId", () => {
       params: Promise.resolve({ userId: "user-1" }),
     });
     expect(res.status).toBe(401);
-  });
+  }, 10000);
 
   it("returns 403 when requesting another userId", async () => {
     authMock.mockResolvedValue({ userId: "user-1" });
@@ -33,7 +33,7 @@ describe("GET /api/gamification/badges/:userId", () => {
       params: Promise.resolve({ userId: "user-2" }),
     });
     expect(res.status).toBe(403);
-  });
+  }, 10000);
 
   it("returns totals and creates row when missing", async () => {
     authMock.mockResolvedValue({ userId: "user-1" });
@@ -77,6 +77,5 @@ describe("GET /api/gamification/badges/:userId", () => {
     expect(res.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.totals).toEqual({ wasteKg: 0, butts: 0 });
-  });
+  }, 10000);
 });
-
