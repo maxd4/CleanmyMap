@@ -5,6 +5,10 @@ import {
   loadJoinableActions,
   loadUserParticipationHistory,
 } from "./group-participation";
+import {
+  buildJoinableItem,
+  resolveParticipationUpdatedAt,
+} from "./group-participation.helpers";
 
 type ActionRow = {
   id: string;
@@ -105,6 +109,54 @@ function createSupabaseMock(params: {
 }
 
 describe("group participation fallback handling", () => {
+  it("builds a joinable item from the extracted helper seam", () => {
+    const item = buildJoinableItem(
+      {
+        id: "action-1",
+        created_at: "2026-06-01T10:00:00Z",
+        action_date: "2026-06-10",
+        location_label: "Parc Nord",
+        volunteers_count: 12,
+        duration_minutes: 45,
+        status: "approved",
+        notes: null,
+        action_phase: "pre_action",
+      },
+      { groupJoinEnabled: true },
+      4,
+      {
+        actionId: "action-1",
+        activeCount: 4,
+        totalCount: 6,
+        myParticipationStatus: "pending",
+        myParticipationSource: "group_form",
+        myJoinedAt: "2026-06-02T10:00:00Z",
+        myUpdatedAt: null,
+      },
+    );
+
+    expect(item).toMatchObject({
+      actionPhase: "pre_action",
+      participantsCount: 4,
+      joined: false,
+      awaitingApproval: true,
+      joinedAt: "2026-06-02T10:00:00Z",
+      participationUpdatedAt: "2026-06-02T10:00:00Z",
+      groupJoinEnabled: true,
+      pendingRequestsCount: 2,
+    });
+  });
+
+  it("resolves the latest participation timestamp from a row", () => {
+    expect(
+      resolveParticipationUpdatedAt({
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-02T10:00:00Z",
+        updated_at: null,
+      }),
+    ).toBe("2026-06-02T10:00:00Z");
+  });
+
   it("keeps the joinable actions list available when participation summaries cannot be loaded", async () => {
     const supabase = createSupabaseMock({
       actions: [

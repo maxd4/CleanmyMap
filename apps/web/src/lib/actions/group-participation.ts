@@ -1,42 +1,44 @@
 /* eslint-disable max-lines, max-lines-per-function, complexity */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionParticipantRow, ActionRow } from "@/types/database";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import type { ActionParticipantSummary } from "./participant-summaries";
 import { loadActionParticipantSummaries } from "./participant-summaries";
 import type { ActionPhase } from "@/lib/actions/types";
+import {
+  ACTION_PARTICIPATION_COLUMNS,
+  ACTION_PREVIEW_COLUMNS,
+  ACTIVE_PARTICIPATION_STATUS,
+  ADMIN_PARTICIPATION_SOURCE,
+  buildJoinableItem,
+  countParticipantsForAction,
+  escapeSearchPattern,
+  GROUP_PARTICIPATION_SOURCE,
+  insertParticipantRecord,
+  loadParticipantProfilesForUserIds,
+  PENDING_PARTICIPATION_STATUS,
+  readParticipantRecord,
+  readParticipantRecordById,
+  resolveJoinedAt,
+  resolveParticipationUpdatedAt,
+  updateParticipantRecord,
+  type ActionParticipantRecordRow,
+  type ActionParticipantReviewRow,
+  type ActionParticipantStatusRow,
+  type ActionPreviewRow,
+  type ParticipantSearchRow,
+  type ParticipationSource,
+  type ParticipationStatus,
+} from "./group-participation.helpers";
 
-const PENDING_PARTICIPATION_STATUS = "pending" as const;
-const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
-const GROUP_PARTICIPATION_SOURCE = "group_form" as const;
-const ADMIN_PARTICIPATION_SOURCE = "admin" as const;
-
-type ParticipationStatus = ActionParticipantRow["participation_status"];
-type ParticipationSource = ActionParticipantRow["participation_source"];
-
-type ProfileLookupRow = {
+export type JoinableActionItem = {
   id: string;
-  display_name: string | null;
-  handle: string | null;
-};
-
-type ParticipantSearchRow = {
-  id: string;
-  display_name: string | null;
-  handle: string | null;
-};
-
-export type JoinableActionItem = Pick<
-  ActionRow,
-  | "id"
-  | "created_at"
-  | "action_date"
-  | "location_label"
-  | "volunteers_count"
-  | "duration_minutes"
-  | "status"
-> & {
+  created_at: string;
+  action_date: string;
+  location_label: string;
+  volunteers_count: number;
+  duration_minutes: number;
+  status: "pending" | "approved" | "rejected";
   actionPhase: ActionPhase;
   participantsCount: number;
   joined: boolean;
@@ -50,247 +52,6 @@ export type JoinableActionItem = Pick<
 };
 
 export type JoinableActionHistoryItem = JoinableActionItem;
-
-type ActionPreviewRow = Pick<
-  ActionRow,
-  | "id"
-  | "created_at"
-  | "action_date"
-  | "location_label"
-  | "volunteers_count"
-  | "duration_minutes"
-  | "status"
-  | "notes"
-  | "action_phase"
->;
-
-type ActionParticipantRecordRow = Pick<
-  ActionParticipantRow,
-  | "action_id"
-  | "created_at"
-  | "joined_at"
-  | "updated_at"
-  | "participation_status"
-  | "participation_source"
->;
-
-type ActionParticipantStatusRow = Pick<
-  ActionParticipantRow,
-  | "action_id"
-  | "created_at"
-  | "joined_at"
-  | "updated_at"
-  | "participation_status"
-  | "participation_source"
->;
-
-type ActionParticipantReviewRow = Pick<
-  ActionParticipantRow,
-  | "id"
-  | "action_id"
-  | "created_at"
-  | "joined_at"
-  | "updated_at"
-  | "user_id"
-  | "participation_status"
-  | "participation_source"
-> & {
-  display_name: string | null;
-  handle: string | null;
-};
-
-const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes, action_phase";
-const ACTION_PARTICIPATION_COLUMNS = "status, notes";
-
-function resolveJoinedAt(
-  row: Pick<
-    ActionParticipantRow,
-    "created_at" | "joined_at" | "updated_at" | "participation_status" | "participation_source"
-  >,
-): string {
-  return row.joined_at ?? row.created_at;
-}
-
-function resolveParticipationUpdatedAt(
-  row: Pick<ActionParticipantRow, "created_at" | "joined_at" | "updated_at">,
-): string | null {
-  return row.updated_at ?? row.joined_at ?? row.created_at;
-}
-
-function buildJoinableItem(
-  action: ActionPreviewRow,
-  metadata: ReturnType<typeof extractActionMetadataFromNotes>,
-  participantsCount: number,
-  participantSummary: ActionParticipantSummary | null,
-): JoinableActionItem {
-  const joined = participantSummary?.myParticipationStatus === ACTIVE_PARTICIPATION_STATUS;
-  const awaitingApproval =
-    participantSummary?.myParticipationStatus === PENDING_PARTICIPATION_STATUS;
-  const pendingRequestsCount = Math.max(
-    0,
-    (participantSummary?.totalCount ?? participantsCount) - participantsCount,
-  );
-  return {
-    ...action,
-    actionPhase: action.action_phase ?? "post_action_complete",
-    participantsCount,
-    joined,
-    awaitingApproval,
-    joinedAt: participantSummary?.myJoinedAt ?? null,
-    participationStatus: participantSummary?.myParticipationStatus ?? null,
-    participationSource: participantSummary?.myParticipationSource ?? null,
-    participationUpdatedAt: participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
-    groupJoinEnabled: metadata.groupJoinEnabled,
-    pendingRequestsCount,
-  };
-}
-
-async function countActiveParticipants(supabase: SupabaseClient, actionId: string): Promise<number> {
-  const result = await supabase
-    .from("action_participants")
-    .select("id", { count: "exact", head: true })
-    .eq("action_id", actionId)
-    .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return Number(result.count ?? 0);
-}
-
-async function loadParticipantProfilesForUserIds(
-  supabase: SupabaseClient,
-  userIds: string[],
-): Promise<Map<string, ProfileLookupRow>> {
-  const uniqueUserIds = Array.from(
-    new Set(userIds.map((value) => value.trim()).filter((value) => value.length > 0)),
-  );
-
-  if (uniqueUserIds.length === 0) {
-    return new Map();
-  }
-
-  const result = await supabase
-    .from("profiles")
-    .select("id, display_name, handle")
-    .in("id", uniqueUserIds)
-    .limit(uniqueUserIds.length);
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  const rows = (result.data ?? []) as ProfileLookupRow[];
-  return new Map(rows.map((row) => [row.id, row] as const));
-}
-
-async function readParticipantRecord(
-  supabase: SupabaseClient,
-  params: { actionId: string; userId: string },
-): Promise<ActionParticipantStatusRow | null> {
-  const result = await supabase
-    .from("action_participants")
-    .select(
-      "action_id, created_at, joined_at, updated_at, participation_status, participation_source",
-    )
-    .eq("action_id", params.actionId)
-    .eq("user_id", params.userId)
-    .maybeSingle();
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data as ActionParticipantStatusRow | null;
-}
-
-async function readParticipantRecordById(
-  supabase: SupabaseClient,
-  params: { actionId: string; participantId: string },
-): Promise<ActionParticipantReviewRow | null> {
-  const result = await supabase
-    .from("action_participants")
-    .select(
-      "id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source",
-    )
-    .eq("action_id", params.actionId)
-    .eq("id", params.participantId)
-    .maybeSingle();
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data as ActionParticipantReviewRow | null;
-}
-
-async function updateParticipantRecord(
-  supabase: SupabaseClient,
-  params: {
-    actionId: string;
-    userId: string;
-    joinedAt: string;
-    participationStatus: ParticipationStatus;
-    participationSource: ParticipationSource;
-  },
-): Promise<ActionParticipantStatusRow> {
-  const result = await supabase
-    .from("action_participants")
-    .update({
-      joined_at: params.joinedAt,
-      participation_status: params.participationStatus,
-      participation_source: params.participationSource,
-    })
-    .eq("action_id", params.actionId)
-    .eq("user_id", params.userId)
-    .select(
-      "action_id, created_at, joined_at, updated_at, participation_status, participation_source",
-    )
-    .single();
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data as ActionParticipantStatusRow;
-}
-
-async function insertParticipantRecord(
-  supabase: SupabaseClient,
-  params: {
-    actionId: string;
-    userId: string;
-    joinedAt: string;
-    participationStatus: ParticipationStatus;
-    participationSource: ParticipationSource;
-  },
-): Promise<ActionParticipantStatusRow> {
-  const result = await supabase
-    .from("action_participants")
-    .insert({
-      action_id: params.actionId,
-      user_id: params.userId,
-      joined_at: params.joinedAt,
-      participation_status: params.participationStatus,
-      participation_source: params.participationSource,
-    })
-    .select(
-      "action_id, created_at, joined_at, updated_at, participation_status, participation_source",
-    )
-    .single();
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data as ActionParticipantStatusRow;
-}
-
-async function countParticipantsForAction(supabase: SupabaseClient, actionId: string): Promise<number> {
-  return countActiveParticipants(supabase, actionId);
-}
 
 export async function loadJoinableActions(
   supabase: SupabaseClient,
@@ -562,7 +323,7 @@ export async function searchActionParticipationCandidates(
     }));
   }
 
-  const pattern = `%${term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
+  const pattern = `%${escapeSearchPattern(term)}%`;
   const partial = await supabase
     .from("profiles")
     .select("id, display_name, handle")
