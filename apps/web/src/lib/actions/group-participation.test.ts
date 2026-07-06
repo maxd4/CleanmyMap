@@ -152,7 +152,7 @@ describe("group participation fallback handling", () => {
       resolveParticipationUpdatedAt({
         created_at: "2026-06-01T10:00:00Z",
         joined_at: "2026-06-02T10:00:00Z",
-        updated_at: null,
+        updated_at: undefined,
       }),
     ).toBe("2026-06-02T10:00:00Z");
   });
