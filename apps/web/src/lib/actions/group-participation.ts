@@ -5,6 +5,7 @@ import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import type { ActionParticipantSummary } from "./participant-summaries";
 import { loadActionParticipantSummaries } from "./participant-summaries";
+import type { ActionPhase } from "@/lib/actions/types";
 
 const PENDING_PARTICIPATION_STATUS = "pending" as const;
 const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -36,6 +37,7 @@ export type JoinableActionItem = Pick<
   | "duration_minutes"
   | "status"
 > & {
+  actionPhase: ActionPhase;
   participantsCount: number;
   joined: boolean;
   awaitingApproval: boolean;
@@ -59,6 +61,7 @@ type ActionPreviewRow = Pick<
   | "duration_minutes"
   | "status"
   | "notes"
+  | "action_phase"
 >;
 
 type ActionParticipantRecordRow = Pick<
@@ -97,7 +100,7 @@ type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes";
+  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes, action_phase";
 const ACTION_PARTICIPATION_COLUMNS = "status, notes";
 
 function resolveJoinedAt(
@@ -130,6 +133,7 @@ function buildJoinableItem(
   );
   return {
     ...action,
+    actionPhase: action.action_phase ?? "post_action_complete",
     participantsCount,
     joined,
     awaitingApproval,
@@ -300,7 +304,7 @@ export async function loadJoinableActions(
   const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
     query
       .select(ACTION_PREVIEW_COLUMNS)
-      .eq("status", "approved")
+      .in("status", ["approved", "pending"])
       .order("action_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(fetchLimit),
@@ -315,7 +319,6 @@ export async function loadJoinableActions(
       query
         .select(ACTION_PREVIEW_COLUMNS)
         .eq("id", params.actionId)
-        .eq("status", "approved")
         .maybeSingle(),
     );
 
@@ -332,6 +335,11 @@ export async function loadJoinableActions(
       action,
       metadata: extractActionMetadataFromNotes(action.notes),
     }))
+    .filter(({ action }) =>
+      action.action_phase === "pre_action" ||
+      action.action_phase === "post_action_complete" ||
+      action.status === "approved",
+    )
     .slice(0, params.limit);
 
   if (joinableActions.length === 0) {
@@ -420,6 +428,7 @@ export async function loadUserParticipationHistory(
       return [
         {
           ...action,
+          actionPhase: action.action_phase ?? "post_action_complete",
           participantsCount: participantCounts.get(action.id) ?? 0,
           joined,
           awaitingApproval,
@@ -676,6 +685,7 @@ export async function addActionParticipationByAdmin(
 }> {
   const actionResult = await runSingleActionQuery<{
     status: "pending" | "approved" | "rejected";
+    action_phase: ActionPhase;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
@@ -685,9 +695,9 @@ export async function addActionParticipationByAdmin(
     throw notFoundError;
   }
 
-  if (actionResult.status !== "approved") {
+  if (actionResult.action_phase !== "pre_action" && actionResult.status !== "approved") {
     const validationError = new Error(
-      "L'action doit etre validée par un admin avant d'ajouter un participant.",
+      "Le formulaire doit être ouvert en pré-action ou validée par un admin pour ajouter un participant.",
     );
     validationError.name = "ValidationError";
     throw validationError;
@@ -836,6 +846,7 @@ export async function joinActionParticipation(
 }> {
   const actionResult = await runSingleActionQuery<{
     status: "pending" | "approved" | "rejected";
+    action_phase: ActionPhase;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
@@ -845,9 +856,9 @@ export async function joinActionParticipation(
     throw notFoundError;
   }
 
-  if (actionResult.status !== "approved") {
+  if (actionResult.action_phase !== "pre_action" && actionResult.status !== "approved") {
     const validationError = new Error(
-      "L'action doit etre validée par un admin avant de rejoindre son formulaire.",
+      "Le formulaire doit être ouvert en pré-action ou validée par un admin pour rejoindre son formulaire.",
     );
     validationError.name = "ValidationError";
     throw validationError;

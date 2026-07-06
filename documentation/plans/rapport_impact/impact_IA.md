@@ -661,21 +661,99 @@ L'hypothèse centrale prudente pour le développement assisté par IA se situe a
 
 L'impact carbone dépend du mix électrique. Vercel documente que `vercel.json` permet de configurer le comportement du projet, tandis que les fonctions peuvent être déployées dans une région donnée [@vercel_project_configuration; @vercel_functions_region]. Dans l'hypothèse de travail retenue dans ce rapport, la phase de build Vercel reste en `iad1`, mais le runtime des fonctions peut basculer en `cdg1`. À périmètre comparable, le passage d'un runtime électrique de type US-East, pris ici comme ordre de grandeur de travail du rapport à **400 à 500 gCO₂e/kWh**, à l'intensité moyenne de la production électrique française en 2024, soit **21,7 gCO₂eq/kWh** [@rte_annual_review_2024_keyfindings]. L'empreinte actuelle du développement est estimée entre **10 et 20 kgCO₂e**.
 
-Depuis juin 2026, il est possible de consulter le **nombre de tokens consommés par compte utilisateur**. Au **26 juin**, soit environ **quatre mois après le début du développement de CleanMyMap**, mon compte principal affiche environ **8 milliards de tokens**. Comme j'ai également beaucoup utilisé Codex lors d'un stage et travaillé en parallèle sur quelques autres petits projets, une hypothèse prudente consiste à attribuer environ **la moitié de ce volume à CleanMyMap**, soit **4 milliards de tokens** sur quatre mois. Cela représente donc un ordre de grandeur d'environ **1 milliard de tokens par mois** pour le développement du site.
+### Lecture des quotas et des tokens
 
-À ce volume s'ajoutent deux autres comptes Codex, avec respectivement environ **500 millions de tokens** et une valeur encore à préciser, ainsi qu'un usage probablement comparable sur **Antigravity** sur la même période de quatre mois. Cette situation reste exceptionnelle, car les quotas sont désormais plus fortement encadrés, avec des limites mensuelles ou des plafonds d'usage plus restrictifs.
+La partie quota du rapport ne vise pas les quotas web de production, mais les limites d'usage qui encadrent les outils de développement. Dans ce cadre, le mot quota désigne surtout les plafonds de session, les fenêtres de contexte et les limites d'activité qui conditionnent la manière de travailler avec Codex.
 
-Sur des tâches lourdes, notamment les tâches agentiques, les audits de dépôt, les corrections transversales et les analyses longues, Codex peut consommer près de **30 millions de tokens par heure**. À ce rythme, **1 milliard de tokens** correspond à environ **30 heures de développement IA actif**. Cet ordre de grandeur correspond assez bien à mon usage réel : lors d'une session hebdomadaire d'environ **10 heures**, trois flux de conversation ou agents peuvent travailler en parallèle, ce qui revient à environ **30 heures-agent** sur une seule semaine de développement assisté par IA.
+L'estimation fondée sur le temps de travail mesure l'effort humain et organisationnel. La lecture fondée sur les tokens mesure plutôt l'intensité de traitement et la pression exercée sur l'outil. Les deux proxies ne se remplacent pas: ils décrivent la même activité sous deux angles différents, avec une précision différente.
 
-Il convient toutefois de ne pas comparer directement des **tokens comptabilisés par Codex** avec des **tokens API facturés au prix public**. Une part importante des tokens Codex peut correspondre à du contexte relu, du cache, des logs, du code déjà présent dans le dépôt ou des sorties de tests. Ces éléments ne représentent pas nécessairement le même coût réel qu'un token API généré ou traité plein tarif, et peuvent parfois correspondre à un coût effectif bien inférieur, de l'ordre d'un dixième selon le type de token et le niveau de cache.
+Le compte principal Codex Plus affiche **9,5 milliards de tokens consommés**, avec **335 fils de discussion** et une tâche maximale de **11 h 48**. En ajoutant les deux autres comptes gratuits utilisés sur Codex et Antigravity, l'ordre de grandeur total se situe entre **10,7 et 12,2 milliards de tokens**. Pour garder une lecture simple, le rapport retient une valeur arrondie de **13 milliards de tokens**.
 
-Ainsi, **1 milliard de tokens "comptés" dans Codex** ne doit pas être interprété comme l'équivalent direct de **1 milliard de tokens API facturés plein tarif en sortie**. Sinon, un usage mensuel d'environ 1 milliard de tokens représenterait pour OpenAI un coût théorique proche de **1 000 €**, alors même que l'abonnement utilisateur est d'environ **23 €** par mois. Cette différence montre que l'indicateur de tokens Codex doit être utilisé comme un **ordre de grandeur d'activité et de charge de travail**, mais pas comme une mesure directe du coût économique ou environnemental réel.
+Sur la période étudiée de **4 mois**, entre la première utilisation de Codex à la mi-mars et aujourd'hui, cela revient à environ **3 milliards de tokens par mois** pour l'ensemble des projets suivis. CleanMyMap restant le projet prioritaire, il est raisonnable d'attribuer à lui seul environ **2 milliards de tokens mensuels** sur Codex, avec une forte dominante de **GPT-5.4 mini**.
 
-Grâce au nombre précis de tokens consommés, une seconde estimation de l'impact environnemental de la première moitié du développement du site, correspondant aux trois premiers mois, peut être proposée : environ **400 kWh**, **20 à 160 kg CO₂e selon le mix électrique**, et **1 000 L d'eau directe de refroidissement**. Cette estimation est environ **deux fois supérieure** au calcul fondé sur le temps de code mensuel.
+Sur des tâches lourdes, notamment les tâches agentiques, les audits de dépôt, les corrections transversales et les analyses longues, Codex peut consommer près de **30 millions de tokens par heure**. À ce rythme, **1 milliard de tokens** correspond à environ **30 heures de développement IA actif**. L'ordre de grandeur retenu pour CleanMyMap reste donc compatible avec une activité soutenue, répétée et souvent parallèle.
 
-Cet écart semble indiquer qu'un travail de sobriété et d'optimisation du développement web doit être mis en place afin d'éviter de basculer vers des ordres de grandeur « hauts », caractéristiques d'un développement lourd avec tâches approfondies. Une partie de cet impact vient probablement de l'usage fréquent du mode de raisonnement **profond**, alors qu'un raisonnement **moyen** aurait souvent suffi pour des corrections simples, des vérifications ciblées ou des ajustements d'interface. Le problème est surtout pratique : changer systématiquement ce niveau de raisonnement demande d'y penser, d'être devant l'ordinateur et de qualifier correctement la complexité de chaque tâche avant son lancement.
+Il faut toutefois distinguer les tokens affichés d'une mesure directe du coût calculé. Une partie importante du volume peut provenir de contexte déjà relu, de cache, de logs, de code déjà présent dans le dépôt ou de sorties de tests. Autrement dit, le volume comptabilisé ne se traduit pas mécaniquement en coût serveur équivalent.
 
-Ce choix reste en partie justifié par l'utilisation de **GPT-5.4 mini**, déjà environ **30 % moins consommateur que GPT-5.4**. Le raisonnement approfondi permet également de conserver un niveau de qualité proche des standards de modèles plus avancés, comme **GPT-5.5** ou **Opus**, notamment pour les tâches longues, l'ajout de nouvelles fonctionnalité, les transformations UI des anciennes pages, les audits complexes et les corrections profondes...
+### Effet du cache
+
+Le cache ne rend aucun token totalement neutre, mais il réduit fortement la part de calcul à refaire. Sur les **2 milliards de tokens mensuels** attribuables à CleanMyMap sur Codex, une lecture prudente conduit à considérer qu'une large fraction correspond à du contexte réutilisé, tandis que la part réellement nouvelle reste bien plus faible.
+
+| Type de traitement | Ordre de grandeur |
+| --- | ---: |
+| Contexte vraisemblablement réutilisé | **1,2 à 1,8 Md** |
+| Entrées réellement nouvelles | **150 à 500 M** |
+| Sorties et raisonnement | **100 à 300 M** |
+| Part strictement nulle | **0** |
+
+Dans cette lecture, environ **1,6 milliard de tokens** peuvent être considérés comme potentiellement absorbés par le cache ou par une réutilisation très proche du contexte. En équivalent de charge de calcul, les **2 milliards de tokens affichés** peuvent alors se lire comme **0,7 à 1,2 milliard de tokens en pleine charge équivalente** par mois.
+
+Le cache ne retire pas toute l'empreinte: il allège surtout le calcul répété, pas les sorties, le raisonnement, les outils, les tests, les exécutions ni l'infrastructure. Les chiffres restent donc des **ordres de grandeur**, faute de publication détaillée sur le taux de cache ou sur la consommation énergétique par token.
+
+### Usage complémentaire de ChatGPT
+
+ChatGPT ajoute une couche d'usage distincte. En moyenne, le volume ChatGPT reste inférieur à celui de Codex, mais son coût de calcul n'est pas proportionnel au seul nombre de tokens bruts, car il repose souvent sur **GPT-5.5 Thinking**, des contextes longs, des fichiers, des images et parfois de la génération ou de la modification d'images. La documentation OpenAI indique que GPT-5.5 utilise des tokens de raisonnement internes et distingue les coûts d'entrée, d'entrée mise en cache et de sortie ; cela confirme qu'un même volume brut peut produire une charge de calcul sensiblement différente selon le type d'usage. [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5) ; [OpenAI Pricing](https://developers.openai.com/api/docs/pricing) ; [Image generation](https://developers.openai.com/api/docs/guides/image-generation)
+
+À titre de repère économique, une image carrée GPT Image 2 coûte actuellement environ **0,053 $** en qualité moyenne ou **0,211 $** en qualité élevée. Plusieurs centaines d'images mensuelles resteraient donc probablement secondaires face au volume de raisonnement textuel, même si une modification avec image de référence consomme aussi des tokens d'entrée visuels.
+
+Dans le périmètre CleanMyMap, l'ajout de ChatGPT représente environ **un cinquième du volume Codex**, soit autour de **400 millions de tokens par mois**. En incluant cet usage complémentaire et l'effet des images, le bilan pratique à conserver pour CleanMyMap se situe autour de **2,4 milliards de tokens comptabilisés par mois**, pour une charge de calcul en pleine équivalence d'environ **1,4 milliard de tokens par mois**.
+
+| Mesure | Volume brut | Charge équivalente |
+| --- | ---: | ---: |
+| Codex | **2,0 Md/mois** | **0,7 à 1,2 Md** |
+| ChatGPT | **0,4 Md/mois** | **0,3 à 0,57 Md** |
+| Total CleanMyMap | **2,4 Md/mois** | **1,0 à 1,8 Md** |
+| Estimation centrale | **≈ 2,4 Md/mois** | **≈ 1,4 Md** |
+
+Cette lecture reste utile pour comparer les usages, mais elle ne peut pas encore être convertie proprement en kWh ou en CO₂. Ni le taux réel de cache de ChatGPT, ni l'énergie consommée par type de token, ni le coût marginal de génération d'image ne sont publiés avec assez de finesse pour transformer ces volumes en bilan environnemental direct.
+
+### Méthode employée
+
+Les estimations qui suivent restent des scénarios, pas des mesures instrumentées. Des travaux récents montrent qu'une requête textuelle classique sur un grand modèle peut rester proche de quelques dixièmes de Wh, tandis qu'un scénario de raisonnement plus long peut monter nettement au-dessus, jusqu'à plusieurs Wh pour des sorties très longues. [Energy use of AI inference, efficiency pathways, and test-time scaling](https://www.sciencedirect.com/science/article/pii/S2542435126001145) ; [Power Hungry Processing](https://arxiv.org/abs/2311.16863)
+
+OpenAI indique aussi que le prompt caching peut réduire la latence jusqu'à 80 % et les coûts des tokens d'entrée jusqu'à 90 %. Ce point est important ici, parce que le compteur de tokens ne sépare pas proprement les entrées nouvelles, le cache, les sorties visibles, le raisonnement interne ni le modèle réellement sollicité. Un total brut ne correspond donc pas à une charge de calcul uniforme. [Prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching) ; [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5)
+
+Je ne convertis donc pas les **3,6 milliards de tokens mensuels** de manière linéaire en électricité. Je les traite comme un signal d'activité utile pour construire un scénario de charge, pas comme une mesure physique directe.
+
+### Bilan retenu
+
+Pour CleanMyMap seul, l'estimation centrale la plus défendable reste proche de **8 MWh**, **2 tonnes de CO₂e**, **5,5 m³ d'eau directe** et **40 m³ d'eau** en comptant la production électrique, par an.
+
+Ce niveau reste presque **10 fois** au-dessus de l'hypothèse issue de la démarche par heures d'utilisation hebdomadaire de l'IA. Il faut donc le lire comme un scénario haut, utile pour encadrer le risque, pas comme une mesure instrumentée.
+
+La génération d'images augmente bien l'impact, mais elle reste secondaire face au texte et au raisonnement. Quelques centaines d'images mensuelles n'expliquent pas à elles seules l'ordre de grandeur retenu.
+
+Ces résultats couvrent principalement l'inférence et l'infrastructure opérationnelle. Ils n'intègrent pas correctement la fabrication des GPU, la construction des centres de données, l'entraînement des modèles, ton ordinateur personnel, Vercel ou Supabase. Ils servent surtout à fixer des ordres de grandeur robustes et à comparer les scénarios sans confondre tokens comptabilisés et impact physique direct.
+
+### Comparaison pédagogique des échelles
+
+Mon usage individuel reste un usage de développement, pas un usage de production à l'échelle d'un produit grand public. La bonne base de lecture est donc d'abord celle-ci :
+
+* **Codex**: environ **3 milliards de tokens par mois** tous projets confondus ;
+* **CleanMyMap**: environ **2 milliards de tokens par mois** dans cet ensemble ;
+* **ChatGPT**: un complément de volume, mais avec des tâches plus lourdes en contexte, en raisonnement et en images.
+
+À cette échelle, le point important n'est pas seulement le volume brut, mais le fait qu'une grande part du contexte est réinjectée, répétée ou mise en cache. OpenAI explique que le prompt caching peut réduire la latence jusqu'à **80 %** et le coût des tokens d'entrée jusqu'à **90 %**, ce qui confirme qu'un même total brut peut cacher des charges de calcul très différentes. [Prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+
+Pour l'usage industriel des grandes entreprises, la logique change. On ne parle plus d'un poste de travail individuel, mais d'un service qui sert des flux continus de requêtes, souvent très répétitives, à des millions d'utilisateurs. La métrique utile devient alors celle du trafic agrégé, du taux de cache, du débit servi et du coût marginal par requête, pas celle d'un seul compte.
+
+L'entraînement des modèles de frontière correspond encore à une autre échelle. OpenAI indique que le travail sur les modèles de frontière dépend de réseaux de supercalculateurs fiables et de très grandes infrastructures de formation. [Supercomputer networking to accelerate large scale AI training](https://openai.com/index/mrc-supercomputer-networking/) ; [Software Engineer, Frontier Clusters Infrastructure](https://openai.com/careers/software-engineer-frontier-clusters-infrastructure-san-francisco/)
+
+Autrement dit, l'usage individuel mesure une activité de travail, l'usage industriel mesure une activité de service, et l'entraînement mesure une activité d'infrastructure. Les trois niveaux ne s'additionnent pas proprement dans une seule conversion en tokens, parce qu'ils ne décrivent pas le même type de calcul ni la même temporalité.
+
+La comparaison utile pour CleanMyMap est donc la suivante : un usage individuel déjà élevé en tokens ne doit pas être confondu avec une plateforme grand public, et une plateforme grand public ne doit pas être confondue avec le coût massif d'un entraînement de modèle de frontière. Le premier relève du travail quotidien, le second du service à grande échelle, le troisième d'une opération industrielle ponctuelle mais très lourde.
+
+### Comparaison chiffrée avec les grandes entreprises et l'entraînement
+
+Quelques repères chiffrés aident à situer l'échelle de ton usage par rapport aux volumes industriels.
+
+* Selon **The Information**, les employés de Meta auraient traité environ **73 700 milliards de tokens** en **30 jours** avec leurs outils internes d'IA. À ce niveau, mon usage Codex total mensuel reste environ **24 600 fois** plus petit, et l'usage CleanMyMap environ **36 850 fois** plus petit. [The Information](https://www.theinformation.com/articles/tokenminimizing-meta-moves-curb-employee-ai-usage-ai-costs-reach-billions?utm_source=chatgpt.com)
+* Google indique officiellement traiter **plus de 3,2 millions de milliards de tokens par mois** sur l'ensemble de ses surfaces en mai 2026. Cela représente environ **1,07 million de fois** mon usage Codex mensuel, ou **1,6 million de fois** celui de CleanMyMap. [Google Blog](https://blog.google/innovation-and-ai/sundar-pichai-io-2026/)
+* **Llama 3** a été préentraîné sur **plus de 15 000 milliards de tokens**. Rapporté à **2 milliards de tokens par mois pour CleanMyMap**, cela correspond à environ **625 ans** d'usage au même rythme. [Meta AI](https://ai.meta.com/blog/meta-llama-3/)
+* Le mélange d'entraînement de **Llama 4** dépasse **30 000 milliards de tokens**. Cela représente environ **1 250 ans** de mon usage mensuel CleanMyMap, ou **833 ans** de mon usage Codex total. [Meta AI](https://ai.meta.com/blog/llama-4-multimodal-intelligence/)
+* Si l'on imagine **30 modèles** entraînés chacun sur **30 000 milliards de tokens**, on obtient **900 000 milliards de tokens**. C'est l'équivalent arithmétique d'environ **37 500 années** de mon usage CleanMyMap. Ce dernier calcul reste purement illustratif : les entreprises ne publient généralement ni tous les essais, ni les réentraînements, ni le post-entraînement, ni les données synthétiques.
+
+La lecture utile est donc la suivante : mon usage est très élevé pour un particulier, mais il reste microscopique à l'échelle industrielle. À titre de repère, **CleanMyMap** seul représente environ **0,0027 %** du volume Meta rapporté et environ **0,000063 %** du volume mensuel déclaré par Google ; le **total Codex** reste autour de **0,0041 %** du volume Meta. Les tokens doivent servir d'indicateur de volume, puis les impacts en **kWh**, **CO₂e** et **eau** doivent être estimés séparément, sans conversion directe d'un ratio de tokens en ratio d'empreinte environnementale.
 
 ### Empreinte hydrique estimée
 
@@ -4203,6 +4281,3 @@ Cette section rassemble les documents de référence liés aux outils et service
 | Vercel | [v0 — Build Agents, Apps, and Websites with AI](https://vercel.com/blog/v0) |
 | Supabase | [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security) |
 | Google AI for Developers | [Gemini API release notes](https://ai.google.dev/gemini-api/docs/changelog) |
-
-
-

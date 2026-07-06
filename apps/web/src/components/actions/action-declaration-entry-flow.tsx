@@ -1,6 +1,12 @@
 "use client";
 
-import { type ComponentProps, type ElementType, useEffect, useState } from "react";
+import {
+  type ComponentProps,
+  type ElementType,
+  useEffect,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -13,6 +19,7 @@ import {
 } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-before-declaration-form";
 import { ActionDeclarationForm } from "./action-declaration-form";
+import { updateAction } from "@/lib/actions/http";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
@@ -22,7 +29,9 @@ import { getBlockClasses } from "@/lib/ui/block-accents";
 type EntryPath = "before" | "after";
 type EntryScreen = "choice" | "loading" | "success" | "error";
 
-type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationForm>;
+type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationForm> & {
+  initialActionId?: string | null;
+};
 
 function EntryFeature({ children }: { children: string }) {
   return (
@@ -168,40 +177,79 @@ function ErrorPanel({
 }
 
 export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProps) {
-  const [screen, setScreen] = useState<EntryScreen>("choice");
-  const [selection, setSelection] = useState<EntryPath | null>(null);
+  const router = useRouter();
+  const [screen, setScreen] = useState<EntryScreen>(
+    props.initialActionId ? "success" : "choice",
+  );
+  const [selection, setSelection] = useState<EntryPath | null>(
+    props.initialActionId ? "after" : null,
+  );
+  const [handoffActionId, setHandoffActionId] = useState<string | null>(
+    props.initialActionId ?? null,
+  );
+  const [loadingMode, setLoadingMode] = useState<"choice" | "handoff" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const actClasses = getBlockClasses("act");
 
   useEffect(() => {
-    if (screen !== "loading") {
+    if (screen !== "loading" || loadingMode !== "choice") {
       return;
     }
 
     const timer = window.setTimeout(() => {
       if (!selection) {
         setErrorMessage("Le parcours demandé n'a pas pu être préparé.");
+        setLoadingMode(null);
         setScreen("error");
         return;
       }
 
+      setLoadingMode(null);
       setScreen("success");
     }, 220);
 
     return () => window.clearTimeout(timer);
-  }, [screen, selection]);
+  }, [loadingMode, screen, selection]);
 
   const startChoice = (path: EntryPath) => {
     setErrorMessage(null);
+    setHandoffActionId(null);
     setSelection(path);
+    setLoadingMode("choice");
     setScreen("loading");
+  };
+
+  const transitionToComplete = async (actionId: string) => {
+    setErrorMessage(null);
+    setSelection("after");
+    setLoadingMode("handoff");
+    setScreen("loading");
+    try {
+      await updateAction(actionId, { actionPhase: "post_action_draft" });
+      setHandoffActionId(actionId);
+      router.replace(`/actions/new?actionId=${encodeURIComponent(actionId)}`);
+      setLoadingMode(null);
+      setScreen("success");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Impossible de préparer le formulaire complet pour le moment.",
+      );
+      setSelection(null);
+      setLoadingMode(null);
+      setScreen("error");
+    }
   };
 
   const backToChoice = () => {
     setErrorMessage(null);
     setSelection(null);
+    setHandoffActionId(null);
+    setLoadingMode(null);
     setScreen("choice");
+    router.replace("/actions/new");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -242,11 +290,11 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           <ChoiceCard
             icon={ClipboardList}
             title="Déclarer avant l'action"
-            description="Préparer une pré-déclaration de groupe avant le terrain, puis construire le futur formulaire dédié."
+            description="Préparer une action de groupe avant le départ. Les données de récolte seront ajoutées plus tard dans le formulaire complet."
             features={[
               "Pensé pour les actions à venir ou à organiser.",
-              "N'envoie aucune validation partielle.",
-              "Sert de point d'entrée pour le futur formulaire de groupe.",
+              "Les données de collecte finale restent absentes.",
+              "Sert de point d'entrée pour le formulaire de groupe.",
             ]}
             onSelect={() => startChoice("before")}
             cta="Préparer ce parcours"
@@ -255,9 +303,9 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           <ChoiceCard
             icon={CheckCircle2}
             title="Déclarer après l'action"
-            description="Ouvrir le formulaire actuel sans changer son fonctionnement, pour saisir une action déjà réalisée."
+            description="Ouvrir le formulaire complet actuel pour déclarer une collecte déjà réalisée."
             features={[
-              "Conserve le formulaire bénévole actuel.",
+              "Conserve le formulaire bénévole complet.",
               "Garde les validations, erreurs et succès existants.",
               "Permet de continuer immédiatement sans rupture de parcours.",
             ]}
@@ -288,7 +336,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         linkedEventId={props.linkedEventId}
         initialRecordType={props.initialRecordType}
         onReturnToChoice={backToChoice}
-        onPassToComplete={() => startChoice("after")}
+        onPassToComplete={(actionId) => transitionToComplete(actionId)}
       />
     );
   }
@@ -314,7 +362,11 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           </CmmButton>
         </div>
 
-        <ActionDeclarationForm {...props} />
+        <ActionDeclarationForm
+          {...props}
+          initialActionId={handoffActionId ?? undefined}
+          onReturnToChoice={backToChoice}
+        />
       </div>
     );
   }

@@ -81,6 +81,41 @@ const associationNameSchema = z
   .max(120)
   .refine((value) => isValidAssociationName(value), "Association invalide.");
 
+const preparationDataSchema = z
+  .object({
+    actionTitle: z.string().max(200).optional(),
+    shortDescription: z.string().max(1000).optional(),
+    communeZoneLabel: z.string().max(200).optional(),
+    pointDeRendezVous: z.string().max(200).optional(),
+    zoneCiblePrevue: z.string().max(200).optional(),
+    actionDate: z.string().date().optional(),
+    meetingTime: z.string().max(20).optional(),
+    departureTime: z.string().max(20).optional(),
+    estimatedDurationMinutes: z.number().int().min(0).max(24 * 60).optional(),
+    plannedObjective: z
+      .enum(["repérage", "nettoyage", "collecte_mégots", "action_mixte", "sensibilisation", "autre"])
+      .optional(),
+    placeType: z.string().max(120).optional(),
+    estimatedDifficulty: z.enum(["facile", "moderee", "soutenue"]).optional(),
+    accessibility: z.string().max(1000).optional(),
+    safetyInstructions: z.string().max(2000).optional(),
+    recommendedMaterials: z.string().max(2000).optional(),
+    participantMessage: z.string().max(2000).optional(),
+    creatorRole: z.enum(["organisateur", "benevole", "association", "etudiant", "autre"]).optional(),
+    preparationState: z.enum(["brouillon", "pret_a_partager", "action_en_cours", "a_completer_apres_action"]).optional(),
+    logisticsNotes: z.string().max(2000).optional(),
+    checklistBeforeDeparture: z.string().max(2000).optional(),
+    volunteersExpected: z.number().int().min(0).max(500).optional(),
+    groupJoinEnabled: z.boolean().optional(),
+  })
+  .strict();
+
+const actionPhaseSchema = z.enum([
+  "pre_action",
+  "post_action_draft",
+  "post_action_complete",
+]);
+
 const userMetadataSchema = z.object({
   userId: z.string().min(1).max(120),
   username: z.string().min(1).max(120).optional(),
@@ -103,6 +138,8 @@ const createActionLegacySchema = z.object({
   routeAdjustmentMessage: z.string().max(500).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  actionPhase: actionPhaseSchema.optional(),
+  preparationData: preparationDataSchema.nullable().optional(),
   wasteKg: z.number().min(0).max(100000),
   cigaretteButts: z.number().int().min(0).max(5000000).default(0),
   cigaretteButtsCount: z.number().int().min(1).max(10000).optional(),
@@ -157,6 +194,8 @@ const createActionContractSchema = z.object({
     routeStyle: z.enum(["direct", "souple"]).optional(),
     routeAdjustmentMessage: z.string().max(500).optional(),
     submissionMode: z.enum(["quick", "complete"]).optional(),
+    actionPhase: actionPhaseSchema.optional(),
+    preparationData: preparationDataSchema.nullable().optional(),
     wasteBreakdown: wasteBreakdownSchema.optional(),
     photos: z.array(photoAssetSchema).max(3).optional(),
     visionEstimate: visionEstimateSchema.nullable().optional(),
@@ -171,5 +210,10 @@ export const createActionSchema = z
         value as CreateActionPayload | ActionContractCreatePayload,
       ),
   );
+
+export const updateActionSchema = createActionLegacySchema.partial().extend({
+  actionPhase: actionPhaseSchema.optional(),
+  preparationData: preparationDataSchema.nullable().optional(),
+});
 
 export type CreateActionInput = z.infer<typeof createActionSchema>;

@@ -83,6 +83,31 @@ describe("accueil data", () => {
     expect(activity.items[0]?.id).toBe("approved");
   });
 
+  it("prefers the real action name over the legacy sheet source label", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        buildActionDataContract({
+          id: "sheet-import",
+          type: "action",
+          status: "approved",
+          source: "google_sheet",
+          observedAt: "2026-04-10",
+          createdAt: "2026-04-10T08:00:00.000Z",
+          locationLabel: "Mairie du 20e arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris",
+          latitude: 48.87,
+          longitude: 2.35,
+          actorName: "Google Sheet",
+          volunteersCount: 10,
+        }),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.items[0]?.actor).toBe(
+      "Mairie du 20e arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris",
+    );
+  });
+
   it("formats a clear landing overview error message", () => {
     expect(
       formatLandingOverviewErrorMessage(new Error("Database timeout")),

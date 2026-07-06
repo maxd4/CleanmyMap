@@ -5,6 +5,7 @@ import type { QuizReasoningType } from "../../components/learn/quiz-reasoning-ty
 import type { QuizQuestionFormatId } from "../../components/learn/quiz-question-formats.ts";
 import type { QuizTrapLevelId } from "../../components/learn/quiz-trap-levels.ts";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "./quiz-source-metadata.ts";
+import type { ImpactReferenceMetadata } from "./impact-reference-types.ts";
 import type { QuizQuestionLocalizedFields } from "./quiz-i18n";
 import { buildQuizSourceMetadata } from "./quiz-source-metadata.ts";
 import { getQuizDifficulty, getQuizPedagogicalType, type QuizDifficultyId, type QuizPedagogicalTypeId, type QuizSkillId } from "./quiz-taxonomy.ts";
@@ -40,6 +41,7 @@ export type QuizQuestion = {
   localScope?: QuizLocalScope;
   lastCheckedAt?: string;
   needsReview?: boolean;
+  reference?: ImpactReferenceMetadata;
   localized?: QuizQuestionLocalizedFields;
 };
 
@@ -96,6 +98,7 @@ export type QuizQuestionStructure = {
   content: QuizQuestionContentBlock;
   taxonomy: QuizQuestionTaxonomyBlock;
   source: QuizQuestionSourceBlock;
+  reference?: ImpactReferenceMetadata;
   review: QuizQuestionReviewBlock;
 };
 
@@ -143,6 +146,7 @@ export function stabilizeQuizQuestion(question: QuizQuestion): ResolvedQuizQuest
         lastCheckedAt: sourceMetadata.lastCheckedAt,
         needsReview: sourceMetadata.needsReview,
       },
+      reference: question.reference,
       review: {
         target: reviewTarget,
         errorType: errorGrid.errorType,

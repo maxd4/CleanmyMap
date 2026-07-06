@@ -73,6 +73,8 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     actorName: row.actor_name,
     associationName: parsedMetadata.associationName,
     groupJoinEnabled: parsedMetadata.groupJoinEnabled,
+    actionPhase: row.action_phase,
+    preparationData: row.preparation_data,
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,

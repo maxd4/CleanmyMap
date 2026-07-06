@@ -1,9 +1,11 @@
 import type {
   ActionImpactLevel,
   ActionListResponse,
+  ActionPhase,
   ActionRecordType,
   ActionQualityGrade,
   ActionStatus,
+  ActionPreparationData,
   CreateActionPayload,
 } from "@/lib/actions/types";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
@@ -290,6 +292,40 @@ export type ActionPrefillResponse = {
   };
 };
 
+export type ActionEditorRecord = {
+  id: string;
+  status: ActionStatus;
+  actionPhase: ActionPhase;
+  preparationData: ActionPreparationData | null;
+  createdByClerkId: string | null;
+  actorName: string | null;
+  actionDate: string;
+  locationLabel: string;
+  latitude: number | null;
+  longitude: number | null;
+  wasteKg: number;
+  cigaretteButts: number;
+  volunteersCount: number;
+  durationMinutes: number;
+  notes: string | null;
+  submissionMode: "quick" | "complete" | null;
+  associationName: string | null;
+  groupJoinEnabled: boolean;
+  placeType: string | null;
+  departureLocationLabel: string | null;
+  arrivalLocationLabel: string | null;
+  routeStyle: "direct" | "souple" | null;
+  routeAdjustmentMessage: string | null;
+  wasteBreakdown?: unknown;
+  photos?: unknown;
+  visionEstimate?: unknown;
+};
+
+export type ActionEditorResponse = {
+  status: "ok";
+  action: ActionEditorRecord;
+};
+
 export async function fetchActionPrefill(): Promise<ActionPrefillResponse> {
   const response = await fetch("/api/actions/prefill", {
     method: "GET",
@@ -310,4 +346,61 @@ export async function fetchActionPrefill(): Promise<ActionPrefillResponse> {
     });
   }
   return body as ActionPrefillResponse;
+}
+
+export async function fetchActionById(
+  actionId: string,
+): Promise<ActionEditorRecord> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(
+      response,
+      body,
+      parseErrorMessage(body, "Impossible de charger l'action."),
+    );
+  }
+  if (!body || typeof body !== "object" || !("action" in body)) {
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour l'action.",
+    });
+  }
+  return (body as ActionEditorResponse).action;
+}
+
+export async function updateAction(
+  actionId: string,
+  payload: Partial<CreateActionPayload> & {
+    actionPhase?: ActionPhase;
+    preparationData?: ActionPreparationData | null;
+  },
+): Promise<{ actionId: string; actionPhase: ActionPhase | null }> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(
+      response,
+      body,
+      parseErrorMessage(body, "Impossible de mettre à jour l'action."),
+    );
+  }
+  if (
+    !body ||
+    typeof body !== "object" ||
+    typeof (body as { actionId?: unknown }).actionId !== "string"
+  ) {
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète lors de la mise à jour.",
+    });
+  }
+  return body as { actionId: string; actionPhase: ActionPhase | null };
 }

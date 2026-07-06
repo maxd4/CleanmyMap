@@ -78,32 +78,12 @@ function getAccueilVisibleContracts(
   });
 }
 
-function formatSourceLabel(source: string): string {
-  const normalized = source.trim().toLowerCase();
-
-  if (normalized.includes("sheet")) {
-    return "Google Sheet";
-  }
-  if (normalized.includes("spot")) {
-    return "Signalement terrain";
-  }
-  if (normalized.includes("action")) {
-    return "Action terrain";
-  }
-
-  return (
-    source
-      .replace(/[-_]+/g, " ")
-      .trim()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase()) || "Action terrain"
-  );
-}
-
 function getActorLabel(contract: ActionDataContract): string {
   return (
-    contract.metadata.actorName?.trim() ||
+    contract.location.label.trim() ||
     contract.metadata.associationName?.trim() ||
-    formatSourceLabel(contract.source)
+    contract.metadata.actorName?.trim() ||
+    "Action terrain"
   );
 }
 

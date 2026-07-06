@@ -15,6 +15,8 @@ function buildContract(overrides: Partial<ActionDataContract>): ActionDataContra
     notes: null,
     notesPlain: null,
     submissionMode: "quick",
+    actionPhase: "post_action_complete",
+    preparationData: null,
     wasteBreakdown: null,
     photos: null,
     visionEstimate: null,

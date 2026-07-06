@@ -34,7 +34,15 @@ describe("action declaration draft storage", () => {
     installLocalStorage();
     const savedAt = "2026-05-13T10:45:00.000Z";
     const fallback = createInitialFormState("Alice");
-    const draft = { ...fallback, locationLabel: "Place de la Republique", wasteKg: "12" };
+    const draft = {
+      ...fallback,
+      actionTitle: "Nettoyage test",
+      shortDescription: "Préparation avant action",
+      locationLabel: "Place de la Republique",
+      meetingTime: "09:15",
+      preparationState: "pret_a_partager" as const,
+      wasteKg: "12",
+    };
 
     expect(saveDraft(draft, savedAt)).toBe(savedAt);
 
@@ -42,7 +50,11 @@ describe("action declaration draft storage", () => {
 
     expect(snapshot?.savedAt).toBe(savedAt);
     expect(snapshot?.form.actorName).toBe("Alice");
+    expect(snapshot?.form.actionTitle).toBe("Nettoyage test");
+    expect(snapshot?.form.shortDescription).toBe("Préparation avant action");
     expect(snapshot?.form.locationLabel).toBe("Place de la Republique");
+    expect(snapshot?.form.meetingTime).toBe("09:15");
+    expect(snapshot?.form.preparationState).toBe("pret_a_partager");
     expect(snapshot?.form.wasteKg).toBe("12");
   });
 

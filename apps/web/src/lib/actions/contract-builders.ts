@@ -1,6 +1,8 @@
 import {
   ActionRecordType,
   ActionSubmissionMode,
+  ActionPhase,
+  ActionPreparationData,
   ActionWasteBreakdown,
   ActionPhotoAsset,
   ActionVisionEstimate,
@@ -32,6 +34,8 @@ export type ActionContractCreatePayload = {
     associationName?: string;
     organizerAccounts?: string[];
     groupJoinEnabled?: boolean;
+    actionPhase?: ActionPhase;
+    preparationData?: ActionPreparationData | null;
     placeType?: string;
     wasteKg: number;
     cigaretteButts?: number;
@@ -81,6 +85,8 @@ export function toContractCreatePayload(
       associationName: payload.associationName,
       organizerAccounts: payload.organizerAccounts,
       groupJoinEnabled: payload.groupJoinEnabled,
+      actionPhase: payload.actionPhase,
+      preparationData: payload.preparationData ?? null,
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButts: payload.cigaretteButts,
@@ -128,16 +134,15 @@ function buildManualDrawing(
 /**
  * Normalise un payload de création (qu'il vienne du formulaire web ou d'un contrat existant).
  */
-export function normalizeCreatePayload(
-  payload: CreateActionPayload | ActionContractCreatePayload,
+function normalizeContractCreatePayload(
+  payload: ActionContractCreatePayload,
 ): CreateActionPayload {
-  if ("actionDate" in payload) {
-    return payload;
-  }
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
+    actionPhase: payload.metadata.actionPhase ?? undefined,
+    preparationData: payload.metadata.preparationData ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
     recordType: payload.type,
@@ -160,4 +165,13 @@ export function normalizeCreatePayload(
     manualDrawing: buildManualDrawing(payload.geometry),
     placeType: payload.metadata.placeType ?? undefined,
   };
+}
+
+export function normalizeCreatePayload(
+  payload: CreateActionPayload | ActionContractCreatePayload,
+): CreateActionPayload {
+  if ("actionDate" in payload) {
+    return payload;
+  }
+  return normalizeContractCreatePayload(payload);
 }

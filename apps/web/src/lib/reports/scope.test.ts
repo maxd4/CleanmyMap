@@ -41,6 +41,8 @@ const contract: ActionDataContract = {
     notesPlain: null,
     groupJoinEnabled: true,
     submissionMode: null,
+    actionPhase: "post_action_complete",
+    preparationData: null,
     wasteBreakdown: null,
     photos: null,
     visionEstimate: null,

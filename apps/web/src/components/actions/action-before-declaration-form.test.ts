@@ -25,10 +25,23 @@ describe("ActionBeforeDeclarationForm", () => {
       } as ComponentProps<typeof ActionBeforeDeclarationForm>),
     );
 
-    expect(html).toContain("Déclarer avant l'action");
-    expect(html).toContain("Préparer un formulaire de groupe");
+    expect(html).toContain("Déclarer avant l&#x27;action");
+    expect(html).toContain("Préparer le formulaire de groupe");
     expect(html).toContain("Publier le pré-formulaire");
-    expect(html).toContain("Ouvrir le formulaire de groupe");
-    expect(html).toContain("Objectif, consignes et contexte");
+    expect(html).toContain("Identité et partage");
+    expect(html).toContain("Action prévue");
+    expect(html).toContain("Préparation et sécurité");
+    expect(html).toContain("Point de rendez-vous précis");
+    expect(html).toContain("Zone cible prévue");
+    expect(html).toContain("Nombre de bénévoles attendus");
+    expect(html).toContain("Message pour les participants");
+    expect(html).toContain("Commentaire logistique");
+    expect(html).toContain("Checklist avant départ");
+    expect(html).toContain("Localisation du rendez-vous");
+    expect(html).toContain("Statut du formulaire");
+    expect(html).toContain("Autoriser les participants à rejoindre");
+    expect(html).not.toContain("Déchets collectés");
+    expect(html).not.toContain("Photos de preuve");
+    expect(html).not.toContain("Score d'impact");
   });
 });

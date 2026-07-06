@@ -1,4 +1,8 @@
-import type { ActionGeometrySource } from "@/lib/actions/types";
+import type {
+  ActionGeometrySource,
+  ActionPhase,
+  ActionPreparationData,
+} from "@/lib/actions/types";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -67,6 +71,8 @@ export type ActionRow = {
   duration_minutes: number;
   notes: string | null;
   status: "pending" | "approved" | "rejected";
+  action_phase: ActionPhase;
+  preparation_data: ActionPreparationData;
   geometry_source?: ActionGeometrySource | null;
 };
 

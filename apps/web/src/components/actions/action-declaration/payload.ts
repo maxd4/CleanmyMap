@@ -8,6 +8,7 @@ import { deriveAutoDrawingFromLocation } from"@/lib/actions/route-geometry";
 import type {
  ActionDrawing,
  ActionPhotoAsset,
+ ActionPreparationData,
  ActionVisionEstimate,
  CreateActionPayload,
 } from"../../../lib/actions/types";
@@ -40,12 +41,27 @@ const BASE_FORM_STATE: FormState = {
  enterpriseName:"",
  organizerAccounts:"",
  groupJoinEnabled: true,
+ actionTitle:"",
+ shortDescription:"",
+ communeZoneLabel:"",
  actionDate: new Date().toISOString().slice(0, 10),
+ meetingTime:"",
+ departureTime:"",
  locationLabel:"",
  departureLocationLabel:"",
  arrivalLocationLabel:"",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
+ plannedObjective:"nettoyage",
+ estimatedDifficulty:"moderee",
+ accessibility:"",
+ safetyInstructions:"",
+ recommendedMaterials:"",
+ participantMessage:"",
+ creatorRole:"organisateur",
+ preparationState:"brouillon",
+ logisticsNotes:"",
+ checklistBeforeDeparture:"",
  recordType:"action",
  latitude:"",
  longitude:"",
@@ -74,6 +90,85 @@ export function createInitialFormState(
  recordType: FormState["recordType"] = "action",
 ): FormState {
  return { ...BASE_FORM_STATE, actorName, recordType };
+}
+
+export function buildPreparationDataFromForm(
+ form: FormState,
+): ActionPreparationData {
+ return {
+  actionTitle: form.actionTitle.trim() || undefined,
+  shortDescription: form.shortDescription.trim() || undefined,
+  communeZoneLabel: form.communeZoneLabel.trim() || undefined,
+  pointDeRendezVous: form.departureLocationLabel.trim() || undefined,
+  zoneCiblePrevue: form.arrivalLocationLabel.trim() || undefined,
+  actionDate: form.actionDate.trim() || undefined,
+  meetingTime: form.meetingTime.trim() || undefined,
+  departureTime: form.departureTime.trim() || undefined,
+  estimatedDurationMinutes: toOptionalNumber(form.durationMinutes),
+  plannedObjective: form.plannedObjective,
+  placeType: form.placeType || undefined,
+  estimatedDifficulty: form.estimatedDifficulty,
+  accessibility: form.accessibility.trim() || undefined,
+  safetyInstructions: form.safetyInstructions.trim() || undefined,
+  recommendedMaterials: form.recommendedMaterials.trim() || undefined,
+  participantMessage: form.participantMessage.trim() || undefined,
+  creatorRole: form.creatorRole,
+  preparationState: form.preparationState,
+  logisticsNotes: form.logisticsNotes.trim() || undefined,
+  checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
+  volunteersExpected: toOptionalNumber(form.volunteersCount),
+  groupJoinEnabled: form.groupJoinEnabled,
+ };
+}
+
+export function applyPreparationDataToForm(
+ form: FormState,
+ preparationData: ActionPreparationData | null | undefined,
+): FormState {
+ if (!preparationData) {
+  return form;
+ }
+
+ return {
+  ...form,
+  actionTitle: preparationData.actionTitle ?? form.actionTitle,
+  shortDescription: preparationData.shortDescription ?? form.shortDescription,
+  communeZoneLabel: preparationData.communeZoneLabel ?? form.communeZoneLabel,
+  departureLocationLabel:
+   preparationData.pointDeRendezVous ?? form.departureLocationLabel,
+  arrivalLocationLabel: preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
+  actionDate: preparationData.actionDate ?? form.actionDate,
+  meetingTime: preparationData.meetingTime ?? form.meetingTime,
+  departureTime: preparationData.departureTime ?? form.departureTime,
+  durationMinutes:
+   typeof preparationData.estimatedDurationMinutes === "number"
+    ? String(preparationData.estimatedDurationMinutes)
+    : form.durationMinutes,
+  plannedObjective: preparationData.plannedObjective ?? form.plannedObjective,
+  placeType: preparationData.placeType ?? form.placeType,
+  estimatedDifficulty:
+   preparationData.estimatedDifficulty ?? form.estimatedDifficulty,
+  accessibility: preparationData.accessibility ?? form.accessibility,
+  safetyInstructions:
+   preparationData.safetyInstructions ?? form.safetyInstructions,
+  recommendedMaterials:
+   preparationData.recommendedMaterials ?? form.recommendedMaterials,
+  participantMessage:
+   preparationData.participantMessage ?? form.participantMessage,
+  creatorRole: preparationData.creatorRole ?? form.creatorRole,
+  preparationState: preparationData.preparationState ?? form.preparationState,
+  logisticsNotes: preparationData.logisticsNotes ?? form.logisticsNotes,
+  checklistBeforeDeparture:
+   preparationData.checklistBeforeDeparture ?? form.checklistBeforeDeparture,
+  volunteersCount:
+   typeof preparationData.volunteersExpected === "number"
+    ? String(preparationData.volunteersExpected)
+    : form.volunteersCount,
+  groupJoinEnabled:
+   typeof preparationData.groupJoinEnabled === "boolean"
+    ? preparationData.groupJoinEnabled
+    : form.groupJoinEnabled,
+ };
 }
 
 export function getFormResetState(previous: FormState): FormState {
@@ -201,10 +296,12 @@ export function buildCreateActionPayload(params: {
  )
  : undefined;
 
-  return {
+ return {
     actorName: form.actorName.trim() || undefined,
     associationName,
     groupJoinEnabled: form.groupJoinEnabled,
+    actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
+    preparationData: buildPreparationDataFromForm(form),
     organizerAccounts: isSpontaneousAction
    ? undefined
    : (() => {

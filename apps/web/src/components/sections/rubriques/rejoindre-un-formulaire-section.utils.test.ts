@@ -9,6 +9,7 @@ function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionIt
     volunteers_count: partial.volunteers_count ?? 12,
     duration_minutes: partial.duration_minutes ?? 30,
     status: partial.status ?? "approved",
+    actionPhase: partial.actionPhase ?? "post_action_complete",
     participantsCount: partial.participantsCount ?? 0,
     joined: partial.joined ?? false,
     awaitingApproval: partial.awaitingApproval ?? false,

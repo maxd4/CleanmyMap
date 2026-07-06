@@ -71,11 +71,25 @@ function compareByLocation(left: JoinableActionItem, right: JoinableActionItem):
 }
 
 function buildSearchableText(item: JoinableActionItem, locale: "fr" | "en"): string {
+  const phaseLabel =
+    item.actionPhase === "pre_action"
+      ? locale === "fr"
+        ? "pré action"
+        : "pre action"
+      : item.actionPhase === "post_action_draft"
+        ? locale === "fr"
+          ? "a compléter"
+          : "to complete"
+        : locale === "fr"
+          ? "declaration complete"
+          : "complete declaration";
+
   return normalizeSearchText(
     [
       item.location_label,
       item.action_date,
       formatSearchableDate(item.action_date, locale),
+      phaseLabel,
       item.participantsCount.toString(),
       item.pendingRequestsCount.toString(),
       item.volunteers_count.toString(),

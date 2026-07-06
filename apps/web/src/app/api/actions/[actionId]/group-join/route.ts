@@ -143,9 +143,10 @@ export async function PATCH(
       id: string;
       created_by_clerk_id: string | null;
       status: "pending" | "approved" | "rejected";
+      action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
       notes: string | null;
     }>(supabase, (query) =>
-      query.select("id, created_by_clerk_id, status, notes").eq("id", trimmedActionId).maybeSingle(),
+      query.select("id, created_by_clerk_id, status, action_phase, notes").eq("id", trimmedActionId).maybeSingle(),
     );
 
     if (!actionResult) {
@@ -155,10 +156,10 @@ export async function PATCH(
       );
     }
 
-    if (actionResult.status !== "approved") {
+    if (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action") {
       return validationErrorResponse({
         actionId: [
-          "Le formulaire ne peut être modifié qu'après validation.",
+          "Le formulaire ne peut être modifié qu'en pré-action ou après validation.",
         ],
       });
     }
@@ -234,15 +235,16 @@ export async function GET(
       id: string;
       created_by_clerk_id: string | null;
       status: "pending" | "approved" | "rejected";
+      action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
       notes: string | null;
     }>(supabase, (query) =>
       query
-        .select("id, created_by_clerk_id, status, notes")
+        .select("id, created_by_clerk_id, status, action_phase, notes")
         .eq("id", trimmedActionId)
         .maybeSingle(),
     );
 
-    if (!actionResult || actionResult.status !== "approved") {
+    if (!actionResult || (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")) {
       return NextResponse.json(
         { error: "Action introuvable." },
         { status: 404 },
@@ -337,15 +339,16 @@ export async function POST(
       id: string;
       created_by_clerk_id: string | null;
       status: "pending" | "approved" | "rejected";
+      action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
       notes: string | null;
     }>(supabase, (query) =>
       query
-        .select("id, created_by_clerk_id, status, notes")
+        .select("id, created_by_clerk_id, status, action_phase, notes")
         .eq("id", trimmedActionId)
         .maybeSingle(),
     );
 
-    if (!actionResult || actionResult.status !== "approved") {
+    if (!actionResult || (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")) {
       return NextResponse.json(
         { error: "Action introuvable." },
         { status: 404 },

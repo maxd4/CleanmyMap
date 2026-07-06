@@ -39,6 +39,25 @@ Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant su
 - Ajouter des tests de logique avant de supprimer le code source.
 - Commande de vérification : `npm run quality:top-heavy` + `npm -C apps/web run lint`.
 
+## Règles d'exécution Kaizen
+
+Ces règles s'appliquent à chaque shell ou module monolithique traité dans ce plan, en cohérence avec le plan Kaizen du dépôt.
+
+- Extraire d'abord les constantes, les listes de données et les helpers purs.
+- Extraire ensuite la logique d'état dans un hook ou un module de modèle, avant de toucher au rendu.
+- Après chaque extraction, conserver un seul point d'entrée lisible qui compose les sous-modules.
+- Valider chaque étape avec le trio suivant :
+  - `npm run typecheck` ciblé sur le périmètre modifié ;
+  - tests ciblés quand il y en a ;
+  - `node scripts/check-top-heavy-files.mjs --top=25`.
+- Objectif de sortie :
+  - plus aucun fichier applicatif au-dessus de `1000` lignes par défaut ;
+  - idéalement, garder les shells UI entre `500` et `700` lignes.
+- Limiter l'utilisation des quotas des services web au strict nécessaire pendant l'audit et la modularisation.
+- S'appuyer sur le plan Kaizen existant du dépôt :
+  - `documentation/kaizen-implementation-plan/README.md`
+  - `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+
 ---
 
 ## LOT 1 — `chat-shell.tsx` (41 KB) 🔴

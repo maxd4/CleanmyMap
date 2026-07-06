@@ -14,6 +14,7 @@ type ActionRow = {
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
+  action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
 };
 
@@ -21,6 +22,7 @@ function createActionsChain(actions: ActionRow[]) {
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
+    in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({
       data: actions,
@@ -113,7 +115,8 @@ describe("group participation fallback handling", () => {
           location_label: "Parc Nord",
           volunteers_count: 12,
           duration_minutes: 45,
-          status: "approved",
+          status: "pending",
+          action_phase: "pre_action",
           notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
         },
       ],

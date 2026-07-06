@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
+import { ChevronDown } from "lucide-react";
+import {
+  getRoleSwitchTargetPath,
+} from "@/lib/account/role-switch-navigation";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
   getProfileEntryPath,
@@ -17,7 +21,6 @@ import {
   getSwitchableProfiles,
   type AppProfile,
 } from "@/lib/profiles";
-import { getRoleSwitchTargetPath } from "@/lib/account/role-switch-navigation";
 import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
@@ -28,6 +31,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const { locale } = useSitePreferences();
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useUser();
   const roleBadge = identity.badges.find((badge) =>
     badge.id.startsWith("role_"),
   );
@@ -129,6 +133,10 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
 
       if (!response.ok) {
         throw new Error(payload?.error ?? "Mutation de rôle refusée.");
+      }
+
+      if (user) {
+        await user.reload();
       }
 
       const profilePath =
