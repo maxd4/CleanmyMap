@@ -13,6 +13,7 @@ describe("ReportsPageTabs", () => {
       }),
     );
 
+    expect(markup).toContain("cmm-grid-shell");
     expect(markup).toContain("pilotage-section");
     expect(markup).not.toContain("generation-section");
   });
