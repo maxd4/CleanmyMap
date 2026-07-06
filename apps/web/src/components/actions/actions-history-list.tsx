@@ -1,115 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from"react";
-import { useUser } from"@clerk/nextjs";
-import useSWR from"swr";
-import { fetchActions } from"@/lib/actions/http";
-import { evaluateActionQuality } from"@/lib/actions/quality";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import useSWR from "swr";
+import { fetchActions } from "@/lib/actions/http";
+import { evaluateActionQuality } from "@/lib/actions/quality";
 import { fetchActionOperationAudit } from "@/lib/actions/operation-audit";
-import { CmmButton } from"@/components/ui/cmm-button";
-import { OperationAuditTimeline } from "@/components/actions/operation-audit-timeline";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { isAdminLikeProfile, normalizeProfileRole } from "@/lib/profiles";
 import {
- getActionOperationalContext,
- mapItemWasteKg,
- mapItemCigaretteButts,
-} from"@/lib/actions/data-contract";
+  getActionOperationalContext,
+  mapItemCigaretteButts,
+  mapItemWasteKg,
+} from "@/lib/actions/data-contract";
 import type {
- ActionListItem,
- ActionQualityGrade,
- ActionMapItem,
- ActionStatus,
-} from"@/lib/actions/types";
+  ActionListItem,
+  ActionMapItem,
+  ActionQualityGrade,
+  ActionStatus,
+} from "@/lib/actions/types";
 import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
-import type { ActionParticipationReviewItem } from"@/lib/actions/group-participation";
-import { swrRecentViewOptions } from"@/lib/swr-config";
-import { CmmSkeleton } from"@/components/ui/cmm-skeleton";
+import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
-
-function formatDate(value: string, locale: "fr" | "en" = "fr"): string {
- const parsed = new Date(value);
- if (Number.isNaN(parsed.getTime())) {
- return value;
- }
- return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
-  dateStyle: "medium",
- }).format(
-  parsed,
- );
-}
-
-function formatRecordType(item: ActionListItem): string {
- if (item.record_type ==="clean_place") {
- return"lieu propre";
- }
- if (item.record_type ==="other") {
- return"spot";
- }
- return"action";
-}
-
-function buildJoinHref(actionId: string): string {
- return `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(actionId)}`;
-}
+import {
+  canManageGroupJoin,
+  formatDate,
+  formatRecordType,
+} from "./actions-history-list.helpers";
+import { ActionsHistoryListDetails } from "./actions-history-list-details";
+import { ActionsHistoryListTable } from "./actions-history-list-table";
 
 function readProfileRole(metadata: unknown): string | null {
- if (!metadata || typeof metadata !== "object") {
- return null;
- }
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
 
- const candidate = metadata as Record<string, unknown>;
- const roleValue = candidate.role ?? candidate.profile;
- return typeof roleValue === "string" ? roleValue : null;
-}
-
-function isJoinableAction(item: ActionListItem): boolean {
- return (
- item.record_type === "action" &&
- item.contract?.metadata.groupJoinEnabled !== false
-  );
-}
-
-function isOwnedByCurrentUser(
- item: ActionListItem,
- currentUserId: string | null,
-): boolean {
- return Boolean(currentUserId && item.created_by_clerk_id === currentUserId);
-}
-
-function canManageGroupJoin(
- item: ActionListItem,
- currentUserId: string | null,
- isAdminLikeUser: boolean,
-): boolean {
- return Boolean(
-  item.status === "approved" &&
-   item.record_type === "action" &&
-   (isAdminLikeUser || isOwnedByCurrentUser(item, currentUserId)),
- );
-}
-
-function qualityTone(grade:"A" |"B" |"C"): string {
- if (grade ==="A") {
- return"border-emerald-200 bg-emerald-50 text-emerald-700";
- }
- if (grade ==="B") {
- return"border-amber-200 bg-amber-50 text-amber-700";
- }
- return"border-rose-200 bg-rose-50 text-rose-700";
-}
-
-function rowTone(grade:"A" |"B" |"C" | null): string {
- if (grade ==="A") {
- return"bg-emerald-50/40";
- }
- if (grade ==="B") {
- return"bg-amber-50/40";
- }
- if (grade ==="C") {
- return"bg-rose-50/40";
- }
- return"";
+  const candidate = metadata as Record<string, unknown>;
+  const roleValue = candidate.role ?? candidate.profile;
+  return typeof roleValue === "string" ? roleValue : null;
 }
 
 export function ActionsHistoryList() {
@@ -614,390 +543,49 @@ export function ActionsHistoryList() {
  </div>
 
  {selectedItem && selectedQuality ? (
- <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
- Detail score qualite
- </p>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
- <span className="font-semibold">
- {selectedQuality.grade} ({selectedQuality.score}/100)
- </span>{""}
- - points perdus: {selectedLostPoints}
- {selectedItem.contract?.metadata.placeType && (
- <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 cmm-text-caption cmm-text-secondary">
- Type: {selectedItem.contract.metadata.placeType}
- </span>
- )}
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Facteurs:{""}
- {selectedQuality.flags.length > 0
- ? selectedQuality.flags.join(",")
- :"Aucun facteur critique."}
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Action corrective recommandee: {correctiveAction}
- </p>
- {selectedOperational ? (
- <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
- Contexte métier
- </p>
- <div className="mt-2 flex flex-wrap gap-2">
- <span className="rounded-full bg-emerald-50 px-2 py-0.5 cmm-text-caption font-semibold text-emerald-800">
- {selectedOperational.placeTypeLabel}
- </span>
- <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-semibold cmm-text-secondary">
- {selectedOperational.routeStyleLabel}
- </span>
- <span className="rounded-full bg-sky-50 px-2 py-0.5 cmm-text-caption font-semibold text-sky-800">
- {selectedOperational.volunteersCount} bénévoles
- </span>
- <span className="rounded-full bg-indigo-50 px-2 py-0.5 cmm-text-caption font-semibold text-indigo-800">
- {selectedOperational.durationMinutes} min
- </span>
- <span className="rounded-full bg-amber-50 px-2 py-0.5 cmm-text-caption font-semibold text-amber-800">
- {selectedOperational.engagementHours} h-personnes
- </span>
- </div>
- {selectedOperational.routeAdjustmentMessage ? (
- <p className="mt-2 cmm-text-caption cmm-text-secondary">
- Ajustement trajet: {selectedOperational.routeAdjustmentMessage}
- </p>
- ) : null}
- </div>
- ) : null}
- {selectedCanModerateGroupJoin ? (
- <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
- <div className="flex flex-wrap items-center justify-between gap-2">
- <div>
- <p className="cmm-text-caption font-semibold uppercase tracking-wide text-amber-800">
- Modération
- </p>
- <p className="mt-0.5 cmm-text-small cmm-text-secondary">
- {fr
-  ? `${pendingGroupJoinRequests.length} demande${pendingGroupJoinRequests.length > 1 ? "s" : ""} à traiter.`
-  : `${pendingGroupJoinRequests.length} request${pendingGroupJoinRequests.length > 1 ? "s" : ""} to review.`}
- </p>
- </div>
- <button
-  type="button"
- onClick={() => {
-  if (selectedActionId) {
-   void loadPendingGroupJoinRequests(selectedActionId);
-  }
- }}
- className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 cmm-text-small font-semibold text-amber-900 transition hover:bg-amber-100"
- >
- {pendingGroupJoinLoading ? "..." : fr ? "Actualiser" : "Refresh"}
- </button>
- </div>
-
- {pendingGroupJoinError ? (
- <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
-  {pendingGroupJoinError}
- </p>
+  <ActionsHistoryListDetails
+    selectedItem={selectedItem}
+    selectedQuality={selectedQuality}
+    selectedOperational={selectedOperational}
+    selectedLostPoints={selectedLostPoints}
+    correctiveAction={correctiveAction}
+    selectedCanModerateGroupJoin={selectedCanModerateGroupJoin}
+    selectedCanViewActionAudit={selectedCanViewActionAudit}
+    pendingGroupJoinRequests={pendingGroupJoinRequests}
+    pendingGroupJoinLoading={pendingGroupJoinLoading}
+    pendingGroupJoinError={pendingGroupJoinError}
+    reviewingParticipantId={reviewingParticipantId}
+    actionAudit={{
+      data: actionAudit.data,
+      isLoading: actionAudit.isLoading,
+      error: actionAudit.error,
+    }}
+    fr={fr}
+    onRefreshPending={() => {
+      if (selectedActionId) {
+        void loadPendingGroupJoinRequests(selectedActionId);
+      }
+    }}
+    onReviewGroupJoin={(request, decision) => void handleReviewGroupJoin(request, decision)}
+  />
  ) : null}
 
- {pendingGroupJoinLoading ? (
- <div className="mt-2 space-y-2">
-  {[...Array(2)].map((_, index) => (
-   <div
-    key={index}
-    className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"
-   >
-    <CmmSkeleton className="h-4 w-40" />
-    <CmmSkeleton className="mt-2 h-3 w-24" />
-   </div>
-  ))}
- </div>
- ) : pendingGroupJoinRequests.length > 0 ? (
- <div className="mt-2 space-y-2.5">
-  {pendingGroupJoinRequests.map((request) => (
-   <div
-    key={request.id}
-    className="rounded-lg border border-amber-100 bg-white px-3 py-2.5"
-   >
-    <div className="flex flex-wrap items-start justify-between gap-2">
-     <div>
-      <p className="text-sm font-semibold text-slate-900">
-       {request.displayName}
-      </p>
-      <p className="text-xs text-slate-600">
-       {request.handle ? `@${request.handle}` : request.displayName} ·{" "}
-       {fr
-        ? `depuis ${formatDate(request.joinedAt.slice(0, 10), "fr")}`
-        : `since ${formatDate(request.joinedAt.slice(0, 10), "en")}`}
-      </p>
-     </div>
-     <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
-      {fr ? "À traiter" : "To review"}
-     </span>
-    </div>
-
-    <div className="mt-2 flex flex-wrap gap-2">
-     <CmmButton
-      type="button"
-      tone="primary"
-      variant="pill"
-      size="sm"
-      disabled={reviewingParticipantId === request.id}
-      onClick={() => void handleReviewGroupJoin(request, "accept")}
-     >
-      {reviewingParticipantId === request.id ? "..." : fr ? "Accepter" : "Accept"}
-     </CmmButton>
-     <CmmButton
-      type="button"
-      tone="secondary"
-      variant="pill"
-      size="sm"
-      disabled={reviewingParticipantId === request.id}
-      onClick={() => void handleReviewGroupJoin(request, "reject")}
-     >
-      {reviewingParticipantId === request.id ? "..." : fr ? "Refuser" : "Reject"}
-     </CmmButton>
-    </div>
-   </div>
-  ))}
- </div>
-) : (
- <div className="mt-2 rounded-lg border border-dashed border-amber-200 bg-white/80 px-3 py-2.5 cmm-text-small cmm-text-secondary">
-  {fr
-   ? "Aucune demande en attente."
-   : "No requests waiting."}
- </div>
- )}
- </div>
- ) : null}
-
- {selectedCanViewActionAudit ? (
-  <div className="mt-3">
-   <OperationAuditTimeline
-    title={fr ? "Journal de modifications" : "Change log"}
-    scopeLabel={
-     fr
-      ? selectedItem?.location_label
-        ? `Fiche action · ${selectedItem.location_label}`
-        : "Fiche action"
-      : selectedItem?.location_label
-        ? `Action sheet · ${selectedItem.location_label}`
-        : "Action sheet"
-    }
-    items={actionAudit.data?.items ?? []}
-    loading={actionAudit.isLoading}
-    errorMessage={
-     actionAudit.error
-      ? actionAudit.error instanceof Error
-       ? actionAudit.error.message
-       : fr
-        ? "Journal indisponible."
-        : "Audit unavailable."
-      : null
-    }
-    emptyMessage={
-     fr
-      ? "Aucune modification enregistrée sur cette action pour le moment."
-      : "No change recorded for this action yet."
-    }
-   />
-  </div>
- ) : null}
- </div>
- ) : null}
-
- {isLoading ? (
- <div className="mt-5 space-y-3">
- <div className="flex gap-4 border-b border-slate-200 pb-3 px-2">
- <CmmSkeleton className="h-4 w-16" />
- <CmmSkeleton className="h-4 w-24" />
- <CmmSkeleton className="h-4 w-32" />
- <CmmSkeleton className="h-4 w-20" />
- </div>
- {[...Array(5)].map((_, i) => (
- <div key={i} className="flex gap-4 px-2 items-center py-2 border-b border-slate-50">
- <CmmSkeleton className="h-4 w-16" />
- <CmmSkeleton className="h-4 w-24" />
- <CmmSkeleton className="h-4 w-48 flex-1" />
- <CmmSkeleton className="h-5 w-16 rounded-full" />
- <CmmSkeleton className="h-5 w-20 rounded-full" />
- </div>
- ))}
- </div>
- ) : null}
-
- {error ? (
- <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
-  {error instanceof Error ? error.message : "Impossible de charger l'historique des actions. Veuillez vérifier votre connexion ou rafraîchir la page."}
- </p>
- ) : null}
-
- {!isLoading && !error ? (
- <div className="mt-5 overflow-x-auto">
- <table className="min-w-full text-left cmm-text-small">
- <thead>
- <tr className="border-b border-slate-200 cmm-text-muted">
- <th className="px-2 py-2 font-medium">Date</th>
- <th className="px-2 py-2 font-medium">Benevole</th>
- <th className="px-2 py-2 font-medium">Lieu</th>
- <th className="px-2 py-2 font-medium">Type</th>
- <th className="px-2 py-2 font-medium">Kg</th>
- <th className="px-2 py-2 font-medium">Megots</th>
- <th className="px-2 py-2 font-medium">Statut</th>
- <th className="px-2 py-2 font-medium">Qualite</th>
- <th className="px-2 py-2 font-medium">Jonction</th>
- </tr>
- </thead>
- <tbody>
- {filteredItems.map((item: ActionListItem) => {
- const quality = qualityById.get(item.id);
- return (
- <tr
- key={item.id}
- className={`cursor-pointer border-b border-slate-100 cmm-text-secondary ${rowTone(quality?.grade ?? null)}`}
- onClick={() => setSelectedId(item.id)}
- >
- <td className="px-2 py-2">
- {formatDate(item.action_date)}
- </td>
- <td className="px-2 py-2">
- {item.actor_name ||"Anonyme"}
- </td>
- <td className="px-2 py-2">{item.location_label}</td>
- <td className="px-2 py-2">{formatRecordType(item)}</td>
- <td className="px-2 py-2">
- {mapItemWasteKg(item as ActionMapItem) !== null
- ? Number(mapItemWasteKg(item as ActionMapItem)).toFixed(1)
- : <span className="text-slate-300">-</span>}
- </td>
- <td className="px-2 py-2">
- {mapItemCigaretteButts(item as ActionMapItem) !== null
- ? mapItemCigaretteButts(item as ActionMapItem)
- : <span className="text-slate-300">-</span>}
- </td>
- <td className="px-2 py-2">
- <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
- {item.status}
- </span>
- </td>
- <td className="px-2 py-2">
- {quality ? (
- <div className="space-y-1">
- <span
- title={quality.flags.join(" |")}
- className={`inline-flex rounded-full border px-2 py-0.5 cmm-text-caption font-semibold ${qualityTone(quality.grade)}`}
- >
- {quality.grade} ({quality.score}/100)
- </span>
- <p className="max-w-48 truncate cmm-text-caption cmm-text-muted">
- {quality.flags[0]
- ? `Risque: ${quality.flags[0]}`
- :"Aucun risque majeur detecte"}
- </p>
- </div>
- ) : (
- <span className="cmm-text-caption cmm-text-muted">n/a</span>
- )}
- </td>
- <td className="px-2 py-2">
- {item.status ==="approved" && item.record_type ==="action" ? (
- <div className="flex flex-col items-start gap-2">
-  {isJoinableAction(item) ? (
-   <CmmButton
-    href={buildJoinHref(item.id)}
-    tone="secondary"
-    variant="pill"
-    className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
-   >
-    Rejoindre
-   </CmmButton>
-  ) : (
-   <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide text-slate-500">
-    Fermé
-   </span>
-  )}
-  {canManageGroupJoin(item, currentUserId, isAdminLikeUser) ? (
-   <CmmButton
-    type="button"
-    tone="primary"
-    variant="pill"
-    disabled={groupJoinActionId === item.id}
-    onClick={() =>
-      void handleToggleGroupJoin(item, item.contract?.metadata.groupJoinEnabled === false)
-    }
-    className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
-   >
-    {groupJoinActionId === item.id ? (
-     <>
-      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-      {item.contract?.metadata.groupJoinEnabled === false ? "Rouverture..." : "Fermeture..."}
-     </>
-    ) : item.contract?.metadata.groupJoinEnabled === false ? (
-     "Rouvrir"
-    ) : (
-     "Fermer"
-    )}
-   </CmmButton>
-  ) : null}
- </div>
- ) : (
- <span className="cmm-text-caption cmm-text-muted">-</span>
- )}
- </td>
- </tr>
- );
- })}
- </tbody>
- </table>
-
- {filteredItems.length >= limit && (
- <div className="mt-6 flex justify-center border-t border-slate-100 pt-6">
- <button
- type="button"
- onClick={() => setLimit((prev) => prev + 25)}
- disabled={isValidating}
- className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 cmm-text-small font-bold cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 active:translate-y-0 disabled:opacity-50"
- >
- {isValidating ? (
- <>
- <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-600" />
- Actualisation...
- </>
- ) : (
- <>
- <span>Afficher 25 de plus</span>
- <span className="text-slate-300 group-hover:text-emerald-400">↓</span>
- </>
- )}
- </button>
- </div>
- )}
-
-  {filteredItems.length === 0 ? (
-    <div className="mt-8 flex flex-col items-center justify-center space-y-4 p-12 border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 text-center">
-      <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100">
-        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      </div>
-      <div className="max-w-xs space-y-2">
-        <p className="cmm-text-small font-bold cmm-text-primary">
-          Aucun enregistrement trouvé
-        </p>
-        <p className="cmm-text-caption cmm-text-secondary leading-relaxed">
-          Il semble que vous n&apos;ayez pas encore d&apos;actions correspondant à ces filtres. Commencez par déclarer votre première action terrain !
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={() => window.location.href = "/actions/new"}
-        className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-500 active:translate-y-0"
-      >
-        Déclarer une action
-      </button>
-    </div>
-  ) : null}
- </div>
- ) : null}
- </section>
- );
+      <ActionsHistoryListTable
+        filteredItems={filteredItems}
+        qualityById={qualityById}
+        limit={limit}
+        isLoading={isLoading}
+        error={error}
+        isValidating={isValidating}
+        currentUserId={currentUserId}
+        isAdminLikeUser={isAdminLikeUser}
+        groupJoinActionId={groupJoinActionId}
+        onSelectItem={(itemId) => setSelectedId(itemId)}
+        onLoadMore={() => setLimit((prev) => prev + 25)}
+        onToggleGroupJoin={(item, nextEnabled) =>
+          void handleToggleGroupJoin(item, nextEnabled)
+        }
+      />
+    </section>
+  );
 }
