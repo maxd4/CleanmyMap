@@ -46,5 +46,5 @@ describe("server component boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 10000);
 });

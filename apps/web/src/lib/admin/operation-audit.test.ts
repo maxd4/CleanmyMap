@@ -64,6 +64,7 @@ function createAuditClientMock(params: {
   type ProfilesChain = {
     select: ReturnType<typeof vi.fn>;
     in: ReturnType<typeof vi.fn>;
+    limit: ReturnType<typeof vi.fn>;
     then: (
       resolve: (value: {
         data: Array<{
@@ -85,6 +86,7 @@ function createAuditClientMock(params: {
       }
       return profilesChain;
     }),
+    limit: vi.fn(() => profilesChain),
     then: (resolve, reject) =>
       Promise.resolve({
         data: params.profiles.filter((profile) =>

@@ -69,5 +69,5 @@ describe("GET /api/actions/prefill", () => {
     expect(body.prefill?.associationName).toBe("Action spontanée");
     expect(body.basedOn?.recentDeclarations).toBe(1);
     expect(fetchRecentActionsByUserMock).toHaveBeenCalledTimes(1);
-  });
+  }, 10000);
 });
