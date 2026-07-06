@@ -48,6 +48,7 @@ Documentation optimisée pour les agents IA qui développent ce projet.
    - À consulter pour décider si une page doit adopter une grille stricte
    - Cas d'usage pour rapports, KPI, dashboards et pages éditoriales
    - Cas d'exclusion pour cartes et formulaires complexes
+   - Recommandation de généralisation contrôlée et liste courte des prochaines pages candidates
 
 ### 🎨 Planche Design System
 
