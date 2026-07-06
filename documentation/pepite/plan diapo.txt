@@ -1,0 +1,44 @@
+Pour 6 minutes, garde **8 diapos maximum** :
+
+1. Titre
+2. Équipe
+3. Problème
+4. Solution
+5. Comment ça marche / prototype
+6. Concurrence + différenciation
+7. Roadmap
+8. Apports de Pépite + conclusion
+
+À fusionner ou réduire fortement : marché, modèle économique, stratégie commerciale, prix/distinctions, partenaires. Pour CleanMyMap, le jury doit surtout comprendre l’origine, l’utilité terrain, le prototype déjà avancé, les besoins d’accompagnement et la crédibilité du projet. La trame officielle contient ces rubriques, mais tout n’a pas le même poids pour un pitch de 6 min .
+
+
+
+
+
+1. **Verrouiller le message central**
+   Une phrase simple : CleanMyMap transforme les actions locales de dépollution en données cartographiées, mesurables et exploitables.
+
+2. **Construire une trame de 8 diapositives**
+
+   * Titre et accroche
+   * Porteur du projet
+   * Problème terrain
+   * Solution CleanMyMap
+   * Démonstration du parcours utilisateur
+   * Différenciation et partenaires
+   * Avancement et roadmap
+   * Besoins vis-à-vis de Pépite et conclusion
+
+3. **Récupérer uniquement les preuves fortes**
+   Logo, 3 à 5 captures du site, architecture simplifiée, état d’avancement, contacts déjà engagés, prototype fonctionnel et prochaines étapes. On évite de détailler toute l’architecture technique ou toutes les rubriques du site.
+
+4. **Écrire le discours avant de finaliser les diapositives**
+   Environ 700 à 800 mots pour 6 minutes. Chaque diapositive porte une seule idée et sert de support visuel, sans répéter tout le discours.
+
+5. **Faire une passe de compression**
+   Supprimer les textes inutiles, limiter chaque diapositive à un message principal, puis chronométrer :
+
+   * problème : 1 min
+   * solution et démonstration : 2 min 30
+   * avancement et différenciation : 1 min 30
+   * Pépite et conclusion : 1 min

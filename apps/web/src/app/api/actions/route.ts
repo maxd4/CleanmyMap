@@ -430,15 +430,17 @@ export async function POST(request: Request) {
       payload: normalizedPayload,
       organizers: organizerResolution.organizers,
       status:
-        normalizedPayload.recordType === "action"
-          ? isQuickSubmission
-            ? "approved"
-            : organizerResolution.organizers.some(
-                (organizer) => organizer.userId === userId,
-              ) && isCreatorAdminLike
+        normalizedPayload.actionPhase === "pre_action"
+          ? "pending"
+          : normalizedPayload.recordType === "action"
+            ? isQuickSubmission
               ? "approved"
-              : "pending"
-          : resolveActionCreationStatus(isCreatorAdminLike),
+              : organizerResolution.organizers.some(
+                  (organizer) => organizer.userId === userId,
+                ) && isCreatorAdminLike
+                ? "approved"
+                : "pending"
+            : resolveActionCreationStatus(isCreatorAdminLike),
     });
 
     emitActionCreated({

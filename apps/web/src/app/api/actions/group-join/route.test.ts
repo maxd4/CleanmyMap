@@ -30,6 +30,7 @@ type ActionRow = {
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
+  action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
 };
 
@@ -679,6 +680,46 @@ describe("POST /api/actions/group-join", () => {
       new Request("http://localhost/api/actions/group-join", {
         method: "POST",
         body: JSON.stringify({ actionId: "action-1" }),
+      }),
+    );
+    const body = (await response.json()) as {
+      alreadyJoined?: boolean;
+      participationStatus?: string;
+      participantsCount?: number;
+      joinedAt?: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.alreadyJoined).toBe(false);
+    expect(body.participationStatus).toBe("pending");
+    expect(body.participantsCount).toBe(0);
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("creates a pending request for a pre-action form", async () => {
+    const participants: ParticipantRow[] = [];
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-pre",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Préparation",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "pending",
+          action_phase: "pre_action",
+        },
+      ],
+      participants,
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ actionId: "action-pre" }),
       }),
     );
     const body = (await response.json()) as {

@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionPhotoAsset,
   ActionStatus,
   CreateActionPayload,
 } from "@/lib/actions/types";
@@ -20,10 +21,33 @@ import {
   recordTrainingExample,
 } from "@/lib/actions/training";
 import { logFailure } from "@/lib/logging/failure-log";
-import { runActionQuery } from "@/lib/actions/query";
+import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
+
+type PersistedActionNotesPayload = Pick<
+  CreateActionPayload,
+  | "notes"
+  | "submissionMode"
+  | "wasteBreakdown"
+  | "associationName"
+  | "groupJoinEnabled"
+  | "placeType"
+  | "departureLocationLabel"
+  | "arrivalLocationLabel"
+  | "routeStyle"
+  | "routeAdjustmentMessage"
+  | "visionEstimate"
+  | "manualDrawing"
+> & {
+  photos?: Array<
+    Pick<
+      ActionPhotoAsset,
+      "id" | "name" | "mimeType" | "size" | "width" | "height"
+    >
+  >;
+};
 
 export function resolveActionCreationStatus(
   isAutoApprovedSubmission: boolean,
@@ -31,7 +55,9 @@ export function resolveActionCreationStatus(
   return isAutoApprovedSubmission ? "approved" : "pending";
 }
 
-export function buildPersistedNotes(payload: CreateActionPayload): string | null {
+export function buildPersistedNotes(
+  payload: PersistedActionNotesPayload,
+): string | null {
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,
@@ -87,8 +113,8 @@ export async function fetchActions(
 ): Promise<StoredAction[]> {
   const rows = await runActionQuery<StoredAction>(supabase, (query) => {
     let nextQuery = query
-      .select(
-        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+        .select(
+          "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
       )
       .order("action_date", { ascending: false })
       .limit(params.limit);
@@ -119,8 +145,8 @@ export async function fetchRecentActionsByUser(
 ): Promise<StoredAction[]> {
   const rows = await runActionQuery<StoredAction>(supabase, (query) =>
     query
-      .select(
-        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+        .select(
+          "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
       )
       .eq("created_by_clerk_id", params.userId)
       .order("action_date", { ascending: false })
@@ -133,7 +159,37 @@ export async function fetchRecentActionsByUser(
     cigarette_butts: Number(row.cigarette_butts ?? 0),
     volunteers_count: Number(row.volunteers_count ?? 0),
     duration_minutes: Number(row.duration_minutes ?? 0),
+    action_phase: row.action_phase ?? "post_action_complete",
+    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
   }));
+}
+
+export async function loadActionById(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<StoredAction | null> {
+  const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
+    query
+      .select(
+        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
+      )
+      .eq("id", actionId)
+      .maybeSingle(),
+  );
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    waste_kg: Number(row.waste_kg ?? 0),
+    cigarette_butts: Number(row.cigarette_butts ?? 0),
+    volunteers_count: Number(row.volunteers_count ?? 0),
+    duration_minutes: Number(row.duration_minutes ?? 0),
+    action_phase: row.action_phase ?? "post_action_complete",
+    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
+  };
 }
 
 async function resolveCreateActionDrawing(
@@ -207,6 +263,8 @@ async function insertCreatedAction(
       cigarette_butts: resolvePersistedCigaretteButts(params.payload),
       volunteers_count: params.payload.volunteersCount,
       duration_minutes: params.payload.durationMinutes,
+      action_phase: params.payload.actionPhase ?? "post_action_complete",
+      preparation_data: params.payload.preparationData ?? {},
       notes: buildPersistedNotes({
         ...params.payload,
         manualDrawing: params.finalDrawing ?? undefined,

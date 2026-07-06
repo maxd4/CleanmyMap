@@ -2,6 +2,8 @@ import {
   ActionRecordType,
   ActionStatus,
   ActionSubmissionMode,
+  ActionPhase,
+  ActionPreparationData,
   ActionWasteBreakdown,
   ActionPhotoAsset,
   ActionVisionEstimate,
@@ -43,6 +45,8 @@ export type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
+  actionPhase: ActionPhase;
+  preparationData: ActionPreparationData | null;
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;
@@ -93,6 +97,8 @@ export type BuildActionContractParams = {
   actorName?: string | null;
   associationName?: string | null;
   groupJoinEnabled?: boolean | null;
+  actionPhase?: ActionPhase | null;
+  preparationData?: ActionPreparationData | null;
   placeType?: string | null;
   departureLocationLabel?: string | null;
   arrivalLocationLabel?: string | null;
@@ -177,12 +183,14 @@ function buildActionIdentityMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "actorName" | "associationName" | "groupJoinEnabled"
+  "actorName" | "associationName" | "groupJoinEnabled" | "actionPhase" | "preparationData"
 > {
   return {
     actorName: params.actorName ?? null,
     associationName: params.associationName ?? null,
     groupJoinEnabled: params.groupJoinEnabled ?? true,
+    actionPhase: params.actionPhase ?? "post_action_complete",
+    preparationData: params.preparationData ?? null,
   };
 }
 

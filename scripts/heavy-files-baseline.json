@@ -29,8 +29,9 @@
   "apps/web/src/lib/navigation.ts",
   "apps/web/src/lib/environmental-impact-estimator/service.ts",
   "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel.tsx",
-  "apps/web/src/lib/environmental-impact-estimator/project-signals.ts",
-  "apps/web/src/components/actions/action-declaration-form/action-declaration-export-picker.tsx",
+    "apps/web/src/lib/environmental-impact-estimator/project-signals.ts",
+    "apps/web/src/lib/environmental-impact-estimator/project-signals.impl.ts",
+    "apps/web/src/components/actions/action-declaration-form/action-declaration-export-picker.tsx",
   "apps/web/src/components/admin/free-plan-services-panel.tsx",
   "apps/web/src/lib/governance/governance-monthly-report.test.ts",
   "apps/web/src/lib/governance/governance-monthly-report.ts",
@@ -49,6 +50,7 @@
   "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.tsx",
   "apps/web/src/components/sections/rubriques/gamification/index.tsx",
   "apps/web/src/components/learn/quiz-session-panel.tsx",
-  "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx"
+  "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx",
+  "apps/web/src/app/api/actions/[actionId]/group-join/route.test.ts"
   ]
 }

@@ -6,11 +6,14 @@ import {
   ClipboardCheck,
   Download,
   History,
+  Loader2,
   Smartphone,
   Sparkles,
   User,
   X,
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
@@ -41,6 +44,8 @@ type ActionDeclarationFormProps = {
   };
   linkedEventId?: string;
   initialRecordType?: "action" | "clean_place";
+  initialActionId?: string | null;
+  onReturnToChoice?: () => void;
 };
 
 function SectionDivider({
@@ -103,6 +108,9 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     errorMessage,
     createdId,
     retentionLoop,
+    loadedActionPhase,
+    isHydratingAction,
+    hydrationError,
     validationIssues,
     hasAttemptedSubmit,
     showConfirmation,
@@ -159,6 +167,55 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     }
     setShowConfirmation(true);
   }
+
+  if (isHydratingAction) {
+    return (
+      <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
+        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
+          <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl border-emerald-200/80 bg-white/95">
+            <div className="space-y-4 text-center">
+              <Loader2 size={22} className="mx-auto animate-spin text-emerald-600" />
+              <h2 className="text-2xl font-black tracking-tight text-emerald-950">
+                Chargement du formulaire existant
+              </h2>
+              <p className="text-sm leading-6 text-emerald-900/70">
+                Nous récupérons les informations préparées avant l&apos;action pour reprendre le même enregistrement.
+              </p>
+            </div>
+          </CmmCard>
+        </div>
+      </div>
+    );
+  }
+
+  if (hydrationError) {
+    return (
+      <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
+        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
+          <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl border-rose-200/70 bg-white/96">
+            <div className="space-y-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-rose-700">
+                Erreur
+              </p>
+              <h2 className="text-2xl font-black tracking-tight text-rose-950">
+                Le formulaire existant n&apos;a pas pu être chargé
+              </h2>
+              <p className="text-sm leading-6 text-rose-900/72">{hydrationError}</p>
+              {props.onReturnToChoice ? (
+                <CmmButton tone="secondary" variant="pill" size="md" onClick={props.onReturnToChoice}>
+                  Retour au choix
+                </CmmButton>
+              ) : null}
+            </div>
+          </CmmCard>
+        </div>
+      </div>
+    );
+  }
+
+  const showPreparationSummary = Boolean(props.initialActionId || loadedActionPhase);
+  const isPreparationDraft =
+    loadedActionPhase === "pre_action" || loadedActionPhase === "post_action_draft";
 
   return (
     <>
@@ -336,6 +393,79 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   className="absolute inset-0 z-20 cursor-not-allowed rounded-[2.5rem] bg-transparent"
                 />
               ) : null}
+              {showPreparationSummary ? (
+                <section className="rounded-[2rem] border border-emerald-200/70 bg-white/88 p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
+                        Informations préparées avant l&apos;action
+                      </p>
+                      <h3 className="mt-1 text-lg font-black tracking-tight text-emerald-950">
+                        Pré-action {isPreparationDraft ? "en préparation" : "chargée"}
+                      </h3>
+                    </div>
+                    <span className="rounded-full border border-emerald-200 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-900">
+                      {loadedActionPhase ?? "pre_action"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                        Titre et contexte
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-950">
+                        {form.actionTitle || form.locationLabel || "Sans titre"}
+                      </p>
+                      {form.shortDescription ? (
+                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
+                          {form.shortDescription}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                        Rendez-vous et zone cible
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-950">
+                        {form.departureLocationLabel || "Point de rendez-vous non renseigné"}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-emerald-900/72">
+                        {form.arrivalLocationLabel || "Zone cible non renseignée"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                        Bénévoles et message
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-950">
+                        {form.volunteersCount || "0"} bénévoles attendus
+                      </p>
+                      {form.participantMessage ? (
+                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
+                          {form.participantMessage}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
+                        Matériel et sécurité
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-950">
+                        {form.recommendedMaterials || "Matériel non renseigné"}
+                      </p>
+                      {form.safetyInstructions ? (
+                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
+                          {form.safetyInstructions}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </section>
+              ) : null}
               <fieldset
                 disabled={isCompletionBlocked}
                 className="relative z-10 space-y-8"
@@ -477,6 +607,10 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 : null
             }
             onReset={() => {
+              if (props.initialActionId && props.onReturnToChoice) {
+                props.onReturnToChoice();
+                return;
+              }
               setForm(createInitialFormState(resolvedDefaultActorName, props.initialRecordType ?? "action"));
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}

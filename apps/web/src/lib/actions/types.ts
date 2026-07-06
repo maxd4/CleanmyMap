@@ -15,10 +15,39 @@ export type ActionGeometryOrigin =
   | "fallback_point";
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionSubmissionMode = "quick" | "complete";
+export type ActionPhase =
+  | "pre_action"
+  | "post_action_draft"
+  | "post_action_complete";
 export type ActionQualityGrade = "A" | "B" | "C";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
 export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
 export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
+
+export type ActionPreparationData = {
+  actionTitle?: string;
+  shortDescription?: string;
+  communeZoneLabel?: string;
+  pointDeRendezVous?: string;
+  zoneCiblePrevue?: string;
+  actionDate?: string;
+  meetingTime?: string;
+  departureTime?: string;
+  estimatedDurationMinutes?: number;
+  plannedObjective?: "repérage" | "nettoyage" | "collecte_mégots" | "action_mixte" | "sensibilisation" | "autre";
+  placeType?: string;
+  estimatedDifficulty?: "facile" | "moderee" | "soutenue";
+  accessibility?: string;
+  safetyInstructions?: string;
+  recommendedMaterials?: string;
+  participantMessage?: string;
+  creatorRole?: "organisateur" | "benevole" | "association" | "etudiant" | "autre";
+  preparationState?: "brouillon" | "pret_a_partager" | "action_en_cours" | "a_completer_apres_action";
+  logisticsNotes?: string;
+  checklistBeforeDeparture?: string;
+  volunteersExpected?: number;
+  groupJoinEnabled?: boolean;
+};
 
 export type ActionPhotoAsset = {
   id: string;
@@ -175,6 +204,8 @@ export type CreateActionPayload = {
   associationName?: string;
   organizerAccounts?: string[];
   groupJoinEnabled?: boolean;
+  actionPhase?: ActionPhase;
+  preparationData?: ActionPreparationData | null;
   actionDate: string;
   locationLabel: string;
   departureLocationLabel?: string;

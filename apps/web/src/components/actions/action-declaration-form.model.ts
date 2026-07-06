@@ -11,12 +11,27 @@ export type FormState = {
  enterpriseName: string;
  organizerAccounts: string;
  groupJoinEnabled: boolean;
+ actionTitle: string;
+ shortDescription: string;
+ communeZoneLabel: string;
  actionDate: string;
+ meetingTime: string;
+ departureTime: string;
  locationLabel: string;
  departureLocationLabel: string;
  arrivalLocationLabel: string;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
+ plannedObjective: "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
+ estimatedDifficulty: "facile" |"moderee" |"soutenue";
+ accessibility: string;
+ safetyInstructions: string;
+ recommendedMaterials: string;
+ participantMessage: string;
+ creatorRole: "organisateur" |"benevole" |"association" |"etudiant" |"autre";
+ preparationState:"brouillon" |"pret_a_partager" |"action_en_cours" |"a_completer_apres_action";
+ logisticsNotes: string;
+ checklistBeforeDeparture: string;
  recordType: ActionRecordType;
  latitude: string;
  longitude: string;
@@ -46,12 +61,27 @@ export const initialState: FormState = {
  enterpriseName:"",
  organizerAccounts:"",
  groupJoinEnabled: true,
+ actionTitle:"",
+ shortDescription:"",
+ communeZoneLabel:"",
  actionDate: new Date().toISOString().slice(0, 10),
+ meetingTime:"",
+ departureTime:"",
  locationLabel:"",
  departureLocationLabel:"",
  arrivalLocationLabel:"",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
+ plannedObjective:"nettoyage",
+ estimatedDifficulty:"moderee",
+ accessibility:"",
+ safetyInstructions:"",
+ recommendedMaterials:"",
+ participantMessage:"",
+ creatorRole:"organisateur",
+ preparationState:"brouillon",
+ logisticsNotes:"",
+ checklistBeforeDeparture:"",
  recordType:"action",
  latitude:"",
  longitude:"",

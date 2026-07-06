@@ -10,15 +10,19 @@ import {
   Loader2,
   PencilLine,
   Sparkles,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { createAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
+import {
+  ASSOCIATION_SELECTION_OPTIONS,
+  ENTREPRISE_ASSOCIATION_OPTION,
+  extractEntrepriseName,
+  normalizeAssociationSelectionForPrefill,
+} from "@/lib/actions/association-options";
 import { createInitialFormState, buildCreateActionPayload } from "./action-declaration/payload";
 import { saveDraft, loadDraftSnapshot } from "./action-declaration/draft-storage";
-import { ActionDeclarationIdentityFields } from "./action-declaration-form.identity-fields";
 import type { FormState } from "./action-declaration-form.model";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -41,8 +45,43 @@ type ActionBeforeDeclarationFormProps = {
   linkedEventId?: string;
   initialRecordType?: "action" | "clean_place";
   onReturnToChoice: () => void;
-  onPassToComplete: () => void;
+  onPassToComplete: (actionId: string) => void | Promise<void>;
 };
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+const PLANNED_OBJECTIVE_OPTIONS: SelectOption[] = [
+  { value: "repérage", label: "Repérage" },
+  { value: "nettoyage", label: "Nettoyage" },
+  { value: "collecte_mégots", label: "Collecte mégots" },
+  { value: "action_mixte", label: "Action mixte" },
+  { value: "sensibilisation", label: "Sensibilisation" },
+  { value: "autre", label: "Autre" },
+];
+
+const DIFFICULTY_OPTIONS: SelectOption[] = [
+  { value: "facile", label: "Facile" },
+  { value: "moderee", label: "Modérée" },
+  { value: "soutenue", label: "Soutenue" },
+];
+
+const CREATOR_ROLE_OPTIONS: SelectOption[] = [
+  { value: "organisateur", label: "Organisateur" },
+  { value: "benevole", label: "Bénévole" },
+  { value: "association", label: "Association" },
+  { value: "etudiant", label: "Étudiant" },
+  { value: "autre", label: "Autre" },
+];
+
+const PREPARATION_STATE_OPTIONS: SelectOption[] = [
+  { value: "brouillon", label: "Brouillon" },
+  { value: "pret_a_partager", label: "Prêt à partager" },
+  { value: "action_en_cours", label: "Action en cours" },
+  { value: "a_completer_apres_action", label: "À compléter après action" },
+];
 
 function SectionLabel({
   icon: Icon,
@@ -77,19 +116,105 @@ function FieldShell({
   children,
   hint,
 }: {
-  label: string;
+  label: ReactNode;
   children: ReactNode;
   hint?: string;
 }) {
   return (
     <label className="space-y-1.5 text-sm font-semibold text-emerald-950">
-      <span className="flex items-center gap-2">
-        {label}
-      </span>
+      <span className="flex items-center gap-2">{label}</span>
       {children}
       {hint ? <span className="block text-xs font-normal leading-5 text-emerald-900/58">{hint}</span> : null}
     </label>
   );
+}
+
+function SelectShell({
+  label,
+  value,
+  onChange,
+  options,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  hint?: string;
+}) {
+  return (
+    <FieldShell label={label} hint={hint}>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </FieldShell>
+  );
+}
+
+function sanitizePreActionForm(form: FormState): FormState {
+  const next: FormState = {
+    ...form,
+    routeStyle: "souple",
+    routeAdjustmentMessage: "",
+    notes: "",
+    wasteKg: "0",
+    cigaretteButts: "0",
+    cigaretteButtsCount: "",
+    cigaretteButtsCondition: "propre",
+    wasteMegotsKg: "0",
+    wasteMegotsCondition: "propre",
+    wastePlastiqueKg: "",
+    wasteVerreKg: "",
+    wasteMetalKg: "",
+    wasteMixteKg: "",
+    triQuality: "moyenne",
+    visionBagsCount: "",
+    visionFillLevel: "",
+    visionDensity: "",
+  };
+
+  next.actionTitle = next.actionTitle.trim();
+  next.shortDescription = next.shortDescription.trim();
+  next.communeZoneLabel = next.communeZoneLabel.trim();
+  next.actionDate = next.actionDate.trim();
+  next.meetingTime = next.meetingTime.trim();
+  next.departureTime = next.departureTime.trim();
+  next.locationLabel = next.departureLocationLabel.trim() || next.actionTitle;
+  next.departureLocationLabel = next.departureLocationLabel.trim();
+  next.plannedObjective = next.plannedObjective;
+  next.estimatedDifficulty = next.estimatedDifficulty;
+  next.accessibility = next.accessibility.trim();
+  next.safetyInstructions = next.safetyInstructions.trim();
+  next.recommendedMaterials = next.recommendedMaterials.trim();
+  next.creatorRole = next.creatorRole;
+  next.preparationState = next.preparationState;
+  next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
+  next.volunteersCount = next.volunteersCount.trim() || "1";
+  const enterpriseFromAssociation = extractEntrepriseName(next.associationName);
+  const normalizedAssociation = normalizeAssociationSelectionForPrefill(next.associationName);
+  next.associationName = normalizedAssociation ?? next.associationName.trim();
+  if (enterpriseFromAssociation) {
+    next.associationName = ENTREPRISE_ASSOCIATION_OPTION;
+    next.enterpriseName = enterpriseFromAssociation;
+  }
+  next.enterpriseName = next.enterpriseName.trim();
+  next.actorName = next.actorName.trim();
+  next.placeType = next.placeType;
+  next.durationMinutes = next.durationMinutes.trim();
+
+  if (next.associationName !== ENTREPRISE_ASSOCIATION_OPTION) {
+    next.enterpriseName = "";
+  }
+
+  return next;
 }
 
 function buildPrefillForm(
@@ -105,7 +230,13 @@ function buildPrefillForm(
   );
 
   const snapshot = loadDraftSnapshot(fallback, initialRecordType);
-  return snapshot?.form ?? fallback;
+  return sanitizePreActionForm(snapshot?.form ?? fallback);
+}
+
+function labelForPreparationState(value: FormState["preparationState"]): string {
+  return (
+    PREPARATION_STATE_OPTIONS.find((option) => option.value === value)?.label ?? value
+  );
 }
 
 export function ActionBeforeDeclarationForm({
@@ -132,16 +263,23 @@ export function ActionBeforeDeclarationForm({
   const hasTrackedStartRef = useRef(false);
 
   const actClasses = getBlockClasses("act");
-  const isEntrepriseMode = form.associationName === "Entreprise";
+  const shareLink = createdId
+    ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`
+    : null;
   const summaryNote = useMemo(() => {
     const chunks = [
-      form.locationLabel.trim(),
+      form.actionTitle.trim(),
+      form.actionDate.trim(),
       form.departureLocationLabel.trim(),
-      form.routeAdjustmentMessage.trim(),
-      form.notes.trim(),
+      form.plannedObjective.trim(),
     ].filter((value) => value.length > 0);
     return chunks.length > 0 ? chunks.join(" · ") : null;
-  }, [form.departureLocationLabel, form.locationLabel, form.notes, form.routeAdjustmentMessage]);
+  }, [
+    form.actionDate,
+    form.actionTitle,
+    form.departureLocationLabel,
+    form.plannedObjective,
+  ]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasTrackedStartRef.current) {
@@ -155,13 +293,14 @@ export function ActionBeforeDeclarationForm({
       }).catch(() => undefined);
     }
 
-    const nextForm = { ...form, [key]: value };
+    const nextForm = sanitizePreActionForm({ ...form, [key]: value } as FormState);
     if (key === "routeStyle") {
       nextForm.routeStyle = "souple";
     }
-    if (key === "associationName" && value === "Action spontanée") {
-      nextForm.organizerAccounts = "";
+    if (key === "associationName" && value !== ENTREPRISE_ASSOCIATION_OPTION) {
+      nextForm.enterpriseName = "";
     }
+
     setForm(nextForm);
     saveDraft(nextForm);
     if (submissionState === "error") {
@@ -178,14 +317,17 @@ export function ActionBeforeDeclarationForm({
     }
 
     const issues: string[] = [];
+    if (!form.actionTitle.trim()) {
+      issues.push("Indiquez un titre pour publier le pré-formulaire.");
+    }
     if (!form.actionDate.trim()) {
       issues.push("Indiquez la date prévue avant de publier le pré-formulaire.");
     }
     if (!form.associationName.trim()) {
       issues.push("Sélectionnez une structure ou un cadre d'engagement.");
     }
-    if (!form.locationLabel.trim()) {
-      issues.push("Renseignez le lieu prévu pour l'action.");
+    if (!form.departureLocationLabel.trim()) {
+      issues.push("Indiquez le point de rendez-vous avant de publier.");
     }
 
     if (issues.length > 0) {
@@ -195,13 +337,14 @@ export function ActionBeforeDeclarationForm({
       return;
     }
 
+    const normalizedForm = sanitizePreActionForm(form);
     const payload = buildCreateActionPayload({
-      form,
+      form: normalizedForm,
       declarationMode: "quick",
       effectiveManualDrawingEnabled: false,
       drawingIsValid: false,
       manualDrawing: null,
-      isEntrepriseMode,
+      isEntrepriseMode: normalizedForm.associationName === ENTREPRISE_ASSOCIATION_OPTION,
       linkedEventId,
       photos: [] as ActionPhotoAsset[],
       visionEstimate: null as ActionVisionEstimate | null,
@@ -216,7 +359,7 @@ export function ActionBeforeDeclarationForm({
       const result = await createAction(payload);
       setCreatedId(result.id);
       setSubmissionState("success");
-      saveDraft(form);
+      saveDraft(normalizedForm);
       await trackFunnel("submit_success", "quick", {
         source: "action_before_declaration_form",
         createdId: result.id,
@@ -234,10 +377,11 @@ export function ActionBeforeDeclarationForm({
   }
 
   const onContinueComplete = () => {
-    if (form) {
-      saveDraft(form);
+    if (!createdId) {
+      return;
     }
-    onPassToComplete();
+    saveDraft(sanitizePreActionForm(form));
+    void onPassToComplete(createdId);
   };
 
   if (submissionState === "success") {
@@ -251,19 +395,26 @@ export function ActionBeforeDeclarationForm({
                   <CmmPill tone="emerald" size="sm">
                     Succès
                   </CmmPill>
-                  <span className="text-sm font-semibold text-emerald-950">Pré-formulaire publié</span>
+                  <span className="text-sm font-semibold text-emerald-950">
+                    Pré-formulaire publié
+                  </span>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-emerald-950">
                   Le formulaire avant action est prêt
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-emerald-900/68">
-                  Les bénévoles peuvent déjà consulter ce pré-formulaire, rejoindre l'action et compléter
+                  Les bénévoles peuvent déjà consulter ce pré-formulaire, rejoindre l&apos;action et compléter
                   les informations utiles avant le départ terrain.
                 </p>
                 {summaryNote ? (
                   <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950">
                     {summaryNote}
                   </div>
+                ) : null}
+                {shareLink ? (
+                  <p className="text-xs text-emerald-900/60">
+                    Lien de partage du formulaire de groupe: <span className="font-mono">{shareLink}</span>
+                  </p>
                 ) : null}
                 {createdId ? (
                   <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p>
@@ -274,8 +425,13 @@ export function ActionBeforeDeclarationForm({
                   Passer au formulaire complet
                   <ArrowRight size={14} />
                 </CmmButton>
-                <CmmButton tone="secondary" variant="pill" size="md" href="/sections/rejoindre-un-formulaire">
-                  Voir la page groupe
+                <CmmButton
+                  tone="secondary"
+                  variant="pill"
+                  size="md"
+                  href={shareLink ?? "/sections/rejoindre-un-formulaire"}
+                >
+                  Ouvrir le formulaire de groupe
                 </CmmButton>
                 <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
                   <ArrowLeft size={14} />
@@ -304,19 +460,19 @@ export function ActionBeforeDeclarationForm({
                 Déclarer avant l&apos;action
               </CmmPill>
               <h1 className="text-[clamp(2rem,4vw,3.15rem)] font-black tracking-tighter text-emerald-950">
-                Préparer un formulaire de groupe
+                Préparer le formulaire de groupe
               </h1>
               <p className="max-w-3xl text-sm leading-6 text-emerald-900/72 md:text-[0.98rem]">
-                Renseignez uniquement ce qui est déjà connu avant le départ terrain. Le pré-formulaire reste
-                visible dans la page Formulaire de groupe et pourra ensuite être complété dans le parcours
-                complet sans casser le formulaire actuel.
+                Renseignez uniquement les informations utiles avant le terrain. Les champs de récolte,
+                de bilan final et de validation restent réservés au formulaire complet.
               </p>
             </div>
             <div className="max-w-sm rounded-[1.5rem] border border-emerald-200/80 bg-[#F3FBF6] px-4 py-3 text-sm leading-6 text-emerald-900/76 shadow-sm">
-              <p className="font-bold text-emerald-950">Préparation légère</p>
-              <p className="mt-1">
-                Aucun décompte final n&apos;est validé ici. Ce formulaire sert seulement à préparer la mise en
-                groupe avant le terrain.
+              <p className="font-bold text-emerald-950">Statut du formulaire</p>
+              <p className="mt-1 text-emerald-950">Pré-action — les données de collecte seront ajoutées après le terrain.</p>
+              <p className="mt-1">{labelForPreparationState(form.preparationState)}</p>
+              <p className="mt-2 text-xs leading-5 text-emerald-900/60">
+                Le lien de partage du formulaire de groupe sera créé après publication.
               </p>
             </div>
           </div>
@@ -328,26 +484,76 @@ export function ActionBeforeDeclarationForm({
           }}
           className="space-y-6"
         >
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
             <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
               <div className="space-y-6">
                 <SectionLabel
                   icon={ClipboardList}
-                  title="Identité et cadre"
-                  subtitle="Qui prépare le formulaire, dans quel cadre, et à quelle date l'action est prévue."
+                  title="Identité et partage"
+                  subtitle="Qui porte le formulaire, dans quel cadre, et si le groupe peut rejoindre l'action."
                 />
-                <ActionDeclarationIdentityFields
-                  resolvedActorOptions={actorNameOptions}
-                  recordType={form.recordType}
-                  actorName={form.actorName}
-                  associationName={form.associationName}
-                  enterpriseName={form.enterpriseName}
-                  organizerAccounts={form.organizerAccounts}
-                  onActorNameChange={(value) => updateField("actorName", value)}
-                  onAssociationNameChange={(value) => updateField("associationName", value)}
-                  onEnterpriseNameChange={(value) => updateField("enterpriseName", value)}
-                  onOrganizerAccountsChange={(value) => updateField("organizerAccounts", value)}
-                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FieldShell label="Référent ou créateur">
+                    <select
+                      value={form.actorName}
+                      onChange={(event) => updateField("actorName", event.target.value)}
+                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    >
+                      {actorNameOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldShell>
+
+                  <FieldShell label="Structure ou cadre">
+                    <select
+                      value={form.associationName}
+                      onChange={(event) => updateField("associationName", event.target.value)}
+                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    >
+                      {ASSOCIATION_SELECTION_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldShell>
+
+                  {form.associationName === ENTREPRISE_ASSOCIATION_OPTION ? (
+                    <FieldShell label="Nom de l'entreprise" hint="Utilisé pour nommer le cadre d'engagement.">
+                      <input
+                        type="text"
+                        value={form.enterpriseName}
+                        onChange={(event) => {
+                          const enterpriseName = event.target.value;
+                          updateField("enterpriseName", enterpriseName);
+                        }}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        placeholder="Ex. Veolia"
+                        maxLength={100}
+                      />
+                    </FieldShell>
+                  ) : null}
+
+                  <SelectShell
+                    label="Rôle du créateur"
+                    value={form.creatorRole}
+                    onChange={(value) => updateField("creatorRole", value as FormState["creatorRole"])}
+                    options={CREATOR_ROLE_OPTIONS}
+                  />
+
+                  <SelectShell
+                    label="Statut du formulaire"
+                    value={form.preparationState}
+                    onChange={(value) =>
+                      updateField("preparationState", value as FormState["preparationState"])
+                    }
+                    options={PREPARATION_STATE_OPTIONS}
+                  />
+                </div>
 
                 <label className="flex cursor-pointer items-start gap-3 rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
                   <input
@@ -357,9 +563,11 @@ export function ActionBeforeDeclarationForm({
                     className="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-emerald-950">Ouvrir le formulaire de groupe</p>
+                    <p className="text-sm font-semibold text-emerald-950">
+                      Autoriser les participants à rejoindre
+                    </p>
                     <p className="text-xs leading-5 text-emerald-900/66">
-                      Les bénévoles pourront rejoindre ce pré-formulaire avant ou pendant l&apos;action.
+                      Le lien sera affiché après publication puis réutilisé pour ouvrir le formulaire de groupe.
                     </p>
                   </div>
                 </label>
@@ -370,53 +578,151 @@ export function ActionBeforeDeclarationForm({
               <div className="space-y-4">
                 <SectionLabel
                   icon={Sparkles}
-                  title="Informations connues"
-                  subtitle="Lieu prévu, rendez-vous, type d&apos;action, durée estimée et effectif prévu si vous les avez déjà."
+                  title="Action prévue"
+                  subtitle="Le contenu nécessaire avant le terrain, sans les champs de récolte réelle."
                 />
 
                 <div className="space-y-4">
-                  <FieldShell
-                    label="Lieu prévu"
-                    hint="Adresse, lieu de rendez-vous ou repère principal de l'action."
-                  >
+                  <FieldShell label="Titre de l'action" hint="Nom affiché dans le formulaire de groupe.">
                     <input
                       type="text"
-                      value={form.locationLabel}
-                      onChange={(event) => updateField("locationLabel", event.target.value)}
+                      value={form.actionTitle}
+                      onChange={(event) => updateField("actionTitle", event.target.value)}
                       className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                      placeholder="Ex. Parc des Buttes-Chaumont"
+                      placeholder="Ex. Nettoyage des berges de la Seine"
                     />
                   </FieldShell>
 
-                  <FieldShell
-                    label="Point de rendez-vous"
-                    hint="Lieu de départ ou repère pour la coordination."
-                  >
-                    <input
-                      type="text"
-                      value={form.departureLocationLabel}
-                      onChange={(event) => updateField("departureLocationLabel", event.target.value)}
-                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                      placeholder="Ex. Entrée principale, côté métro"
+                  <FieldShell label="Description courte" hint="Quelques lignes pour expliquer le contexte.">
+                    <textarea
+                      value={form.shortDescription}
+                      onChange={(event) => updateField("shortDescription", event.target.value)}
+                      className="min-h-[118px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      placeholder="Ex. Préparation d'une action de collecte et repérage du site..."
                     />
                   </FieldShell>
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    <FieldShell label="Type de lieu">
-                      <select
-                        value={form.placeType}
-                        onChange={(event) => updateField("placeType", event.target.value)}
+                    <FieldShell label="Commune ou zone concernée" hint="Ville, quartier ou secteur principal.">
+                      <input
+                        type="text"
+                        value={form.communeZoneLabel}
+                        onChange={(event) => updateField("communeZoneLabel", event.target.value)}
                         className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                      >
-                        {PLACE_TYPE_FORM_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="Ex. Paris 15e, berges nord"
+                      />
                     </FieldShell>
 
-                    <FieldShell label="Durée estimée">
+                  <FieldShell
+                      label="Point de rendez-vous précis"
+                      hint="Adresse, entrée ou repère exact avant le départ."
+                    >
+                      <input
+                        type="text"
+                        value={form.departureLocationLabel}
+                        onChange={(event) => updateField("departureLocationLabel", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        placeholder="Ex. Entrée principale, côté métro"
+                      />
+                    </FieldShell>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FieldShell
+                      label="Zone cible prévue"
+                      hint="Périmètre visé en quelques mots."
+                    >
+                      <input
+                        type="text"
+                        value={form.arrivalLocationLabel}
+                        onChange={(event) => updateField("arrivalLocationLabel", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        placeholder="Ex. Parc rive gauche, quais nord"
+                      />
+                    </FieldShell>
+
+                    <FieldShell
+                      label="Nombre de bénévoles attendus"
+                      hint="Estimation avant départ, pas le nombre final."
+                    >
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.volunteersCount}
+                        onChange={(event) => updateField("volunteersCount", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        placeholder="8"
+                      />
+                    </FieldShell>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FieldShell
+                      label="Localisation du rendez-vous"
+                      hint="Facultatif si l'adresse suffit."
+                    >
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <input
+                          type="number"
+                          step="any"
+                          value={form.latitude}
+                          onChange={(event) => updateField("latitude", event.target.value)}
+                          className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                          placeholder="Latitude"
+                        />
+                        <input
+                          type="number"
+                          step="any"
+                          value={form.longitude}
+                          onChange={(event) => updateField("longitude", event.target.value)}
+                          className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                          placeholder="Longitude"
+                        />
+                      </div>
+                    </FieldShell>
+
+                    <FieldShell
+                      label="Message pour les participants"
+                      hint="Visible par les personnes qui rejoignent le formulaire de groupe."
+                    >
+                      <textarea
+                        value={form.participantMessage}
+                        onChange={(event) => updateField("participantMessage", event.target.value)}
+                        className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        placeholder="Ex. Merci d'arriver 10 minutes avant, prévoir des chaussures fermées."
+                      />
+                    </FieldShell>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <FieldShell label="Date prévue">
+                      <input
+                        type="date"
+                        value={form.actionDate}
+                        onChange={(event) => updateField("actionDate", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      />
+                    </FieldShell>
+
+                    <FieldShell label="Heure de rendez-vous">
+                      <input
+                        type="time"
+                        value={form.meetingTime}
+                        onChange={(event) => updateField("meetingTime", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      />
+                    </FieldShell>
+
+                    <FieldShell label="Heure de départ prévue">
+                      <input
+                        type="time"
+                        value={form.departureTime}
+                        onChange={(event) => updateField("departureTime", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      />
+                    </FieldShell>
+
+                    <FieldShell label="Durée estimée" hint="Estimation avant départ.">
                       <div className="relative">
                         <Clock3 size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" />
                         <input
@@ -431,19 +737,33 @@ export function ActionBeforeDeclarationForm({
                     </FieldShell>
                   </div>
 
-                  <FieldShell label="Effectif prévu">
-                    <div className="relative">
-                      <Users size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" />
-                      <input
-                        type="number"
-                        min="1"
-                        value={form.volunteersCount}
-                        onChange={(event) => updateField("volunteersCount", event.target.value)}
-                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] py-3 pl-10 pr-4 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                        placeholder="12"
-                      />
-                    </div>
-                  </FieldShell>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <SelectShell
+                      label="Type d'action prévue"
+                      value={form.plannedObjective}
+                      onChange={(value) => updateField("plannedObjective", value as FormState["plannedObjective"])}
+                      options={PLANNED_OBJECTIVE_OPTIONS}
+                    />
+
+                    <SelectShell
+                      label="Type de zone"
+                      value={form.placeType}
+                      onChange={(value) => updateField("placeType", value)}
+                      options={PLACE_TYPE_FORM_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                    />
+
+                    <SelectShell
+                      label="Niveau de difficulté estimé"
+                      value={form.estimatedDifficulty}
+                      onChange={(value) =>
+                        updateField("estimatedDifficulty", value as FormState["estimatedDifficulty"])
+                      }
+                      options={DIFFICULTY_OPTIONS}
+                    />
+                  </div>
                 </div>
               </div>
             </CmmCard>
@@ -453,36 +773,60 @@ export function ActionBeforeDeclarationForm({
             <div className="space-y-4">
               <SectionLabel
                 icon={PencilLine}
-                title="Objectif, consignes et contexte"
-                subtitle="Décrivez ce que les bénévoles doivent savoir avant de partir: objectif, accès, précautions et informations de coordination."
+                title="Préparation et sécurité"
+                subtitle="Consignes, matériel et accessibilité avant publication."
               />
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <FieldShell label="Objectif / contexte">
+                <FieldShell label="Accessibilité">
                   <textarea
-                    value={form.notes}
-                    onChange={(event) => updateField("notes", event.target.value)}
-                    className="min-h-[144px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                    placeholder="Ex. Nettoyage préparatoire avant l'arrivée du public, mise en sécurité du site, coordination avec la mairie..."
+                    value={form.accessibility}
+                    onChange={(event) => updateField("accessibility", event.target.value)}
+                    className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    placeholder="Ex. Accessible PMR partiellement, escalier à éviter..."
                   />
                 </FieldShell>
 
-                <FieldShell
-                  label="Consignes, accès et précautions"
-                  hint="Rendez-vous, accès terrain, équipement conseillé, points de vigilance."
-                >
+                <FieldShell label="Consignes de sécurité">
                   <textarea
-                    value={form.routeAdjustmentMessage}
-                    onChange={(event) => updateField("routeAdjustmentMessage", event.target.value)}
-                    className="min-h-[144px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                    placeholder="Ex. Gants recommandés, accès par la porte nord, point de collecte près du kiosque..."
+                    value={form.safetyInstructions}
+                    onChange={(event) => updateField("safetyInstructions", event.target.value)}
+                    className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    placeholder="Ex. Ne pas traverser la voie ferrée, rester en groupe, gilets visibles..."
                   />
                 </FieldShell>
               </div>
 
-              <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3 text-sm leading-6 text-emerald-950">
-                <span className="font-bold">Bon à savoir.</span> Ce pré-formulaire reste léger. Les données de
-                collecte complètes seront ajoutées ensuite via le formulaire complet.
+                <FieldShell label="Matériel conseillé">
+                  <textarea
+                    value={form.recommendedMaterials}
+                    onChange={(event) => updateField("recommendedMaterials", event.target.value)}
+                    className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    placeholder="Ex. Gants, sacs, pinces, chasubles, eau..."
+                  />
+                </FieldShell>
+
+                <FieldShell label="Commentaire logistique">
+                  <textarea
+                    value={form.logisticsNotes}
+                    onChange={(event) => updateField("logisticsNotes", event.target.value)}
+                    className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    placeholder="Ex. Accès, transport, météo à surveiller, lieu de repli, risques connus..."
+                  />
+                </FieldShell>
+
+                <FieldShell label="Checklist avant départ">
+                  <textarea
+                    value={form.checklistBeforeDeparture}
+                    onChange={(event) => updateField("checklistBeforeDeparture", event.target.value)}
+                    className="min-h-[132px] w-full rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    placeholder="Ex. Matériel prêt, groupe informé, point de rendez-vous confirmé, sécurité rappelée."
+                  />
+                </FieldShell>
+
+                <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3 text-sm leading-6 text-emerald-950">
+                  <span className="font-bold">Bon à savoir.</span> Ce pré-formulaire ne comprend pas de
+                tracé GPS, de récolte réelle, de photos de collecte, de bilan final ni de score d&apos;impact.
               </div>
             </div>
           </CmmCard>
@@ -508,7 +852,7 @@ export function ActionBeforeDeclarationForm({
             <div className="space-y-1">
               <p className="text-sm font-semibold text-emerald-950">Pré-formulaire avant action</p>
               <p className="text-xs leading-5 text-emerald-900/66">
-                Le bouton de publication crée un pré-formulaire visible dans la page Formulaire de groupe.
+                La publication crée un pré-formulaire visible dans la page Formulaire de groupe.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

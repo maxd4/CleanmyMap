@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
-import { createInitialFormState } from "@/components/actions/action-declaration/payload";
+import {
+  buildCreateActionPayload,
+  createInitialFormState,
+} from "@/components/actions/action-declaration/payload";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -152,21 +155,47 @@ describe("POST /api/actions", () => {
     expect(trackServerEventMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("accepts quick pre-action submissions without waste and publishes them", async () => {
+  it("accepts quick pre-action submissions without waste and keeps them pending", async () => {
     const { POST } = await import("./route");
 
-    const payload = toContractCreatePayload({
-      actorName: "Test User",
-      associationName: "Action spontanée",
-      actionDate: "2026-04-22",
-      locationLabel: "Pré-formulaire test",
-      wasteKg: 0,
-      cigaretteButts: 0,
-      volunteersCount: 1,
-      durationMinutes: 30,
-      notes: "Préparation avant action",
-      submissionMode: "quick",
-    });
+    const form = createInitialFormState("Test User");
+    form.actionTitle = "Préparation terrain";
+    form.shortDescription = "Préparer une action de nettoyage.";
+    form.communeZoneLabel = "Paris 15";
+    form.departureLocationLabel = "Place de la Mairie";
+    form.actionDate = "2026-04-22";
+    form.meetingTime = "09:00";
+    form.departureTime = "09:30";
+    form.durationMinutes = "30";
+    form.plannedObjective = "nettoyage";
+    form.placeType = "parc";
+    form.estimatedDifficulty = "moderee";
+    form.accessibility = "Accessible en transport";
+    form.safetyInstructions = "Gants recommandés.";
+    form.recommendedMaterials = "Sacs, pinces, gants";
+    form.participantMessage = "Réponse souhaitée avant la veille.";
+    form.creatorRole = "organisateur";
+    form.preparationState = "pret_a_partager";
+    form.logisticsNotes = "Point de rendez-vous confirmé.";
+    form.checklistBeforeDeparture = "Eau, gants, sacs";
+    form.volunteersCount = "1";
+
+    const payload = toContractCreatePayload(
+      buildCreateActionPayload({
+        form,
+        declarationMode: "quick",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        photos: [],
+        visionEstimate: null,
+        userMetadata: {
+          userId: "user-test-1",
+          displayName: "Test User",
+        },
+      }),
+    );
 
     const response = await POST(
       new Request("http://localhost/api/actions", {
@@ -181,7 +210,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        status: "approved",
+        status: "pending",
       }),
     );
   }, 15000);

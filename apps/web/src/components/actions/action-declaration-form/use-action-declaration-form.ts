@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from "react";
-import { createAction } from "@/lib/actions/http";
+import { createAction, fetchActionById, updateAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import type {
@@ -9,6 +9,7 @@ import type {
 } from "@/lib/actions/types";
 import {
   buildCreateActionPayload,
+  applyPreparationDataToForm,
   createInitialFormState,
   isDrawingValid,
   OTHER_VOLUNTEER_ASSOCIATION_VALUE,
@@ -42,6 +43,7 @@ type UseActionDeclarationFormProps = {
     displayName?: string;
     email?: string;
   };
+  initialActionId?: string | null;
   linkedEventId?: string;
   initialRecordType?: "action" | "clean_place";
 };
@@ -51,6 +53,7 @@ export function useActionDeclarationForm({
   defaultActorName,
   isAuthenticated,
   userMetadata,
+  initialActionId = null,
   linkedEventId,
   initialRecordType = "action",
 }: UseActionDeclarationFormProps) {
@@ -60,13 +63,18 @@ export function useActionDeclarationForm({
   )
     ? defaultActorName
     : (resolvedActorOptions[0] ?? userMetadata.userId);
-  const createCleanForm = () =>
-    createInitialFormState(resolvedDefaultActorName, initialRecordType);
+  const createCleanForm = useMemo(
+    () => () => createInitialFormState(resolvedDefaultActorName, initialRecordType),
+    [initialRecordType, resolvedDefaultActorName],
+  );
 
   const [form, setForm] = useState<FormState>(() => createCleanForm());
   const pendingDraft = useSyncExternalStore(
     subscribeToDraftChanges,
     () => {
+      if (initialActionId) {
+        return null;
+      }
       return loadDraftSnapshot(createCleanForm(), initialRecordType);
     },
     () => null,
@@ -85,6 +93,11 @@ export function useActionDeclarationForm({
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
+  const [loadedActionPhase, setLoadedActionPhase] = useState<
+    "pre_action" | "post_action_draft" | "post_action_complete" | null
+  >(null);
+  const [isHydratingAction, setIsHydratingAction] = useState<boolean>(Boolean(initialActionId));
+  const [hydrationError, setHydrationError] = useState<string | null>(null);
   const hasTrackedStartRef = useRef<boolean>(false);
 
   const isCleanPlaceMode = form.recordType === "clean_place";
@@ -101,6 +114,79 @@ export function useActionDeclarationForm({
     setForm(createCleanForm());
     setHasAttemptedSubmit(false);
   }
+
+  useEffect(() => {
+    if (!initialActionId) {
+      return;
+    }
+
+    let active = true;
+
+    fetchActionById(initialActionId)
+      .then((action) => {
+        if (!active) {
+          return;
+        }
+
+        const baseForm = createCleanForm();
+        const preparedForm = applyPreparationDataToForm(baseForm, action.preparationData);
+        const nextForm: FormState = {
+          ...preparedForm,
+          actorName: action.actorName ?? preparedForm.actorName,
+          associationName: action.associationName ?? preparedForm.associationName,
+          groupJoinEnabled: action.groupJoinEnabled,
+          actionDate: action.actionDate,
+          locationLabel: action.locationLabel,
+          departureLocationLabel:
+            action.departureLocationLabel ?? preparedForm.departureLocationLabel,
+          arrivalLocationLabel:
+            action.arrivalLocationLabel ?? preparedForm.arrivalLocationLabel,
+          routeStyle: action.routeStyle ?? preparedForm.routeStyle,
+          routeAdjustmentMessage:
+            action.routeAdjustmentMessage ?? preparedForm.routeAdjustmentMessage,
+          notes: action.notes ?? preparedForm.notes,
+          placeType: action.placeType ?? preparedForm.placeType,
+        };
+
+        if (
+          action.actionPhase === "pre_action" ||
+          action.actionPhase === "post_action_draft"
+        ) {
+          nextForm.wasteKg = "";
+          nextForm.cigaretteButts = "";
+          nextForm.cigaretteButtsCount = "";
+          nextForm.volunteersCount = "";
+          nextForm.durationMinutes = "";
+          nextForm.wasteMegotsKg = "";
+          nextForm.wastePlastiqueKg = "";
+          nextForm.wasteVerreKg = "";
+          nextForm.wasteMetalKg = "";
+          nextForm.wasteMixteKg = "";
+          nextForm.visionBagsCount = "";
+          nextForm.visionFillLevel = "";
+          nextForm.visionDensity = "";
+        }
+
+        setLoadedActionPhase(action.actionPhase);
+        setForm(nextForm);
+        setIsHydratingAction(false);
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
+        setHydrationError(
+          error instanceof Error && error.message
+            ? error.message
+            : "Impossible de charger le formulaire existant.",
+        );
+        setIsHydratingAction(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [createCleanForm, initialActionId]);
 
   const drawingIsValid = isDrawingValid(manualDrawing);
   const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
@@ -331,11 +417,14 @@ export function useActionDeclarationForm({
         visionEstimate,
         userMetadata,
       });
-      const result = await createAction(submissionPayload);
-      setCreatedId(result.id);
-      setRetentionLoop(result.retentionLoop ?? null);
+      const result = initialActionId
+        ? await updateAction(initialActionId, submissionPayload)
+        : await createAction(submissionPayload);
+      setCreatedId("id" in result ? result.id : result.actionId);
+      setRetentionLoop("retentionLoop" in result ? result.retentionLoop ?? null : null);
       setSubmissionState("success");
       setShowConfirmation(false);
+      setLoadedActionPhase("post_action_complete");
       clearDraft();
     } catch (error: unknown) {
       setSubmissionState("error");
@@ -362,6 +451,9 @@ export function useActionDeclarationForm({
     errorMessage,
     createdId,
     retentionLoop,
+    loadedActionPhase,
+    isHydratingAction,
+    hydrationError,
     validationIssues,
     hasAttemptedSubmit,
     showConfirmation,

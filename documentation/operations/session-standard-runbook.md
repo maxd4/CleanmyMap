@@ -24,6 +24,7 @@ Critere de succes:
 - `quality:top-heavy` applique une regle progressive:
   - > `500` lignes (ou > `40KB`) = warning d'audit (cohesion/lisibilite),
   - > `700` lignes (ou > `60KB`) = echec bloquant.
+  - toute nouvelle exception doit etre justifiee puis ajoutee au meme lot dans `scripts/heavy-files-baseline.json`.
 
 ## Partie 2 - Qualite applicative
 Depuis la racine:
