@@ -6,10 +6,10 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 
 ## Résumé des contrôles
 
-- `npm run lint` : passe, avec 141 warnings.
+- `npm run lint` : passe, avec 141 warnings connus.
 - `npm run typecheck` : passe.
 - `npm run test` : passe.
-- `npm run build` : passe, mais remonte un avertissement runtime lié aux données.
+- `npm run build` : passe, sans signal runtime supplémentaire.
 
 ## P0 - Bloquant typecheck (résolu)
 
@@ -32,11 +32,12 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 4. [`apps/web/src/lib/vercel-regression-gates.test.ts`](../../apps/web/src/lib/vercel-regression-gates.test.ts)
    - Résolu: baseline API mise à jour et commentaire de justification ajouté sur la route dynamique.
 
-## P2 - Signal runtime à investiguer
+## P2 - Signal runtime (résolu)
 
 1. Investiguer l’erreur build-time `column actions.action_phase does not exist`.
-   - Signal observé pendant `next build`, sans échec final du build.
-   - Action: localiser la requête ou le helper de lecture d’actions qui référence cette colonne, puis synchroniser le schéma ou la projection.
+   - Résolu le 2026-07-06.
+   - Correction: ajout de la migration [`supabase/migrations/20260706000001_actions_phase_preparation_data.sql`](../../supabase/migrations/20260706000001_actions_phase_preparation_data.sql) pour réaligner le schéma `actions`, plus fallback de lecture et d’insertion côté `apps/web/src/lib/actions/store.ts` pour les environnements encore en retard.
+   - Vérification: `npm run build` ne remonte plus le message `column actions.action_phase does not exist`.
 
 ## P3 - Dette lint non bloquante
 
