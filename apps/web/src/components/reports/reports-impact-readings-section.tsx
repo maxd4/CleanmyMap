@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { ArrowRight, CalendarDays, Eye, FileText, Map, ShieldCheck, Sparkles } from "lucide-react";
 import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
+import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ReportModel } from "@/components/reports/web-document/types";
@@ -142,8 +143,12 @@ export function ReportsImpactReadingsSection({
   const snapshotGroups = useMemo(() => buildSnapshotGroups(report), [report]);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)] sm:p-6">
+    <CmmGrid
+      as="section"
+      className="rounded-[2rem] border border-slate-200 bg-white py-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)] sm:py-6"
+      contentClassName="gap-4"
+    >
+      <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
         <SectionHeader
           eyebrow={
             <span className="inline-flex items-center gap-2">
@@ -169,13 +174,17 @@ export function ReportsImpactReadingsSection({
           eyebrowClassName="text-stone-900"
           subtitleClassName="text-sm text-slate-500"
         />
+      </CmmGridItem>
 
-        <div className="mt-6 grid gap-4 xl:grid-cols-4">
+      <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
+        <CmmGrid contentClassName="gap-4">
           {snapshotGroups.map((group) => (
-            <SnapshotGroupCard key={group.id} group={group} />
+            <CmmGridItem key={group.id} span={{ mobile: 4, tablet: 3, desktop: 3 }}>
+              <SnapshotGroupCard group={group} />
+            </CmmGridItem>
           ))}
-        </div>
-      </section>
-    </div>
+        </CmmGrid>
+      </CmmGridItem>
+    </CmmGrid>
   );
 }

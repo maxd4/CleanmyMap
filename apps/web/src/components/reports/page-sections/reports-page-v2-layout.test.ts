@@ -32,6 +32,7 @@ describe("ReportsPageV2Layout", () => {
       }),
     );
 
+    expect(markup).toContain("cmm-grid-shell");
     expect(markup).toContain("Export réservé");
     expect(markup).not.toContain("Génération verrouillée");
   });

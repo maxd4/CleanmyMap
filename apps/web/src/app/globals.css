@@ -108,6 +108,21 @@
   --space-12: 6rem;    /* 96px */
 
   /* ============================================================
+     GRID TOKENS - CleanMyMap layout foundations
+     ============================================================ */
+  --cmm-grid-columns-mobile: 4;
+  --cmm-grid-columns-tablet: 6;
+  --cmm-grid-columns-desktop: 12;
+  --cmm-grid-margin-mobile: 1rem;   /* 16px */
+  --cmm-grid-margin-tablet: 1.5rem;  /* 24px */
+  --cmm-grid-margin-desktop: 2rem;   /* 32px */
+  --cmm-grid-gutter-mobile: 1rem;    /* 16px */
+  --cmm-grid-gutter-tablet: 1.5rem;  /* 24px */
+  --cmm-grid-gutter-desktop: 1.5rem; /* 24px */
+  --cmm-grid-max-width: 90rem;       /* 1440px */
+  --cmm-grid-step: 0.5rem;           /* 8px */
+
+  /* ============================================================
      RADIUS TOKENS
      ============================================================ */
   --radius-sm: 0.5rem;   /* 8px */
@@ -481,6 +496,102 @@ html[data-theme="dark"] {
 
   .cmm-page-header-action {
     margin-top: 0.25rem;
+  }
+
+  /* ============================================================
+     GRID FOUNDATIONS
+     ============================================================ */
+  .cmm-grid-shell {
+    position: relative;
+    width: min(100%, var(--cmm-grid-max-width));
+    margin-inline: auto;
+    padding-inline: var(--cmm-grid-margin-mobile);
+  }
+
+  .cmm-grid-layout {
+    display: grid;
+    grid-template-columns: repeat(var(--cmm-grid-columns-mobile), minmax(0, 1fr));
+    gap: var(--cmm-grid-gutter-mobile);
+    align-items: start;
+  }
+
+  .cmm-grid-span {
+    min-width: 0;
+    --cmm-grid-span-mobile: var(--cmm-grid-columns-mobile);
+    --cmm-grid-span-tablet: var(--cmm-grid-columns-tablet);
+    --cmm-grid-span-desktop: var(--cmm-grid-columns-desktop);
+    grid-column: span var(--cmm-grid-span-mobile) / span var(--cmm-grid-span-mobile);
+  }
+
+  .cmm-grid-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+    padding-inline: var(--cmm-grid-margin-mobile);
+    background-image:
+      linear-gradient(to right, rgba(15, 23, 42, 0.08) 0 1px, transparent 1px 100%),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 0 1px, transparent 1px 100%);
+    background-repeat: repeat, repeat;
+    background-origin: content-box, content-box;
+    background-clip: content-box, content-box;
+    background-size:
+      calc(
+        (100% - (var(--cmm-grid-gutter-mobile) * (var(--cmm-grid-columns-mobile) - 1)))
+        / var(--cmm-grid-columns-mobile) + var(--cmm-grid-gutter-mobile)
+      ) 100%,
+      100% var(--cmm-grid-step);
+  }
+
+  @media (min-width: 768px) {
+    .cmm-grid-shell {
+      padding-inline: var(--cmm-grid-margin-tablet);
+    }
+
+    .cmm-grid-layout {
+      grid-template-columns: repeat(var(--cmm-grid-columns-tablet), minmax(0, 1fr));
+      gap: var(--cmm-grid-gutter-tablet);
+    }
+
+    .cmm-grid-span {
+      grid-column: span var(--cmm-grid-span-tablet) / span var(--cmm-grid-span-tablet);
+    }
+
+    .cmm-grid-overlay {
+      padding-inline: var(--cmm-grid-margin-tablet);
+      background-size:
+        calc(
+          (100% - (var(--cmm-grid-gutter-tablet) * (var(--cmm-grid-columns-tablet) - 1)))
+          / var(--cmm-grid-columns-tablet) + var(--cmm-grid-gutter-tablet)
+        ) 100%,
+        100% var(--cmm-grid-step);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .cmm-grid-shell {
+      padding-inline: var(--cmm-grid-margin-desktop);
+    }
+
+    .cmm-grid-layout {
+      grid-template-columns: repeat(var(--cmm-grid-columns-desktop), minmax(0, 1fr));
+      gap: var(--cmm-grid-gutter-desktop);
+    }
+
+    .cmm-grid-span {
+      grid-column: span var(--cmm-grid-span-desktop) / span var(--cmm-grid-span-desktop);
+    }
+
+    .cmm-grid-overlay {
+      padding-inline: var(--cmm-grid-margin-desktop);
+      background-size:
+        calc(
+          (100% - (var(--cmm-grid-gutter-desktop) * (var(--cmm-grid-columns-desktop) - 1)))
+          / var(--cmm-grid-columns-desktop) + var(--cmm-grid-gutter-desktop)
+        ) 100%,
+        100% var(--cmm-grid-step);
+    }
   }
 
   /* Homepage section headers
