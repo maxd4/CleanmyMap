@@ -7,15 +7,16 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 ## Résumé des contrôles
 
 - `npm run lint` : passe, avec 141 warnings.
-- `npm run typecheck` : échec sur un point bloquant.
+- `npm run typecheck` : passe.
 - `npm run test` : échec sur 4 fichiers, 5 tests.
 - `npm run build` : passe, mais remonte un avertissement runtime lié aux données.
 
-## P0 - Bloquant typecheck
+## P0 - Bloquant typecheck (résolu)
 
 1. Corriger [`apps/web/src/lib/actions/group-participation.test.ts`](../../apps/web/src/lib/actions/group-participation.test.ts) ligne 155.
    - Symptôme: `null` est passé à un champ typé `string | undefined`.
    - Action: aligner le fixture ou élargir le typage si `null` est réellement attendu.
+   - Statut: résolu le 2026-07-06 en remplaçant `null` par `undefined` dans le fixture de test.
 
 ## P1 - Tests de régression
 
@@ -59,8 +60,6 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 
 ## Ordre de traitement recommandé
 
-1. P0 - typecheck bloquant.
-2. P1 - tests de régression.
-3. P2 - signal runtime.
-4. P3 - dette lint et refactors de confort.
-
+1. P1 - tests de régression.
+2. P2 - signal runtime.
+3. P3 - dette lint et refactors de confort.
