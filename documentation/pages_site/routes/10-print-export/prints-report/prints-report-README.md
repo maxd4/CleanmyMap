@@ -48,3 +48,9 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- Structure imprimable réorganisée autour d'une grille canonique CleanMyMap:
+  - en-tête documentaire sur deux colonnes;
+  - bande KPI en quatre blocs alignés;
+  - comparaison cartographique et analyse mensuelle disposées côte à côte quand l'espace le permet;
+  - bloc méthodologique et notes de lecture regroupés en section dédiée;
+  - sections protégées contre les ruptures de page inutiles et les débordements horizontaux.
