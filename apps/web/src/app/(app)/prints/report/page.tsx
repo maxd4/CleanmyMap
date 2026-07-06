@@ -54,15 +54,15 @@ export default async function PrintReportPage() {
         <div className="print:hidden">
           <PageHeader
             family={pageFamily}
-            eyebrow="Print & Export"
+            eyebrow="Impression & export"
             title="Rapport d'impact imprimable"
             subtitle="Synthèse documentaire, export visuel et lecture d'impact pour l'audit."
             badges={
               <>
-                <PageHeaderBadge family={pageFamily}>Print</PageHeaderBadge>
-                <PageHeaderBadge family={pageFamily} muted>
-                  Export
-                </PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily}>Impression</PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily} muted>
+                Export
+              </PageHeaderBadge>
               </>
             }
           />
@@ -126,14 +126,14 @@ export default async function PrintReportPage() {
   return (
     <div className="cmm-print-report min-h-screen space-y-6 p-0 sm:p-12 print:p-0">
       <div className="print:hidden">
-        <PageHeader
-          family={pageFamily}
-          eyebrow="Print & Export"
+          <PageHeader
+            family={pageFamily}
+            eyebrow="Impression & export"
           title="Rapport d'impact imprimable"
           subtitle="Synthèse documentaire, export visuel et lecture d'impact pour l'audit."
           badges={
             <>
-              <PageHeaderBadge family={pageFamily}>Print</PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily}>Impression</PageHeaderBadge>
               <PageHeaderBadge family={pageFamily} muted>
                 Document
               </PageHeaderBadge>
@@ -172,7 +172,7 @@ export default async function PrintReportPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-700 print:bg-white">
-                    Print
+                    Impression
                   </span>
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-700 print:bg-white">
                     Export
@@ -314,9 +314,9 @@ export default async function PrintReportPage() {
                 </p>
               </div>
               <div className="flex gap-4 text-[9px] font-mono text-slate-300 print:text-slate-400">
-                <span>RFC-6749 COMPLIANT</span>
-                <span>GDPR CERTIFIED</span>
-                <span>OPEN DATA READY</span>
+                  <span>RFC-6749 conforme</span>
+                  <span>RGPD conforme</span>
+                  <span>Données ouvertes prêtes</span>
               </div>
             </div>
 
