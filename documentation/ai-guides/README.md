@@ -40,6 +40,15 @@ Documentation optimisée pour les agents IA qui développent ce projet.
    - Règles communes pour les schémas
    - Exemples copiables
 
+### 📐 Grille et composition
+
+1. **[CLEANMYMAP_GRID_SYSTEM_PLAYBOOK.md](./CLEANMYMAP_GRID_SYSTEM_PLAYBOOK.md)**
+   - Grille CleanMyMap 12/6/4 colonnes
+   - Rythme vertical basé sur 8 px
+   - À consulter pour décider si une page doit adopter une grille stricte
+   - Cas d'usage pour rapports, KPI, dashboards et pages éditoriales
+   - Cas d'exclusion pour cartes et formulaires complexes
+
 ### 🎨 Planche Design System
 
 1. **[design-system-board.dynamic.html](../design-system-board.dynamic.html)**
