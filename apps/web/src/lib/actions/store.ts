@@ -21,7 +21,155 @@ import {
   recordTrainingExample,
 } from "@/lib/actions/training";
 import { logFailure } from "@/lib/logging/failure-log";
+import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
+
+const ACTION_SELECT_FIELDS = [
+  "id",
+  "created_at",
+  "updated_at",
+  "created_by_clerk_id",
+  "actor_name",
+  "action_date",
+  "location_label",
+  "latitude",
+  "longitude",
+  "derived_geometry_kind",
+  "derived_geometry_geojson",
+  "geometry_confidence",
+  "geometry_source",
+  "waste_kg",
+  "cigarette_butts",
+  "volunteers_count",
+  "duration_minutes",
+  "notes",
+  "status",
+] as const;
+
+const ACTION_SELECT_FIELDS_WITH_PHASE = [
+  ...ACTION_SELECT_FIELDS,
+  "action_phase",
+  "preparation_data",
+].join(", ");
+
+const ACTION_SELECT_FIELDS_LEGACY = ACTION_SELECT_FIELDS.join(", ");
+
+function isMissingActionColumnError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message ?? "")
+          : "";
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("does not exist") &&
+    (normalized.includes("action_phase") || normalized.includes("preparation_data"))
+  );
+}
+
+function normalizeStoredAction(row: StoredAction): StoredAction {
+  return {
+    ...row,
+    waste_kg: Number(row.waste_kg ?? 0),
+    cigarette_butts: Number(row.cigarette_butts ?? 0),
+    volunteers_count: Number(row.volunteers_count ?? 0),
+    duration_minutes: Number(row.duration_minutes ?? 0),
+    action_phase: row.action_phase ?? "post_action_complete",
+    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
+  };
+}
+
+function buildActionListQuery(
+  query: ActionQuery,
+  params: {
+    limit: number;
+    status: ActionStatus | null;
+    floorDate?: string;
+    requireCoordinates?: boolean;
+  },
+  selectFields: string,
+) {
+  let nextQuery = query
+    .select(selectFields)
+    .order("action_date", { ascending: false })
+    .limit(params.limit);
+
+  if (params.status) {
+    nextQuery = nextQuery.eq("status", params.status);
+  }
+  if (params.floorDate) {
+    nextQuery = nextQuery.gte("action_date", params.floorDate);
+  }
+  if (params.requireCoordinates) {
+    nextQuery = nextQuery.not("latitude", "is", null).not("longitude", "is", null);
+  }
+
+  return nextQuery;
+}
+
+async function fetchActionRows(
+  supabase: SupabaseClient,
+  params: {
+    limit: number;
+    status: ActionStatus | null;
+    floorDate?: string;
+    requireCoordinates?: boolean;
+  },
+): Promise<StoredAction[]> {
+  try {
+    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+      buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
+    );
+    return rows.map(normalizeStoredAction);
+  } catch (error) {
+    if (!isMissingActionColumnError(error)) {
+      throw error;
+    }
+
+    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+      buildActionListQuery(query, params, ACTION_SELECT_FIELDS_LEGACY),
+    );
+    return rows.map(normalizeStoredAction);
+  }
+}
+
+async function fetchActionRowById(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<StoredAction | null> {
+  try {
+    const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
+      query
+        .select(ACTION_SELECT_FIELDS_WITH_PHASE)
+        .eq("id", actionId)
+        .maybeSingle(),
+    );
+
+    if (!row) {
+      return null;
+    }
+
+    return normalizeStoredAction(row);
+  } catch (error) {
+    if (!isMissingActionColumnError(error)) {
+      throw error;
+    }
+
+    const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
+      query.select(ACTION_SELECT_FIELDS_LEGACY).eq("id", actionId).maybeSingle(),
+    );
+
+    if (!row) {
+      return null;
+    }
+
+    return normalizeStoredAction(row);
+  }
+}
 
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
@@ -111,85 +259,43 @@ export async function fetchActions(
     requireCoordinates?: boolean;
   },
 ): Promise<StoredAction[]> {
-  const rows = await runActionQuery<StoredAction>(supabase, (query) => {
-    let nextQuery = query
-        .select(
-          "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
-      )
-      .order("action_date", { ascending: false })
-      .limit(params.limit);
-
-    if (params.status) {
-      nextQuery = nextQuery.eq("status", params.status);
-    }
-    if (params.floorDate) {
-      nextQuery = nextQuery.gte("action_date", params.floorDate);
-    }
-    if (params.requireCoordinates) {
-      nextQuery = nextQuery.not("latitude", "is", null).not("longitude", "is", null);
-    }
-    return nextQuery;
-  });
-  return rows.map((row) => ({
-    ...row,
-    waste_kg: Number(row.waste_kg ?? 0),
-    cigarette_butts: Number(row.cigarette_butts ?? 0),
-    volunteers_count: Number(row.volunteers_count ?? 0),
-    duration_minutes: Number(row.duration_minutes ?? 0),
-  }));
+  return fetchActionRows(supabase, params);
 }
 
 export async function fetchRecentActionsByUser(
   supabase: SupabaseClient,
   params: { userId: string; limit: number },
 ): Promise<StoredAction[]> {
-  const rows = await runActionQuery<StoredAction>(supabase, (query) =>
-    query
-        .select(
-          "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
-      )
-      .eq("created_by_clerk_id", params.userId)
-      .order("action_date", { ascending: false })
-      .limit(params.limit),
-  );
+  try {
+    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+      query
+        .select(ACTION_SELECT_FIELDS_WITH_PHASE)
+        .eq("created_by_clerk_id", params.userId)
+        .order("action_date", { ascending: false })
+        .limit(params.limit),
+    );
+    return rows.map(normalizeStoredAction);
+  } catch (error) {
+    if (!isMissingActionColumnError(error)) {
+      throw error;
+    }
 
-  return rows.map((row) => ({
-    ...row,
-    waste_kg: Number(row.waste_kg ?? 0),
-    cigarette_butts: Number(row.cigarette_butts ?? 0),
-    volunteers_count: Number(row.volunteers_count ?? 0),
-    duration_minutes: Number(row.duration_minutes ?? 0),
-    action_phase: row.action_phase ?? "post_action_complete",
-    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
-  }));
+    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+      query
+        .select(ACTION_SELECT_FIELDS_LEGACY)
+        .eq("created_by_clerk_id", params.userId)
+        .order("action_date", { ascending: false })
+        .limit(params.limit),
+    );
+    return rows.map(normalizeStoredAction);
+  }
 }
 
 export async function loadActionById(
   supabase: SupabaseClient,
   actionId: string,
 ): Promise<StoredAction | null> {
-  const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
-    query
-      .select(
-        "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status, action_phase, preparation_data",
-      )
-      .eq("id", actionId)
-      .maybeSingle(),
-  );
-
-  if (!row) {
-    return null;
-  }
-
-  return {
-    ...row,
-    waste_kg: Number(row.waste_kg ?? 0),
-    cigarette_butts: Number(row.cigarette_butts ?? 0),
-    volunteers_count: Number(row.volunteers_count ?? 0),
-    duration_minutes: Number(row.duration_minutes ?? 0),
-    action_phase: row.action_phase ?? "post_action_complete",
-    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
-  };
+  return fetchActionRowById(supabase, actionId);
 }
 
 async function resolveCreateActionDrawing(
@@ -246,33 +352,39 @@ async function insertCreatedAction(
     status: ActionStatus | undefined;
   },
 ): Promise<string> {
-  const inserted = await supabase
-    .from("actions")
-    .insert({
-      created_by_clerk_id: params.userId,
-      actor_name: params.payload.actorName ?? null,
-      action_date: params.payload.actionDate,
-      location_label: params.payload.locationLabel,
-      latitude: params.payload.latitude ?? null,
-      longitude: params.payload.longitude ?? null,
-      derived_geometry_kind: params.persistedGeometry.kind,
-      derived_geometry_geojson: params.persistedGeometry.geojson,
-      geometry_confidence: params.persistedGeometry.confidence,
-      geometry_source: params.persistedGeometry.geometrySource,
-      waste_kg: params.payload.wasteKg,
-      cigarette_butts: resolvePersistedCigaretteButts(params.payload),
-      volunteers_count: params.payload.volunteersCount,
-      duration_minutes: params.payload.durationMinutes,
-      action_phase: params.payload.actionPhase ?? "post_action_complete",
-      preparation_data: params.payload.preparationData ?? {},
-      notes: buildPersistedNotes({
-        ...params.payload,
-        manualDrawing: params.finalDrawing ?? undefined,
-      }),
-      status: params.status ?? "pending",
-    })
-    .select("id")
-    .single();
+  const baseInsert = {
+    created_by_clerk_id: params.userId,
+    actor_name: params.payload.actorName ?? null,
+    action_date: params.payload.actionDate,
+    location_label: params.payload.locationLabel,
+    latitude: params.payload.latitude ?? null,
+    longitude: params.payload.longitude ?? null,
+    derived_geometry_kind: params.persistedGeometry.kind,
+    derived_geometry_geojson: params.persistedGeometry.geojson,
+    geometry_confidence: params.persistedGeometry.confidence,
+    geometry_source: params.persistedGeometry.geometrySource,
+    waste_kg: params.payload.wasteKg,
+    cigarette_butts: resolvePersistedCigaretteButts(params.payload),
+    volunteers_count: params.payload.volunteersCount,
+    duration_minutes: params.payload.durationMinutes,
+    notes: buildPersistedNotes({
+      ...params.payload,
+      manualDrawing: params.finalDrawing ?? undefined,
+    }),
+    status: params.status ?? "pending",
+  };
+
+  const insertWithPhase = {
+    ...baseInsert,
+    action_phase: params.payload.actionPhase ?? "post_action_complete",
+    preparation_data: params.payload.preparationData ?? {},
+  };
+
+  let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
+
+  if (inserted.error && isMissingActionColumnError(inserted.error)) {
+    inserted = await supabase.from("actions").insert(baseInsert).select("id").single();
+  }
 
   if (inserted.error) {
     throw inserted.error;
