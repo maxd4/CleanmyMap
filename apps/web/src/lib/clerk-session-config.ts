@@ -84,6 +84,41 @@ function parseOriginCsv(raw: string | undefined): string[] {
   return Array.from(new Set(normalized));
 }
 
+function resolveClerkPublishableKey(
+  publishableKey: string | undefined,
+  isLocalDevOrigin: boolean,
+): string | undefined {
+  if (publishableKey && isLocalDevOrigin && publishableKey.startsWith("pk_live_")) {
+    return LOCAL_DEV_CLERK_PUBLISHABLE_KEY;
+  }
+
+  if (publishableKey) {
+    return publishableKey;
+  }
+
+  return process.env.NODE_ENV !== "production" ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY : undefined;
+}
+
+function resolveClerkDomain(
+  domain: string | undefined,
+  isLocalDevOrigin: boolean,
+  proxyUrl: string | undefined,
+): string | undefined {
+  return isLocalDevOrigin && !proxyUrl ? undefined : domain;
+}
+
+function resolveClerkSatellite(
+  isSatellite: boolean,
+  isLocalDevOrigin: boolean,
+  proxyUrl: string | undefined,
+): boolean | undefined {
+  if (isLocalDevOrigin && !proxyUrl) {
+    return undefined;
+  }
+
+  return isSatellite ? true : undefined;
+}
+
 export type ClerkRuntimeConfig = {
   appOrigin?: string;
   publishableKey?: string;
@@ -105,24 +140,10 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
   const domain = parseDomain(env.CLERK_DOMAIN);
   const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
   const isLocalDevOrigin = process.env.NODE_ENV !== "production" && isLocalhostOrigin(appOrigin);
-  const resolvedPublishableKey =
-    publishableKey &&
-    isLocalDevOrigin &&
-    publishableKey.startsWith("pk_live_")
-      ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
-      : publishableKey ??
-        (process.env.NODE_ENV !== "production"
-          ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY
-          : undefined);
   // Do not leak the production Clerk domain into localhost unless an explicit proxy is configured.
-  const resolvedDomain =
-    isLocalDevOrigin && !proxyUrl ? undefined : domain;
-  const resolvedIsSatellite =
-    isLocalDevOrigin && !proxyUrl
-      ? undefined
-      : isSatellite
-        ? true
-        : undefined;
+  const resolvedPublishableKey = resolveClerkPublishableKey(publishableKey, isLocalDevOrigin);
+  const resolvedDomain = resolveClerkDomain(domain, isLocalDevOrigin, proxyUrl);
+  const resolvedIsSatellite = resolveClerkSatellite(isSatellite, isLocalDevOrigin, proxyUrl);
 
   return {
     appOrigin,

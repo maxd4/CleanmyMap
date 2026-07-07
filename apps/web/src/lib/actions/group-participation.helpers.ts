@@ -94,6 +94,25 @@ export function resolveParticipationUpdatedAt(
   return row.updated_at ?? row.joined_at ?? row.created_at;
 }
 
+function isJoinedParticipant(
+  participantSummary: ActionParticipantSummary | null,
+): boolean {
+  return participantSummary?.myParticipationStatus === ACTIVE_PARTICIPATION_STATUS;
+}
+
+function isAwaitingApprovalParticipant(
+  participantSummary: ActionParticipantSummary | null,
+): boolean {
+  return participantSummary?.myParticipationStatus === PENDING_PARTICIPATION_STATUS;
+}
+
+function resolvePendingRequestsCount(
+  participantSummary: ActionParticipantSummary | null,
+  participantsCount: number,
+): number {
+  return Math.max(0, (participantSummary?.totalCount ?? participantsCount) - participantsCount);
+}
+
 export function buildJoinableItem(
   action: ActionPreviewRow,
   metadata: JoinableActionMetadata,
@@ -118,26 +137,19 @@ export function buildJoinableItem(
   groupJoinEnabled: boolean;
   pendingRequestsCount: number;
 } {
-  const joined = participantSummary?.myParticipationStatus === ACTIVE_PARTICIPATION_STATUS;
-  const awaitingApproval =
-    participantSummary?.myParticipationStatus === PENDING_PARTICIPATION_STATUS;
-  const pendingRequestsCount = Math.max(
-    0,
-    (participantSummary?.totalCount ?? participantsCount) - participantsCount,
-  );
   return {
     ...action,
     actionPhase: action.action_phase ?? "post_action_complete",
     participantsCount,
-    joined,
-    awaitingApproval,
+    joined: isJoinedParticipant(participantSummary),
+    awaitingApproval: isAwaitingApprovalParticipant(participantSummary),
     joinedAt: participantSummary?.myJoinedAt ?? null,
     participationStatus: participantSummary?.myParticipationStatus ?? null,
     participationSource: participantSummary?.myParticipationSource ?? null,
     participationUpdatedAt:
       participantSummary?.myUpdatedAt ?? participantSummary?.myJoinedAt ?? null,
     groupJoinEnabled: metadata.groupJoinEnabled,
-    pendingRequestsCount,
+    pendingRequestsCount: resolvePendingRequestsCount(participantSummary, participantsCount),
   };
 }
 

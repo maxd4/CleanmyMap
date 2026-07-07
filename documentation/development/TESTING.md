@@ -40,6 +40,23 @@
    Référence détaillée :
    - `page-by-page-ui-qa.md`
 
+## Fenêtres Locales Recommandées
+
+Ordres de grandeur mesurés sur cette base de repo. Ils servent de fenêtres locales minimales avant de conclure qu'une commande est trop lente ou bloquée.
+
+| Commande | Fenêtre locale recommandée | Temps observé récent |
+|---------|----------------------------|----------------------|
+| `npm run typecheck` | 2 min | ~25-40 s |
+| `npm run lint` | 5 min | ~100-150 s |
+| `npm run test` | 3 min | ~75-90 s |
+| `npm run build` | 15 min | ~280 s |
+| `git diff --check` | 1 min | < 5 s |
+
+Règles pratiques :
+- si une commande dépasse sa fenêtre habituelle, lire la sortie avant de relancer;
+- pour les scans larges (`rg -n`, audits de documentation, gros `eslint`), partir sur 2 à 5 min selon le périmètre;
+- ne pas réduire les timeouts juste pour faire passer un contrôle, surtout pour `build` et `test`.
+
 ## Scope Covered
 
 - Python syntax/compile checks

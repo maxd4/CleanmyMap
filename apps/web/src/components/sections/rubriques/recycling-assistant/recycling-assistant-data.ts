@@ -1,4 +1,4 @@
-import { Answer, Locale, Tone } from "./recycling-assistant.types";
+import { Answer } from "./recycling-assistant.types";
 
 export type LocalizedContent = {
   fr: Partial<Answer>;

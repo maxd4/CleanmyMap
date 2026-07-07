@@ -7,7 +7,6 @@ import {
   Globe,
   Leaf,
   Mail,
-  Monitor,
   PieChart,
   Plug,
   Radar,

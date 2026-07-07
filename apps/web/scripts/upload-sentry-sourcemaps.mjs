@@ -246,12 +246,18 @@ const release =
   process.env.GIT_COMMIT_SHA?.trim() ||
   process.env.VERCEL_GIT_COMMIT_REF?.trim() ||
   "";
+const shouldReportMissingSentryConfig =
+  process.env.CI === "1" ||
+  process.env.VERCEL === "1" ||
+  Boolean(process.env.VERCEL_ENV);
 const buildDir = resolve(process.cwd(), ".next");
 const staticDir = join(buildDir, "static");
 const serverDir = join(buildDir, "server");
 
 if (!authToken || !org || !project) {
-  log("Sentry source map upload skipped: missing SENTRY_AUTH_TOKEN, SENTRY_ORG, or SENTRY_PROJECT.");
+  if (shouldReportMissingSentryConfig) {
+    log("Sentry source map upload skipped: missing SENTRY_AUTH_TOKEN, SENTRY_ORG, or SENTRY_PROJECT.");
+  }
   process.exit(0);
 }
 

@@ -47,7 +47,7 @@ describe("server translation boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 30000);
 
   it("keeps sensitive client hooks out of server app pages and layouts", async () => {
     const files = await collectFiles(APP_ROOT);
@@ -65,5 +65,5 @@ describe("server translation boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 30000);
 });

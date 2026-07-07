@@ -6,7 +6,7 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
 
 ## Résumé des contrôles
 
-- `npm run lint` : passe, avec 141 warnings connus.
+- `npm run lint` : passe, avec 123 warnings connus.
 - `npm run typecheck` : passe.
 - `npm run test` : passe.
 - `npm run build` : passe, sans signal runtime supplémentaire.
@@ -39,23 +39,27 @@ Ce backlog ordonne les corrections à faire après les vérifications globales `
    - Correction: ajout de la migration [`supabase/migrations/20260706000001_actions_phase_preparation_data.sql`](../../supabase/migrations/20260706000001_actions_phase_preparation_data.sql) pour réaligner le schéma `actions`, plus fallback de lecture et d’insertion côté `apps/web/src/lib/actions/store.ts` pour les environnements encore en retard.
    - Vérification: `npm run build` ne remonte plus le message `column actions.action_phase does not exist`.
 
-## P3 - Dette lint non bloquante
+## P3 - Dette lint restante
 
-1. Corriger le warning React dans [`apps/web/src/components/actions/map-feed/use-actions-map-viewport.ts`](../../apps/web/src/components/actions/map-feed/use-actions-map-viewport.ts).
-   - Symptôme: `setState` synchronisé dans un effect.
-   - Action: déplacer la mise à jour dans un flux plus sûr ou dans un callback asynchrone.
+1. Réduire la dette de complexité et de taille dans `environmental-impact-estimator`.
+   - Priorité: élevée.
+   - Objectif: scinder les helpers les plus longs et les branches les plus imbriquées.
 
-2. Nettoyer les avertissements de texte non échappé dans [`apps/web/src/components/missions/mission-qr.tsx`](../../apps/web/src/components/missions/mission-qr.tsx).
-   - Action: remplacer les apostrophes par des entités HTML ou du texte formaté.
+2. Réduire la dette de complexité et de taille dans `pdf-export`.
+   - Priorité: élevée.
+   - Objectif: isoler les blocs de génération et les assemblages de données trop denses.
 
-3. Purger les imports inutilisés dans les fichiers data/rubriques signalés par ESLint.
-   - Exemples: [`apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.data.ts`](../../apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.data.ts), [`apps/web/src/components/sections/rubriques/recycling-assistant/recycling-assistant-data.ts`](../../apps/web/src/components/sections/rubriques/recycling-assistant/recycling-assistant-data.ts), [`apps/web/src/components/sections/rubriques/recycling-assistant/recycling-assistant.utils.ts`](../../apps/web/src/components/sections/rubriques/recycling-assistant/recycling-assistant.utils.ts).
+3. Réduire la dette de complexité et de taille dans `supabase`.
+   - Priorité: moyenne.
+   - Objectif: simplifier les helpers et continuer à purger les avertissements de style ou d’API.
 
-4. Réduire la dette de complexité et de taille dans les familles les plus lourdes.
-   - Familles concernées: `environmental-impact-estimator`, `pdf-export`, `supabase`, `learning`, `pilotage`, `admin`, `ui`.
-   - Action: fractionner les helpers les plus longs ou les plus cyclomatiques après les blocages P0/P1.
+4. Réduire la dette de complexité et de taille dans `pilotage`, `admin` et `ui`.
+   - Priorité: moyenne.
+   - Objectif: traiter les derniers gros fichiers signalés par ESLint une famille à la fois.
 
 ## Ordre de traitement recommandé
 
-1. P2 - signal runtime.
-2. P3 - dette lint et refactors de confort.
+1. `environmental-impact-estimator`.
+2. `pdf-export`.
+3. `supabase`.
+4. `pilotage` / `admin` / `ui`.

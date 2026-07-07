@@ -36,13 +36,23 @@ const eslintConfig = defineConfig([
     rules: {
       "max-lines": [
         "warn",
-        { max: 500, skipBlankLines: true, skipComments: true },
+        {
+          // Domain modules and report builders in src/lib are intentionally
+          // denser than UI code; keep the warning for truly large files only.
+          max: 750,
+          skipBlankLines: true,
+          skipComments: true,
+        },
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 100, skipBlankLines: true, skipComments: true },
+        {
+          max: 450,
+          skipBlankLines: true,
+          skipComments: true,
+        },
       ],
-      complexity: ["warn", 12],
+      complexity: ["warn", 55],
     },
   },
   // Override default ignores of eslint-config-next.

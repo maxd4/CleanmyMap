@@ -12,6 +12,7 @@ const PLACEHOLDER_HOSTS = new Set([
 export const PUBLIC_FORM_ANTISPAM_DELAY_MS = 1500;
 export const PUBLIC_RATE_LIMIT_STATUS = "rate_limited" as const;
 export const PUBLIC_RATE_LIMIT_KIND = "validation" as const;
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export type PublicRateLimitPayload = {
   error: string;
@@ -71,17 +72,18 @@ export function normalizePublicChannelUrl(value: unknown): string | null {
 }
 
 export function isIsoDateString(value: unknown): value is string {
-  if (typeof value !== "string" || value.length !== 10) {
+  if (typeof value !== "string") {
     return false;
   }
 
-  if (value[4] !== "-" || value[7] !== "-") {
+  const match = value.match(ISO_DATE_PATTERN);
+  if (!match) {
     return false;
   }
 
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-  const day = Number(value.slice(8, 10));
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
 
   if (
     !Number.isInteger(year) ||
