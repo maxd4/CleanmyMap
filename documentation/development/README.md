@@ -28,6 +28,7 @@ Guides de développement pour agents IA.
 ### Qualité & Tests
 - **TESTING.md** - Guide de tests
 - **page-by-page-ui-qa.md** - Workflow de QA page par page avec capture écran et export `.MD this page`
+- **Fenêtres locales recommandées** - Temps de validation observés et fenêtres de timeout conseillées dans `TESTING.md`
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
 - **performance-quotas-vercel-checklist.md** - Checklist PR pour prévenir les régressions de coût Vercel

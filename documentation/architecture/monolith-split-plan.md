@@ -1,33 +1,46 @@
 # Plan de découpage monolithes
 
-**Mis à jour :** 2026-05-06 | **Portée :** `apps/web/src` | **Seuil d'alerte :** > 10 KB
+**Mis à jour :** 2026-07-06 | **Portée :** `apps/web/src` | **Seuil d'alerte :** > 1000 lignes ou > 50 KB
 
 ## Objectif
 
-Réduire les fichiers dépassant 300 lignes en modules testables, sans régression fonctionnelle.  
+Réduire les fichiers applicatifs dépassant 1000 lignes en modules testables, sans régression fonctionnelle.
 Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant suppression du code legacy**.
 
 ---
 
-## 📊 Radar actuel (scan 06/05/2026)
+## 📊 Radar actuel (scan 2026-07-06)
 
 | Priorité | Taille | Fichier | Statut |
 |----------|--------|---------|--------|
-| 🔴 CRITIQUE | 41 801 o | `components/chat/chat-shell.tsx` | ⏳ À faire |
-| 🔴 CRITIQUE | 30 299 o | `components/actions/action-declaration/ActionStepHarvest.tsx` | ⏳ À faire |
-| 🔴 CRITIQUE | 27 902 o | `components/admin/creator-inbox-panel.tsx` | ⏳ À faire |
-| 🔴 CRITIQUE | 25 798 o | `components/sections/rubriques/annuaire-directory-seed.ts` | ⏳ À faire |
-| 🔴 CRITIQUE | 24 277 o | `app/(app)/actions/map/page.tsx` | ⏳ À faire |
-| 🟠 HAUTE | 22 790 o | `components/actions/actions-map-feed.tsx` | ⏳ À faire |
-| 🟠 HAUTE | 21 926 o | `components/seo/structured-data.tsx` | ⏳ À faire |
-| 🟠 HAUTE | 21 552 o | `components/actions/action-declaration-form.tsx` | ⏳ À faire |
-| 🟠 HAUTE | 20 365 o | `components/sections/rubriques/feedback-section.tsx` | ⏳ À faire |
-| 🟠 HAUTE | 19 045 o | `components/sections/rubriques/gamification-section.tsx` | ⏳ À faire |
-| 🟡 MOYENNE | 18 709 o | `components/reports/web-document/analytics.ts` | ⏳ À faire |
-| 🟡 MOYENNE | 17 052 o | `lib/sections-registry/config.ts` | ⏳ À faire |
-| 🟡 MOYENNE | 13 032 o | `components/sections/rubriques/community/use-community-section.ts` | ⏳ À faire |
+| 🔴 CRITIQUE | 1 410 lignes | `lib/environmental-impact-estimator/project-signals.impl.ts` | ✅ Découpé en shell + modules |
+| 🔴 CRITIQUE | 1 125 lignes | `app/api/actions/[actionId]/group-join/route.test.ts` | ✅ Découpé en helpers + fichiers par verbes HTTP |
+| 🟠 HAUTE | 996 lignes | `components/sections/rubriques/free-plan-services-methodology-visual.tsx` | ⏳ À faire |
+| 🟠 HAUTE | 927 lignes | `components/admin/free-plan-services-visual.tsx` | ⏳ À faire |
+| 🟠 HAUTE | 923 lignes | `components/sections/rubriques/partners-network-section.tsx` | ⏳ À faire |
+| 🟠 HAUTE | 922 lignes | `app/api/actions/group-join/route.test.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 883 lignes | `components/actions/action-before-declaration-form.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 875 lignes | `components/learn/quiz-session-panel.tsx` | ✅ Découpé en shell + sous-modules |
+| 🟡 MOYENNE | 861 lignes | `components/actions/action-declaration-form/action-declaration-export-picker.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 838 lignes | `components/admin/free-plan-services-panel.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 838 lignes | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 827 lignes | `components/sections/rubriques/gamification/gamification-panels.tsx` | ✅ Shell extrait, sous-module encore dense |
+| 🟡 MOYENNE | 799 lignes | `components/learn/environmental-quiz.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 796 lignes | `components/sections/rubriques/weather-section.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 775 lignes | `components/reports/reports-web-document.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 770 lignes | `components/sections/rubriques/rejoindre-un-formulaire-section.tsx` | ⏳ À faire |
+| 🟡 MOYENNE | 756 lignes | `lib/actions/group-participation.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 749 lignes | `lib/learning/quiz-personal-progress.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 738 lignes | `components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 718 lignes | `lib/supabase/storage-business-contribution.ts` | ⏳ À faire |
 
-> Les 3 fichiers du plan d'avril 2026 ont été partiellement traités : `use-admin-workflow.ts` et `community-section.tsx` ont été découpés (sous-dossiers `admin-workflow/` et `community/`). `reports-web-document.tsx` a été scindé en `web-document/sections.tsx` (14 KB, encore lourd).
+> Déjà sortis du radar sur ce cycle :
+> - `app/api/actions/[actionId]/group-join/route.test.ts`
+> - `components/learn/quiz-session-panel.tsx`
+> - `components/sections/rubriques/feedback-section.tsx`
+> - `components/sections/rubriques/gamification/index.tsx`
+>
+> Ces shells sont désormais minces et orchestrent des sous-modules dédiés.
 
 ---
 
@@ -35,9 +48,13 @@ Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant su
 
 - Conserver les APIs publiques (props, hook signatures, exports nommés).
 - Une PR par monolithe.
-- Taille cible : **< 5 KB / < 200 lignes** pour une page, **< 10 KB / < 300 lignes** pour un composant complexe.
+- Taille cible : **< 1000 lignes** par défaut pour tout fichier applicatif.
+- Viser **500 à 700 lignes** pour les shells UI quand c'est encore lisible.
 - Ajouter des tests de logique avant de supprimer le code source.
-- Commande de vérification : `npm run quality:top-heavy` + `npm -C apps/web run lint`.
+- Toute exception au seuil courant doit rester dans `scripts/heavy-files-baseline.json` avec justification.
+- Commande de vérification recommandée : tests ciblés d'abord, puis `node scripts/check-top-heavy-files.mjs --top=25`.
+- Ajouter un `npm run typecheck -w apps/web` ciblé quand la modification touche vraiment le typage ou les contrats exportés.
+- Si le typecheck ciblé est trop coûteux pour une étape intermédiaire de refactor, le repousser à la fin du lot, sans supprimer les tests ciblés ni le contrôle des fichiers lourds.
 
 ## Règles d'exécution Kaizen
 
@@ -46,10 +63,11 @@ Ces règles s'appliquent à chaque shell ou module monolithique traité dans ce 
 - Extraire d'abord les constantes, les listes de données et les helpers purs.
 - Extraire ensuite la logique d'état dans un hook ou un module de modèle, avant de toucher au rendu.
 - Après chaque extraction, conserver un seul point d'entrée lisible qui compose les sous-modules.
-- Valider chaque étape avec le trio suivant :
-  - `npm run typecheck` ciblé sur le périmètre modifié ;
+- Valider chaque étape avec la séquence suivante, selon le coût du lot :
   - tests ciblés quand il y en a ;
+  - `npm run typecheck -w apps/web` ou commande équivalente ciblée sur le périmètre modifié, si le changement touche les types ou les exports ;
   - `node scripts/check-top-heavy-files.mjs --top=25`.
+- Pour les très gros fichiers ou les refactors multi-extractions, il est acceptable de faire d'abord les tests ciblés + le contrôle des fichiers lourds, puis de réserver le typecheck ciblé à la fin du lot.
 - Objectif de sortie :
   - plus aucun fichier applicatif au-dessus de `1000` lignes par défaut ;
   - idéalement, garder les shells UI entre `500` et `700` lignes.
@@ -185,21 +203,20 @@ components/actions/map/
 
 ---
 
-## LOT 6 — `feedback-section.tsx` + `gamification-section.tsx` (20 + 19 KB) 🟠
+## LOT 6 — `feedback-section.tsx` et `gamification/index.tsx` ✅
 
-**Pattern identique :** sections rubriques de même structure (header, contenu, CTA). Traiter en parallèle.
+Ces deux shells ont été sortis du monolithe principal et servent maintenant de point d'entrée mince.
 
-### Découpage type (à reproduire pour chacune)
+### État réel
 
-```
-components/sections/rubriques/[nom]/
-├── index.ts
-├── [nom]-section.tsx             ← orchestrateur (< 150 lignes)
-├── [nom]-header.tsx
-├── [nom]-content.tsx
-├── [nom]-cta.tsx
-└── use-[nom]-data.ts
-```
+- `feedback-section.tsx` : shell de 37 lignes, contexte URL/prefill déplacé dans le module partagé.
+- `gamification/index.tsx` : shell de 105 lignes, composition des panneaux extraite dans `gamification-panels.tsx` et `gamification-shell.tsx`.
+- Le sous-module `gamification-panels.tsx` reste dense et peut devenir la prochaine cible si l'objectif est de descendre sous 700 lignes.
+
+### Suite possible
+
+- Découper les sous-panneaux réutilisés dans `gamification-panels.tsx`.
+- Réduire les blocs de rendu les plus volumineux en composants plus petits seulement si le gain de locality est réel.
 
 ---
 
@@ -220,8 +237,9 @@ LOT 4 (data pure, risque zéro)
 → LOT 2 (formulaire critique flux principal)
 → LOT 3 (admin, modération)
 → LOT 5 (carte, complexité Mapbox)
-→ LOT 6 (2 sections en parallèle)
+→ LOT 6 (clôture des shells déjà extraits)
 → LOT 7 (complétion du travail d'avril)
+→ résiduel prioritaire: `app/api/actions/group-join/route.test.ts` puis les autres monolithes du radar
 ```
 
 ---

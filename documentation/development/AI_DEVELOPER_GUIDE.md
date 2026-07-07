@@ -48,6 +48,7 @@ Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas
 - Évite de lancer plusieurs commandes lourdes en parallèle, notamment `npm run checks`, `pytest`, `typecheck`, `rg -n` sur tout le repo et les scans de documentation.
 - N'active pas en même temps `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
 - Si un contrôle ciblé suffit, préfère-le à un scan global pour préserver la réactivité de la machine.
+- Pour les timeouts locaux, consulte les fenêtres recommandées dans `TESTING.md` avant de relancer un build, un lint ou une suite de tests.
 - Arrête une commande dès qu'elle n'est plus utile.
 - Ferme les commandes qui tournent pour un `localhost` dès que ce `localhost` n'est plus ouvert ou plus utilisé.
 - Les commandes `git` peuvent rester en arrière-plan car leur coût machine est généralement faible.

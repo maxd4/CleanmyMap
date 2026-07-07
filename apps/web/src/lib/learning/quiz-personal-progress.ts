@@ -2,7 +2,6 @@ import { createLocalStorageStore, isRecord } from "@/lib/storage/local-storage";
 import { QUIZ_ACCESS_TYPES, getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
 import { getQuizReviewTarget, type QuizQuestionCategory, type QuizReviewTarget } from "@/components/learn/quiz-review-targets";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import type { QuizUiCopyKey } from "@/lib/learning/quiz-i18n";
 
 type QuizPersonalModeProgress = {
   sessions: number;

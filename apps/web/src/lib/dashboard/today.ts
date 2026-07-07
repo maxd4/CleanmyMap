@@ -160,6 +160,81 @@ function buildRecommendedActionTile(
   };
 }
 
+function buildDashboardEmptyState(
+  locale: Locale,
+  recommendedAction: DashboardRecommendedAction,
+  errorMessage?: string,
+): DashboardTodayErrorState {
+  return {
+    kind: "error",
+    message:
+      errorMessage ??
+      text(
+        locale,
+        "Les indicateurs du tableau de bord sont indisponibles pour le moment.",
+        "Dashboard indicators are temporarily unavailable.",
+      ),
+    nextAction: buildRecommendedActionTile(recommendedAction, locale),
+  };
+}
+
+function buildDashboardReadyState(params: {
+  latestContract: ActionDataContract;
+  overview: PilotageOverview;
+  locale: Locale;
+  recommendedAction: DashboardRecommendedAction;
+}): DashboardTodayReadyState {
+  const { latestContract, overview, locale, recommendedAction } = params;
+  const actorLabel =
+    latestContract.metadata.actorName?.trim() ||
+    latestContract.metadata.associationName?.trim() ||
+    formatSourceLabel(latestContract.source, locale);
+  const pendingCount = overview.comparison.current.pendingCount;
+  const approvedCount = overview.comparison.current.approvedActions;
+  const moderationDelay = overview.comparison.current.moderationDelayDays;
+  const reliabilityLabel = text(
+    locale,
+    overview.comparison.current.reliability.level === "elevee"
+      ? "fiabilité élevée"
+      : overview.comparison.current.reliability.level === "moyenne"
+        ? "fiabilité moyenne"
+        : "lecture prudente",
+    overview.comparison.current.reliability.level === "elevee"
+      ? "high reliability"
+      : overview.comparison.current.reliability.level === "moyenne"
+        ? "medium reliability"
+        : "cautious reading",
+  );
+
+  return {
+    kind: "ready",
+    syncedAtLabel: toDateTimeFormat(locale).format(new Date(overview.generatedAt)),
+    latestActivity: {
+      label: text(locale, "Dernière activité", "Latest activity"),
+      title: actorLabel,
+      detail: formatActivityDetail(latestContract, locale),
+      meta: formatActivityMeta(latestContract, locale),
+    },
+    validation: {
+      label: text(locale, "Éléments à traiter", "Items to review"),
+      title:
+        pendingCount > 0
+          ? text(locale, `${pendingCount} en attente`, `${pendingCount} pending`)
+          : text(locale, "Aucun élément en attente", "No pending items"),
+      detail: text(
+        locale,
+        `${approvedCount} validées · délai médian ${moderationDelay.toFixed(1)} j`,
+        `${approvedCount} approved · median delay ${moderationDelay.toFixed(1)} d`,
+      ),
+      meta: text(locale, `Fiabilité ${reliabilityLabel}`, `Reliability ${reliabilityLabel}`),
+    },
+    nextAction: {
+      ...buildRecommendedActionTile(recommendedAction, locale),
+      meta: text(locale, "À ouvrir maintenant", "Open now"),
+    },
+  };
+}
+
 export function buildDashboardTodayState(params: {
   overview: PilotageOverview | null;
   locale: Locale;
@@ -167,20 +242,11 @@ export function buildDashboardTodayState(params: {
   errorMessage?: string;
 }): DashboardTodayState {
   if (!params.overview) {
-    return {
-      kind: "error",
-      message:
-        params.errorMessage ??
-        text(
-          params.locale,
-          "Les indicateurs du tableau de bord sont indisponibles pour le moment.",
-          "Dashboard indicators are temporarily unavailable.",
-        ),
-      nextAction: buildRecommendedActionTile(
-        params.recommendedAction,
-        params.locale,
-      ),
-    };
+    return buildDashboardEmptyState(
+      params.locale,
+      params.recommendedAction,
+      params.errorMessage,
+    );
   }
 
   const latestContract = pickLatestContract(params.overview.contracts);
@@ -197,63 +263,14 @@ export function buildDashboardTodayState(params: {
         "Aucune activité récente n'a été trouvée sur cette période.",
         "No recent activity was found for this period.",
       ),
-      nextAction: buildRecommendedActionTile(
-        params.recommendedAction,
-        params.locale,
-      ),
+      nextAction: buildRecommendedActionTile(params.recommendedAction, params.locale),
     };
   }
 
-  const actorLabel =
-    latestContract.metadata.actorName?.trim() ||
-    latestContract.metadata.associationName?.trim() ||
-    formatSourceLabel(latestContract.source, params.locale);
-  const pendingCount = params.overview.comparison.current.pendingCount;
-  const approvedCount = params.overview.comparison.current.approvedActions;
-  const moderationDelay = params.overview.comparison.current.moderationDelayDays;
-  const reliabilityLabel = text(
-    params.locale,
-    params.overview.comparison.current.reliability.level === "elevee"
-      ? "fiabilité élevée"
-      : params.overview.comparison.current.reliability.level === "moyenne"
-        ? "fiabilité moyenne"
-        : "lecture prudente",
-    params.overview.comparison.current.reliability.level === "elevee"
-      ? "high reliability"
-      : params.overview.comparison.current.reliability.level === "moyenne"
-        ? "medium reliability"
-        : "cautious reading",
-  );
-
-  return {
-    kind: "ready",
-    syncedAtLabel,
-    latestActivity: {
-      label: text(params.locale, "Dernière activité", "Latest activity"),
-      title: actorLabel,
-      detail: formatActivityDetail(latestContract, params.locale),
-      meta: formatActivityMeta(latestContract, params.locale),
-    },
-    validation: {
-      label: text(params.locale, "Éléments à traiter", "Items to review"),
-      title:
-        pendingCount > 0
-          ? text(params.locale, `${pendingCount} en attente`, `${pendingCount} pending`)
-          : text(params.locale, "Aucun élément en attente", "No pending items"),
-      detail: text(
-        params.locale,
-        `${approvedCount} validées · délai médian ${moderationDelay.toFixed(1)} j`,
-        `${approvedCount} approved · median delay ${moderationDelay.toFixed(1)} d`,
-      ),
-      meta: text(
-        params.locale,
-        `Fiabilité ${reliabilityLabel}`,
-        `Reliability ${reliabilityLabel}`,
-      ),
-    },
-    nextAction: {
-      ...buildRecommendedActionTile(params.recommendedAction, params.locale),
-      meta: text(params.locale, "À ouvrir maintenant", "Open now"),
-    },
-  };
+  return buildDashboardReadyState({
+    latestContract,
+    overview: params.overview,
+    locale: params.locale,
+    recommendedAction: params.recommendedAction,
+  });
 }

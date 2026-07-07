@@ -1,4 +1,3 @@
-/* eslint-disable max-lines, max-lines-per-function, complexity */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
@@ -752,4 +751,3 @@ export async function joinActionParticipation(
     participantsCount,
   };
 }
-/* eslint-enable max-lines, max-lines-per-function, complexity */

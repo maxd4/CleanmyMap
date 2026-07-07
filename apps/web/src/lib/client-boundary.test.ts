@@ -46,5 +46,5 @@ describe("server lib boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  }, 10000);
+  }, 30000);
 });

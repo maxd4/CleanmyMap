@@ -35,13 +35,13 @@ export function useActionsMapViewport(
   const isMountedRef = useRef(true);
   const pendingProgrammaticViewportRef = useRef<MapViewportState | null>(null);
 
-  const loadFallbackViewport = useCallback(async () => {
+  const loadFallbackViewport = useCallback(async (): Promise<MapViewportState | null> => {
     if (
       hasManualViewportChangeRef.current ||
       hasGeolocationViewportAppliedRef.current ||
       hasFallbackViewportAppliedRef.current
     ) {
-      return;
+      return null;
     }
 
     try {
@@ -52,7 +52,7 @@ export function useActionsMapViewport(
       });
 
       if (!response.ok) {
-        return;
+        return null;
       }
 
       const payload = (await response.json()) as {
@@ -66,16 +66,38 @@ export function useActionsMapViewport(
         hasGeolocationViewportAppliedRef.current ||
         hasFallbackViewportAppliedRef.current
       ) {
-        return;
+        return null;
       }
 
-      hasFallbackViewportAppliedRef.current = true;
-      pendingProgrammaticViewportRef.current = payload.viewport;
-      setViewport(payload.viewport);
+      return payload.viewport;
     } catch {
       /* Silent fallback: geolocation or the Paris default will remain available. */
+      return null;
     }
   }, []);
+
+  const applyFallbackViewport = useCallback(async () => {
+    const nextViewport = await loadFallbackViewport();
+    if (
+      !isMountedRef.current ||
+      !nextViewport ||
+      hasManualViewportChangeRef.current ||
+      hasGeolocationViewportAppliedRef.current ||
+      hasFallbackViewportAppliedRef.current
+    ) {
+      return;
+    }
+
+    hasFallbackViewportAppliedRef.current = true;
+    pendingProgrammaticViewportRef.current = nextViewport;
+    setViewport(nextViewport);
+  }, [loadFallbackViewport]);
+
+  const queueFallbackViewport = useCallback(() => {
+    queueMicrotask(() => {
+      void applyFallbackViewport();
+    });
+  }, [applyFallbackViewport]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -84,12 +106,12 @@ export function useActionsMapViewport(
     };
 
     if (!canRequestGeolocation() || hasManualViewportChangeRef.current) {
-      void loadFallbackViewport();
+      queueFallbackViewport();
       return cleanup;
     }
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      void loadFallbackViewport();
+      queueFallbackViewport();
       return cleanup;
     }
 
@@ -111,7 +133,7 @@ export function useActionsMapViewport(
         setViewport(nextViewport);
       },
       () => {
-        void loadFallbackViewport();
+        queueFallbackViewport();
       },
       {
         enableHighAccuracy: true,
@@ -121,7 +143,7 @@ export function useActionsMapViewport(
     );
 
     return cleanup;
-  }, [loadFallbackViewport]);
+  }, [queueFallbackViewport]);
 
   const handleViewportChange = useCallback(
     (nextViewport: MapViewportState) => {

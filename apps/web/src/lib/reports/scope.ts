@@ -58,6 +58,30 @@ export const DEFAULT_REPORT_SCOPE: ReportScope = {
   value: null,
 };
 
+function formatAccountScopeLabel(
+  value: string,
+  options?: ReportScopeOptions,
+): string {
+  const option = options?.accounts.find((item) => item.value === value);
+  return option?.label ?? `Compte ${value.slice(0, 8)}`;
+}
+
+function formatAssociationScopeLabel(
+  value: string,
+  options?: ReportScopeOptions,
+): string {
+  const option = options?.associations.find((item) => item.value === value);
+  return option?.label ?? value;
+}
+
+function formatArrondissementScopeLabel(
+  value: string,
+  options?: ReportScopeOptions,
+): string {
+  const option = options?.arrondissements.find((item) => item.value === value);
+  return option?.label ?? `Arrondissement ${value}e`;
+}
+
 function trimValue(value: string | null | undefined): string {
   return (value ?? "").trim();
 }
@@ -110,15 +134,12 @@ export function formatReportScopeLabel(
     return "Global";
   }
   if (scope.kind === "account") {
-    const option = options?.accounts.find((item) => item.value === scope.value);
-    return option?.label ?? `Compte ${scope.value.slice(0, 8)}`;
+    return formatAccountScopeLabel(scope.value, options);
   }
   if (scope.kind === "association") {
-    const option = options?.associations.find((item) => item.value === scope.value);
-    return option?.label ?? scope.value;
+    return formatAssociationScopeLabel(scope.value, options);
   }
-  const option = options?.arrondissements.find((item) => item.value === scope.value);
-  return option?.label ?? `Arrondissement ${scope.value}e`;
+  return formatArrondissementScopeLabel(scope.value, options);
 }
 
 function countByValue<T>(

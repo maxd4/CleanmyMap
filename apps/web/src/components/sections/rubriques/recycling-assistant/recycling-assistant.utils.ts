@@ -1,4 +1,4 @@
-import { Answer, Locale, AnswerKind, Tone } from "./recycling-assistant.types";
+import { Answer, Locale } from "./recycling-assistant.types";
 
 export function normalizeText(value: string): string {
   return value

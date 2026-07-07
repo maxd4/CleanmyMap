@@ -25,7 +25,6 @@ import { swrRecentViewOptions } from "@/lib/swr-config";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import {
   canManageGroupJoin,
-  formatDate,
   formatRecordType,
 } from "./actions-history-list.helpers";
 import { ActionsHistoryListDetails } from "./actions-history-list-details";
