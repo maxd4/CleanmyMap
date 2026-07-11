@@ -22,6 +22,21 @@ interface AggregatedMetrics {
   averageFieldsCompleted: number
 }
 
+function createSessionId(): string {
+  const randomUUID = globalThis.crypto?.randomUUID?.();
+  if (randomUUID) {
+    return `session_${randomUUID}`;
+  }
+
+  const randomBytes = globalThis.crypto?.getRandomValues?.(new Uint8Array(16));
+  if (randomBytes) {
+    const hex = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return `session_${hex}`;
+  }
+
+  throw new Error("Web Crypto API indisponible pour générer un identifiant de session.");
+}
+
 class MetricsService {
   private metrics: FormMetrics[] = []
   private readonly STORAGE_KEY = 'formMetrics'
@@ -31,7 +46,7 @@ class MetricsService {
   }
 
   startSession(variant: 'simple' | 'complex', userId: string = 'anonymous'): string {
-    const sessionId = `session_${Date.now()}_${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`
+    const sessionId = createSessionId()
     
     const metric: FormMetrics = {
       variant,
