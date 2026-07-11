@@ -3,43 +3,37 @@
 **Date de référence :** 2026-06-17
 
 Ce document archive les éléments encore à corriger après les ajustements GitHub à faible risque déjà appliqués.
-Il sert de backlog de reprise pour les alertes Dependabot, les alertes Code Scanning et les points de gouvernance GitHub qui restent à traiter manuellement.
+Il sert de backlog de reprise pour les alertes GitHub restantes après les corrections locales déjà appliquées.
 
 ## Résumé
 
-- Dependabot : 3 alertes ouvertes au moment de l'audit.
-- Code Scanning : 127 alertes ouvertes au moment de l'audit, majoritairement des alertes de qualité ou de robustesse JavaScript/TypeScript.
+- Dependabot : 0 alerte ouverte après la remédiation locale et la régénération du lockfile.
+- Code Scanning : les alertes ciblant `js/trivial-conditional`, `js/file-system-race`, `js/http-to-file-access` et `js/insecure-temporary-file` ont été traitées localement dans cette reprise.
 - Secret scanning : 0 alerte ouverte.
 - Workflows GitHub Actions : pas de correctif à faible risque restant identifié après revue des fichiers `.github/workflows/ci.yml` et `.github/workflows/codeql.yml`.
 
-## Déjà traités depuis la reprise
+## Exécuté dans cette passe
 
-- `Dependabot` sur `dompurify` et `vite` : le lockfile courant est déjà au-dessus des versions corrigées listées dans l'audit (`dompurify 3.4.11`, `vite 8.1.3`).
-- `js/misleading-indentation-after-control-statement` dans `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` : indentation du retour de branche vide corrigée sans changement de comportement.
-- `js/insecure-randomness` dans `apps/web/src/lib/metrics.ts` : génération d'identifiant de session basculée sur Web Crypto, sans fallback prévisible.
+- `Dependabot` : mise à jour des dépendances directes et du lockfile, puis validation `npm audit` à `0`.
+- `js/trivial-conditional` dans `apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx` : garde JSX simplifié.
+- `js/file-system-race` dans `scripts/split-bibliography.mjs` : écritures rendues atomiques via fichier temporaire.
+- `js/http-to-file-access` dans `scripts/export-clerk-users.mjs` : valeurs `--out` de type URL rejetées, chemin local normalisé.
+- `js/insecure-temporary-file` dans `apps/web/scripts/upload-sentry-sourcemaps.mjs` : répertoire temporaire créé avec `mkdtempSync`.
 
-## Dependabot à reprendre plus tard
+## Dependabot
 
-| alerte | fichier source | dépendance | env. | gravité | version actuelle | version corrigée | correction recommandée | risque de casse |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `dompurify` | `package-lock.json` | transitive via `posthog-js@1.373.4` | prod | low | `3.4.0` override | `3.4.8` | aligner la chaîne de dépendances ou mettre à jour le lockfile pour supprimer l'override vulnérable | faible |
-| `vite` | `package-lock.json` | transitive via `vitest@4.1.5` | dev | high | `8.0.10` | `8.0.16` | mettre à jour la chaîne `vitest`/`vite` et régénérer le lockfile ensemble | faible à moyen |
-| `vite` | `package-lock.json` | transitive via `vitest@4.1.5` | dev | medium | `8.0.10` | `8.0.16` | traiter en même temps que l'alerte `high` pour éviter deux PR séparées | faible à moyen |
+Aucune alerte locale restante après la mise à jour du graphe de dépendances. Garder une vérification GitHub en différé si le compteur affiché dans l'interface n'est pas encore rafraîchi.
 
 ## Code Scanning à reprendre plus tard
 
-| alerte ou famille | fichier source | direct ou transitive | env. | gravité | version actuelle | version corrigée | correction recommandée | risque de casse |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `js/unused-local-variable` | `apps/web/src/lib/gamification/badges/listing.ts:130` | direct | dev | note | n/a | n/a | supprimer les variables et fonctions mortes, puis relancer le scan | nul |
-| `js/unused-local-variable` | nombreux fichiers `apps/web/` et `scripts/` | direct | dev/prod | note | n/a | n/a | reprendre le nettoyage par lots car c'est la famille la plus volumineuse | nul à faible |
-| `js/trivial-conditional` | `apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx:174` | direct | dev | warning | n/a | n/a | simplifier la condition et vérifier qu'aucun cas métier n'est perdu | faible |
-| `js/file-system-race` | `scripts/split-bibliography.mjs:127` | direct | dev | warning | n/a | n/a | rendre l'écriture de fichier atomique et relire l'état avant écriture | faible à moyen |
-| `js/http-to-file-access` | `scripts/export-clerk-users.mjs:247` | direct | dev | warning | n/a | n/a | valider strictement l'entrée avant d'écrire sur disque | moyen |
-| `js/useless-assignment-to-local` | `apps/web/src/lib/gamification/engagement.events.ts:114` | direct | dev | warning | n/a | n/a | supprimer l'affectation inutile et vérifier les tests associés | nul |
-| `js/incomplete-sanitization` | `scripts/cleanup/run-inventory.js:187` | direct | dev | warning | n/a | n/a | compléter la sanitation avec un helper partagé et des bornes explicites | moyen |
-| `js/file-access-to-http` | `apps/web/scripts/lib/sheet-ingestion-core.mjs:250` | direct | dev | warning | n/a | n/a | renforcer la validation avant toute lecture depuis une source HTTP | moyen |
-| `js/insecure-temporary-file` | `apps/web/scripts/upload-sentry-sourcemaps.mjs:192` | direct | dev | warning | n/a | n/a | utiliser un dossier temporaire sûr et des noms non prévisibles | faible |
-| `js/unneeded-defensive-code` | `apps/web/src/components/admin/free-plan-services-visual.tsx:208` | direct | dev | note | n/a | n/a | simplifier le garde-fou devenu redondant après lecture des flux | nul |
+Les entrées ci-dessous restent à revalider sur le prochain scan GitHub ou à traiter si elles réapparaissent dans le code courant.
+
+| alerte ou famille | fichier source | direct ou transitive | env. | gravité | correction recommandée | risque de casse |
+| --- | --- | --- | --- | --- | --- | --- |
+| `js/unused-local-variable` | nombreux fichiers `apps/web/` et `scripts/` | direct | dev/prod | note | reprendre le nettoyage par lots car c'est la famille la plus volumineuse | nul à faible |
+| `js/incomplete-sanitization` | `scripts/cleanup/run-inventory.js:187` | direct | dev | warning | compléter la sanitation avec un helper partagé et des bornes explicites | moyen |
+| `js/file-access-to-http` | `apps/web/scripts/lib/sheet-ingestion-core.mjs:250` | direct | dev | warning | renforcer la validation avant toute lecture depuis une source HTTP | moyen |
+| `js/unneeded-defensive-code` | `apps/web/src/components/admin/free-plan-services-visual.tsx:208` | direct | dev | note | simplifier le garde-fou devenu redondant après lecture des flux | nul |
 
 ## Notes de gouvernance GitHub
 
@@ -50,10 +44,9 @@ Il sert de backlog de reprise pour les alertes Dependabot, les alertes Code Scan
 
 ## Priorité de reprise
 
-1. Corriger les alertes `vite` de Dependabot, car elles touchent le chemin de test courant.
-2. Retirer l'override `dompurify` dès qu'une mise à jour sûre de la chaîne de dépendances est possible.
-3. Nettoyer les familles Code Scanning les plus volumineuses, en commençant par les variables locales inutilisées.
-4. Reprendre ensuite les alertes de robustesse ou de sécurité des scripts.
+1. Nettoyer la famille `js/unused-local-variable`, car c'est la dette la plus volumineuse.
+2. Revalider les alertes encore listées sur le prochain scan GitHub et retirer les faux positifs éventuels.
+3. Reprendre ensuite les alertes de robustesse ou de sécurité des scripts.
 
 ## Ce qui peut attendre
 

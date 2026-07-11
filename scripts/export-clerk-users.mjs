@@ -29,6 +29,18 @@ function getArg(name, fallback = null) {
   return fallback;
 }
 
+function resolveOutputBasePath(value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return path.resolve(DEFAULT_OUTPUT_BASE);
+  }
+
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value)) {
+    throw new Error("Invalid --out value: use a local filesystem path, not a URL.");
+  }
+
+  return path.resolve(value);
+}
+
 function parseDotEnv(content) {
   const env = {};
   for (const line of content.split(/\r?\n/)) {
@@ -212,7 +224,7 @@ async function main() {
     throw new Error(`Invalid --limit value: ${String(limit)}`);
   }
 
-  const outputBase = String(getArg("out", DEFAULT_OUTPUT_BASE));
+  const outputBase = resolveOutputBasePath(String(getArg("out", DEFAULT_OUTPUT_BASE)));
   const outputDir = path.dirname(outputBase);
   await mkdir(outputDir, { recursive: true });
 

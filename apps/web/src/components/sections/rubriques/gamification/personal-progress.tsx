@@ -171,7 +171,7 @@ export function PersonalProgress({
               </div>
             )}
 
-            {!loading && progression?.annualRecognition.currentContributor && (
+            {progression.annualRecognition.currentContributor && (
               <div className="rounded-[2rem] border border-amber-500/15 bg-amber-500/[0.04] p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-300">

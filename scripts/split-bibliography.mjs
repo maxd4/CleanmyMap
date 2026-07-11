@@ -104,6 +104,17 @@ function rewriteReport(reportText) {
   return out;
 }
 
+function writeTextAtomic(filePath, contents) {
+  const tempPath = `${filePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tempPath, contents, 'utf8');
+  try {
+    fs.renameSync(tempPath, filePath);
+  } catch (error) {
+    fs.rmSync(filePath, { force: true });
+    fs.renameSync(tempPath, filePath);
+  }
+}
+
 const reportText = fs.readFileSync(reportFile, 'utf8');
 const bodyKeys = extractCitationKeys(reportText);
 const annexExists = fs.existsSync(annexBibFile);
@@ -123,9 +134,9 @@ if (annexExists && annexText.trim()) {
 const entries = parseBibEntries(sourceParts.join('\n\n'));
 const { body, annexes } = splitBib(entries, bodyKeys);
 
-fs.writeFileSync(bodyBibFile, body.join('\n\n') + '\n', 'utf8');
-fs.writeFileSync(annexBibFile, annexes.join('\n\n') + '\n', 'utf8');
-fs.writeFileSync(reportFile, rewriteReport(reportText), 'utf8');
+writeTextAtomic(bodyBibFile, `${body.join('\n\n')}\n`);
+writeTextAtomic(annexBibFile, `${annexes.join('\n\n')}\n`);
+writeTextAtomic(reportFile, rewriteReport(reportText));
 
 console.log(JSON.stringify({
   bodyEntries: body.length,
