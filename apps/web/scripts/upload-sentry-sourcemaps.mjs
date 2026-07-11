@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -208,8 +208,7 @@ function hydrateSourceMaps(rootDir) {
 }
 
 function stageMatchedArtifacts(sourceRoot, sourceMaps) {
-  const stagingRoot = join(tmpdir(), `cmm-sentry-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  mkdirSync(stagingRoot, { recursive: true });
+  const stagingRoot = mkdtempSync(join(tmpdir(), "cmm-sentry-"));
 
   const stagedFiles = [];
   const skippedMaps = [];
