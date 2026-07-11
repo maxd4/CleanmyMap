@@ -451,18 +451,18 @@ export function resolveActionMapGeometryViewModel(
     };
   }
 
-    return {
-      kind: null,
-      renderMode: "empty",
-      positions: [],
-      anchor: null,
-      pointCount: 0,
-      confidence,
-      metrics: resolveGeometryMetric(null, []),
-      label: presentation.label,
-      presentation,
-      drawing: null,
-    };
+  return {
+    kind: null,
+    renderMode: "empty",
+    positions: [],
+    anchor: null,
+    pointCount: 0,
+    confidence,
+    metrics: resolveGeometryMetric(null, []),
+    label: presentation.label,
+    presentation,
+    drawing: null,
+  };
   }
 
 export function resolveInfrastructureAnchor(

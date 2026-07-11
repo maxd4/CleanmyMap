@@ -12,6 +12,12 @@ Il sert de backlog de reprise pour les alertes Dependabot, les alertes Code Scan
 - Secret scanning : 0 alerte ouverte.
 - Workflows GitHub Actions : pas de correctif à faible risque restant identifié après revue des fichiers `.github/workflows/ci.yml` et `.github/workflows/codeql.yml`.
 
+## Déjà traités depuis la reprise
+
+- `Dependabot` sur `dompurify` et `vite` : le lockfile courant est déjà au-dessus des versions corrigées listées dans l'audit (`dompurify 3.4.11`, `vite 8.1.3`).
+- `js/misleading-indentation-after-control-statement` dans `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` : indentation du retour de branche vide corrigée sans changement de comportement.
+- `js/insecure-randomness` dans `apps/web/src/lib/metrics.ts` : génération d'identifiant de session basculée sur Web Crypto, sans fallback prévisible.
+
 ## Dependabot à reprendre plus tard
 
 | alerte | fichier source | dépendance | env. | gravité | version actuelle | version corrigée | correction recommandée | risque de casse |
@@ -32,9 +38,7 @@ Il sert de backlog de reprise pour les alertes Dependabot, les alertes Code Scan
 | `js/useless-assignment-to-local` | `apps/web/src/lib/gamification/engagement.events.ts:114` | direct | dev | warning | n/a | n/a | supprimer l'affectation inutile et vérifier les tests associés | nul |
 | `js/incomplete-sanitization` | `scripts/cleanup/run-inventory.js:187` | direct | dev | warning | n/a | n/a | compléter la sanitation avec un helper partagé et des bornes explicites | moyen |
 | `js/file-access-to-http` | `apps/web/scripts/lib/sheet-ingestion-core.mjs:250` | direct | dev | warning | n/a | n/a | renforcer la validation avant toute lecture depuis une source HTTP | moyen |
-| `js/insecure-randomness` | `apps/web/src/lib/metrics.ts:34` | direct | prod | warning | n/a | n/a | remplacer la source aléatoire non cryptographique si l'identifiant est sensible | faible à moyen |
 | `js/insecure-temporary-file` | `apps/web/scripts/upload-sentry-sourcemaps.mjs:192` | direct | dev | warning | n/a | n/a | utiliser un dossier temporaire sûr et des noms non prévisibles | faible |
-| `js/misleading-indentation-after-control-statement` | `apps/web/src/components/actions/map/actions-map-geometry.utils.ts:454` | direct | dev | warning | n/a | n/a | corriger l'indentation et ajouter des accolades explicites | nul |
 | `js/unneeded-defensive-code` | `apps/web/src/components/admin/free-plan-services-visual.tsx:208` | direct | dev | note | n/a | n/a | simplifier le garde-fou devenu redondant après lecture des flux | nul |
 
 ## Notes de gouvernance GitHub
