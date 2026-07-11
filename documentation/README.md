@@ -14,7 +14,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 ### Avant Toute Modification
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
    Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
-   Puis consulter **pages_site/INDEX.md** pour l'inventaire canonique des routes UI, avec `pages_site/README.md` comme porte d'entrée
+   Puis consulter **pages_site/INDEX.md** pour l'inventaire canonique des routes UI et des fiches page côté utilisateur, avec `pages_site/README.md` comme porte d'entrée
 2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
 3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
 4. **Code** → Consulter **development/README.md**
@@ -46,6 +46,12 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 ### Instantanés de documentation
 
 - **[documentation-push-status.md](./documentation-push-status.md)** - arborescence locale avec statut `✅` / `❌` / `⚪` pour suivre ce qui est déjà poussé.
+
+### Règle de classement documentaire
+
+- `documentation/pages_site/` est la référence canonique pour chaque page ou rubrique du point de vue utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et pistes d'amélioration propres à la page.
+- Le reste de `documentation/` sert aux sujets techniques transversaux, rangés dans le dossier adapté selon le thème : `development/`, `architecture/`, `security/`, `database/`, `operations/`, `features/` ou autre dossier pertinent.
+- Pour un sujet mixte, garder le résumé fonctionnel dans la fiche de page et pointer vers la documentation technique correspondante. Éviter les doublons et les fichiers miroir.
 
 ---
 
@@ -114,7 +120,7 @@ documentation/
 │   ├── README.md
 │   └── group-action/
 │
-├── pages_site/                  🗺️ Cartographie des pages
+├── pages_site/                  🗺️ Pages et parcours utilisateurs
 │   ├── README.md
 │   ├── INDEX.md
 │   └── routes/

@@ -245,7 +245,7 @@ export async function getDevAuthBypassSession() {
   }
 
   const bypassRole =
-    isLocalhostHost(host) && !process.env.CMM_DEV_AUTH_BYPASS_ROLE?.trim()
+    isLocalhostHost(host) && !process.env["CMM_DEV_AUTH_BYPASS_ROLE"]?.trim()
       ? "super_admin"
       : getDevAuthBypassRole();
 

@@ -7,7 +7,13 @@ Point d'entrée du registre documentaire route-first.
 - [Mémoire de non-régression `page-families`](./PAGE_FAMILIES_NON_REGRESSION.md)
 - L'arborescence canonique vit dans `./routes/`
 
-Ce dossier sert de source de vérité documentaire pour les pages du site. Le détail de chaque route vit dans sa présentation détaillée canonique.
+Ce dossier sert de source de vérité documentaire pour les pages du site du point de vue utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et améliorations propres à la page.
+
+L'implémentation technique, les tests, l'architecture et les services utilisés restent dans le dossier technique adapté de `documentation/`.
+
+Pour un sujet mixte, conserver dans la fiche de page le résumé fonctionnel puis ajouter un lien vers la documentation technique correspondante. Ne pas dupliquer le contenu et ne pas créer de fichier miroir.
+
+Le détail de chaque route vit dans sa présentation détaillée canonique.
 
 Le site est documenté comme une plateforme nationale. Les mentions Paris, Île-de-France et arrondissement restent uniquement quand elles servent de cas métier, de compatibilité legacy ou de précision géographique ponctuelle.
 
@@ -56,7 +62,7 @@ La preuve visuelle seule ne suffit pas : la lecture Markdown doit aussi rester c
 
 ## Fichiers d'amélioration continue
 
-Les fichiers d'amélioration continue de `pages_site` servent à proposer des évolutions concrètes, pas à refaire la fiche canonique.
+Les fichiers d'amélioration continue de `pages_site` servent à proposer des évolutions concrètes propres à la page ou à la rubrique, pas à refaire la fiche canonique ni la documentation technique.
 
 Ils doivent aider à:
 

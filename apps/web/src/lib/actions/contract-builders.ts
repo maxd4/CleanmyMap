@@ -33,6 +33,7 @@ export type ActionContractCreatePayload = {
     actorName?: string;
     associationName?: string;
     organizerAccounts?: string[];
+    participantAccounts?: string[];
     groupJoinEnabled?: boolean;
     actionPhase?: ActionPhase;
     preparationData?: ActionPreparationData | null;
@@ -84,6 +85,7 @@ export function toContractCreatePayload(
       actorName: payload.actorName,
       associationName: payload.associationName,
       organizerAccounts: payload.organizerAccounts,
+      participantAccounts: payload.participantAccounts,
       groupJoinEnabled: payload.groupJoinEnabled,
       actionPhase: payload.actionPhase,
       preparationData: payload.preparationData ?? null,
@@ -144,6 +146,7 @@ function normalizeContractCreatePayload(
     actionPhase: payload.metadata.actionPhase ?? undefined,
     preparationData: payload.metadata.preparationData ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
+    participantAccounts: payload.metadata.participantAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
     recordType: payload.type,
     locationLabel: payload.location.label,

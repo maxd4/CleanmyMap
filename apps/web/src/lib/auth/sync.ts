@@ -163,7 +163,7 @@ function resolveProfileArrondissement(
   profileMetadata: Record<string, unknown>,
 ): number | null {
   const rawArrondissement =
-    profileMetadata.territoryArrondissement ?? profileMetadata.parisArrondissement;
+    profileMetadata["territoryArrondissement"] ?? profileMetadata["parisArrondissement"];
 
   const parsedArrondissement =
     typeof rawArrondissement === "number"
@@ -173,10 +173,10 @@ function resolveProfileArrondissement(
         : null;
 
   const metadataZoneName =
-    typeof profileMetadata.territoryLabel === "string"
-      ? profileMetadata.territoryLabel
-      : typeof profileMetadata.zoneName === "string"
-        ? profileMetadata.zoneName
+    typeof profileMetadata["territoryLabel"] === "string"
+      ? profileMetadata["territoryLabel"]
+      : typeof profileMetadata["zoneName"] === "string"
+        ? profileMetadata["zoneName"]
         : null;
   const inferredArrondissement = metadataZoneName
     ? extractParisArrondissementFromLabel(metadataZoneName)
@@ -261,40 +261,40 @@ function buildCompatibilityProfileMetadata(
     }
   }
 
-  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneName)) {
-    mergedMetadata.zoneName = resolvedLabel;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["zoneName"])) {
+    mergedMetadata["zoneName"] = resolvedLabel;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneDepartment) && resolvedSubtitle) {
-    mergedMetadata.zoneDepartment = resolvedSubtitle;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["zoneDepartment"]) && resolvedSubtitle) {
+    mergedMetadata["zoneDepartment"] = resolvedSubtitle;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.zoneLocationType)) {
-    mergedMetadata.zoneLocationType = resolvedLocationType;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["zoneLocationType"])) {
+    mergedMetadata["zoneLocationType"] = resolvedLocationType;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territorySubtitle) && resolvedSubtitle) {
-    mergedMetadata.territorySubtitle = resolvedSubtitle;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territorySubtitle"]) && resolvedSubtitle) {
+    mergedMetadata["territorySubtitle"] = resolvedSubtitle;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLocationType)) {
-    mergedMetadata.territoryLocationType = resolvedLocationType;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territoryLocationType"])) {
+    mergedMetadata["territoryLocationType"] = resolvedLocationType;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryCountry)) {
-    mergedMetadata.territoryCountry = "France";
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territoryCountry"])) {
+    mergedMetadata["territoryCountry"] = "France";
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLevel)) {
-    mergedMetadata.territoryLevel = resolvedArrondissement ? "arrondissement" : "commune";
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territoryLevel"])) {
+    mergedMetadata["territoryLevel"] = resolvedArrondissement ? "arrondissement" : "commune";
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryLabel)) {
-    mergedMetadata.territoryLabel = resolvedLabel;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territoryLabel"])) {
+    mergedMetadata["territoryLabel"] = resolvedLabel;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.territoryArrondissement) && resolvedArrondissement !== null) {
-    mergedMetadata.territoryArrondissement = resolvedArrondissement;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["territoryArrondissement"]) && resolvedArrondissement !== null) {
+    mergedMetadata["territoryArrondissement"] = resolvedArrondissement;
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.parisArrondissement) && resolvedArrondissement !== null) {
+  if (!hasMeaningfulMetadataValue(mergedMetadata["parisArrondissement"]) && resolvedArrondissement !== null) {
     if (isParisArrondissementLabel(resolvedLabel)) {
-      mergedMetadata.parisArrondissement = resolvedArrondissement;
+      mergedMetadata["parisArrondissement"] = resolvedArrondissement;
     }
   }
-  if (!hasMeaningfulMetadataValue(mergedMetadata.parisLocationType)) {
-    mergedMetadata.parisLocationType = resolvedLocationType;
+  if (!hasMeaningfulMetadataValue(mergedMetadata["parisLocationType"])) {
+    mergedMetadata["parisLocationType"] = resolvedLocationType;
   }
 
   return mergedMetadata;

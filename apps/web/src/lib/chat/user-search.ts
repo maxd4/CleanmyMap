@@ -51,17 +51,19 @@ async function loadChatUsers(
   }
 
   const pattern = `%${escapePostgrestLikePattern(query)}%`;
-  const [handleResult, displayNameResult] = await Promise.all([
+  const [idResult, handleResult, displayNameResult] = await Promise.all([
     buildChatUserQuery(supabase, userId).ilike("handle", pattern),
+    buildChatUserQuery(supabase, userId).eq("id", query),
     buildChatUserQuery(supabase, userId).ilike("display_name", pattern),
   ]);
 
-  const error = handleResult.error ?? displayNameResult.error;
+  const error = idResult.error ?? handleResult.error ?? displayNameResult.error;
   if (error) {
     throw error;
   }
 
   return mergeRowGroupsById<ChatUserRow>([
+    (idResult.data ?? []) as ChatUserRow[],
     (handleResult.data ?? []) as ChatUserRow[],
     (displayNameResult.data ?? []) as ChatUserRow[],
   ]).sort((left, right) => {

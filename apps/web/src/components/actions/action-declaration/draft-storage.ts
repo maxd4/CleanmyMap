@@ -18,6 +18,7 @@ const FORM_STATE_KEYS = [
   "associationName",
   "enterpriseName",
   "organizerAccounts",
+  "participantAccounts",
   "groupJoinEnabled",
   "actionTitle",
   "shortDescription",
@@ -194,6 +195,17 @@ export function loadDraftSnapshot(
 
     for (const key of FORM_STATE_KEYS) {
       const value = parsed[key];
+      if (key === "participantAccounts") {
+        if (
+          Array.isArray(value) &&
+          value.every((token) => typeof token === "string")
+        ) {
+          Object.assign(next, {
+            participantAccounts: value,
+          });
+        }
+        continue;
+      }
       if (key === "groupJoinEnabled") {
         if (typeof value === "boolean") {
           Object.assign(next, { groupJoinEnabled: value });

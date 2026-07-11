@@ -311,6 +311,7 @@ export type ActionEditorRecord = {
   submissionMode: "quick" | "complete" | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
+  participantAccounts: string[];
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;

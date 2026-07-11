@@ -10,6 +10,7 @@ export type FormState = {
  associationName: string;
  enterpriseName: string;
  organizerAccounts: string;
+ participantAccounts: string[];
  groupJoinEnabled: boolean;
  actionTitle: string;
  shortDescription: string;
@@ -60,7 +61,8 @@ export const initialState: FormState = {
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
  organizerAccounts:"",
- groupJoinEnabled: true,
+ participantAccounts:[],
+ groupJoinEnabled: false,
  actionTitle:"",
  shortDescription:"",
  communeZoneLabel:"",

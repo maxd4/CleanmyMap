@@ -9,6 +9,7 @@ const mockFormActionSpontanee: FormState = {
   actorName: "Test User",
   associationName: "Action spontanee", // Action spontanée
   enterpriseName: "",
+  participantAccounts: [],
   groupJoinEnabled: false,
   actionTitle: "Test Location",
   shortDescription: "Test avec mégots",
@@ -59,6 +60,7 @@ const mockFormActionSpontanee: FormState = {
 const mockFormActionOrganisee: FormState = {
   ...mockFormActionSpontanee,
   associationName: "Paris Clean Walk", // Action organisée
+  participantAccounts: [],
   cigaretteButtsCount: "", // Vide pour action organisée
   cigaretteButtsCondition: "propre" as const,
   volunteersCount: "5",

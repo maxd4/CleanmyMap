@@ -97,7 +97,7 @@ function formatRelativeTime(value: string, fr: boolean): string {
 }
 
 function getStatusTone(status?: string | null) {
-  return statusToneClasses[status ?? "default"] ?? statusToneClasses.default;
+  return statusToneClasses[status ?? "default"] ?? statusToneClasses["default"];
 }
 
 export const SpotterForm = memo(function SpotterForm({

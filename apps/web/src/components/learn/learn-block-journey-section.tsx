@@ -51,19 +51,19 @@ export function LearnBlockJourneySection({
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
             {locale === "fr"
               ? compact
-                ? "Un repère de parcours, pas un centre"
+                ? "Autres pages Apprendre"
                 : "Les portes d'entrée restent visibles ici"
               : compact
-                ? "A route marker, not the center"
+                ? "Other Learn pages"
                 : "The entry points stay visible here"}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
             {locale === "fr"
               ? compact
-                ? "On garde le lien vers les autres rubriques, sans faire remonter tout le parcours au premier plan."
+                ? "Revenir au contexte ou passer à la suite sans surcharger la page."
                 : "Le point de départ peut être retiré ensuite: les repères de navigation vivent désormais dans chaque rubrique du bloc."
               : compact
-                ? "Keep the link to other rubrics without pulling the whole journey into the foreground."
+                ? "Return to the context or move on without overloading the page."
                 : "The starting point can be removed later: the navigation cues now live inside each rubric of the block."}
           </p>
         </div>

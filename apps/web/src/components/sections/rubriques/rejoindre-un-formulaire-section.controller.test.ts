@@ -19,7 +19,7 @@ function makeItem(
     participationStatus: partial.participationStatus ?? null,
     participationSource: partial.participationSource ?? null,
     participationUpdatedAt: partial.participationUpdatedAt ?? null,
-    groupJoinEnabled: partial.groupJoinEnabled ?? true,
+    groupJoinEnabled: partial.groupJoinEnabled ?? false,
     pendingRequestsCount: partial.pendingRequestsCount ?? 0,
   };
 }
@@ -80,6 +80,7 @@ describe("sortItemsByStatusRank", () => {
         id: "open",
         action_date: "2026-05-04",
         location_label: "Place Ouest",
+        groupJoinEnabled: true,
       }),
     ];
 

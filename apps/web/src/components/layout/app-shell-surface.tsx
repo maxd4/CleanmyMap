@@ -20,10 +20,10 @@ function resolveProfileFromUser(
 
   const metadata = user.publicMetadata as Record<string, unknown> | undefined;
   const rawRole =
-    typeof metadata?.role === "string"
-      ? metadata.role
-      : typeof metadata?.profile === "string"
-        ? metadata.profile
+    typeof metadata?.["role"] === "string"
+      ? metadata["role"]
+      : typeof metadata?.["profile"] === "string"
+        ? metadata["profile"]
         : null;
   const normalizedRole = normalizeProfileRole(rawRole);
 

@@ -124,14 +124,14 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     limit: vi.fn(async (limit: number) => {
       state.limitValue = limit;
       const filtered = actions.filter((action) => {
-        if (state.filters.id && action.id !== state.filters.id) {
+        if (state.filters["id"] && action["id"] !== state.filters["id"]) {
           return false;
         }
-        if (state.filters.status && action.status !== state.filters.status) {
+        if (state.filters["status"] && action["status"] !== state.filters["status"]) {
           return false;
         }
-        const allowedActionIds = state.inFilters.id;
-        if (allowedActionIds && !allowedActionIds.includes(action.id)) {
+        const allowedActionIds = state.inFilters["id"];
+        if (allowedActionIds && !allowedActionIds.includes(action["id"])) {
           return false;
         }
         return true;
@@ -143,14 +143,14 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     }),
     maybeSingle: vi.fn(async () => {
       const filtered = actions.filter((action) => {
-        if (state.filters.id && action.id !== state.filters.id) {
+        if (state.filters["id"] && action["id"] !== state.filters["id"]) {
           return false;
         }
-        if (state.filters.status && action.status !== state.filters.status) {
+        if (state.filters["status"] && action["status"] !== state.filters["status"]) {
           return false;
         }
-        const allowedActionIds = state.inFilters.id;
-        if (allowedActionIds && !allowedActionIds.includes(action.id)) {
+        const allowedActionIds = state.inFilters["id"];
+        if (allowedActionIds && !allowedActionIds.includes(action["id"])) {
           return false;
         }
         return true;
@@ -163,14 +163,14 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     then: (resolve: (value: ManyResult<ActionRow>) => void, reject: (reason: unknown) => void) =>
       Promise.resolve({
         data: actions.filter((action) => {
-          if (state.filters.id && action.id !== state.filters.id) {
+          if (state.filters["id"] && action["id"] !== state.filters["id"]) {
             return false;
           }
-          if (state.filters.status && action.status !== state.filters.status) {
+          if (state.filters["status"] && action["status"] !== state.filters["status"]) {
             return false;
           }
-          const allowedActionIds = state.inFilters.id;
-          if (allowedActionIds && !allowedActionIds.includes(action.id)) {
+          const allowedActionIds = state.inFilters["id"];
+          if (allowedActionIds && !allowedActionIds.includes(action["id"])) {
             return false;
           }
           return true;
@@ -209,20 +209,20 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
   const buildFiltered = () =>
     participants.filter((row) => {
       const normalized = normalizeRow(row);
-      if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
+      if (state.filters["action_id"] && normalized["action_id"] !== state.filters["action_id"]) {
         return false;
       }
-      if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
+      if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
         return false;
       }
       if (
-        state.filters.participation_status &&
-        getParticipationStatus(normalized) !== state.filters.participation_status
+        state.filters["participation_status"] &&
+        getParticipationStatus(normalized) !== state.filters["participation_status"]
       ) {
         return false;
       }
-      const allowedActionIds = state.inFilters.action_id;
-      if (allowedActionIds && !allowedActionIds.includes(normalized.action_id)) {
+      const allowedActionIds = state.inFilters["action_id"];
+      if (allowedActionIds && !allowedActionIds.includes(normalized["action_id"])) {
         return false;
       }
       return true;
@@ -265,10 +265,10 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
       if (state.pendingUpdate) {
         const original = participants.find((row) => {
           const normalized = normalizeRow(row);
-          if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
+          if (state.filters["action_id"] && normalized["action_id"] !== state.filters["action_id"]) {
             return false;
           }
-          if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
+          if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
             return false;
           }
           return true;
@@ -277,8 +277,8 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
           Object.assign(original!, state.pendingUpdate, {
             updated_at: "2026-06-04T12:00:00Z",
             joined_at:
-              typeof state.pendingUpdate.joined_at === "string"
-                ? state.pendingUpdate.joined_at
+              typeof state.pendingUpdate["joined_at"] === "string"
+                ? state.pendingUpdate["joined_at"]
                 : getJoinedAt(original),
           });
         }
@@ -314,8 +314,8 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
           joined_at: joinedAt,
           participation_status: values.participation_status ?? "confirmed",
           participation_source: values.participation_source ?? "group_form",
-          action_id: values.action_id,
-          user_id: values.user_id,
+          action_id: values["action_id"],
+          user_id: values["user_id"],
         };
         return chain;
       },
@@ -368,6 +368,14 @@ function createSupabaseMock(params: {
   };
 }
 
+function makeVisibleGroupAction(action: ActionRow): ActionRow {
+  return {
+    ...action,
+    action_phase: "pre_action",
+    notes: appendActionMetadataToNotes(action.notes ?? undefined, { groupJoinEnabled: true }),
+  };
+}
+
 describe("GET /api/actions/group-join", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -379,7 +387,7 @@ describe("GET /api/actions/group-join", () => {
   it("returns approved actions with participation state", async () => {
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-1",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -387,7 +395,7 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
+        }),
         {
           id: "action-2",
           created_at: "2026-05-02T10:00:00Z",
@@ -438,7 +446,7 @@ describe("GET /api/actions/group-join", () => {
 
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-1",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -446,7 +454,7 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
+        }),
       ],
       participants: [],
     });
@@ -469,7 +477,7 @@ describe("GET /api/actions/group-join", () => {
   it("includes approved actions even when the organizer has not opened participation", async () => {
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-open",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -477,8 +485,7 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
-        },
+        }),
         {
           id: "action-closed",
           created_at: "2026-05-02T10:00:00Z",
@@ -502,15 +509,15 @@ describe("GET /api/actions/group-join", () => {
     };
 
     expect(response.status).toBe(200);
-    expect(body.count).toBe(2);
+    expect(body.count).toBe(1);
     expect(body.items?.[0]?.id).toBe("action-open");
-    expect(body.items?.some((item) => item.id === "action-closed")).toBe(true);
+    expect(body.items?.some((item) => item.id === "action-closed")).toBe(false);
   }, 15000);
 
   it("prioritizes a requested approved action even when it is outside the default slice", async () => {
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-1",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -518,8 +525,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-2",
           created_at: "2026-05-02T10:00:00Z",
           action_date: "2026-05-09",
@@ -527,8 +534,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 8,
           duration_minutes: 30,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-3",
           created_at: "2026-05-03T10:00:00Z",
           action_date: "2026-05-08",
@@ -536,8 +543,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 6,
           duration_minutes: 25,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-4",
           created_at: "2026-05-04T10:00:00Z",
           action_date: "2026-05-07",
@@ -545,8 +552,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 5,
           duration_minutes: 35,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-5",
           created_at: "2026-05-05T10:00:00Z",
           action_date: "2026-05-06",
@@ -554,8 +561,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 10,
           duration_minutes: 40,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-6",
           created_at: "2026-05-06T10:00:00Z",
           action_date: "2026-05-05",
@@ -563,8 +570,8 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 9,
           duration_minutes: 20,
           status: "approved",
-        },
-        {
+        }),
+        makeVisibleGroupAction({
           id: "action-7",
           created_at: "2026-04-01T10:00:00Z",
           action_date: "2026-04-02",
@@ -572,7 +579,7 @@ describe("GET /api/actions/group-join", () => {
           volunteers_count: 4,
           duration_minutes: 15,
           status: "approved",
-        },
+        }),
       ],
       participants: [],
     });
@@ -661,7 +668,7 @@ describe("POST /api/actions/group-join", () => {
     const participants: ParticipantRow[] = [];
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-1",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -669,7 +676,7 @@ describe("POST /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
+        }),
       ],
       participants,
     });
@@ -700,7 +707,7 @@ describe("POST /api/actions/group-join", () => {
     const participants: ParticipantRow[] = [];
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-pre",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -708,8 +715,7 @@ describe("POST /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "pending",
-          action_phase: "pre_action",
-        },
+        }),
       ],
       participants,
     });
@@ -751,7 +757,7 @@ describe("POST /api/actions/group-join", () => {
     ];
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-1",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -759,7 +765,7 @@ describe("POST /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
+        }),
       ],
       participants,
     });
@@ -788,7 +794,7 @@ describe("POST /api/actions/group-join", () => {
     expect(participants[0]?.participation_source).toBe("group_form");
   });
 
-  it("confirms immediately for admin-like users", async () => {
+  it("keeps normal joins pending for admin-like users", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-1",
       role: "admin",
@@ -797,7 +803,7 @@ describe("POST /api/actions/group-join", () => {
     const participants: ParticipantRow[] = [];
     const supabase = createSupabaseMock({
       actions: [
-        {
+        makeVisibleGroupAction({
           id: "action-4",
           created_at: "2026-05-01T10:00:00Z",
           action_date: "2026-05-10",
@@ -805,7 +811,7 @@ describe("POST /api/actions/group-join", () => {
           volunteers_count: 12,
           duration_minutes: 45,
           status: "approved",
-        },
+        }),
       ],
       participants,
     });
@@ -825,9 +831,10 @@ describe("POST /api/actions/group-join", () => {
     };
 
     expect(response.status).toBe(200);
-    expect(body.participationStatus).toBe("confirmed");
-    expect(body.participantsCount).toBe(1);
-    expect(refreshProgressionProfileMock).toHaveBeenCalledWith(supabase, "user-1");
+    expect(body.participationStatus).toBe("pending");
+    expect(body.participantsCount).toBe(0);
+    expect(participants[0]?.participation_status).toBe("pending");
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
   });
 
   it("rejects joining a pending action", async () => {

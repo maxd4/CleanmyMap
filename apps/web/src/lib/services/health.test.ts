@@ -14,9 +14,9 @@ describe("service health helpers", () => {
       return "ready";
     });
 
-    expect(services.supabase?.severity).toBe("critical");
-    expect(services.supabase?.statusMessage).toContain("n'est pas configure");
-    expect(services.vercel?.severity).toBe("warning");
+    expect(services["supabase"]?.severity).toBe("critical");
+    expect(services["supabase"]?.statusMessage).toContain("n'est pas configure");
+    expect(services["vercel"]?.severity).toBe("warning");
   });
 
   it("builds a degraded summary when a critical service is missing", () => {

@@ -239,7 +239,7 @@ describe("syncUserActionProgression action rejection", () => {
 
     const firstPass = await syncUserActionProgression(supabase, "user-1");
     const firstValidationEvents = insertedEvents.filter(
-      (row) => row.event_type === "action_declare_validation",
+      (row) => row["event_type"] === "action_declare_validation",
     );
 
     expect(firstPass).toBe(1);
@@ -257,7 +257,7 @@ describe("syncUserActionProgression action rejection", () => {
 
     const secondPass = await syncUserActionProgression(supabase, "user-1");
     const secondValidationEvents = insertedEvents.filter(
-      (row) => row.event_type === "action_declare_validation",
+      (row) => row["event_type"] === "action_declare_validation",
     );
 
     expect(secondPass).toBe(0);

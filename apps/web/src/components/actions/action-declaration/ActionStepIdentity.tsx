@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { ASSOCIATION_SELECTION_OPTIONS, buildEntrepriseAssociationName } from "@/lib/actions/association-options";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload";
 import type { FormState } from "../action-declaration-form.model";
+import { ActionParticipantPicker } from "../action-participant-picker";
 
 const PLACE_TYPE_TILE_OPTIONS = [
   {
@@ -75,7 +76,7 @@ const inputErrCls = "border-rose-400 ring-2 ring-rose-400/20 focus:border-rose-4
 interface Props {
   form: FormState;
   updateField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
-  userMetadata: { displayName?: string; username?: string };
+  userMetadata: { userId: string; displayName?: string; username?: string };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
 }
@@ -271,6 +272,17 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
               </div>
             )}
 
+            {isActionMode && !isCleanPlaceMode && (
+              <div className="mt-4">
+                <ActionParticipantPicker
+                  currentUserId={userMetadata.userId}
+                  value={form.participantAccounts}
+                  onChange={(next) => updateField("participantAccounts", next)}
+                  description="Ajoutez les participants connus avant l'envoi du formulaire complet."
+                />
+              </div>
+            )}
+
             {isAutreBénévole && (
               <div className="mt-3 space-y-1">
                 <Field icon={User}>
@@ -294,27 +306,6 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 ) : (
                   <p className="text-xs text-emerald-900/55 pl-1">Vous déclarez cette action au nom d&apos;un autre bénévole.</p>
                 )}
-              </div>
-            )}
-
-            {isActionMode && (
-              <div className="mt-3 rounded-2xl border border-sky-200/70 bg-sky-50/60 p-4 shadow-sm">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-sky-300 text-sky-600 focus:ring-sky-500"
-                    checked={form.groupJoinEnabled}
-                    onChange={(e) => updateField("groupJoinEnabled", e.target.checked)}
-                  />
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-sky-950">
-                      Ouvrir le formulaire de groupe
-                    </p>
-                    <p className="text-xs leading-relaxed text-sky-900/70">
-                      L&apos;organisateur / référant principal et les coorganisateurs peuvent partager le lien. L&apos;action devient rejoignable après validation, et chaque participation est enregistrée séparément.
-                    </p>
-                  </div>
-                </label>
               </div>
             )}
 

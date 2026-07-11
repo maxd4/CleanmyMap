@@ -5,6 +5,7 @@ export type FormState = {
  associationName: string;
  enterpriseName: string;
  organizerAccounts: string;
+ participantAccounts: string[];
  groupJoinEnabled: boolean;
  actionTitle: string;
  shortDescription: string;

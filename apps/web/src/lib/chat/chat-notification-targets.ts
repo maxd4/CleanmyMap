@@ -38,11 +38,11 @@ function readNotificationAliases(raw: Record<string, unknown>): {
 } {
   return {
     conversationPartnerId:
-      readString(raw.conversationPartnerId) ?? readString(raw.recipientId) ?? undefined,
+      readString(raw["conversationPartnerId"]) ?? readString(raw["recipientId"]) ?? undefined,
     conversationPartnerLabel:
-      readString(raw.conversationPartnerLabel) ?? readString(raw.recipientLabel) ?? undefined,
+      readString(raw["conversationPartnerLabel"]) ?? readString(raw["recipientLabel"]) ?? undefined,
     conversationPartnerHandle:
-      readString(raw.conversationPartnerHandle) ?? readString(raw.recipientHandle) ?? undefined,
+      readString(raw["conversationPartnerHandle"]) ?? readString(raw["recipientHandle"]) ?? undefined,
   };
 }
 
@@ -57,17 +57,17 @@ export function normalizeChatNotificationPayload(
   const aliases = readNotificationAliases(raw);
 
   return {
-    href: readString(raw.href) ?? undefined,
-    channelType: readString(raw.channelType) as ChatChannelType | undefined,
-    messageId: readString(raw.messageId) ?? undefined,
-    zoneName: readString(raw.zoneName),
-    arrondissementId: readNumber(raw.arrondissementId),
+    href: readString(raw["href"]) ?? undefined,
+    channelType: readString(raw["channelType"]) as ChatChannelType | undefined,
+    messageId: readString(raw["messageId"]) ?? undefined,
+    zoneName: readString(raw["zoneName"]),
+    arrondissementId: readNumber(raw["arrondissementId"]),
     conversationPartnerId: aliases.conversationPartnerId,
     conversationPartnerLabel: aliases.conversationPartnerLabel,
     conversationPartnerHandle: aliases.conversationPartnerHandle,
-    recipientId: readString(raw.recipientId) ?? undefined,
-    recipientLabel: readString(raw.recipientLabel) ?? undefined,
-    recipientHandle: readString(raw.recipientHandle) ?? undefined,
+    recipientId: readString(raw["recipientId"]) ?? undefined,
+    recipientLabel: readString(raw["recipientLabel"]) ?? undefined,
+    recipientHandle: readString(raw["recipientHandle"]) ?? undefined,
   };
 }
 

@@ -6,24 +6,15 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { isAdminLikeProfile, type AppProfile } from "@/lib/profiles";
+import { canManageAction, canUseAdminOverride } from "@/lib/actions/permissions";
+import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import { loadManualParticipantIdsForAction } from "@/lib/actions/group-participation.helpers";
+import { loadActionOrganizerIdsForAction, syncActionManualParticipants } from "@/lib/actions/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
-
-function canEditAction(params: {
-  userId: string;
-  creatorUserId: string | null;
-  role: AppProfile | null | undefined;
-}): boolean {
-  if (params.creatorUserId === params.userId) {
-    return true;
-  }
-
-  return Boolean(params.role && isAdminLikeProfile(params.role));
-}
 
 function buildActionEditorPayload(
   row: Awaited<ReturnType<typeof loadActionById>>,
@@ -91,12 +82,20 @@ export async function GET(
     }
 
     const identity = await getCurrentUserIdentity();
+    const permissionIdentity = identity
+      ? { userId: session.userId, role: identity.role }
+      : null;
+    const organizerIds = await loadActionOrganizerIdsForAction(
+      supabase,
+      trimmedActionId,
+      row.created_by_clerk_id,
+    );
     if (
-      !canEditAction({
-        userId: session.userId,
-        creatorUserId: row.created_by_clerk_id,
-        role: identity?.role,
-      })
+      !canManageAction(
+        permissionIdentity,
+        { createdByClerkId: row.created_by_clerk_id },
+        organizerIds,
+      )
     ) {
       return NextResponse.json(
         { error: "Vous n'êtes pas autorisé à lire cette action." },
@@ -104,7 +103,14 @@ export async function GET(
       );
     }
 
-    const action = buildActionEditorPayload(row);
+    const participantAccounts = await loadManualParticipantIdsForAction(
+      supabase,
+      trimmedActionId,
+    ).catch(() => []);
+    const action = {
+      ...buildActionEditorPayload(row),
+      participantAccounts,
+    };
     return NextResponse.json({ status: "ok", action });
   } catch (error) {
     return handleApiError(error, "GET /api/actions/:actionId");
@@ -154,12 +160,20 @@ export async function PATCH(
     }
 
     const identity = await getCurrentUserIdentity();
+    const permissionIdentity = identity
+      ? { userId: session.userId, role: identity.role }
+      : null;
+    const organizerIds = await loadActionOrganizerIdsForAction(
+      supabase,
+      trimmedActionId,
+      current.created_by_clerk_id,
+    );
     if (
-      !canEditAction({
-        userId: session.userId,
-        creatorUserId: current.created_by_clerk_id,
-        role: identity?.role,
-      })
+      !canManageAction(
+        permissionIdentity,
+        { createdByClerkId: current.created_by_clerk_id },
+        organizerIds,
+      )
     ) {
       return NextResponse.json(
         { error: "Vous n'êtes pas autorisé à modifier cette action." },
@@ -178,42 +192,42 @@ export async function PATCH(
     );
 
     if (body.actionPhase) {
-      updateData.action_phase = body.actionPhase;
+      updateData["action_phase"] = body.actionPhase;
       if (body.actionPhase === "pre_action") {
-        updateData.status = "pending";
+        updateData["status"] = "pending";
       } else if (body.actionPhase === "post_action_complete") {
-        updateData.status = "approved";
+        updateData["status"] = "approved";
       }
     }
     if (body.preparationData !== undefined) {
-      updateData.preparation_data = body.preparationData ?? {};
+      updateData["preparation_data"] = body.preparationData ?? {};
     }
     if (body.actorName !== undefined) {
-      updateData.actor_name = body.actorName.trim() || null;
+      updateData["actor_name"] = body.actorName.trim() || null;
     }
     if (body.actionDate !== undefined) {
-      updateData.action_date = body.actionDate;
+      updateData["action_date"] = body.actionDate;
     }
     if (body.locationLabel !== undefined) {
-      updateData.location_label = body.locationLabel.trim();
+      updateData["location_label"] = body.locationLabel.trim();
     }
     if (body.latitude !== undefined) {
-      updateData.latitude = body.latitude;
+      updateData["latitude"] = body.latitude;
     }
     if (body.longitude !== undefined) {
-      updateData.longitude = body.longitude;
+      updateData["longitude"] = body.longitude;
     }
     if (body.wasteKg !== undefined) {
-      updateData.waste_kg = body.wasteKg;
+      updateData["waste_kg"] = body.wasteKg;
     }
     if (body.cigaretteButts !== undefined) {
-      updateData.cigarette_butts = body.cigaretteButts;
+      updateData["cigarette_butts"] = body.cigaretteButts;
     }
     if (body.volunteersCount !== undefined) {
-      updateData.volunteers_count = body.volunteersCount;
+      updateData["volunteers_count"] = body.volunteersCount;
     }
     if (body.durationMinutes !== undefined) {
-      updateData.duration_minutes = body.durationMinutes;
+      updateData["duration_minutes"] = body.durationMinutes;
     }
     if (shouldRefreshNotes) {
       const persistedPayload = {
@@ -253,24 +267,76 @@ export async function PATCH(
           body.visionEstimate ?? currentMetadata.visionEstimate ?? undefined,
       } satisfies Parameters<typeof buildPersistedNotes>[0];
       const persistedNotes = buildPersistedNotes(persistedPayload);
-      updateData.notes = persistedNotes;
+      updateData["notes"] = persistedNotes;
     }
 
-    const updateResult = await supabase
-      .from("actions")
-      .update(updateData)
-      .eq("id", trimmedActionId)
-      .select("id")
-      .single();
+    const hasActionUpdates = Object.keys(updateData).length > 0;
+    const updateResult = hasActionUpdates
+      ? await supabase
+          .from("actions")
+          .update(updateData)
+          .eq("id", trimmedActionId)
+          .select("id")
+          .single()
+      : { data: { id: trimmedActionId }, error: null };
 
     if (updateResult.error) {
       throw new Error(updateResult.error.message);
     }
 
+    if (body.participantAccounts !== undefined) {
+      const organizerIds = await loadActionOrganizerIdsForAction(
+        supabase,
+        trimmedActionId,
+        current.created_by_clerk_id,
+      );
+      const resolvedIdentity = identity ?? {
+        displayName: session.userId,
+        handle: session.userId,
+        username: session.userId,
+        email: null,
+      };
+
+      await syncActionManualParticipants({
+        supabase,
+        actionId: trimmedActionId,
+        creator: {
+          userId: session.userId,
+          displayName:
+            resolvedIdentity.displayName?.trim() || session.userId,
+          handle: resolvedIdentity.handle?.trim() || null,
+          username: resolvedIdentity.username?.trim() || null,
+          email: resolvedIdentity.email?.trim() || null,
+        },
+        participantAccounts: body.participantAccounts ?? [],
+        organizerIds,
+      });
+    }
+
+    const actorUserId = identity?.userId ?? session.userId;
+    const shouldAuditModeration =
+      Boolean(identity) &&
+      session.userId !== current.created_by_clerk_id &&
+      canUseAdminOverride(identity);
+
+    if (shouldAuditModeration && identity) {
+      await appendActionModerationAudit({
+        operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
+        actorUserId,
+        targetActionId: trimmedActionId,
+        operation: "edit_action",
+        outcome: "success",
+        details: {
+          editedFields: Object.keys(body).filter((key) => body[key as keyof typeof body] !== undefined),
+          participantAccountsChanged: body.participantAccounts !== undefined,
+        },
+      });
+    }
+
     return NextResponse.json({
       status: "ok",
       actionId: trimmedActionId,
-      actionPhase: body.actionPhase ?? current.action_phase,
+      actionPhase: body.actionPhase ?? current["action_phase"],
     });
   } catch (error) {
     return handleApiError(error, "PATCH /api/actions/:actionId");

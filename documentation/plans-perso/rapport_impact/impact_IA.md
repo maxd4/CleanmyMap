@@ -756,6 +756,18 @@ La méthode la plus robuste combine les deux lectures :
 3. comparer le résultat avec le nombre de journées ou d'heures d'agents actifs ;
 4. publier une fourchette plutôt qu'un chiffre unique.
 
+### Tokens par mois
+
+Un volume de **3 milliards de tokens par mois** reste plausible dans ton cas, mais il signale surtout une forte réutilisation du contexte, pas 3 milliards de tokens réellement générés de bout en bout.
+
+En retenant **40 heures** de développement humain par mois et jusqu'à **3 conversations simultanées**, on obtient environ **120 heures-conversations**. À ce niveau, **3 milliards ÷ 120** donne environ **25 millions de tokens par heure et par conversation**.
+
+Avec une fenêtre de contexte d'environ **400 000 tokens**, cela correspond à environ **62 passages complets par heure**, soit un passage presque total toutes les **58 secondes**. L'ordre de grandeur devient crédible dès lors que l'agent relit continuellement le dépôt, les instructions, la documentation et l'historique. [OpenAI Développeurs](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
+
+Ce rythme peut aussi s'expliquer par des sessions agentiques où le modèle enchaîne plusieurs appels pour une seule demande, tout en réinjectant les mêmes fichiers, les mêmes règles et les mêmes consignes de travail. Dans ce cadre, les tokens d'historique continuent d'apparaître dans le volume comptabilisé, même lorsqu'ils bénéficient du cache. [OpenAI Help Center](https://help.openai.com/en/articles/20001106-codex-rate-card)
+
+Le compteur de tokens sert donc d'**indicateur d'activité**. Il ne suffit pas, à lui seul, pour convertir proprement l'usage en kWh, parce qu'il mélange des événements de nature différente et ne donne pas la part exacte du cache, du raisonnement ou des sorties.
+
 ### Usage complémentaire de ChatGPT
 
 ChatGPT ajoute une couche d'usage distincte. En moyenne, le volume ChatGPT reste inférieur à celui de Codex, mais son coût de calcul n'est pas proportionnel au seul nombre de tokens bruts, car il repose souvent sur **GPT-5.5 Thinking**, des contextes longs, des fichiers, des images et parfois de la génération ou de la modification d'images. La documentation OpenAI indique que GPT-5.5 utilise des tokens de raisonnement internes et distingue les coûts d'entrée, d'entrée mise en cache et de sortie ; cela confirme qu'un même volume brut peut produire une charge de calcul sensiblement différente selon le type d'usage. [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5) ; [OpenAI Pricing](https://developers.openai.com/api/docs/pricing) ; [Image generation](https://developers.openai.com/api/docs/guides/image-generation)
@@ -791,6 +803,30 @@ La génération d'images augmente bien l'impact, mais elle reste secondaire face
 
 Ces résultats couvrent principalement l'inférence et l'infrastructure opérationnelle. Ils n'intègrent pas correctement la fabrication des GPU, la construction des centres de données, l'entraînement des modèles, ton ordinateur personnel, Vercel ou Supabase. Ils servent surtout à fixer des ordres de grandeur robustes et à comparer les scénarios sans confondre tokens comptabilisés et impact physique direct.
 
+### Développement web avec l’IA et trajectoire climatique individuelle
+
+L'empreinte carbone moyenne d'un Français se situe aujourd'hui autour de **8 à 10 tCO₂e par an**. Pour rester compatible avec une trajectoire mondiale alignée sur l'Accord de Paris, l'ordre de grandeur souvent retenu à long terme est d'environ **2 tCO₂e par personne et par an**. Ce seuil n'est pas une limite individuelle écrite dans l'accord lui-même, mais une traduction des réductions nécessaires à l'échelle mondiale.
+
+Dans le cas étudié, l'usage de Codex représente environ **40 heures de développement par mois**, souvent avec trois conversations simultanées, pour près de **3 milliards de tokens mensuels**. Ce volume reste techniquement plausible, surtout lorsqu'une grande quantité de documentation, d'historique et de fichiers est relue à chaque appel. Il ne signifie pas pour autant que 3 milliards de tokens de texte utile ont été générés: une part importante correspond probablement au contexte réinjecté, aux tokens mis en cache, aux raisonnements internes et aux appels successifs des agents.
+
+Il n'existe pas aujourd'hui de facteur public suffisamment fiable pour convertir directement un token Codex en énergie ou en CO₂e. L'empreinte réelle dépend du modèle, du matériel, du taux d'utilisation des serveurs, du refroidissement, de la localisation des centres de données et du mix électrique. Une estimation autour de **1 tCO₂e par an** reste donc plausible dans certains scénarios, mais elle ne peut pas être considérée comme démontrée à partir du seul volume de tokens.
+
+Si cette estimation annuelle d'une tonne était correcte, l'usage serait difficilement compatible avec une trajectoire individuelle de **2 tCO₂e par an**. Le développement assisté par IA absorberait alors à lui seul environ la moitié du budget carbone annuel théorique, avant même de compter le logement, l'alimentation, les transports, les biens consommés et la part des services publics. Du point de vue strictement individuel, un tel niveau serait donc très élevé.
+
+Cette incompatibilité ne signifie pas que tout développement web utilisant l'IA serait incompatible avec l'Accord de Paris. Le sujet dépend de l'intensité de l'usage, de son efficacité et de son utilité réelle. Une activité professionnelle, associative ou collective peut légitimement mobiliser une partie du budget carbone disponible si elle produit un service utile. En revanche, cette utilité ne constitue pas une compensation carbone automatique.
+
+Dans le cas de CleanMyMap, faciliter les actions de dépollution, la coordination des bénévoles, la cartographie et la mesure de l'impact peut créer une utilité écologique réelle. Toutefois, les déchets ramassés, les utilisateurs mobilisés ou les fonctionnalités développées ne compensent pas directement les émissions de CO₂ du développement. Une réduction ou une compensation climatique ne pourrait être revendiquée qu'en démontrant des émissions effectivement évitées: déplacements réduits, mutualisation d'actions, optimisation logistique ou amélioration mesurable du recyclage. Le projet vise donc à structurer une boucle allant de l'action de terrain à la production de données et de livrables exploitables.
+
+Le bon indicateur n'est pas seulement le nombre d'heures passées ou de tokens consommés, mais la quantité de calcul nécessaire pour produire un résultat utile :
+
+* tokens par fonctionnalité réellement finalisée ;
+* tokens par correction acceptée ;
+* tokens par régression évitée ;
+* tokens par utilisateur actif ;
+* tokens par action de terrain effectivement accompagnée.
+
+En conclusion, une utilisation de l'IA qui représenterait réellement environ **1 tCO₂e par an** serait difficilement compatible, à l'échelle individuelle, avec un budget cible de **2 tCO₂e**. En revanche, il serait excessif d'en déduire que tout développement web assisté par IA est intrinsèquement incompatible avec la transition climatique. L'enjeu principal reste de réduire fortement le calcul consommé par résultat utile, puis d'évaluer l'empreinte avec une méthode transparente et des fourchettes d'incertitude.
+
 ### Comparaison pédagogique des échelles
 
 Mon usage individuel reste un usage de développement, pas un usage de production à l'échelle d'un produit grand public. La bonne base de lecture est donc d'abord celle-ci :
@@ -809,6 +845,23 @@ Autrement dit, l'usage individuel mesure une activité de travail, l'usage indus
 
 La comparaison utile pour CleanMyMap est donc la suivante : un usage individuel déjà élevé en tokens ne doit pas être confondu avec une plateforme grand public, et une plateforme grand public ne doit pas être confondue avec le coût massif d'un entraînement de modèle de frontière. Le premier relève du travail quotidien, le second du service à grande échelle, le troisième d'une opération industrielle ponctuelle mais très lourde.
 
+### Votre impact face à l'entraînement des modèles
+
+À l'échelle d'un entraînement industriel, votre consommation reste faible.
+
+Le développement de la famille **Llama 3.1** a représenté environ **39,3 millions d'heures-GPU** et **11 390 tonnes de CO₂e** en émissions calculées selon le lieu de consommation électrique. Le seul modèle **405B** représentait déjà environ **8 930 tonnes**. [Meta Llama 3.1 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
+
+Avec votre estimation centrale de l'ordre de **20 à 160 kg de CO₂e** sur la période étudiée, votre projet représenterait environ **70 000 à 570 000 fois moins** que l'entraînement de toute la famille Llama 3.1. Il représenterait aussi environ **300 à 2 500 fois moins** que l'empreinte complète estimée de l'entraînement de **BLOOM**, évaluée à **50,5 tonnes de CO₂e**. [BLOOM carbon footprint](https://arxiv.org/abs/2211.02001)
+
+Mais la comparaison doit être interprétée correctement :
+
+* l'entraînement est un coût initial partagé par des millions d'utilisateurs ;
+* votre utilisation provoque principalement de l'inférence ;
+* un message supplémentaire ne déclenche pas un nouvel entraînement ;
+* l'ensemble de la demande des utilisateurs influence néanmoins la construction de nouveaux centres de données et le développement des modèles suivants.
+
+L'inférence cumulée peut donc finir par dépasser l'entraînement sur toute la durée de vie d'un modèle. Le problème industriel vient surtout de la multiplication à très grande échelle : les centres de données américains ont utilisé environ **176 TWh** en **2023** et pourraient atteindre **325 à 580 TWh** en **2028**, la croissance des serveurs d'IA jouant un rôle majeur. [Berkeley Lab](https://newscenter.lbl.gov/2025/01/15/berkeley-lab-report-evaluates-increase-in-electricity-demand-from-data-centers/)
+
 ### Comparaison chiffrée avec les grandes entreprises et l'entraînement
 
 Quelques repères chiffrés aident à situer l'échelle de ton usage par rapport aux volumes industriels.
@@ -820,6 +873,43 @@ Quelques repères chiffrés aident à situer l'échelle de ton usage par rapport
 * Si l'on imagine **30 modèles** entraînés chacun sur **30 000 milliards de tokens**, on obtient **900 000 milliards de tokens**. C'est l'équivalent arithmétique d'environ **37 500 années** de mon usage CleanMyMap. Ce dernier calcul reste purement illustratif : les entreprises ne publient généralement ni tous les essais, ni les réentraînements, ni le post-entraînement, ni les données synthétiques.
 
 La lecture utile est donc la suivante : mon usage est très élevé pour un particulier, mais il reste microscopique à l'échelle industrielle. À titre de repère, **CleanMyMap** seul représente environ **0,0027 %** du volume Meta rapporté et environ **0,000063 %** du volume mensuel déclaré par Google ; le **total Codex** reste autour de **0,0041 %** du volume Meta. Les tokens doivent servir d'indicateur de volume, puis les impacts en **kWh**, **CO₂e** et **eau** doivent être estimés séparément, sans conversion directe d'un ratio de tokens en ratio d'empreinte environnementale.
+
+### Comparaison avec un régime contenant de la viande
+
+Une étude française publiée en 2025 estime que remplacer quotidiennement la viande par des légumineuses, noix, graines, œufs ou substituts pourrait réduire l'empreinte alimentaire d'environ **2,8 kg CO₂e par jour**, soit environ **1 tonne de CO₂e par an**. [WUR](https://research.wur.nl/en/publications/substituting-meat-with-alternatives-the-potential-to-reduce-envir/)
+
+En annualisant votre hypothèse centrale pour CleanMyMap, on obtient environ **60 à 480 kg CO₂e par an** si le rythme reste le même.
+
+Votre usage intensif de l'IA représenterait ainsi environ **6 à 47 %** de la réduction annuelle associée au remplacement quotidien de la viande dans cette étude.
+
+Sur quatre mois, la comparaison devient la suivante :
+
+| Activité | Empreinte ou réduction estimée |
+| --- | ---: |
+| IA pour CleanMyMap, hypothèse centrale | **20 à 160 kg CO₂e** |
+| Remplacement quotidien de la viande pendant quatre mois | **environ 341 kg CO₂e** |
+
+Avec l'hypothèse centrale, l'effet alimentaire reste donc **deux à dix-sept fois plus important**. Avec une hypothèse IA haute, intégrant beaucoup de sorties et de longs raisonnements, les deux ordres de grandeur peuvent toutefois devenir comparables.
+
+Les études montrent aussi que l'empreinte climatique d'un régime végétalien représente environ **25 %** de celle d'un régime consommant plus de **100 g de viande par jour**. L'alimentation carnée a aussi des impacts sur l'occupation des sols, le méthane, l'eutrophisation et la biodiversité, dimensions qui ne se comparent pas directement à l'électricité consommée par l'IA. [Nature](https://www.nature.com/articles/s43016-023-00795-w)
+
+### Impact physique et responsabilité individuelle
+
+Il faut distinguer trois notions qui sont souvent confondues.
+
+L'**impact physique** désigne l'électricité, l'eau, les émissions et l'usure matérielle nécessaires pour exécuter vos requêtes.
+
+L'**empreinte attribuée** dépend, elle, d'une convention de comptabilité. Selon qu'on retient l'inférence marginale, une part de l'entraînement, la fabrication des GPU, les bâtiments ou les réseaux électriques, le résultat peut varier sensiblement.
+
+La **responsabilité** dépend surtout du pouvoir de décision. Les entreprises contrôlent la taille des modèles, leur architecture, le nombre d'entraînements, le choix des GPU, le lieu des centres de données, le mix électrique, le refroidissement, le cache et la transparence des mesures. Elles portent donc la responsabilité structurelle principale.
+
+Cette distinction explique pourquoi la comptabilité carbone peut changer fortement sans que la consommation physique disparaisse. Meta peut ainsi afficher pour le même entraînement Llama 3.1 environ **11 390 tonnes** en comptabilité géographique, mais zéro tonne en comptabilité *market-based* grâce à des achats ou appariements d'électricité renouvelable. [GitHub][3]
+
+L'utilisateur contrôle surtout la fréquence des appels, le nombre d'agents parallèles, la répétition des audits, la taille des contextes, le choix de modèles plus ou moins lourds et la valeur réellement produite par cette consommation.
+
+Votre responsabilité est donc plus élevée que celle d'un utilisateur occasionnel, mais elle n'est pas proportionnelle à votre part de l'impact industriel total. Vous ne choisissez ni les centres de données ni le matériel, et vous ne déclenchez pas directement les entraînements.
+
+La comparaison avec la viande doit aussi intégrer le contrefactuel. Réduire la viande suppose de la remplacer par autre chose ; pour l'IA, il faut demander ce qu'elle remplace réellement : du temps humain, des déplacements, une prestation, du développement abandonné ou une consommation supplémentaire. L'utilité de CleanMyMap peut justifier un usage donné, mais elle ne l'annule pas comptablement.
 
 ### Comparaison avec d'autres utilisateurs intensifs
 

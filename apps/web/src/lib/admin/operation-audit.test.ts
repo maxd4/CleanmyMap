@@ -159,6 +159,6 @@ describe("admin operation audit", () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.operationId).toBe("op-1");
     expect(items[0]?.actorLabel).toBe("Maxence Deroome (@maxence_deroome)");
-    expect(items[0]?.details.editedFields).toEqual(["locationLabel", "notes"]);
+    expect(items[0]?.details["editedFields"]).toEqual(["locationLabel", "notes"]);
   });
 });

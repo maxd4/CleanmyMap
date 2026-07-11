@@ -7,7 +7,7 @@ interface MissionQRProps {
 
 export function MissionQR({ missionId }: MissionQRProps) {
   // En production, utiliser l'URL du site via process.env.NEXT_PUBLIC_APP_URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr";
+  const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
   const url = `${baseUrl}/mission/start?id=${missionId}`;
 
   return (

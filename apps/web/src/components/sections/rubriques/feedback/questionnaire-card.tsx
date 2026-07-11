@@ -105,7 +105,7 @@ export function QuestionnaireCard({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           reportType: questionnaire.id,
-          title: values.subject?.trim() || questionnaire.title[locale],
+          title: values["subject"]?.trim() || questionnaire.title[locale],
           description: formatQuestionnaireDescription(
             questionnaire,
             values,

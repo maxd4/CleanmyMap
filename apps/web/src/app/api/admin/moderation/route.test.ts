@@ -126,8 +126,8 @@ describe("POST /api/admin/moderation", () => {
         duration_minutes: 75,
       }),
     );
-    expect(updateMock.mock.calls[0]?.[0].notes).toContain("Corrigé par admin");
-    expect(updateMock.mock.calls[0]?.[0].notes).toContain("[cmm-meta]");
+    expect(updateMock.mock.calls[0]?.[0]["notes"]).toContain("Corrigé par admin");
+    expect(updateMock.mock.calls[0]?.[0]["notes"]).toContain("[cmm-meta]");
   });
 
   it("returns a sanitized error when the underlying database update fails", async () => {

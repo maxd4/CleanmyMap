@@ -64,8 +64,8 @@ describe("GET /api/services", () => {
     expect(payload.summary.globalState).toBe("degraded");
     expect(payload.summary.criticalAlertCount).toBeGreaterThan(0);
     expect(payload.timeline.length).toBeGreaterThan(0);
-    expect(payload.services.supabase?.severity).toBe("critical");
-    expect(payload.services.supabase?.statusMessage).toContain("Supabase");
+    expect(payload.services["supabase"]?.severity).toBe("critical");
+    expect(payload.services["supabase"]?.statusMessage).toContain("Supabase");
     expect(payload.missing).toContain("supabase");
   });
 
@@ -83,7 +83,7 @@ describe("GET /api/services", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toContain("private");
-    expect(payload.services.resend?.state).toBe("ready");
+    expect(payload.services["resend"]?.state).toBe("ready");
   });
 
   it("returns 403 when admin access is denied", async () => {

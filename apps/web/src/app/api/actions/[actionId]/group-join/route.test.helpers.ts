@@ -6,6 +6,7 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
+const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -25,6 +26,10 @@ vi.mock("@/lib/actions/organizers", () => ({
 
 vi.mock("@/lib/gamification/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,
+}));
+
+vi.mock("@/lib/actions/moderation-audit", () => ({
+  appendActionModerationAudit: appendActionModerationAuditMock,
 }));
 
 export type GroupJoinActionRow = {
@@ -57,6 +62,7 @@ export const groupJoinMocks = {
   getSupabaseServerClientMock,
   loadActionOrganizerIdsForActionMock,
   refreshProgressionProfileMock,
+  appendActionModerationAuditMock,
 };
 
 export function createGroupJoinAction(params: {
@@ -221,28 +227,28 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
   const buildFiltered = () =>
     participants.filter((row) => {
       const normalized = normalizeRow(row);
-      if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
+      if (state.filters["action_id"] && normalized["action_id"] !== state.filters["action_id"]) {
         return false;
       }
-      if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
+      if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
         return false;
       }
       if (
-        state.filters.participation_status &&
-        normalized.participation_status !== state.filters.participation_status
+        state.filters["participation_status"] &&
+        normalized["participation_status"] !== state.filters["participation_status"]
       ) {
         return false;
       }
-      const allowedStatuses = state.inFilters.participation_status;
-      if (allowedStatuses && !allowedStatuses.includes(normalized.participation_status)) {
+      const allowedStatuses = state.inFilters["participation_status"];
+      if (allowedStatuses && !allowedStatuses.includes(normalized["participation_status"])) {
         return false;
       }
-      const allowedActionIds = state.inFilters.action_id;
-      if (allowedActionIds && !allowedActionIds.includes(normalized.action_id)) {
+      const allowedActionIds = state.inFilters["action_id"];
+      if (allowedActionIds && !allowedActionIds.includes(normalized["action_id"])) {
         return false;
       }
-      const allowedUserIds = state.inFilters.user_id;
-      if (allowedUserIds && !allowedUserIds.includes(normalized.user_id)) {
+      const allowedUserIds = state.inFilters["user_id"];
+      if (allowedUserIds && !allowedUserIds.includes(normalized["user_id"])) {
         return false;
       }
       return true;
@@ -318,25 +324,25 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
       return chain;
     }),
     single: vi.fn(async () => {
-      if (state.pendingUpdate) {
-        const original =
-          participants.find((row) => {
-            const normalized = normalizeRow(row);
-            if (state.filters.action_id && normalized.action_id !== state.filters.action_id) {
-              return false;
-            }
-            if (state.filters.user_id && normalized.user_id !== state.filters.user_id) {
-              return false;
-            }
-            return true;
-          }) ?? null;
+        if (state.pendingUpdate) {
+          const original =
+            participants.find((row) => {
+              const normalized = normalizeRow(row);
+              if (state.filters["action_id"] && normalized["action_id"] !== state.filters["action_id"]) {
+                return false;
+              }
+              if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
+                return false;
+              }
+              return true;
+            }) ?? null;
         if (original) {
           Object.assign(original, state.pendingUpdate, {
             updated_at: "2026-06-04T12:00:00Z",
             joined_at:
-              typeof state.pendingUpdate.joined_at === "string"
-                ? state.pendingUpdate.joined_at
-                : original.joined_at ?? original.created_at,
+              typeof state.pendingUpdate["joined_at"] === "string"
+                ? state.pendingUpdate["joined_at"]
+                : original["joined_at"] ?? original["created_at"],
           });
         }
         state.pendingUpdate = undefined;
@@ -442,20 +448,20 @@ function createProfilesChain(profiles: GroupJoinProfileRow[]) {
     limit: vi.fn(async (limit: number) => ({
       data: profiles
         .filter((profile) => {
-          if (state.eqFilters.id && profile.id !== state.eqFilters.id) {
+          if (state.eqFilters["id"] && profile["id"] !== state.eqFilters["id"]) {
             return false;
           }
-          if (state.eqFilters.handle && profile.handle !== state.eqFilters.handle) {
+          if (state.eqFilters["handle"] && profile["handle"] !== state.eqFilters["handle"]) {
             return false;
           }
-          const allowedIds = state.inFilters.id;
-          if (allowedIds && !allowedIds.includes(profile.id)) {
+          const allowedIds = state.inFilters["id"];
+          if (allowedIds && !allowedIds.includes(profile["id"])) {
             return false;
           }
           if (state.orExpression) {
             const needle = state.orExpression.match(/%([^%]+)%/)?.[1]?.toLowerCase() ?? "";
-            const display = (profile.display_name ?? "").toLowerCase();
-            const handle = (profile.handle ?? "").toLowerCase();
+            const display = (profile["display_name"] ?? "").toLowerCase();
+            const handle = (profile["handle"] ?? "").toLowerCase();
             if (!display.includes(needle) && !handle.includes(needle)) {
               return false;
             }
@@ -474,20 +480,20 @@ function createProfilesChain(profiles: GroupJoinProfileRow[]) {
     ) =>
       Promise.resolve({
         data: profiles.filter((profile) => {
-          if (state.eqFilters.id && profile.id !== state.eqFilters.id) {
+          if (state.eqFilters["id"] && profile["id"] !== state.eqFilters["id"]) {
             return false;
           }
-          if (state.eqFilters.handle && profile.handle !== state.eqFilters.handle) {
+          if (state.eqFilters["handle"] && profile["handle"] !== state.eqFilters["handle"]) {
             return false;
           }
-          const allowedIds = state.inFilters.id;
-          if (allowedIds && !allowedIds.includes(profile.id)) {
+          const allowedIds = state.inFilters["id"];
+          if (allowedIds && !allowedIds.includes(profile["id"])) {
             return false;
           }
           if (state.orExpression) {
             const needle = state.orExpression.match(/%([^%]+)%/)?.[1]?.toLowerCase() ?? "";
-            const display = (profile.display_name ?? "").toLowerCase();
-            const handle = (profile.handle ?? "").toLowerCase();
+            const display = (profile["display_name"] ?? "").toLowerCase();
+            const handle = (profile["handle"] ?? "").toLowerCase();
             if (!display.includes(needle) && !handle.includes(needle)) {
               return false;
             }

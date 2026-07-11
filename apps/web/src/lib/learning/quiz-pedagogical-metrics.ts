@@ -173,18 +173,16 @@ function isValidMetricRow(value: unknown): value is QuizPedagogicalMetricRow {
   }
 
   const row = value as Record<string, unknown>;
+  const bucketType = row["bucket_type"];
 
   return (
-    (row.bucket_type === "question" ||
-      row.bucket_type === "mode" ||
-      row.bucket_type === "skill" ||
-      row.bucket_type === "error_type") &&
-    isString(row.bucket_key) &&
-    isFiniteNumber(row.attempts) &&
-    isFiniteNumber(row.correct_count) &&
-    isFiniteNumber(row.wrong_count) &&
-    isFiniteNumber(row.session_count) &&
-    (row.last_seen_at === null || isString(row.last_seen_at))
+    (bucketType === "question" || bucketType === "mode" || bucketType === "skill" || bucketType === "error_type") &&
+    isString(row["bucket_key"]) &&
+    isFiniteNumber(row["attempts"]) &&
+    isFiniteNumber(row["correct_count"]) &&
+    isFiniteNumber(row["wrong_count"]) &&
+    isFiniteNumber(row["session_count"]) &&
+    (row["last_seen_at"] === null || isString(row["last_seen_at"]))
   );
 }
 
@@ -194,13 +192,13 @@ export function normalizeQuizPedagogicalMetricRows(value: unknown): QuizPedagogi
   }
 
   return value.filter(isValidMetricRow).map((row) => ({
-    bucket_type: row.bucket_type,
-    bucket_key: row.bucket_key,
-    attempts: Math.max(0, Math.trunc(row.attempts)),
-    correct_count: Math.max(0, Math.trunc(row.correct_count)),
-    wrong_count: Math.max(0, Math.trunc(row.wrong_count)),
-    session_count: Math.max(0, Math.trunc(row.session_count)),
-    last_seen_at: row.last_seen_at,
+    bucket_type: row["bucket_type"],
+    bucket_key: row["bucket_key"],
+    attempts: Math.max(0, Math.trunc(row["attempts"])),
+    correct_count: Math.max(0, Math.trunc(row["correct_count"])),
+    wrong_count: Math.max(0, Math.trunc(row["wrong_count"])),
+    session_count: Math.max(0, Math.trunc(row["session_count"])),
+    last_seen_at: row["last_seen_at"],
   }));
 }
 

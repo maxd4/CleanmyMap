@@ -1,6 +1,10 @@
-import Link from "next/link";
-import { AlertTriangle, Compass, Droplets, MapPinned, PartyPopper, Sprout, ArrowRight } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ArrowRight, Compass, Droplets, MapPinned, PartyPopper, Sprout } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 
@@ -9,14 +13,8 @@ type LocalizedText = {
   en: string;
 };
 
-type DecisionStep = {
-  title: LocalizedText;
-  detail: LocalizedText;
-  icon: LucideIcon;
-  tone: "amber" | "sky" | "emerald";
-};
-
-type ContextCard = {
+type ContextItem = {
+  id: string;
   title: LocalizedText;
   context: LocalizedText;
   decision: LocalizedText;
@@ -24,412 +22,296 @@ type ContextCard = {
   href: string;
   hrefLabel: LocalizedText;
   icon: LucideIcon;
-  tone: "amber" | "sky" | "emerald" | "violet" | "rose";
 };
 
-type EdgeCaseCard = {
+type EdgeCaseItem = {
   title: LocalizedText;
-  problem: LocalizedText;
-  response: LocalizedText;
-  href: string;
-  hrefLabel: LocalizedText;
-  icon: LucideIcon;
-  tone: "amber" | "sky" | "emerald" | "violet" | "rose";
+  detail: LocalizedText;
 };
 
-const TONE_CLASSES: Record<
-  DecisionStep["tone"] | ContextCard["tone"],
-  { shell: string; badge: string; accent: string }
-> = {
-  amber: {
-    shell: "border-amber-200 bg-amber-50/70",
-    badge: "bg-amber-100 text-amber-900",
-    accent: "text-amber-700",
-  },
-  sky: {
-    shell: "border-sky-200 bg-sky-50/70",
-    badge: "bg-sky-100 text-sky-900",
-    accent: "text-sky-700",
-  },
-  emerald: {
-    shell: "border-emerald-200 bg-emerald-50/70",
-    badge: "bg-emerald-100 text-emerald-900",
-    accent: "text-emerald-700",
-  },
-  violet: {
-    shell: "border-violet-200 bg-violet-50/70",
-    badge: "bg-violet-100 text-violet-900",
-    accent: "text-violet-700",
-  },
-  rose: {
-    shell: "border-rose-200 bg-rose-50/70",
-    badge: "bg-rose-100 text-rose-900",
-    accent: "text-rose-700",
-  },
-};
-
-const DECISION_STEPS: DecisionStep[] = [
+const TRI_CONTEXTS: ContextItem[] = [
   {
-    title: { fr: "Repérer le contexte", en: "Spot the context" },
-    detail: {
-      fr: "Identifier si l'on est sur le terrain, à la plage, en ville, en événement ou sur une logique de compost domestique.",
-      en: "Identify whether you're on the field, at the beach, in the city, at an event or working from a home-compost setup.",
-    },
-    icon: MapPinned,
-    tone: "amber",
-  },
-  {
-    title: { fr: "Vérifier la consigne locale", en: "Check the local rule" },
-    detail: {
-      fr: "Chercher le bac, le panneau ou la consigne de l'organisation avant d'appliquer une règle générale.",
-      en: "Look for the bin, sign or organizer instruction before applying a general rule.",
-    },
-    icon: Compass,
-    tone: "sky",
-  },
-  {
-    title: { fr: "Choisir le geste sûr", en: "Choose the safe gesture" },
-    detail: {
-      fr: "Quand le doute reste là, choisir la solution la moins risquée pour la filière et garder le message simple.",
-      en: "When doubt remains, choose the least risky option for the stream and keep the message simple.",
-    },
-    icon: Sprout,
-    tone: "emerald",
-  },
-];
-
-const CONTEXT_CARDS: ContextCard[] = [
-  {
+    id: "terrain",
     title: { fr: "Action terrain", en: "Field action" },
     context: {
-      fr: "Sur une action de nettoyage, le bon réflexe est de trier au fil de l'eau sans ralentir le groupe.",
-      en: "During a cleanup, the right reflex is to sort on the fly without slowing the group down.",
+      fr: "En collecte ou en nettoyage, il faut trier au fil de l’eau sans ralentir le groupe.",
+      en: "During a cleanup, sorting happens on the fly without slowing the group.",
     },
     decision: {
-      fr: "Préparer un point de tri clair, garder une consigne courte et faire remonter les déchets incertains à part.",
-      en: "Prepare a clear sorting point, keep the rule short and set uncertain items aside.",
+      fr: "Préparer un point de tri clair et garder une consigne courte.",
+      en: "Prepare a clear sorting point and keep the rule short.",
     },
     fallback: {
-      fr: "Si le geste n'est pas clair, isoler le déchet plutôt que de l'envoyer dans le mauvais flux.",
-      en: "If the gesture is unclear, isolate the item rather than pushing it into the wrong stream.",
+      fr: "Isoler le doute plutôt que de forcer une mauvaise filière.",
+      en: "Isolate doubt rather than forcing the wrong stream.",
     },
     href: "/sections/recycling",
     hrefLabel: { fr: "Voir le guide tri", en: "Open sorting guide" },
     icon: MapPinned,
-    tone: "emerald",
   },
   {
+    id: "plage",
     title: { fr: "Plage", en: "Beach" },
     context: {
-      fr: "Sur le sable, les déchets sont souvent dispersés, sales ou difficiles à identifier rapidement.",
-      en: "On the sand, waste is often scattered, dirty or hard to identify quickly.",
+      fr: "Le sable mélange vite les déchets, les consignes doivent donc rester très lisibles.",
+      en: "Sand mixes waste quickly, so the rules must stay highly legible.",
     },
     decision: {
-      fr: "Faire d'abord une lecture visuelle, séparer les objets douteux et garder un sac ou un bac pour les cas ambigus.",
-      en: "Start with a visual scan, separate doubtful items and keep a bag or bin for ambiguous cases.",
+      fr: "Faire une lecture rapide, séparer les objets douteux et garder un sac pour les cas ambigus.",
+      en: "Do a quick scan, separate doubtful items and keep a bag for ambiguous cases.",
     },
     fallback: {
-      fr: "Quand l'objet est trop dégradé, éviter de deviner et passer par le tri résiduel ou le signalement local.",
-      en: "When an item is too degraded, avoid guessing and route it to residual waste or local reporting.",
+      fr: "Quand l’objet est trop dégradé, passer par le signalement local.",
+      en: "When the item is too degraded, use local reporting.",
     },
     href: "/sections/trash-spotter",
-    hrefLabel: { fr: "Voir le signalement", en: "Open reporting guide" },
+    hrefLabel: { fr: "Voir le signalement", en: "Open reporting" },
     icon: Droplets,
-    tone: "sky",
   },
   {
+    id: "ville",
     title: { fr: "Ville", en: "City" },
     context: {
-      fr: "En rue ou en pied d'immeuble, on doit composer avec des consignes visibles, des flux mélangés et parfois des bacs absents.",
-      en: "In the street or around buildings, you deal with visible rules, mixed streams and sometimes missing bins.",
+      fr: "En rue ou en pied d’immeuble, on compose avec des consignes visibles et parfois des bacs absents.",
+      en: "In the street or around buildings, you deal with visible rules and sometimes missing bins.",
     },
     decision: {
-      fr: "Lire d'abord les panneaux, puis appliquer la règle locale la plus précise disponible.",
-      en: "Read the signage first, then apply the most precise local rule available.",
+      fr: "Lire d’abord les panneaux puis appliquer la règle locale la plus précise.",
+      en: "Read the signs first, then apply the most precise local rule.",
     },
     fallback: {
-      fr: "Si aucune consigne n'est visible, choisir le flux le moins risqué et demander confirmation ensuite.",
-      en: "If no rule is visible, choose the least risky stream and confirm afterward.",
+      fr: "Si rien n’est visible, choisir le flux le moins risqué.",
+      en: "If nothing is visible, choose the least risky stream.",
     },
     href: "/sections/recycling",
     hrefLabel: { fr: "Voir le tri urbain", en: "Open urban sorting" },
     icon: Compass,
-    tone: "violet",
   },
   {
+    id: "evenement",
     title: { fr: "Événement", en: "Event" },
     context: {
-      fr: "Sur un événement, la densité de public impose des messages encore plus courts et des emplacements de tri lisibles.",
-      en: "At events, crowd density calls for even shorter messages and highly legible sorting points.",
+      fr: "Un événement impose des messages très courts et un point de tri central.",
+      en: "An event needs very short messages and a central sorting point.",
     },
     decision: {
-      fr: "Installer un parcours simple, un point de tri central et une consigne unique que tout le monde peut répéter.",
-      en: "Set up a simple flow, a central sorting point and one rule that everyone can repeat.",
+      fr: "Installer un parcours simple et une consigne unique que tout le monde peut répéter.",
+      en: "Set up a simple flow and one rule that everyone can repeat.",
     },
     fallback: {
-      fr: "Si le matériel manque, simplifier la consigne plutôt que multiplier les exceptions.",
-      en: "If equipment is missing, simplify the rule rather than multiplying exceptions.",
+      fr: "Si le matériel manque, simplifier la consigne.",
+      en: "If equipment is missing, simplify the rule.",
     },
     href: "/actions/new",
-    hrefLabel: { fr: "Voir le suivi d'action", en: "Open action tracking" },
+    hrefLabel: { fr: "Voir l’action", en: "Open action" },
     icon: PartyPopper,
-    tone: "amber",
   },
   {
+    id: "compost",
     title: { fr: "Compost domestique", en: "Home compost" },
     context: {
-      fr: "À la maison, le tri dépend de l'équipement disponible et de la capacité réelle à composter sans erreur.",
-      en: "At home, sorting depends on the equipment available and the real ability to compost without mistakes.",
+      fr: "À la maison, le tri dépend de l’équipement disponible et de la capacité réelle à composter.",
+      en: "At home, sorting depends on the available equipment and the real ability to compost.",
     },
     decision: {
-      fr: "Vérifier ce qui est accepté localement, puis séparer ce qui part au compost de ce qui doit rester en résiduel.",
-      en: "Check what is locally accepted, then separate compostable items from what must remain residual.",
+      fr: "Vérifier ce qui est accepté localement puis séparer ce qui part au compost.",
+      en: "Check what is locally accepted, then separate what goes to compost.",
     },
     fallback: {
-      fr: "Si le compost n'est pas possible, garder une filière simple et lisible plutôt que forcer un mauvais geste.",
-      en: "If composting is not possible, keep a simple readable path instead of forcing a bad gesture.",
+      fr: "Si le compost n’est pas possible, garder une filière simple.",
+      en: "If composting is not possible, keep a simple stream.",
     },
     href: "/sections/compost",
     hrefLabel: { fr: "Voir le compost", en: "Open compost guide" },
     icon: Sprout,
-    tone: "emerald",
   },
 ];
 
-const EDGE_CASE_CARDS: EdgeCaseCard[] = [
-  {
-    title: { fr: "Déchet non identifiable", en: "Unidentified waste" },
-    problem: {
-      fr: "L'objet est trop abîmé, trop sale ou trop mixte pour être identifié vite.",
-      en: "The item is too damaged, dirty or mixed to identify quickly.",
-    },
-    response: {
-      fr: "Ne pas deviner: isoler l'objet, regarder s'il existe une consigne locale et choisir le flux le plus sûr.",
-      en: "Do not guess: set it aside, check whether there is a local rule and choose the safest stream.",
-    },
-    href: "/sections/recycling",
-    hrefLabel: { fr: "Revoir le tri", en: "Review sorting" },
-    icon: AlertTriangle,
-    tone: "rose",
-  },
+const EDGE_CASES: EdgeCaseItem[] = [
   {
     title: { fr: "Déchet souillé", en: "Soiled waste" },
-    problem: {
-      fr: "Le gras, les restes ou la contamination risquent de salir la filière de tri.",
-      en: "Grease, leftovers or contamination risk dirtying the sorting stream.",
+    detail: {
+      fr: "Le gras ou la contamination risquent de salir la filière de tri.",
+      en: "Grease or contamination risk dirtying the sorting stream.",
     },
-    response: {
-      fr: "Quand c'est trop souillé, éviter de contaminer le recyclage et basculer vers la solution résiduelle si besoin.",
-      en: "When it is too dirty, avoid contaminating recycling and fall back to residual waste if needed.",
-    },
-    href: "/sections/recycling",
-    hrefLabel: { fr: "Vérifier les exceptions", en: "Check exceptions" },
-    icon: AlertTriangle,
-    tone: "amber",
   },
   {
-    title: { fr: "Compost impossible", en: "Composting impossible" },
-    problem: {
-      fr: "Le lieu, l'équipement ou le volume rendent le compost impossible à tenir correctement.",
-      en: "The place, equipment or volume makes composting impossible to keep correctly.",
+    title: { fr: "Objet non identifiable", en: "Unidentified item" },
+    detail: {
+      fr: "L’objet est trop abîmé ou trop mixte pour être lu vite.",
+      en: "The item is too damaged or mixed to read quickly.",
     },
-    response: {
-      fr: "Ne pas forcer le compost: garder un tri lisible, suivre la filière disponible et documenter le besoin si le contexte revient souvent.",
-      en: "Do not force composting: keep sorting readable, follow the available stream and document the need if the context repeats.",
+  },
+  {
+    title: { fr: "Consigne ambiguë", en: "Ambiguous rule" },
+    detail: {
+      fr: "Deux messages se contredisent ou le panneau ne suffit pas.",
+      en: "Two messages conflict or the sign is not enough.",
     },
-    href: "/sections/compost",
-    hrefLabel: { fr: "Revoir le compost", en: "Review compost" },
-    icon: Sprout,
-    tone: "emerald",
   },
   {
     title: { fr: "Matériel absent", en: "Missing equipment" },
-    problem: {
-      fr: "Le bon bac, le sac ou l'étiquette ne sont pas là au moment d'agir.",
-      en: "The right bin, bag or label is missing when it's time to act.",
+    detail: {
+      fr: "Le bon bac, le sac ou l’étiquette ne sont pas là au bon moment.",
+      en: "The right bin, bag or label is missing when needed.",
     },
-    response: {
-      fr: "Simplifier la consigne, utiliser le point de tri disponible et éviter de créer une règle improvisée.",
-      en: "Simplify the rule, use the available sorting point and avoid inventing a rule on the spot.",
-    },
-    href: "/actions/new",
-    hrefLabel: { fr: "Voir le suivi", en: "Open tracking" },
-    icon: MapPinned,
-    tone: "sky",
   },
   {
-    title: { fr: "Consigne locale ambiguë", en: "Ambiguous local rule" },
-    problem: {
-      fr: "Deux messages se contredisent ou le panneau ne suffit pas à trancher.",
-      en: "Two messages conflict or the sign is not enough to decide.",
+    title: { fr: "Compost impossible", en: "Composting impossible" },
+    detail: {
+      fr: "Le lieu ou le volume ne permettent pas un compost fiable.",
+      en: "The place or volume does not allow reliable composting.",
     },
-    response: {
-      fr: "Appliquer la règle la plus locale et la plus précise, puis demander clarification plutôt que généraliser à la hâte.",
-      en: "Apply the most local and specific rule, then ask for clarification instead of generalizing too fast.",
-    },
-    href: "/sections/trash-spotter",
-    hrefLabel: { fr: "Voir le signalement", en: "Open reporting" },
-    icon: Compass,
-    tone: "violet",
   },
 ];
 
-function StepCard({ locale, step }: { locale: LearnLocale; step: DecisionStep }) {
-  const Icon = step.icon;
-  const tone = TONE_CLASSES[step.tone];
-
-  return (
-    <article className={cn("rounded-[1.5rem] border p-4 shadow-sm", tone.shell)}>
-      <div className="flex items-center justify-between gap-3">
-        <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]", tone.badge)}>
-          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-          {step.title[locale]}
-        </span>
-        <span className={cn("text-[10px] font-black uppercase tracking-[0.18em]", tone.accent)}>
-          {locale === "fr" ? "Étape" : "Step"}
-        </span>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-slate-700">{step.detail[locale]}</p>
-    </article>
-  );
-}
-
-function ScenarioCard({
-  locale,
-  card,
-}: {
-  locale: LearnLocale;
-  card: ContextCard | EdgeCaseCard;
-}) {
-  const Icon = card.icon;
-  const tone = TONE_CLASSES[card.tone];
-
-  return (
-    <article className={cn("flex h-full flex-col rounded-[1.6rem] border p-4 shadow-sm", tone.shell)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl border", tone.badge)}>
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </div>
-        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-          {locale === "fr" ? "Décision" : "Decision"}
-        </span>
-      </div>
-
-      <h4 className="mt-4 text-lg font-black tracking-tight text-slate-900">{card.title[locale]}</h4>
-
-      {"context" in card ? (
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.context[locale]}</p>
-      ) : (
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.problem[locale]}</p>
-      )}
-
-      <div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {locale === "fr" ? "Réflexe" : "Reflex"}
-          </p>
-          <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">
-            {"decision" in card ? card.decision[locale] : card.response[locale]}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {locale === "fr" ? "Quand ça bloque" : "When it blocks"}
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            {"fallback" in card ? card.fallback[locale] : card.response[locale]}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <Link
-          href={card.href}
-          className={cn(
-            "inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-black uppercase tracking-[0.18em] transition hover:-translate-y-[1px]",
-            tone.badge,
-          )}
-        >
-          {card.hrefLabel[locale]}
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    </article>
-  );
-}
-
 export function LearnTriContextSection({ locale }: { locale: LearnLocale }) {
+  const [selectedContextId, setSelectedContextId] = useState(TRI_CONTEXTS[0].id);
+  const selectedContext = TRI_CONTEXTS.find((item) => item.id === selectedContextId) ?? TRI_CONTEXTS[0];
+  const Icon = selectedContext.icon;
+
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-      <div className="max-w-3xl">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-yellow-700">
-          {locale === "fr" ? "Chemins de décision" : "Decision paths"}
+    <section className="rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 shadow-sm md:p-6">
+      <div className="max-w-3xl space-y-2">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+          {locale === "fr" ? "Contexte de tri" : "Sorting context"}
         </p>
-        <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+        <h3 className="text-2xl font-black tracking-tight cmm-text-primary">
           {locale === "fr"
-            ? "Le bon geste change selon le contexte"
-            : "The right gesture changes with the context"}
+            ? "Un seul contexte affiché à la fois"
+            : "Only one context shown at a time"}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+        <p className="cmm-text-small leading-relaxed cmm-text-secondary">
           {locale === "fr"
-            ? "On commence par le lieu, on lit la consigne locale, puis on choisit la solution la moins risquée. Cette logique évite les improvisations et garde le tri lisible."
-            : "Start with the place, read the local rule, then choose the least risky option. This logic avoids improvisation and keeps sorting readable."}
+            ? "Le sélecteur remplace les cinq cartes visibles d’un bloc: on choisit un contexte, puis on lit le détail utile."
+            : "The selector replaces the five visible cards: choose one context, then read only the useful detail."}
         </p>
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
-        {DECISION_STEPS.map((step) => (
-          <StepCard key={step.title.fr} locale={locale} step={step} />
-        ))}
-      </div>
+      <div className="mt-5 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className="space-y-3">
+          <label
+            htmlFor="learn-tri-context-select"
+            className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700"
+          >
+            {locale === "fr" ? "Sélecteur" : "Selector"}
+          </label>
+          <select
+            id="learn-tri-context-select"
+            value={selectedContextId}
+            onChange={(event) => setSelectedContextId(event.target.value)}
+            className="w-full rounded-[1.2rem] border border-amber-200 bg-white px-4 py-3 cmm-text-small font-semibold cmm-text-primary outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100 md:hidden"
+          >
+            {TRI_CONTEXTS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title[locale]}
+              </option>
+            ))}
+          </select>
 
-      <div className="mt-8 space-y-4">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-              {locale === "fr" ? "Par contexte" : "By context"}
-            </p>
-            <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900">
-              {locale === "fr"
-                ? "Des raccourcis de décision pour chaque situation"
-                : "Decision shortcuts for each situation"}
-            </h4>
+          <div className="hidden gap-2 md:flex md:flex-wrap">
+            {TRI_CONTEXTS.map((item) => {
+              const isSelected = item.id === selectedContextId;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedContextId(item.id)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "inline-flex min-h-10 items-center rounded-full border px-3.5 py-2 cmm-text-caption font-black uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                    isSelected
+                      ? "border-amber-300 bg-amber-100 text-amber-900"
+                      : "border-amber-200 bg-white text-amber-700 hover:bg-amber-50",
+                  )}
+                >
+                  {item.title[locale]}
+                </button>
+              );
+            })}
           </div>
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            5
+        </div>
+
+        <CmmCard tone="amber" variant="elevated" className="p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+                {locale === "fr" ? "Situation active" : "Active situation"}
+              </p>
+              <h4 className="mt-1 text-xl font-black tracking-tight cmm-text-primary">
+                {selectedContext.title[locale]}
+              </h4>
+            </div>
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-700">
+              <Icon className="h-5 w-5" aria-hidden="true" />
+            </span>
+          </div>
+
+          <p className="mt-4 cmm-text-small leading-relaxed cmm-text-secondary">
+            {selectedContext.context[locale]}
+          </p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-[1.2rem] border border-amber-100 bg-white px-4 py-3">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+                {locale === "fr" ? "Décision" : "Decision"}
+              </p>
+              <p className="mt-2 cmm-text-small leading-relaxed cmm-text-primary">
+                {selectedContext.decision[locale]}
+              </p>
+            </div>
+
+            <div className="rounded-[1.2rem] border border-amber-100 bg-white px-4 py-3">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+                {locale === "fr" ? "Quand ça bloque" : "When it blocks"}
+              </p>
+              <p className="mt-2 cmm-text-small leading-relaxed cmm-text-primary">
+                {selectedContext.fallback[locale]}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <CmmButton
+              href={selectedContext.href}
+              tone="secondary"
+              variant="pill"
+              className="inline-flex min-h-11 px-4 py-2.5 cmm-text-caption font-black uppercase tracking-[0.18em]"
+            >
+              {selectedContext.hrefLabel[locale]}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </CmmButton>
+          </div>
+        </CmmCard>
+      </div>
+
+      <details className="group mt-4 rounded-[1.35rem] border border-amber-200 bg-white px-4 py-3 shadow-sm">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white">
+          <div className="space-y-1 pr-4">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "Cas limites" : "Edge cases"}
+            </p>
+            <p className="cmm-text-small leading-relaxed cmm-text-secondary">
+              {locale === "fr"
+                ? "Ouvert seulement si un cas flou revient ou si le contexte devient délicat."
+                : "Open only if a fuzzy case comes back or the context gets tricky."}
+            </p>
+          </div>
+          <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 transition group-open:rotate-180">
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </span>
-        </div>
+        </summary>
 
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {CONTEXT_CARDS.map((card) => (
-            <ScenarioCard key={card.title.fr} locale={locale} card={card} />
+        <ul className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {EDGE_CASES.map((item) => (
+            <li key={item.title.fr} className="rounded-2xl border border-amber-100 bg-amber-50/40 px-3 py-2">
+              <p className="text-sm font-black tracking-tight cmm-text-primary">{item.title[locale]}</p>
+              <p className="mt-1 cmm-text-small leading-relaxed cmm-text-secondary">{item.detail[locale]}</p>
+            </li>
           ))}
-        </div>
-      </div>
-
-      <div className="mt-8 space-y-4">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            {locale === "fr" ? "Cas limites" : "Edge cases"}
-          </p>
-          <h4 className="mt-1 text-xl font-black tracking-tight text-slate-900">
-            {locale === "fr"
-              ? "Quand le contexte devient flou, on garde des garde-fous"
-              : "When the context gets fuzzy, keep guardrails"}
-          </h4>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-            {locale === "fr"
-              ? "Ces cas reviennent souvent sur le terrain: ne pas deviner, ne pas contaminer une filière et ne pas inventer une règle locale quand l'information manque."
-              : "These cases show up often on the ground: don't guess, don't contaminate a stream and don't invent a local rule when information is missing."}
-          </p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {EDGE_CASE_CARDS.map((card) => (
-            <ScenarioCard key={card.title.fr} locale={locale} card={card} />
-          ))}
-        </div>
-      </div>
+        </ul>
+      </details>
     </section>
   );
 }

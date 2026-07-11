@@ -80,7 +80,7 @@ export function ActionPopupContent({
   const isJoinableAction =
     item.status === "approved" &&
     (item.record_type === "action" || contract?.type === "action");
-  const groupJoinEnabled = contract?.metadata.groupJoinEnabled !== false;
+  const groupJoinEnabled = contract?.metadata.groupJoinEnabled === true;
   const joinHref =
     isJoinableAction && groupJoinEnabled
       ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`

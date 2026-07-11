@@ -23,7 +23,7 @@
 ## Annuel
 - [ ] Refonte complète des мета données
 - [ ] Audit technique complet (Vitesse, Mobile, Indexation)
-- [ ] Mise à jour du robots.txt (nouveauxAI bots)
+- [ ] Mise à jour de `apps/web/src/app/robots.ts` si le périmètre d'exploration change
 - [ ] Revoir la stratégie de mots-clés
 - [ ] Vérifier les redirections permanentes (301)
 - [ ] Créer un rapport annuel SEO
@@ -62,6 +62,7 @@ npm run build
 - Google Search Console: https://search.google.com/search-console
 - Schema.org: https://schema.org
 - Google Rich Results: https://search.google.com/test/rich-results
+- Tâches manuelles restantes: [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md)
 
 ---
 
@@ -87,7 +88,7 @@ npm run build
 - [ ] Audit backlinks
 - [ ] Mise à jour mots-clés été 2026
 - [ ] Préparer contenu pour saison été (cleanwalks)
-- [ ] Vérifier redirection .com → .fr fonctionne
+- [ ] Vérifier redirection du domaine et des variantes `www`/`http`
 
 ---
 

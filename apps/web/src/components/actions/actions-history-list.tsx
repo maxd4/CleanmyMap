@@ -36,7 +36,7 @@ function readProfileRole(metadata: unknown): string | null {
   }
 
   const candidate = metadata as Record<string, unknown>;
-  const roleValue = candidate.role ?? candidate.profile;
+  const roleValue = candidate["role"] ?? candidate["profile"];
   return typeof roleValue === "string" ? roleValue : null;
 }
 

@@ -39,7 +39,7 @@ export default function LearnSentrainerPage() {
       cta={{
         href: "/learn/bonnes-pratiques",
         label: {
-          fr: "Voir tri, composte, comportements",
+          fr: "Voir tri, compost, comportements",
           en: "See sorting, composting, behaviors",
         },
       }}

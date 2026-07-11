@@ -9,11 +9,13 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 ## Flux utilisateur
 
 1. Un organisateur crée un formulaire de groupe depuis la déclaration d'action.
-2. L'action passe par la validation admin.
-3. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
-4. Le bénévole rejoint ce formulaire existant.
-5. La participation est enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
-6. Si le bénévole s'est trompé, il peut annuler une demande en attente ou quitter un formulaire accepté, tout en conservant la trace historique.
+2. Le pré-formulaire conserve les données communes et les membres ajoutés manuellement dans `participantAccounts`, mais pas les champs de récolte finale.
+3. L'action passe par la validation admin.
+4. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
+5. Le bénévole rejoint ce formulaire existant.
+6. Les membres ajoutés manuellement à l'action sont enregistrés séparément dans `action_participants` avec la source `manual_add`, sans passer par la file publique.
+7. La participation est ensuite enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
+8. Si le bénévole s'est trompé, il peut annuler une demande en attente ou quitter un formulaire accepté, tout en conservant la trace historique.
 
 ## Placement dans le bloc Agir
 
@@ -33,6 +35,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 - Le flux doit eviter la double saisie.
 - Le formulaire rejoint doit deja exister et etre valide par un admin.
+- Le formulaire complet reste le seul parcours qui expose la récolte finale, la validation scientifique et les scores.
 - Les participations doivent rester traçables, y compris si leur statut change.
 - La jonction ne cree pas de nouveau formulaire.
 - Une seule participation active est conservee par benevole et par action.
@@ -43,6 +46,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 - Source d'affichage: table `actions` filtree sur `status = approved`.
 - Source de participation: table `action_participants` avec `participation_status`, `participation_source` et `joined_at`.
+- Origine de participation: `group_form` pour les demandes publiques, `manual_add` pour les membres ajoutés directement, `admin` pour la modération, `import` pour les reprises.
 - Source badge: `action_participants` alimente la famille `Participant`.
 - Source stats: `action_participants` compte pour la progression collective.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.

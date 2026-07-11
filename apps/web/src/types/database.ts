@@ -33,7 +33,7 @@ export type ActionParticipantRow = {
   user_id: string;
   joined_at: string;
   participation_status: "pending" | "confirmed" | "cancelled";
-  participation_source: "group_form" | "admin" | "import";
+  participation_source: "group_form" | "manual_add" | "admin" | "import";
 };
 
 export type SpotRow = {

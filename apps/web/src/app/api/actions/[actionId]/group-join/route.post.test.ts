@@ -12,6 +12,7 @@ const {
   authMock,
   getCurrentUserIdentityMock,
   getSupabaseServerClientMock,
+  appendActionModerationAuditMock,
   refreshProgressionProfileMock,
 } = groupJoinMocks;
 
@@ -21,6 +22,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     authMock.mockResolvedValue({ userId: "elu-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ role: "elu" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
+    appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
 
   it("adds a participant directly from search", async () => {
@@ -73,6 +75,14 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(body.participantsCount).toBe(1);
     expect(participants[0]?.user_id).toBe("user-2");
     expect(participants[0]?.participation_status).toBe("confirmed");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "elu-1",
+        targetActionId: "action-1",
+        operation: "admin_add_participant",
+        outcome: "success",
+      }),
+    );
   }, 15000);
 
   it("excludes an accepted participant through moderation", async () => {
@@ -128,6 +138,14 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(body.participationStatus).toBe("cancelled");
     expect(body.participantsCount).toBe(0);
     expect(participants[0]?.participation_status).toBe("cancelled");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "elu-1",
+        targetActionId: "action-1",
+        operation: "admin_review_reject",
+        outcome: "success",
+      }),
+    );
   }, 15000);
 });
 
@@ -137,6 +155,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
     authMock.mockResolvedValue({ userId: "user-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ role: "admin" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
+    appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
 
   it("accepts a pending request", async () => {
@@ -193,5 +212,13 @@ describe("POST /api/actions/:actionId/group-join", () => {
     expect(body.participationSource).toBe("group_form");
     expect(participants[0]?.participation_status).toBe("confirmed");
     expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "user-1",
+        targetActionId: "action-1",
+        operation: "admin_review_accept",
+        outcome: "success",
+      }),
+    );
   }, 15000);
 });

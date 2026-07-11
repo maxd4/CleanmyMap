@@ -17,7 +17,7 @@ function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionIt
     participationStatus: partial.participationStatus ?? null,
     participationSource: partial.participationSource ?? null,
     participationUpdatedAt: partial.participationUpdatedAt ?? null,
-    groupJoinEnabled: partial.groupJoinEnabled ?? true,
+    groupJoinEnabled: partial.groupJoinEnabled ?? false,
     pendingRequestsCount: partial.pendingRequestsCount ?? 0,
   };
 }

@@ -2,11 +2,24 @@ import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { env } from "@/lib/env";
+import {
+  ACTIVE_PARTICIPATION_STATUS,
+  loadActionParticipantIdsForAction,
+  loadManualParticipantIdsForAction,
+} from "./group-participation.helpers";
 
 type ProfileLookupRow = {
   id: string;
   display_name: string | null;
   handle: string | null;
+};
+
+type ResolvedActionAccount = {
+  userId: string;
+  displayName: string;
+  handle: string | null;
+  isPrimary?: boolean;
+  sourceToken: string | null;
 };
 
 type ClerkUserLookup = {
@@ -26,6 +39,8 @@ export type ResolvedActionOrganizer = {
   isPrimary: boolean;
   sourceToken: string | null;
 };
+
+export type ResolvedActionParticipant = ResolvedActionAccount;
 
 export type ActionOrganizerResolution = {
   organizers: ResolvedActionOrganizer[];
@@ -136,7 +151,7 @@ export function parseOrganizerAccountTokens(
   );
 }
 
-function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionOrganizer {
+function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionAccount {
   return {
     userId: row.id,
     displayName:
@@ -145,7 +160,6 @@ function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionOrganizer {
       row.id ||
       "Membre",
     handle: row.handle?.trim() || null,
-    isPrimary: false,
     sourceToken: null,
   };
 }
@@ -153,7 +167,7 @@ function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionOrganizer {
 async function lookupProfileByToken(
   supabase: SupabaseClient,
   token: string,
-): Promise<ResolvedActionOrganizer | null> {
+): Promise<ResolvedActionAccount | null> {
   const normalized = normalizeToken(token);
   if (!normalized) {
     return null;
@@ -209,7 +223,7 @@ async function lookupProfileByToken(
 
 async function lookupClerkUserByToken(
   token: string,
-): Promise<ResolvedActionOrganizer | null> {
+): Promise<ResolvedActionAccount | null> {
   const normalized = normalizeToken(token);
   if (!normalized) {
     return null;
@@ -236,7 +250,6 @@ async function lookupClerkUserByToken(
     userId: match.id,
     displayName: buildClerkDisplayName(match),
     handle: match.username?.trim() || null,
-    isPrimary: false,
     sourceToken: token,
   };
 }
@@ -282,14 +295,153 @@ export async function resolveActionOrganizers(params: {
     }
 
     seen.add(resolved.userId);
-    resolved.isPrimary = organizers.length === 0;
-    organizers.push(resolved);
+    organizers.push({
+      ...resolved,
+      isPrimary: organizers.length === 0,
+    });
   }
 
   return {
     organizers,
     unresolvedTokens,
   };
+}
+
+export async function resolveActionParticipants(params: {
+  supabase: SupabaseClient;
+  creator: {
+    userId: string;
+    displayName: string;
+    handle?: string | null;
+    username?: string | null;
+    email?: string | null;
+  };
+  participantAccounts?: string[] | null;
+  organizerIds?: string[] | null;
+  existingParticipantIds?: string[] | null;
+}): Promise<{
+  participants: ResolvedActionParticipant[];
+  unresolvedTokens: string[];
+}> {
+  const unresolvedTokens: string[] = [];
+  const participants: ResolvedActionParticipant[] = [];
+  const seen = new Set<string>(
+    (params.organizerIds ?? [])
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  );
+  for (const participantId of params.existingParticipantIds ?? []) {
+    const normalized = participantId.trim();
+    if (normalized.length > 0) {
+      seen.add(normalized);
+    }
+  }
+  seen.add(params.creator.userId);
+
+  for (const token of uniqueTokens(params.participantAccounts ?? [])) {
+    if (isCreatorToken(token, params.creator)) {
+      continue;
+    }
+
+    const fromProfiles = await lookupProfileByToken(params.supabase, token);
+    const resolved = fromProfiles ?? (await lookupClerkUserByToken(token));
+
+    if (!resolved) {
+      unresolvedTokens.push(token);
+      continue;
+    }
+
+    if (seen.has(resolved.userId)) {
+      continue;
+    }
+
+    seen.add(resolved.userId);
+    participants.push(resolved);
+  }
+
+  return {
+    participants,
+    unresolvedTokens,
+  };
+}
+
+export async function syncActionManualParticipants(params: {
+  supabase: SupabaseClient;
+  actionId: string;
+  creator: {
+    userId: string;
+    displayName: string;
+    handle?: string | null;
+    username?: string | null;
+    email?: string | null;
+  };
+  participantAccounts?: string[] | null;
+  organizerIds?: string[] | null;
+}): Promise<{
+  participants: ResolvedActionParticipant[];
+  unresolvedTokens: string[];
+}> {
+  const currentParticipantIds = await loadActionParticipantIdsForAction(
+    params.supabase,
+    params.actionId,
+  );
+  const currentManualParticipantIds = await loadManualParticipantIdsForAction(
+    params.supabase,
+    params.actionId,
+  );
+
+  const resolution = await resolveActionParticipants({
+    supabase: params.supabase,
+    creator: params.creator,
+    participantAccounts: params.participantAccounts,
+    organizerIds: params.organizerIds,
+    existingParticipantIds: currentParticipantIds,
+  });
+
+  const targetParticipantIds = new Set(
+    resolution.participants.map((participant) => participant.userId),
+  );
+  const idsToRemove = currentManualParticipantIds.filter(
+    (participantId) => !targetParticipantIds.has(participantId),
+  );
+
+  if (idsToRemove.length > 0) {
+    const deleteResult = await params.supabase
+      .from("action_participants")
+      .delete()
+      .eq("action_id", params.actionId)
+      .eq("participation_source", "manual_add")
+      .in("user_id", idsToRemove);
+
+    if (deleteResult.error) {
+      throw new Error(deleteResult.error.message);
+    }
+  }
+
+  const idsToInsert = resolution.participants.filter(
+    (participant) => !currentParticipantIds.includes(participant.userId),
+  );
+
+  if (idsToInsert.length > 0) {
+    const joinedAt = new Date().toISOString();
+    const insertResult = await params.supabase
+      .from("action_participants")
+      .insert(
+        idsToInsert.map((participant) => ({
+          action_id: params.actionId,
+          user_id: participant.userId,
+          joined_at: joinedAt,
+          participation_status: ACTIVE_PARTICIPATION_STATUS,
+          participation_source: "manual_add" as const,
+        })),
+      );
+
+    if (insertResult.error) {
+      throw new Error(insertResult.error.message);
+    }
+  }
+
+  return resolution;
 }
 
 export async function loadActionOrganizerRowsForAction(

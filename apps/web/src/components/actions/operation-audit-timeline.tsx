@@ -65,7 +65,7 @@ export function OperationAuditTimeline({
           ) : (
             <ul className="space-y-2">
               {normalizedItems.map((entry) => {
-                const editedFields = formatEditedFields(entry.details.editedFields);
+                const editedFields = formatEditedFields(entry.details["editedFields"]);
 
                 return (
                   <li

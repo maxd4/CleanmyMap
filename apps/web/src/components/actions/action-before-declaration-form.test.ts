@@ -39,7 +39,8 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Checklist avant départ");
     expect(html).toContain("Localisation du rendez-vous");
     expect(html).toContain("Statut du formulaire");
-    expect(html).toContain("Autoriser les participants à rejoindre");
+    expect(html).toContain("Membres de l&#x27;action");
+    expect(html).toContain("Publier en tant que formulaire de groupe");
     expect(html).not.toContain("Déchets collectés");
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");

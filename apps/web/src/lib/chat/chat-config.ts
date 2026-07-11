@@ -8,6 +8,5 @@ export function parseChatRealtimeFlag(raw: string | undefined | null): boolean {
 }
 
 export function isChatRealtimeEnabled(): boolean {
-  return parseChatRealtimeFlag(process.env.NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME);
+  return parseChatRealtimeFlag(process.env["NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME"]);
 }
-

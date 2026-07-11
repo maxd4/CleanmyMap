@@ -1,0 +1,164 @@
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable et executable par étapes de priorité
+
+exécute le plan 
+
+retrouver le logo officiel et le pictogramme 
+
+
+
+
+
+
+
+
+météo fusionnée en une page (avec trois parties). bien délimiter les trois parties puis envoyer chacune a gpt pour image a copier
+
+FINIR LES FUSION BLOC RESEAU pour mettre a jour le excel puis chatgpt image et appliquer UI   
+
+tester les formulaires de groupe.
+
+
+APPRendre
+
+ouvrir le excel des rubriques pour executer ce que j'avais en tête sur les rubriques apprendre.
+
+passer du temps sur la rubrique quizz : d'abord audit de tous les grands thèmes abordés dans le bloc puis faire des catégories puis faire des questions sur chacune soit QCM soit vrai/faux
+
+ajouter les infos du mail de geste propres
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Améliore la rubrique Météo pour aider à organiser une cleanwalk.
+
+Objectif :
+- afficher la météo réelle sur 10 jours par choix d'arrondissement ou de ville (choix avec uniquement les proches banlieu pour l'instant) :
+- layout desktop : 2 lignes de 5 jours ;
+- chaque jour doit afficher jour, date, météo, température, pluie/vent si dispo ;
+- code couleur du fond et du contour :
+  - vert = conditions favorables / soleil ;
+  - orange = risque d’intempérie ou vigilance légère ;
+  - rouge = conditions défavorables.
+
+Ajouter sous la météo une section “Matériel recommandé” en 3 colonnes :
+1. Standard
+2. Chaleur
+3. Intempéries
+
+Chaque colonne doit être divisée en 2 sous-sections :
+- Matériel organisateurs
+- Matériel bénévoles
+
+Contraintes :
+- données météo réelles via API existante ou intégration propre ;
+- gérer loading / error / ville non supportée ;
+- UI claire, moderne, responsive ;
+- garder Paris + banlieue comme périmètre initial ;
+- code propre, typé, maintenable.
+
+ajoute la possiblité de cliquer sur un jour puis un bouton "organiser cleanwalk" qui renvoi sur le site de cleanwalk.org à l'endroit où on créer une cleanwalk pour faciliter l'action bénévole depuis mon site vers le site de référence pour les cleanwalk.
+
+pour eviter les bug de lancement local du site, vider les caches :
+Chrome/Edge (Windows) :
+
+Ouvre http://localhost:3000 (ou ton port local).
+F12 pour ouvrir DevTools.
+Onglet Application (ou Storage).
+Dans Storage à gauche :
+Local Storage → supprime http://localhost:xxxx
+Session Storage → supprime http://localhost:xxxx
+Cookies → supprime http://localhost:xxxx
+Pour Clerk:
+Dans Cookies, sélectionne aussi https://proper-cowbird-54.clerk.accounts.dev (ou ton domaine Clerk exact) et supprime tout.
+Recharge la page avec Ctrl+Shift+R.
+Option rapide (navigateur) :
+
+Ouvre chrome://settings/siteData (ou edge://settings/siteData)
+Cherche localhost puis supprime.
+Cherche clerk.accounts.dev puis supprime.
+Option la plus propre :
+
+Ouvre une fenêtre Navigation privée/InPrivate et teste dedans (stockage vierge).
+
+filtre paris + banlieux + arrondissement.
+même présentation que cleanwak.org et si l'utilsiateur clique sur "s'inscire" alors il est envoyésur la page de cleanwalk.org utilsie la méthode redirect de next.js vers l'url de l'action. l'action a typiquement cette forme : https://www.cleanwalk.org/cleanwalk/21/aebcpev-ramassage-de-dechets-metro-buttes-chaumont-aebcpev. issus de la base de donnée de l'action.
+
+API publique, flux RSS, JSON à interroger pour afficher un claque à jour des futures cleanwalks parisiennes en temps réel sur notre carte. Il faut aussi que le contenu de la fiche d'action réelle sur cleanwalk.org soit affiché sur mon site pour que si l'utilisateur est intéressé il clique et cela l'envoi directement sur la page d'inscription de l'évènement.
+L'objectif est de créer une synergie entre nos deux outils pour maximiser l'impact environnemental sur le terrain.
+
+Create real custom-designed icons for all badges across the site.
+
+Goal:
+Replace placeholder, shortcut-like, or generic badge icons with high-quality, visually coherent icons that feel intentional, polished, and production-ready.
+
+Requirements:
+- redesign all badge icons
+- make them unique, clear, and aesthetically strong
+- keep full consistency with the site’s branding and visual system
+- ensure each icon matches the meaning of its badge
+- avoid cheap, default, emoji-like, or shortcut-looking visuals
+- make icons clean, readable, and scalable at small sizes
+- keep style consistent across the whole site
+
+Constraints:
+- no generic icon set feel
+- no mismatched styles between badges
+- no overcomplicated details that hurt readability
+- preserve clarity and premium feel
+
+Deliver:
+- updated badge icon system
+- clean implementation across the site
+- consistent visual language for all badges
+
+
+
+
+
+
+
+
+
+METTRE A JOUR petit à petit les doc du dossier DU (en copiant collant le contenu dans codex et qu'il réécrive comme sur chatgpt pas juste qu'il traite tout d'un coup car trop d'info). Notamment :
+FICHIER TEXTE ATELIER_DU
+LES FICHES PROJET et PDF plus pro
+IMPACT_IA surtout paragraphe final rajouté

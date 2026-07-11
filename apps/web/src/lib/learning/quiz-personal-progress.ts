@@ -190,15 +190,15 @@ function normalizeModeId(value: unknown): QuizAccessTypeId | null {
 }
 
 function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgressState | null {
-  if (!isRecord(value) || value.version !== 1) {
+  if (!isRecord(value) || value["version"] !== 1) {
     return null;
   }
 
-  const modes = isRecord(value.modes) ? value.modes : {};
-  const skills = isRecord(value.skills) ? value.skills : {};
-  const errorTypes = isRecord(value.errorTypes) ? value.errorTypes : {};
-  const reviewTargets = isRecord(value.reviewTargets) ? value.reviewTargets : {};
-  const recentSessions = Array.isArray(value.recentSessions) ? value.recentSessions : [];
+  const modes = isRecord(value["modes"]) ? value["modes"] : {};
+  const skills = isRecord(value["skills"]) ? value["skills"] : {};
+  const errorTypes = isRecord(value["errorTypes"]) ? value["errorTypes"] : {};
+  const reviewTargets = isRecord(value["reviewTargets"]) ? value["reviewTargets"] : {};
+  const recentSessions = Array.isArray(value["recentSessions"]) ? value["recentSessions"] : [];
 
   const normalized = createEmptyQuizPersonalProgressState();
 
@@ -208,10 +208,10 @@ function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgres
       continue;
     }
 
-    const sessions = Number(entry.sessions);
-    const correctAnswers = Number(entry.correctAnswers);
-    const totalQuestions = Number(entry.totalQuestions);
-    const lastPlayedAt = isString(entry.lastPlayedAt) ? entry.lastPlayedAt : new Date().toISOString();
+    const sessions = Number(entry["sessions"]);
+    const correctAnswers = Number(entry["correctAnswers"]);
+    const totalQuestions = Number(entry["totalQuestions"]);
+    const lastPlayedAt = isString(entry["lastPlayedAt"]) ? entry["lastPlayedAt"] : new Date().toISOString();
 
     normalized.modes[normalizedModeId] = {
       sessions: Number.isFinite(sessions) && sessions > 0 ? Math.trunc(sessions) : 0,
@@ -226,9 +226,9 @@ function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgres
       continue;
     }
 
-    const attempts = Number(entry.attempts);
-    const correctAnswers = Number(entry.correctAnswers);
-    const lastPlayedAt = isString(entry.lastPlayedAt) ? entry.lastPlayedAt : new Date().toISOString();
+    const attempts = Number(entry["attempts"]);
+    const correctAnswers = Number(entry["correctAnswers"]);
+    const lastPlayedAt = isString(entry["lastPlayedAt"]) ? entry["lastPlayedAt"] : new Date().toISOString();
 
     normalized.skills[skillId as QuizReasoningType] = {
       attempts: Number.isFinite(attempts) && attempts > 0 ? Math.trunc(attempts) : 0,
@@ -242,8 +242,8 @@ function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgres
       continue;
     }
 
-    const count = Number(entry.count);
-    const lastSeenAt = isString(entry.lastSeenAt) ? entry.lastSeenAt : new Date().toISOString();
+    const count = Number(entry["count"]);
+    const lastSeenAt = isString(entry["lastSeenAt"]) ? entry["lastSeenAt"] : new Date().toISOString();
     normalized.errorTypes[errorType] = {
       count: Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0,
       lastSeenAt,
@@ -255,10 +255,10 @@ function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgres
       continue;
     }
 
-    const label = isString(entry.label) ? entry.label : href;
-    const attempts = Number(entry.attempts);
-    const correctAnswers = Number(entry.correctAnswers);
-    const lastSeenAt = isString(entry.lastSeenAt) ? entry.lastSeenAt : new Date().toISOString();
+    const label = isString(entry["label"]) ? entry["label"] : href;
+    const attempts = Number(entry["attempts"]);
+    const correctAnswers = Number(entry["correctAnswers"]);
+    const lastSeenAt = isString(entry["lastSeenAt"]) ? entry["lastSeenAt"] : new Date().toISOString();
     normalized.reviewTargets[href] = {
       label,
       href,
@@ -273,11 +273,11 @@ function normalizeQuizPersonalProgressState(value: unknown): QuizPersonalProgres
       continue;
     }
 
-    const mode = normalizeModeId(entry.mode);
-    const score = Number(entry.score);
-    const totalQuestions = Number(entry.totalQuestions);
-    const accuracy = Number(entry.accuracy);
-    const playedAt = isString(entry.playedAt) ? entry.playedAt : new Date().toISOString();
+    const mode = normalizeModeId(entry["mode"]);
+    const score = Number(entry["score"]);
+    const totalQuestions = Number(entry["totalQuestions"]);
+    const accuracy = Number(entry["accuracy"]);
+    const playedAt = isString(entry["playedAt"]) ? entry["playedAt"] : new Date().toISOString();
 
     if (!mode) {
       continue;
@@ -562,13 +562,18 @@ function getPlayedModeStats(progress: QuizPersonalProgressState): QuizPersonalPr
 
 function getSkillStats(progress: QuizPersonalProgressState): QuizPersonalProgressSkillStat[] {
   return Object.entries(progress.skills)
-    .map(([label, entry]) => ({
-      label: label as QuizReasoningType,
-      attempts: entry.attempts,
-      correctAnswers: entry.correctAnswers,
-      accuracy: getAccuracy(entry.correctAnswers, entry.attempts),
-      lastPlayedAt: entry.lastPlayedAt,
-    }))
+    .map(([label, entry]) => {
+      const attempts = entry["attempts"];
+      const correctAnswers = entry["correctAnswers"];
+      const lastPlayedAt = entry["lastPlayedAt"];
+      return {
+        label: label as QuizReasoningType,
+        attempts,
+        correctAnswers,
+        accuracy: getAccuracy(correctAnswers, attempts),
+        lastPlayedAt,
+      };
+    })
     .sort((left, right) => right.attempts - left.attempts || right.accuracy - left.accuracy || left.label.localeCompare(right.label, "fr"));
 }
 
@@ -576,22 +581,27 @@ function getErrorStats(progress: QuizPersonalProgressState): QuizPersonalProgres
   return Object.entries(progress.errorTypes)
     .map(([label, entry]) => ({
       label,
-      count: entry.count,
-      lastSeenAt: entry.lastSeenAt,
+      count: entry["count"],
+      lastSeenAt: entry["lastSeenAt"],
     }))
     .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "fr"));
 }
 
 function getReviewTargetStats(progress: QuizPersonalProgressState): QuizPersonalProgressTargetStat[] {
   return Object.values(progress.reviewTargets)
-    .map((entry) => ({
-      label: entry.label,
-      href: entry.href,
-      attempts: entry.attempts,
-      correctAnswers: entry.correctAnswers,
-      accuracy: getAccuracy(entry.correctAnswers, entry.attempts),
-      lastSeenAt: entry.lastSeenAt,
-    }))
+    .map((entry) => {
+      const attempts = entry["attempts"];
+      const correctAnswers = entry["correctAnswers"];
+      const lastSeenAt = entry["lastSeenAt"];
+      return {
+        label: entry["label"],
+        href: entry["href"],
+        attempts,
+        correctAnswers,
+        accuracy: getAccuracy(correctAnswers, attempts),
+        lastSeenAt,
+      };
+    })
     .sort((left, right) => left.accuracy - right.accuracy || right.attempts - left.attempts || left.label.localeCompare(right.label, "fr"));
 }
 

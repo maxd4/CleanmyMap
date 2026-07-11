@@ -46,10 +46,10 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 
 ### Sitemap et robots
 - `apps/web/src/app/sitemap.ts` - Liste des pages (16 actuellement)
-- `apps/web/src/app/robots.txt` - Directives crawl + AI bots
+- `apps/web/src/app/robots.ts` - Directives crawl + AI bots
 
 ### Schemas JSON-LD
-- `apps/web/src/components/seo/structured-data.tsx` - Tous les schemas
+- `apps/web/src/components/seo/structured-data/` - Tous les schemas
 
 ## Schemas JSON-LD disponibles
 
@@ -82,9 +82,9 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 
 ### Checklist mensuelle
 - [ ] Vérifier le sitemap
-- [ ] Tester les мета descriptions
+- [ ] Tester les meta descriptions
 - [ ] Valider les schemas JSON-LD
-- [ ] Checker les redirections .com → .fr
+- [ ] Vérifier les redirections de domaine et l'URL canonique
 
 ### Trimestriel
 - [ ] Audit backlinks
@@ -96,7 +96,7 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 - [ ] Révision complète metadata
 - [ ] Audit performance Core Web Vitals
 - [ ] Mise à jour mots-clés
-- [ ] Revuerobots.txt et AI directives
+- [ ] Revoir `robots.ts` et les directives AI
 
 ## Pages avec metadata
 
@@ -104,7 +104,6 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 |------|--------|-------------|
 | / | ✅ | - |
 | /explorer | ✅ | - |
-| /observatoire | ✅ | - |
 | /reports | ✅ | - |
 | /methodologie | ✅ | - |
 | /learn | ✅ | - |
@@ -123,6 +122,10 @@ import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
 3. ✅ **VideoObject** pour tutoriels (fait)
 4. **Schema Q&A** pour pages méthodologiques
 5. **Sitelinks Searchbox** pour Google
+
+## Ce qui reste manuel
+
+Voir [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md) pour Search Console, Google Business Profile, backlinks et redirections DNS.
 
 ## Outils de validation
 

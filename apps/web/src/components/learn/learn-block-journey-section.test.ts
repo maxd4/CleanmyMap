@@ -16,7 +16,7 @@ describe("LearnBlockJourneySection", () => {
     expect(markup).toContain("Parcours du bloc");
     expect(markup).toContain("Vulgarisation");
     expect(markup).toContain("S&#x27;entraîner");
-    expect(markup).toContain("Tri, composte, comportements");
+    expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("Vous êtes ici");
     expect(markup).toContain("Continuer");
     expect(markup).toContain("aria-label=\"Vulgarisation - Rester ici\"");
@@ -32,11 +32,12 @@ describe("LearnBlockJourneySection", () => {
       }),
     );
 
-    expect(markup).toContain("Un repère de parcours, pas un centre");
+    expect(markup).toContain("Autres pages Apprendre");
+    expect(markup).toContain("Bonnes pratiques");
     expect(markup).toContain("Rester ici");
     expect(markup).toContain("Continuer");
     expect(markup).not.toContain("Vous êtes ici");
     expect(markup).not.toContain("Ouvrir");
-    expect(markup).toContain("aria-label=\"Tri, composte, comportements - Rester ici\"");
+    expect(markup).toContain("aria-label=\"Bonnes pratiques - Rester ici\"");
   });
 });

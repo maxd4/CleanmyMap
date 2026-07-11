@@ -134,6 +134,7 @@ export function useActionDeclarationForm({
           ...preparedForm,
           actorName: action.actorName ?? preparedForm.actorName,
           associationName: action.associationName ?? preparedForm.associationName,
+          participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
           groupJoinEnabled: action.groupJoinEnabled,
           actionDate: action.actionDate,
           locationLabel: action.locationLabel,

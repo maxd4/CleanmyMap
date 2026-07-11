@@ -6,6 +6,8 @@ import {
   getPublicSectionSitemapPaths,
 } from "@/lib/seo/indexability";
 
+const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
+
 const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/": 1,
   "/en": 0.9,
@@ -36,19 +38,18 @@ function toSitemapEntry(url: string, now: Date): MetadataRoute.Sitemap[number] {
           : url === "/reports"
               ? "weekly"
               : "monthly",
-    priority: SITEMAP_PATH_PRIORITY[new URL(url, "https://cleanmymap.fr").pathname] ?? 0.5,
+    priority: SITEMAP_PATH_PRIORITY[new URL(url, appUrl).pathname] ?? 0.5,
   };
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr";
   const now = new Date();
 
   const staticEntries = PUBLIC_APP_SITEMAP_PATHS.map((pathname) =>
-    toSitemapEntry(`${base}${pathname}`, now),
+    toSitemapEntry(`${appUrl}${pathname}`, now),
   );
   const sectionEntries = getPublicSectionSitemapPaths().map((pathname) =>
-    toSitemapEntry(`${base}${pathname}`, now),
+    toSitemapEntry(`${appUrl}${pathname}`, now),
   );
 
   return [...staticEntries, ...sectionEntries];

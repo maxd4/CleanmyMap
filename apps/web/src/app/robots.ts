@@ -6,6 +6,8 @@ import {
   PRIVATE_APP_ROUTE_PREFIXES,
 } from "@/lib/seo/indexability";
 
+const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
+
 const PRIVATE_ROBOTS_PATHS = [
   ...PRIVATE_APP_ROUTE_PREFIXES,
   ...getPrivateSectionRoutes(),
@@ -52,6 +54,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: PRIVATE_ROBOTS_PATHS,
       },
     ],
-    sitemap: `${env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr"}/sitemap.xml`,
+    sitemap: `${appUrl}/sitemap.xml`,
   };
 }

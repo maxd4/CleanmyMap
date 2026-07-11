@@ -111,4 +111,79 @@ describe("buildInitialActionParticipantRows", () => {
       participation_status: "confirmed",
     });
   });
+
+  it("adds manual participants as confirmed entries without duplicating known accounts", () => {
+    const rows = buildInitialActionParticipantRows({
+      actionId: "action-3",
+      creatorUserId: "user-creator",
+      organizers: [
+        {
+          userId: "user-organizer",
+          displayName: "Organisateur",
+          handle: "orga",
+          isPrimary: true,
+          sourceToken: null,
+        },
+      ],
+      manualParticipants: [
+        {
+          userId: "user-organizer",
+          displayName: "Organisateur",
+          handle: "orga",
+          sourceToken: null,
+        },
+        {
+          userId: "user-manual-1",
+          displayName: "Participant 1",
+          handle: "p1",
+          sourceToken: "token-1",
+        },
+        {
+          userId: "user-creator",
+          displayName: "Créateur",
+          handle: "creator",
+          sourceToken: null,
+        },
+        {
+          userId: "user-manual-2",
+          displayName: "Participant 2",
+          handle: "p2",
+          sourceToken: "token-2",
+        },
+        {
+          userId: "user-manual-1",
+          displayName: "Participant 1",
+          handle: "p1",
+          sourceToken: "token-1",
+        },
+      ],
+    });
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        action_id: "action-3",
+        user_id: "user-organizer",
+        participation_status: "confirmed",
+        participation_source: "group_form",
+      }),
+      expect.objectContaining({
+        action_id: "action-3",
+        user_id: "user-creator",
+        participation_status: "pending",
+        participation_source: "group_form",
+      }),
+      expect.objectContaining({
+        action_id: "action-3",
+        user_id: "user-manual-1",
+        participation_status: "confirmed",
+        participation_source: "manual_add",
+      }),
+      expect.objectContaining({
+        action_id: "action-3",
+        user_id: "user-manual-2",
+        participation_status: "confirmed",
+        participation_source: "manual_add",
+      }),
+    ]);
+  });
 });
