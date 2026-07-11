@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const sendEmailMock = vi.hoisted(() => vi.fn());
+
 const envMock = vi.hoisted(() => ({
   RESEND_API_KEY: "re_test_key" as string | undefined,
-  EMAIL_FROM: "CleanMyMap <contact@mail.cleanmymap.fr>" as string | undefined,
+  EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
   CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
 }));
 
@@ -13,7 +14,8 @@ vi.mock("@/lib/authz", () => ({
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
+  adminAccessErrorJsonResponse: () =>
+    new Response("forbidden", { status: 403 }),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -26,13 +28,40 @@ vi.mock("@/lib/services/email", () => ({
 
 describe("POST /api/email/test", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin_1" });
-    sendEmailMock.mockResolvedValue({ id: "email_123", status: "sent" });
+
+    requireAdminAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "admin_123",
+    });
+
+    sendEmailMock.mockResolvedValue({
+      id: "email_123",
+      status: "sent",
+    });
+
     envMock.RESEND_API_KEY = "re_test_key";
-    envMock.EMAIL_FROM = "CleanMyMap <contact@mail.cleanmymap.fr>";
+    envMock.EMAIL_FROM = "CleanMyMap <noreply@cleanmymap.fr>";
     envMock.CONTACT_EMAIL = "contact@cleanmymap.fr";
+  });
+
+  it("rejects a non-admin request", async () => {
+    requireAdminAccessMock.mockResolvedValue({ ok: false });
+
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/email/test", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
   it("sends a test email using the configured sender and contact inbox", async () => {
@@ -61,8 +90,8 @@ describe("POST /api/email/test", () => {
     expect(body.status).toBe("sent");
     expect(body.id).toBe("email_123");
     expect(sendEmailMock).toHaveBeenCalledWith({
-      actorUserId: "admin_1",
-      from: "CleanMyMap <contact@mail.cleanmymap.fr>",
+      actorUserId: "admin_123",
+      from: "CleanMyMap <noreply@cleanmymap.fr>",
       to: "contact@cleanmymap.fr",
       subject: "Hello World",
       html: "<p>Test OK</p>",
@@ -70,14 +99,39 @@ describe("POST /api/email/test", () => {
     });
   });
 
-  it("returns 503 when Resend sender config is missing", async () => {
+  it("rejects invalid JSON", async () => {
     const { POST } = await import("./route");
-    envMock.EMAIL_FROM = undefined;
-    envMock.RESEND_API_KEY = undefined;
 
     const response = await POST(
       new Request("http://localhost/api/email/test", {
         method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: "{",
+      }),
+    );
+
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid JSON");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when email configuration is missing", async () => {
+    envMock.EMAIL_FROM = undefined;
+    envMock.CONTACT_EMAIL = undefined;
+
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/email/test", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({}),
       }),
     );
 
@@ -85,5 +139,6 @@ describe("POST /api/email/test", () => {
 
     expect(response.status).toBe(503);
     expect(body.error).toBe("Resend not configured");
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 });

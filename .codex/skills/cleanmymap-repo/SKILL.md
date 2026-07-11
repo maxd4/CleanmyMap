@@ -1,6 +1,6 @@
 ---
 name: cleanmymap-repo
-description: "Use this skill when working in the CleanMyMap repository and you need project-specific rules, architecture context, documentation guidance, or validation steps."
+description: "Use this skill for any task targeting the CleanMyMap repository. It enforces GitHub source-of-truth checks, repository boundaries, security rules, documentation routing, and validation."
 category: repository
 risk: safe
 source: local
@@ -12,68 +12,134 @@ date_added: "2026-05-24"
 
 ## Purpose
 
-This skill captures the repo-specific rules that must stay consistent while working on CleanMyMap. It complements the global Codex capabilities by encoding the project conventions, guarded areas, preferred tooling, documentation sources, and validation workflow.
+Use this skill for any task touching CleanMyMap code, documentation, UI, backend routes, tests, data, security, deployment or repository conventions.
 
-## When To Use
+`AGENTS.md` remains the canonical detailed rule source.
 
-Use this skill for any task that touches the CleanMyMap codebase, documentation, UI, backend routes, tests, deployment workflow, or repository conventions.
+## Source of truth
 
-## Project Context
+Before changing a specific file:
 
-- App router Next.js 15 in `apps/web`
-- TypeScript and Tailwind CSS 4
-- Clerk for auth
-- Supabase for persistence and storage
-- Vercel for deployment
-- Playwright for local UI verification
-- Figma, Notion, GitHub, Stripe, and Canva when the task touches those domains
-- Documentation is a first-class source of truth, especially for architecture, security, product, and release decisions.
+1. inspect the current file on GitHub `maxd4/CleanmyMap`;
+2. inspect the directly relevant dependencies;
+3. do not trust an old plan, conversation or local copy over the current repository;
+4. report conflicts between code, docs and configuration.
 
-## Non-Negotiable Rules
+## Current stack
 
-- Do not change the homepage or its associated components unless the user explicitly asks for it.
+Read exact versions from `apps/web/package.json`.
+
+Current major baselines:
+
+- Next.js 16 App Router;
+- React 19;
+- TypeScript 6;
+- Tailwind CSS 4;
+- Clerk;
+- Supabase/PostgreSQL;
+- Vercel;
+- Expo/React Native for `companion-app`.
+
+## Non-negotiable rules
+
+- Do not change the homepage or its associated components unless explicitly requested.
+- Do not change the global header or footer unless explicitly requested.
 - Preserve the distinction between `Role`, `SessionRole`, and `Parcours`.
-- Avoid raw SQL and use the Supabase clients and server helpers already in the repo.
-- Keep client components thin and prefer server-side data access, SWR, or server actions.
-- Use dynamic import with `ssr: false` for Leaflet-based map components.
-- Preserve module boundaries and folder conventions already established in the repo.
-- Keep server and client responsibilities separated instead of collapsing them together.
-- Keep public-facing text in French unless the content is explicitly localized.
-- Avoid creating root-level files unless the user explicitly asks for them.
-- Do not create parallel worktrees or duplicate repositories.
-- When a task changes repo rules, update the canonical documentation instead of duplicating guidance in multiple skills.
+- Never expose Supabase `service_role` to web or mobile clients.
+- Never disable RLS to unblock a feature.
+- Avoid raw SQL in application runtime code; use versioned migrations for SQL changes.
+- Keep Client Components thin.
+- Keep server/client boundaries explicit.
+- Load Leaflet through dynamic import with `ssr: false`.
+- Keep public-facing text in French unless explicitly localized.
+- Do not create root-level files without justification.
+- Do not create worktrees, sibling copies or parallel repositories without explicit user approval.
+- Do not modify `documentation/pepite/` or `documentation/gpt-context/` without explicit user approval.
 
-## Preferred Workflow
+## Supabase
 
-1. Inspect the affected route, component, or service.
-2. Read the relevant documentation before editing.
-3. Identify the correct MCP tools for the task.
-4. Apply the smallest safe change.
-5. Validate with lint, typecheck, tests, or browser checks.
-6. Report the result with concrete file references.
+The active workspace CLI configuration is under:
 
-## Validation Baseline
+```txt
+apps/web/supabase/
+```
 
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test`
-- `npm run checks`
+Before changing migrations, inspect both existing migration trees until ADR-006 is fully applied:
 
-## References
+```txt
+apps/web/supabase/migrations/
+supabase/migrations/
+```
 
-- `references/governance.md`
-- `references/validation.md`
+Never update only one tree blindly.
 
-## Examples
+## Documentation routing
 
-- `examples/change-flow.md`
+Use:
 
-## Relevant Documentation
+- `documentation/pages_site/` for page-level functional/UX context;
+- `documentation/architecture/` for system decisions and boundaries;
+- `documentation/security/` for security doctrine and audits;
+- `documentation/development/` for engineering workflow and tests;
+- `documentation/product/` for product vision and priorities.
 
-- `AGENTS.md`
-- `.cursorrules`
-- `README.md`
-- `documentation/README.md`
-- `documentation/architecture/README.md`
-- `documentation/security/README.md`
-- `documentation/development/README.md`
+Do not duplicate the same rule across multiple documents. Link to the canonical source.
+
+## Preferred workflow
+
+1. Inspect the real target.
+2. Read the relevant canonical docs.
+3. Identify the smallest safe scope.
+4. Apply the change.
+5. Run targeted validation.
+6. Run broader checks when shared core, configuration, routes, security or release behavior changed.
+7. Report exact files and exact checks.
+
+## Validation
+
+Targeted:
+
+```bash
+npm run checks:changed
+```
+
+Complete:
+
+```bash
+npm run checks
+```
+
+Useful focused commands:
+
+```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run test:security
+npm run test:regression-gates
+npm run build
+npm run security:secrets
+```
+
+E2E remains explicit:
+
+```bash
+npm run test:e2e
+```
+
+Never claim a check was executed when it was not.
+
+## Mirror governance
+
+This skill is consumed from two paths:
+
+```txt
+.codex/skills/cleanmymap-repo/SKILL.md
+.agents/skills/cleanmymap-repo/SKILL.md
+```
+
+They must remain byte-identical and are checked by:
+
+```bash
+npm run check:agent-skills
+```

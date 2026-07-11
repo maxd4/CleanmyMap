@@ -1,55 +1,101 @@
 # Backlog d'audit GitHub
 
-**Date de référence :** 2026-06-17
+**Dernière revalidation documentaire :** 11 juillet 2026
 
-Ce document archive les éléments encore à corriger après les ajustements GitHub à faible risque déjà appliqués.
-Il sert de backlog de reprise pour les alertes GitHub restantes après les corrections locales déjà appliquées.
+Ce document distingue l'état confirmé, les éléments à revalider et les réglages hors dépôt.
 
-## Résumé
+## État courant confirmé dans le dépôt
 
-- Dependabot : 0 alerte ouverte après la remédiation locale et la régénération du lockfile.
-- Code Scanning : les alertes ciblant `js/trivial-conditional`, `js/file-system-race`, `js/http-to-file-access` et `js/insecure-temporary-file` ont été traitées localement dans cette reprise.
-- Secret scanning : 0 alerte ouverte.
-- Workflows GitHub Actions : pas de correctif à faible risque restant identifié après revue des fichiers `.github/workflows/ci.yml` et `.github/workflows/codeql.yml`.
+### Dependabot
 
-## Exécuté dans cette passe
+Le dernier état documenté indique :
 
-- `Dependabot` : mise à jour des dépendances directes et du lockfile, puis validation `npm audit` à `0`.
-- `js/trivial-conditional` dans `apps/web/src/components/sections/rubriques/gamification/personal-progress.tsx` : garde JSX simplifié.
-- `js/file-system-race` dans `scripts/split-bibliography.mjs` : écritures rendues atomiques via fichier temporaire.
-- `js/http-to-file-access` dans `scripts/export-clerk-users.mjs` : valeurs `--out` de type URL rejetées, chemin local normalisé.
-- `js/insecure-temporary-file` dans `apps/web/scripts/upload-sentry-sourcemaps.mjs` : répertoire temporaire créé avec `mkdtempSync`.
+```txt
+0 alerte ouverte après remédiation locale et régénération du lockfile
+```
 
-## Dependabot
+Ce nombre doit être revalidé dans GitHub avant toute communication externe.
 
-Aucune alerte locale restante après la mise à jour du graphe de dépendances. Garder une vérification GitHub en différé si le compteur affiché dans l'interface n'est pas encore rafraîchi.
+### Secret scanning
 
-## Code Scanning à reprendre plus tard
+Le dernier état documenté indique :
 
-Les entrées ci-dessous restent à revalider sur le prochain scan GitHub ou à traiter si elles réapparaissent dans le code courant.
+```txt
+0 alerte ouverte
+```
 
-| alerte ou famille | fichier source | direct ou transitive | env. | gravité | correction recommandée | risque de casse |
-| --- | --- | --- | --- | --- | --- | --- |
-| `js/unused-local-variable` | nombreux fichiers `apps/web/` et `scripts/` | direct | dev/prod | note | reprendre le nettoyage par lots car c'est la famille la plus volumineuse | nul à faible |
-| `js/incomplete-sanitization` | `scripts/cleanup/run-inventory.js:187` | direct | dev | warning | compléter la sanitation avec un helper partagé et des bornes explicites | moyen |
-| `js/file-access-to-http` | `apps/web/scripts/lib/sheet-ingestion-core.mjs:250` | direct | dev | warning | renforcer la validation avant toute lecture depuis une source HTTP | moyen |
-| `js/unneeded-defensive-code` | `apps/web/src/components/admin/free-plan-services-visual.tsx:208` | direct | dev | note | simplifier le garde-fou devenu redondant après lecture des flux | nul |
+L'audit local reste obligatoire :
 
-## Notes de gouvernance GitHub
+```bash
+npm run security:secrets
+```
 
-- `SECURITY.md` est déjà présent et doit rester la porte d'entrée pour le signalement responsable des vulnérabilités.
-- `main` n'est pas protégé dans l'état actuel du dépôt; ce réglage se fait dans GitHub, pas dans le code.
-- Les permissions de `ci.yml` et `codeql.yml` sont déjà à un niveau minimal pour les jobs concernés.
-- Les deux workflows principaux utilisent déjà `concurrency` avec `cancel-in-progress: true`.
+### Code scanning
 
-## Priorité de reprise
+Familles restant à revalider ou traiter si elles sont toujours présentes :
 
-1. Nettoyer la famille `js/unused-local-variable`, car c'est la dette la plus volumineuse.
-2. Revalider les alertes encore listées sur le prochain scan GitHub et retirer les faux positifs éventuels.
-3. Reprendre ensuite les alertes de robustesse ou de sécurité des scripts.
+| Famille | Fichier historique | Priorité |
+|---|---|---|
+| `js/incomplete-sanitization` | `scripts/cleanup/run-inventory.js` | haute si flux externe |
+| `js/file-access-to-http` | `apps/web/scripts/lib/sheet-ingestion-core.mjs` | haute si actif |
+| `js/unused-local-variable` | plusieurs fichiers | faible |
+| `js/unneeded-defensive-code` | `free-plan-services-visual.tsx` | faible |
 
-## Ce qui peut attendre
+Ne pas supposer qu'une ligne ou une alerte historique existe encore : revalider le code courant.
 
-- Les alertes `note` de Code Scanning peuvent être traitées en lot quand la file de dette technique est plus basse.
-- Les points de gouvernance GitHub hors dépôt restent à appliquer manuellement dans l'interface GitHub.
-- Les corrections de type "gros nettoyage" ne doivent pas être mélangées à une mise à jour de dépendance ou à une correction CI.
+## CI
+
+Correction attendue par le lot d'audit GPT-5.6 :
+
+- audit de secrets également sur changements documentaires ;
+- hygiène racine en CI ;
+- gouvernance documentaire en CI ;
+- détection de dérive de versions ;
+- contrôle des skills miroir ;
+- build de production pour les changements code ;
+- typecheck dédié pour l'application compagnon lorsqu'elle change.
+
+Fichier cible :
+
+```txt
+.github/workflows/ci.yml
+```
+
+## Branche `main`
+
+État documenté :
+
+```txt
+main non protégée
+```
+
+Ce réglage est externe au dépôt.
+
+Recommandation minimale :
+
+- interdire le force-push ;
+- exiger les checks critiques décidés ;
+- garder un workflow compatible avec un mainteneur unique.
+
+## Priorité
+
+1. corriger les garanties CI qui donnent une fausse impression de couverture ;
+2. revalider CodeQL sur le commit courant ;
+3. traiter les flux d'entrée externes avant les notes de qualité ;
+4. protéger `main` selon le niveau de friction accepté ;
+5. nettoyer les alertes de note par petits lots.
+
+## Règle de mise à jour
+
+Pour chaque snapshot GitHub, enregistrer :
+
+```txt
+date
+commit SHA
+Dependabot open count
+Code scanning open count
+Secret scanning open count
+branch protection state
+```
+
+Ne pas mélanger un état historique et un backlog actif sans statut explicite.

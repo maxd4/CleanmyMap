@@ -94,6 +94,72 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.confirmedParticipants?.[0]?.displayName).toBe("Bob");
   }, 15000);
 
+  it("returns pending and confirmed participants for action organizers", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        joined_at: "2026-06-01T10:00:00Z",
+        participation_status: "pending",
+        participation_source: "group_form",
+        action_id: "action-1",
+        user_id: "user-2",
+      }),
+      createGroupJoinParticipant({
+        id: "participant-2",
+        created_at: "2026-06-02T10:00:00Z",
+        joined_at: "2026-06-02T10:00:00Z",
+        participation_status: "confirmed",
+        participation_source: "group_form",
+        action_id: "action-1",
+        user_id: "user-3",
+      }),
+    ];
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+        profiles: [
+          createGroupJoinProfile({
+            id: "user-2",
+            display_name: "Alice",
+            handle: "alice",
+          }),
+          createGroupJoinProfile({
+            id: "user-3",
+            display_name: "Bob",
+            handle: "bob",
+          }),
+        ],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    const body = (await response.json()) as {
+      count?: number;
+      pendingRequests?: Array<{ id?: string }>;
+      confirmedParticipants?: Array<{ id?: string }>;
+      canReview?: boolean;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.count).toBe(1);
+    expect(body.canReview).toBe(true);
+    expect(body.pendingRequests?.[0]?.id).toBe("participant-1");
+    expect(body.confirmedParticipants?.[0]?.id).toBe("participant-2");
+  }, 15000);
+
   it("hides moderation rows for anonymous visitors", async () => {
     authMock.mockResolvedValue({ userId: null });
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
@@ -191,5 +257,45 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.canReview).toBe(true);
     expect(body.count).toBe(1);
     expect(body.items?.[0]?.userId).toBe("user-2");
+  }, 15000);
+
+  it("searches candidate accounts for action organizers", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        profiles: [
+          createGroupJoinProfile({
+            id: "user-2",
+            display_name: "Alice Martin",
+            handle: "alice",
+          }),
+        ],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    const body = (await response.json()) as {
+      status?: string;
+      mode?: string;
+      count?: number;
+      canReview?: boolean;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.mode).toBe("search");
+    expect(body.canReview).toBe(true);
+    expect(body.count).toBe(1);
   }, 15000);
 });

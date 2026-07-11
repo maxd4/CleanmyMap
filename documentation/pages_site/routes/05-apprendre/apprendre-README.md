@@ -1,25 +1,56 @@
 # Apprendre
 
-Contenus pédagogiques et guides de compréhension.
+Contenus pédagogiques, quiz et guides de compréhension.
 
 ## Routes canoniques
 
-| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
-|---|---|---|---|---|:---:|---|---|
-| `/learn/bonnes-pratiques` | [Bonnes pratiques](./learn-bonnes-pratiques/learn-bonnes-pratiques-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/bonnes-pratiques/page.tsx |
-| `/learn/comprendre` | [Ordres de grandeur](./learn-comprendre/learn-comprendre-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/comprendre/page.tsx |
-| `/learn/sentrainer` | [S'entraîner](./learn-sentrainer/learn-sentrainer-README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/sentrainer/page.tsx |
-| `/learn/ecole` | Mode École du quiz (fiche à créer) | page éducative | public | à documenter | non | moyenne | `apps/web/src/app/learn/ecole/page.tsx` |
+| Route | Fiche | Type | Accès | Scope | Priorité | Source principale |
+|---|---|---|---|---|---|---|
+| `/learn/bonnes-pratiques` | `learn-bonnes-pratiques/learn-bonnes-pratiques-README.md` | éducative | public | à corriger | moyenne | `apps/web/src/app/learn/bonnes-pratiques/page.tsx` |
+| `/learn/comprendre` | `learn-comprendre/learn-comprendre-README.md` | éducative | public | à corriger | moyenne | `apps/web/src/app/learn/comprendre/page.tsx` |
+| `/learn/sentrainer` | `learn-sentrainer/learn-sentrainer-README.md` | quiz | public | à corriger | moyenne | `apps/web/src/app/learn/sentrainer/page.tsx` |
+| `/learn/ecole` | `learn-ecole/learn-ecole-README.md` | éducative / atelier | public | documentée | moyenne | `apps/web/src/app/learn/ecole/page.tsx` |
 
 ## Surfaces intégrées
 
-| Surface | Fiche | Statut | Détail | Source principale |
-|---|---|---|---|---|
-| Point de départ | [Point de départ](./learn-hub/learn-hub-README.md) | intégré | Plus de `page.tsx` dédié, l'orientation est répartie dans les trois pages canoniques. | `apps/web/src/components/learn/learn-block-journey-section.tsx` |
-| Ressources | [Ressources](./learn-ressources/learn-ressources-README.md) | intégré | Plus de `page.tsx` dédié, les ressources sont intégrées à `bonnes-pratiques`. | `apps/web/src/components/learn/learn-ressources-client.tsx` |
-| Mode École | Banque de quiz | intégré | La page `learn/ecole` réutilise le kit de quiz école et reste la porte d'entrée scolaire. | `apps/web/src/app/learn/ecole/page.tsx` |
+| Surface | Statut | Rôle |
+|---|---|---|
+| Point de départ | intégré | orientation répartie dans les pages canoniques |
+| Ressources | intégré | ressources intégrées principalement à bonnes pratiques |
+| Mode École | page canonique | kit d'atelier et porte d'entrée scolaire |
 
-## Notes
+## Palette
 
-- Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
-- Les captures officielles, quand elles existent, vivent dans le dossier central `photo/` du bloc et sont en `WebP`.
+Famille :
+
+```txt
+Apprendre
+```
+
+Teintes :
+
+```txt
+yellow / amber
+```
+
+Référence :
+
+```txt
+documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
+```
+
+## Règles
+
+- ne pas inventer une source scientifique ;
+- signaler les contenus à vérifier ;
+- distinguer fait, estimation et conseil ;
+- privilégier une compréhension rapide ;
+- éviter la surcharge textuelle ;
+- conserver les contenus lourds à la demande ;
+- respecter la promesse « sans compte élève » tant qu'elle est affichée.
+
+## Captures
+
+Les captures officielles vivent dans le dossier photo centralisé du bloc, au format WebP.
+
+Les captures mobile ne sont pas générées sans instruction explicite.

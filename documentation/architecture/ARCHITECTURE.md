@@ -1,54 +1,126 @@
 # CleanMyMap Architecture Snapshot
 
-## Purpose
-This file is a compact context entrypoint for AI/code assistants.
-Read [master-architecture.md](./master-architecture.md) first, then load only task-relevant files.
+Entrée compacte pour assistants IA. La source globale reste `master-architecture.md`.
 
-## Active Surfaces
-- Next.js app: `apps/web/src/*` + `apps/web/src/app/api/*`
-- Python support modules: `src/report_generator.py`, `src/database.py`, `src/maintenance/*`
-- Maintenance/tooling: `scripts/*`
+## Surfaces actives
 
-## High-Value Entry Files
-- `apps/web/src/app/(app)/actions/map/page.tsx`
-- `apps/web/src/components/actions/actions-map-feed.tsx`
-- `apps/web/src/lib/actions/http.ts`
-- `apps/web/src/lib/actions/store.ts`
-- `apps/web/src/lib/data/map-records.ts`
-- `src/report_generator.py`
+```txt
+apps/web/                       application web Next.js
+apps/web/src/app/               pages et routes API
+apps/web/src/components/        UI
+apps/web/src/lib/               logique métier, auth, services et data
+apps/web/supabase/              configuration et migrations du workspace web
+companion-app/                  application mobile GPS
+scripts/                        garde-fous et maintenance Node
+maintenance/python/             maintenance Python hors runtime principal
+documentation/                  architecture, produit, sécurité et opérations
+```
 
-## Context Budget Rules
-- Never read full repository by default.
-- Start with `git diff --name-only` and targeted `rg`.
-- Load at most 3-5 files before first plan/proposal.
-- Prefer function-level reads over full-file reads.
+## Fichiers d'entrée à forte valeur
 
-## Hard Exclusions (unless explicitly required)
-- `apps/web/node_modules/`
-- `apps/web/.next/`
-- `**/__pycache__/`
-- `artifacts/`
-- `output/`
-- `**/package-lock.json`
-- `data/` (except explicit seed files)
+```txt
+apps/web/src/proxy.ts
+apps/web/src/lib/auth/protected-routes.ts
+apps/web/src/lib/authz.ts
+apps/web/src/lib/actions/data-contract.ts
+apps/web/src/lib/actions/unified-source.ts
+apps/web/src/lib/actions/types.ts
+apps/web/src/lib/sections-registry/config.ts
+apps/web/src/app/api/
+```
 
-## Validation Strategy
-- Default: run targeted checks for changed scope.
-- Full suite only before release or when touching shared core.
+Pour la carte :
 
-## Production Notes (Web)
-- `apps/web/src/app/api/uptime/route.ts` exposes:
-  - `criticalStatus`: health for required dependencies (`app`, `supabase`, `clerk`, `clerk_keys`)
-  - `optionalStatus`: warnings for optional integrations (`sentry`, others if added)
-- Build warnings for Sentry without auth token are non-blocking for runtime:
-  - release creation/source-map upload requires `SENTRY_AUTH_TOKEN`
-  - app build and runtime remain valid without it.
-- Clerk production readiness is validated by:
-  - live keys (`pk_live_` / `sk_live_`)
-  - application-domain redirects (`/sign-in`, `/sign-up`, `/dashboard`).
-- Incident handling quick guide:
-  - `documentation/repo-docs/ops/INCIDENT_RUNBOOK_SHORT.md`
+```txt
+apps/web/src/app/(app)/actions/map/page.tsx
+apps/web/src/components/actions/actions-map-feed.tsx
+apps/web/src/lib/data/map-records.ts
+```
 
-## Canonical architecture source
-- `master-architecture.md` is the source of truth for the global site architecture.
-- Use this file only as a lightweight entrypoint when you need a constrained context budget.
+## Auth et données
+
+```mermaid
+flowchart LR
+  User[Utilisateur] --> Web[Next.js]
+  Web --> Clerk[Clerk AuthN]
+  Web --> API[API Routes]
+  API --> AuthZ[AuthZ serveur]
+  AuthZ --> Domain[Services métier]
+  Domain --> Supabase[(Supabase)]
+```
+
+Règles :
+
+- Clerk est l'identité principale du web ;
+- Supabase stocke les données ;
+- `service_role` reste serveur ;
+- RLS ne doit pas être désactivée pour contourner un défaut ;
+- les routes sensibles vérifient l'accès côté serveur.
+
+## Application compagnon
+
+`companion-app/` partage le projet Supabase mais son modèle d'identité doit être aligné avec Clerk avant production.
+
+Ne pas considérer comme valide un flux où :
+
+- une identité Supabase anonyme devient implicitement un profil Clerk ;
+- le client mobile appelle une RPC réservée à `service_role`.
+
+Voir :
+
+```txt
+documentation/architecture/adr/ADR-004-companion-identity.md
+documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
+```
+
+## Migrations
+
+Le workspace Supabase actif possède :
+
+```txt
+apps/web/supabase/config.toml
+apps/web/supabase/migrations/
+```
+
+Un second arbre existe encore :
+
+```txt
+supabase/migrations/
+```
+
+Ne pas modifier un seul arbre sans appliquer la stratégie de l'ADR-006.
+
+## Budget de contexte
+
+- commencer par la cible réelle ;
+- lire 3 à 5 fichiers utiles avant d'élargir ;
+- utiliser `git diff --name-only` et `rg` ciblé ;
+- éviter `node_modules`, `.next`, artefacts, backups et lockfiles sauf nécessité.
+
+## Validation
+
+Ciblée :
+
+```bash
+npm run checks:changed
+```
+
+Complète :
+
+```bash
+npm run checks
+```
+
+E2E explicite :
+
+```bash
+npm run test:e2e
+```
+
+## Incident
+
+Runbook :
+
+```txt
+documentation/operations/INCIDENT_RUNBOOK_SHORT.md
+```

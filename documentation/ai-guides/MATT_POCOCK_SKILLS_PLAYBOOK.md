@@ -77,14 +77,12 @@ Ce second pas sert a enseigner au skill le contexte du repo : issue tracker, voc
 
 ## Cohérence documentaire
 
-Dans la doc locale, `npm run checks:changed:quick` et `npm run checks:changed:quick:build` sont cites, mais ces scripts n'existent pas dans le `package.json` racine.
-
-Le commandement executable aujourd'hui est :
+Les alias npm dédiés aux checks rapides existent désormais dans le `package.json` racine.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1
-powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild
+npm run checks:changed:quick
+npm run checks:changed:quick:build
 ```
 
-Utiliser la premiere ligne pour le mode rapide sans build, la seconde pour inclure `next build`.
-Ne pas ajouter d'alias npm tant que `package.json` n'est pas mis a jour.
+Utiliser la première ligne pour le mode rapide sans build, la seconde pour inclure `next build`.
+Le script PowerShell sous-jacent reste disponible pour les cas où l'on veut l'exécuter directement.

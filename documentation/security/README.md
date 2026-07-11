@@ -1,68 +1,172 @@
 # Security Entry Point
 
-Lire cette page en premier avant toute modification sur les surfaces publiques, privées ou CI.
+Lire cette page avant toute modification concernant API, auth, données, CI, secrets ou surfaces publiques.
 
 ## Ordre de lecture
 
-1. [Contrôles avant merge](./PRE_MERGE_CHECKLIST.md)
-2. [Référence rapide](./SECURITY_QUICK_REFERENCE.md)
-3. [Guide complet](./SECURITY_GUIDE.md)
-4. [Validation d'URL](./url-validation-security.md)
-5. [Regex et ReDoS](./regex-security.md)
-6. [Rate limiting](../backend/RATE_LIMITING.md)
-7. [Codex Security Playbook](./CODEX_SECURITY_PLAYBOOK.md)
-8. [Supabase Linked Advisories Report](./supabase-linked-advisories-2026-05-20.md)
-9. [SQL injection hardening audit](./sql-injection-hardening-audit.md)
-10. [Supabase review checklist](./supabase-review-checklist.md)
-11. [Checklist Performance & Quotas Vercel](../development/performance-quotas-vercel-checklist.md)
-12. [Backlog d'audit GitHub](./github-audit-backlog.md)
+1. `PRE_MERGE_CHECKLIST.md`
+2. `SECURITY_QUICK_REFERENCE.md`
+3. `SECURITY_GUIDE.md`
+4. `authz-authn-regles.md`
+5. `url-validation-security.md`
+6. `regex-security.md`
+7. `../backend/RATE_LIMITING.md`
+8. `CODEX_SECURITY_PLAYBOOK.md`
+9. `supabase-review-checklist.md`
+10. `github-audit-backlog.md`
 
-## Checklist courte
+## Principes non négociables
 
-- Routes publiques vs privées
-  - Une route sensible doit être dans `PROTECTED_ROUTE_PATTERNS` ou bloquée au niveau handler.
-  - Les routes privées ne doivent pas apparaître dans `PUBLIC_APP_SITEMAP_PATHS`.
-- Robots / sitemap / noindex
-  - Les pages internes doivent avoir `robots.index = false`.
-  - Les pages publiques indexables doivent être cohérentes avec `sitemap.ts`.
-- Validation d'URL
-  - Utiliser `new URL()` ou les helpers de `src/lib/security/validation.ts`.
-  - Refuser les hôtes factices et les schémas non prévus.
-- Regex à risque
-  - Pas de quantificateurs imbriqués.
-  - Longueurs bornées avant validation.
-  - Alternatives ordonnées de la plus longue à la plus courte.
-- Rate limiting / anti-spam
-  - Les formulaires publics doivent passer par `createPublicRateLimitResponse()`.
-  - Les garde-fous `honeypot` et `submittedAt` doivent rester déterministes.
-- Secrets / env
-  - Lancer `npm run security:secrets` avant merge.
-  - Ne jamais ajouter de secret en dur dans les docs ou le code.
-- GitHub Actions
-  - Garder les permissions minimales par job.
-  - Les changements Dependabot sur l'auth, les secrets, le routage ou la CI passent en revue renforcée.
+### Secrets
 
-## Helpers réutilisables
+- ne jamais committer un secret ;
+- ne jamais exposer `service_role` au client ;
+- ne pas considérer la documentation comme sûre par nature ;
+- exécuter l'audit de secrets même pour les changements Markdown.
 
-- `src/lib/security/validation.ts`
-- `src/lib/seo/indexability.ts`
-- `src/lib/auth/protected-routes.ts`
-- `src/lib/community/discussion-rate-limit.ts`
-- `src/lib/supabase/server.ts`
-- `src/lib/supabase/clerk-rls.ts`
-- `src/lib/rate-limit/server.ts`
+Commande :
 
-## Rapports
+```bash
+npm run security:secrets
+```
 
-- [Supabase Linked Advisories Report](./supabase-linked-advisories-2026-05-20.md)
-- Use this report to verify that the linked Supabase project is aligned with the hardened repository state after a push.
+### AuthN et AuthZ
 
-## Quand bloquer un merge
+Une session valide ne suffit pas.
 
-Bloquer si l'un des points suivants est faux:
+Vérifier :
 
-- une route privée est indexable ou présente dans le sitemap
-- un formulaire public renvoie un 429 non homogène
-- une validation d'URL utilise un substring au lieu d'un parsing explicite
-- une regex sensible n'a pas de borne ou contient un backtracking inutile
-- une permission CI est plus large que nécessaire
+1. authentification ;
+2. rôle ;
+3. ownership ;
+4. état métier ;
+5. audit si dérogation sensible.
+
+### Supabase
+
+- RLS reste active ;
+- une policy n'est pas contournée par `service_role` côté client ;
+- les RPC ont des droits explicites ;
+- les migrations sont versionnées ;
+- les fonctions sensibles ont un `search_path` maîtrisé.
+
+### API
+
+Chaque endpoint doit être classé :
+
+- public ;
+- authentifié ;
+- propriétaire ;
+- admin ;
+- cron/service ;
+- webhook signé.
+
+Ne pas se fier uniquement au proxy : le handler doit vérifier les permissions nécessaires.
+
+### Validation
+
+Les entrées externes doivent être :
+
+- typées ;
+- bornées ;
+- validées ;
+- normalisées ;
+- rejetées explicitement si invalides.
+
+## Routes et indexation
+
+Vérifier :
+
+```txt
+apps/web/src/lib/auth/protected-routes.ts
+apps/web/src/proxy.ts
+apps/web/src/lib/seo/indexability.ts
+apps/web/src/app/sitemap.ts
+apps/web/src/app/robots.ts
+```
+
+Une page privée :
+
+- ne doit pas être indexable ;
+- ne doit pas apparaître dans le sitemap public.
+
+## Rate limiting et anti-spam
+
+Pour les formulaires publics, utiliser les helpers existants.
+
+Vérifier :
+
+- quota ;
+- IP ou identité selon le flux ;
+- honeypot ;
+- timestamp ;
+- payload maximal ;
+- réponse 429 homogène.
+
+## Email de test
+
+Ne pas maintenir deux surfaces aux politiques contradictoires.
+
+La route de test recommandée est :
+
+```txt
+/api/email/test
+```
+
+avec accès admin.
+
+Si `/api/send` est conservée pour la compatibilité locale, son token de test ne doit jamais contourner l'admin en production.
+
+## Application compagnon
+
+Avant production, vérifier :
+
+- identité cohérente avec Clerk ;
+- ownership des missions ;
+- stockage sécurisé des sessions ;
+- absence de `service_role` dans l'app ;
+- RPC compatibles avec le rôle appelant ;
+- erreurs de finalisation traitées.
+
+## CI
+
+Contrôles à conserver :
+
+```bash
+npm run security:secrets
+npm run check:root-files
+npm run check:doc-governance
+npm run test:security
+```
+
+L'audit de secrets doit s'exécuter pour les commits documentaires.
+
+## Helpers structurants
+
+```txt
+apps/web/src/lib/security/validation.ts
+apps/web/src/lib/seo/indexability.ts
+apps/web/src/lib/auth/protected-routes.ts
+apps/web/src/lib/community/discussion-rate-limit.ts
+apps/web/src/lib/supabase/server.ts
+apps/web/src/lib/supabase/clerk-rls.ts
+apps/web/src/lib/rate-limit/server.ts
+```
+
+## Bloquer une livraison si
+
+- secret probable détecté ;
+- route sensible sans contrôle serveur ;
+- page privée indexable ;
+- RLS désactivée pour contourner une erreur ;
+- `service_role` exposée au client ;
+- webhook sans signature requise ;
+- entrée critique non validée ;
+- CI plus permissive sans justification ;
+- test de sécurité critique absent ou cassé.
+
+## Validation complète
+
+```bash
+npm run checks
+```

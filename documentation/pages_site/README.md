@@ -2,154 +2,182 @@
 
 Point d'entrée du registre documentaire route-first.
 
-- [Index maître](./INDEX.md)
-- [Charte des pages hors blocs](./charte-pages-hors-blocs.md)
-- [Mémoire de non-régression `page-families`](./PAGE_FAMILIES_NON_REGRESSION.md)
-- L'arborescence canonique vit dans `./routes/`
+- `INDEX.md` — inventaire maître ;
+- `charte-pages-hors-blocs.md` — familles autonomes ;
+- `PAGE_FAMILIES_NON_REGRESSION.md` — invariants des familles ;
+- `routes/` — arborescence canonique.
 
-Ce dossier sert de source de vérité documentaire pour les pages du site du point de vue utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et améliorations propres à la page.
+## Périmètre
 
-L'implémentation technique, les tests, l'architecture et les services utilisés restent dans le dossier technique adapté de `documentation/`.
+`documentation/pages_site/` décrit chaque page du point de vue utilisateur :
 
-Pour un sujet mixte, conserver dans la fiche de page le résumé fonctionnel puis ajouter un lien vers la documentation technique correspondante. Ne pas dupliquer le contenu et ne pas créer de fichier miroir.
+- rôle ;
+- contenu ;
+- parcours ;
+- états ;
+- UX/UI ;
+- captures ;
+- améliorations propres à la page.
 
-Le détail de chaque route vit dans sa présentation détaillée canonique.
+Les sujets techniques transversaux restent dans :
 
-Le site est documenté comme une plateforme nationale. Les mentions Paris, Île-de-France et arrondissement restent uniquement quand elles servent de cas métier, de compatibilité legacy ou de précision géographique ponctuelle.
+```txt
+documentation/architecture/
+documentation/development/
+documentation/security/
+documentation/database/
+documentation/operations/
+```
 
-Chaque page modifiée doit être vérifiée par un duo de contrôles :
+Pour un sujet mixte :
 
-- capture écran desktop pour le rendu visuel
-- export `.MD this page` dans Chrome pour la lisibilité sémantique sans mise en page
+- résumé fonctionnel ici ;
+- détail technique dans le dossier adapté ;
+- lien entre les deux ;
+- aucune duplication.
 
-## Choix de sobriété
+## Une route, une fiche canonique
 
-Les pages doivent privilégier la légèreté.
+Règle :
 
-- charger seulement ce qui sert à l'état courant ;
-- reporter les calculs lourds à l'ouverture d'un détail ;
-- éviter les requêtes et recalculs inutiles sur les vues de lecture ;
-- garder une interface stable, rapide et lisible avant tout.
+```txt
+une route canonique
+→ un dossier canonique
+→ un nom stable
+→ une documentation fonctionnelle unique
+```
 
-Ce choix est important pour les pages de carte et de supervision. La carte reste fluide. Le détail vient à la demande.
+Les alias et redirections restent inventoriés mais ne deviennent pas des pages autonomes artificielles.
 
-## Structure des sous-dossiers de pages
+## Noyau documentaire d'une page canonique
 
-Chaque page du site possède son propre sous-dossier dans `./routes/`.
+Chaque page ou rubrique canonique conserve quatre fichiers de base :
 
-Ces sous-dossiers regroupent les éléments de référence suivants :
+```txt
+nom-de-page-README.md
+nom-de-page-presentation-detaillee.md
+nom-de-page-liste-propositions-a-traiter.md
+nom-de-page-objectifs-non-pertinents.md
+```
 
-- des captures plein écran de la page complète ;
-- un fichier `nom-de-page-README.md` préfixé par le nom de la page ou de la rubrique et titré avec ce même nom ;
-- un fichier `nom-de-page-presentation-detaillee.md` préfixé par le nom de la page ou de la rubrique ;
-- un fichier `nom-de-page-liste-propositions-a-traiter.md` préfixé par le nom de la page ou de la rubrique ;
-- un fichier `nom-de-page-objectifs-non-pertinents.md` préfixé par le nom de la page ou de la rubrique ;
-- un markdown dédié aux exceptions UI de la page, préfixé par le nom de la page ou de la rubrique, quand cela sert à documenter un écart visuel réel.
+Ces quatre fichiers sont le noyau stable.
 
-Les fichiers optionnels ne doivent être créés que quand ils deviennent pertinents pour la page ou la rubrique. Si la page n a pas d exceptions UI, de cas particulier ou de mémoire locale utile, on ne force pas la création d un fichier vide.
+Les fichiers supplémentaires restent optionnels :
 
-Les captures de référence de toutes les pages d'un bloc vivent dans un dossier photo centralisé au niveau d'entrée du bloc. Ce dossier contient des captures `.webp` nommées avec la route, le nom lisible de la page et la date de capture.
+- exception UI ;
+- étude spécifique ;
+- sources ;
+- protocole ;
+- backlog temporaire local ;
+- document partenaire.
 
-Règle de structure photo:
+Ne pas créer un fichier optionnel vide uniquement par anticipation.
 
-- un seul dossier photo centralisé par bloc ou famille documentaire ;
-- aucune page fille ne possède son propre dossier photo ;
-- les noms de capture doivent rendre visible la route, le nom de la page et la date ;
-- les captures restent en `.webp`.
+## Propositions et idées écartées
 
-L'objectif est de centraliser, pour chaque page, à la fois la preuve visuelle, les écarts UI connus et la documentation fonctionnelle.
-La preuve visuelle seule ne suffit pas : la lecture Markdown doit aussi rester claire.
+### `liste-propositions-a-traiter`
 
-## Fichiers d'amélioration continue
+Contient uniquement les propositions :
 
-Les fichiers d'amélioration continue de `pages_site` servent à proposer des évolutions concrètes propres à la page ou à la rubrique, pas à refaire la fiche canonique ni la documentation technique.
+- retenues ;
+- pas encore exécutées ;
+- spécifiques à la page.
 
-Ils doivent aider à:
+Quand une proposition est terminée :
 
-- améliorer la rubrique sur le fond et sur la forme ;
-- proposer des améliorations UX/UI concrètes ;
-- proposer des améliorations fonctionnelles réalistes ;
-- identifier les incohérences possibles ;
-- détailler les besoins desktop et mobile ;
-- anticiper accessibilité, performance, sécurité et abus ;
-- prévoir analytics et SEO si pertinent ;
-- proposer une architecture claire et scalable.
+- la retirer de la liste active ;
+- documenter son résultat dans la fiche canonique si nécessaire.
 
-Une bonne fiche d'amélioration reste spécifique à la page ou à la rubrique concernée, priorise les gains à fort impact et évite les idées trop vagues ou déconnectées du code existant.
+### `objectifs-non-pertinents`
 
-## Règles spécifiques aux rubriques
+Mémoire locale des idées explicitement écartées.
 
-Quand un sous-dossier représente une rubrique fonctionnelle du site, il doit aussi contenir un petit noyau documentaire stable:
+But :
 
-- un fichier `nom-de-rubrique-README.md` préfixé par le nom de la rubrique, par exemple `gamification-README.md` : point d entrée de la rubrique, avec le nom de la rubrique dans le titre H1;
-- un fichier `nom-de-rubrique-presentation-detaillee.md` préfixé par le nom de la rubrique, par exemple `gamification-presentation-detaillee.md` : rôle, périmètre, états, composants concernés, notes d audit;
-- un fichier `nom-de-rubrique-liste-propositions-a-traiter.md` préfixé par le nom de la rubrique, par exemple `gamification-liste-propositions-a-traiter.md` : propositions retenues mais pas encore exécutées;
-- un fichier `nom-de-rubrique-objectifs-non-pertinents.md` préfixé par le nom de la rubrique, par exemple `gamification-objectifs-non-pertinents.md` : mémoire locale des idées écartées pour cette rubrique;
-- un dossier photo centralisé au niveau d'entrée du bloc de la rubrique, contenant les captures `webp` de toutes les pages du bloc, nommées avec la route, le nom de la page et la date de capture.
+- éviter de reproposer les mêmes idées ;
+- conserver la raison du rejet ;
+- rester court.
 
-Ces fichiers doivent rester synchronisés avec la spec canonique de la rubrique concernée.
-Si une proposition change d état, elle doit être déplacée dans le bon fichier sans duplication.
-Si aucune proposition n est active, le fichier `liste-propositions-a-traiter.md` peut rester vide en affichant clairement `Aucune proposition active à ce jour`.
-Le titre H1 de chacun de ces fichiers doit commencer par le nom de la rubrique pour éviter les ambiguïtés, par exemple `Gamification - ...`.
-Le titre H1 du fichier `nom-de-rubrique-README.md` doit aussi commencer par le nom de la page ou de la rubrique.
-Les fichiers optionnels ne doivent être créés que quand ils deviennent pertinents pour la rubrique. On évite les fichiers vides créés par anticipation sans besoin réel.
+## Captures
 
-## Mémoire des idées écartées
+Les captures officielles sont centralisées au niveau du bloc ou de la famille.
 
-Chaque sous-dossier de page doit conserver un fichier `nom-de-page-README.md`, un fichier `nom-de-page-presentation-detaillee.md`, un fichier `nom-de-page-liste-propositions-a-traiter.md` et un fichier `nom-de-page-objectifs-non-pertinents.md`, tous préfixés par le nom de la page ou de la rubrique.
+Règles :
 
-Le fichier `objectifs-non-pertinents.md` sert de mémoire locale de rejet.
+- un dossier photo centralisé par bloc ou famille ;
+- format `.webp` ;
+- nom contenant bloc, page ou route et date ;
+- pas de dossier photo dupliqué dans chaque page enfant ;
+- desktop par défaut ;
+- mobile seulement sur instruction explicite.
 
-Format attendu :
+Exemple :
 
-- `# <Nom de la page ou rubrique> - Objectifs non pertinents`
-- `But:`
-- `## Liste des objectifs écartés`
-- `## Règle de mémoire`
-- `## Liens utiles`
+```txt
+03-cartographie-impact__gamification__2026-07-11.webp
+```
 
-La structure doit rester courte, directe, et alignée sur la logique des mémoires locales de rubrique, comme dans `documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-objectifs-non-pertinents.md`.
+## Vérification UI
+
+Lorsqu'une vérification visuelle est explicitement demandée :
+
+1. capture desktop ;
+2. export `.MD this page` ;
+3. comparaison visuelle et sémantique ;
+4. vérification des titres, CTA, statistiques, sources, états et accessibilité.
+
+Une capture seule ne suffit pas.
+
+## Sobriété
+
+Les pages doivent privilégier :
+
+- chargement utile seulement ;
+- détails à la demande ;
+- calculs lourds différés ;
+- absence de polling inutile ;
+- stabilité du layout ;
+- interface lisible.
+
+Cette règle est particulièrement importante pour :
+
+- carte ;
+- supervision ;
+- rapports ;
+- admin ;
+- données externes.
 
 ## Convention de nommage
 
-La règle de nommage est la suivante.
+Le dossier et les fichiers doivent reprendre le nom de la page ou rubrique.
 
-- Le dossier canonique d'une page doit porter le nom de la page ou de la rubrique.
-- Les fichiers qu'il contient doivent aussi porter ce même nom en préfixe.
-- Le fichier `nom-de-page-README.md` n'échappe pas à cette règle.
-- Les dossiers photo ne vivent pas dans chaque page : ils sont centralisés au niveau d'entrée du bloc.
-- Les captures de référence restent en `.webp`.
-- Les noms de capture doivent inclure la route, le nom lisible de la page et la date.
+Exemple :
 
-Exemple pour la rubrique `gamification` :
-
-- `gamification-README.md`
-- `gamification-presentation-detaillee.md`
-- `gamification-liste-propositions-a-traiter.md`
-- `gamification-objectifs-non-pertinents.md`
-- `03-cartographie-impact-photo/` ou équivalent au niveau du bloc
-- captures nommées par exemple `03-cartographie-impact__gamification__2026-06-03.webp`
+```txt
+gamification/
+├── gamification-README.md
+├── gamification-presentation-detaillee.md
+├── gamification-liste-propositions-a-traiter.md
+└── gamification-objectifs-non-pertinents.md
+```
 
 ## Mémoire de non-régression
 
-Les corrections déjà apportées doivent rester vraies.
+- une route canonique garde un nom unique ;
+- runtime et générateurs partagent une source ;
+- les anciens fichiers de compatibilité supprimés ne sont pas recréés sans besoin ;
+- le registre des familles reste aligné avec le code ;
+- une exception nouvelle est déclarée, testée et documentée ;
+- une modification de famille traverse runtime, documentation et test de cohérence.
 
-- Une route canonique doit garder un seul nom.
-- Une seule source de vérité doit alimenter à la fois le runtime et les générateurs.
-- Les anciens fichiers de compatibilité supprimés ne doivent pas être recréés sans besoin réel.
-- Le registre des familles de pages doit rester aligné avec le manifeste partagé.
-- Toute nouvelle exception doit être déclarée, testée et documentée en même temps.
-- Une modification de famille doit toujours traverser le runtime, la doc et le test de cohérence.
+## Style
 
-## Style de rédaction
+Les fichiers de `routes/` utilisent :
 
-Les futurs markdown de `./routes/` doivent garder le même style de lecture.
-
-- Phrases courtes et directes.
-- Détail précis, sans verbiage.
-- Chiffres exacts, jamais approximatifs.
-- Unités abrégées, par exemple `kg`, `pts`, `px`.
-- Listes sans article en tête quand c'est possible.
-- Une idée par phrase.
-
-Ce style s'applique aux présentations, aux légendes et aux notes métier de chaque sous-dossier.
+- phrases courtes ;
+- une idée par phrase ;
+- chiffres exacts ;
+- unités abrégées ;
+- listes directes ;
+- pas de verbiage ;
+- pas de source inventée.
