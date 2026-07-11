@@ -1,294 +1,222 @@
-# Documentation - Guide Maître IA
+# Documentation — CleanMyMap
 
-Documentation complète du projet CleanMyMap optimisée pour agents IA.
+Point d'entrée de la documentation technique, produit et opérationnelle du projet.
 
----
+## Source de vérité
 
-## 🎯 Démarrage Rapide IA
+Avant toute modification ciblant le dépôt :
 
-### Première Session
-1. **OBLIGATOIRE** : Lire les règles globales du projet
-2. **OBLIGATOIRE** : Lire le contexte de session actuel
-3. Consulter la vue d'ensemble du projet
+1. lire `AGENTS.md` ;
+2. vérifier le fichier courant sur GitHub `maxd4/CleanmyMap` ;
+3. lire uniquement la documentation canonique utile au périmètre ;
+4. ne pas appliquer un ancien plan sans le confronter au code actuel.
 
-### Avant Toute Modification
-1. **UI** → Lire **design-system/README.md** (CRITIQUE)
-   Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
-   Puis consulter **pages_site/INDEX.md** pour l'inventaire canonique des routes UI et des fiches page côté utilisateur, avec `pages_site/README.md` comme porte d'entrée
-2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
-3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
-4. **Code** → Consulter **development/README.md**
+## Où chercher
 
-### Guides IA utiles
+| Besoin | Référence |
+|---|---|
+| Architecture globale | `architecture/master-architecture.md` |
+| Vue système rapide | `architecture/system-overview.md` |
+| Décisions majeures | `architecture/adr/` |
+| Sécurité | `security/README.md` |
+| Tests et validation | `development/TESTING.md` |
+| Développement | `development/README.md` |
+| Produit | `product/README.md` |
+| Design system | `design-system/README.md` |
+| Pages et routes | `pages_site/INDEX.md` |
+| Exploitation | `operations/README.md` |
+| Données | `database/README.md` |
 
-- **[ai-guides/SPEC_KIT_PLAYBOOK.md](./ai-guides/SPEC_KIT_PLAYBOOK.md)** - workflow Spec Kit adapte a CleanMyMap.
-- **[ai-guides/SPEC_KIT_ACTIONS.md](./ai-guides/SPEC_KIT_ACTIONS.md)** - liste d'actions derivee de la lecture de Spec Kit.
-- **[ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md](./ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md)** - workflow CleanMyMap pour les skills Matt Pocock, avec quand les utiliser et les commandes de check rapides reelles.
-- **[ai-guides/README.md](./ai-guides/README.md)** - porte d'entree des guides IA.
-- **[operations/agent-memory-governance.md](./operations/agent-memory-governance.md)** - doctrine de mémoire persistante, cycle de travail et clôture de session.
-- **[development/vercel-quota-governance.md](./development/vercel-quota-governance.md)** - gouvernance des quotas Vercel et détection des régressions de coût.
-- **[development/vercel-surface-report.md](./development/vercel-surface-report.md)** - rapport automatique des surfaces Vercel et de leur risque.
-- **[development/performance-quotas-vercel-checklist.md](./development/performance-quotas-vercel-checklist.md)** - checklist de revue avant PR pour les surfaces Vercel sensibles.
-- **[development/vercel-anti-regression-playbook.md](./development/vercel-anti-regression-playbook.md)** - retour d'expérience et erreurs à ne pas reproduire sur les surfaces Vercel.
-- **[development/vercel-supabase-browser-strategy.md](./development/vercel-supabase-browser-strategy.md)** - stratégie de répartition des charges entre Vercel, Supabase et le navigateur.
-- **[development/vercel-supabase-free-tier-rules.md](./development/vercel-supabase-free-tier-rules.md)** - doctrine free tier pour garder les features dans les limites Vercel et Supabase.
-- **[development/codex-vercel-development-guide.md](./development/codex-vercel-development-guide.md)** - guide Codex pour développer une fonctionnalité sans augmenter inutilement les quotas Vercel.
-- **[development/vercel-next-build-triage.md](./development/vercel-next-build-triage.md)** - protocole court pour corriger un build Vercel/Next sans multiplier les rebuilds.
-- **[development/supabase-quota-guide.md](./development/supabase-quota-guide.md)** - doctrine de stockage Supabase, règles Git/localStorage et garde-fous de consommation.
-- **[development/client-server-bundle-splitting.md](./development/client-server-bundle-splitting.md)** - règles pour garder la frontière serveur/client propre et éviter de regonfler le bundle initial.
-- **[development/vercel-route-cost-audit.md](./development/vercel-route-cost-audit.md)** - audit route par route des coûts Vercel.
+## Règle de classement
 
-### Origine et attribution
+### `documentation/pages_site/`
 
-- **[origin-about.md](./origin-about.md)** - origine du projet, attribution initiale, releases et traçabilité.
-- **[AUTHORS.md](../AUTHORS.md)** - attribution des auteurs et repères de contribution.
+Source de vérité fonctionnelle du point de vue utilisateur pour :
 
-### Instantanés de documentation
+- rôle de la page ;
+- contenu ;
+- parcours ;
+- états ;
+- UX/UI ;
+- captures ;
+- améliorations propres à la page.
 
-- **[documentation-push-status.md](./documentation-push-status.md)** - arborescence locale avec statut `✅` / `❌` / `⚪` pour suivre ce qui est déjà poussé.
+### Dossiers techniques transversaux
 
-### Règle de classement documentaire
+Utiliser le dossier adapté :
 
-- `documentation/pages_site/` est la référence canonique pour chaque page ou rubrique du point de vue utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et pistes d'amélioration propres à la page.
-- Le reste de `documentation/` sert aux sujets techniques transversaux, rangés dans le dossier adapté selon le thème : `development/`, `architecture/`, `security/`, `database/`, `operations/`, `features/` ou autre dossier pertinent.
-- Pour un sujet mixte, garder le résumé fonctionnel dans la fiche de page et pointer vers la documentation technique correspondante. Éviter les doublons et les fichiers miroir.
-
----
-
-## 📁 Structure Documentation
-
+```txt
+architecture/
+database/
+development/
+features/
+operations/
+security/
 ```
+
+Pour un sujet mixte :
+
+- résumé fonctionnel dans la fiche de page ;
+- détail technique dans le dossier technique ;
+- lien entre les deux ;
+- aucune copie miroir.
+
+## Structure principale
+
+```txt
 documentation/
-├── README.md                    ← Ce fichier
-│
-├── ai-guides/                   🤖 Guides spécifiques IA
-│   ├── SPEC_KIT_PLAYBOOK.md
-│   ├── SPEC_KIT_ACTIONS.md
-│   ├── MATT_POCOCK_SKILLS_PLAYBOOK.md
-│   ├── AI_MODULARIZATION_GUIDE.md
-│   └── AI_MODULARIZATION_CHEATSHEET.md
-│
-├── design-system/               🎨 CRITIQUE pour UI
-│   ├── README.md
-│   ├── charte-ui-pro-moderne-futuriste.md
-│   ├── VISUAL_STORYTELLING.md
-│   └── [14 autres fichiers]
-│
-├── security/                    🔐 CRITIQUE pour sécurité
-│   ├── README.md
-│   ├── SECURITY_GUIDE.md
-│   ├── SECURITY_QUICK_REFERENCE.md
-│   └── [11 autres fichiers]
-│
-├── development/                 💻 Standards de code
-│   ├── README.md
-│   ├── AI_DEVELOPER_GUIDE.md
-│   ├── AI_MINDSET_KAIZEN.md
-│   └── [9 autres fichiers]
-│
-├── architecture/                🏗️ Architecture système
-│   ├── README.md
-│   ├── master-architecture.md
-│   ├── ARCHITECTURE.md
+├── ai-guides/
+├── architecture/
 │   ├── adr/
-│   └── [7 autres fichiers]
-│
-├── database/                    💾 Quotas, requêtes et index Supabase
-│   ├── README.md
-│   ├── QUERY_INDEX_AUDIT.md
-│   └── supabase-quota-audit.md
-│
-├── operations/                  🔧 Ops & déploiement
-│   ├── README.md
-│   ├── INCIDENT_RUNBOOK_SHORT.md
-│   ├── agent-memory-governance.md
-│   └── [9 autres fichiers + data-import/]
-│
-├── product/                     📋 Vision & métier
-│   ├── README.md
-│   ├── vision-et-objectifs.md
-│   ├── audit/ (24 fichiers)
-│   └── [11 autres fichiers]
-│
-├── features/                    🎮 Fonctionnalités
-│   ├── README.md
-│   ├── group-action.md
-│   ├── GAMIFICATION_ENGINE.md
-│   └── quiz-srs.md
-│
-├── specs/                       🧭 Spécifications structurées
-│   ├── README.md
-│   └── group-action/
-│
-├── pages_site/                  🗺️ Pages et parcours utilisateurs
-│   ├── README.md
+│   ├── master-architecture.md
+│   ├── system-overview.md
+│   └── ...
+├── database/
+├── design-system/
+├── development/
+├── features/
+├── operations/
+├── pages_site/
 │   ├── INDEX.md
 │   └── routes/
-│
-├── maintenance/                 🔧 Maintenance
-│   ├── improvements_journal.md
-│   └── vercel_deployments.txt
-│
-└── assets/                      🖼️ Images
-    ├── map-immersive-desktop.png
-    └── map-immersive-mobile.png
+├── product/
+├── security/
+└── specs/
 ```
 
----
+Les dossiers historiques, de session ou personnels ne doivent pas devenir des sources de vérité concurrentes.
 
-## Règle de captures UX/UI
+## Lecture par type de tâche
 
-Les captures d'écran canoniques des pages doivent être déposées dans le dossier `photo/desktop/` de la fiche route canonique sous `documentation/pages_site/routes/.../`, au format WebP. L'inventaire des pages et le statut de capture sont centralisés dans `documentation/pages_site/INDEX.md`. Les anciens miroirs UX/UI ne doivent plus servir de source de vérité.
+### UI
 
-Chaque page du site dispose de son propre sous-dossier dans `documentation/pages_site/routes/`. Ce sous-dossier contient les captures de la page complète, un markdown dédié aux exceptions UI de la page et un markdown de présentation qui explique le fonctionnement de la page et son rôle dans le parcours utilisateur.
+Lire :
 
-Jusqu'à nouvel ordre, seules les captures desktop sont produites. Les captures mobile restent documentées comme attendues, mais elles ne doivent pas être générées sans instruction explicite.
+1. `design-system/README.md` ;
+2. `design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` ;
+3. `pages_site/INDEX.md` ;
+4. fiche canonique de la page.
 
-- `documentation/pages_site/routes/00-homepage/homepage/photo/desktop/`
-- `documentation/pages_site/routes/02-agir/actions-new/photo/desktop/`
-- `documentation/pages_site/routes/03-cartographie-impact/actions-map/photo/desktop/`
-- etc.
+### Sécurité, API, données ou auth
 
-Les captures temporaires, versions contexte ou exports de travail ne remplacent jamais ces fichiers WebP officiels.
+Lire :
 
----
+1. `security/README.md` ;
+2. `architecture/system-overview.md` ;
+3. ADR pertinent ;
+4. fichiers de code réellement concernés.
 
-## 🤖 Workflow IA Standard
+### Architecture
 
-### 1. Démarrage Session
-```
-□ Lire les règles globales du projet
-□ Lire le contexte de session actuel
-□ Consulter la vue d'ensemble du projet si besoin
-```
+Lire :
 
-### 2. Avant de Coder
-```
-□ Identifier le type de tâche
-□ Consulter le README du dossier pertinent
-□ Lire les fichiers essentiels
-```
+1. `architecture/master-architecture.md` ;
+2. `architecture/system-overview.md` ;
+3. ADR concernés ;
+4. document de domaine.
 
-### 3. Pendant le Développement
-```
-□ Respecter les règles du domaine
-□ Suivre les standards
-□ Valider régulièrement
-```
+### Produit
 
-### 4. Avant de Commit
-```
-□ Vérifier les checklists
-□ Toujours partir de l'état complet du repo avec `git add -A`
-□ Lancer les tests
-□ Documenter si nécessaire
+Lire :
+
+1. `product/vision-et-objectifs.md` ;
+2. `product/roadmap-priorisee.md` ;
+3. fiche de page ou fonctionnalité concernée.
+
+## Captures UX/UI
+
+Les captures canoniques sont centralisées par bloc ou famille documentaire, conformément à :
+
+```txt
+documentation/pages_site/README.md
 ```
 
-### 5. Fin de Session
+Règles :
+
+- format WebP ;
+- dossier photo centralisé au niveau du bloc ;
+- nom contenant bloc, page ou route et date ;
+- pas de miroir par page ;
+- capture desktop par défaut ;
+- mobile uniquement sur instruction explicite.
+
+Une preuve visuelle ne remplace pas la vérification sémantique de la page.
+
+## Workflow agent
+
+### Avant de modifier
+
+```txt
+□ Lire AGENTS.md
+□ Vérifier le fichier actuel sur GitHub
+□ Identifier la source canonique
+□ Inspecter les dépendances directes
+□ Définir le plus petit périmètre sûr
 ```
-□ Mettre à jour le contexte de session
-□ Documenter les décisions importantes
-```
 
----
+### Après modification
 
-## 📊 Matrice de Décision IA
-
-| Tâche | Dossiers à Consulter | Priorité |
-|-------|---------------------|----------|
-| Modifier UI | design-system/ | CRITIQUE |
-| Ajouter API | security/, development/ | CRITIQUE |
-| Refactoring | development/, architecture/ | HAUTE |
-| Nouvelle feature | product/, features/ | HAUTE |
-| Déploiement | operations/ | HAUTE |
-| Bug fix | development/, security/ | MOYENNE |
-| Documentation | development/ | MOYENNE |
-
----
-
-## 🎯 Règles Globales IA
-
-### Toujours
-- ✅ Lire les règles globales au démarrage
-- ✅ Lire le contexte de session pour continuité
-- ✅ Consulter design-system/ avant UI
-- ✅ Appliquer `cleanmymap-ui-ux-pro-max.md` sur les surfaces métier denses
-- ✅ Consulter security/ avant code sensible
-- ✅ Respecter les standards de development/
-- ✅ Documenter les décisions importantes
-
-### Jamais
-- ❌ Modifier UI sans lire design-system/
-- ❌ Coder sans vérifier security/
-- ❌ Déployer sans operations/checklist
-- ❌ Ignorer les tests de regression-gates
-- ❌ Oublier de mettre à jour latest-session.md
-
----
-
-## 🚀 Commandes Utiles
+Validation ciblée :
 
 ```bash
-# Développement
-npm run dev
-npm run build
-npm run lint
-npm run test
-
-# Modularisation
-npm run analyze:heavy-files
-npm run modularize:report <fichier>
-
-# Sessions
-npm run session:bootstrap
-npm run session:close
-npm run session:budget
-
-# Validation
-npm run checks
-npm run test:regression-gates
+npm run checks:changed
 ```
 
----
+Validation complète :
 
-## 📞 Support
+```bash
+npm run checks
+```
 
-### Questions sur...
-- **Architecture** → architecture/README.md puis architecture/master-architecture.md
-- **UI/Design** → design-system/README.md
-- **Sécurité** → security/README.md
-- **Code** → development/README.md
-- **Ops** → operations/README.md
-- **Produit** → product/README.md
-- **Features** → features/README.md
-- **Modularisation** → ai-guides/README.md
+Contrôles spécialisés :
 
----
+```bash
+npm run security:secrets
+npm run test:security
+npm run test:regression-gates
+npm run check:root-files
+npm run check:doc-governance
+npm run check:stack-doc-drift
+npm run check:agent-skills
+```
 
-## ✨ Principes Clés
+E2E explicite :
 
-### Amélioration Continue
-- Ne jamais considérer le code comme parfait
-- Toujours chercher à améliorer
-- Être force de proposition
+```bash
+npm run test:e2e
+```
 
-### Qualité
-- Tests obligatoires
-- Pas de régression
-- Code maintenable
+## Principes
 
 ### Sécurité
-- Toujours valider les entrées
-- Jamais exposer de secrets
-- Suivre security/SECURITY_GUIDE.md
+
+- valider les entrées ;
+- vérifier l'autorisation côté serveur ;
+- ne jamais exposer `service_role` au client ;
+- ne pas désactiver RLS pour contourner un bug ;
+- ne jamais committer un secret.
 
 ### Documentation
-- Code auto-documenté
-- Documentation technique à jour
-- Contexte de session documenté
 
----
+- une règle durable = une source canonique ;
+- préférer un lien à une duplication ;
+- éviter les nombres de fichiers codés en dur ;
+- éviter les dates factices ;
+- ne pas conserver un backlog terminé comme source active.
 
-**Optimisé pour** : Agents IA  
-**Version** : 2.0.0  
-**Dernière mise à jour** : 2025-01-XX
+### Qualité
+
+- ne pas annoncer un test non exécuté ;
+- corriger la cause racine ;
+- éviter les refontes opportunistes ;
+- documenter les décisions majeures dans un ADR.
+
+## Références prioritaires
+
+- `AGENTS.md`
+- `README.md`
+- `architecture/README.md`
+- `security/README.md`
+- `development/TESTING.md`
+- `pages_site/README.md`
+- `pages_site/INDEX.md`

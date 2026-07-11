@@ -1,185 +1,267 @@
 # Testing Guide
 
-## Reproducible Setup
+Guide canonique de validation du dépôt CleanMyMap.
 
-1. Install Python and Node dependencies:
-   - `powershell -ExecutionPolicy Bypass -File scripts/setup_test_env.ps1`
+## Principe
 
-## Run Checks
+Une commande ne doit jamais être présentée comme « globale » si elle ne couvre qu'une partie du dépôt.
 
-1. Full validation:
-   - `powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1`
+Le projet distingue :
 
-2. Fast changed-scope validation:
-   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
-   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild` (includes `next build`)
+- validation ciblée ;
+- validation complète ;
+- tests spécialisés ;
+- E2E explicites.
 
-3. TypeScript diagnostic flow:
-   - `npm run typecheck`
-   - `npx tsc --noEmit --pretty false`
-   - `npx tsc --noEmit --pretty false > typescript-errors.txt`
-   - if the output still looks truncated, use `npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt`
-   - read the file, group the errors by root cause, fix the shared blocker first, then rerun `npm run typecheck`
+## Installation
 
-4. Focused low-noise logs:
-   - `npm run logs:focus:test`
-   - `npm run logs:focus:build`
-   - `npm run logs:focus:checks`
+```bash
+npm install
+```
 
-5. Python only:
-   - `pytest -q`
+Pour l'application compagnon :
 
-6. QA page par page sur une route visible modifiée:
-   - lancer la page en local
-   - capturer le rendu écran
-   - exporter la page avec `.MD this page` via `Alt+M`
-   - comparer la capture et l'extraction Markdown
-   - corriger la hiérarchie des titres, les CTA, les statistiques, les cartes, les sources/statuts et les attributs accessibles
-   - relancer les deux vérifications avant merge
+```bash
+npm install --prefix companion-app
+```
 
-   Référence détaillée :
-   - `page-by-page-ui-qa.md`
+Pour les tests E2E Playwright :
 
-## Fenêtres Locales Recommandées
+```bash
+npx playwright install chromium
+```
 
-Ordres de grandeur mesurés sur cette base de repo. Ils servent de fenêtres locales minimales avant de conclure qu'une commande est trop lente ou bloquée.
+## Validation ciblée
 
-| Commande | Fenêtre locale recommandée | Temps observé récent |
-|---------|----------------------------|----------------------|
-| `npm run typecheck` | 2 min | ~25-40 s |
-| `npm run lint` | 5 min | ~100-150 s |
-| `npm run test` | 3 min | ~75-90 s |
-| `npm run build` | 15 min | ~280 s |
-| `git diff --check` | 1 min | < 5 s |
+Commande recommandée pendant une correction :
 
-Règles pratiques :
-- si une commande dépasse sa fenêtre habituelle, lire la sortie avant de relancer;
-- pour les scans larges (`rg -n`, audits de documentation, gros `eslint`), partir sur 2 à 5 min selon le périmètre;
-- ne pas réduire les timeouts juste pour faire passer un contrôle, surtout pour `build` et `test`.
+```bash
+npm run checks:changed
+```
 
-## Scope Covered
+Elle inspecte les changements locaux et exécute les contrôles pertinents pour le scope détecté.
 
-- Python syntax/compile checks
-- Unit tests for:
-  - admin auth hardening
-  - input validation
-  - CSV export service
-  - PDF generation
-  - security sanitization helpers
-- Web lint/test/build gates for `apps/web`
+## Validation complète
 
-## Production Smoke (Short)
+```bash
+npm run checks
+```
 
-After each production redeploy, verify:
-- `/sign-in`
-- `/dashboard` (authenticated)
-- `/admin` (admin account)
-- `/actions/new`
-- `/actions/map`
-- `/reports`
-- `/api/health`
-- `/api/uptime`
+Équivalent explicite :
 
-## Minimal Anti-Regression Protocol
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/run_checks2.ps1 -Scope full
+```
 
-Run this sequence for every incremental patch:
+La lane maintenance reste disponible à part :
 
-1. Local changed-scope checks:
-   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
-2. Web app quality gates:
-   - `npm --prefix apps/web run lint`
-   - `npm --prefix apps/web run build`
-3. QA page par page pour toute route visible touchée :
-   - capture écran locale
-   - export `.MD this page`
-   - comparaison des deux rendus
-   - correction avant merge si l'un des deux révèle un défaut de lecture
-4. Production post-redeploy smoke (authenticated):
-   - sign in with a live Clerk account
-   - verify `/dashboard`, `/admin`, `/reports`, `/actions/new`, `/actions/map`
-   - verify export endpoints from admin UI (`CSV` + `JSON`)
-   - verify `/api/uptime` shows `criticalStatus: "ok"` (optional warnings allowed)
+```bash
+npm run checks:maintenance
+```
 
-Pass criteria:
-- no failing checks in steps 1-2
-- no critical functional gap in steps 3-4
+Ou directement :
 
-## Vercel Build Fast Path
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope full
+```
 
-Use this order before starting a long `vercel build` session:
+La validation complète couvre notamment :
 
-Do not use `next build` as the first diagnostic method.
+- audit de secrets ;
+- hygiène de la racine ;
+- gouvernance documentaire ;
+- dérive de versions documentées ;
+- synchronisation des skills miroir ;
+- contrôles documentaires ;
+- typecheck web ;
+- lint web ;
+- Vitest ;
+- tests de sécurité ;
+- tests de régression ;
+- audit Vercel CI ;
+- build de production ;
+- typecheck de l'application compagnon ;
+- maintenance Python lorsque l'environnement la permet.
 
-Expected order:
+Les E2E ne sont pas lancés automatiquement par défaut.
 
-1. Read the full error log.
-2. Classify the failure: TypeScript, import, Next route, Vercel config, cache, Supabase, env vars, Turbopack/Webpack.
-3. Run the fast checks: typecheck, lint, targeted tests.
-   - Prefer `npm run typecheck` or `npx tsc --noEmit --pretty false` for TypeScript triage.
-   - If the compiler output is long, capture it to `typescript-errors.txt` and group by root cause before editing.
-4. Fix grouped errors.
-5. Run one full local/sandbox build.
-6. Trigger Vercel only once the local/sandbox build is clean.
+## Commandes ciblées
 
-1. `npm run typecheck -w apps/web`
-2. `npm run test:regression-gates -w apps/web`
-3. `npm run build -w apps/web`
-4. `npm run audit:vercel-quota`
-5. `npx vercel build --yes`
+```bash
+npm run security:secrets
+npm run check:root-files
+npm run check:doc-governance
+npm run check:stack-doc-drift
+npm run check:agent-skills
 
-Stop after the first repeated failure. Do not relaunch `next build` after every micro-correction. Batch the fixes by category, re-run the fast checks once, then rebuild once.
+npm run typecheck
+npm run lint
+npm run test
+npm run test:security
+npm run test:regression-gates
+npm run build
 
-If the code-level build passes but `vercel build` fails on Windows with `EPERM: operation not permitted, symlink`, do not loop on the same command:
+npm run companion:typecheck
+```
 
-- verify whether the shell can create symlinks;
-- retry from an elevated shell or with Windows Developer Mode enabled;
-- keep the native `next build` result as the code signal and treat the failure as a packaging/environment issue.
+## E2E
 
-If the build looks stale or manifests are missing, clean the local cache before the next full build:
+Lister les tests :
 
-- `npm run build:clean -w apps/web`
-- this deletes `apps/web/.next` and `apps/web/.turbo`, then relaunches the stable Webpack build path
-- do not fabricate `.next/server/pages-manifest.json`, `.next/server/proxy.js.nft.json` or any other internal Next.js file by hand
+```bash
+npm run test:e2e:list
+```
 
-## Local Clerk Verification
+Exécuter :
 
-For web verification on a localhost app without signing in every time:
+```bash
+npm run test:e2e
+```
 
-1. Prefer the automatic dev bypass on `localhost` during `next dev`.
-2. For a clean local Clerk setup, copy `apps/web/.env.local.example` to `apps/web/.env.local`, leave `NEXT_PUBLIC_CLERK_PROXY_URL` empty, omit the live `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, and set:
-   - `CMM_DEV_AUTH_BYPASS=1`
-   - `CMM_DEV_AUTH_BYPASS_ROLE=max` for the IMU profile
-3. If you need to force it on another local host, set:
-   - `CMM_DEV_AUTH_BYPASS=1`
-   - `CMM_DEV_AUTH_BYPASS_ROLE=coordinateur` or `admin` depending on the screen you need to inspect
-4. For Playwright automation, prefer a saved `storageState` from one real Clerk login when you want to test the protected route itself.
-5. If the goal is UX review rather than auth behavior, use the public preview route:
-   - `/preview/actions/new`
-6. For isolated tests, mock the session/auth server layer instead of depending on live Clerk redirects.
+Ou via le script PowerShell :
 
-## Localhost Stale Build Troubleshooting
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/run_checks2.ps1 -Scope full -IncludeE2E
+```
 
-If `localhost` looks older than the GitHub repo or Turbopack logs mention missing cache files:
+Le premier périmètre E2E doit rester limité aux parcours à fort risque :
 
-0. If this machine is bugging out in the browser, do not force a Codex browser session on `localhost`; rely on the terminal logs and the local browser outside Codex for verification.
-1. `npm run dev` uses Turbopack by default.
-2. `npm run build` for `apps/web` uses the stable Webpack path; if it fails, clean the cache first and inspect the post-build manifest copy step before retrying.
-3. Stop every running `Node.js JavaScript Runtime` / `next dev` process for this repo.
-4. Clear the Next.js cache and restart clean:
-   - `npm run dev:clean`
-5. If you want to fail fast instead of silently moving to another port:
-   - `npm run dev:strict`
-6. If the terminal says port `3000` is busy, do not open `3000` by reflex:
-   - the launcher may have started on `3001` or higher.
-7. If the browser still serves stale content after restart, hard refresh or clear `localhost` site data.
+- pages publiques essentielles ;
+- health endpoints ;
+- frontière admin ;
+- absence d'indexation des surfaces privées ;
+- parcours authentifiés critiques quand un `storageState` sécurisé est disponible.
 
-## Build Notes Observed In The Latest Validation
+## TypeScript
 
-When validating the web workspace:
+Commande standard :
 
-1. Run the usual quality gates first:
-   - `npm run typecheck -w apps/web`
-   - `npm run lint -w apps/web`
-2. If the build fails on missing Next server manifests, clean the cache once with `npm run build:clean -w apps/web` before retrying the full build.
-3. Inspect `apps/web/scripts/ensure-deterministic-routes-manifest.mjs` only for the post-build copy step.
-4. Treat `403` on `npm run backend:supabase:advisors -w apps/web` as a permissions issue on the Supabase project, not as a local build regression.
+```bash
+npm run typecheck
+```
+
+Diagnostic détaillé :
+
+```bash
+npx tsc --noEmit --pretty false
+```
+
+Sortie complète :
+
+```bash
+npx tsc --noEmit --pretty false --noErrorTruncation > typescript-errors.txt
+```
+
+Méthode :
+
+1. lire la sortie ;
+2. grouper les erreurs par cause ;
+3. corriger le blocage commun ;
+4. relancer le typecheck ;
+5. ne pas remplacer mécaniquement `any` par `unknown` sans narrowing.
+
+## Build
+
+Ordre recommandé :
+
+1. lire l'erreur complète ;
+2. classer : TypeScript, import, route, Next.js, Vercel, env, Supabase, bundler ;
+3. lancer typecheck, lint et tests ciblés ;
+4. corriger un lot cohérent ;
+5. lancer un seul build complet.
+
+Commandes :
+
+```bash
+npm run typecheck
+npm run test:regression-gates
+npm run build
+npm run audit:vercel-quota
+```
+
+Si le build semble utiliser un cache incohérent :
+
+```bash
+npm run build:clean -w apps/web
+```
+
+Ne jamais fabriquer manuellement un fichier interne `.next`.
+
+## Application compagnon
+
+Minimum obligatoire :
+
+```bash
+npm --prefix companion-app run typecheck
+```
+
+Avant production mobile, ajouter des tests ciblés couvrant :
+
+- restauration d'une mission active ;
+- buffer offline ;
+- refus des permissions GPS ;
+- finalisation d'une mission ;
+- erreurs Supabase ;
+- propriété d'une mission ;
+- cohérence d'identité ;
+- calcul de distance.
+
+## QA UI
+
+Pour une page visible modifiée, seulement lorsque demandé :
+
+1. lancer localement ;
+2. capturer le rendu desktop ;
+3. exporter `.MD this page` ;
+4. comparer visuel et sémantique ;
+5. vérifier CTA, titres, statistiques, sources, états et accessibilité.
+
+Référence :
+
+```txt
+documentation/development/page-by-page-ui-qa.md
+```
+
+## Smoke de production
+
+Après déploiement significatif :
+
+```txt
+/sign-in
+/dashboard
+/admin
+/actions/new
+/actions/map
+/reports
+/api/health
+/api/uptime
+```
+
+Vérifier :
+
+- auth ;
+- admin ;
+- pages métier ;
+- export si concerné ;
+- `criticalStatus: "ok"` sur `/api/uptime`.
+
+## Clerk local
+
+Pour revue UX sans tester Clerk lui-même :
+
+- utiliser le bypass de développement uniquement en `NODE_ENV=development` ;
+- ou utiliser `/preview/actions/new`.
+
+Pour tester une vraie route protégée avec Playwright :
+
+- préférer un `storageState` issu d'une connexion réelle ;
+- ne jamais committer session, token ou secret.
+
+## Critères de réussite
+
+Une validation est réussie seulement si :
+
+- toutes les commandes réellement exécutées passent ;
+- aucune erreur critique n'est masquée ;
+- les contrôles non exécutés sont explicitement signalés ;
+- le niveau de validation correspond au niveau de risque du changement.

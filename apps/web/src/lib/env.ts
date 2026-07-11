@@ -14,16 +14,20 @@ export const LOCAL_DEV_CLERK_PUBLISHABLE_KEY =
 
 function normalizeUrlCandidate(raw: string): string {
   const value = raw.trim();
-  // Use URL constructor instead of regex to avoid ReDoS (CodeQL: js/regex/dos)
+
   try {
     const parsed = new URL(value);
-    if (parsed.protocol) return value;
+    if (parsed.protocol) {
+      return value;
+    }
   } catch {
-    // Not a valid absolute URL — fall through
+    // Relative or hostname-only values are normalized below.
   }
+
   if (value.startsWith("localhost") || value.startsWith("127.0.0.1")) {
     return `http://${value}`;
   }
+
   return `https://${value}`;
 }
 
@@ -37,18 +41,21 @@ const optionalUrl = z.preprocess((value) => {
 
 const optionalBoolean = z.preprocess((value) => {
   const normalized = emptyToUndefined(value);
+
   if (typeof normalized === "boolean" || normalized === undefined) {
     return normalized;
   }
+
   if (typeof normalized === "string") {
     const lower = normalized.trim().toLowerCase();
-    if (lower === "true") {
+    if (lower === "true" || lower === "1") {
       return true;
     }
-    if (lower === "false") {
+    if (lower === "false" || lower === "0") {
       return false;
     }
   }
+
   return normalized;
 }, z.boolean().optional());
 
@@ -63,7 +70,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
   NEXT_PUBLIC_POSTHOG_REGION: z.enum(["eu", "us"]).optional(),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
-  NEXT_PUBLIC_CONTACT_EMAIL: z.string().optional(),
+  NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
@@ -80,11 +87,11 @@ const envSchema = z.object({
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
-  CONTACT_EMAIL: z.string().optional(),
+  CONTACT_EMAIL: z.string().email().optional(),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_REPLY_TO: z.string().optional(),
-  CREATOR_INBOX_EMAIL: z.string().optional(),
+  CREATOR_INBOX_EMAIL: z.string().email().optional(),
   SUPABASE_STORAGE_QUOTA_BYTES: z.string().optional(),
   SUPABASE_STORAGE_QUOTA_GB: z.string().optional(),
   CRON_SECRET: z.string().optional(),
@@ -107,7 +114,7 @@ const envSchema = z.object({
   IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE: z.string().optional(),
 });
 
-const parsed = envSchema.safeParse({
+const candidate = {
   ...process.env,
   NEXT_PUBLIC_APP_URL:
     process.env["NEXT_PUBLIC_APP_URL"] ||
@@ -125,18 +132,23 @@ const parsed = envSchema.safeParse({
   NEXT_PUBLIC_SENTRY_DSN: process.env["NEXT_PUBLIC_SENTRY_DSN"],
   SENTRY_AUTH_TOKEN: process.env["SENTRY_AUTH_TOKEN"],
   SENTRY_RELEASE: process.env["SENTRY_RELEASE"],
-});
+};
+
+const parsed = envSchema.safeParse(candidate);
+
 if (!parsed.success) {
-  // Fail fast in server contexts while keeping local DX understandable.
-  console.error(
-    "Invalid environment configuration",
-    parsed.error.flatten().fieldErrors,
+  const invalidFields = Object.keys(parsed.error.flatten().fieldErrors).sort();
+
+  console.error("Invalid environment configuration", {
+    invalidFields,
+  });
+
+  throw new Error(
+    `Invalid environment configuration: ${invalidFields.join(", ") || "unknown field"}`,
   );
 }
 
-export const env = parsed.success
-  ? parsed.data
-  : (process.env as z.infer<typeof envSchema>);
+export const env = parsed.data;
 
 export function isConfigured(value: string | undefined): boolean {
   return Boolean(value && value.trim().length > 0);

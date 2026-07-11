@@ -1,145 +1,145 @@
-# Plans d'Implémentation Kaizen
+# Plans d'implémentation Kaizen
 
-Plans d'amélioration continue pour les fichiers modularisés du projet CleanMyMap.
+## Rôle
 
----
+Ce dossier contient des audits d'amélioration ciblés à utiliser après stabilisation fonctionnelle d'un périmètre.
 
-## 📋 Principe
+Un audit Kaizen n'est ni une roadmap globale, ni une obligation de créer un audit pour chaque gros fichier, ni une liste d'innovations à exécuter automatiquement.
 
-Chaque fichier modularisé reçoit un **audit Kaizen** qui identifie des opportunités d'amélioration en 2 axes :
+## Priorité
 
-1. **Le Fond** (Logique & Science) : Rigueur, performance, robustesse
-2. **La Forme** (UX & Design) : Visualisation, animation, expérience
+Avant un audit Kaizen, traiter d'abord :
 
-Chaque audit est une **suite de prompts à exécuter par ordre de priorité**.
+1. sécurité ;
+2. erreurs de données ou runtime ;
+3. tests manquants sur les parcours critiques ;
+4. backlog produit actif ;
+5. refactors nécessaires.
 
----
+Le Kaizen vient ensuite pour améliorer un périmètre déjà suffisamment stable.
 
-## 📚 Ressources
+## État du dossier
 
-### Templates
+- `01-accueil-audit.md` : document historique d'avril 2026 ; à revalider avant toute exécution.
+- `TEMPLATE-AUDIT.md` : modèle de structure, à simplifier lors de son usage.
+- `GUIDE-UTILISATION-TEMPLATE.md` : aide de référence, non obligatoire à charger pour un lot simple.
 
-- **[TEMPLATE-AUDIT.md](./TEMPLATE-AUDIT.md)** - Template réutilisable pour créer un audit
-- **[GUIDE-UTILISATION-TEMPLATE.md](./GUIDE-UTILISATION-TEMPLATE.md)** - Guide complet pour utiliser le template
+Il n'existe plus d'objectif automatique de produire 14 audits supplémentaires. Un nouvel audit est créé uniquement quand une cible concrète le justifie.
 
----
+## Règles GPT-5.4 mini
 
-## 📁 Audits Disponibles
+Chaque audit doit rester court et contenir au maximum trois actions réellement prioritaires.
 
-### ✅ Complétés
+Pour chaque action, fournir uniquement :
 
-1. **[01-accueil-audit.md](./01-accueil-audit.md)** - Page d'Accueil
-   - 3 améliorations Fond (rigueur scientifique)
-   - 3 améliorations Forme (UX premium)
-   - 3 innovations (engagement)
-   - **Temps estimé** : 18-25h
+- objectif ;
+- preuve du problème actuel ;
+- périmètre ;
+- modification attendue ;
+- contraintes critiques ;
+- validations nécessaires ;
+- critère de fin.
 
----
+Éviter :
 
-## 🎯 Comment Utiliser
+- estimations horaires ;
+- longues listes d'idées optionnelles ;
+- innovations spéculatives ;
+- nouvelles dépendances proposées sans analyse ;
+- composants inventés avant lecture du code ;
+- chiffres ou sources scientifiques non vérifiés ;
+- injonction à ajouter de l'animation pour rendre une page « premium ».
 
-### Pour l'IA
+## Quand créer un audit
 
-1. **Lire l'audit** du fichier concerné
-2. **Exécuter les prompts** dans l'ordre de priorité
-3. **Valider** après chaque prompt (lint + test + build)
-4. **Documenter** les changements effectués
-5. **Mettre à jour** le statut dans l'audit
+Créer ou mettre à jour un audit seulement si au moins une condition est vraie :
 
-### Ordre d'Exécution Recommandé
+- un fichier ou module vient d'être fortement refactoré ;
+- une page reste difficile à comprendre malgré sa stabilité ;
+- des cas limites ou preuves manquent dans une logique métier ;
+- le même problème revient plusieurs fois ;
+- l'utilisateur demande explicitement une amélioration approfondie du périmètre.
 
+## Méthode
+
+### 1. Vérifier l'état réel
+
+Lire le code, les tests et la documentation canonique.
+
+Ne jamais reprendre aveuglément un constat ancien.
+
+### 2. Choisir au plus trois actions
+
+Classer par :
+
+1. exactitude et robustesse ;
+2. compréhension utilisateur ;
+3. performance ou maintenance.
+
+Une innovation n'entre dans l'audit que si elle répond à un problème démontré.
+
+### 3. Exécuter une action à la fois
+
+Chaque action doit pouvoir être donnée directement à GPT-5.4 mini sans explication supplémentaire.
+
+### 4. Valider
+
+Utiliser les contrôles ciblés pertinents :
+
+- tests ;
+- typecheck ;
+- lint ;
+- build ;
+- vérification UI seulement si demandée ou nécessaire au lot.
+
+Ne pas exécuter une suite lourde complète si un contrôle ciblé suffit.
+
+## Format canonique d'un audit
+
+```md
+# Audit Kaizen — <périmètre>
+
+## Contexte actuel
+- fichiers concernés
+- comportement actuel
+- preuves observées
+
+## P1 — <action prioritaire>
+Objectif :
+Preuve :
+Périmètre :
+Modification attendue :
+Contraintes :
+Validations :
+Fini quand :
+
+## P2 — <action suivante>
+...
+
+## P3 — <action optionnelle>
+...
 ```
-Phase 1: Fond (Rigueur)
-├─ Priorité 1 → Priorité 2 → Priorité 3
 
-Phase 2: Forme (UX)
-├─ Priorité 1 → Priorité 2 → Priorité 3
+## Critères de fin
 
-Phase 3: Innovations
-├─ Innovation 1 → Innovation 2 → Innovation 3
+Un audit est clos quand :
+
+- chaque action terminée possède une preuve ;
+- les validations exécutées sont indiquées ;
+- les actions abandonnées sont supprimées ou justifiées ;
+- aucun vieux prompt ne reste marqué comme actif après absorption ;
+- le document reflète l'état réel du repo.
+
+## Prompt exécutable
+
+```text
+Réalise un audit Kaizen ciblé sur un seul périmètre CleanMyMap.
+
+Avant de proposer des actions, vérifie l'état réel du code, des tests et de la documentation canonique. Ignore les anciens constats devenus faux.
+
+Sélectionne au maximum trois actions, classées par valeur réelle : exactitude/robustesse, compréhension utilisateur, puis performance/maintenance.
+
+Pour chaque action, indique uniquement : objectif, preuve, périmètre, modification attendue, contraintes, validations et critère de fin.
+
+N'invente ni source, ni métrique, ni composant, ni dépendance avant analyse du code. Ne propose pas d'innovation décorative sans problème démontré.
 ```
-
----
-
-## 📊 Format d'un Audit
-
-Chaque audit contient :
-
-### 1. État Actuel
-- Fichiers concernés
-- Points forts identifiés
-
-### 2. Audit Fond
-- Opportunités d'amélioration priorisées
-- Problème + Solution + Prompt
-
-### 3. Audit Forme
-- Opportunités d'amélioration priorisées
-- Problème + Solution + Prompt
-
-### 4. Innovations Proposées
-- Description + Valeur ajoutée + Complexité + Prompt
-
-### 5. Plan d'Exécution
-- Phases avec temps estimés
-- Ordre de priorité
-
-### 6. Résultat Attendu
-- Avant/Après
-- Impact mesurable
-
----
-
-## 🔄 Workflow
-
-```
-1. Modularisation d'un fichier
-   ↓
-2. Création de l'audit Kaizen
-   ↓
-3. Exécution des prompts (par priorité)
-   ↓
-4. Validation (lint + test + build)
-   ↓
-5. Documentation des changements
-   ↓
-6. Mise à jour du statut
-```
-
----
-
-## 📈 Métriques de Succès
-
-Pour chaque audit, mesurer :
-
-- ✅ **Rigueur** : Références scientifiques ajoutées
-- ✅ **Robustesse** : Cas limites gérés
-- ✅ **Performance** : Temps de chargement réduit
-- ✅ **UX** : Animations et visualisations ajoutées
-- ✅ **Engagement** : Temps passé sur la page augmenté
-
----
-
-## 🎯 Prochains Audits
-
-Après modularisation de :
-
-2. **Dashboard** (`apps/web/src/app/(app)/dashboard/page.tsx`)
-3. **Map Feed** (`apps/web/src/components/actions/actions-map-feed.tsx`)
-4. **Map Page** (`apps/web/src/app/(app)/actions/map/page.tsx`)
-5. **Gamification** (`apps/web/src/components/sections/rubriques/gamification-section.tsx`)
-
----
-
-## 📚 Références
-
-- **Philosophie** : `documentation/development/AI_MINDSET_KAIZEN.md`
-- **Visual Storytelling** : `documentation/design-system/VISUAL_STORYTELLING.md`
-- **Design System** : `documentation/design-system/charte-ui-pro-moderne-futuriste.md`
-- **Exemples** : `documentation/ai-guides/AI_KAIZEN_EXAMPLES.md`
-
----
-
-**Dernière mise à jour** : 28/04/2026  
-**Audits créés** : 1  
-**Audits en attente** : 14

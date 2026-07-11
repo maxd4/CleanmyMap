@@ -13,9 +13,13 @@ on:
 jobs:
   fast-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      companion_code_relevant: ${{ steps.scope.outputs.companion_code_relevant }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -43,28 +47,51 @@ jobs:
 
           changed_files="$(git diff --name-only "$base" "$head")"
           docs_only=true
+          companion_code_relevant=false
 
           while IFS= read -r file; do
             [[ -z "$file" ]] && continue
+
             case "$file" in
-              documentation/*|*.md|backups/*|artifacts/*)
+              documentation/*|*.md)
                 ;;
               *)
                 docs_only=false
-                break
+                ;;
+            esac
+
+            case "$file" in
+              companion-app/*.md)
+                ;;
+              companion-app/*|.github/workflows/ci.yml)
+                companion_code_relevant=true
                 ;;
             esac
           done <<< "$changed_files"
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "companion_code_relevant=$companion_code_relevant" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
-        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
+
+      # Security and repository governance must run even for documentation-only changes.
+      - name: Secret audit
+        run: npm run security:secrets
+
+      - name: Root file hygiene
+        run: npm run check:root-files
+
+      - name: Documentation governance
+        run: npm run check:doc-governance
+
+      - name: Stack documentation drift
+        run: npm run check:stack-doc-drift
+
+      - name: Agent skill mirror check
+        run: npm run check:agent-skills
 
       - name: Install Node dependencies
         if: steps.scope.outputs.docs_only != 'true'
@@ -73,10 +100,6 @@ jobs:
       - name: Lockfile policy
         if: steps.scope.outputs.docs_only != 'true'
         run: npm run check:lockfile-policy
-
-      - name: Secret audit
-        if: steps.scope.outputs.docs_only != 'true'
-        run: npm run security:secrets
 
       - name: TypeScript typecheck
         if: steps.scope.outputs.docs_only != 'true'
@@ -100,60 +123,32 @@ jobs:
 
       - name: Vercel regression gates
         if: steps.scope.outputs.docs_only != 'true'
-        run: npm run test:regression-gates -w apps/web
+        run: npm run test:regression-gates
 
       - name: Vercel audits
         if: ${{ always() && steps.scope.outputs.docs_only != 'true' }}
         run: npm run audit:vercel:ci
 
+      - name: Web production build
+        if: steps.scope.outputs.docs_only != 'true'
+        run: npm run build
+
   security-checks:
+    needs: fast-checks
+    if: needs.fast-checks.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
-      - name: Detect scope
-        id: scope
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base="${{ github.event.pull_request.base.sha }}"
-            head="${{ github.event.pull_request.head.sha }}"
-          else
-            base="${{ github.event.before }}"
-            head="${{ github.sha }}"
-          fi
-
-          if [[ "$base" =~ ^0+$ ]]; then
-            base="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
-          fi
-
-          changed_files="$(git diff --name-only "$base" "$head")"
-          docs_only=true
-
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-            case "$file" in
-              documentation/*|*.md|backups/*|artifacts/*)
-                ;;
-              *)
-                docs_only=false
-                break
-                ;;
-            esac
-          done <<< "$changed_files"
-
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-
       - name: Set up Node
-        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: "20"
@@ -161,13 +156,35 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install Node dependencies
-        if: steps.scope.outputs.docs_only != 'true'
         run: npm ci
 
-      - name: Secret audit
-        if: steps.scope.outputs.docs_only != 'true'
-        run: npm run security:secrets
-
       - name: Security invariants and targeted tests
-        if: steps.scope.outputs.docs_only != 'true'
         run: npm run test:security
+
+  companion-checks:
+    needs: fast-checks
+    if: needs.fast-checks.outputs.companion_code_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: companion-app/package-lock.json
+
+      - name: Install companion dependencies
+        run: npm ci --prefix companion-app
+
+      - name: Companion typecheck
+        run: npm --prefix companion-app run typecheck

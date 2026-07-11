@@ -98,15 +98,6 @@ async function resolveReviewerAccess(params: {
   return { ok: false as const };
 }
 
-async function resolveAdminModerationAccess() {
-  const identity = await getCurrentUserIdentity();
-  if (canUseAdminOverride(identity)) {
-    return { ok: true as const, identity };
-  }
-
-  return { ok: false as const, identity };
-}
-
 export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
@@ -234,7 +225,7 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  await resolveGroupJoinUserId("GET /api/actions/:actionId/group-join");
+  const userId = await resolveGroupJoinUserId("GET /api/actions/:actionId/group-join");
   const url = new URL(_request.url);
   const searchParsed = searchSchema.safeParse({
     q: url.searchParams.get("q"),
@@ -271,8 +262,16 @@ export async function GET(
       );
     }
 
+    const access = userId
+      ? await resolveReviewerAccess({
+          supabase,
+          actionId: trimmedActionId,
+          creatorUserId: actionResult.created_by_clerk_id,
+          actorUserId: userId,
+        })
+      : { ok: false as const };
+
     if (searchParsed.success && searchParsed.data.q.length > 0) {
-      const access = await resolveAdminModerationAccess();
       if (!access.ok) {
         return NextResponse.json(
           { error: "Vous n'êtes pas autorisé à rechercher des comptes." },
@@ -295,7 +294,6 @@ export async function GET(
       });
     }
 
-    const access = await resolveAdminModerationAccess();
     const pendingRequests = access.ok
       ? await loadActionParticipationReviews(supabase, {
           actionId: trimmedActionId,
@@ -375,7 +373,12 @@ export async function POST(
       );
     }
 
-    const access = await resolveAdminModerationAccess();
+    const access = await resolveReviewerAccess({
+      supabase,
+      actionId: trimmedActionId,
+      creatorUserId: actionResult.created_by_clerk_id,
+      actorUserId: userId,
+    });
 
     if (!access.ok) {
       return NextResponse.json(
@@ -406,7 +409,7 @@ export async function POST(
       ).catch(() => null);
     }
 
-    if (access.identity) {
+    if (access.identity && canUseAdminOverride(access.identity)) {
       const actorUserId = access.identity?.userId ?? userId;
       await appendActionModerationAudit({
         operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,

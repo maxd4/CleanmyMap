@@ -1,333 +1,142 @@
-# Plan de Modularisation - 15 Fichiers Prioritaires
+# Plan de modularisation IA
 
-Plan détaillé des fichiers à modulariser avec objectifs et structure cible.
+## Statut
 
----
+Plan exécutable pour GPT-5.4 mini.
 
-## 🔴 Priorité Haute (1-5) - Impact Immédiat
+Ce document ne maintient plus une liste figée de 15 fichiers héritée d'avril 2026. La priorité réelle doit être déterminée depuis l'état courant du dépôt.
 
-### 1. ✅ `src/app/page.tsx` (7695 → 3500 octets) - COMPLÉTÉ
+Sources de vérité, dans cet ordre :
 
-**Réduction** : 54%
+1. `documentation/architecture/monolith-split-plan.md`
+2. `scripts/heavy-files-baseline.json`
+3. résultat du scan courant des fichiers lourds
+4. tests, lint et erreurs réellement observés
 
-**Fichiers créés** :
-- `components/accueil/index.ts` - Exports centralisés
-- `lib/accueil/config.ts` - Configuration et builders
+En cas de conflit, l'état réel du code prime sur ce document.
 
-**Date** : 28/04/2026
+## Objectif
 
----
+Réduire progressivement les fichiers trop longs ou trop couplés sans modifier le comportement public, les contrats métier ni les parcours utilisateurs.
 
-### 2. ⏸️ `src/app/(app)/dashboard/page.tsx` (22545 octets) - CRITIQUE
+Une exécution traite une seule cible principale à la fois.
 
-**Objectif** : < 5000 octets
+## Contraintes critiques
 
-**Estimation** : 60-90 min
+- Ne jamais créer un découpage sur la seule base d'un ancien plan.
+- Vérifier d'abord que le fichier existe encore et mesurer son état actuel.
+- Préserver les props, exports, routes, contrats API et comportements visibles.
+- Extraire seulement quand la responsabilité obtenue est claire et cohérente.
+- Éviter les micro-fichiers artificiels et les wrappers sans valeur.
+- Ajouter ou conserver les tests avant de supprimer une logique existante.
+- Ne pas mélanger refactor structurel, refonte UI, migration Supabase et correction de dépendances dans le même lot.
+- Respecter `AGENTS.md`, l'architecture, la sécurité et le design system applicables au périmètre.
 
-**Fichiers à créer** :
+## Backlog courant
+
+### P1 — Cibles à forte valeur de maintenance
+
+Traiter une cible uniquement après vérification de son état réel :
+
+- `components/sections/rubriques/free-plan-services-methodology-visual.tsx`
+- `components/admin/free-plan-services-visual.tsx`
+- `components/sections/rubriques/partners-network-section.tsx`
+- `app/api/actions/group-join/route.test.ts`
+
+### P2 — Cibles moyennes à reprendre ensuite
+
+- `components/actions/action-before-declaration-form.tsx`
+- `components/actions/action-declaration-form/action-declaration-export-picker.tsx`
+- `components/admin/free-plan-services-panel.tsx`
+- `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts`
+- `components/learn/environmental-quiz.tsx`
+- `components/sections/rubriques/weather-section.tsx`
+- `components/reports/reports-web-document.tsx`
+- `components/sections/rubriques/rejoindre-un-formulaire-section.tsx`
+- `lib/actions/group-participation.ts`
+- `lib/learning/quiz-personal-progress.ts`
+- `components/sections/rubriques/recycling-question-assistant/assistant-utils.ts`
+- `lib/supabase/storage-business-contribution.ts`
+
+### Déjà absorbé — ne pas refaire sans nouvelle preuve
+
+- `lib/environmental-impact-estimator/project-signals.impl.ts`
+- `app/api/actions/[actionId]/group-join/route.test.ts`
+- `components/learn/quiz-session-panel.tsx`
+- `components/sections/rubriques/feedback-section.tsx`
+- `components/sections/rubriques/gamification/index.tsx`
+
+## Procédure d'exécution GPT-5.4 mini
+
+### Étape 1 — Vérifier la cible
+
+Avant toute modification :
+
+1. confirmer que le fichier existe ;
+2. relever sa taille et ses responsabilités réelles ;
+3. rechercher les tests associés ;
+4. identifier les imports et exports publics ;
+5. vérifier si une modularisation récente a déjà absorbé le problème.
+
+Si la cible n'est plus pertinente, ne rien modifier et mettre à jour le plan concerné.
+
+### Étape 2 — Définir un découpage minimal
+
+Produire un plan court contenant uniquement :
+
+- responsabilité du fichier actuel ;
+- problème concret ;
+- sous-modules réellement nécessaires ;
+- API publique à préserver ;
+- validations à lancer.
+
+Ne pas inventer à l'avance une arborescence détaillée si l'analyse du code ne la justifie pas.
+
+### Étape 3 — Exécuter
+
+Ordre conseillé :
+
+1. extraire constantes et données pures ;
+2. extraire helpers purs ;
+3. extraire logique d'état ou de domaine ;
+4. extraire sous-composants cohérents ;
+5. garder un point d'entrée lisible qui orchestre l'ensemble.
+
+### Étape 4 — Valider
+
+Minimum attendu :
+
+- tests ciblés du périmètre ;
+- contrôle TypeScript si types ou exports changent ;
+- lint ciblé si disponible ;
+- `node scripts/check-top-heavy-files.mjs --top=25` pour une cible de modularisation ;
+- build complet uniquement si le périmètre le justifie.
+
+Ne jamais annoncer un test non exécuté.
+
+## Critères de fin
+
+Un lot est terminé uniquement si :
+
+- le comportement visible reste inchangé ;
+- les contrats publics restent compatibles ;
+- la cible est devenue plus lisible ou plus testable ;
+- aucune duplication significative n'a été introduite ;
+- les validations pertinentes passent ou leurs échecs sont documentés précisément ;
+- le radar ou la baseline sont mis à jour si nécessaire.
+
+## Prompt exécutable
+
+```text
+Travaille sur une seule cible de modularisation dans CleanMyMap.
+
+Objectif : réduire le couplage et améliorer la testabilité sans changer le comportement public.
+
+Avant toute modification : vérifie l'état réel du fichier, sa taille, ses responsabilités, ses imports/exports et ses tests. Ne suis pas aveuglément un ancien plan si le code a déjà changé.
+
+Périmètre : la cible choisie et les seuls fichiers directement nécessaires.
+
+Contraintes : préserver routes, props, exports, contrats API et comportement visible ; ne pas créer de micro-fichiers inutiles ; ne pas mélanger refactor, refonte UI, migration Supabase ou mise à jour de dépendances.
+
+Livrable : code modularisé, validations ciblées exécutées, résumé des fichiers modifiés, risques restants et éventuelle mise à jour du plan.
 ```
-components/dashboard/
-├── dashboard-layout.tsx
-├── dashboard-header.tsx
-└── index.ts
-
-hooks/
-└── use-dashboard-data.ts
-```
-
-**Responsabilités identifiées** :
-- Layout et structure
-- Header avec actions
-- Panels de données
-- Logique de chargement
-
----
-
-### 3. ⏸️ `src/components/actions/actions-map-feed.tsx` (21586 octets) - CRITIQUE
-
-**Objectif** : < 6000 octets
-
-**Estimation** : 90-120 min
-
-**Fichiers à créer** :
-```
-components/actions/map/
-├── map-feed-sidebar.tsx
-├── map-filters-panel.tsx
-├── map-legend.tsx
-└── index.ts
-
-hooks/
-└── use-map-feed-state.ts
-```
-
-**Responsabilités identifiées** :
-- Sidebar avec liste d'actions
-- Panel de filtres
-- Légende de la carte
-- État et logique de filtrage
-
----
-
-### 4. ⏸️ `src/app/(app)/actions/map/page.tsx` (19189 octets) - HAUTE
-
-**Objectif** : < 4000 octets
-
-**Estimation** : 45-60 min
-
-**Fichiers à créer** :
-```
-app/(app)/actions/map/
-├── map-page-header.tsx
-├── map-page-toolbar.tsx
-└── index.ts
-
-hooks/
-└── use-map-page-state.ts
-```
-
-**Responsabilités identifiées** :
-- Header de page
-- Toolbar avec actions
-- État de la page
-- Gestion des filtres
-
----
-
-### 5. ⏸️ `src/components/sections/rubriques/gamification-section.tsx` (18633 octets) - HAUTE
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 60-90 min
-
-**Fichiers à créer** :
-```
-components/sections/rubriques/gamification/
-├── gamification-header.tsx
-├── badges-showcase-panel.tsx
-├── progression-tracker-panel.tsx
-├── leaderboard-panel.tsx
-└── index.ts
-
-hooks/
-└── use-gamification-data.ts
-```
-
-**Responsabilités identifiées** :
-- Header de section
-- Showcase des badges
-- Tracker de progression
-- Leaderboard
-- Logique de gamification
-
----
-
-## 🟡 Priorité Moyenne (6-10)
-
-### 6. ⏸️ `src/components/learn/environmental-quiz.tsx` (24314 octets)
-
-**Objectif** : < 6000 octets
-
-**Estimation** : 90-120 min
-
-**Fichiers à créer** :
-```
-components/learn/quiz/
-├── quiz-question.tsx
-├── quiz-answers.tsx
-├── quiz-progress.tsx
-├── quiz-results.tsx
-└── index.ts
-
-hooks/
-└── use-quiz-logic.ts
-
-lib/learn/
-└── quiz-config.ts
-```
-
----
-
-### 7. ⏸️ `src/components/navigation/app-navigation-ribbon.tsx` (18742 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 60-90 min
-
-**Fichiers à créer** :
-```
-components/navigation/ribbon/
-├── ribbon-menu.tsx
-├── ribbon-user-menu.tsx
-├── ribbon-notifications.tsx
-└── index.ts
-
-lib/navigation/
-└── ribbon-config.ts
-```
-
----
-
-### 8. ⏸️ `src/components/sections/rubriques/weather-section.tsx` (17908 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 60-90 min
-
-**Fichiers à créer** :
-```
-components/sections/rubriques/weather/
-├── weather-current.tsx
-├── weather-forecast.tsx
-├── weather-alerts.tsx
-└── index.ts
-
-hooks/
-└── use-weather-data.ts
-```
-
----
-
-### 9. ⏸️ `src/components/actions/action-declaration-form.tsx` (17072 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
-**Note** : Partiellement modularisé, continuer l'extraction
-
-**Fichiers à créer** :
-```
-components/actions/declaration/
-├── declaration-form-wrapper.tsx
-├── declaration-form-validation.ts
-└── index.ts
-```
-
----
-
-### 10. ⏸️ `src/components/partners/partner-onboarding-form.tsx` (16797 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 60-90 min
-
-**Fichiers à créer** :
-```
-components/partners/onboarding/
-├── onboarding-step-1.tsx
-├── onboarding-step-2.tsx
-├── onboarding-step-3.tsx
-├── onboarding-navigation.tsx
-└── index.ts
-
-hooks/
-└── use-onboarding-state.ts
-```
-
----
-
-## 🟢 Priorité Basse (11-15)
-
-### 11. ⏸️ `src/components/learn/planetary-boundaries.tsx` (16536 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
----
-
-### 12. ⏸️ `src/components/reports/reports-kpi-summary.tsx` (16234 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
----
-
-### 13. ⏸️ `src/components/sections/rubriques/trash-spotter-section.tsx` (15892 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
----
-
-### 14. ⏸️ `src/components/chat/chat-shell.tsx` (15678 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
----
-
-### 15. ⏸️ `src/components/reports/reports-window-comparisons-section.tsx` (15234 octets)
-
-**Objectif** : < 5000 octets
-
-**Estimation** : 45-60 min
-
----
-
-## 📊 Métriques Globales
-
-### Taille Totale
-- **Avant** : ~280 KB
-- **Après** : ~85 KB (objectif)
-- **Réduction visée** : 70%
-
-### Temps Estimé Total
-- **Priorité Haute** : 6-8 heures
-- **Priorité Moyenne** : 6-8 heures
-- **Priorité Basse** : 4-6 heures
-- **Total** : 16-22 heures
-
-### Fichiers à Créer
-- **Composants** : ~40
-- **Hooks** : ~15
-- **Config/Utils** : ~10
-- **Total** : ~65 nouveaux fichiers
-
----
-
-## 🎯 Objectifs de Taille par Type
-
-| Type de Fichier | Taille Max | Lignes Max |
-|-----------------|-----------|-----------|
-| Page (app/) | 5 KB | 200 lignes |
-| Composant Complexe | 10 KB | 300 lignes |
-| Composant Simple | 5 KB | 150 lignes |
-| Hook | 5 KB | 200 lignes |
-| Config/Utils | 3 KB | 100 lignes |
-
-**Règle** : Si dépassement → Continuer à modulariser !
-
----
-
-## 🎯 Objectifs par Sprint
-
-### Sprint 1 (Semaine 1)
-- [x] Documentation et outils
-- [x] Modularisation #1 (page.tsx)
-- [ ] Modularisation #2 (dashboard)
-- [ ] Modularisation #3 (map-feed)
-
-### Sprint 2 (Semaine 2)
-- [ ] Modularisation #4 (map page)
-- [ ] Modularisation #5 (gamification)
-- [ ] Modularisation #6 (quiz)
-
-### Sprint 3 (Semaine 3)
-- [ ] Modularisations #7-10
-- [ ] Revue et optimisations
-
-### Sprint 4 (Semaine 4)
-- [ ] Modularisations #11-15
-- [ ] Documentation finale
-- [ ] Validation complète
-
----
-
-**Dernière mise à jour** : 28/04/2026  
-**Progression** : 1/15 fichiers (6.7%)
-

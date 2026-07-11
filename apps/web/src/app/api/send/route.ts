@@ -10,12 +10,21 @@ import { sendEmail } from "@/lib/services/email";
 export const runtime = "nodejs";
 
 const sendSchema = z.object({
-  to: z.union([z.string().email(), z.array(z.string().email()).min(1)]).optional(),
+  to: z
+    .union([
+      z.string().email(),
+      z.array(z.string().email()).min(1).max(10),
+    ])
+    .optional(),
   subject: z.string().trim().min(1).max(200).optional(),
   html: z.string().trim().min(1).max(10000).optional(),
 });
 
-function hasValidTestToken(request: Request): boolean {
+function hasValidLocalTestToken(request: Request): boolean {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
   const configuredToken = env.RESEND_TEST_TOKEN?.trim();
   if (!configuredToken) {
     return false;
@@ -26,7 +35,7 @@ function hasValidTestToken(request: Request): boolean {
 }
 
 export async function POST(request: Request) {
-  const tokenAuthorized = hasValidTestToken(request);
+  const tokenAuthorized = hasValidLocalTestToken(request);
   const { userId: actorUserId } = await auth();
 
   if (!tokenAuthorized) {
@@ -35,26 +44,39 @@ export async function POST(request: Request) {
       return adminAccessErrorJsonResponse(access);
     }
   }
+
   const from = resolveEmailFrom();
   const replyTo = resolveContactEmail();
+
   if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
-    return NextResponse.json({ error: "Resend not configured" }, { status: 503 });
+    return NextResponse.json(
+      { error: "Resend not configured" },
+      { status: 503 },
+    );
   }
 
   let rawPayload: unknown = {};
+
   try {
     const contentType = request.headers.get("content-type") ?? "";
     if (contentType.toLowerCase().includes("application/json")) {
       rawPayload = await request.json();
     }
   } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON payload" },
+      { status: 400 },
+    );
   }
 
   const parsed = sendSchema.safeParse(rawPayload);
+
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
+      {
+        error: "Invalid payload",
+        details: parsed.error.flatten().fieldErrors,
+      },
       { status: 400 },
     );
   }
@@ -81,14 +103,14 @@ export async function POST(request: Request) {
       to,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown Resend error";
+    const message =
+      error instanceof Error ? error.message : "Unknown Resend error";
+
     console.error("[Resend test] send failed", {
-      to,
-      subject: payload.subject ?? "[CleanMyMap] Test Resend",
-      from,
-      replyTo,
+      recipientCount: Array.isArray(to) ? to.length : 1,
       error: message,
     });
+
     return NextResponse.json(
       { error: "Resend send failed", details: "Unavailable" },
       { status: 502 },

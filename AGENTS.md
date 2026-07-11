@@ -1,10 +1,21 @@
 # AGENTS.md — CleanMyMap
 
-## Portée du fichier
+## Portée
 
-Ce fichier définit les règles de travail obligatoires pour tout agent IA intervenant sur le dépôt CleanMyMap.
+Ce fichier définit les règles obligatoires pour tout agent IA intervenant sur le dépôt CleanMyMap.
 
-Les règles ci-dessous s'appliquent à l'ensemble du dépôt, sauf instruction plus spécifique donnée par l'utilisateur dans la conversation courante.
+Ordre de priorité :
+
+1. consigne explicite de l'utilisateur ;
+2. sécurité, données et authentification ;
+3. état réel du dépôt GitHub `maxd4/CleanmyMap` ;
+4. architecture et contrats existants ;
+5. design system ;
+6. tests et validation ;
+7. simplicité ;
+8. performance et quotas lorsque le sujet est concerné.
+
+Ne jamais préférer une refonte large à une correction ciblée suffisante.
 
 ## Canari de session
 
@@ -12,325 +23,320 @@ Commencer uniquement la réponse finale par :
 
 `Maxence —`
 
-Cette règle s'applique seulement au message de clôture. Les mises à jour intermédiaires et les messages de travail ne doivent pas commencer par ce canari.
-
-## Priorités de travail
-
-Ordre de priorité :
-
-1. Respect des consignes explicites de l'utilisateur.
-2. Sécurité, données et authentification.
-3. Cohérence avec l'architecture existante.
-4. Respect du design system CleanMyMap.
-5. Tests et validation.
-6. Simplicité des modifications.
-7. Performance lorsque le sujet est pertinent.
-
-Ne jamais privilégier une refonte large si une correction ciblée suffit.
+Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
 
 ---
 
-## 1. Règles strictes de travail local
+## 1. Source de vérité et répartition du travail
 
-### Interdiction de créer des dossiers projet parallèles
+### Projet local
 
-Il est strictement interdit de créer un nouveau dossier sibling, une copie du dépôt, un worktree Git ou tout autre dossier projet parallèle à côté de `CleanmyMap-main` sans autorisation explicite de l'utilisateur.
+Le projet local est la source de vérité. Il est plus exhaustif car contient tout ce qui est ignoré sur github tel que les secrets, les clés, certaines fiches de documentation personnelles, les caches, les commandes de localhost.
 
-Cette interdiction s'applique à tous les agents, modèles et automatisations travaillant sur ce projet.
+### GitHub est la seconde source de vérité du projet
 
-Ne pas créer de dossier du type :
+Si un agent IA n'a pas accès aux fichiers locaux alors il se réfère à github, régulièrement mis a jour par codex.
 
-* `CleanmyMap-*`
-* `CleanmyMap-main-*`
-* `.worktrees/*`
-* `worktrees/*`
-* toute copie locale du dépôt hors du dossier courant
+Avant toute analyse, réécriture, création ou modification visant un fichier précis du dépôt :
 
-Tout travail doit rester dans :
+1. lire la version actuelle du fichier local ou GitHub ;
+2. inspecter les dépendances directes utiles ;
+3. ne pas se fier uniquement à une ancienne conversation, un ancien plan ou une copie locale potentiellement obsolète ;
+4. signaler toute divergence entre documentation, code et configuration.
+
+Dépôt de référence :
+
+```txt
+maxd4/CleanmyMap
+```
+
+Branche de référence par défaut :
+
+```txt
+main
+```
+
+### Agents d'analyse et de conception externes
+
+Un agent utilisé pour l'analyse, la rédaction ou la conception peut :
+
+- lire GitHub ;
+- analyser les fichiers ;
+- produire des versions complètes corrigées ;
+- joindre des fichiers prêts à intégrer.
+
+Il ne doit pas créer de branche, commit, pull request ou push sans demande explicite et sans capacité prévue pour cela.
+
+### Intégrateur local
+
+L'intégrateur local, notamment Codex, intervient principalement pour :
+
+- vérifier la cohérence avec le checkout local complet ;
+- intégrer les fichiers fournis ;
+- exécuter les validations ;
+- propager les changements transversaux nécessaires ;
+- signaler les conflits avec le code réel.
+
+Aucun push GitHub n'est obligatoire par défaut. Un push n'est effectué que si l'utilisateur le demande ou si le workflow explicitement approuvé l'exige.
+
+---
+
+## 2. Règles strictes de travail local
+
+### Interdiction des dépôts parallèles
+
+Il est interdit de créer sans autorisation explicite :
+
+- un dossier sibling du dépôt ;
+- une copie complète du projet ;
+- un worktree ;
+- `.worktrees/*` ;
+- `worktrees/*` ;
+- tout dossier `CleanmyMap-*` ou `CleanmyMap-main-*` parallèle.
+
+Tout travail local doit rester dans :
 
 ```txt
 C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main
 ```
 
-Si une isolation Git est nécessaire, demander d'abord l'accord explicite de l'utilisateur et préciser :
-
-* le nom du dossier qui serait créé ;
-* la raison exacte ;
-* la durée de conservation ;
-* la procédure de fusion ;
-* la procédure de suppression.
-
-Sans cet accord, utiliser uniquement la branche courante et les fichiers du dossier `CleanmyMap-main`.
-
 ### Hygiène de la racine
 
-Ne pas générer de nouveaux fichiers à la racine du dépôt sauf demande explicite de l'utilisateur.
+Ne pas créer de nouveau fichier racine sans demande explicite.
 
-Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent aller dans un dossier adapté, par exemple :
+Placer les fichiers temporaires, captures, logs, exports et artefacts dans un dossier adapté :
 
-* `artifacts/`
-* `documentation/`
-* `backups/`
-* un sous-dossier dédié déjà prévu par le dépôt
+- `artifacts/`
+- `documentation/`
+- `backups/`
+- un sous-dossier technique existant.
 
-Si un fichier doit absolument vivre à la racine, il doit être un fichier d'architecture, de configuration ou un livrable racine clairement justifié.
-
-Tout fichier racine ajouté sans demande explicite doit être considéré comme une régression de gouvernance et doit être nettoyé avant validation.
-
-Ne pas créer de fichiers ou dossiers miroir pour contourner une règle d'emplacement. Ne pas dupliquer un même contenu dans deux emplacements parallèles.
+Ne pas créer de miroir manuel pour contourner une règle d'emplacement.
 
 ### Dossiers protégés
 
-Ne jamais modifier, déplacer, supprimer, renommer ou dupliquer le contenu de `documentation/pepite/` et `documentation/gpt-context/` sans demande explicite de l'utilisateur.
+Ne pas modifier, déplacer, supprimer, renommer ou dupliquer sans demande explicite :
 
-Ces dossiers servent de références internes et de contexte. Toute intervention doit rester strictement limitée au périmètre demandé.
-
----
-
-## 2. Stack et structure du projet
-
-### Stack principale
-
-* Framework : `Next.js 15` avec App Router.
-* Styling : `Tailwind CSS 4`.
-* Authentification : `Clerk` via `@clerk/nextjs`.
-* Base de données et backend : `Supabase` avec PostgreSQL.
-* Cartographie : `react-leaflet`.
-* Icônes : `lucide-react`.
-
-Avant toute modification importante, vérifier les versions réelles dans `package.json`, les fichiers de configuration et la documentation du dépôt.
-
-### Structure importante
-
-* `apps/web/src/app` contient les routes applicatives.
-* `apps/web/src/components/ui` contient les composants UI réutilisables.
-* `apps/web/src/components/sections/rubriques` contient les modules fonctionnels principaux.
-* `apps/web/src/components/accueil` contient les composants liés à la homepage.
-* `apps/web/src/lib/sections-registry/config.ts` centralise l'enregistrement des modules de rubriques, et `apps/web/src/lib/sections-registry/index.ts` ré-exporte le registre.
-* `apps/web/src/lib/domain-language.ts` est la source de vérité pour les notions `Role`, `SessionRole` et `Parcours`.
-* `scripts/` et `maintenance/python/` contiennent les scripts d'ingestion, de maintenance et d'historique technique.
-
-Quand un nouveau module est ajouté dans `apps/web/src/components/sections/rubriques`, il doit être enregistré dans `apps/web/src/lib/sections-registry/config.ts`.
+```txt
+documentation/pepite/
+documentation/gpt-context/
+```
 
 ---
 
-## 3. Règles critiques de code
+## 3. Stack réelle et structure
+
+La version exacte des dépendances est définie par les manifestes, en particulier `apps/web/package.json`.
+
+Repères actuels :
+
+- Next.js 16 avec App Router ;
+- React 19 ;
+- TypeScript 6 ;
+- Tailwind CSS 4 ;
+- Clerk pour l'identité principale ;
+- Supabase/PostgreSQL pour les données ;
+- Vercel pour le déploiement web ;
+- Expo/React Native pour `companion-app`.
+
+Ne jamais recopier une version précise dans plusieurs documents sans nécessité. Quand la précision importe, lire le manifeste.
+
+### Chemins structurants
+
+```txt
+apps/web/src/app/                         pages et routes API
+apps/web/src/components/                  UI
+apps/web/src/components/sections/rubriques/ modules fonctionnels
+apps/web/src/lib/                         domaine, services et contrats
+apps/web/src/lib/domain-language.ts       Role, SessionRole, Parcours
+apps/web/src/lib/sections-registry/config.ts registre des rubriques
+apps/web/supabase/                        configuration Supabase active du workspace web
+apps/web/supabase/migrations/             migrations utilisées par le CLI du workspace web
+companion-app/                            application mobile expérimentale
+scripts/                                  garde-fous et maintenance Node
+maintenance/python/                       maintenance Python hors runtime principal
+documentation/                            documentation structurée
+```
+
+Le dossier racine `supabase/migrations/` est un miroir historique tant que l'ADR de migration n'est pas définitivement appliqué. Ne jamais modifier un seul arbre de migrations sans vérifier l'autre.
+
+---
+
+## 4. Règles critiques de code
 
 ### Supabase et données
 
-* Ne jamais utiliser de SQL brut dans le code applicatif.
-* Utiliser les clients Supabase existants et les helpers du projet.
-* Ne jamais désactiver une protection de sécurité pour faire passer une fonctionnalité.
-* Ne jamais exposer de secret côté client.
-* Vérifier les règles d'accès, les validations et les erreurs pour tout flux manipulant des données utilisateur.
+- Ne jamais exposer `service_role` côté client.
+- Ne jamais désactiver RLS pour contourner un bug.
+- Ne pas utiliser de SQL brut dans le code applicatif.
+- Les changements SQL passent par une migration versionnée.
+- Vérifier propriétaire/non-propriétaire, connecté/anonyme et rôle privilégié.
+- Réduire les colonnes et lignes chargées avant d'optimiser ailleurs.
+- Vérifier les erreurs de chaque opération Supabase.
+- Régénérer ou réaligner les types si le schéma change.
 
-### Règle de travail Supabase
+Avant une requête coûteuse :
 
-Toute modification Supabase doit être traitée comme une modification de base de données, pas comme une simple correction de code.
+```txt
+documentation/development/supabase-query-optimization-playbook.md
+```
 
-Ne pas modifier la base de production au hasard depuis le dashboard Supabase sans migration associée.
+### Cycle de modification Supabase
 
-Avant toute optimisation de lecture, vérifier d'abord si le code charge une table entière puis filtre côté application. Si c'est le cas, traiter ça comme un défaut de conception de requête: réduire les colonnes, déplacer le filtre dans la base, puis seulement garder un filtre métier local si nécessaire.
-
-Référence de travail à relire avant de toucher une requête coûteuse:
-
-- `documentation/development/supabase-query-optimization-playbook.md`
-
-Méthode obligatoire :
-
-1. Identifier si le changement concerne le schéma SQL, les policies RLS, les RPC, les triggers, les fonctions, les buckets Storage, les Edge Functions, les seeds ou les types TypeScript générés.
-2. Regrouper les corrections Supabase par catégorie avant de tester.
-3. Créer ou modifier une migration SQL versionnée dans `supabase/migrations`.
-4. Tester localement avec Supabase CLI quand c'est possible.
-5. Vérifier que la base peut être reconstruite proprement depuis les migrations.
-6. Régénérer les types Supabase si le schéma change.
-7. Vérifier les usages côté Next.js : imports, clients browser/server, variables d'environnement et appels RPC.
-8. Vérifier les règles RLS : un utilisateur non autorisé ne doit pas pouvoir lire, écrire, modifier ou supprimer des données protégées.
-9. Ne jamais exposer `service_role` côté client.
-10. Appliquer les changements à distance seulement après validation locale ou environnement de preview/staging.
-
-À éviter :
-
-* corriger directement la base de production sans migration ;
-* créer des migrations partielles non testées ;
-* mélanger refonte UI, migration SQL et correction Vercel dans le même commit ;
-* désactiver RLS pour débloquer rapidement une erreur ;
-* utiliser `service_role` pour contourner un problème de permission côté frontend ;
-* corriger une policy sans tester les cas utilisateur connecté, anonyme et propriétaire/non-propriétaire.
-
-Résultat attendu à la fin :
-
-* migrations propres ;
-* types Supabase à jour ;
-* RLS vérifiée ;
-* build Next.js encore valide ;
-* résumé des tables, policies, RPC et fichiers modifiés.
+1. identifier schéma, RLS, RPC, trigger, fonction, Storage, seed ou type concerné ;
+2. inspecter les migrations actuelles ;
+3. créer une migration versionnée ;
+4. tester localement quand possible ;
+5. vérifier la reconstruction ;
+6. vérifier les types ;
+7. vérifier les appels Next.js ou mobile ;
+8. vérifier les permissions ;
+9. ne jamais utiliser `service_role` comme contournement client ;
+10. appliquer à distance seulement après validation appropriée.
 
 ### Authentification et profils
 
-Ne pas modifier les fichiers suivants sans extrême prudence :
+Modifier avec prudence :
 
-* `apps/web/src/lib/domain-language.ts`
-* `apps/web/src/lib/profiles.ts`
+```txt
+apps/web/src/lib/domain-language.ts
+apps/web/src/lib/profiles.ts
+apps/web/src/lib/authz.ts
+apps/web/src/lib/auth/
+apps/web/src/proxy.ts
+```
 
-Ces fichiers structurent des notions centrales du domaine CleanMyMap. Toute modification doit préserver le sens sémantique des rôles, parcours, profils et droits associés.
+Préserver la distinction entre `Role`, `SessionRole` et `Parcours`.
 
-### Client Components et Server Components
+Clerk reste le fournisseur d'identité principal du projet web.
 
-* Garder les Client Components (`"use client"`) aussi minces que possible.
-* Préférer les Server Components, Server Actions ou hooks de données existants lorsque c'est cohérent avec l'architecture.
-* Ne pas déplacer inutilement de logique serveur vers le client.
-* Ne pas ajouter `"use client"` à un composant sans raison précise.
+### Permissions administratives
 
-### Leaflet et rendu côté serveur
+Un rôle privilégié ne doit pas modifier silencieusement le parcours utilisateur normal.
 
-`react-leaflet` doit toujours être chargé dynamiquement avec `next/dynamic` et `{ ssr: false }`.
+Exemple canonique :
 
-Ne jamais accéder à `window`, `document`, `navigator` ou à une API navigateur pendant le SSR.
+- un admin qui rejoint normalement l'action d'un tiers suit la file normale ;
+- une dérogation admin doit être explicite ;
+- une dérogation sensible doit exiger une autorisation serveur, un motif et une trace d'audit.
 
-Toute logique cartographique doit être compatible avec le rendu Next.js côté serveur.
+Référence :
+
+```txt
+documentation/security/authz-authn-regles.md
+```
+
+### Client et serveur
+
+- Garder les Client Components minces.
+- Préférer Server Components, Server Actions ou services existants lorsque cohérent.
+- Ne pas déplacer de logique sensible vers le client.
+- Ne pas ajouter `"use client"` sans nécessité précise.
+
+### Leaflet et SSR
+
+Charger les composants Leaflet avec `next/dynamic` et `{ ssr: false }`.
+
+Ne jamais accéder à `window`, `document`, `navigator` ou une API navigateur pendant le SSR.
 
 ### Texte public
 
-Tout texte visible par les utilisateurs doit être écrit en français, notamment :
+Tout texte visible par l'utilisateur est en français, sauf surface explicitement localisée.
 
-* `label`
-* `title`
-* `description`
-* boutons
-* états vides
-* messages d'erreur
-* aides contextuelles
+### Homepage, header et footer
 
-Exception : un objet multilingue explicite du type `{ fr: "...", en: "..." }`.
+Ne pas modifier sans demande explicite :
 
-### Homepage
+```txt
+apps/web/src/app/page.tsx
+apps/web/src/components/accueil/
+```
 
-Ne jamais modifier la homepage sans demande explicite de l'utilisateur.
-
-Cela concerne notamment :
-
-* `apps/web/src/app/page.tsx`
-* les composants associés dans `apps/web/src/components/accueil/`
+Ne pas modifier le header global ni le footer global sans demande explicite.
 
 ---
 
-## 4. Design system et règles UI
+## 5. Design system
 
-### Règle générale
+Avant toute modification UI :
 
-Respecter le design system CleanMyMap existant, ses tokens CSS, ses composants, ses conventions visuelles et ses patterns de page.
+1. lire `documentation/design-system/README.md` ;
+2. lire `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` ;
+3. consulter `documentation/pages_site/INDEX.md` ;
+4. consulter la fiche canonique de la page.
 
-Ne pas introduire un style isolé si un composant ou une convention existe déjà dans le projet.
+Utiliser les composants canoniques existants, notamment lorsque pertinents : `CmmCard`, `CmmButton`, `PageHeader`.
 
-### Lisibilité des héros et titres de page
+### Couleurs
 
-Sur les héros et titres de page, éviter les retours à la ligne décoratifs.
-
-Priorité d'ajustement :
-
-1. réduire la taille du texte ;
-2. réduire le tracking ;
-3. ajuster la largeur utile ;
-4. réorganiser le bloc sur mobile.
-
-Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard lorsque c'est possible sans nuire à la lisibilité.
-
-### Header et footer
-
-Ne pas modifier le header global ni le footer global sans demande explicite de l'utilisateur.
-
-Lorsqu'une page doit être améliorée visuellement, travailler uniquement sur le contenu éditable de la page, sauf consigne contraire.
-
-### États système
-
-Toute page ou fonctionnalité nouvelle ou modifiée doit gérer, si pertinent :
-
-* état de chargement ;
-* état vide ;
-* erreur utilisateur ;
-* accès refusé ;
-* succès ou confirmation ;
-* cas mobile.
-
-Les états doivent être cohérents avec la palette et les conventions du projet.
-
-### Gamification et transparence
-
-Informer systématiquement l'utilisateur lorsqu'une action réalisée sur le site lui apporte :
-
-* de l'XP ;
-* un badge ;
-* une progression visible ;
-* une récompense de gamification.
-
-Cette information doit être claire, mais ne doit pas rendre l'interface artificielle ou confuse.
-
----
-
-## 5. Système de couleurs CleanMyMap
-
-### Structure globale
-
-La homepage est structurée en 5 blocs avec une logique multi-teintes selon le type de page :
-
-1. Accueil & Pilotage
-2. Agir
-3. Cartographie & Impact
-4. Réseau & Discussions
-5. Apprendre
-
-### Mapping des teintes
-
-| Bloc ou rubrique     | Teinte dominante   |
-| -------------------- | ------------------ |
-| Accueil              | `amber` / `orange` |
-| Pilotage             | `amber` / `brun`   |
-| Agir                 | `emerald`          |
-| Cartographie         | `sky`              |
-| Impact               | `red` / `rose`     |
-| Réseau & Discussions | `indigo`           |
-| Apprendre            | `yellow`           |
-
-### Mapping des routes
-
-| Routes                                            | Teinte dominante   |
-| ------------------------------------------------- | ------------------ |
-| `/dashboard`, `/profil`, `/explorer`, `/feedback` | `amber` / `orange` |
-| `/pilotage`, `/admin`, `/elus`, `/godmode`        | `amber` / `brun`   |
-| `/actions/map`, `/sandbox`                        | `sky`              |
-| `/reports`, `/gamification`                       | `red` / `rose`     |
-
-### Règle stricte
-
-Une page = une teinte dominante.
-
-Ne pas mélanger deux familles dominantes sur une même page, par exemple :
-
-* ne pas mélanger `orange` et `brun` sur une même page ;
-* ne pas mélanger `sky` et `red` / `rose` sur une même page.
-
-Référence complète :
+Le fichier de référence est :
 
 ```txt
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 ```
 
+Règles :
+
+- ne pas inventer une combinaison de teintes ;
+- respecter la famille de page ;
+- le bloc `Accueil & Pilotage` constitue une exception documentée avec combinaison orange + brun ;
+- `Cartographie & Impact` sélectionne la teinte selon la page : `sky` pour cartographie, `red/rose` pour impact ;
+- les familles autonomes utilisent leur propre palette documentée.
+
+### Titres
+
+Éviter les retours à la ligne décoratifs.
+
+Ordre d'ajustement :
+
+1. taille ;
+2. tracking ;
+3. largeur utile ;
+4. réorganisation mobile.
+
+### États
+
+Toute surface modifiée gère lorsque pertinent :
+
+- chargement ;
+- vide ;
+- erreur ;
+- accès refusé ;
+- succès ;
+- mobile ;
+- accessibilité clavier et lecteur d'écran.
+
 ---
 
-## 6. Markdown, documentation et Quarto
+## 6. Documentation et pages
 
-Ne jamais mettre de numéros de section ou de titre en dur dans les fichiers Markdown destinés à l'export Quarto.
+### Gouvernance documentaire
 
-Ne pas écrire :
+`documentation/pages_site/` est la source de vérité fonctionnelle du point de vue utilisateur pour :
 
-```md
-# 1. Titre
-## 2. Sous-titre
-### 3.1 Section
-```
+- rôle de la page ;
+- contenu ;
+- parcours ;
+- comportement ;
+- UX/UI ;
+- états ;
+- captures ;
+- améliorations propres à la page.
 
-Écrire uniquement :
+Les sujets techniques transversaux restent dans les dossiers techniques adaptés.
+
+Pour un sujet mixte :
+
+- résumé fonctionnel dans la fiche de page ;
+- détail technique dans le dossier technique ;
+- lien entre les deux ;
+- aucune duplication.
+
+### Quarto
+
+Ne pas numéroter manuellement les titres destinés à Quarto.
+
+Écrire :
 
 ```md
 # Titre
@@ -338,129 +344,117 @@ Ne pas écrire :
 ### Section
 ```
 
-Les numéros sont générés automatiquement par Quarto lors de l'export.
+Ne pas écrire :
 
-Pour les fichiers Markdown destinés au rapport CleanMyMap :
+```md
+# 1. Titre
+## 2. Sous-titre
+```
 
-* conserver une structure propre ;
-* éviter les tableaux trop larges ;
-* privilégier les sources en fin de section si elles sont nécessaires ;
-* ne pas inventer de sources ;
-* ne pas insérer de numérotation manuelle ;
-* éviter les commentaires provisoires sauf demande explicite.
+### Sources
 
-### Gouvernance documentaire
-
-`documentation/pages_site/` est la source de vérité pour chaque page ou rubrique vue par l'utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et améliorations propres à la page.
-
-Le reste de `documentation/` sert aux sujets techniques transversaux : implémentation, tests, architecture, sécurité, performance, maintenance, services web et explication du code.
-
-Pour un sujet mixte, conserver le résumé fonctionnel dans la fiche de page puis ajouter un lien vers la documentation technique adaptée. Ne pas dupliquer le contenu et ne pas créer de fichier miroir.
+Ne jamais inventer une source, une mesure, un chiffre ou une référence.
 
 ---
 
-## 7. Charge machine et commandes
+## 7. Charge machine
 
-Éviter de lancer plusieurs commandes lourdes en parallèle, notamment :
+Ne pas lancer plusieurs commandes lourdes en parallèle.
 
-* `npm run checks`
-* `pytest`
-* `typecheck`
-* `rg -n` sur tout le dépôt
-* scans de documentation
-* watchers de build
-* scripts de maintenance Python lourds
+Exemples :
 
-Avant de lancer une commande lourde, vérifier qu'une autre tâche active sur le dépôt ne produit pas déjà la même charge.
+```txt
+npm run checks
+npm run build
+npm run test
+pytest
+rg -n sur tout le dépôt
+scans documentaires larges
+```
 
-Si une vérification ciblée suffit, préférer cette vérification à un scan global.
+Préférer une validation ciblée lorsqu'elle suffit.
 
 Ne pas laisser tourner inutilement :
 
-* `npm run dev`
-* tests `vitest` en mode watch ;
-* watchers de build ;
-* scripts de maintenance ;
-* processus liés à un `localhost` inutilisé.
+- `npm run dev` ;
+- Vitest watch ;
+- watchers de build ;
+- processus localhost inutilisés.
 
-Les commandes `git` peuvent rester en arrière-plan lorsqu'elles sont légères.
+Éviter d'explorer par défaut :
 
-Au lancement d'une tâche, éviter d'ouvrir ou de parcourir les dossiers générés ou d'outillage comme `node_modules`, `.next`, `.vercel`, `.playwright-mcp`, `.codex-remote-attachments`, `artifacts` ou `backups` sauf nécessité explicite.
-
-Si un diagnostic demande un scan large, le justifier d'abord et privilégier une cible précise.
-
-Si `%TEMP%` grossit à cause des outils de dev ou de Codex, lancer `npm run clean:temp` avant de repartir sur une tâche lourde.
+```txt
+node_modules/
+.next/
+.vercel/
+.playwright-mcp/
+.codex-remote-attachments/
+artifacts/
+backups/
+```
 
 ---
 
 ## 8. Tests et validation
 
-Après une modification significative, lancer les vérifications pertinentes disponibles dans le dépôt.
+Ne jamais annoncer qu'une commande a réussi si elle n'a pas été exécutée.
 
-Toute livraison doit se terminer par un push GitHub et une vérification globale du dépôt avant clôture. Quand c'est possible, cette vérification doit couvrir l'ensemble du repo avec la suite de validation disponible, pas seulement le périmètre modifié.
+### Validation ciblée
 
-Avant de lancer une commande, vérifier dans `package.json`, `turbo.json`, la documentation ou les scripts du projet quelle commande est adaptée.
+```bash
+npm run checks:changed
+```
 
-Priorité :
+### Validation complète
 
-1. vérification ciblée sur les fichiers modifiés ;
-2. typecheck si la modification touche TypeScript ;
-3. lint si la modification touche du code applicatif ;
-4. tests si une logique fonctionnelle a été modifiée ;
-5. build si la modification touche l'architecture, les routes ou la configuration.
+```bash
+npm run checks
+```
 
-Ne jamais prétendre qu'un test a été exécuté s'il ne l'a pas été.
+La validation complète doit couvrir les garde-fous de gouvernance, les tests, le typecheck, le lint et le build web. Les tests E2E restent explicites tant qu'ils nécessitent une installation navigateur dédiée.
 
-Si une commande échoue :
+### Ordre recommandé
 
-1. lire l'erreur ;
+1. test ciblé ;
+2. typecheck ;
+3. lint ;
+4. tests fonctionnels ;
+5. tests sécurité/régression ;
+6. build ;
+7. E2E si le périmètre le justifie.
+
+### En cas d'échec
+
+1. lire l'erreur complète ;
 2. identifier la cause racine ;
-3. corriger de manière ciblée ;
-4. relancer la commande pertinente.
+3. regrouper les erreurs de même cause ;
+4. corriger un lot cohérent ;
+5. relancer la vérification ciblée ;
+6. ne lancer le build complet qu'après stabilisation.
 
-Si les tests ne peuvent pas être lancés, expliquer précisément pourquoi dans la réponse finale.
-
-### Règle de debug build Vercel/Next.js
-
-Lorsqu'un build Vercel ou Next.js échoue, ne pas lancer une boucle de micro-corrections suivies d'un build complet à chaque fois.
-
-Priorité :
-
-* diagnostiquer la cause racine à partir des logs ;
-* corriger les erreurs TypeScript avant le build complet ;
-* ne jamais créer manuellement de fichiers internes `.next` ;
-* nettoyer le cache seulement si nécessaire ;
-* regrouper les corrections ;
-* utiliser les commandes rapides avant `next build` ;
-* lancer le build complet seulement après un groupe cohérent de corrections.
-
-Les problèmes Turbopack/Webpack doivent être isolés. En cas de doute, stabiliser d'abord le build de production avec le chemin le plus fiable, puis traiter l'optimisation de bundler dans une tâche séparée.
+Ne jamais créer manuellement de fichiers internes `.next`.
 
 ---
 
 ## 9. Vérification UI et navigateur
 
-Ne pas lancer de vérification web du rendu du site, d'inspection navigateur, de capture Playwright ou d'audit visuel sans demande explicite de l'utilisateur.
+Ne pas lancer de navigation automatisée, capture ou audit visuel sans demande explicite de l'utilisateur.
 
-Si l'utilisateur demande seulement une modification UI, appliquer les conventions du dépôt dans le code, puis signaler en fin de réponse qu'une vérification visuelle reste recommandée.
+Les tests E2E non visuels peuvent être exécutés lorsqu'ils font explicitement partie du périmètre de validation demandé.
 
 ---
 
-## 10. Réponse finale attendue
+## 10. Réponse finale
 
-La réponse finale de l'agent doit être concise et factuelle.
+La réponse finale doit indiquer :
 
-Elle doit indiquer :
-
-* les modifications réalisées ;
-* les fichiers principaux modifiés ;
-* les vérifications lancées ;
-* les erreurs rencontrées, s'il y en a ;
-* les vérifications restantes, si certaines n'ont pas pu être faites.
+- modifications réalisées ;
+- fichiers principaux ;
+- validations exécutées ;
+- erreurs rencontrées ;
+- validations restantes.
 
 Ne pas donner de long raisonnement interne.
-Ne pas masquer une erreur.
-Ne pas annoncer une réussite si la validation n'a pas été faite.
 
 ---
 
@@ -468,15 +462,15 @@ Ne pas annoncer une réussite si la validation n'a pas été faite.
 
 Il est interdit de :
 
-* créer un dossier projet parallèle sans autorisation explicite ;
-* créer un worktree sans autorisation explicite ;
-* ajouter des fichiers racine non demandés ;
-* modifier la homepage sans demande explicite ;
-* modifier le header ou footer global sans demande explicite ;
-* utiliser du SQL brut dans le code applicatif ;
-* accéder à `window` pendant le SSR ;
-* charger `react-leaflet` sans `next/dynamic` et `{ ssr: false }` ;
-* durcir une numérotation Markdown destinée à Quarto ;
-* laisser des placeholders, TODO ou routes cassées après une modification ;
-* prétendre avoir testé sans avoir réellement lancé les vérifications ;
-* lancer une inspection navigateur ou Playwright sans demande explicite.
+- créer un dépôt parallèle ou worktree sans autorisation ;
+- créer des fichiers racine non justifiés ;
+- modifier la homepage, le header ou le footer sans demande ;
+- utiliser `service_role` côté client ;
+- désactiver RLS pour débloquer un flux ;
+- utiliser du SQL brut dans le code applicatif ;
+- accéder aux APIs navigateur pendant le SSR ;
+- charger Leaflet côté SSR ;
+- inventer des sources ou chiffres ;
+- laisser des placeholders ou routes cassées après une modification ;
+- prétendre avoir testé sans validation réelle ;
+- considérer une ancienne conversation comme source de vérité supérieure au dépôt actuel.

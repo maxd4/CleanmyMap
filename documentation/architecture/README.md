@@ -1,65 +1,101 @@
-# Architecture - Guide IA
+# Architecture — Guide IA
 
-Documentation d'architecture pour agents IA.
+Point d'entrée de l'architecture CleanMyMap.
 
----
+## Source de vérité
 
-## 📋 Fichiers Clés pour IA
+Lire d'abord :
 
-### Source de vérité
-- **master-architecture.md** - Architecture globale du système
+1. `master-architecture.md` ;
+2. `system-overview.md` ;
+3. ADR pertinents ;
+4. document de domaine concerné.
 
-### Décisions d'Architecture (ADR)
-- **adr/ADR-001-clerk-auth.md** - Authentification Clerk
-- **adr/ADR-002-service-role-key.md** - Clés de service
-- **adr/ADR-003-monorepo-structure.md** - Structure monorepo
+## Vues principales
 
-### Vues d'Ensemble
-- **system-overview.md** - Vue runtime synthétique
-- **ARCHITECTURE.md** - Entrée compacte pour assistants IA
+| Fichier | Rôle |
+|---|---|
+| `master-architecture.md` | Architecture globale canonique |
+| `system-overview.md` | Vue runtime rapide |
+| `ARCHITECTURE.md` | Entrée compacte pour assistants |
+| `frontend-backend-boundaries.md` | Frontières UI/API/domaine/data |
+| `data-governance.md` | Contrats et gouvernance des données |
+| `modules-cles-et-dependances.md` | Modules structurants |
+| `section-ownership-boundaries.md` | Ownership app/registry/UI |
+| `traceability-matrix.md` | Rattachement code/documentation |
+| `monolith-split-plan.md` | Plan courant de modularisation |
 
-### Domaines Spécifiques
-- **frontend-backend-boundaries.md** - Séparation frontend/backend
-- **data-governance.md** - Gouvernance des données
-- **modules-cles-et-dependances.md** - Modules et dépendances
-- **section-ownership-boundaries.md** - Frontieres `app` / registry / UI pour les rubriques
-- **rubrique-placement-guide.md** - Guide de placement concret pour les développeurs
-- **methodologie-fonctionnement-site.md** - Fonctionnement technique du site et quotas gratuits de référence
-- **traceability-matrix.md** - Rattachement code/doc
-- **migrations-techniques.md** - Migrations techniques
-- **monolith-split-plan.md** - Plan de découpage monolithe
+## ADR
 
----
+Décisions existantes :
 
-## 🤖 Instructions IA
+- `ADR-001-clerk-auth.md` — Clerk comme identité principale ;
+- `ADR-002-service-role-key.md` — usage des clés privilégiées ;
+- `ADR-003-monorepo-structure.md` — structure du dépôt.
 
-### Avant de Modifier l'Architecture
-1. Lire **master-architecture.md** pour comprendre la structure globale
-2. Consulter les ADR pertinents
-3. Vérifier **system-overview.md** puis **frontend-backend-boundaries.md** pour les limites
+Décisions à intégrer avec cet audit :
 
-### Lors d'Ajout de Fonctionnalité
-1. Identifier le module concerné dans **modules-cles-et-dependances.md**
-2. Respecter **data-governance.md** pour les données
-3. Vérifier **traceability-matrix.md** si la demande touche des routes, pages, APIs ou sources de données
+- `ADR-004-companion-identity.md` — identité de l'application compagnon ;
+- `ADR-005-next-canary-policy.md` — usage d'une version canary de Next.js ;
+- `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations.
 
-### Lors de Refactoring
-1. Consulter **monolith-split-plan.md** si découpage nécessaire
-2. Vérifier **migrations-techniques.md** pour les migrations
-3. Documenter les changements dans un nouveau ADR si décision majeure
+## Architecture active
 
----
-
-## 📊 Hiérarchie de Lecture
-
-```
-1. master-architecture.md   ← Source de vérité
-2. system-overview.md       ← Vue d'ensemble runtime
-3. ADR pertinents          ← Décisions spécifiques
-4. Fichiers domaine        ← Détails techniques
+```txt
+apps/web/              application web principale
+apps/web/src/app/      pages et API routes
+apps/web/src/lib/      domaine, services, sécurité, data
+apps/web/supabase/     configuration Supabase active du workspace
+companion-app/         application mobile GPS
+scripts/               garde-fous et maintenance
+maintenance/python/    maintenance Python hors runtime principal
+documentation/         documentation structurée
 ```
 
----
+## Règles de modification
 
-**Optimisé pour** : Agents IA  
-**Dernière mise à jour** : 2025-01-XX
+Avant une décision d'architecture :
+
+1. vérifier le code réel ;
+2. identifier les contrats publics ;
+3. consulter les ADR existants ;
+4. éviter une nouvelle abstraction si un module canonique existe ;
+5. ajouter un ADR seulement pour une décision durable et transversale.
+
+## Points sensibles
+
+- identité Clerk ↔ Supabase ;
+- `service_role` strictement serveur ;
+- RLS ;
+- frontières serveur/client ;
+- routes publiques/protégées/admin ;
+- migrations Supabase ;
+- quotas Vercel/Supabase ;
+- app compagnon et géolocalisation.
+
+## Refactoring
+
+Pour un gros fichier :
+
+1. lire `monolith-split-plan.md` ;
+2. une cible par lot ;
+3. conserver props, exports, routes et comportement public ;
+4. ajouter ou maintenir les tests ;
+5. supprimer l'ancien chemin seulement après validation.
+
+## Validation
+
+Après changement architectural :
+
+```bash
+npm run checks
+```
+
+Selon le périmètre :
+
+```bash
+npm run test:security
+npm run test:regression-gates
+npm run build
+npm run test:e2e
+```
