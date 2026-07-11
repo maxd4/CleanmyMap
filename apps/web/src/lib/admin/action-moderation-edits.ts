@@ -236,10 +236,10 @@ export async function buildAdminActionUpdates(
       arrivalLocationLabel: payloadForNotes.arrivalLocationLabel ?? null,
       routeStyle: payloadForNotes.routeStyle ?? null,
     });
-    updates.derived_geometry_kind = geometry.kind;
-    updates.derived_geometry_geojson = geometry.geojson;
-    updates.geometry_confidence = geometry.confidence;
-    updates.geometry_source = geometry.geometrySource;
+    updates["derived_geometry_kind"] = geometry.kind;
+    updates["derived_geometry_geojson"] = geometry.geojson;
+    updates["geometry_confidence"] = geometry.confidence;
+    updates["geometry_source"] = geometry.geometrySource;
   }
 
   return updates;

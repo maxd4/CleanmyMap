@@ -12,8 +12,8 @@ const EXPECTED_OVERVIEW_ROUTES = [
 const EXPECTED_PRACTICE_ROUTES = [
   "/sections/recycling",
   "/sections/compost",
-  "/actions/map",
   "/actions/new",
+  "/actions/map",
   "/sections/trash-spotter",
 ];
 

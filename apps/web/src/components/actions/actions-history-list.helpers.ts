@@ -28,7 +28,7 @@ export function buildJoinHref(actionId: string): string {
 }
 
 export function isJoinableAction(item: ActionListItem): boolean {
-  return item.record_type === "action" && item.contract?.metadata.groupJoinEnabled !== false;
+  return item.record_type === "action" && item.contract?.metadata.groupJoinEnabled === true;
 }
 
 export function isOwnedByCurrentUser(

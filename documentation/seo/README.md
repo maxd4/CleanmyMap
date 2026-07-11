@@ -6,6 +6,7 @@
 |---------|-------------|
 | [SEO_STRATEGY.md](./SEO_STRATEGY.md) | Stratégie complète SEO/AEO/GEO/AIO/SXO |
 | [MAINTENANCE_CHECKLIST.md](./MAINTENANCE_CHECKLIST.md) | Checklist maintenance régulière |
+| [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md) | Tâches à faire hors du code |
 
 ## Démarrage rapide
 
@@ -42,7 +43,7 @@ export default function MaPage() {
 
 ### Ajouter un nouveau HowTo
 
-1. Créer une nouvelle fonction dans `structured-data.tsx`:
+1. Créer une nouvelle fonction dans `apps/web/src/components/seo/structured-data/`:
 ```typescript
 export function HowToMonActionJsonLd() {
   const data = {
@@ -85,4 +86,4 @@ Voir `SEO_STRATEGY.md` pour la liste complète.
 
 ## Contact
 
-Pour toute question SEO, consulter la stratégie complète dans `SEO_STRATEGY.md`.
+Pour toute question SEO, consulter la stratégie complète dans `SEO_STRATEGY.md` et les tâches manuelles dans `ACTIONS_MANUELLES_RESTANTES.md`.

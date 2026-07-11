@@ -1,8 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUserIdentity } from "@/lib/authz";
-import { isAdminLikeProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -100,14 +98,10 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
-    const identity = await getCurrentUserIdentity();
-    const isAdminLikeSubmission = Boolean(
-      identity && isAdminLikeProfile(identity.role),
-    );
     const joined = await joinActionParticipation(supabase, {
       actionId: parsed.data.actionId,
       userId,
-      isAdminLike: isAdminLikeSubmission,
+      isAdminLike: false,
     });
 
     if (joined.participationStatus === "confirmed") {

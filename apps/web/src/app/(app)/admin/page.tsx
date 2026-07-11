@@ -299,7 +299,7 @@ function buildModerationBlockSummaries(params: {
       ],
       samples: [
         ...pendingAuditErrors.slice(0, 2).map((item) => ({
-          label: String(item.details.entityType ?? item.operationType),
+          label: String(item.details["entityType"] ?? item.operationType),
           meta: `${item.operationType} · ${formatModerationDate(item.at)}`,
         })),
         ...(pendingAuditErrors.length === 0

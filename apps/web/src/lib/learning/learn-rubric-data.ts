@@ -70,8 +70,8 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/learn/bonnes-pratiques",
-      title: "Tri, composte, comportements",
-      detail: "Repères courts pour trier, composter et garder les bons comportements.",
+      title: "Bonnes pratiques",
+      detail: "Repères courts pour agir sans détour.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -126,8 +126,8 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/learn/bonnes-pratiques",
-      title: "Sorting, composting, behaviors",
-      detail: "Short cues for sorting, composting and keeping the right behaviors.",
+      title: "Good practices",
+      detail: "Short cues for acting without detours.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -149,8 +149,8 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
   fr: [
     {
       href: "/sections/recycling",
-      title: "Que faire des déchets ?",
-      detail: "Repères de tri, Q&A rapide et seconde vie.",
+      title: "Bien trier",
+      detail: "Repères de tri, erreurs fréquentes et seconde vie.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -163,7 +163,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/sections/compost",
-      title: "Guide compost",
+      title: "Composter",
       detail: "Composter chez soi, en quartier ou en association.",
       visual: {
         tone: "violet",
@@ -172,6 +172,20 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
         chips: [
           { fr: "Maison", en: "Home" },
           { fr: "Quartier", en: "Neighborhood" },
+        ],
+      },
+    },
+    {
+      href: "/actions/new",
+      title: "Réduire à la source",
+      detail: "Passer du geste ponctuel à l'action suivie.",
+      visual: {
+        tone: "emerald",
+        motif: "quiz",
+        badge: { fr: "Action", en: "Action" },
+        chips: [
+          { fr: "Suivi", en: "Tracking" },
+          { fr: "Mesure", en: "Measurement" },
         ],
       },
     },
@@ -186,20 +200,6 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
         chips: [
           { fr: "Zone", en: "Area" },
           { fr: "Repères", en: "Cues" },
-        ],
-      },
-    },
-    {
-      href: "/actions/new",
-      title: "Déclarer une action",
-      detail: "Passer du geste au suivi mesuré.",
-      visual: {
-        tone: "emerald",
-        motif: "quiz",
-        badge: { fr: "Déclaration", en: "Declaration" },
-        chips: [
-          { fr: "Suivi", en: "Tracking" },
-          { fr: "Mesure", en: "Measurement" },
         ],
       },
     },
@@ -221,8 +221,8 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
   en: [
     {
       href: "/sections/recycling",
-      title: "What to do with waste",
-      detail: "Sorting cues, quick Q&A and second life.",
+      title: "Sort well",
+      detail: "Sorting cues, common mistakes and second life.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -235,7 +235,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/sections/compost",
-      title: "Compost guide",
+      title: "Compost",
       detail: "Compost at home, in a neighborhood site or with an association.",
       visual: {
         tone: "violet",
@@ -244,6 +244,20 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
         chips: [
           { fr: "Maison", en: "Home" },
           { fr: "Quartier", en: "Neighborhood" },
+        ],
+      },
+    },
+    {
+      href: "/actions/new",
+      title: "Reduce waste",
+      detail: "Move from a one-off gesture to a tracked action.",
+      visual: {
+        tone: "emerald",
+        motif: "quiz",
+        badge: { fr: "Action", en: "Action" },
+        chips: [
+          { fr: "Suivi", en: "Tracking" },
+          { fr: "Mesure", en: "Measurement" },
         ],
       },
     },
@@ -258,20 +272,6 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
         chips: [
           { fr: "Zone", en: "Area" },
           { fr: "Repères", en: "Cues" },
-        ],
-      },
-    },
-    {
-      href: "/actions/new",
-      title: "Declare an action",
-      detail: "Turn a gesture into a measured record.",
-      visual: {
-        tone: "emerald",
-        motif: "quiz",
-        badge: { fr: "Déclaration", en: "Declaration" },
-        chips: [
-          { fr: "Suivi", en: "Tracking" },
-          { fr: "Mesure", en: "Measurement" },
         ],
       },
     },

@@ -1,6 +1,9 @@
 // Structured data for content, reviews, events, and media
 import { JsonLd } from "./json-ld-wrapper";
+import { env } from "@/lib/env";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+
+const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
 export function FAQJsonLd() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
@@ -13,7 +16,7 @@ export function FAQJsonLd() {
         name: "Comment déclarer une action de nettoyage sur CleanMyMap ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Connectez-vous, cliquez sur 'Declarer une action', remplissez le formulaire avec la localisation, le type de dechets et la quantite. Votre action apparaitra sur la carte apres validation. Calcul automatique de l'impact environnemental (CO2, eau).",
+          text: "Connectez-vous, ouvrez le formulaire de déclaration et renseignez la localisation, le type de déchets et les informations utiles. L'action rejoint ensuite l'historique du site selon les règles de publication.",
         },
       },
       {
@@ -21,7 +24,7 @@ export function FAQJsonLd() {
         name: "Comment participer à un cleanwalk à Paris ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Rendez-vous dans la section 'Evenements' pour voir les cleanwalks organizees pres de chez vous. Cliquez sur 'Participer' pour vous'inscrire gratuitement. Coordination des benevoles, mise a disposition du materiel.",
+          text: "Consultez la carte ou les pages de réseau pour repérer les cleanwalks disponibles, puis inscrivez-vous via le bouton prévu par l'organisateur.",
         },
       },
       {
@@ -29,7 +32,7 @@ export function FAQJsonLd() {
         name: "Comment signaler une pollution sur CleanMyMap ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Utilisez le formulaire de signalement pour identifier le lieu, le type dechet et telecharger une photo. Les moderateurs valideront votre signalement sous 24h. Participation citoyenne a la proprete urbaine.",
+          text: "Utilisez le formulaire de signalement pour préciser le lieu, le type de déchet et ajouter une photo si possible. Le signalement est ensuite traité par l'équipe de modération.",
         },
       },
       {
@@ -37,7 +40,7 @@ export function FAQJsonLd() {
         name: "CleanMyMap est-il gratuit ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Oui, CleanMyMap est entierement gratuit et open source. Finance par des dons et des subventions publiques. MISSION: depollution, ecologie, developpement durable.",
+          text: "Oui, l'accès aux pages publiques et aux outils de base est gratuit pour les personnes qui souhaitent découvrir, participer ou signaler une action.",
         },
       },
       {
@@ -45,7 +48,7 @@ export function FAQJsonLd() {
         name: "Comment sont calculés les points d'impact ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "L'impact = kg collectes x 2.5kg CO2 evite + megots x 500L eau preservee + surface nettoyee. Tous les calculs sont transparents et documentes dans la page Methodologie. Valorisation des dechets et impact terrain.",
+          text: "Les règles de calcul sont détaillées dans la page Méthodologie. Elles traduisent les quantités collectées et les indicateurs de terrain en métriques lisibles pour l'utilisateur.",
         },
       },
       {
@@ -53,7 +56,7 @@ export function FAQJsonLd() {
         name: "Puis-je organiser un événement de nettoyage ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Oui ! Creez un evenement depuis la section Communaute. Precisez la date, lieu, nombre de benevoles attendus. Vous pouvez ajouter un lieu sur la carte et inviter d'autres benevoles. Coordination et mutualisation des ressources.",
+          text: "Oui. Vous pouvez créer ou préparer un événement depuis les pages prévues à cet effet et y préciser la date, le lieu et le nombre de bénévoles attendus.",
         },
       },
       {
@@ -61,7 +64,7 @@ export function FAQJsonLd() {
         name: "Comment CleanMyMap contribue-t-il au developpement durable ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "CleanMyMap est une plateforme d'action ecologique. Chaque action declaree reduit l'empreinte carbone (CO2 evite), preserv l'eau (megots), et ameliore le cadre de vie. Partenariat avec collectivites pour coordonner les operations de propretE.",
+          text: "En rendant les actions visibles, mesurables et partageables, la plateforme aide à mieux coordonner les initiatives locales de dépollution et de sensibilisation.",
         },
       },
       {
@@ -69,7 +72,7 @@ export function FAQJsonLd() {
         name: "Comment voir l'impact de mes actions de benevolat ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Accedez a votre profil pour voir vos statistiques: kg de dechets collectes, CO2 evite, eau preservee, surface nettoyee. Comparez avec la communaute. Mutualisation des resultats pour mesurer l'impact terrain collectif.",
+          text: "Ouvrez votre profil pour consulter vos statistiques, l'historique de vos actions et les indicateurs associés à vos contributions.",
         },
       },
       {
@@ -77,7 +80,7 @@ export function FAQJsonLd() {
         name: "CleanMyMap a-t-il une application mobile ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "CleanMyMap est accessible sur mobile via votre navigateur. L'application web progressive (PWA) permet de declarer vos actions, signaler les pollutions et suivre votre impact depuis n'importe quel appareil. Installation simple depuis le menu de votre navigateur.",
+          text: "CleanMyMap est accessible depuis un navigateur mobile et peut être utilisé sur la plupart des téléphones sans installation spécifique.",
         },
       },
       {
@@ -85,7 +88,7 @@ export function FAQJsonLd() {
         name: "Comment cooperate avec CleanMyMap pour mon association ou collectivite ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `CleanMyMap est ouvert aux partenariats avec associations, collectivites et entreprises pour des operations de propretE urbaine. Contactez-nous via ${contactEmail} pour discuter d'une collaboration. Partenariat, coordination des benevoles, mutualisation des ressources.`,
+          text: `Les associations et collectivités peuvent nous contacter via ${contactEmail} pour étudier un partenariat ou un usage terrain adapté à leur besoin.`,
         },
       },
     ],
@@ -100,32 +103,17 @@ export function ReviewJsonLd() {
     "@type": "Review",
     itemReviewed: {
       "@type": "Product",
-      name: "CleanMyMap - Plateforme de Dépollution Citoyenne",
+      name: "CleanMyMap",
       description:
-        "Plateforme citoyenne de dépollution urbaine, de nettoyage et d'action écologique à Paris et en France.",
-    },
-    reviewRating: {
-      "@type": "Rating",
-      ratingValue: "4.8",
-      bestRating: "5",
-      worstRating: "1",
+        "Plateforme citoyenne de dépollution urbaine, de nettoyage et d'action écologique en France.",
     },
     author: {
       "@type": "Organization",
       name: "CleanMyMap Community",
     },
     reviewBody:
-      "Excellente initiative citoyenne pour la propreté urbaine. Interface intuitive, impact environnemental measurable, communauté active. Contribution réelle au développement durable et à la valorisation des déchets.",
+      "Schéma réservé aux cas où un avis réel et publié doit être décrit de manière structurée.",
     datePublished: "2024-01-15",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "1250",
-      bestRating: "5",
-      worstRating: "1",
-    },
-    reviewAspect: "Impact environnemental",
-    reviewRatingSummary: "Très positif - Action citoyenne efficace pour l'écologie",
   };
 
   return <JsonLd id="json-ld-review" data={data} />;
@@ -135,10 +123,10 @@ export function ArticleRessourceJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: "Tri, composte, comportements",
+    headline: "Bonnes pratiques",
     description:
-      "Repères courts pour trier, composter et garder les bons comportements sur le terrain.",
-    image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
+      "Repères courts pour bien trier, composter et éviter les déchets abandonnés.",
+    image: `${appUrl}/brand/nouveau-logo.svg`,
     author: {
       "@type": "Organization",
       name: "CleanMyMap",
@@ -148,14 +136,14 @@ export function ArticleRessourceJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
+        url: `${appUrl}/brand/nouveau-logo.svg`,
       },
     },
     datePublished: "2026-01-15",
     dateModified: "2026-05-01",
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://cleanmymap.fr/learn/bonnes-pratiques",
+      "@id": `${appUrl}/learn/bonnes-pratiques`,
     },
     articleSection: "Écologie et environnement",
     wordCount: 1500,
@@ -170,7 +158,7 @@ export function ArticleRessourceJsonLd() {
         name: "Développement durable",
       },
     ],
-    keywords: "tri, compostage, comportements, depollution, benevolat, ecologie, guide",
+    keywords: "tri, compostage, comportements, dépollution, bénévolat, écologie, guide",
   };
 
   return <JsonLd id="json-ld-article" data={data} />;
@@ -182,18 +170,18 @@ export function VideoTutorialJsonLd() {
     "@type": "VideoObject",
     name: "Comment déclarer une action sur CleanMyMap",
     description:
-      "Tutoriel vidéo pour apprendre à déclarer vos actions de nettoyage et累计 votre impact environnemental sur la plateforme CleanMyMap.",
-    thumbnailUrl: "https://cleanmymap.fr/brand/nouveau-logo.svg",
+      "Tutoriel vidéo pour apprendre à déclarer vos actions de nettoyage et suivre leur impact sur CleanMyMap.",
+    thumbnailUrl: `${appUrl}/brand/nouveau-logo.svg`,
     uploadDate: "2026-01-15",
     duration: "PT5M30S",
-    contentUrl: "https://cleanmymap.fr/videos/declaration-action.mp4",
-    embedUrl: "https://cleanmymap.fr/videos/declaration-action",
+    contentUrl: `${appUrl}/videos/declaration-action.mp4`,
+    embedUrl: `${appUrl}/videos/declaration-action`,
     publisher: {
       "@type": "Organization",
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
+        url: `${appUrl}/brand/nouveau-logo.svg`,
       },
     },
     author: {
@@ -213,7 +201,7 @@ export function EventCleanwalkJsonLd() {
     "@type": "Event",
     name: "Cleanwalk Paris - Nettoyage Urbain Citoyen",
     description:
-      "Participez à un cleanwalk organisé par CleanMyMap. Nettoyage urbain citoyen pour la dépollution de Paris. Bénévolat, action écologique, développement durable.",
+      "Participez à un cleanwalk organisé par CleanMyMap pour contribuer à la dépollution urbaine et à la sensibilisation citoyenne.",
     startDate: "2026-05-15T09:00:00+02:00",
     endDate: "2026-05-15T13:00:00+02:00",
     eventStatus: "https://schema.org/EventScheduled",
@@ -230,9 +218,9 @@ export function EventCleanwalkJsonLd() {
     organizer: {
       "@type": "Organization",
       name: "CleanMyMap",
-      url: "https://cleanmymap.fr",
+      url: appUrl,
     },
-    image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
+    image: `${appUrl}/brand/nouveau-logo.svg`,
     offers: {
       "@type": "Offer",
       price: "0",
@@ -244,7 +232,7 @@ export function EventCleanwalkJsonLd() {
       "@type": "Audience",
       audienceType: "Bénévoles et citoyens engagés",
     },
-    keywords: "cleanwalk, nettoyage urbain, benevolat, depollution, ecologie, Paris",
+    keywords: "cleanwalk, nettoyage urbain, bénévolat, dépollution, écologie, Paris",
   };
 
   return <JsonLd id="json-ld-event" data={data} />;

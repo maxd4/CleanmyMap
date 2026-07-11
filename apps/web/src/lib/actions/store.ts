@@ -6,7 +6,10 @@ import type {
 } from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ResolvedActionOrganizer } from "@/lib/actions/organizers";
+import type {
+  ResolvedActionOrganizer,
+  ResolvedActionParticipant,
+} from "@/lib/actions/organizers";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import {
   buildPersistedGeometry,
@@ -425,25 +428,26 @@ type ActionParticipantInsertRow = {
   user_id: string;
   joined_at: string;
   participation_status: "pending" | "confirmed";
-  participation_source: "group_form" | "admin" | "import";
+  participation_source: "group_form" | "manual_add" | "admin" | "import";
 };
 
 export function buildInitialActionParticipantRows(params: {
   actionId: string;
   creatorUserId: string;
   organizers: ResolvedActionOrganizer[];
+  manualParticipants?: ResolvedActionParticipant[];
   participationSource?: ActionParticipantInsertRow["participation_source"];
 }): ActionParticipantInsertRow[] {
   const joinedAt = new Date().toISOString();
   const source = params.participationSource ?? "group_form";
   const rows: ActionParticipantInsertRow[] = [];
-  const organizerIds = new Set<string>();
+  const seenUserIds = new Set<string>();
 
   for (const organizer of params.organizers) {
-    if (organizerIds.has(organizer.userId)) {
+    if (seenUserIds.has(organizer.userId)) {
       continue;
     }
-    organizerIds.add(organizer.userId);
+    seenUserIds.add(organizer.userId);
     rows.push({
       action_id: params.actionId,
       user_id: organizer.userId,
@@ -453,13 +457,28 @@ export function buildInitialActionParticipantRows(params: {
     });
   }
 
-  if (!organizerIds.has(params.creatorUserId)) {
+  if (!seenUserIds.has(params.creatorUserId)) {
+    seenUserIds.add(params.creatorUserId);
     rows.push({
       action_id: params.actionId,
       user_id: params.creatorUserId,
       joined_at: joinedAt,
       participation_status: "pending",
       participation_source: source,
+    });
+  }
+
+  for (const participant of params.manualParticipants ?? []) {
+    if (seenUserIds.has(participant.userId)) {
+      continue;
+    }
+    seenUserIds.add(participant.userId);
+    rows.push({
+      action_id: params.actionId,
+      user_id: participant.userId,
+      joined_at: joinedAt,
+      participation_status: "confirmed",
+      participation_source: "manual_add",
     });
   }
 
@@ -520,7 +539,8 @@ export async function createAction(
     userId: string;
     payload: CreateActionPayload;
     organizers: ResolvedActionOrganizer[];
-  status?: ActionStatus;
+    manualParticipants?: ResolvedActionParticipant[];
+    status?: ActionStatus;
   },
 ): Promise<{ id: string }> {
   const payload = params.payload;
@@ -543,6 +563,7 @@ export async function createAction(
       actionId,
       creatorUserId: params.userId,
       organizers: params.organizers,
+      manualParticipants: params.manualParticipants ?? [],
     }),
   );
   await recordCreateActionTrainingExample(supabase, { actionId, payload });

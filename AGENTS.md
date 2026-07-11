@@ -79,6 +79,12 @@ Tout fichier racine ajouté sans demande explicite doit être considéré comme 
 
 Ne pas créer de fichiers ou dossiers miroir pour contourner une règle d'emplacement. Ne pas dupliquer un même contenu dans deux emplacements parallèles.
 
+### Dossiers protégés
+
+Ne jamais modifier, déplacer, supprimer, renommer ou dupliquer le contenu de `documentation/pepite/` et `documentation/gpt-context/` sans demande explicite de l'utilisateur.
+
+Ces dossiers servent de références internes et de contexte. Toute intervention doit rester strictement limitée au périmètre demandé.
+
 ---
 
 ## 2. Stack et structure du projet
@@ -342,6 +348,14 @@ Pour les fichiers Markdown destinés au rapport CleanMyMap :
 * ne pas inventer de sources ;
 * ne pas insérer de numérotation manuelle ;
 * éviter les commentaires provisoires sauf demande explicite.
+
+### Gouvernance documentaire
+
+`documentation/pages_site/` est la source de vérité pour chaque page ou rubrique vue par l'utilisateur : rôle, contenu, parcours, comportement fonctionnel, UX/UI, états, captures et améliorations propres à la page.
+
+Le reste de `documentation/` sert aux sujets techniques transversaux : implémentation, tests, architecture, sécurité, performance, maintenance, services web et explication du code.
+
+Pour un sujet mixte, conserver le résumé fonctionnel dans la fiche de page puis ajouter un lien vers la documentation technique adaptée. Ne pas dupliquer le contenu et ne pas créer de fichier miroir.
 
 ---
 

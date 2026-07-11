@@ -49,7 +49,7 @@ export function getBackpressureConfig(operationType: string): BackpressureConfig
     },
   };
   
-  return configs[operationType] || configs.default;
+  return configs[operationType] || configs["default"];
 }
 
 export function acquireBackpressure(

@@ -216,6 +216,10 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const showPreparationSummary = Boolean(props.initialActionId || loadedActionPhase);
   const isPreparationDraft =
     loadedActionPhase === "pre_action" || loadedActionPhase === "post_action_draft";
+  const canShowGroupInvite =
+    form.recordType === "action" &&
+    form.groupJoinEnabled &&
+    loadedActionPhase !== "post_action_complete";
 
   return (
     <>
@@ -593,16 +597,16 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           </form>
 
           <ActionDeclarationFormFeedback
-            submissionState={submissionState}
-            createdId={createdId}
-            errorMessage={errorMessage}
-            hasAttemptedSubmit={hasAttemptedSubmit}
-            validationIssues={validationIssues}
-            retentionLoop={retentionLoop}
-            showGroupInvite={form.recordType === "action" && form.groupJoinEnabled}
-            isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
-            groupJoinHref={
-              createdId && form.recordType === "action" && form.groupJoinEnabled
+          submissionState={submissionState}
+          createdId={createdId}
+          errorMessage={errorMessage}
+          hasAttemptedSubmit={hasAttemptedSubmit}
+          validationIssues={validationIssues}
+          retentionLoop={retentionLoop}
+            showGroupInvite={canShowGroupInvite}
+          isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
+          groupJoinHref={
+              createdId && canShowGroupInvite
                 ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`
                 : null
             }

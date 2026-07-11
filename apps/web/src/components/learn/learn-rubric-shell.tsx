@@ -19,6 +19,8 @@ type LearnRubricShellProps = {
     href: string;
     label: { fr: string; en: string };
   };
+  showVisualPanel?: boolean;
+  showHeaderBadges?: boolean;
   children: ReactNode;
 };
 
@@ -39,6 +41,8 @@ export function LearnRubricShell({
   backHref,
   accent,
   cta,
+  showVisualPanel = true,
+  showHeaderBadges = true,
   children,
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
@@ -55,7 +59,13 @@ export function LearnRubricShell({
             : `rounded-[2rem] bg-gradient-to-br ${ACCENT_CLASSES[accent]} p-6 text-white md:p-8`
         }
       >
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        <div
+          className={
+            showVisualPanel
+              ? "grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
+              : "space-y-6"
+          }
+        >
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-3">
               <Link
@@ -90,6 +100,7 @@ export function LearnRubricShell({
               title={title[locale]}
               subtitle={subtitle[locale]}
               badges={
+                showHeaderBadges ? (
                 <>
                   <PageHeaderBadge family={pageFamily}>
                     {isFrench ? "Parcours pédagogique" : "Learning path"}
@@ -106,6 +117,7 @@ export function LearnRubricShell({
                     </PageHeaderBadge>
                   ))}
                 </>
+                ) : undefined
               }
             />
 
@@ -115,207 +127,209 @@ export function LearnRubricShell({
                   ? "max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg"
                   : "max-w-3xl text-base leading-relaxed text-white/82 md:text-lg"
               }
-            >
+              >
               {description[locale]}
             </p>
           </div>
 
-          <aside
-            className={
-              isLightOrange
-                ? "overflow-hidden rounded-[1.75rem] border border-amber-200/70 bg-white/92 p-4 shadow-[0_20px_40px_-28px_rgba(249,115,22,0.12)]"
-                : "overflow-hidden rounded-[1.75rem] border border-white/14 bg-white/10 p-4 shadow-[0_20px_40px_-28px_rgba(255,255,255,0.18)] backdrop-blur-sm"
-            }
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p
-                  className={
-                    isLightOrange
-                      ? "text-[11px] font-black uppercase tracking-[0.22em] text-amber-700"
-                      : "text-[11px] font-black uppercase tracking-[0.22em] text-white/72"
-                }
-                >
-                  {isFrench ? "Lecture visuelle" : "Visual read"}
-                </p>
-                <h3
-                  className={
-                    isLightOrange
-                      ? "mt-1 text-xl font-black tracking-tight text-slate-900"
-                      : "mt-1 text-xl font-black tracking-tight text-white"
-                }
-                >
-                  {isFrench ? "3 repères rapides" : "3 quick cues"}
-                </h3>
-              </div>
-              <div
-                className={
-                  isLightOrange
-                    ? "grid h-12 w-12 place-items-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700"
-                    : "grid h-12 w-12 place-items-center rounded-2xl border border-white/16 bg-white/12"
-                }
-              >
-                <Sparkles className="h-5 w-5" aria-hidden="true" />
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <div
-                className={
+          {showVisualPanel ? (
+            <aside
+              className={
                 isLightOrange
-                    ? "rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4"
-                    : "rounded-[1.4rem] border border-white/12 bg-black/10 p-4"
-                }
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span
+                  ? "overflow-hidden rounded-[1.75rem] border border-amber-200/70 bg-white/92 p-4 shadow-[0_20px_40px_-28px_rgba(249,115,22,0.12)]"
+                  : "overflow-hidden rounded-[1.75rem] border border-white/14 bg-white/10 p-4 shadow-[0_20px_40px_-28px_rgba(255,255,255,0.18)] backdrop-blur-sm"
+              }
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p
                     className={
                       isLightOrange
-                        ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
-                        : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
+                        ? "text-[11px] font-black uppercase tracking-[0.22em] text-amber-700"
+                        : "text-[11px] font-black uppercase tracking-[0.22em] text-white/72"
                     }
                   >
-                    <Compass className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span
+                    {isFrench ? "Lecture visuelle" : "Visual read"}
+                  </p>
+                  <h3
                     className={
                       isLightOrange
-                        ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                        : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                        ? "mt-1 text-xl font-black tracking-tight text-slate-900"
+                        : "mt-1 text-xl font-black tracking-tight text-white"
                     }
                   >
-                    01
-                  </span>
+                    {isFrench ? "3 repères rapides" : "3 quick cues"}
+                  </h3>
                 </div>
                 <div
                   className={
                     isLightOrange
-                      ? "mt-4 h-20 rounded-[1.1rem] border border-amber-100 bg-orange-50/90 p-3"
-                      : "mt-4 h-20 rounded-[1.1rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.04))] p-3"
-                }
-              >
-                  <div className={isLightOrange ? "h-2 w-16 rounded-full bg-amber-200" : "h-2 w-16 rounded-full bg-white/30"} />
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <span className={isLightOrange ? "h-9 rounded-xl bg-amber-100" : "h-9 rounded-xl bg-white/18"} />
-                    <span className={isLightOrange ? "h-12 rounded-xl bg-orange-200/70" : "h-12 rounded-xl bg-white/24"} />
-                    <span className={isLightOrange ? "h-8 rounded-xl bg-amber-100" : "h-8 rounded-xl bg-white/16"} />
-                  </div>
-                </div>
-                <p
-                  className={
-                    isLightOrange
-                      ? "mt-3 text-sm font-semibold text-slate-700"
-                      : "mt-3 text-sm font-semibold text-white/88"
+                      ? "grid h-12 w-12 place-items-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700"
+                      : "grid h-12 w-12 place-items-center rounded-2xl border border-white/16 bg-white/12"
                   }
                 >
-                  {subtitle[locale]}
-                </p>
+                  <Sparkles className="h-5 w-5" aria-hidden="true" />
+                </div>
               </div>
 
-              <div
-                className={
-                    isLightOrange
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <div
+                  className={
+                  isLightOrange
                       ? "rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4"
                       : "rounded-[1.4rem] border border-white/12 bg-black/10 p-4"
-                }
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={
-                      isLightOrange
-                        ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
-                        : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
-                    }
-                  >
-                    <Layers3 className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span
-                    className={
-                      isLightOrange
-                        ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                        : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
-                    }
-                  >
-                    02
-                  </span>
-                </div>
-                <div className="mt-4 grid gap-2">
-                  {highlights?.slice(0, 2).map((item) => (
+                  }
+                >
+                  <div className="flex items-center justify-between gap-2">
                     <span
-                      key={item[locale]}
                       className={
                         isLightOrange
-                          ? "inline-flex items-center rounded-2xl border border-amber-200 bg-orange-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-amber-900"
-                          : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/88"
+                          ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
+                          : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
                       }
                     >
-                      {item[locale]}
+                      <Compass className="h-4 w-4" aria-hidden="true" />
                     </span>
-                  ))}
-                </div>
-                <p
-                  className={
-                    isLightOrange
-                      ? "mt-3 text-sm font-semibold text-slate-700"
-                      : "mt-3 text-sm font-semibold text-white/88"
+                    <span
+                      className={
+                        isLightOrange
+                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
+                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                      }
+                    >
+                      01
+                    </span>
+                  </div>
+                  <div
+                    className={
+                      isLightOrange
+                        ? "mt-4 h-20 rounded-[1.1rem] border border-amber-100 bg-orange-50/90 p-3"
+                        : "mt-4 h-20 rounded-[1.1rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.04))] p-3"
                   }
                 >
-                  {description[locale]}
-                </p>
-              </div>
-
-              <div
-                className={
-                    isLightOrange
-                      ? "rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4"
-                      : "rounded-[1.4rem] border border-white/12 bg-black/10 p-4"
-                }
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span
+                    <div className={isLightOrange ? "h-2 w-16 rounded-full bg-amber-200" : "h-2 w-16 rounded-full bg-white/30"} />
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <span className={isLightOrange ? "h-9 rounded-xl bg-amber-100" : "h-9 rounded-xl bg-white/18"} />
+                      <span className={isLightOrange ? "h-12 rounded-xl bg-orange-200/70" : "h-12 rounded-xl bg-white/24"} />
+                      <span className={isLightOrange ? "h-8 rounded-xl bg-amber-100" : "h-8 rounded-xl bg-white/16"} />
+                    </div>
+                  </div>
+                  <p
                     className={
                       isLightOrange
-                        ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
-                        : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
+                        ? "mt-3 text-sm font-semibold text-slate-700"
+                        : "mt-3 text-sm font-semibold text-white/88"
                     }
                   >
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span
-                    className={
-                      isLightOrange
-                        ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
-                        : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
-                    }
-                  >
-                    03
-                  </span>
+                    {subtitle[locale]}
+                  </p>
                 </div>
+
                 <div
                   className={
-                    isLightOrange
-                      ? "mt-4 rounded-[1.1rem] border border-amber-100 bg-orange-50/80 p-3"
-                      : "mt-4 rounded-[1.1rem] border border-white/10 bg-white/8 p-3"
-                }
-              >
-                  <div className={isLightOrange ? "h-2 rounded-full bg-amber-200" : "h-2 rounded-full bg-white/25"} />
-                  <div className="mt-3 flex gap-2">
-                    <span className={isLightOrange ? "h-10 flex-1 rounded-2xl bg-amber-100" : "h-10 flex-1 rounded-2xl bg-white/14"} />
-                    <span className={isLightOrange ? "h-10 flex-1 rounded-2xl bg-orange-200/80" : "h-10 flex-1 rounded-2xl bg-white/22"} />
-                  </div>
-                </div>
-                <p
-                  className={
-                    isLightOrange
-                      ? "mt-3 text-sm font-semibold text-slate-700"
-                      : "mt-3 text-sm font-semibold text-white/88"
+                      isLightOrange
+                        ? "rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4"
+                        : "rounded-[1.4rem] border border-white/12 bg-black/10 p-4"
                   }
                 >
-                  {cta ? cta.label[locale] : isFrench ? "Continuer" : "Continue"}
-                </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={
+                        isLightOrange
+                          ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
+                          : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
+                      }
+                    >
+                      <Layers3 className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span
+                      className={
+                        isLightOrange
+                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
+                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                      }
+                    >
+                      02
+                    </span>
+                  </div>
+                  <div className="mt-4 grid gap-2">
+                    {highlights?.slice(0, 2).map((item) => (
+                      <span
+                        key={item[locale]}
+                        className={
+                          isLightOrange
+                            ? "inline-flex items-center rounded-2xl border border-amber-200 bg-orange-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-amber-900"
+                            : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/88"
+                        }
+                      >
+                        {item[locale]}
+                      </span>
+                    ))}
+                  </div>
+                  <p
+                    className={
+                      isLightOrange
+                        ? "mt-3 text-sm font-semibold text-slate-700"
+                        : "mt-3 text-sm font-semibold text-white/88"
+                    }
+                  >
+                    {description[locale]}
+                  </p>
+                </div>
+
+                <div
+                  className={
+                      isLightOrange
+                        ? "rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4"
+                        : "rounded-[1.4rem] border border-white/12 bg-black/10 p-4"
+                  }
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={
+                        isLightOrange
+                          ? "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm"
+                          : "inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-white/10"
+                      }
+                    >
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span
+                      className={
+                        isLightOrange
+                          ? "text-[10px] font-black uppercase tracking-[0.18em] text-amber-700"
+                          : "text-[10px] font-black uppercase tracking-[0.18em] text-white/68"
+                      }
+                    >
+                      03
+                    </span>
+                  </div>
+                  <div
+                    className={
+                      isLightOrange
+                        ? "mt-4 rounded-[1.1rem] border border-amber-100 bg-orange-50/80 p-3"
+                        : "mt-4 rounded-[1.1rem] border border-white/10 bg-white/8 p-3"
+                  }
+                >
+                    <div className={isLightOrange ? "h-2 rounded-full bg-amber-200" : "h-2 rounded-full bg-white/25"} />
+                    <div className="mt-3 flex gap-2">
+                      <span className={isLightOrange ? "h-10 flex-1 rounded-2xl bg-amber-100" : "h-10 flex-1 rounded-2xl bg-white/14"} />
+                      <span className={isLightOrange ? "h-10 flex-1 rounded-2xl bg-orange-200/80" : "h-10 flex-1 rounded-2xl bg-white/22"} />
+                    </div>
+                  </div>
+                  <p
+                    className={
+                      isLightOrange
+                        ? "mt-3 text-sm font-semibold text-slate-700"
+                        : "mt-3 text-sm font-semibold text-white/88"
+                    }
+                  >
+                    {cta ? cta.label[locale] : isFrench ? "Continuer" : "Continue"}
+                  </p>
+                </div>
               </div>
-            </div>
-          </aside>
+            </aside>
+          ) : null}
         </div>
       </section>
 

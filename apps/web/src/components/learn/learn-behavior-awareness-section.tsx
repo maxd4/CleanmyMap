@@ -1,5 +1,9 @@
-import Link from "next/link";
+"use client";
+
 import { ArrowRight, Megaphone, ShieldCheck, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 
@@ -8,146 +12,165 @@ type LocalizedText = {
   en: string;
 };
 
-type AwarenessCard = {
+type PracticeCard = {
   title: LocalizedText;
-  lead: LocalizedText;
-  bullets: LocalizedText[];
-  href: string;
-  sourceLabel: LocalizedText;
-  sourceHint: LocalizedText;
-  icon: typeof Megaphone;
-  tone: "amber" | "emerald" | "sky";
+  detail: LocalizedText;
+  note: LocalizedText;
+  icon: LucideIcon;
 };
 
-const AWARENESS_CARDS: AwarenessCard[] = [
+type SourceCard = {
+  title: LocalizedText;
+  detail: LocalizedText;
+  href: string;
+  externalLabel: LocalizedText;
+  icon: LucideIcon;
+};
+
+const PRACTICE_CARDS: PracticeCard[] = [
   {
-    title: {
-      fr: "Montrer l’exemple",
-      en: "Lead by example",
+    title: { fr: "Montrer le bon geste", en: "Show the right gesture" },
+    detail: {
+      fr: "Un geste visible aide le groupe à comprendre vite ce qu’il faut reproduire.",
+      en: "A visible gesture helps the group quickly understand what to copy.",
     },
-    lead: {
-      fr: "Gestes Propres rappelle qu’en matière de propreté, le fait de montrer le bon geste joue sur les normes sociales et aide à faire évoluer les comportements.",
-      en: "Gestes Propres notes that in cleanliness matters, showing the right gesture influences social norms and helps behavior evolve.",
-    },
-    bullets: [
-      {
-        fr: "Un geste visible vaut plus qu’un long discours.",
-        en: "A visible gesture matters more than a long speech.",
-      },
-      {
-        fr: "Quand le tri est simple à voir, il devient plus facile à reproduire.",
-        en: "When sorting is easy to see, it becomes easier to copy.",
-      },
-      {
-        fr: "Les défis partagés renforcent l’envie d’agir avec les autres.",
-        en: "Shared challenges strengthen the desire to act with others.",
-      },
-    ],
-    href: "https://www.gestespropres.com/relever-un-defi",
-    sourceLabel: {
-      fr: "Gestes Propres",
-      en: "Gestes Propres",
-    },
-    sourceHint: {
-      fr: "Défis, norme sociale et mise en visibilité du bon geste.",
-      en: "Challenges, social norms and making the right gesture visible.",
+    note: {
+      fr: "Le visible passe avant le long discours.",
+      en: "Visibility comes before a long speech.",
     },
     icon: Users,
-    tone: "emerald",
   },
   {
-    title: {
-      fr: "Accompagner le changement",
-      en: "Support behavior change",
+    title: { fr: "Répéter une consigne courte", en: "Repeat a short rule" },
+    detail: {
+      fr: "Une consigne simple tient mieux qu’un panneau trop chargé.",
+      en: "A simple rule sticks better than an overloaded sign.",
     },
-    lead: {
-      fr: "L’ADEME insiste sur les leviers de communication, de sensibilisation et d’événements pour faire adopter un nouveau geste de tri.",
-      en: "ADEME highlights communication, awareness and event-based levers to help people adopt a new sorting gesture.",
-    },
-    bullets: [
-      {
-        fr: "Identifier les freins aide à choisir le bon message.",
-        en: "Identifying barriers helps choose the right message.",
-      },
-      {
-        fr: "Un bon support pédagogique sert aussi à évaluer l’adhésion.",
-        en: "A good educational support also helps measure adoption.",
-      },
-      {
-        fr: "Le geste s’installe mieux quand il est expliqué, montré et répété.",
-        en: "The gesture sticks better when it is explained, shown and repeated.",
-      },
-    ],
-    href: "https://economie-circulaire.ademe.fr/tri-biodechets",
-    sourceLabel: {
-      fr: "ADEME",
-      en: "ADEME",
-    },
-    sourceHint: {
-      fr: "Communication, sensibilisation et outils d’accompagnement.",
-      en: "Communication, awareness and behavior-change tools.",
+    note: {
+      fr: "Court, stable et lisible.",
+      en: "Short, stable and readable.",
     },
     icon: Megaphone,
-    tone: "amber",
   },
   {
-    title: {
-      fr: "Prévention collective",
-      en: "Collective prevention",
+    title: { fr: "Préparer le contexte", en: "Prepare the context" },
+    detail: {
+      fr: "Le bon environnement réduit les erreurs avant même l’action.",
+      en: "The right environment reduces errors before the action starts.",
     },
-    lead: {
-      fr: "Le ministère rappelle qu’une politique efficace combine prévention, sensibilisation, communication, collecte adaptée et, si nécessaire, sanction.",
-      en: "The ministry stresses that effective policy combines prevention, awareness, communication, adapted collection and, when needed, enforcement.",
-    },
-    bullets: [
-      {
-        fr: "Le bon comportement dépend aussi de l’environnement proposé.",
-        en: "The right behavior also depends on the environment provided.",
-      },
-      {
-        fr: "Un dispositif clair réduit les abandons et facilite le tri.",
-        en: "A clear setup reduces littering and makes sorting easier.",
-      },
-      {
-        fr: "Prévenir, c’est d’abord rendre les bons réflexes faciles à comprendre.",
-        en: "Prevention starts by making the right reflexes easy to understand.",
-      },
-    ],
-    href: "https://www.ecologie.gouv.fr/politiques-publiques/lutte-contre-depots-illegaux-dechets",
-    sourceLabel: {
-      fr: "Ministère",
-      en: "Ministry",
-    },
-    sourceHint: {
-      fr: "Prévention, sensibilisation et communication locale.",
-      en: "Prevention, awareness and local communication.",
+    note: {
+      fr: "Le cadre aide autant que l’explication.",
+      en: "The setup helps as much as the explanation.",
     },
     icon: ShieldCheck,
-    tone: "sky",
   },
 ];
 
-const TONE_CLASSES: Record<AwarenessCard["tone"], { shell: string; badge: string; accent: string; border: string }> =
+const SOURCE_CARDS: SourceCard[] = [
   {
-    amber: {
-      shell: "border-amber-200 bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.98))]",
-      badge: "border-amber-200 bg-amber-50 text-amber-900",
-      accent: "text-amber-700",
-      border: "border-amber-200",
+    title: { fr: "Gestes Propres", en: "Gestes Propres" },
+    detail: {
+      fr: "Normes sociales, visibilité du geste et effet d’entraînement collectif.",
+      en: "Social norms, visible gestures and collective momentum.",
     },
-    emerald: {
-      shell: "border-emerald-200 bg-[linear-gradient(180deg,rgba(236,253,245,0.98),rgba(255,255,255,0.98))]",
-      badge: "border-emerald-200 bg-emerald-50 text-emerald-900",
-      accent: "text-emerald-700",
-      border: "border-emerald-200",
+    href: "https://www.gestespropres.com/relever-un-defi",
+    externalLabel: { fr: "Ouvrir la source", en: "Open source" },
+    icon: Users,
+  },
+  {
+    title: { fr: "ADEME", en: "ADEME" },
+    detail: {
+      fr: "Communication, sensibilisation et leviers d’accompagnement du tri.",
+      en: "Communication, awareness and sorting support levers.",
     },
-    sky: {
-      shell: "border-sky-200 bg-[linear-gradient(180deg,rgba(240,249,255,0.98),rgba(255,255,255,0.98))]",
-      badge: "border-sky-200 bg-sky-50 text-sky-900",
-      accent: "text-sky-700",
-      border: "border-sky-200",
+    href: "https://economie-circulaire.ademe.fr/tri-biodechets",
+    externalLabel: { fr: "Ouvrir la source", en: "Open source" },
+    icon: Megaphone,
+  },
+  {
+    title: { fr: "Ministère", en: "Ministry" },
+    detail: {
+      fr: "Prévention, sensibilisation et communication locale.",
+      en: "Prevention, awareness and local communication.",
     },
-  };
+    href: "https://www.ecologie.gouv.fr/politiques-publiques/lutte-contre-depots-illegaux-dechets",
+    externalLabel: { fr: "Ouvrir la source", en: "Open source" },
+    icon: ShieldCheck,
+  },
+];
+
+function PracticeCardView({
+  locale,
+  card,
+}: {
+  locale: LearnLocale;
+  card: PracticeCard;
+}) {
+  const Icon = card.icon;
+
+  return (
+    <CmmCard tone="amber" variant="outlined" className="flex h-full flex-col gap-3 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+            {locale === "fr" ? "Repère pratique" : "Practical cue"}
+          </p>
+          <h4 className="mt-1 text-lg font-black tracking-tight cmm-text-primary">
+            {card.title[locale]}
+          </h4>
+        </div>
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </div>
+
+      <p className="cmm-text-small leading-relaxed cmm-text-secondary">{card.detail[locale]}</p>
+      <p className="rounded-2xl border border-amber-100 bg-white px-3 py-2 cmm-text-small font-semibold text-amber-900">
+        {card.note[locale]}
+      </p>
+    </CmmCard>
+  );
+}
+
+function SourceCardView({
+  locale,
+  card,
+}: {
+  locale: LearnLocale;
+  card: SourceCard;
+}) {
+  const Icon = card.icon;
+
+  return (
+    <CmmCard tone="amber" variant="outlined" className="flex h-full flex-col justify-between p-4">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "Source" : "Source"}
+            </p>
+            <h5 className="mt-1 text-base font-black tracking-tight cmm-text-primary">{card.title[locale]}</h5>
+          </div>
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+            <Icon className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </div>
+
+        <p className="cmm-text-small leading-relaxed cmm-text-secondary">{card.detail[locale]}</p>
+      </div>
+
+      <CmmButton
+        href={card.href}
+        tone="secondary"
+        variant="pill"
+        className="mt-4 w-full justify-between px-4 py-3 cmm-text-caption font-black uppercase tracking-[0.18em]"
+      >
+        {card.externalLabel[locale]}
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </CmmButton>
+    </CmmCard>
+  );
+}
 
 export function LearnBehaviorAwarenessSection({
   locale,
@@ -157,24 +180,21 @@ export function LearnBehaviorAwarenessSection({
   id?: string;
 }) {
   return (
-    <section
-      id={id}
-      className="rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6"
-    >
+    <section id={id} className="rounded-[2rem] border border-amber-200/80 bg-white p-5 shadow-sm md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="max-w-3xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-            {locale === "fr" ? "Comportement et sensibilisation" : "Behavior and awareness"}
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+            {locale === "fr" ? "Repères pratiques" : "Practical cues"}
           </p>
-          <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+          <h3 className="mt-1 text-2xl font-black tracking-tight cmm-text-primary">
             {locale === "fr"
-              ? "Le tri s’installe mieux quand le bon geste est visible, expliqué et répété"
-              : "Sorting sticks better when the right gesture is visible, explained and repeated"}
+              ? "Le geste tient mieux quand il reste visible, simple et cohérent"
+              : "The gesture sticks better when it stays visible, simple and coherent"}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 cmm-text-small leading-relaxed cmm-text-secondary">
             {locale === "fr"
-              ? "On s’appuie ici sur Gestes Propres, l’ADEME et le ministère: montrer l’exemple, choisir les bons leviers de sensibilisation et rendre le message simple à suivre."
-              : "This section draws on Gestes Propres, ADEME and the ministry: lead by example, choose the right awareness levers and keep the message easy to follow."}
+              ? "On garde ici seulement ce qui aide à agir tout de suite; les sources restent disponibles plus bas."
+              : "Only the parts that help immediate action remain here; sources stay available below."}
           </p>
         </div>
         <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
@@ -182,68 +202,35 @@ export function LearnBehaviorAwarenessSection({
         </span>
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
-        {AWARENESS_CARDS.map((card) => {
-          const Icon = card.icon;
-          const tone = TONE_CLASSES[card.tone];
-
-          return (
-            <article key={card.title.fr} className={cn("rounded-[1.6rem] border p-4 shadow-sm", tone.shell, tone.border)}>
-              <div className="flex items-start justify-between gap-3">
-                <div className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl border", tone.badge)}>
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                </div>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  {card.sourceLabel[locale]}
-                </span>
-              </div>
-
-              <h4 className="mt-4 text-lg font-black tracking-tight text-slate-900">
-                {card.title[locale]}
-              </h4>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.lead[locale]}</p>
-
-              <ul className="mt-4 space-y-2">
-                {card.bullets.map((bullet) => (
-                  <li
-                    key={bullet.fr}
-                    className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-700"
-                  >
-                    <span
-                      className={cn(
-                        "mt-1 h-2 w-2 shrink-0 rounded-full",
-                        card.tone === "amber" ? "bg-amber-500" : card.tone === "emerald" ? "bg-emerald-500" : "bg-sky-500",
-                      )}
-                    />
-                    <span>{bullet[locale]}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                    {locale === "fr" ? "Source" : "Source"}
-                  </p>
-                  <p className="mt-1 truncate text-sm font-bold text-slate-900">{card.sourceHint[locale]}</p>
-                </div>
-                <Link
-                  href={card.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(
-                    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] transition hover:-translate-y-[1px]",
-                    tone.badge,
-                  )}
-                >
-                  {card.sourceLabel[locale]}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
-              </div>
-            </article>
-          );
-        })}
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
+        {PRACTICE_CARDS.map((card) => (
+          <PracticeCardView key={card.title.fr} locale={locale} card={card} />
+        ))}
       </div>
+
+      <details className="group mt-5 rounded-[1.35rem] border border-amber-200 bg-amber-50/40 px-4 py-3">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-none">
+          <div className="space-y-1 pr-4">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "Pour aller plus loin" : "To go further"}
+            </p>
+            <p className="cmm-text-small leading-relaxed cmm-text-secondary">
+              {locale === "fr"
+                ? "Sources et compléments quand l’utilisateur veut aller plus loin."
+                : "Sources and extras when the user wants to go further."}
+            </p>
+          </div>
+          <span className={cn("mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-white text-amber-700 transition group-open:rotate-180")}>
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </summary>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {SOURCE_CARDS.map((card) => (
+            <SourceCardView key={card.title.fr} locale={locale} card={card} />
+          ))}
+        </div>
+      </details>
     </section>
   );
 }

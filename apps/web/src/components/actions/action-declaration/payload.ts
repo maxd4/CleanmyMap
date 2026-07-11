@@ -35,12 +35,26 @@ export function parseOrganizerAccounts(input: string): string[] {
  )];
 }
 
+export function normalizeParticipantAccounts(
+ accounts: readonly string[] | null | undefined,
+): string[] {
+ return [
+  ...new Set(
+   (accounts ?? [])
+    .map((token) => token.trim())
+    .map((token) => token.replace(/^@+/, ""))
+    .filter((token) => token.length > 0),
+  ),
+ ];
+}
+
 const BASE_FORM_STATE: FormState = {
  actorName:"",
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
  organizerAccounts:"",
- groupJoinEnabled: true,
+ participantAccounts:[],
+ groupJoinEnabled: false,
  actionTitle:"",
  shortDescription:"",
  communeZoneLabel:"",
@@ -177,6 +191,7 @@ export function getFormResetState(previous: FormState): FormState {
  actorName: previous.actorName,
  associationName: previous.associationName,
  organizerAccounts: previous.organizerAccounts,
+ participantAccounts: previous.participantAccounts,
  actionDate: previous.actionDate,
  recordType: previous.recordType,
  };

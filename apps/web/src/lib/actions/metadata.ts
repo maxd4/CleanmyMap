@@ -70,7 +70,7 @@ function hasStructuredActionMetadata(metadata: {
   return Boolean(
     hasWasteBreakdown ||
       associationName ||
-      metadata.groupJoinEnabled === false ||
+      typeof metadata.groupJoinEnabled === "boolean" ||
       metadata.placeType ||
       metadata.departureLocationLabel ||
       metadata.arrivalLocationLabel,
@@ -139,8 +139,8 @@ function buildStructuredMetadataPayload(
   if (metadata.associationName?.trim()) {
     metaPayload.associationName = metadata.associationName.trim();
   }
-  if (metadata.groupJoinEnabled === false) {
-    metaPayload.groupJoinEnabled = false;
+  if (typeof metadata.groupJoinEnabled === "boolean") {
+    metaPayload.groupJoinEnabled = metadata.groupJoinEnabled;
   }
   if (metadata.placeType) {
     metaPayload.placeType = metadata.placeType;
@@ -201,11 +201,7 @@ function appendMetadataLine(
   }
 
   const nextParsed = { ...parsed };
-  if (groupJoinEnabled) {
-    delete nextParsed.groupJoinEnabled;
-  } else {
-    nextParsed.groupJoinEnabled = false;
-  }
+  nextParsed.groupJoinEnabled = groupJoinEnabled;
 
   if (Object.keys(nextParsed).length === 0) {
     return { lines, metadataUpdated: true };
@@ -222,7 +218,7 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     submissionMode: null,
     wasteBreakdown: null,
     associationName: null,
-    groupJoinEnabled: true,
+    groupJoinEnabled: false,
     placeType: null,
     departureLocationLabel: null,
     arrivalLocationLabel: null,
@@ -356,7 +352,7 @@ export function extractActionMetadataFromNotes(
       submissionMode: null,
       wasteBreakdown: null,
       associationName: null,
-      groupJoinEnabled: true,
+      groupJoinEnabled: false,
       placeType: null,
       departureLocationLabel: null,
       arrivalLocationLabel: null,
@@ -427,9 +423,9 @@ export function setActionGroupJoinEnabledInNotes(
     metadataUpdated = updated.metadataUpdated;
   }
 
-  if (!metadataUpdated && !groupJoinEnabled) {
+  if (!metadataUpdated) {
     outputLines.push(
-      `${META_PREFIX}${JSON.stringify({ groupJoinEnabled: false })}`,
+      `${META_PREFIX}${JSON.stringify({ groupJoinEnabled })}`,
     );
   }
 

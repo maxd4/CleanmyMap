@@ -9,6 +9,7 @@ import {
 
 const {
   authMock,
+  appendActionModerationAuditMock,
   getCurrentUserIdentityMock,
   getSupabaseServerClientMock,
   loadActionOrganizerIdsForActionMock,
@@ -20,6 +21,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     authMock.mockResolvedValue({ userId: "user-1" });
     getCurrentUserIdentityMock.mockResolvedValue(null);
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
+    appendActionModerationAuditMock.mockResolvedValue(undefined);
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -114,6 +116,14 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     expect(response.status).toBe(200);
     expect(body.groupJoinEnabled).toBe(false);
     expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "admin-1",
+        targetActionId: "action-old",
+        operation: "toggle_group_join",
+        outcome: "success",
+      }),
+    );
   }, 15000);
 
   it("rejects users that are not organizers", async () => {

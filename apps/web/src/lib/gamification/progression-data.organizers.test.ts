@@ -264,12 +264,12 @@ describe("syncUserActionProgression", () => {
 
     expect(validatedCount).toBe(1);
     const validationEvent = progressionEventsInserted.find(
-      (row) => row.event_type === "action_declare_validation",
+      (row) => row["event_type"] === "action_declare_validation",
     ) as Record<string, unknown> | undefined;
 
     expect(validationEvent).toBeDefined();
-    expect(validationEvent?.xp_awarded).toBeCloseTo(1 / 3);
-    expect(validationEvent?.metadata).toMatchObject({
+    expect(validationEvent?.["xp_awarded"]).toBeCloseTo(1 / 3);
+    expect(validationEvent?.["metadata"]).toMatchObject({
       organizerCount: 3,
     });
     expect(pointsInsert).not.toHaveBeenCalled();

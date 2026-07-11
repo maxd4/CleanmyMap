@@ -57,8 +57,9 @@ function readProfileRole(metadata: unknown): AppProfile | null {
     return null;
   }
 
-  const roleValue = (metadata as Record<string, unknown>).role;
-  const profileValue = (metadata as Record<string, unknown>).profile;
+  const metadataRecord = metadata as Record<string, unknown>;
+  const roleValue = metadataRecord["role"];
+  const profileValue = metadataRecord["profile"];
   const rawValue =
     typeof roleValue === "string"
       ? roleValue
@@ -74,7 +75,7 @@ function readProfileBadges(metadata: unknown): string[] {
     return [];
   }
 
-  const badges = (metadata as Record<string, unknown>).badges;
+  const badges = (metadata as Record<string, unknown>)["badges"];
   if (!Array.isArray(badges)) {
     return [];
   }

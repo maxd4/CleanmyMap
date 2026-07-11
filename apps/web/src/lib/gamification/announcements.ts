@@ -42,29 +42,29 @@ function joinKeyParts(...parts: Array<string | undefined>): string | undefined {
 }
 
 function buildTierDedupedKey(type: string, payload: RawGamificationEvent): string {
-  const tierId = readString(payload.tierId) ?? readString(payload.badgeId);
+  const tierId = readString(payload["tierId"]) ?? readString(payload["badgeId"]);
   return tierId ? `${type}:${tierId}` : type;
 }
 
 function buildBonusDedupedKey(type: string, payload: RawGamificationEvent): string {
-  const bonus = readNumber(payload.bonus);
+  const bonus = readNumber(payload["bonus"]);
   return bonus !== undefined ? `${type}:${bonus}` : type;
 }
 
 function buildLevelDedupedKey(type: string, payload: RawGamificationEvent): string {
-  const userId = readString(payload.userId);
-  const level = readNumber(payload.newLevel) ?? readNumber(payload.currentLevel);
+  const userId = readString(payload["userId"]);
+  const level = readNumber(payload["newLevel"]) ?? readNumber(payload["currentLevel"]);
   return userId && level !== undefined ? `${type}:${userId}:${level}` : type;
 }
 
 function buildUserDedupedKey(type: string, payload: RawGamificationEvent): string {
-  const userId = readString(payload.userId);
+  const userId = readString(payload["userId"]);
   return userId ? `${type}:${userId}` : type;
 }
 
 function buildSourceDedupedKey(type: string, payload: RawGamificationEvent): string {
-  const sourceId = readString(payload.sourceId);
-  const sourceTable = readString(payload.sourceTable);
+  const sourceId = readString(payload["sourceId"]);
+  const sourceTable = readString(payload["sourceTable"]);
   return joinKeyParts(type, sourceTable, sourceId) ?? type;
 }
 
@@ -88,11 +88,11 @@ function buildDedupedKey(type: string, payload: RawGamificationEvent): string | 
     return buildUserDedupedKey(type, payload);
   }
   if (type === "xp_awarded") {
-    const userId = readString(payload.userId);
-    const sourceId = readString(payload.sourceId);
+    const userId = readString(payload["userId"]);
+    const sourceId = readString(payload["sourceId"]);
     return userId && sourceId ? `${type}:${userId}:${sourceId}` : type;
   }
-  return payload.dedupeKey as string | undefined;
+  return payload["dedupeKey"] as string | undefined;
 }
 
 function buildTierUnlockedAnnouncement(
@@ -105,12 +105,12 @@ function buildTierUnlockedAnnouncement(
     dedupeKey?: string;
   },
 ): GamificationAnnouncementPayload {
-  const xpText = formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP");
+  const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
   return {
     title: base.title ?? "Palier débloqué",
     message:
       base.message ??
-      `Le palier ${readString(payload.title) ?? readString(payload.tierId) ?? "suivant"} est débloqué.${
+      `Le palier ${readString(payload["title"]) ?? readString(payload["tierId"]) ?? "suivant"} est débloqué.${
         xpText ? ` ${xpText}.` : ""
       }`,
     tone: "explorer",
@@ -130,12 +130,12 @@ function buildParticipantTierAnnouncement(
     dedupeKey?: string;
   },
 ): GamificationAnnouncementPayload {
-  const xpText = formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP");
+  const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
   return {
     title: base.title ?? "Palier de participation débloqué",
     message:
       base.message ??
-      `${readString(payload.tierId) ?? "Votre palier"} est débloqué côté participation.${
+      `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué côté participation.${
         xpText ? ` ${xpText}.` : ""
       }`,
     tone: "actions",
@@ -155,12 +155,12 @@ function buildFormTierAnnouncement(
     dedupeKey?: string;
   },
 ): GamificationAnnouncementPayload {
-  const xpText = formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP");
+  const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
   return {
     title: base.title ?? "Palier de formulaires débloqué",
     message:
       base.message ??
-      `${readString(payload.tierId) ?? "Votre palier"} est débloqué pour les formulaires.${
+      `${readString(payload["tierId"]) ?? "Votre palier"} est débloqué pour les formulaires.${
         xpText ? ` ${xpText}.` : ""
       }`,
     tone: "forms",
@@ -184,7 +184,7 @@ function buildFormBonusAnnouncement(
     title: base.title ?? "Bonus de formulaires débloqué",
     message:
       base.message ??
-      (formatGenericAmount(readNumber(payload.bonus), "XP") ??
+      (formatGenericAmount(readNumber(payload["bonus"]), "XP") ??
         "Un bonus de formulaires a été débloqué."),
     tone: "forms",
     icon: base.icon ?? "✨",
@@ -207,7 +207,7 @@ function buildCleanZoneAnnouncement(
     title: base.title ?? "Mission zone propre récompensée",
     message:
       base.message ??
-      (formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP") ??
+      (formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP") ??
         "Une mission zone propre a été récompensée."),
     tone: "clean-zones",
     icon: base.icon ?? "🌍",
@@ -226,12 +226,12 @@ function buildFirstTraceAnnouncement(
     dedupeKey?: string;
   },
 ): GamificationAnnouncementPayload {
-  const xpText = formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP");
+  const xpText = formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP");
   return {
     title: base.title ?? "Première trace utile débloquée",
     message:
       base.message ??
-      `${readString(payload.badgeId) ?? "La première trace utile"} est désormais visible.${
+      `${readString(payload["badgeId"]) ?? "La première trace utile"} est désormais visible.${
         xpText ? ` ${xpText}.` : ""
       }`,
     tone: "actions",
@@ -255,7 +255,7 @@ function buildLevelUpAnnouncement(
     title: base.title ?? "Niveau supérieur ! 🏆",
     message:
       base.message ??
-      `Vous avez atteint le niveau ${readNumber(payload.newLevel) ?? readNumber(payload.currentLevel) ?? "suivant"}.`,
+      `Vous avez atteint le niveau ${readNumber(payload["newLevel"]) ?? readNumber(payload["currentLevel"]) ?? "suivant"}.`,
     tone: "generic",
     icon: base.icon ?? "🏆",
     source: base.source,
@@ -277,7 +277,7 @@ function buildReferralAnnouncement(
     title: base.title ?? "Badge invité un ami",
     message:
       base.message ??
-      (formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP") ??
+      (formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP") ??
         "Le badge de parrainage a été débloqué."),
     tone: "generic",
     icon: base.icon ?? "share-2",
@@ -300,7 +300,7 @@ function buildXpAnnouncement(
     title: base.title ?? "XP attribués",
     message:
       base.message ??
-      (formatGenericAmount(readNumber(payload.xp) ?? readNumber(payload.xpAwarded), "XP") ??
+      (formatGenericAmount(readNumber(payload["xp"]) ?? readNumber(payload["xpAwarded"]), "XP") ??
         "Des points d'expérience ont été attribués."),
     tone: "generic",
     icon: base.icon ?? "✨",
@@ -372,13 +372,13 @@ export function resolveGamificationAnnouncement(
   }
 
   const payload = raw as RawGamificationEvent;
-  const type = readString(payload.type);
+  const type = readString(payload["type"]);
   const base = {
-    title: readString(payload.title),
-    message: readString(payload.message),
-    icon: readString(payload.icon),
-    source: readString(payload.source) ?? "realtime",
-    dedupeKey: type ? buildDedupedKey(type, payload) : readString(payload.dedupeKey),
+    title: readString(payload["title"]),
+    message: readString(payload["message"]),
+    icon: readString(payload["icon"]),
+    source: readString(payload["source"]) ?? "realtime",
+    dedupeKey: type ? buildDedupedKey(type, payload) : readString(payload["dedupeKey"]),
   };
 
   if (!type) {

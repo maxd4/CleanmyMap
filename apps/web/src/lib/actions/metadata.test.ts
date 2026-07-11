@@ -35,6 +35,16 @@ describe("action metadata notes", () => {
     expect(parsed.submissionMode).toBeNull();
     expect(parsed.associationName).toBeNull();
     expect(parsed.wasteBreakdown).toBeNull();
+    expect(parsed.groupJoinEnabled).toBe(false);
+  });
+
+  it("persists an open group form flag in metadata", () => {
+    const notes = appendActionMetadataToNotes("Simple note", {
+      groupJoinEnabled: true,
+    });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.cleanNotes).toBe("Simple note");
     expect(parsed.groupJoinEnabled).toBe(true);
   });
 

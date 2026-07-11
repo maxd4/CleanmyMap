@@ -69,8 +69,8 @@ describe("community event RSVP summaries", () => {
         maybeSingle: vi.fn(async () => ({
           data: rows.find(
             (row) =>
-              row.event_id === state.filters.event_id &&
-              row.participant_clerk_id === state.filters.participant_clerk_id,
+              row["event_id"] === state.filters["event_id"] &&
+              row["participant_clerk_id"] === state.filters["participant_clerk_id"],
           ) ?? null,
           error: null,
         })),
@@ -84,19 +84,19 @@ describe("community event RSVP summaries", () => {
         ) =>
           Promise.resolve({
             data: rows.filter((row) => {
-              if (state.filters.event_id && row.event_id !== state.filters.event_id) {
+              if (state.filters["event_id"] && row["event_id"] !== state.filters["event_id"]) {
                 return false;
               }
-              if (state.filters.status && row.status !== state.filters.status) {
+              if (state.filters["status"] && row["status"] !== state.filters["status"]) {
                 return false;
               }
               return true;
             }),
             count: rows.filter((row) => {
-              if (state.filters.event_id && row.event_id !== state.filters.event_id) {
+              if (state.filters["event_id"] && row["event_id"] !== state.filters["event_id"]) {
                 return false;
               }
-              if (state.filters.status && row.status !== state.filters.status) {
+              if (state.filters["status"] && row["status"] !== state.filters["status"]) {
                 return false;
               }
               return true;

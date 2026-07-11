@@ -3,7 +3,7 @@ import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz"
 import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
-import { isAdminLikeProfile } from "@/lib/profiles";
+import { canViewModerationAudit } from "@/lib/actions/permissions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
@@ -36,7 +36,7 @@ async function canViewActionAudit(params: {
   supabase: ReturnType<typeof getSupabaseServerClient>;
 }): Promise<boolean> {
   const identity = await getCurrentUserIdentity();
-  if (identity && isAdminLikeProfile(identity.role)) {
+  if (canViewModerationAudit(identity)) {
     return true;
   }
 

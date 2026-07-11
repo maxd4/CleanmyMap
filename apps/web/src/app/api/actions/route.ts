@@ -7,12 +7,16 @@ import {
   createAction,
   resolveActionCreationStatus,
 } from "@/lib/actions/store";
+import {
+  canAutoApproveOwnAction,
+  canUseAdminOverride,
+} from "@/lib/actions/permissions";
 import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
-import { isAdminLikeProfile } from "@/lib/profiles";
 import { toActionListItem } from "@/lib/actions/data-contract";
 import {
   resolveActionOrganizers,
   resolveDefaultActionOrganizerIds,
+  resolveActionParticipants,
 } from "@/lib/actions/organizers";
 import {
   fetchUnifiedActionContracts,
@@ -299,7 +303,10 @@ export async function POST(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
     const identity = await getCurrentUserIdentity();
-    const isCreatorAdminLike = identity ? isAdminLikeProfile(identity.role) : false;
+    const isCreatorAdminLike = canUseAdminOverride(identity);
+    const canAutoApproveOwnSubmission = canAutoApproveOwnAction(identity, {
+      createdByClerkId: userId,
+    });
     const resolvedIdentity = identity ?? {
       displayName: userId,
       handle: userId,
@@ -353,13 +360,39 @@ export async function POST(request: Request) {
             },
             organizerAccounts,
             includeCreatorAsPrimary: isSpontaneousAction,
-          })
+        })
         : { organizers: [], unresolvedTokens: [] as string[] };
 
     if (organizerResolution.unresolvedTokens.length > 0) {
       return validationErrorResponse({
         organizerAccounts: [
           `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,
+        ],
+      });
+    }
+
+    const participantResolution =
+      normalizedPayload.recordType === "action"
+        ? await resolveActionParticipants({
+            supabase,
+            creator: {
+              userId,
+              displayName: resolvedIdentity.displayName,
+              handle: resolvedIdentity.handle,
+              username: resolvedIdentity.username,
+              email: resolvedIdentity.email,
+            },
+            participantAccounts: normalizedPayload.participantAccounts,
+            organizerIds: organizerResolution.organizers.map(
+              (organizer) => organizer.userId,
+            ),
+          })
+        : { participants: [], unresolvedTokens: [] as string[] };
+
+    if (participantResolution.unresolvedTokens.length > 0) {
+      return validationErrorResponse({
+        participantAccounts: [
+          `Comptes participants introuvables: ${participantResolution.unresolvedTokens.join(", ")}`,
         ],
       });
     }
@@ -429,18 +462,19 @@ export async function POST(request: Request) {
       userId,
       payload: normalizedPayload,
       organizers: organizerResolution.organizers,
+      manualParticipants: participantResolution.participants,
       status:
         normalizedPayload.actionPhase === "pre_action"
-          ? "pending"
+          ? canAutoApproveOwnSubmission
+            ? "approved"
+            : "pending"
           : normalizedPayload.recordType === "action"
             ? isQuickSubmission
               ? "approved"
-              : organizerResolution.organizers.some(
-                  (organizer) => organizer.userId === userId,
-                ) && isCreatorAdminLike
+              : canAutoApproveOwnSubmission
                 ? "approved"
                 : "pending"
-            : resolveActionCreationStatus(isCreatorAdminLike),
+            : resolveActionCreationStatus(canAutoApproveOwnSubmission),
     });
 
     emitActionCreated({

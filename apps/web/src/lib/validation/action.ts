@@ -81,6 +81,8 @@ const associationNameSchema = z
   .max(120)
   .refine((value) => isValidAssociationName(value), "Association invalide.");
 
+const accountTokensSchema = z.array(z.string().min(1).max(120)).max(50).optional();
+
 const preparationDataSchema = z
   .object({
     actionTitle: z.string().max(200).optional(),
@@ -127,6 +129,7 @@ const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
   organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
+  participantAccounts: accountTokensSchema,
   groupJoinEnabled: z.boolean().optional(),
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
@@ -179,6 +182,7 @@ const createActionContractSchema = z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
     organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
+    participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),
     placeType: z.string().max(80).optional(),
     wasteKg: z.number().min(0).max(100000),

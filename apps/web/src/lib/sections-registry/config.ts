@@ -449,12 +449,12 @@ export const RUBRIQUE_REGISTRY = [
     kind: "app-route",
     route: "/learn/bonnes-pratiques",
     label: {
-      fr: "Tri, composte, comportements",
-      en: "Sorting, composting, behaviors",
+      fr: "Bonnes pratiques",
+      en: "Good practices",
     },
     description: {
-      fr: "Repères de tri, compostage et conduite utile",
-      en: "Sorting, composting and useful behavior cues",
+      fr: "Repères courts pour bien trier, composter et éviter les déchets abandonnés",
+      en: "Short cues to sort well, compost and avoid litter",
     },
     availability: "available",
     implementation: "finalized",

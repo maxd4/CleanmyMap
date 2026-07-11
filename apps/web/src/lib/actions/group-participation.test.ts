@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "./metadata";
 import {
+  isVisibleInGroupForms,
   loadJoinableActions,
   loadUserParticipationHistory,
 } from "./group-participation";
@@ -109,6 +110,33 @@ function createSupabaseMock(params: {
 }
 
 describe("group participation fallback handling", () => {
+  it("keeps only pre-actions explicitly published as group forms", () => {
+    expect(
+      isVisibleInGroupForms(
+        {
+          action_phase: "pre_action",
+        },
+        { groupJoinEnabled: true },
+      ),
+    ).toBe(true);
+    expect(
+      isVisibleInGroupForms(
+        {
+          action_phase: "pre_action",
+        },
+        { groupJoinEnabled: false },
+      ),
+    ).toBe(false);
+    expect(
+      isVisibleInGroupForms(
+        {
+          action_phase: "post_action_complete",
+        },
+        { groupJoinEnabled: true },
+      ),
+    ).toBe(false);
+  });
+
   it("builds a joinable item from the extracted helper seam", () => {
     const item = buildJoinableItem(
       {
@@ -187,6 +215,80 @@ describe("group participation fallback handling", () => {
       joined: false,
       awaitingApproval: false,
     });
+  });
+
+  it("hides pre-actions that are not explicitly published as group forms", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-1",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "pending",
+          action_phase: "pre_action",
+          notes: "Préparation sans publication explicite",
+        },
+        {
+          id: "action-2",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-11",
+          location_label: "Quai Sud",
+          volunteers_count: 8,
+          duration_minutes: 45,
+          status: "pending",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+      ],
+    });
+
+    const items = await loadJoinableActions(supabase, {
+      limit: 8,
+      userId: null,
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["action-2"]);
+  });
+
+  it("does not bypass publication rules when a hidden action is targeted directly", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-1",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+          action_phase: "pre_action",
+          notes: "Préparation sans publication explicite",
+        },
+        {
+          id: "action-2",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-11",
+          location_label: "Quai Sud",
+          volunteers_count: 8,
+          duration_minutes: 45,
+          status: "approved",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+      ],
+    });
+
+    const items = await loadJoinableActions(supabase, {
+      limit: 8,
+      userId: null,
+      actionId: "action-1",
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.id).toBe("action-2");
   });
 
   it("returns an empty history instead of failing when participation history cannot be loaded", async () => {

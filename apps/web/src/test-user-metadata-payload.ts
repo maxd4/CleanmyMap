@@ -7,6 +7,7 @@ const mockForm: FormState = {
   actorName: "Test User",
   associationName: "Test Association",
   organizerAccounts: "",
+  participantAccounts: [],
   groupJoinEnabled: false,
   actionTitle: "Test Location",
   shortDescription: "Test notes",

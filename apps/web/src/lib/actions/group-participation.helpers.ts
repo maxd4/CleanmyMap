@@ -305,6 +305,45 @@ export async function insertParticipantRecord(
   return result.data as ActionParticipantStatusRow;
 }
 
+export async function loadActionParticipantIdsForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<string[]> {
+  const result = await supabase
+    .from("action_participants")
+    .select("user_id, participation_source, participation_status")
+    .eq("action_id", actionId)
+    .neq("participation_status", "cancelled");
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Array.from(
+    new Set((result.data ?? []).map((row) => String((row as { user_id?: string }).user_id ?? "").trim()).filter((value) => value.length > 0)),
+  );
+}
+
+export async function loadManualParticipantIdsForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<string[]> {
+  const result = await supabase
+    .from("action_participants")
+    .select("user_id")
+    .eq("action_id", actionId)
+    .eq("participation_source", "manual_add")
+    .neq("participation_status", "cancelled");
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return Array.from(
+    new Set((result.data ?? []).map((row) => String((row as { user_id?: string }).user_id ?? "").trim()).filter((value) => value.length > 0)),
+  );
+}
+
 export function escapeSearchPattern(term: string): string {
   return term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }

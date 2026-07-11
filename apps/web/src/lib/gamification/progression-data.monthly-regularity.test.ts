@@ -207,34 +207,34 @@ describe("syncUserActionProgression monthly regularity", () => {
 
     const firstPass = await syncUserActionProgression(supabase, "user-1");
     const firstMonthlyEvents = insertedEvents.filter(
-      (row) => row.event_type === "action_monthly_regularity",
+      (row) => row["event_type"] === "action_monthly_regularity",
     );
 
     expect(firstPass).toBe(0);
     expect(firstMonthlyEvents).toHaveLength(4);
-    expect(firstMonthlyEvents.map((row) => row.source_id)).toEqual([
+    expect(firstMonthlyEvents.map((row) => row["source_id"])).toEqual([
       "monthly-regularity:2026-01",
       "monthly-regularity:2026-02",
       "monthly-regularity:2026-03",
       "monthly-regularity:2026-04",
     ]);
-    expect(firstMonthlyEvents.map((row) => row.xp_awarded)).toEqual([1, 2, 3, 4]);
+    expect(firstMonthlyEvents.map((row) => row["xp_awarded"])).toEqual([1, 2, 3, 4]);
 
     actions[2] = buildAction("action-mar", "2026-03-10", "rejected");
     insertedEvents.length = 0;
 
     const secondPass = await syncUserActionProgression(supabase, "user-1");
     const secondMonthlyEvents = insertedEvents.filter(
-      (row) => row.event_type === "action_monthly_regularity",
+      (row) => row["event_type"] === "action_monthly_regularity",
     );
 
     expect(secondPass).toBe(0);
     expect(secondMonthlyEvents).toHaveLength(3);
-    expect(secondMonthlyEvents.map((row) => row.source_id)).toEqual([
+    expect(secondMonthlyEvents.map((row) => row["source_id"])).toEqual([
       "monthly-regularity:2026-01",
       "monthly-regularity:2026-02",
       "monthly-regularity:2026-04",
     ]);
-    expect(secondMonthlyEvents.map((row) => row.xp_awarded)).toEqual([1, 2, 1]);
+    expect(secondMonthlyEvents.map((row) => row["xp_awarded"])).toEqual([1, 2, 1]);
   });
 });

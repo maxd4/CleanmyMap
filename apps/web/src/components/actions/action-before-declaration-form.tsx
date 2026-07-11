@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Clock3,
   Loader2,
+  Info,
   PencilLine,
   Sparkles,
   type LucideIcon,
@@ -21,7 +22,11 @@ import {
   extractEntrepriseName,
   normalizeAssociationSelectionForPrefill,
 } from "@/lib/actions/association-options";
-import { createInitialFormState, buildCreateActionPayload } from "./action-declaration/payload";
+import {
+  createInitialFormState,
+  buildCreateActionPayload,
+  normalizeParticipantAccounts,
+} from "./action-declaration/payload";
 import { saveDraft, loadDraftSnapshot } from "./action-declaration/draft-storage";
 import type { FormState } from "./action-declaration-form.model";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -30,6 +35,7 @@ import { CmmPill } from "@/components/ui/cmm-pill";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import { ActionParticipantPicker } from "./action-participant-picker";
 
 type ActionBeforeDeclarationFormProps = {
   actorNameOptions: string[];
@@ -159,6 +165,54 @@ function SelectShell({
   );
 }
 
+function GroupJoinPublishCard({
+  checked,
+  onChange,
+  showHelp,
+  onToggleHelp,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  showHelp: boolean;
+  onToggleHelp: () => void;
+}) {
+  return (
+    <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-emerald-950">Publier en tant que formulaire de groupe</p>
+            <button
+              type="button"
+              onClick={onToggleHelp}
+              aria-label={showHelp ? "Masquer l'aide" : "Afficher l'aide"}
+              aria-expanded={showHelp}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50"
+            >
+              <Info size={12} />
+            </button>
+          </div>
+          <p className="text-xs leading-5 text-emerald-900/66">
+            Les autres membres pourront voir l&apos;action et envoyer une demande pour la rejoindre.
+          </p>
+        </div>
+      </label>
+      {showHelp ? (
+        <p className="mt-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-xs leading-5 text-emerald-900/72">
+          Cette option ne publie pas les champs de récolte finale. Elle rend seulement le pré-formulaire visible dans
+          la page Formulaire de groupe.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function sanitizePreActionForm(form: FormState): FormState {
   const next: FormState = {
     ...form,
@@ -197,6 +251,7 @@ function sanitizePreActionForm(form: FormState): FormState {
   next.creatorRole = next.creatorRole;
   next.preparationState = next.preparationState;
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
+  next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
   next.volunteersCount = next.volunteersCount.trim() || "1";
   const enterpriseFromAssociation = extractEntrepriseName(next.associationName);
   const normalizedAssociation = normalizeAssociationSelectionForPrefill(next.associationName);
@@ -260,6 +315,7 @@ export function ActionBeforeDeclarationForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
+  const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const hasTrackedStartRef = useRef(false);
 
   const actClasses = getBlockClasses("act");
@@ -385,6 +441,7 @@ export function ActionBeforeDeclarationForm({
   };
 
   if (submissionState === "success") {
+    const isGroupFormPublished = form.groupJoinEnabled;
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-7xl">
@@ -393,25 +450,26 @@ export function ActionBeforeDeclarationForm({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <CmmPill tone="emerald" size="sm">
-                    Succès
+                    {isGroupFormPublished ? "Publié" : "Enregistré"}
                   </CmmPill>
                   <span className="text-sm font-semibold text-emerald-950">
-                    Pré-formulaire publié
+                    {isGroupFormPublished ? "Pré-formulaire publié" : "Pré-formulaire enregistré"}
                   </span>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-emerald-950">
                   Le formulaire avant action est prêt
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-emerald-900/68">
-                  Les bénévoles peuvent déjà consulter ce pré-formulaire, rejoindre l&apos;action et compléter
-                  les informations utiles avant le départ terrain.
+                  {isGroupFormPublished
+                    ? "Les bénévoles peuvent déjà consulter ce pré-formulaire, rejoindre l'action et compléter les informations utiles avant le départ terrain."
+                    : "Le pré-formulaire est enregistré avec les informations utiles avant le terrain. Vous pourrez le publier ensuite si vous souhaitez ouvrir le formulaire de groupe."}
                 </p>
                 {summaryNote ? (
                   <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950">
                     {summaryNote}
                   </div>
                 ) : null}
-                {shareLink ? (
+                {shareLink && isGroupFormPublished ? (
                   <p className="text-xs text-emerald-900/60">
                     Lien de partage du formulaire de groupe: <span className="font-mono">{shareLink}</span>
                   </p>
@@ -425,14 +483,16 @@ export function ActionBeforeDeclarationForm({
                   Passer au formulaire complet
                   <ArrowRight size={14} />
                 </CmmButton>
-                <CmmButton
-                  tone="secondary"
-                  variant="pill"
-                  size="md"
-                  href={shareLink ?? "/sections/rejoindre-un-formulaire"}
-                >
-                  Ouvrir le formulaire de groupe
-                </CmmButton>
+                {shareLink && isGroupFormPublished ? (
+                  <CmmButton
+                    tone="secondary"
+                    variant="pill"
+                    size="md"
+                    href={shareLink}
+                  >
+                    Ouvrir le formulaire de groupe
+                  </CmmButton>
+                ) : null}
                 <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
                   <ArrowLeft size={14} />
                   Retour au choix
@@ -555,22 +615,19 @@ export function ActionBeforeDeclarationForm({
                   />
                 </div>
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-[1.4rem] border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={form.groupJoinEnabled}
-                    onChange={(event) => updateField("groupJoinEnabled", event.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-emerald-950">
-                      Autoriser les participants à rejoindre
-                    </p>
-                    <p className="text-xs leading-5 text-emerald-900/66">
-                      Le lien sera affiché après publication puis réutilisé pour ouvrir le formulaire de groupe.
-                    </p>
-                  </div>
-                </label>
+                <ActionParticipantPicker
+                  currentUserId={userMetadata.userId}
+                  value={form.participantAccounts}
+                  onChange={(next) => updateField("participantAccounts", next)}
+                  description="Ajoutez des membres connus avant de publier le pré-formulaire ou de passer au formulaire complet."
+                />
+
+                <GroupJoinPublishCard
+                  checked={form.groupJoinEnabled}
+                  onChange={(next) => updateField("groupJoinEnabled", next)}
+                  showHelp={showGroupJoinHelp}
+                  onToggleHelp={() => setShowGroupJoinHelp((current) => !current)}
+                />
               </div>
             </CmmCard>
 

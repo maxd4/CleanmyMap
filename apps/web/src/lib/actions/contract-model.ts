@@ -188,7 +188,7 @@ function buildActionIdentityMetadata(
   return {
     actorName: params.actorName ?? null,
     associationName: params.associationName ?? null,
-    groupJoinEnabled: params.groupJoinEnabled ?? true,
+    groupJoinEnabled: params.groupJoinEnabled ?? false,
     actionPhase: params.actionPhase ?? "post_action_complete",
     preparationData: params.preparationData ?? null,
   };

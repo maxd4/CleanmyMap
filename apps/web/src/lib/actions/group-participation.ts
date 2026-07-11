@@ -52,6 +52,13 @@ export type JoinableActionItem = {
 
 export type JoinableActionHistoryItem = JoinableActionItem;
 
+export function isVisibleInGroupForms(
+  action: Pick<ActionPreviewRow, "action_phase">,
+  metadata: { groupJoinEnabled: boolean },
+): boolean {
+  return action.action_phase === "pre_action" && metadata.groupJoinEnabled === true;
+}
+
 export async function loadJoinableActions(
   supabase: SupabaseClient,
   params: {
@@ -64,6 +71,7 @@ export async function loadJoinableActions(
   const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
     query
       .select(ACTION_PREVIEW_COLUMNS)
+      .eq("action_phase", "pre_action")
       .in("status", ["approved", "pending"])
       .order("action_date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -78,6 +86,7 @@ export async function loadJoinableActions(
     const focusedAction = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
       query
         .select(ACTION_PREVIEW_COLUMNS)
+        .eq("action_phase", "pre_action")
         .eq("id", params.actionId)
         .maybeSingle(),
     );
@@ -95,11 +104,7 @@ export async function loadJoinableActions(
       action,
       metadata: extractActionMetadataFromNotes(action.notes),
     }))
-    .filter(({ action }) =>
-      action.action_phase === "pre_action" ||
-      action.action_phase === "post_action_complete" ||
-      action.status === "approved",
-    )
+    .filter(({ action, metadata }) => isVisibleInGroupForms(action, metadata))
     .slice(0, params.limit);
 
   if (joinableActions.length === 0) {

@@ -43,9 +43,9 @@ function buildHeaders(token: string | null): HeadersInit {
 
 async function resolveGitHubToken(): Promise<string | null> {
   const envToken =
-    process.env.GITHUB_TOKEN ??
-    process.env.GH_TOKEN ??
-    process.env.GITHUB_API_TOKEN ??
+    process.env["GITHUB_TOKEN"] ??
+    process.env["GH_TOKEN"] ??
+    process.env["GITHUB_API_TOKEN"] ??
     null;
 
   if (envToken && envToken.trim().length > 0) {

@@ -15,7 +15,8 @@
 - **Objectif utilisateur principal** : Rejoindre une action de groupe déjà validée, consulter sa file publique, suivre les participations et corriger une erreur si besoin.
 - **Action principale attendue** : Trouver une action ouverte, envoyer une demande, puis suivre son statut, annuler une demande en attente ou quitter un formulaire accepté.
 - **Contrat de participation** : `action_participants` conserve l'état actif, l'origine, la date de jonction et la trace d'une annulation ou d'un départ.
-- **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet de fermer ou rouvrir les inscriptions après publication.
+- **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet d'ouvrir explicitement les inscriptions après publication ; une valeur absente ou `false` maintient l'action fermée pour la page Formulaire de groupe.
+- **Contrat de séparation** : les pré-formulaires visibles ici restent des actions prévues ; tant que les champs de récolte finale ne sont pas renseignés, ils ne sont ni validés sur la carte publique ni comptés comme déclarations complètes.
 - **Palette attendue** : emerald
 - **Scope** : finalisé
 - **Terminée** : oui
@@ -85,7 +86,9 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée doit rester cohérent avec la rubrique `Rejoindre un formulaire` du bloc `Agir`.
-- La page ne liste que les actions approuvées dont `groupJoinEnabled` n'est pas désactivé.
+- La page ne liste que les actions approuvées en phase pré-action dont `groupJoinEnabled` vaut explicitement `true`.
+- Une action pré-action sans publication explicite reste invisible dans la page Formulaire de groupe.
+- Les membres ajoutés manuellement à l'action par l'organisateur sont conservés dans `participantAccounts` côté formulaire puis enregistrés comme participations `manual_add` sans passer par la file publique.
 - La file publique des demandes n'apparaît que pour l'action ciblée sélectionnée.
 - Le lien avec `actionId` doit conserver la possibilité d'ouvrir directement la file d'une action depuis les cartes d'action et la déclaration.
 - La page doit permettre au bénévole de se retirer lui-meme d'une demande en attente ou d'une participation confirmée, sans suppression définitive de trace.

@@ -398,11 +398,11 @@ export function buildPrefillText(
   }
 
   const lines = [
-    prefill.subject ? `${locale === "fr" ? "Sujet" : "Subject"}: ${prefill.subject}` : null,
-    prefill.context ? `${locale === "fr" ? "Contexte" : "Context"}: ${prefill.context}` : null,
-    prefill.steps ? `${locale === "fr" ? "Étapes" : "Steps"}: ${prefill.steps}` : null,
-    prefill.expected
-      ? `${locale === "fr" ? "Résultat attendu" : "Expected"}: ${prefill.expected}`
+    prefill["subject"] ? `${locale === "fr" ? "Sujet" : "Subject"}: ${prefill["subject"]}` : null,
+    prefill["context"] ? `${locale === "fr" ? "Contexte" : "Context"}: ${prefill["context"]}` : null,
+    prefill["steps"] ? `${locale === "fr" ? "Étapes" : "Steps"}: ${prefill["steps"]}` : null,
+    prefill["expected"]
+      ? `${locale === "fr" ? "Résultat attendu" : "Expected"}: ${prefill["expected"]}`
       : null,
   ].filter(Boolean) as string[];
 

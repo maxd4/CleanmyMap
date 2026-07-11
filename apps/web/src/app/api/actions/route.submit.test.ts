@@ -18,6 +18,7 @@ const resolveActionCreationStatusMock = vi.hoisted(() =>
   ),
 );
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
+const resolveActionParticipantsMock = vi.hoisted(() => vi.fn());
 const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
@@ -60,6 +61,7 @@ vi.mock("@/lib/actions/store", () => ({
 
 vi.mock("@/lib/actions/organizers", () => ({
   resolveActionOrganizers: resolveActionOrganizersMock,
+  resolveActionParticipants: resolveActionParticipantsMock,
   resolveDefaultActionOrganizerIds: resolveDefaultActionOrganizerIdsMock,
 }));
 
@@ -79,6 +81,10 @@ describe("POST /api/actions", () => {
           sourceToken: null,
         },
       ],
+      unresolvedTokens: [],
+    });
+    resolveActionParticipantsMock.mockResolvedValue({
+      participants: [],
       unresolvedTokens: [],
     });
     resolveDefaultActionOrganizerIdsMock.mockReturnValue(["user-admin-default"]);
@@ -140,6 +146,12 @@ describe("POST /api/actions", () => {
     expect(resolveActionOrganizersMock).toHaveBeenCalledWith(
       expect.objectContaining({
         organizerAccounts: [],
+      }),
+    );
+    expect(resolveActionParticipantsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        participantAccounts: undefined,
+        organizerIds: ["user-test-1"],
       }),
     );
     expect(emitActionCreatedMock).toHaveBeenCalledWith({
@@ -215,6 +227,75 @@ describe("POST /api/actions", () => {
     );
   }, 15000);
 
+  it("auto-approves an admin-like pre-action created by its author", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      displayName: "Test User",
+      firstName: "Test",
+      username: "test@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Test User"],
+      role: "admin",
+      badges: [],
+    });
+
+    const { POST } = await import("./route");
+
+    const form = createInitialFormState("Test User");
+    form.actionTitle = "Préparation terrain";
+    form.shortDescription = "Préparer une action de nettoyage.";
+    form.communeZoneLabel = "Paris 15";
+    form.departureLocationLabel = "Place de la Mairie";
+    form.actionDate = "2026-04-22";
+    form.meetingTime = "09:00";
+    form.departureTime = "09:30";
+    form.durationMinutes = "30";
+    form.plannedObjective = "nettoyage";
+    form.placeType = "parc";
+    form.estimatedDifficulty = "moderee";
+    form.accessibility = "Accessible en transport";
+    form.safetyInstructions = "Gants recommandés.";
+    form.recommendedMaterials = "Sacs, pinces, gants";
+    form.participantMessage = "Réponse souhaitée avant la veille.";
+    form.creatorRole = "organisateur";
+    form.preparationState = "pret_a_partager";
+    form.logisticsNotes = "Point de rendez-vous confirmé.";
+    form.checklistBeforeDeparture = "Eau, gants, sacs";
+    form.volunteersCount = "1";
+
+    const payload = toContractCreatePayload(
+      buildCreateActionPayload({
+        form,
+        declarationMode: "quick",
+        effectiveManualDrawingEnabled: false,
+        drawingIsValid: false,
+        manualDrawing: null,
+        isEntrepriseMode: false,
+        photos: [],
+        visionEstimate: null,
+        userMetadata: {
+          userId: "user-test-1",
+          displayName: "Test User",
+        },
+      }),
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "approved",
+      }),
+    );
+  }, 15000);
+
   it("falls back to the admin organizer when no organizer is provided", async () => {
     const { POST } = await import("./route");
 
@@ -256,6 +337,97 @@ describe("POST /api/actions", () => {
         status: "approved",
       }),
     );
+  }, 15000);
+
+  it("passes manual participant accounts to the creation pipeline", async () => {
+    resolveActionParticipantsMock.mockResolvedValueOnce({
+      participants: [
+        {
+          userId: "user-manual-1",
+          displayName: "Participant manuel",
+          handle: "manual",
+          sourceToken: "user-manual-1",
+        },
+      ],
+      unresolvedTokens: [],
+    });
+
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Test lieu action",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 45,
+      notes: "Formulaire bénévole de test",
+      submissionMode: "quick",
+      participantAccounts: ["user-manual-1"],
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = (await response.json()) as { id?: string; error?: string };
+    expect(response.status).toBe(201);
+    expect(body.id).toBe("action-test-1");
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        manualParticipants: [
+          {
+            userId: "user-manual-1",
+            displayName: "Participant manuel",
+            handle: "manual",
+            sourceToken: "user-manual-1",
+          },
+        ],
+      }),
+    );
+  }, 15000);
+
+  it("rejects unknown manual participant accounts", async () => {
+    resolveActionParticipantsMock.mockResolvedValueOnce({
+      participants: [],
+      unresolvedTokens: ["missing-user"],
+    });
+
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Test lieu action",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 45,
+      notes: "Formulaire bénévole de test",
+      submissionMode: "quick",
+      participantAccounts: ["missing-user"],
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      details?: { participantAccounts?: string[] };
+    };
+    expect(response.status).toBe(422);
+    expect(body.details?.participantAccounts?.[0]).toContain("Comptes participants introuvables");
+    expect(createActionMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("rejects volunteer actions without waste or cigarette butts", async () => {

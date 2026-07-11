@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
 
-const appUrl = env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr";
+const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
 const KEYWORDS_BASE = [
   "CleanMyMap",
-  "CMM",
+  "dépollution urbaine",
   "cleanwalk",
-  "dépollution",
-  "propreté",
-  "carte",
+  "carte citoyenne",
+  "signalement de déchets",
+  "action écologique",
   "France",
 ];
 
@@ -19,98 +19,45 @@ const KEYWORDS_ECO = [
   "environnement",
   "transition écologique",
   "impact environnemental",
-  "empreinte carbone",
-  "zéro déchet",
   "économie circulaire",
-  "ressources naturelles",
-  "protection nature",
 ];
 
 const KEYWORDS_ACTION = [
   "action citoyenne",
   "bénévolat",
-  "engagement",
-  "volontaire",
-  "participation citoyenne",
-  "mobilisation",
-  "collecte déchets",
+  "collecte de déchets",
   "nettoyage urbain",
-  "opération propreté",
-  "opération nettoyage",
+  "participation citoyenne",
 ];
 
 const KEYWORDS_COMMUNITY = [
   "communauté",
-  "entraide",
   "coordination",
-  "mutualisation",
   "partenariat",
-  "collaboration",
-  "solidarité",
-  "terrain",
-  "impact terrain",
-  "valorisation déchets",
-  "réemploi",
-  "recyclage",
-];
-
-const KEYWORDS_CLEANUP = [
-  "dépollution urbaine",
-  "propreté urbaine",
-  "carte pollution",
-  "cleanwalk",
-  "collecte déchets bénévole",
-  "signalement détritus",
-  "action nettoyage urbain",
-  "carte propreté",
-  "dépollution citoyenne",
-  "nettoyage urbain",
-];
-
-const KEYWORDS_COMMUNITY_SPECIFIC = [
-  "bénévolat environnement",
-  "collecte déchets France",
-  "action écologie",
-  "citoyen engagé propreté",
-  "community cleanup",
-  "volontaire nettoyage",
+  "entraide",
+  "valorisation des déchets",
 ];
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "CleanMyMap | Dépollution urbaine & carte citoyenne",
-    template: "%s | CleanMyMap - Écologie & impact terrain",
+    default: "CleanMyMap | Carte citoyenne de dépollution urbaine",
+    template: "%s | CleanMyMap",
   },
   description:
-    "CleanMyMap est une plateforme nationale de dépollution urbaine et d'action citoyenne. Signalez les pollutions, organisez des cleanwalks et coordonnez vos actions de nettoyage partout en France. Écologie, développement durable, bénévolat et impact terrain.",
+    "CleanMyMap est la plateforme citoyenne de dépollution urbaine en France. Signalez les pollutions, organisez des cleanwalks et suivez vos actions de nettoyage avec une carte claire et des résultats mesurables.",
   keywords: [
     ...KEYWORDS_BASE,
     ...KEYWORDS_ECO,
     ...KEYWORDS_ACTION,
     ...KEYWORDS_COMMUNITY,
-    ...KEYWORDS_CLEANUP,
-    ...KEYWORDS_COMMUNITY_SPECIFIC,
-    "carte propreté",
-    "dépollution France",
-    "cleanwalk",
-    "signalement déchets",
-    "action nettoyage",
-    "bénévolat propreté",
-    "citoyen environnement",
     "collecte urbaine",
-    "impact environnemental",
-    "coordination bénévolat",
-    "mutualisation résultats",
-    "valorisation déchets",
-    "terrain écologie",
-    "partenariat environnement",
-    "entraide citoyenne",
-    "région",
-    "département",
-    "commune",
+    "bénévolat environnement",
+    "signalement local",
+    "impact terrain",
+    "territoire",
   ],
-  authors: [{ name: "CleanMyMap", url: "https://cleanmymap.fr" }],
+  authors: [{ name: "CleanMyMap", url: appUrl }],
   creator: "CleanMyMap",
   publisher: "CleanMyMap",
   formatDetection: {
@@ -119,35 +66,35 @@ export const metadata: Metadata = {
     telephone: false,
   },
   alternates: {
-    canonical: "/",
+    canonical: appUrl,
     languages: {
-      "fr-FR": "/",
-      "en-US": "/en",
+      "fr-FR": appUrl,
+      "en-US": `${appUrl}/en`,
     },
   },
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    url: "/",
-    siteName: "CleanMyMap - Dépollution citoyenne",
-    title: "CleanMyMap - Carte de dépollution citoyenne & cleanwalks",
+    url: appUrl,
+    siteName: "CleanMyMap",
+    title: "CleanMyMap - Carte de dépollution citoyenne",
     description:
-      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement. Développement durable, bénévolat, action citoyenne, coordination communautaire.",
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez et organisez vos cleanwalks avec un site distinct, clair et orienté impact.",
     images: [
       {
-        url: "/brand/logo-cleanmymap.svg",
+        url: `${appUrl}/brand/logo-cleanmymap.svg`,
         width: 1200,
         height: 630,
-        alt: "CleanMyMap - Carte de dépollution citoyenne et cleanwalks en France",
+        alt: "CleanMyMap - Carte citoyenne de dépollution urbaine en France",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CleanMyMap - Dépollution citoyenne & carte propreté",
+    title: "CleanMyMap - Carte citoyenne de dépollution",
     description:
-      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez, agissez pour l'environnement.",
-    images: ["/brand/logo-cleanmymap.svg"],
+      "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez et suivez vos actions.",
+    images: [`${appUrl}/brand/logo-cleanmymap.svg`],
   },
   robots: {
     index: true,

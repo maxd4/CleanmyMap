@@ -11,7 +11,8 @@
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
 - **Action principale attendue** : Choisir entre un parcours de déclaration après action et un parcours de préparation avant action, puis compléter le formulaire adapté.
-- **Pré-formulaire avant action** : titre de l'action, description courte, commune ou zone, point de rendez-vous précis avec localisation si disponible, zone cible prévue, date prévue, heure de rendez-vous, heure de départ prévue, durée estimée, type d'action prévue, type de zone, nombre de bénévoles attendus, difficulté estimée, accessibilité, message pour les participants, consignes de sécurité, matériel conseillé, commentaire logistique, checklist avant départ, organisateur ou référent, autorisation de rejoindre le groupe, lien de partage du formulaire de groupe et statut du formulaire.
+- **Pré-formulaire avant action** : titre de l'action, description courte, commune ou zone, point de rendez-vous précis avec localisation si disponible, zone cible prévue, date prévue, heure de rendez-vous, heure de départ prévue, durée estimée, type d'action prévue, type de zone, nombre de bénévoles attendus, difficulté estimée, accessibilité, message pour les participants, consignes de sécurité, matériel conseillé, commentaire logistique, checklist avant départ, organisateur ou référent, membres ajoutés manuellement via `participantAccounts`, autorisation de rejoindre le groupe, lien de partage du formulaire de groupe et statut du formulaire.
+- **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Formulaire de groupe. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
 - **Scope** : à corriger
 - **Terminée** : non
@@ -64,9 +65,12 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée commence par le choix entre déclaration après action et préparation avant action.
-- Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe, avec uniquement les informations utiles avant le terrain.
+- Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe uniquement s'il est explicitement publié.
+- Les membres ajoutés avant publication sont conservés dans `participantAccounts` puis synchronisés en tant que participations `manual_add`.
 - Les champs de récolte, de validation finale et les calculs d'impact restent réservés au formulaire après action.
+- Le formulaire complet réutilise les données communes et n'expose plus le contrôle de publication du groupe.
 - Le parcours avant action conserve l'état `pending` jusqu'à la complétion du formulaire complet.
 - Le parcours avant action propose ensuite un passage fluide vers le formulaire complet sans perte de données.
 - Le pré-formulaire n'est jamais traité comme une collecte validée tant que la déclaration finale n'a pas complété les champs de récolte.
+- L'absence de valeur pour `groupJoinEnabled` est interprétée comme une fermeture de la visibilité publique.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

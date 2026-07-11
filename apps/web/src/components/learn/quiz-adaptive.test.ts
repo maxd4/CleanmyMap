@@ -7,7 +7,7 @@ describe("quiz adaptive reinforcements", () => {
     const deck = [
       { id: "a", category: "Plage" },
       { id: "b", category: "Ville" },
-      { id: "c", category: "Tri, compost, comportements" },
+      { id: "c", category: "Bonnes pratiques" },
       { id: "d", category: "Plage" },
       { id: "e", category: "Cas limites" },
     ];

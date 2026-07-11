@@ -30,13 +30,13 @@ function isActionDeclarationExportTargetId(
 
 function hasValidHistoryEntryBase(value: Record<string, unknown>): boolean {
   return (
-    typeof value.id === "string" &&
-    typeof value.generatedAt === "string" &&
-    typeof value.filename === "string" &&
-    typeof value.label === "string" &&
-    typeof value.sourceLabel === "string" &&
-    typeof value.actorName === "string" &&
-    isRecord(value.form)
+    typeof value["id"] === "string" &&
+    typeof value["generatedAt"] === "string" &&
+    typeof value["filename"] === "string" &&
+    typeof value["label"] === "string" &&
+    typeof value["sourceLabel"] === "string" &&
+    typeof value["actorName"] === "string" &&
+    isRecord(value["form"])
   );
 }
 
@@ -45,7 +45,7 @@ function isHistoryEntry(value: unknown): value is ActionDeclarationExportHistory
     return false;
   }
 
-  return hasValidHistoryEntryBase(value) && isActionDeclarationExportTargetId(value.targetId);
+  return hasValidHistoryEntryBase(value) && isActionDeclarationExportTargetId(value["targetId"]);
 }
 
 export function readActionDeclarationExportHistory(): ActionDeclarationExportHistoryEntry[] {

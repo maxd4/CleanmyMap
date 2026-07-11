@@ -5,6 +5,11 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import {
+  canReviewActionParticipants,
+  canUseAdminOverride,
+} from "@/lib/actions/permissions";
+import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
@@ -42,10 +47,6 @@ const searchSchema = z.object({
   limit: z.coerce.number().int().min(1).max(12).default(8),
 });
 
-function isGroupFormModeratorRole(role: string): boolean {
-  return role === "admin" || role === "elu" || role === "max";
-}
-
 async function resolveGroupJoinUserId(operation: string): Promise<string | null> {
   try {
     const session = await auth();
@@ -61,31 +62,32 @@ async function resolveGroupJoinUserId(operation: string): Promise<string | null>
 async function resolveReviewerAccess(params: {
   supabase: ReturnType<typeof getSupabaseServerClient>;
   actionId: string;
-  userId: string;
   creatorUserId?: string | null;
+  actorUserId: string;
 }) {
   const identity = await getCurrentUserIdentity();
-  if (identity && isGroupFormModeratorRole(identity.role)) {
-    return { ok: true as const, identity };
-  }
-
-  const organizerIds = await loadActionOrganizerIdsForAction(
-    params.supabase,
-    params.actionId,
-    null,
-  );
-
-  if (organizerIds.includes(params.userId)) {
+  if (canUseAdminOverride(identity)) {
     return {
       ok: true as const,
       identity,
     };
   }
 
+  const permissionIdentity = {
+    userId: params.actorUserId,
+    role: identity?.role ?? null,
+  };
+  const organizerIds = await loadActionOrganizerIdsForAction(
+    params.supabase,
+    params.actionId,
+    null,
+  );
   if (
-    typeof params.creatorUserId === "string" &&
-    params.creatorUserId.trim().length > 0 &&
-    params.creatorUserId.trim() === params.userId
+    canReviewActionParticipants(
+      permissionIdentity,
+      { createdByClerkId: params.creatorUserId },
+      organizerIds,
+    )
   ) {
     return {
       ok: true as const,
@@ -98,7 +100,7 @@ async function resolveReviewerAccess(params: {
 
 async function resolveAdminModerationAccess() {
   const identity = await getCurrentUserIdentity();
-  if (identity && isGroupFormModeratorRole(identity.role)) {
+  if (canUseAdminOverride(identity)) {
     return { ok: true as const, identity };
   }
 
@@ -167,9 +169,10 @@ export async function PATCH(
     const access = await resolveReviewerAccess({
       supabase,
       actionId: trimmedActionId,
-      userId,
       creatorUserId: actionResult.created_by_clerk_id,
+      actorUserId: userId,
     });
+    const actorUserId = access.identity?.userId ?? userId;
 
     if (!access.ok) {
       return NextResponse.json(
@@ -199,6 +202,23 @@ export async function PATCH(
     const updatedMetadata = extractActionMetadataFromNotes(
       updateResult.data?.notes ?? updatedNotes,
     );
+
+    if (
+      access.identity &&
+      canUseAdminOverride(access.identity) &&
+      access.identity.userId !== actionResult.created_by_clerk_id
+    ) {
+      await appendActionModerationAudit({
+        operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
+        actorUserId,
+        targetActionId: trimmedActionId,
+        operation: "toggle_group_join",
+        outcome: "success",
+        details: {
+          groupJoinEnabled: updatedMetadata.groupJoinEnabled,
+        },
+      });
+    }
 
     return NextResponse.json({
       status: "ok",
@@ -384,6 +404,26 @@ export async function POST(
         supabase,
         result.participantUserId,
       ).catch(() => null);
+    }
+
+    if (access.identity) {
+      const actorUserId = access.identity?.userId ?? userId;
+      await appendActionModerationAudit({
+        operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
+        actorUserId,
+        targetActionId: trimmedActionId,
+        operation:
+          "participantUserId" in parsed.data
+            ? "admin_add_participant"
+            : `admin_review_${parsed.data.decision}`,
+        outcome: "success",
+        details: {
+          participantUserId: result.participantUserId,
+          participationStatus: result.participationStatus,
+          participationSource: result.participationSource,
+          decision: "decision" in parsed.data ? parsed.data.decision : "accept",
+        },
+      });
     }
 
     return NextResponse.json({

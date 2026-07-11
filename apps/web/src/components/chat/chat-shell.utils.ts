@@ -94,7 +94,7 @@ export function getClerkRoleLabel(user: ReturnType<typeof useUser>["user"]): str
 export function getClerkArrondissement(user: ReturnType<typeof useUser>["user"]): number | null {
   const publicMetadata = toMetadataRecord(user?.publicMetadata);
   const publicArrondissement = parseArrondissement(
-    publicMetadata?.parisArrondissement,
+    publicMetadata?.["parisArrondissement"],
   );
   return publicArrondissement;
 }

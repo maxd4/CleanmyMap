@@ -32,15 +32,15 @@ describe("getSupabaseBrowserClient", () => {
     getTokenMock.mockReset();
     createClientMock.mockReset();
     mockEnv.NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE = "clerk-supabase";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
+    process.env["NEXT_PUBLIC_SUPABASE_URL"] = "https://example.supabase.co";
+    process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] =
       "sb_test_abcdefghijklmnopqrstuvwxyz";
     vi.resetModules();
   });
 
   afterEach(() => {
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env["NEXT_PUBLIC_SUPABASE_URL"];
+    delete process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
   });
 
   it("passes a Clerk/Supabase accessToken provider to Supabase and resolves the configured JWT template token", async () => {

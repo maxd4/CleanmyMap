@@ -203,6 +203,7 @@ export type CreateActionPayload = {
   actorName?: string;
   associationName?: string;
   organizerAccounts?: string[];
+  participantAccounts?: string[];
   groupJoinEnabled?: boolean;
   actionPhase?: ActionPhase;
   preparationData?: ActionPreparationData | null;

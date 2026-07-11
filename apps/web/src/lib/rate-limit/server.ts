@@ -14,7 +14,8 @@ export async function verifyRateLimit(options: ServerRateLimitOptions = {}): Pro
   remaining: number;
   retryAfter?: number;
 }> {
-  const { limit = DEFAULT_RATE_LIMITS.write.limit, window = DEFAULT_RATE_LIMITS.write.window, key } = options;
+  const writeLimits = DEFAULT_RATE_LIMITS["write"];
+  const { limit = writeLimits.limit, window = writeLimits.window, key } = options;
   
   const userId = await getAuthenticatedUserId();
   const ip = await getClientIp();
