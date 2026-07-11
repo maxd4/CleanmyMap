@@ -17,6 +17,7 @@
 - **Contrat de participation** : `action_participants` conserve l'état actif, l'origine, la date de jonction et la trace d'une annulation ou d'un départ.
 - **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet d'ouvrir explicitement les inscriptions après publication ; une valeur absente ou `false` maintient l'action fermée pour la page Formulaire de groupe.
 - **Contrat de séparation** : les pré-formulaires visibles ici restent des actions prévues ; tant que les champs de récolte finale ne sont pas renseignés, ils ne sont ni validés sur la carte publique ni comptés comme déclarations complètes.
+- **Contrat de modération** : un admin qui utilise le parcours normal rejoint comme un bénévole et reste en `pending` avec la source `group_form`; les dérogations admin directes passent par un chemin séparé et journalisé.
 - **Palette attendue** : emerald
 - **Scope** : finalisé
 - **Terminée** : oui
@@ -89,6 +90,7 @@
 - La page ne liste que les actions approuvées en phase pré-action dont `groupJoinEnabled` vaut explicitement `true`.
 - Une action pré-action sans publication explicite reste invisible dans la page Formulaire de groupe.
 - Les membres ajoutés manuellement à l'action par l'organisateur sont conservés dans `participantAccounts` côté formulaire puis enregistrés comme participations `manual_add` sans passer par la file publique.
+- Les opérations de modération admin sont tracées séparément et ne doivent pas brouiller la file publique.
 - La file publique des demandes n'apparaît que pour l'action ciblée sélectionnée.
 - Le lien avec `actionId` doit conserver la possibilité d'ouvrir directement la file d'une action depuis les cartes d'action et la déclaration.
 - La page doit permettre au bénévole de se retirer lui-meme d'une demande en attente ou d'une participation confirmée, sans suppression définitive de trace.

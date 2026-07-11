@@ -16,7 +16,7 @@ Ce document décrit la structure des droits d'accès et de l'expérience utilisa
 
 La source de vérité pour ce mapping se trouve dans `apps/web/src/lib/domain-language.ts`.
 
-| Droit / Permission | anonymous | benevole | coordinateur / scientifique / elu | admin |
+| Droit / Permission | anonymous | benevole | coordinateur / scientifique / elu | admin / elu / max |
 | :--- | :---: | :---: | :---: | :---: |
 | Accès App Protégée | ❌ | ✅ | ✅ | ✅ |
 | Accès Page Admin | ❌ | ❌ | ❌ | ✅ |
@@ -24,7 +24,7 @@ La source de vérité pour ce mapping se trouve dans `apps/web/src/lib/domain-la
 | Imports sensibles | ❌ | ❌ | ❌ | ✅ |
 | Export Elus Dossier | ❌ | ✅ | ✅ | ✅ |
 
-Note : Certains droits sont plus granulaires et vérifiés directement dans les APIs via `requireAdminAccess`.
+Note : Certains droits sont plus granulaires et vérifiés directement dans les APIs via `requireAdminAccess` ou les helpers centraux de permissions comme `canUseAdminOverride`, `canManageAction` et `canReviewActionParticipants`.
 
 ## 3. Parcours Utilisateur (UX)
 
@@ -38,7 +38,7 @@ Chaque rôle est associé à un **Parcours** (ou Profil) qui définit ce que l'u
 ## 4. Implémentation dans le Code
 
 ### Côté Serveur (Actions API / Routes)
-Utiliser `requireAdminAccess()` pour protéger les endpoints sensibles.
+Utiliser `requireAdminAccess()` pour les surfaces strictement admin.
 ```typescript
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
@@ -51,6 +51,21 @@ export async function POST(request: Request) {
   // Logique admin ici...
 }
 ```
+
+Pour les routes d'action, préférer les helpers métier centralisés:
+
+- `canAutoApproveOwnAction`
+- `canManageAction`
+- `canReviewActionParticipants`
+- `canUseAdminOverride`
+- `canChangeActionStatus`
+- `canViewModerationAudit`
+
+Règle de lecture:
+
+- parcours normal: créer, rejoindre, modérer selon le rôle métier et la propriété de l'action;
+- dérogation admin: explicite, serveur, journalisée, réservée aux rôles `admin`, `elu` et `max`;
+- un admin qui rejoint via le flux normal reste traité comme une demande normale `group_form`.
 
 ### Côté Client (Composants React)
 Utiliser le hook de session ou les fonctions de `lib/authz` si nécessaire.

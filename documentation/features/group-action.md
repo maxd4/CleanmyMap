@@ -36,6 +36,8 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Le flux doit eviter la double saisie.
 - Le formulaire rejoint doit deja exister et etre valide par un admin.
 - Le formulaire complet reste le seul parcours qui expose la récolte finale, la validation scientifique et les scores.
+- Le flux normal de jonction ne change pas selon le rôle: un admin qui clique sur le bouton habituel passe aussi en `pending` avec la source `group_form`.
+- Toute intervention admin hors flux normal doit passer par une commande explicite et être journalisée.
 - Les participations doivent rester traçables, y compris si leur statut change.
 - La jonction ne cree pas de nouveau formulaire.
 - Une seule participation active est conservee par benevole et par action.
@@ -50,6 +52,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Source badge: `action_participants` alimente la famille `Participant`.
 - Source stats: `action_participants` compte pour la progression collective.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
+- Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
 
 ## Validation
 
