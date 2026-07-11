@@ -51,12 +51,14 @@ Exemples :
 - normalisation du parcours de participation: le bouton normal de join reste en attente pour tous les profils ;
 - centralisation de l'accès à la route d'édition d'action sur créateur, organisateurs et profils de modération ;
 - réutilisation du helper central dans les routes de revue et d'audit des actions ;
+- complément de la matrice de permissions côté backend avec `canModerateAnyAction` ;
+- mise à jour de la documentation d'autorisation et du parcours Formulaire de groupe ;
 - journalisation des dérogations admin sur l'édition d'action, l'ouverture/fermeture du formulaire de groupe et la modération de participants ;
 - tests ciblés et lint ciblé passés sur le lot permissions/modération.
 
 ### Reste à faire
 
-- compléter la matrice de permissions côté backend et documentation.
+- aucun point bloquant identifié à ce stade dans ce backlog.
 
 ---
 
