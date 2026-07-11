@@ -33,6 +33,12 @@ export function canUseAdminOverride(
   return Boolean(identity && isActionModerationRole(identity.role));
 }
 
+export function canModerateAnyAction(
+  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+): boolean {
+  return canUseAdminOverride(identity);
+}
+
 export function canAutoApproveOwnAction(
   identity: ActionPermissionIdentity | null | undefined,
   action: ActionPermissionTarget,
@@ -90,11 +96,11 @@ export function canEditValidatedImpact(
 export function canChangeActionStatus(
   identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
 ): boolean {
-  return canUseAdminOverride(identity);
+  return canModerateAnyAction(identity);
 }
 
 export function canViewModerationAudit(
   identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
 ): boolean {
-  return canUseAdminOverride(identity);
+  return canModerateAnyAction(identity);
 }

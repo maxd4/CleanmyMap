@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAutoApproveOwnAction,
+  canModerateAnyAction,
   canReviewActionParticipants,
   canUseAdminOverride,
   isActionModerationRole,
@@ -42,6 +43,7 @@ describe("action permissions", () => {
 
   it("lets admin-like users review action participants", () => {
     expect(canUseAdminOverride({ role: "elu" })).toBe(true);
+    expect(canModerateAnyAction({ role: "max" })).toBe(true);
     expect(
       canReviewActionParticipants(
         {
@@ -66,5 +68,9 @@ describe("action permissions", () => {
         ["user-2"],
       ),
     ).toBe(false);
+  });
+
+  it("rejects non moderation roles for global moderation", () => {
+    expect(canModerateAnyAction({ role: "benevole" })).toBe(false);
   });
 });

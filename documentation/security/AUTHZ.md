@@ -58,6 +58,7 @@ Pour les routes d'action, préférer les helpers métier centralisés:
 - `canManageAction`
 - `canReviewActionParticipants`
 - `canUseAdminOverride`
+- `canModerateAnyAction`
 - `canChangeActionStatus`
 - `canViewModerationAudit`
 
