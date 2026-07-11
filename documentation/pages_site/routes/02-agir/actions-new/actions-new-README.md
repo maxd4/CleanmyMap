@@ -11,6 +11,8 @@
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
 - **Action principale attendue** : Choisir entre un parcours de déclaration après action et un parcours de préparation avant action, puis compléter le formulaire adapté.
+- **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
+- **Règle de modération** : un profil `admin`, `elu` ou `max` peut auto-valider sa propre action, mais un formulaire de groupe normal reste soumis au flux habituel et n'est jamais considéré comme une collecte validée tant que la déclaration finale n'est pas complétée.
 - **Pré-formulaire avant action** : titre de l'action, description courte, commune ou zone, point de rendez-vous précis avec localisation si disponible, zone cible prévue, date prévue, heure de rendez-vous, heure de départ prévue, durée estimée, type d'action prévue, type de zone, nombre de bénévoles attendus, difficulté estimée, accessibilité, message pour les participants, consignes de sécurité, matériel conseillé, commentaire logistique, checklist avant départ, organisateur ou référent, membres ajoutés manuellement via `participantAccounts`, autorisation de rejoindre le groupe, lien de partage du formulaire de groupe et statut du formulaire.
 - **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Formulaire de groupe. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
@@ -71,6 +73,7 @@
 - Le formulaire complet réutilise les données communes et n'expose plus le contrôle de publication du groupe.
 - Le parcours avant action conserve l'état `pending` jusqu'à la complétion du formulaire complet.
 - Le parcours avant action propose ensuite un passage fluide vers le formulaire complet sans perte de données.
+- Le passage vers le formulaire complet doit réutiliser les données déjà saisies et n'exige pas de recommencer la préparation.
 - Le pré-formulaire n'est jamais traité comme une collecte validée tant que la déclaration finale n'a pas complété les champs de récolte.
 - L'absence de valeur pour `groupJoinEnabled` est interprétée comme une fermeture de la visibilité publique.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
