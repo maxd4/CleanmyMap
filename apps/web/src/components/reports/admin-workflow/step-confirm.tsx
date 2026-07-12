@@ -4,6 +4,7 @@ import type {
   ModerationActionStatus,
   ModerationCleanPlaceStatus,
   ModerationEntityType,
+  ModerationVisibility,
 } from"@/lib/admin/moderation-client";
 import type {
   ActionModerationEditDraft,
@@ -455,6 +456,36 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  placeholder="Taper: CONFIRMER MODERATION"
  className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
  />
+ </label>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
+ Visibilité modération
+ <select
+ value={workflow.moderationVisibility}
+ onChange={(event) =>
+ workflow.setModerationVisibility(event.target.value as ModerationVisibility)
+ }
+ className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ >
+ <option value="unchanged">Ne pas changer</option>
+ <option value="visible">Restaurer la visibilité publique</option>
+ <option value="hidden">Masquer des surfaces publiques</option>
+ </select>
+ <span className="font-normal normal-case text-slate-500">
+ Le masquage retire l&apos;action de la carte, des listes publiques et des formulaires de groupe.
+ </span>
+ </label>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
+ Motif de modération
+ <textarea
+ rows={3}
+ value={workflow.moderationReason}
+ onChange={(event) => workflow.setModerationReason(event.target.value)}
+ placeholder="Exemple: correction des données terrain après vérification"
+ className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ />
+ <span className="font-normal normal-case text-slate-500">
+ Obligatoire pour un rejet ou une correction d&apos;impact.
+ </span>
  </label>
  {workflow.moderationResult ? (
  <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-300 bg-white p-3 cmm-text-caption cmm-text-secondary">

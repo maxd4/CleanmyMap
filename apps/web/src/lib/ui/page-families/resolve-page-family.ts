@@ -21,8 +21,39 @@ function isAnyRoute(pathname: string, routes: readonly string[]): boolean {
   return routes.some((route) => isRoute(pathname, route));
 }
 
+const ACCUEIL_PILOTAGE_SECTION_ROUTES = [
+  "/sections/elus",
+] as const;
+
+const AGIR_SECTION_ROUTES = [
+  "/sections/route",
+  "/sections/weather",
+  "/sections/rejoindre-un-formulaire",
+] as const;
+
+const CARTOGRAPHIE_IMPACT_SECTION_ROUTES = [
+  "/sections/gamification",
+] as const;
+
+const RESEAU_DISCUSSIONS_SECTION_ROUTES = [
+  "/sections/community",
+  "/sections/feedback",
+  "/sections/actors",
+  "/sections/annuaire",
+  "/sections/messagerie",
+  "/sections/open-data",
+  "/sections/funding",
+  "/sections/trash-spotter",
+] as const;
+
 /**
- * Famille par défaut déduite du pathname (sans exceptions).
+ * Famille par défaut déduite du pathname.
+ *
+ * Les exceptions visuelles nommées restent appliquées ensuite par
+ * PAGE_FAMILY_ROUTE_EXCEPTIONS et applyImplicitRouteOverrides.
+ *
+ * Les sections recycling, compost et climate ne sont volontairement pas
+ * classées ici tant que leur famille produit canonique n'est pas arbitrée.
  */
 export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
   if (!pathname || pathname === "/") {
@@ -31,7 +62,11 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
 
   const base = pathname.split("/")[1] ?? "";
 
-  if (base === "sign-in" || base === "sign-up" || isRoute(pathname, "/onboarding")) {
+  if (
+    base === "sign-in" ||
+    base === "sign-up" ||
+    isRoute(pathname, "/onboarding")
+  ) {
     return "authentification";
   }
 
@@ -68,26 +103,33 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "impression";
   }
 
+  if (isAnyRoute(pathname, ACCUEIL_PILOTAGE_SECTION_ROUTES)) {
+    return "accueil-pilotage";
+  }
+
+  if (isAnyRoute(pathname, AGIR_SECTION_ROUTES)) {
+    return "agir";
+  }
+
+  if (isAnyRoute(pathname, CARTOGRAPHIE_IMPACT_SECTION_ROUTES)) {
+    return "cartographie-impact";
+  }
+
+  if (isAnyRoute(pathname, RESEAU_DISCUSSIONS_SECTION_ROUTES)) {
+    return "reseau-discussions";
+  }
+
   if (
     base === "community" ||
     base === "messagerie" ||
-    base === "open-data" ||
-    isAnyRoute(pathname, [
-      "/sections/community",
-      "/sections/feedback",
-      "/sections/messagerie",
-      "/sections/open-data",
-    ])
+    base === "open-data"
   ) {
     return "reseau-discussions";
   }
 
   if (
     base === "gamification" ||
-    isAnyRoute(pathname, [
-      "/actions/map",
-      "/sections/gamification",
-    ])
+    isRoute(pathname, "/actions/map")
   ) {
     return "cartographie-impact";
   }
@@ -134,22 +176,29 @@ function resolveExceptionFamily(
   if (exceptionId === "explorer-sommaire") {
     return { ...EXPLORER_SOMMAIRE_FAMILY, exceptionId };
   }
+
   if (exceptionId === "methodologie-impact") {
     return { ...METHODOLOGIE_FAMILY, exceptionId };
   }
+
   if (exceptionId === "reports-impact") {
     return { ...IMPACT_REPORTS_FAMILY, exceptionId };
   }
-  const rule = PAGE_FAMILY_ROUTE_EXCEPTIONS.find((e) => e.id === exceptionId);
+
+  const rule = PAGE_FAMILY_ROUTE_EXCEPTIONS.find(
+    (entry) => entry.id === exceptionId,
+  );
+
   if (!rule) {
     return null;
   }
+
   const family = PAGE_FAMILIES[rule.familyId];
   return { ...family, exceptionId };
 }
 
 /**
- * Source de vérité : pathname → famille visuelle (fond + tokens hero).
+ * Source de vérité : pathname → famille visuelle.
  */
 function applyImplicitRouteOverrides(
   pathname: string,
@@ -158,9 +207,11 @@ function applyImplicitRouteOverrides(
   if (isRoute(pathname, "/error/429")) {
     return { ...STATE_429_FAMILY, exceptionId: "error-429" };
   }
+
   if (pathname === "/partners" || pathname.startsWith("/partners/")) {
     return { ...PARTNERS_NETWORK_FAMILY, exceptionId: "partners-indigo" };
   }
+
   if (
     isRoute(pathname, "/reports") ||
     isRoute(pathname, "/gamification") ||
@@ -168,12 +219,18 @@ function applyImplicitRouteOverrides(
   ) {
     return { ...IMPACT_REPORTS_FAMILY, exceptionId: "reports-impact" };
   }
+
   return family;
 }
 
-export function resolvePageFamily(pathname: string | null | undefined): ResolvedPageFamily {
+export function resolvePageFamily(
+  pathname: string | null | undefined,
+): ResolvedPageFamily {
   const path = pathname ?? "/";
-  const exception = PAGE_FAMILY_ROUTE_EXCEPTIONS.find((rule) => rule.match(path));
+  const exception = PAGE_FAMILY_ROUTE_EXCEPTIONS.find((rule) =>
+    rule.match(path),
+  );
+
   if (exception) {
     const resolved = resolveExceptionFamily(path, exception.id);
     if (resolved) {
@@ -185,6 +242,8 @@ export function resolvePageFamily(pathname: string | null | undefined): Resolved
   return applyImplicitRouteOverrides(path, PAGE_FAMILIES[familyId]);
 }
 
-export function getPageFamilyById(familyId: PageFamilyId): ResolvedPageFamily {
+export function getPageFamilyById(
+  familyId: PageFamilyId,
+): ResolvedPageFamily {
   return PAGE_FAMILIES[familyId];
 }

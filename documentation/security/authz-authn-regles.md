@@ -94,6 +94,8 @@ Un organisateur autorisé peut, selon le contrat de l'action :
 - ouvrir ou fermer les inscriptions ;
 - modifier les informations autorisées.
 
+Cette gestion reste limitée à sa propre action. Elle ne déclenche pas les droits de modération globale et ne doit pas être confondue avec une dérogation admin.
+
 ### Admin, élu ou max
 
 Un rôle privilégié peut disposer de droits de supervision globale.
@@ -135,6 +137,41 @@ Une dérogation sensible doit :
 6. utiliser une source claire, par exemple `admin_override`, si le contrat le permet.
 
 Ne pas utiliser un booléen envoyé par le client comme preuve d'autorisation.
+
+Pour les participations d'action, les nouvelles dérogations administratives utilisent `participation_source = admin_override`. La valeur historique `admin` reste acceptée en lecture pour compatibilité, mais elle ne doit plus être utilisée par le flux normal de jonction.
+
+Un retrait d'un participant déjà confirmé est une opération distincte `admin_remove_participant`. Elle exige un motif, conserve la cible utilisateur et journalise l'état avant/après. Un refus de demande en attente reste `admin_review_reject`.
+
+Le contrat d'audit action doit conserver au minimum :
+
+- l'identifiant d'opération ;
+- l'administrateur ou modérateur auteur ;
+- l'action cible ;
+- l'opération métier ;
+- l'issue `success` ou `error` ;
+- le motif lorsqu'il est obligatoire ;
+- l'ancienne valeur et la nouvelle valeur lorsqu'une donnée change ;
+- la cible utilisateur lorsque l'opération concerne une participation ou un compte ;
+- le contexte technique utile, sans pouvoir écraser les champs canoniques.
+
+Les opérations sensibles comme rejet, masquage, restauration, correction d'impact, changement d'organisateur ou dérogation de participation exigent un motif d'au moins 5 caractères après trim.
+
+Le journal d'audit d'une action n'est pas public. Il peut être lu par le créateur de l'action, ses organisateurs/coorganisateurs autorisés et les rôles de modération `admin`, `elu`, `max`.
+
+Ne pas ajouter `change_organizer` ou `reopen_action` tant qu'une commande produit et un modèle d'état explicites n'existent pas. Un changement d'organisateur devra préserver les coorganisateurs existants et auditer avant/après.
+
+## Visibilité de modération des actions
+
+Le masquage de modération est distinct du statut métier de l'action.
+
+```txt
+status = pending | approved | rejected
+moderation_visibility = visible | hidden
+```
+
+Une action `hidden` est exclue des surfaces publiques, dont la carte, les listes publiques et la page Formulaire de groupe. Elle reste traitable par les chemins de modération autorisés.
+
+Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transforme pas une pré-action en collecte finalisée.
 
 ## Centralisation des permissions
 

@@ -7,6 +7,7 @@ import {
  buildAdminCleanPlaceUpdates,
  cleanPlaceEditsSchema,
 } from"@/lib/admin/action-moderation-edits";
+import { extractActionMetadataFromNotes } from"@/lib/actions/metadata";
 import {
  copyValidatedActionToLocalStore,
  copyValidatedSpotToLocalStore,
@@ -20,6 +21,15 @@ import {
 } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { runSingleActionQuery } from"@/lib/actions/query";
+import {
+ normalizeModerationReason,
+} from"@/lib/actions/moderation-audit";
+import { loadActionOrganizerIdsForAction } from"@/lib/actions/organizers";
+import {
+ refreshProgressionProfile,
+ syncUserActionProgression,
+} from"@/lib/gamification/progression-tracking";
+import { invalidatePublicSurfaceSnapshotsByRoute } from"@/lib/public-surface-snapshots";
 
 export const runtime ="nodejs";
 const MODERATION_CONFIRM_PHRASE ="CONFIRMER MODERATION";
@@ -28,7 +38,9 @@ const actionPayloadSchema = z.object({
  entityType: z.literal("action"),
  id: z.string().trim().min(1),
  status: z.enum(["pending","approved","rejected"]),
+ moderationVisibility: z.enum(["visible","hidden"]).optional(),
  confirmPhrase: z.string().trim().max(120).optional(),
+ reason: z.string().trim().max(500).optional(),
  edits: actionEditsSchema,
 });
 
@@ -37,6 +49,7 @@ const cleanPlacePayloadSchema = z.object({
  id: z.string().trim().min(1),
  status: z.enum(["new","validated","cleaned"]),
  confirmPhrase: z.string().trim().max(120).optional(),
+ reason: z.string().trim().max(500).optional(),
  edits: cleanPlaceEditsSchema,
 });
 
@@ -56,6 +69,201 @@ function isValidModerationConfirmationPhrase(
  value: string | null | undefined,
 ): boolean {
  return (value ??"").trim().toUpperCase() === MODERATION_CONFIRM_PHRASE;
+}
+
+function hasSensitiveImpactEdit(
+ edits: z.infer<typeof actionEditsSchema>,
+): boolean {
+ if (!edits) {
+  return false;
+ }
+
+ return [
+  "wasteKg",
+  "cigaretteButts",
+  "volunteersCount",
+  "durationMinutes",
+  "wasteBreakdown",
+ ].some((field) => edits[field as keyof typeof edits] !== undefined);
+}
+
+function resolveActionModerationOperation(
+ payload: z.infer<typeof actionPayloadSchema>,
+): "reject_action" |"hide_action" |"restore_after_sanction" |"correct_impact" | null {
+ if (payload.moderationVisibility ==="hidden") {
+  return"hide_action";
+ }
+ if (payload.moderationVisibility ==="visible") {
+  return"restore_after_sanction";
+ }
+ if (payload.status ==="rejected") {
+  return"reject_action";
+ }
+ if (hasSensitiveImpactEdit(payload.edits)) {
+  return"correct_impact";
+ }
+ return null;
+}
+
+type ActionImpactValues = {
+ createdByClerkId: string | null;
+ wasteKg: number | null;
+ cigaretteButts: number | null;
+ volunteersCount: number | null;
+ durationMinutes: number | null;
+ wasteBreakdown: unknown;
+};
+
+function toNullableNumber(value: unknown): number | null {
+ if (typeof value ==="number" && Number.isFinite(value)) {
+  return value;
+ }
+ if (typeof value ==="string" && value.trim().length > 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+ }
+ return null;
+}
+
+function normalizeImpactValues(row: {
+ created_by_clerk_id?: string | null;
+ waste_kg?: unknown;
+ cigarette_butts?: unknown;
+ volunteers_count?: unknown;
+ duration_minutes?: unknown;
+ notes?: string | null;
+}): ActionImpactValues {
+ const metadata = extractActionMetadataFromNotes(row.notes ?? null);
+ return {
+  createdByClerkId: row.created_by_clerk_id ?? null,
+  wasteKg: toNullableNumber(row.waste_kg),
+  cigaretteButts: toNullableNumber(row.cigarette_butts),
+  volunteersCount: toNullableNumber(row.volunteers_count),
+  durationMinutes: toNullableNumber(row.duration_minutes),
+  wasteBreakdown: metadata.wasteBreakdown,
+ };
+}
+
+async function loadActionImpactValues(
+ supabase: ReturnType<typeof getSupabaseServerClient>,
+ id: string,
+): Promise<ActionImpactValues | null> {
+ const row = await runSingleActionQuery<{
+  created_by_clerk_id: string | null;
+  waste_kg: unknown;
+  cigarette_butts: unknown;
+  volunteers_count: unknown;
+  duration_minutes: unknown;
+  notes: string | null;
+ }>(supabase, (query) =>
+  query
+   .select("created_by_clerk_id, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes")
+   .eq("id", id)
+   .maybeSingle(),
+ );
+
+ return row ? normalizeImpactValues(row) : null;
+}
+
+async function refreshImpactDependents(
+ supabase: ReturnType<typeof getSupabaseServerClient>,
+ params: {
+  actionId: string;
+  creatorUserId: string | null;
+ },
+): Promise<string[]> {
+ const organizerIds = await loadActionOrganizerIdsForAction(
+  supabase,
+  params.actionId,
+  params.creatorUserId,
+ );
+ const affectedUserIds = Array.from(
+  new Set(organizerIds.map((value) => value.trim()).filter(Boolean)),
+ );
+
+ await Promise.all(
+  affectedUserIds.map(async (userId) => {
+   await syncUserActionProgression(supabase, userId);
+   await refreshProgressionProfile(supabase, userId);
+  }),
+ );
+ await invalidatePublicSurfaceSnapshotsByRoute([
+  "api/actions",
+  "api/actions/map",
+ ]);
+
+ return affectedUserIds;
+}
+
+async function updateActionModerationVisibility(
+ supabase: ReturnType<typeof getSupabaseServerClient>,
+ params: {
+  id: string;
+  visibility: "visible" |"hidden";
+  actorUserId: string;
+  reason: string;
+ },
+): Promise<{
+ found: boolean;
+ previousValue: { moderationVisibility: "visible" |"hidden"; hiddenAt: string | null; hiddenByClerkId: string | null; hiddenReason: string | null } | null;
+ newValue: { moderationVisibility: "visible" |"hidden"; hiddenAt: string | null; hiddenByClerkId: string | null; hiddenReason: string | null } | null;
+}> {
+ const current = await supabase
+ .from("actions")
+ .select("moderation_visibility, hidden_at, hidden_by_clerk_id, hidden_reason")
+ .eq("id", params.id)
+ .maybeSingle();
+
+ if (current.error) {
+  throw new Error("Database visibility read failed");
+ }
+ if (!current.data) {
+  return { found: false, previousValue: null, newValue: null };
+ }
+
+ const now = new Date().toISOString();
+ const updates =
+  params.visibility ==="hidden"
+   ? {
+    moderation_visibility:"hidden",
+    hidden_at: now,
+    hidden_by_clerk_id: params.actorUserId,
+    hidden_reason: params.reason,
+   }
+   : {
+    moderation_visibility:"visible",
+    hidden_at: null,
+    hidden_by_clerk_id: null,
+    hidden_reason: null,
+   };
+
+ const updated = await supabase
+ .from("actions")
+ .update(updates)
+ .eq("id", params.id)
+ .select("moderation_visibility, hidden_at, hidden_by_clerk_id, hidden_reason")
+ .maybeSingle();
+ if (updated.error) {
+  throw new Error("Database visibility update failed");
+ }
+
+ return {
+  found: Boolean(updated.data),
+  previousValue: {
+   moderationVisibility: current.data.moderation_visibility ??"visible",
+   hiddenAt: current.data.hidden_at ?? null,
+   hiddenByClerkId: current.data.hidden_by_clerk_id ?? null,
+   hiddenReason: current.data.hidden_reason ?? null,
+  },
+  newValue: updated.data
+   ? {
+    moderationVisibility: updated.data.moderation_visibility ??"visible",
+    hiddenAt: updated.data.hidden_at ?? null,
+    hiddenByClerkId: updated.data.hidden_by_clerk_id ?? null,
+    hiddenReason: updated.data.hidden_reason ?? null,
+   }
+   : null,
+ };
 }
 
 async function updateActionStatus(
@@ -195,16 +403,59 @@ export async function POST(request: Request) {
  });
  }
 
+ const requiredReasonOperation =
+  parsed.data.entityType ==="action"
+   ? resolveActionModerationOperation(parsed.data)
+   : null;
+ const reason = normalizeModerationReason(parsed.data.reason, {
+  required: Boolean(requiredReasonOperation),
+ });
+ if (requiredReasonOperation && !reason) {
+ await appendAdminOperationAudit({
+ operationId,
+ at: new Date().toISOString(),
+ actorUserId: access.userId,
+ operationType:"moderation",
+ outcome:"error",
+ targetId: parsed.data.id,
+ details: {
+ code:"reason_required",
+ entityType: parsed.data.entityType,
+ operation: requiredReasonOperation,
+ },
+ });
+
+ return adminErrorResponse({
+ status: 400,
+ code:"reason_required",
+ message:"Motif de modération obligatoire.",
+ hint:"Renseigne un motif clair d'au moins 5 caractères pour cette opération sensible.",
+ operationId,
+ });
+ }
+
  const supabase = getSupabaseAdminClient();
 
  try {
  if (parsed.data.entityType ==="action") {
+ const shouldRefreshImpact = hasSensitiveImpactEdit(parsed.data.edits);
+ const previousImpactValue = shouldRefreshImpact
+ ? await loadActionImpactValues(supabase, parsed.data.id)
+ : null;
  const statusUpdate = await updateActionStatus(
  supabase,
  parsed.data.id,
  parsed.data.status,
  parsed.data.edits,
  );
+ const visibilityUpdate = parsed.data.moderationVisibility
+ ? await updateActionModerationVisibility(supabase, {
+  id: parsed.data.id,
+  visibility: parsed.data.moderationVisibility,
+  actorUserId: access.userId,
+  reason: reason ?? "",
+ })
+ : null;
  if (!statusUpdate.found) {
  await appendAdminOperationAudit({
  operationId,
@@ -224,9 +475,45 @@ export async function POST(request: Request) {
  operationId,
  });
  }
+ if (visibilityUpdate && !visibilityUpdate.found) {
+ await appendAdminOperationAudit({
+ operationId,
+ at: new Date().toISOString(),
+ actorUserId: access.userId,
+ operationType:"moderation",
+ outcome:"error",
+ targetId: parsed.data.id,
+ details: {
+  code:"not_found",
+  entityType: parsed.data.entityType,
+  operation: requiredReasonOperation,
+ },
+ });
+
+ return adminErrorResponse({
+ status: 404,
+ code:"not_found",
+ message:"Action not found",
+ hint:"Verifier l'identifiant avant de relancer la moderation.",
+ operationId,
+ });
+ }
 
 let copied = false;
-  if (parsed.data.status ==="approved") {
+ let newImpactValue: ActionImpactValues | null = null;
+ let refreshedProgressionUserIds: string[] = [];
+ if (shouldRefreshImpact) {
+  newImpactValue = await loadActionImpactValues(supabase, parsed.data.id);
+  refreshedProgressionUserIds = await refreshImpactDependents(supabase, {
+   actionId: parsed.data.id,
+   creatorUserId:
+    newImpactValue?.createdByClerkId ?? previousImpactValue?.createdByClerkId ?? null,
+  });
+ }
+  if (
+    parsed.data.status ==="approved" &&
+    requiredReasonOperation !== "restore_after_sanction"
+  ) {
     const syncResult = await copyValidatedActionToLocalStore(
       supabase,
       parsed.data.id,
@@ -265,6 +552,21 @@ let copied = false;
  details: {
  entityType: parsed.data.entityType,
  targetStatus: parsed.data.status,
+ ...(requiredReasonOperation ? { operation: requiredReasonOperation } : {}),
+ ...(reason ? { reason } : {}),
+ ...(parsed.data.moderationVisibility
+  ? { moderationVisibility: parsed.data.moderationVisibility }
+  : {}),
+ ...(visibilityUpdate?.previousValue
+  ? { previousValue: visibilityUpdate.previousValue }
+  : {}),
+ ...(previousImpactValue ? { previousValue: previousImpactValue } : {}),
+ ...(visibilityUpdate?.newValue ? { newValue: visibilityUpdate.newValue } : {}),
+ ...(newImpactValue ? { newValue: newImpactValue } : {}),
+ ...(refreshedProgressionUserIds.length > 0
+  ? { refreshedProgressionUserIds }
+  : {}),
+ ...(shouldRefreshImpact ? { publicSurfaceSnapshotsInvalidated: true } : {}),
  sourceTable: statusUpdate.source,
  copiedToLocalValidatedStore: copied,
  editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
@@ -343,6 +645,7 @@ let copied = false;
  details: {
  entityType: parsed.data.entityType,
  targetStatus: parsed.data.status,
+ ...(reason ? { reason } : {}),
  sourceTable:"spots",
  copiedToLocalValidatedStore: copied,
  editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],

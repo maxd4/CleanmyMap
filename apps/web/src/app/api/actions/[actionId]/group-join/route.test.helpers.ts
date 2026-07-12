@@ -30,6 +30,16 @@ vi.mock("@/lib/gamification/progression-tracking", () => ({
 
 vi.mock("@/lib/actions/moderation-audit", () => ({
   appendActionModerationAudit: appendActionModerationAuditMock,
+  normalizeModerationReason: (value: unknown, options?: { required?: boolean }) => {
+    if (typeof value !== "string") {
+      return null;
+    }
+    const normalized = value.trim();
+    if (!normalized || (options?.required && normalized.length < 5)) {
+      return null;
+    }
+    return normalized;
+  },
 }));
 
 export type GroupJoinActionRow = {
@@ -47,7 +57,7 @@ export type GroupJoinParticipantRow = {
   user_id: string;
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "import";
+  participation_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
 export type GroupJoinProfileRow = {
@@ -92,7 +102,7 @@ export function createGroupJoinParticipant(params: {
   user_id: string;
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "import";
+  participation_source?: "group_form" | "admin" | "admin_override" | "import";
 }): GroupJoinParticipantRow {
   return {
     id: params.id ?? `participant-${params.user_id}`,
@@ -278,7 +288,7 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
       user_id: string;
       joined_at?: string;
       participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "import";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
     }) => ParticipantChain;
     then: (
       resolve: (value: {
@@ -364,7 +374,7 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
         user_id: string;
         joined_at?: string;
         participation_status?: "pending" | "confirmed" | "cancelled";
-        participation_source?: "group_form" | "admin" | "import";
+        participation_source?: "group_form" | "admin" | "admin_override" | "import";
       }) => {
         const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
         state.inserting = {

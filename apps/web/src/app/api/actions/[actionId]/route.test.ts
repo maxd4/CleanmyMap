@@ -149,7 +149,32 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
-  it("approves the action once the final declaration is completed", async () => {
+  it("keeps an ordinary final declaration pending moderation", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ actionPhase: "post_action_complete" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action_phase: "post_action_complete",
+        status: "pending",
+      }),
+    );
+  });
+
+  it("auto-approves an admin-like user's own final declaration", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      role: "admin",
+    });
+
     const { PATCH } = await import("./route");
 
     const response = await PATCH(
@@ -165,6 +190,48 @@ describe("PATCH /api/actions/:actionId", () => {
       expect.objectContaining({
         action_phase: "post_action_complete",
         status: "approved",
+      }),
+    );
+  });
+
+  it("does not auto-approve when an admin-like user finalizes another user's action", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      role: "admin",
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-2",
+      notes: null,
+    });
+
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ actionPhase: "post_action_complete" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action_phase: "post_action_complete",
+        status: "pending",
+      }),
+    );
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "user-test-1",
+        targetActionId: "action-test-1",
+        operation: "edit_action",
+        outcome: "success",
       }),
     );
   });

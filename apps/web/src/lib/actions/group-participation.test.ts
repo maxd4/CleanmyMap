@@ -19,6 +19,7 @@ type ActionRow = {
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
+  moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
 };
@@ -30,11 +31,15 @@ function createActionsChain(actions: ActionRow[]) {
     in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({
-      data: actions,
+      data: actions.filter(
+        (action) => action.moderation_visibility !== "hidden",
+      ),
       error: null,
     })),
     maybeSingle: vi.fn(async () => ({
-      data: actions[0] ?? null,
+      data:
+        actions.find((action) => action.moderation_visibility !== "hidden") ??
+        null,
       error: null,
     })),
     then: (
@@ -42,7 +47,9 @@ function createActionsChain(actions: ActionRow[]) {
       reject: (reason: unknown) => void,
     ) =>
       Promise.resolve({
-        data: actions,
+        data: actions.filter(
+          (action) => action.moderation_visibility !== "hidden",
+        ),
         error: null,
       }).then(resolve, reject),
   };
@@ -251,6 +258,44 @@ describe("group participation fallback handling", () => {
     });
 
     expect(items.map((item) => item.id)).toEqual(["action-2"]);
+  });
+
+  it("hides pre-actions masked by moderation visibility", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-hidden",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "pending",
+          moderation_visibility: "hidden",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+        {
+          id: "action-visible",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-11",
+          location_label: "Quai Sud",
+          volunteers_count: 8,
+          duration_minutes: 45,
+          status: "pending",
+          moderation_visibility: "visible",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+      ],
+    });
+
+    const items = await loadJoinableActions(supabase, {
+      limit: 8,
+      userId: null,
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["action-visible"]);
   });
 
   it("does not bypass publication rules when a hidden action is targeted directly", async () => {

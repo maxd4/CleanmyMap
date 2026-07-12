@@ -6,7 +6,7 @@ Point d'entrée de la documentation technique, produit et opérationnelle du pro
 
 Avant toute modification ciblant le dépôt :
 
-1. lire `AGENTS.md` ;
+1. lire les consignes d'agent locales applicables ;
 2. vérifier le fichier courant sur GitHub `maxd4/CleanmyMap` ;
 3. lire uniquement la documentation canonique utile au périmètre ;
 4. ne pas appliquer un ancien plan sans le confronter au code actuel.
@@ -147,7 +147,7 @@ Une preuve visuelle ne remplace pas la vérification sémantique de la page.
 ### Avant de modifier
 
 ```txt
-□ Lire AGENTS.md
+□ Lire les consignes d'agent locales
 □ Vérifier le fichier actuel sur GitHub
 □ Identifier la source canonique
 □ Inspecter les dépendances directes
@@ -213,7 +213,7 @@ npm run test:e2e
 
 ## Références prioritaires
 
-- `AGENTS.md`
+- les consignes d'agent locales
 - `README.md`
 - `architecture/README.md`
 - `security/README.md`

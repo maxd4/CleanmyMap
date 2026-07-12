@@ -92,4 +92,51 @@ describe("GET /api/actions/:actionId/audit", () => {
     expect(response.status).toBe(403);
     expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
   });
+
+  it("returns the audit journal for action organizers", async () => {
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+  });
+
+  it("returns the audit journal for moderation roles", async () => {
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "max" });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
+    expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+  });
+
+  it("rejects anonymous users before reading the audit journal", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(401);
+    expect(runSingleActionQueryMock).not.toHaveBeenCalled();
+    expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
 });

@@ -3,57 +3,85 @@
 ## Fiche canonique
 
 - **Route** : `/reports`
-- **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/reports/page.tsx`
-- **Type fonctionnel** : page de bloc
-- **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Lire, comparer et partager les données de carte et d'impact.
-- **Action principale attendue** : Explorer la carte ou lire les résultats.
-- **Palette attendue** : red
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : red — canvas #fee2e2, halo rgba(220, 38, 38, 0.24)
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
-- **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
-- **Niveau de surcharge textuelle** : fort
-- **Textes à conserver** :
-- Carte
-- légende
-- chiffres clés
-- résumés d'impact
-- **Textes à réduire ou supprimer** :
-- Commentaires de contexte
-- badges de répétition
-- cartes trop proches visuellement
-- **Bulles / cartes / contextes trop nombreux** : Les widgets de lecture d'impact se superposent facilement avec la carte ou les stats.
-- **Composants UI concernés** :
-- Carte
-- cards d'impact
-- filtres
-- legend
-- tableaux / rapports
-- **Captures attendues** : desktop, mobile
-- **Priorité de correction** : moyenne
+- **Famille** : Cartographie & Impact
+- **Palette runtime** : red
+- **Accès visiteur** : `auth-blur-gate`
+- **Accès page complète** : compte connecté
+- **Exports et génération détaillée** : profils admin-like
+- **Source principale** : `apps/web/src/app/(app)/reports/page.tsx`
 
+## Contrat d'accès
 
-## États à documenter
+La route n'est pas simplement « publique ».
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
-- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+Le composant serveur charge la session.
 
+Sans `userId` :
 
+```txt
+ClerkRequiredGate
+mode = blur
+```
 
-## Références legacy
+Avec compte connecté :
 
-- [reports.md](../../../../3-BLOC-VISUALISER&IMPACTER/reports.md)
+```txt
+accès à la page de rapports
+```
 
-## Notes d'audit
+Pour la génération complète et les exports :
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+```txt
+isAdminLikeProfile(profile) = true
+```
+
+## Données
+
+La page charge en parallèle :
+
+```txt
+pilotage overview sur 90 j
+jusqu'à 1 000 actions approuvées
+événements communautaires
+météo Open-Meteo avec revalidation 900 s
+```
+
+## Fonctionnalités
+
+- KPI de synthèse ;
+- tendances mensuelles ;
+- comparaisons ;
+- méthode KPI ;
+- données d'actions ;
+- événements communautaires ;
+- météo ;
+- génération de document ;
+- exports pour profils autorisés.
+
+## Performance
+
+Cette page peut être lourde.
+
+Règles :
+
+- ne pas ouvrir les exports détaillés aux visiteurs anonymes ;
+- conserver les chargements parallèles ;
+- différer les documents lourds ;
+- préserver les limites de volume explicites ;
+- éviter un second fetch des mêmes contrats dans un composant enfant.
+
+## États
+
+```txt
+visiteur anonyme → gate flouté
+compte connecté standard → rapports sans génération admin
+profil admin-like → génération et exports
+échec de chargement → données de repli
+```
+
+## Statut documentaire
+
+```txt
+Accès réaligné sur le code.
+La route ne doit plus être décrite comme simplement publique ni comme protégée uniquement par le proxy.
+```

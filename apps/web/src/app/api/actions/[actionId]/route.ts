@@ -6,7 +6,11 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { canManageAction, canUseAdminOverride } from "@/lib/actions/permissions";
+import {
+  canAutoApproveOwnAction,
+  canManageAction,
+  canUseAdminOverride,
+} from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadManualParticipantIdsForAction } from "@/lib/actions/group-participation.helpers";
 import { loadActionOrganizerIdsForAction, syncActionManualParticipants } from "@/lib/actions/organizers";
@@ -196,7 +200,11 @@ export async function PATCH(
       if (body.actionPhase === "pre_action") {
         updateData["status"] = "pending";
       } else if (body.actionPhase === "post_action_complete") {
-        updateData["status"] = "approved";
+        updateData["status"] = canAutoApproveOwnAction(permissionIdentity, {
+          createdByClerkId: current.created_by_clerk_id,
+        })
+          ? "approved"
+          : "pending";
       }
     }
     if (body.preparationData !== undefined) {

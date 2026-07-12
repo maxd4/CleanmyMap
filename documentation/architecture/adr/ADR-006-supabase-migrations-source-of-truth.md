@@ -85,7 +85,7 @@ Ne supprimer aucun fichier avant :
 Mettre à jour :
 
 ```txt
-AGENTS.md
+les consignes d'agent applicables au dépôt
 documentation/architecture/data-governance.md
 documentation/development/TESTING.md
 documentation/security/*

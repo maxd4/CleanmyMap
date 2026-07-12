@@ -35,7 +35,7 @@ Le chemin de correction doit rester groupé:
 - `apps/web/vercel.json`
 - `.github/workflows/ci.yml`
 - `documentation/development/TESTING.md`
-- `documentation/operations/session-standard-runbook.md`
+- le runbook standard de session du dépôt
 
 ## Ordre de triage
 

@@ -68,6 +68,7 @@ export const PROXY_MATCHER_PATTERNS = [
   ...PROTECTED_APP_PAGE_MATCHER_PATTERNS,
   ...PROXY_AUTH_CONTEXT_API_ROUTE_PATTERNS,
 ] as const;
+
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
 
 function shouldNoIndex(pathname: string): boolean {
@@ -158,7 +159,7 @@ const clerkProxy = clerkMiddleware(
   },
 );
 
-export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
+export async function proxy(req: NextRequest, evt: NextFetchEvent) {
   try {
     const response = await clerkProxy(req, evt);
     const clerkReason = response?.headers.get("x-clerk-auth-reason");

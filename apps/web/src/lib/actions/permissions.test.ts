@@ -44,28 +44,60 @@ describe("action permissions", () => {
   it("lets admin-like users review action participants", () => {
     expect(canUseAdminOverride({ role: "elu" })).toBe(true);
     expect(canModerateAnyAction({ role: "max" })).toBe(true);
+  });
+
+  it("lets creators, organizers and coorganizers review their action participants", () => {
     expect(
       canReviewActionParticipants(
         {
-          userId: "user-2",
+          userId: "creator-1",
           role: "benevole",
         },
         {
-          createdByClerkId: "user-1",
+          createdByClerkId: "creator-1",
         },
-        ["user-2"],
+        [],
       ),
     ).toBe(true);
+
     expect(
       canReviewActionParticipants(
         {
-          userId: "user-3",
+          userId: "organizer-1",
           role: "benevole",
         },
         {
-          createdByClerkId: "user-1",
+          createdByClerkId: "creator-1",
         },
-        ["user-2"],
+        ["organizer-1", "coorganizer-1"],
+      ),
+    ).toBe(true);
+
+    expect(
+      canReviewActionParticipants(
+        {
+          userId: "coorganizer-1",
+          role: "benevole",
+        },
+        {
+          createdByClerkId: "creator-1",
+        },
+        ["organizer-1", "coorganizer-1"],
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects outside users from action participant review", () => {
+    expect(
+      canReviewActionParticipants(
+        {
+          userId: "outside-1",
+          role: "benevole",
+        },
+        {
+          createdByClerkId: "creator-1",
+        },
+        ["organizer-1", "coorganizer-1"],
       ),
     ).toBe(false);
   });

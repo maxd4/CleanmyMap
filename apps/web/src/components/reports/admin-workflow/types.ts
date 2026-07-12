@@ -10,9 +10,10 @@ import type {
 } from"@/lib/actions/types";
 import type { ReportScopeChoice, ReportScopeKind } from"@/lib/reports/scope";
 import type {
- ModerationActionStatus,
- ModerationCleanPlaceStatus,
- ModerationEntityType,
+  ModerationActionStatus,
+  ModerationCleanPlaceStatus,
+  ModerationEntityType,
+  ModerationVisibility,
 } from"@/lib/admin/moderation-client";
 
 export type AsyncState ="idle" |"pending" |"success" |"error";
@@ -133,6 +134,8 @@ export type AdminWorkflowController = {
   moderationJournal: ModerationJournalEntry[];
   moderationConfirmed: boolean;
   moderationConfirmationText: string;
+  moderationReason: string;
+  moderationVisibility: ModerationVisibility;
   selectedActionCreatorId: string | null;
   actionEditDraft: ActionModerationEditDraft | null;
   cleanPlaceEditDraft: CleanPlaceModerationEditDraft | null;
@@ -142,6 +145,8 @@ export type AdminWorkflowController = {
  setCleanPlaceStatus: Dispatch<SetStateAction<ModerationCleanPlaceStatus>>;
  setModerationConfirmed: Dispatch<SetStateAction<boolean>>;
   setModerationConfirmationText: Dispatch<SetStateAction<string>>;
+  setModerationReason: Dispatch<SetStateAction<string>>;
+  setModerationVisibility: Dispatch<SetStateAction<ModerationVisibility>>;
   setActionEditDraft: Dispatch<SetStateAction<ActionModerationEditDraft | null>>;
   setCleanPlaceEditDraft: Dispatch<SetStateAction<CleanPlaceModerationEditDraft | null>>;
   setSelectedActionCreatorId: Dispatch<SetStateAction<string | null>>;

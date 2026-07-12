@@ -76,4 +76,6 @@
 - Le passage vers le formulaire complet doit réutiliser les données déjà saisies et n'exige pas de recommencer la préparation.
 - Le pré-formulaire n'est jamais traité comme une collecte validée tant que la déclaration finale n'a pas complété les champs de récolte.
 - L'absence de valeur pour `groupJoinEnabled` est interprétée comme une fermeture de la visibilité publique.
+- Une soumission `quick` ordinaire reste `pending`; seule une action créée par un profil `admin`, `elu` ou `max` pour son propre compte peut être auto-approuvée.
+- Les corrections admin d'impact exigent un motif, journalisent les valeurs avant/après et recalculent la progression de manière idempotente pour les organisateurs concernés.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

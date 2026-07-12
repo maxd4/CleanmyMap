@@ -27,7 +27,7 @@ import { logFailure } from "@/lib/logging/failure-log";
 import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 
-const ACTION_SELECT_FIELDS = [
+const ACTION_BASE_SELECT_FIELDS = [
   "id",
   "created_at",
   "updated_at",
@@ -49,13 +49,25 @@ const ACTION_SELECT_FIELDS = [
   "status",
 ] as const;
 
+const ACTION_MODERATION_SELECT_FIELDS = [
+  "moderation_visibility",
+  "hidden_at",
+  "hidden_by_clerk_id",
+  "hidden_reason",
+] as const;
+
+const ACTION_SELECT_FIELDS = [
+  ...ACTION_BASE_SELECT_FIELDS,
+  ...ACTION_MODERATION_SELECT_FIELDS,
+] as const;
+
 const ACTION_SELECT_FIELDS_WITH_PHASE = [
   ...ACTION_SELECT_FIELDS,
   "action_phase",
   "preparation_data",
 ].join(", ");
 
-const ACTION_SELECT_FIELDS_LEGACY = ACTION_SELECT_FIELDS.join(", ");
+const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS.join(", ");
 
 function isMissingActionColumnError(error: unknown): boolean {
   const message =
@@ -70,7 +82,12 @@ function isMissingActionColumnError(error: unknown): boolean {
 
   return (
     normalized.includes("does not exist") &&
-    (normalized.includes("action_phase") || normalized.includes("preparation_data"))
+    (normalized.includes("action_phase") ||
+      normalized.includes("preparation_data") ||
+      normalized.includes("moderation_visibility") ||
+      normalized.includes("hidden_at") ||
+      normalized.includes("hidden_by_clerk_id") ||
+      normalized.includes("hidden_reason"))
   );
 }
 
@@ -100,6 +117,10 @@ function buildActionListQuery(
     .select(selectFields)
     .order("action_date", { ascending: false })
     .limit(params.limit);
+
+  if (selectFields.includes("moderation_visibility")) {
+    nextQuery = nextQuery.eq("moderation_visibility", "visible");
+  }
 
   if (params.status) {
     nextQuery = nextQuery.eq("status", params.status);
@@ -428,7 +449,12 @@ type ActionParticipantInsertRow = {
   user_id: string;
   joined_at: string;
   participation_status: "pending" | "confirmed";
-  participation_source: "group_form" | "manual_add" | "admin" | "import";
+  participation_source:
+    | "group_form"
+    | "manual_add"
+    | "admin"
+    | "admin_override"
+    | "import";
 };
 
 export function buildInitialActionParticipantRows(params: {

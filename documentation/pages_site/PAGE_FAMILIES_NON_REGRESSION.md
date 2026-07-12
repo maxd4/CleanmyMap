@@ -1,42 +1,141 @@
 # Mémoire de non-régression `page-families`
 
-Cette note fige les corrections récentes pour éviter de recréer les mêmes ambiguïtés entre le runtime, le générateur documentaire et les guides de navigation.
+## But
 
-## Règles à ne pas casser
+Éviter une nouvelle dérive entre :
 
-- Une route canonique = une seule vérité.
-- `/` reste la seule homepage canonique.
-- `/accueil` ne doit pas revenir comme alias caché.
-- Le registre canonique des familles vit dans `apps/web/src/lib/ui/page-families/families/registry.ts`.
-- La source de métadonnées partagée vit dans `apps/web/src/lib/ui/page-families/page-families.manifest.json`.
-- Le générateur documentaire lit le même manifeste que le runtime.
-- Les fichiers de compatibilité supprimés ne doivent pas être recréés sans besoin explicite.
-- Les identifiants techniques de famille restent stables et alignés sur le manifeste.
-- Les exceptions restent explicites dans `exceptions.ts` et dans `resolve-page-family.ts`.
+```txt
+routes runtime
+sections-registry
+page-families
+documentation/pages_site
+sitemap
+```
 
-## Fichiers de référence
+## Invariants
 
-- [README pages_site](./README.md)
-- [Guide développement `PAGE_FAMILIES`](../development/PAGE_FAMILIES.md)
-- [Plan `PAGE_FAMILIES`](./PAGE_FAMILIES_PLAN.md)
-- [Registre runtime](../../apps/web/src/lib/ui/page-families/families/registry.ts)
-- [Manifeste partagé](../../apps/web/src/lib/ui/page-families/page-families.manifest.json)
-- [Test de cohérence manifeste / runtime](../../apps/web/src/lib/ui/page-families/registry-manifest.test.ts)
+- une route canonique garde une fiche canonique unique ;
+- `/` reste l'unique homepage canonique ;
+- `/accueil` ne doit pas revenir comme alias caché ;
+- le registre des familles vit dans `apps/web/src/lib/ui/page-families/families/registry.ts` ;
+- les métadonnées partagées vivent dans `page-families.manifest.json` ;
+- le mapping pathname → famille vit dans `resolve-page-family.ts` ;
+- les exceptions nommées vivent dans `exceptions.ts` ;
+- chaque exception est testée ;
+- les docs ne recalculent pas seules une famille ou une couleur ;
+- les captures restent centralisées au niveau du bloc ou de la famille.
 
-## Ce qui a été corrigé
+## Générateur documentaire
 
-- Suppression de l'alias de homepage `/accueil`.
-- Centralisation du bloc 01 dans un registre unique.
-- Remplacement de `defaults.ts` par `registry.ts`.
-- Alignement du générateur `generate-canonical-pages.mjs` sur le même manifeste que le runtime.
-- Mise en place d'un test de cohérence pour éviter une divergence future.
+`documentation/pages_site/generate-canonical-pages.mjs` ne doit plus :
 
-## Règle de maintenance
+```txt
+réécrire INDEX.md
+écraser les README enrichis
+créer un photo/ par route
+recalculer les couleurs dans une logique parallèle
+```
 
-Si une nouvelle famille ou une nouvelle exception apparaît, il faut mettre à jour ensemble :
+Son rôle est désormais limité à l'audit de dérive.
 
-1. le manifeste partagé ;
-2. le registre runtime ;
-3. le resolver ;
-4. le test de cohérence ;
-5. la documentation de `pages_site`.
+## Vérification de dérive
+
+Commande de diagnostic :
+
+```bash
+npm run audit:pages-site-drift
+```
+
+Mode strict :
+
+```bash
+npm run check:pages-site-drift
+```
+
+Le check compare :
+
+```txt
+page.tsx
+sections-registry
+INDEX.md
+fiches canoniques
+noyaux documentaires
+```
+
+## Routes de sections documentées à protéger
+
+Les routes suivantes doivent résoudre vers leur famille métier :
+
+```txt
+/sections/elus                    → accueil-pilotage
+/sections/route                   → agir
+/sections/weather                 → agir
+/sections/rejoindre-un-formulaire → agir
+/sections/gamification            → cartographie-impact
+/sections/community              → reseau-discussions
+/sections/feedback               → reseau-discussions
+/sections/actors                 → reseau-discussions
+/sections/annuaire               → reseau-discussions
+/sections/messagerie             → reseau-discussions
+/sections/open-data              → reseau-discussions
+/sections/funding                → reseau-discussions
+/sections/trash-spotter          → reseau-discussions
+```
+
+## Sections volontairement non classées
+
+Jusqu'à décision produit :
+
+```txt
+/sections/recycling
+/sections/compost
+/sections/climate
+```
+
+restent explicitement non classées dans `page-families`.
+
+Ne pas leur attribuer une famille silencieusement.
+
+## Exceptions actuelles
+
+```txt
+explorer-sommaire
+methodologie-impact
+weather-operations
+join-group-form
+reports-impact
+partners-indigo
+error-429
+```
+
+## Méthodologie
+
+Le runtime actuel résout `/methodologie` avec la variante sky dédiée.
+
+La documentation doit suivre ce comportement tant qu'une décision inverse n'est pas appliquée dans le code et les tests.
+
+## Tests
+
+Le resolver possède déjà une suite :
+
+```txt
+apps/web/src/lib/ui/page-families/resolve-page-family.test.ts
+```
+
+Elle doit couvrir :
+
+- routes directes ;
+- routes de sections documentées ;
+- exceptions ;
+- sections non classées ;
+- fallback inconnu.
+
+## Maintenance
+
+Après une modification de route, de famille ou d'exception :
+
+1. modifier le runtime ;
+2. modifier ou ajouter le test ;
+3. mettre à jour `INDEX.md` ;
+4. mettre à jour la fiche concernée ;
+5. lancer l'audit de dérive.

@@ -5,7 +5,7 @@ import {
   DASHBOARD_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
-import { PROXY_MATCHER_PATTERNS } from "./proxy";
+import { PROXY_MATCHER_PATTERNS } from "../proxy";
 
 describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {

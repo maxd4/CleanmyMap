@@ -3,33 +3,45 @@ import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 /**
  * Exceptions explicites par route.
- * Ajouter ici plutôt que dupliquer des classes dans chaque page.
+ *
+ * Une exception doit être :
+ * - nommée ;
+ * - testée ;
+ * - documentée dans documentation/pages_site ;
+ * - préférée aux classes visuelles dupliquées localement.
  */
 export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
   {
     id: "explorer-sommaire",
-    note: "Sommaire bloc 01 : fond yellow, cartes BLOCK_THEME inchangées dans explorer/page.tsx",
+    note:
+      "Sommaire du bloc 01 : famille visuelle jaune dédiée, cartes locales conservées comme exception documentée.",
     match: (pathname) =>
-      pathname === EXPLORER_ROUTE || pathname.startsWith(`${EXPLORER_ROUTE}/`),
+      pathname === EXPLORER_ROUTE ||
+      pathname.startsWith(`${EXPLORER_ROUTE}/`),
     familyId: "apprendre",
   },
   {
     id: "methodologie-impact",
-    note: "Rubrique rouge d'impact cliquable dans la famille cartographie-impact",
+    note:
+      "Méthodologie rattachée à Cartographie & Impact ; le runtime résout actuellement la variante sky dédiée.",
     match: (pathname) =>
-      pathname === "/methodologie" || pathname.startsWith("/methodologie/"),
+      pathname === "/methodologie" ||
+      pathname.startsWith("/methodologie/"),
     familyId: "cartographie-impact",
   },
   {
     id: "weather-operations",
-    note: "Météo et logistique rattachée au bloc Agir pour centraliser les tokens hero",
+    note:
+      "Météo et préparation terrain rattachées au bloc Agir.",
     match: (pathname) =>
-      pathname === "/sections/weather" || pathname.startsWith("/sections/weather/"),
+      pathname === "/sections/weather" ||
+      pathname.startsWith("/sections/weather/"),
     familyId: "agir",
   },
   {
     id: "join-group-form",
-    note: "Rubrique de jonction de formulaire rattachée au bloc Agir",
+    note:
+      "Formulaire de groupe rattaché au bloc Agir.",
     match: (pathname) =>
       pathname === "/sections/rejoindre-un-formulaire" ||
       pathname.startsWith("/sections/rejoindre-un-formulaire/"),
