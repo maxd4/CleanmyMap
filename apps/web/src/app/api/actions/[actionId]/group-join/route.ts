@@ -9,7 +9,10 @@ import {
   canReviewActionParticipants,
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
-import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import {
+  appendActionModerationAudit,
+  normalizeModerationReason,
+} from "@/lib/actions/moderation-audit";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
@@ -36,10 +39,12 @@ const toggleSchema = z.object({
 const reviewSchema = z.object({
   participantId: z.string().trim().min(1),
   decision: z.enum(["accept", "reject"]),
+  reason: z.string().trim().max(500).optional(),
 });
 
 const addParticipantSchema = z.object({
   participantUserId: z.string().trim().min(1),
+  reason: z.string().trim().max(500).optional(),
 });
 
 const searchSchema = z.object({
@@ -387,6 +392,27 @@ export async function POST(
       );
     }
 
+    const adminOverrideOperation =
+      access.identity && canUseAdminOverride(access.identity)
+        ? "participantUserId" in parsed.data
+          ? "admin_add_participant"
+          : parsed.data.decision === "reject"
+            ? "admin_review_reject"
+            : null
+        : null;
+    const reason = normalizeModerationReason(parsed.data.reason, {
+      required: Boolean(adminOverrideOperation),
+    });
+    if (adminOverrideOperation && !reason) {
+      return NextResponse.json(
+        {
+          error:
+            "Un motif d'au moins 5 caractères est requis pour cette opération de modération.",
+        },
+        { status: 400 },
+      );
+    }
+
     const result =
       "participantUserId" in parsed.data
         ? await addActionParticipationByAdmin(supabase, {
@@ -418,8 +444,15 @@ export async function POST(
         operation:
           "participantUserId" in parsed.data
             ? "admin_add_participant"
+            : parsed.data.decision === "reject" &&
+                result.previousValue?.participationStatus === "confirmed"
+              ? "admin_remove_participant"
             : `admin_review_${parsed.data.decision}`,
         outcome: "success",
+        reason,
+        previousValue: result.previousValue,
+        newValue: result.newValue,
+        targetUserId: result.participantUserId,
         details: {
           participantUserId: result.participantUserId,
           participationStatus: result.participationStatus,

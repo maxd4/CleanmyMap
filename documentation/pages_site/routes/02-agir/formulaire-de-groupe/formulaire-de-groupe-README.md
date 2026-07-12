@@ -3,95 +3,201 @@
 ## Fiche canonique
 
 - **Route** : `/sections/rejoindre-un-formulaire`
-- **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
-- `apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx`
-- `apps/web/src/app/api/actions/group-join/route.ts`
-- `apps/web/src/lib/actions/group-participation.ts`
-- **Type fonctionnel** : page de bloc
-- **Famille / bloc fonctionnel** : Agir (bloc)
-- **Statut** : finalisée
-- **Contexte nécessaire** : Compte connecté pour envoyer une demande, affichage public des actions validées ouvertes
-- **Objectif utilisateur principal** : Rejoindre une action de groupe déjà validée, consulter sa file publique, suivre les participations et corriger une erreur si besoin.
-- **Action principale attendue** : Trouver une action ouverte, envoyer une demande, puis suivre son statut, annuler une demande en attente ou quitter un formulaire accepté.
-- **Contrat de participation** : `action_participants` conserve l'état actif, l'origine, la date de jonction et la trace d'une annulation ou d'un départ.
-- **Contrat de clôture** : `groupJoinEnabled` dans `actions.notes` permet d'ouvrir explicitement les inscriptions après publication ; une valeur absente ou `false` maintient l'action fermée pour la page Formulaire de groupe.
-- **Contrat de séparation** : les pré-formulaires visibles ici restent des actions prévues ; tant que les champs de récolte finale ne sont pas renseignés, ils ne sont ni validés sur la carte publique ni comptés comme déclarations complètes.
-- **Contrat de modération** : un admin qui utilise le parcours normal rejoint comme un bénévole et reste en `pending` avec la source `group_form`; les dérogations admin directes passent par un chemin séparé et journalisé.
-- **Palette attendue** : emerald
-- **Scope** : finalisé
-- **Terminée** : oui
-- **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
-- **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
-- **Niveau de surcharge textuelle** : moyen
-- **Textes à conserver** :
-  - titre de rubrique
-  - CTA principal
-  - états de participation
-  - origine de participation
-  - file publique
-  - clôture / réouverture
-  - validation et erreurs
-- **Textes à réduire ou supprimer** :
-  - aides répétées
-  - cartes descriptives redondantes
-  - contextes décoratifs
-- **Bulles / cartes / contextes trop nombreux** : La jonction de groupe doit rester lisible et éviter la multiplication des micro-blocs.
-- **Composants UI concernés** :
-  - Hero
-  - breadcrumb de bloc
-  - filtres et tri
-  - cartes d'actions validées
-  - résumé latéral
-  - file publique
-  - modale de confirmation
-  - suivi personnel
-  - carte d'aide
-  - bandeau d'engagement sécurité
-- **Captures attendues** : desktop, mobile
-- **Priorité de correction** : faible
+- **Famille** : Agir
+- **Accès lecture** : `public-visible`
+- **Compte requis** : oui pour rejoindre, annuler ou traiter une demande
+- **Palette runtime** : agir / emerald
+- **Exception page-family** : `join-group-form`
+
+## Sources principales
+
+```txt
+apps/web/src/app/(app)/sections/[sectionId]/page.tsx
+apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx
+apps/web/src/app/api/actions/group-join/route.ts
+apps/web/src/app/api/actions/[actionId]/group-join/route.ts
+apps/web/src/lib/actions/group-participation.ts
+apps/web/src/lib/actions/permissions.ts
+```
+
+## Objectif utilisateur
+
+Permettre à un bénévole de :
+
+1. voir les actions de groupe ouvertes ;
+2. envoyer une demande de participation ;
+3. suivre son état ;
+4. annuler une demande ou quitter une participation ;
+5. ouvrir directement une action ciblée avec `actionId`.
+
+Permettre au créateur, organisateur ou coorganisateur autorisé de :
+
+1. voir les demandes de son action ;
+2. accepter ou refuser ;
+3. rechercher un compte ;
+4. ajouter manuellement un participant.
+
+Les profils admin-like peuvent traiter toute file selon les permissions centrales.
+
+## Contrat de visibilité
+
+Une action apparaît dans la liste publique uniquement si :
+
+```txt
+action_phase = pre_action
+status ∈ {approved, pending}
+groupJoinEnabled = true
+```
+
+Le statut `pending` n'exclut donc pas automatiquement une pré-action de cette page.
+
+La visibilité dans les formulaires de groupe reste distincte de :
+
+- visibilité sur la carte publique ;
+- validation d'une déclaration finale ;
+- comptabilisation dans les indicateurs d'impact.
+
+## Contrat de participation
+
+Le flux normal :
+
+```txt
+POST /api/actions/group-join
+```
+
+force :
+
+```txt
+isAdminLike = false
+```
+
+Donc même un admin utilisant le bouton normal rejoint selon le parcours normal :
+
+```txt
+participationStatus = pending
+participationSource = group_form
+```
+
+## Contrat de traitement de file
+
+La route :
+
+```txt
+/api/actions/[actionId]/group-join
+```
+
+utilise `resolveReviewerAccess(...)`.
+
+Sont autorisés selon le code actuel :
+
+```txt
+créateur
+organisateur
+coorganisateur autorisé
+admin-like
+```
+
+Un utilisateur extérieur ne peut pas rechercher des comptes ni traiter la file.
+
+## Deux concepts à ne pas confondre
+
+### Liste publique des actions ouvertes
+
+Visible sans compte.
+
+Contient les pré-actions ouvertes à la participation.
+
+### File de modération des demandes
+
+Visible uniquement pour un reviewer autorisé.
+
+Contient :
+
+```txt
+pendingRequests
+confirmedParticipants
+```
+
+Ne plus appeler cette file « file publique ».
+
+## Ajout manuel
+
+Le backend utilise encore la fonction nommée :
+
+```txt
+addActionParticipationByAdmin(...)
+```
+
+alors que la route peut maintenant être utilisée par un organisateur ou coorganisateur autorisé.
+
+Dette de nommage :
+
+```txt
+renommer ou généraliser le helper sans casser son contrat
+```
+
+Ne pas considérer le nom du helper comme une règle d'autorisation.
+
+## Audit admin
+
+Les opérations admin-like de traitement de participation sont journalisées via :
+
+```txt
+appendActionModerationAudit(...)
+```
+
+Les ajouts directs par modération utilisent `participation_source = admin_override`. La source historique `admin` reste lisible pour compatibilité mais ne doit plus être produite par le parcours normal.
+
+Un retrait d'un participant confirmé est journalisé comme `admin_remove_participant`. Un refus de demande en attente reste journalisé comme `admin_review_reject`.
+
+Les opérations normales d'un organisateur sur sa propre action ne doivent pas être confondues avec un override administratif.
+
+## Progression
+
+Après :
+
+```txt
+acceptation
+ajout manuel
+annulation / départ
+```
+
+le code tente de rafraîchir le profil de progression concerné.
+
+Toute évolution de cette logique doit rester idempotente.
 
 ## UI cible
 
-- **Breadcrumb** : `Agir > Formulaire de groupe`
-- **Hero** : grand bloc vert clair, titre très visible, sous-titre court, badge de contexte, illustration écologique à droite.
-- **Barre de recherche** : champ principal suivi de filtres par localisation, période, statut et tri.
-- **Liste principale** : cartes d'actions validées avec image, lieu, date, organisateur, badges d'état et CTA principal.
-- **Résumé** : colonne latérale avec compteurs synthétiques sur les actions ouvertes, les demandes en attente, les participations confirmées et l'impact estimé.
-- **Raccourcis** : accès rapides vers les participations, les demandes envoyées, le rôle d'organisateur et le guide bénévole.
-- **Mon suivi** : carte dédiée aux participations de l'utilisateur avec statuts courts et lien de navigation.
-- **Mon suivi** : carte dédiée aux participations de l'utilisateur avec statuts courts et lien de navigation, y compris les participations annulées comme trace.
-- **Aide** : carte secondaire avec renvoi vers le centre d'aide.
-- **File publique** : tableau des demandes en attente avec actions d'acceptation et de refus.
-- **Confirmation** : modale centrée avant l'envoi d'une demande de participation, ou avant l'annulation / sortie d'un formulaire.
-- **Bandeau bas de page** : rappel des engagements de sécurité et de la charte bénévole.
+- hero court ;
+- recherche et filtres ;
+- cartes d'actions ouvertes ;
+- suivi personnel ;
+- distinction claire entre demande `pending` et participation `confirmed` ;
+- file de modération uniquement pour les reviewers autorisés ;
+- confirmation avant participation, annulation ou départ ;
+- états loading, empty, error et forbidden accessibles.
 
-## États à documenter
+## États
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique vers `/actions/new`.
-- **error state** : panneau `rose`, message court, bouton `Réessayer`.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **queue empty** : panneau dédié à la file publique avec message explicite et absence d'actions de traitement.
-- **confirmation modal** : état de validation avant envoi, focus piégé, annulation possible avec `Escape`.
-- **Architecture commune** : `SectionShell`, `PageHero`, `PageHeroBadge`, `FamilyRubriqueCard`, `CmmButton`.
-- **Variantes** : `loading`, `empty`, `error`, `dialog`, `queue-empty`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+```txt
+loading
+empty
+error
+forbidden
+queue-empty
+confirmation dialog
+```
 
-## Références legacy
+## Statut documentaire
 
-- [group-action.md](../../../../../features/group-action.md)
+```txt
+Fonction principale en place.
+Documentation réalignée sur le runtime actuel.
+Rester en maintenance pour les futures commandes produit non encore modélisées, notamment changement d'organisateur et réouverture d'action si un statut de clôture apparaît.
+```
 
-## Notes d'audit
+## Références
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Le point d'entrée doit rester cohérent avec la rubrique `Rejoindre un formulaire` du bloc `Agir`.
-- La page ne liste que les actions approuvées en phase pré-action dont `groupJoinEnabled` vaut explicitement `true`.
-- Une action pré-action sans publication explicite reste invisible dans la page Formulaire de groupe.
-- Les membres ajoutés manuellement à l'action par l'organisateur sont conservés dans `participantAccounts` côté formulaire puis enregistrés comme participations `manual_add` sans passer par la file publique.
-- Les opérations de modération admin sont tracées séparément et ne doivent pas brouiller la file publique.
-- La file publique des demandes n'apparaît que pour l'action ciblée sélectionnée.
-- Le lien avec `actionId` doit conserver la possibilité d'ouvrir directement la file d'une action depuis les cartes d'action et la déclaration.
-- La page doit permettre au bénévole de se retirer lui-meme d'une demande en attente ou d'une participation confirmée, sans suppression définitive de trace.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- [Présentation détaillée](./formulaire-de-groupe-presentation-detaillee.md)
+- [Propositions à traiter](./formulaire-de-groupe-liste-propositions-a-traiter.md)
+- [Objectifs non pertinents](./formulaire-de-groupe-objectifs-non-pertinents.md)

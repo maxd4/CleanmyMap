@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APP_SHELL_ROUTE_PREFIXES, isAppShellRoute } from "./proxy";
+import { APP_SHELL_ROUTE_PREFIXES, isAppShellRoute } from "../proxy";
 import {
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,

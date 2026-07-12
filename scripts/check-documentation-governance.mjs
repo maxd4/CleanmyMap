@@ -8,6 +8,10 @@ const docsRoot = path.join(repoRoot, "documentation");
 
 const scanExtensions = new Set([".md", ".txt", ".yml", ".yaml", ".html", ".htm"]);
 const skippedPathParts = [
+  `${path.sep}documentation${path.sep}ai-guides${path.sep}`,
+  `${path.sep}documentation${path.sep}gpt-context${path.sep}`,
+  `${path.sep}documentation${path.sep}operations${path.sep}`,
+  `${path.sep}documentation${path.sep}plans-perso${path.sep}`,
   `${path.sep}documentation${path.sep}sessions${path.sep}`,
   `${path.sep}documentation${path.sep}plans${path.sep}`,
   `${path.sep}documentation${path.sep}rapport_IA${path.sep}`,

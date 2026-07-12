@@ -236,3 +236,54 @@ export async function listPublicSurfaceSnapshots<TPayload>(
     .slice(0, limit) as PublicSurfaceSnapshotRecord<TPayload>[];
 }
 
+function snapshotKeyMatchesRoute(snapshotKey: string, routes: readonly string[]): boolean {
+  try {
+    const parsed = JSON.parse(snapshotKey) as { route?: unknown };
+    return typeof parsed.route === "string" && routes.includes(parsed.route);
+  } catch {
+    return routes.some((route) => snapshotKey.includes(route));
+  }
+}
+
+export async function invalidatePublicSurfaceSnapshotsByRoute(
+  routes: readonly string[],
+): Promise<void> {
+  const normalizedRoutes = routes
+    .map((route) => route.trim())
+    .filter((route) => route.length > 0);
+  if (normalizedRoutes.length === 0) {
+    return;
+  }
+
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const supabase = getSupabaseServerClient();
+      for (const route of normalizedRoutes) {
+        const result = await supabase
+          .from("public_surface_snapshots")
+          .delete()
+          .like("snapshot_key", `%"route":"${route}"%`);
+
+        if (result.error && !allowLocalFileStoreFallback()) {
+          throw new Error(result.error.message);
+        }
+      }
+      if (!allowLocalFileStoreFallback()) {
+        return;
+      }
+    } catch (error) {
+      if (!allowLocalFileStoreFallback()) {
+        throw error;
+      }
+    }
+  }
+
+  const store = await readStore();
+  const records = store.records.filter(
+    (entry) => !snapshotKeyMatchesRoute(entry.snapshotKey, normalizedRoutes),
+  );
+  if (records.length === store.records.length) {
+    return;
+  }
+  await writeStore({ updatedAt: new Date().toISOString(), records });
+}

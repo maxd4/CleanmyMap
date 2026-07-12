@@ -1,313 +1,212 @@
-# Plan — Registre `page-families` (couleurs par type de route)
+# Plan — Registre `page-families`
 
-Document de référence pour piloter la transition de la charte couleur par pages. Il complète le guide d'usage [`PAGE_FAMILIES.md`](../development/PAGE_FAMILIES.md).
+## Statut
 
-**Mémoire de non-régression** : [`PAGE_FAMILIES_NON_REGRESSION.md`](./PAGE_FAMILIES_NON_REGRESSION.md)
+```txt
+Actif — fondations en place, alignement incomplet
+```
 
-**Dernière mise à jour** : le plan est aligné sur les 11 types de routes inventoriés dans `documentation/pages_site`.
+## But
 
----
+Stabiliser pour chaque route :
 
-## But du plan
+```txt
+famille
+fond
+hero
+cartes
+exceptions
+documentation
+tests
+```
 
-Le registre `page-families` sert à stabiliser la couleur, le fond, le hero et les cartes des pages qui partagent un même contexte visuel.
+Une même information ne doit pas être recalculée indépendamment dans le runtime et la documentation.
 
-Une modification de palette sur une page de bloc doit se faire dans un fichier famille + exceptions nommées, puis se propager à :
-
-1. Fond de page global (`VibrantBackground`)
-2. En-tête de page (`PageHeader`, alias historique `PageHero` / `SectionShell`)
-3. Cartes rubrique standard (`RubriqueCard` / `FamilyRubriqueCard`)
-4. Plus tard, cartes métier spécialisées, boutons et états système
-
-Ce plan ne remplace pas l'index `pages_site`. Il sert à rendre la migration exécutable.
-
----
-
-## Taxonomie des 11 types de routes
-
-Le dossier `documentation/pages_site` organise l'inventaire autour de 11 types. Le plan `page-families` doit rester lisible dans cette taxonomie.
-
-| # | Type de route | Dossier canonique | Rôle vis-à-vis de `page-families` |
-|---|---|---|---|
-| 00 | Homepage (hors bloc) | `routes/00-homepage` | famille autonome, hors logique bloc |
-| 01 | Accueil & Pilotage (bloc) | `routes/01-accueil-pilotage` | famille prioritaire, registre central pour le bloc 01 |
-| 02 | Agir (bloc) | `routes/02-agir` | famille bloc métier |
-| 03 | Cartographie & Impact (bloc) | `routes/03-cartographie-impact` | famille bloc visuelle et analytique |
-| 04 | Réseau & Discussions (bloc) | `routes/04-reseau-discussions` | famille bloc communautaire |
-| 05 | Apprendre (bloc) | `routes/05-apprendre` | famille bloc pédagogique |
-| 06 | Auth & Onboarding (hors bloc) | `routes/06-auth-onboarding` | famille autonome, charte auth dédiée |
-| 07 | Institutionnel & Légal (hors bloc) | `routes/07-legal` | famille autonome, sobriété prioritaire |
-| 08 | Système & Utilitaires (hors bloc) | `routes/08-systeme-utilitaires` | famille autonome, pages outil, erreurs et dynamiques |
-| 09 | Admin & Super-admin (hors bloc) | `routes/09-admin-superadmin` | famille autonome, accès technique |
-| 10 | Print & Export (hors bloc) | `routes/10-print-export` | famille autonome, contraintes d'impression |
-
----
-
-## Lecture cible
-
-Le plan doit permettre de répondre rapidement à ces questions :
-
-- quelle famille couleur s'applique à une route donnée ;
-- quelles exceptions sont documentées ;
-- quelles routes restent hors migration ;
-- quel composant UI porte la vérité visuelle ;
-- quand une page est considérée comme migrée.
-
-Le point important est le suivant :
-
-- les types 01 à 05 sont les véritables familles de bloc ;
-- les types 06 à 10 sont des familles autonomes, mais doivent suivre la même discipline de documentation et de validation.
-
----
-
-## Phases du plan
-
-### Fondations du registre
-
-| Livrable | Statut |
-|---|---|
-| `lib/ui/page-families/` (types, resolve, exceptions) | Fait |
-| `resolveBackdropToneKey` délègue à `resolvePageFamily` | Fait |
-| Familles 00–10 définies dans `families/registry.ts` et `page-families.manifest.json` | Fait |
-| Guide court `PAGE_FAMILIES.md` | Fait |
-| Mémoire de non-régression dédiée | Fait |
-
-### Bloc 01, accueil et pilotage
-
-| Livrable | Statut |
-|---|---|
-| Routes canoniques du bloc centralisées dans `lib/accueil-pilotage-routes.ts` | Fait |
-| `registry.ts` | Fait |
-| `PageHeader` | Fait |
-| `SectionShell` résout la famille via `pathname` | Fait |
-| Migration de `/dashboard` (canon), `/profil` (alias), `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
-| Exception `/explorer` | Fait |
-
-### Cartes et ponts bloc 01
-
-| Livrable | Statut |
-|---|---|
-| Type `PageFamilyCardTokens` | Fait |
-| Presets carte par famille | Fait |
-| Application des tokens via `family.card` | Fait |
-| `FamilyRubriqueCard` | Fait |
-| Migration bloc 01 de `/profil/[profile]` | Fait |
-| Hook `usePageFamily()` | Fait |
-
-### Homepage autonome, bloc 00
-
-| Livrable | Statut |
-|---|---|
-| Route canonique `/` centralisée pour les usages internes | Fait |
-| Footer et variantes liées à la homepage alignés sur le même helper | Fait |
-| Documentation `pages_site` clarifiée sur la route canonique du bloc 00 | Fait |
-
-### Blocs 02 à 05
-
-Ce lot couvre la première vague de cohérence des blocs métier et de navigation visible. Les pages secondaires non encore alignées restent suivies dans `documentation/pages_site/INDEX.md`.
-
-| Livrable | Statut |
-|---|---|
-| Affiner `hero` et `card` pour Agir, Cartographie/Impact, Réseau, Apprendre | Fait |
-| Migrer des pages pilotes par bloc | Fait |
-| Aligner `INDEX.md` et les fiches `pages_site` sur `PageFamilyId` | Fait |
-
-### Familles autonomes 06 à 10
-
-| Livrable | Statut |
-|---|---|
-| Auth & onboarding stabilisés comme famille autonome | À maintenir |
-| Legal / institutionnel cadré sur une palette neutre | À stabiliser |
-| Système & utilitaires documentés comme pages standalone, erreurs et dynamiques | À stabiliser |
-| Admin & print traités comme familles autonomes | À stabiliser |
-
-### Cartes métier et layouts composites
-
-| Livrable | Statut |
-|---|---|
-| Inventaire des cartes hors `RubriqueCard` | À faire |
-| Décision sur des tokens `panel` / `kpi` / `stat` | À faire |
-| Migration progressive ou documentation d'un legacy local | À faire |
-
-### Gouvernance et outillage
-
-| Livrable | Statut |
-|---|---|
-| Tests unitaires sur `resolvePageFamily` et les exceptions | À faire |
-| Règles de revue pour interdire les gradients de bloc en dur sur les routes migrées | À faire |
-| Vérification route codée ↔ `PageFamilyId` | À faire |
-
----
-
-## Critères de fin
-
-Un bloc est considéré comme migré quand :
-
-1. Toutes ses routes résolvent vers la bonne `PageFamilyId`, sauf exceptions documentées.
-2. Chaque page migrée utilise `PageHeader` (ou l'alias `PageHero`) ou `SectionShell` sans classe hero en dur.
-3. Les cartes standard passent par `FamilyRubriqueCard` ou un `pageFamily` explicite.
-4. Aucun nouveau `linear-gradient` spécifique au bloc n'est ajouté dans les `page.tsx` du bloc.
-5. La fiche `routes/.../README.md` et la colonne palette de `INDEX.md` sont à jour.
-
----
-
-## Bénéfices attendus
-
-- Une lecture claire des 11 types de routes et de leur niveau de traitement.
-- Un fichier par bloc pour fond + hero, puis cartes standard.
-- Des exceptions explicites au lieu de cas dispersés dans les pages.
-- Une doc et un code alignés entre `pages_site`, la charte couleur et `resolvePageFamily`.
-- Une migration incrémentale sans refonte globale.
-
----
-
-## Limites connues
-
-Ces points sont documentés pour éviter qu'ils soient oubliés. Ils ne sont pas tous traités par les phases actuelles.
-
-### Coexistence de plusieurs systèmes couleur
-
-Symptôme :
-
-- `page-families`
-- `block-accents`
-- `RubriqueTheme`
-- `BLOCK_THEME`
-- classes Tailwind en dur
-
-Piste :
-
-- déprécier `block-accents` au profit de `PageFamilyId` + sous-variantes ;
-- mapper `RubriqueTheme` vers `family.card.rubriqueTheme` pendant la transition ;
-- garder `BLOCK_THEME` comme exception locale documentée.
-
-### Cartes métier et layouts spécifiques
-
-Symptôme :
-
-- KPI pilotage ;
-- panneaux dashboard ;
-- grilles admin ;
-- composants encore colorés en dur.
-
-Piste :
-
-- ajouter `family.panel`, `family.kpi`, `family.stat` ;
-- créer des wrappers dédiés ou des variants de composants existants ;
-- inventorier les routes concernées dans `pages_site`.
-
-### Boutons et liens d'action
-
-Symptôme :
-
-- la logique des boutons dépend encore d'autres thèmes que la famille complète.
-
-Piste :
-
-- étendre la définition de famille avec des tokens bouton ;
-- vérifier la cohérence entre fond, carte et action principale.
-
-### Sections dynamiques
-
-Symptôme :
-
-- la couleur peut dépendre du `sectionId`, pas seulement du pathname.
-
-Piste :
-
-- faire passer un contexte de section à `resolvePageFamily` ;
-- ou documenter des sous-familles explicites.
-
-### Dérive des exceptions
-
-Symptôme :
-
-- la liste des overrides peut grossir sans gouvernance.
-
-Piste :
-
-- limiter le nombre d'exceptions par release ;
-- rattacher chaque exception à une fiche `pages_site`.
-
-### Homepage et marketing
-
-Symptôme :
-
-- la homepage reste une famille séparée.
-
-Piste :
-
-- maintenir une séparation volontaire entre homepage et bloc 01 ;
-- documenter ce choix dans l'index.
-
----
-
-## Carte de migration par type
-
-| Type | Couverture attendue | Exemples de routes | Remarque |
-|---|---|---|---|
-| 00 Homepage | autonome | `/` | hors bloc |
-| 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/profil` (alias), `/pilotage`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | cockpit personnel fusionné, exceptions UI et profils détaillés |
-| 02 Agir | famille bloc | `/actions/new`, `/actions/history`, `/signalement`, `/missions/[id]`, `/sections/route`, `/declaration` | famille métier orientée action |
-| 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/profil/impact`, `/reports` | deux sous-teintes logiques sky / red |
-| 04 Réseau & Discussions | famille bloc | `/community`, `/sections/feedback`, `/messagerie`, `/open-data`, `/partners/*` | palette indigo / pink selon les sous-espaces |
-| 05 Apprendre | famille bloc | `/learn/*` | palette yellow + amber |
-| 06 Auth & Onboarding | autonome | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | charte auth dédiée |
-| 07 Institutionnel & Légal | autonome | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | sobriété prioritaire |
-| 08 Système & Utilitaires | autonome | `/form-comparison`, `/preview/actions/new`, `/declaration-simple`, `/reglages`, `/error/429`, `/sections/[sectionId]` | inclut les états et dynamiques utilitaires |
-| 09 Admin & Super-admin | autonome | `/admin/*` | accès restreint |
-| 10 Print & Export | autonome | `/prints/report` | contraintes de lisibilité et d'impression |
-
----
-
-## Fichiers clés
+## Sources de vérité
 
 | Rôle | Chemin |
 |---|---|
-| Plan principal | `documentation/pages_site/PAGE_FAMILIES_PLAN.md` |
-| Guide court | `documentation/development/PAGE_FAMILIES.md` |
-| Index des routes | `documentation/pages_site/INDEX.md` |
-| Charte produit | `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` |
-| Registre code | `apps/web/src/lib/ui/page-families/` |
-| Hero UI | `apps/web/src/components/ui/page-hero.tsx` |
-| Carte UI | `apps/web/src/components/ui/family-rubrique-card.tsx` |
-| Fond global | `apps/web/src/components/ui/vibrant-background.tsx` |
+| registre des familles | `apps/web/src/lib/ui/page-families/families/registry.ts` |
+| manifeste partagé | `apps/web/src/lib/ui/page-families/page-families.manifest.json` |
+| resolver pathname → famille | `apps/web/src/lib/ui/page-families/resolve-page-family.ts` |
+| exceptions | `apps/web/src/lib/ui/page-families/exceptions.ts` |
+| tests | `apps/web/src/lib/ui/page-families/resolve-page-family.test.ts` |
+| index documentaire | `documentation/pages_site/INDEX.md` |
+| mémoire de non-régression | `documentation/pages_site/PAGE_FAMILIES_NON_REGRESSION.md` |
 
----
+## Taxonomie documentaire
 
-## Journal de trace
-
-| Date | Action |
+| # | Famille |
 |---|---|
-| Session 1 | Phases 0–1 : registre `page-families`, `PageHeader` (alias `PageHero`), `SectionShell`, migration bloc 01, exception `/explorer`. |
-| Session 5 | Centralisation exhaustive des routes canoniques du bloc 01 via `lib/accueil-pilotage-routes.ts`. |
-| Session 4 | Reclassification de `/methodologie` vers le bloc 03 Cartographie & Impact et alignement documentaire associé. |
-| Session 2 | Phase 2 : `PageFamilyCardTokens`, `card-presets.ts`, `FamilyRubriqueCard`, migration `/profil/[profile]`. |
-| Session 3 | Correction `ADMIN_CARD` dans `card-presets.ts`. Pilote phase 3 : `/signalement` → `FamilyRubriqueCard`, gradient hero retiré. |
+| 00 | Homepage |
+| 01 | Accueil & Pilotage |
+| 02 | Agir |
+| 03 | Cartographie & Impact |
+| 04 | Réseau & Discussions |
+| 05 | Apprendre |
+| 06 | Auth & Onboarding |
+| 07 | Institutionnel & Légal |
+| 08 | Système & Utilitaires |
+| 09 | Admin & Super-admin |
+| 10 | Print & Export |
 
----
+## État réel
 
-## État de migration par type
+### Fait
 
-| Type | État actuel | Priorité |
+- registre `page-families` ;
+- manifeste partagé ;
+- resolver central ;
+- exceptions nommées ;
+- `VibrantBackground` branché sur le resolver ;
+- tokens hero ;
+- tokens cartes ;
+- test unitaire du resolver ;
+- test manifeste / runtime ;
+- exception `/explorer` ;
+- exception `/methodologie` ;
+- exception `/sections/weather` ;
+- exception `/sections/rejoindre-un-formulaire` ;
+- variante red pour reports / gamification.
+
+### Corrigé dans ce lot
+
+- mapping des sections documentées vers leur vraie famille ;
+- test de non-régression de ces mappings ;
+- suppression de la fausse couleur rouge de Méthodologie dans la doc ;
+- réalignement Communauté vers pink ;
+- générateur `pages_site` rendu non destructif ;
+- ajout d'un audit route ↔ documentation.
+
+### À arbitrer
+
+```txt
+/sections/recycling
+/sections/compost
+/sections/climate
+```
+
+Leur famille produit n'est pas décidée.
+
+Ne pas les déplacer ou les mapper arbitrairement.
+
+## Familles de sections attendues
+
+### Accueil & Pilotage
+
+```txt
+/sections/elus
+```
+
+### Agir
+
+```txt
+/sections/route
+/sections/weather
+/sections/rejoindre-un-formulaire
+```
+
+### Cartographie & Impact
+
+```txt
+/sections/gamification
+```
+
+### Réseau & Discussions
+
+```txt
+/sections/community
+/sections/feedback
+/sections/actors
+/sections/annuaire
+/sections/messagerie
+/sections/open-data
+/sections/funding
+/sections/trash-spotter
+```
+
+## Exceptions nommées
+
+| ID | Route | Résultat |
 |---|---|---|
-| 00 Homepage | documentée, indépendante | faible |
-| 01 Accueil & Pilotage | famille stabilisée, dashboard canonique + alias profil | moyenne |
-| 02 Agir | pilote en cours | critique |
-| 03 Cartographie & Impact | plusieurs routes à valider | critique |
-| 04 Réseau & Discussions | encore hétérogène | critique |
-| 05 Apprendre | à homogénéiser (fond jaune, cartes amber/orange) | moyenne |
-| 06 Auth & Onboarding | stable | faible |
-| 07 Institutionnel & Légal | à stabiliser | moyenne |
-| 08 Système & Utilitaires | à cadrer route par route | critique |
-| 09 Admin & Super-admin | à cadrer | moyenne |
-| 10 Print & Export | à cadrer | critique |
+| `explorer-sommaire` | `/explorer` | famille jaune dédiée |
+| `methodologie-impact` | `/methodologie` | Cartographie & Impact, variante sky actuelle |
+| `weather-operations` | `/sections/weather` | Agir |
+| `join-group-form` | `/sections/rejoindre-un-formulaire` | Agir |
+| `reports-impact` | `/reports`, `/gamification`, `/sections/gamification` | variante red |
+| `partners-indigo` | `/partners/*` | variante réseau partenaires |
+| `error-429` | `/error/429` | état système dédié |
 
----
+## Critères de fin par route
 
-## Prochaine action recommandée
+Une route est considérée alignée quand :
 
-1. Valider visuellement bloc 01 et le pilote bloc 02 (`/signalement`, `/dashboard`).
-2. Compléter le cadrage des familles autonomes 06 à 10.
-3. Migrer `/actions/new` ou `/actions/map` comme second pilote.
-4. Prioriser ensuite les cartes métier et les sections dynamiques.
+1. sa famille est correcte ;
+2. son accès est documenté correctement ;
+3. son fond passe par le resolver ;
+4. son hero utilise la famille ou une exception explicite ;
+5. aucun gradient de bloc n'est réintroduit sans justification ;
+6. la fiche `pages_site` correspond au runtime ;
+7. le test couvre la route si elle est structurante.
+
+## Gouvernance
+
+### Audit de dérive
+
+```bash
+npm run audit:pages-site-drift
+```
+
+### Mode strict
+
+```bash
+npm run check:pages-site-drift
+```
+
+### Règle
+
+Ne pas remettre l'ancien générateur en écriture automatique.
+
+Il ne doit jamais écraser silencieusement :
+
+```txt
+INDEX.md
+README enrichis
+présentations détaillées
+propositions
+mémoires d'idées écartées
+captures
+```
+
+## Travail restant
+
+### P0
+
+- intégrer le check de dérive localement ;
+- exécuter l'audit ;
+- corriger les éventuelles routes encore absentes.
+
+### P1
+
+- arbitrer `recycling`, `compost`, `climate` ;
+- ajouter leur mapping et leur documentation après décision ;
+- vérifier les cartes métier hors `FamilyRubriqueCard`.
+
+### P2
+
+- décider si des tokens `panel`, `kpi` ou `stat` sont nécessaires ;
+- réduire les couleurs codées en dur uniquement lorsqu'un gain réel est démontré.
+
+## Définition de terminé
+
+Le plan peut être clôturé uniquement si :
+
+```txt
+[ ] aucune route UI connue n'est absente de l'index
+[ ] aucune section finalisée n'est absente de l'index
+[ ] chaque route documentée résout vers la bonne famille
+[ ] chaque exception est testée
+[ ] aucune fiche couleur ne contredit le runtime
+[ ] le générateur ne peut plus écraser les docs
+[ ] les 3 sections non classées ont reçu une décision explicite
+```

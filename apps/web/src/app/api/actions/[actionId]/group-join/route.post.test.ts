@@ -34,7 +34,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       user_id: string;
       joined_at?: string;
       participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "import";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
     }> = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
@@ -53,6 +53,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
         method: "POST",
         body: JSON.stringify({
           participantUserId: "user-2",
+          reason: "Ajout direct demandé par le référent.",
         }),
       }),
       { params: Promise.resolve({ actionId: "action-1" }) },
@@ -71,7 +72,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(body.status).toBe("ok");
     expect(body.participantUserId).toBe("user-2");
     expect(body.participationStatus).toBe("confirmed");
-    expect(body.participationSource).toBe("admin");
+    expect(body.participationSource).toBe("admin_override");
     expect(body.participantsCount).toBe(1);
     expect(participants[0]?.user_id).toBe("user-2");
     expect(participants[0]?.participation_status).toBe("confirmed");
@@ -81,6 +82,13 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
         targetActionId: "action-1",
         operation: "admin_add_participant",
         outcome: "success",
+        reason: "Ajout direct demandé par le référent.",
+        targetUserId: "user-2",
+        previousValue: null,
+        newValue: expect.objectContaining({
+          participationStatus: "confirmed",
+          participationSource: "admin_override",
+        }),
       }),
     );
   }, 15000);
@@ -122,6 +130,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
         body: JSON.stringify({
           participantId: "participant-1",
           decision: "reject",
+          reason: "Participant indisponible confirmé.",
         }),
       }),
       { params: Promise.resolve({ actionId: "action-1" }) },
@@ -142,10 +151,47 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       expect.objectContaining({
         actorUserId: "elu-1",
         targetActionId: "action-1",
-        operation: "admin_review_reject",
+        operation: "admin_remove_participant",
         outcome: "success",
+        reason: "Participant indisponible confirmé.",
+        previousValue: expect.objectContaining({
+          participationStatus: "confirmed",
+          participationSource: "group_form",
+        }),
+        newValue: expect.objectContaining({
+          participationStatus: "cancelled",
+          participationSource: "group_form",
+        }),
       }),
     );
+  }, 15000);
+
+  it("rejects admin direct participant add without a valid reason", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-1",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants: [],
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+          reason: "non",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   }, 15000);
 });
 
@@ -294,7 +340,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
       user_id: string;
       joined_at?: string;
       participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "import";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
     }> = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({

@@ -33,7 +33,12 @@ export type ActionParticipantRow = {
   user_id: string;
   joined_at: string;
   participation_status: "pending" | "confirmed" | "cancelled";
-  participation_source: "group_form" | "manual_add" | "admin" | "import";
+  participation_source:
+    | "group_form"
+    | "manual_add"
+    | "admin"
+    | "admin_override"
+    | "import";
 };
 
 export type SpotRow = {
@@ -71,6 +76,10 @@ export type ActionRow = {
   duration_minutes: number;
   notes: string | null;
   status: "pending" | "approved" | "rejected";
+  moderation_visibility?: "visible" | "hidden";
+  hidden_at?: string | null;
+  hidden_by_clerk_id?: string | null;
+  hidden_reason?: string | null;
   action_phase: ActionPhase;
   preparation_data: ActionPreparationData;
   geometry_source?: ActionGeometrySource | null;

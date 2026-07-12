@@ -4,9 +4,10 @@ import { useMemo, useState } from"react";
 import type { ActionStatus } from"@/lib/actions/types";
 import type { ReportScopeKind } from"@/lib/reports/scope";
 import type {
- ModerationActionStatus,
- ModerationCleanPlaceStatus,
- ModerationEntityType,
+  ModerationActionStatus,
+  ModerationCleanPlaceStatus,
+  ModerationEntityType,
+  ModerationVisibility,
 } from"@/lib/admin/moderation-client";
 import type {
  ActionModerationEditDraft,
@@ -84,6 +85,9 @@ export function useAdminWorkflowState() {
  useState<boolean>(false);
  const [moderationConfirmationText, setModerationConfirmationText] =
  useState<string>("");
+ const [moderationReason, setModerationReason] = useState<string>("");
+ const [moderationVisibility, setModerationVisibility] =
+ useState<ModerationVisibility>("unchanged");
  const [selectedActionCreatorId, setSelectedActionCreatorId] =
  useState<string | null>(null);
  const [actionEditDraft, setActionEditDraft] =
@@ -115,6 +119,8 @@ export function useAdminWorkflowState() {
  function resetModerationConfirmationState() {
  setModerationConfirmed(false);
  setModerationConfirmationText("");
+ setModerationReason("");
+ setModerationVisibility("unchanged");
  }
 
  function pushModerationJournal(entry: ModerationJournalEntry) {
@@ -172,6 +178,10 @@ export function useAdminWorkflowState() {
  setModerationConfirmed,
  moderationConfirmationText,
  setModerationConfirmationText,
+ moderationReason,
+ setModerationReason,
+ moderationVisibility,
+ setModerationVisibility,
  selectedActionCreatorId,
  setSelectedActionCreatorId,
  actionEditDraft,

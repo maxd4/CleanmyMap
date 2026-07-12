@@ -43,6 +43,8 @@ export type AdminWorkflowActionState = {
  cleanPlaceStatus:"new" |"validated" |"cleaned";
  moderationConfirmed: boolean;
  moderationConfirmationText: string;
+ moderationReason: string;
+ moderationVisibility: "unchanged" |"visible" |"hidden";
  actionEditDraft: ActionModerationEditDraft | null;
  cleanPlaceEditDraft: CleanPlaceModerationEditDraft | null;
  setModerationResult: Setter<string | null>;
@@ -76,12 +78,17 @@ function buildModerationPayload(
  state: AdminWorkflowActionState,
  trimmedId: string,
 ): ModerationPayload {
+ const reason = state.moderationReason.trim();
  if (state.moderationEntityType ==="action") {
  return {
  entityType:"action",
  id: trimmedId,
  status: state.actionStatus,
+ ...(state.moderationVisibility !=="unchanged"
+ ? { moderationVisibility: state.moderationVisibility }
+ : {}),
  confirmPhrase: state.moderationConfirmationText,
+ ...(reason ? { reason } : {}),
  edits: state.actionEditDraft
  ? buildActionEditPayload(state.actionEditDraft)
  : undefined,
@@ -93,10 +100,30 @@ function buildModerationPayload(
  id: trimmedId,
  status: state.cleanPlaceStatus,
  confirmPhrase: state.moderationConfirmationText,
+ ...(reason ? { reason } : {}),
  edits: state.cleanPlaceEditDraft
  ? buildCleanPlaceEditPayload(state.cleanPlaceEditDraft)
  : undefined,
  };
+}
+
+function actionDraftHasSensitiveImpactEdit(
+ draft: ActionModerationEditDraft | null,
+): boolean {
+ if (!draft) {
+  return false;
+ }
+ return [draft.wasteKg, draft.cigaretteButts, draft.volunteersCount, draft.durationMinutes]
+  .some((value) => value.trim().length > 0);
+}
+
+function requiresModerationReason(state: AdminWorkflowActionState): boolean {
+ return (
+  state.moderationEntityType ==="action" &&
+  (state.actionStatus ==="rejected" ||
+   state.moderationVisibility !=="unchanged" ||
+   actionDraftHasSensitiveImpactEdit(state.actionEditDraft))
+ );
 }
 
 function toOptionalText(value: string): string | null {
@@ -328,6 +355,11 @@ export function createAdminWorkflowActions(
  ) {
  state.setModerationState("error");
       state.setErrorMessage("Veuillez saisir exactement la phrase de confirmation pour valider l'action.");
+ return;
+ }
+ if (requiresModerationReason(state) && state.moderationReason.trim().length < 5) {
+ state.setModerationState("error");
+      state.setErrorMessage("Veuillez renseigner un motif d'au moins 5 caractères pour cette opération sensible.");
  return;
  }
 

@@ -6,7 +6,7 @@ import type { ActionPhase } from "@/lib/actions/types";
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
 export const GROUP_PARTICIPATION_SOURCE = "group_form" as const;
-export const ADMIN_PARTICIPATION_SOURCE = "admin" as const;
+export const ADMIN_PARTICIPATION_SOURCE = "admin_override" as const;
 
 export type ParticipationStatus = ActionParticipantRow["participation_status"];
 export type ParticipationSource = ActionParticipantRow["participation_source"];
@@ -32,6 +32,7 @@ export type ActionPreviewRow = Pick<
   | "volunteers_count"
   | "duration_minutes"
   | "status"
+  | "moderation_visibility"
   | "notes"
   | "action_phase"
 >;
@@ -72,8 +73,8 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes, action_phase";
-const ACTION_PARTICIPATION_COLUMNS = "status, notes";
+  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase";
+const ACTION_PARTICIPATION_COLUMNS = "status, moderation_visibility, notes";
 
 export type JoinableActionMetadata = {
   groupJoinEnabled: boolean;

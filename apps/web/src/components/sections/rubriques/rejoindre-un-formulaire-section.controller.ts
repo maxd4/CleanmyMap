@@ -26,7 +26,7 @@ type JoinActionResponse = {
   alreadyJoined: boolean;
   joinedAt: string;
   participationStatus: "pending" | "confirmed" | "cancelled";
-  participationSource: "group_form" | "admin" | "import";
+  participationSource: "group_form" | "admin" | "admin_override" | "import";
   participationUpdatedAt: string | null;
   participantsCount: number;
 };
@@ -37,7 +37,7 @@ type LeaveActionResponse = {
   alreadyCancelled: boolean;
   joinedAt: string;
   participationStatus: "cancelled";
-  participationSource: "group_form" | "admin" | "import";
+  participationSource: "group_form" | "admin" | "admin_override" | "import";
   participationUpdatedAt: string | null;
   participantsCount: number;
 };
@@ -664,7 +664,7 @@ export function useJoinFormSectionController() {
             status: "ok";
             participantId: string;
             participationStatus: "pending" | "confirmed" | "cancelled";
-            participationSource: "group_form" | "admin" | "import";
+            participationSource: "group_form" | "admin" | "admin_override" | "import";
             participantsCount: number;
           }
         | { error?: string };
@@ -729,7 +729,7 @@ export function useJoinFormSectionController() {
             participantId: string;
             participantUserId: string;
             participationStatus: "pending" | "confirmed" | "cancelled";
-            participationSource: "group_form" | "admin" | "import";
+            participationSource: "group_form" | "admin" | "admin_override" | "import";
             participantsCount: number;
           }
         | { error?: string };

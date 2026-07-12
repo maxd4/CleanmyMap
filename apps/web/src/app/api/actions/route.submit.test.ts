@@ -143,6 +143,12 @@ describe("POST /api/actions", () => {
     expect(response.status).toBe(201);
     expect(body.id).toBe("action-test-1");
     expect(createActionMock).toHaveBeenCalledTimes(1);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "pending",
+      }),
+    );
     expect(resolveActionOrganizersMock).toHaveBeenCalledWith(
       expect.objectContaining({
         organizerAccounts: [],
@@ -165,6 +171,48 @@ describe("POST /api/actions", () => {
       actionId: "action-test-1",
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("auto-approves an admin-like complete action created by its author", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      displayName: "Test User",
+      firstName: "Test",
+      username: "test@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Test User"],
+      role: "admin",
+      badges: [],
+    });
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Test lieu action",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 45,
+      notes: "Formulaire bénévole de test",
+      submissionMode: "complete",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "approved",
+      }),
+    );
   }, 15000);
 
   it("accepts quick pre-action submissions without waste and keeps them pending", async () => {
@@ -296,6 +344,53 @@ describe("POST /api/actions", () => {
     );
   }, 15000);
 
+  it("keeps an admin-like draft action pending instead of submitting it for validation", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      displayName: "Test User",
+      firstName: "Test",
+      username: "test@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Test User"],
+      role: "admin",
+      badges: [],
+    });
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      actionPhase: "post_action_draft",
+      locationLabel: "Test lieu action",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 45,
+      notes: "Brouillon admin de test",
+      submissionMode: "complete",
+      recordType: "action",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "pending",
+        payload: expect.objectContaining({
+          actionPhase: "post_action_draft",
+        }),
+      }),
+    );
+  }, 15000);
+
   it("falls back to the admin organizer when no organizer is provided", async () => {
     const { POST } = await import("./route");
 
@@ -334,7 +429,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        status: "approved",
+        status: "pending",
       }),
     );
   }, 15000);

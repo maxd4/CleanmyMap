@@ -55,7 +55,7 @@ Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas
 
 ## 6. Mémoire persistante et cycle de travail
 
-- Lis `documentation/operations/agent-memory-governance.md` pour la doctrine de mémoire persistante et de clôture de session.
+- Lis la doctrine de mémoire persistante et de clôture de session propre au dépôt avant de prolonger un travail.
 - Avant de répondre sur une tâche complexe, planifie d'abord, puis décompose en sous-tâches logiques si nécessaire.
 - Après chaque modification, teste le cas nominal, les cas limites et les cas d'erreur quand le dépôt le permet.
 - En cas de bug, cherche la cause racine, corrige de manière ciblée et re-teste avant de conclure.

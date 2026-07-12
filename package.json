@@ -40,6 +40,8 @@
     "check:lockfile-policy": "node scripts/check-lockfile-policy.mjs",
     "check:stack-doc-drift": "node scripts/check-stack-doc-drift.mjs",
     "check:agent-skills": "node scripts/check-agent-skill-mirrors.mjs",
+    "audit:pages-site-drift": "node scripts/check-pages-site-route-drift.mjs",
+    "check:pages-site-drift": "node scripts/check-pages-site-route-drift.mjs --strict",
     "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "check:root-files": "node scripts/check-root-file-hygiene.mjs",
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",

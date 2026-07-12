@@ -10,6 +10,7 @@ import {
 export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
 export type ModerationCleanPlaceStatus = "new" | "validated" | "cleaned";
+export type ModerationVisibility = "unchanged" | "visible" | "hidden";
 
 export type AdminActionEditPayload = {
   actorName?: string | null;
@@ -46,7 +47,9 @@ export type ModerationPayload =
       entityType: "action";
       id: string;
       status: ModerationActionStatus;
+      moderationVisibility?: Exclude<ModerationVisibility, "unchanged">;
       confirmPhrase: string;
+      reason?: string;
       edits?: AdminActionEditPayload;
     }
   | {
@@ -54,6 +57,7 @@ export type ModerationPayload =
       id: string;
       status: ModerationCleanPlaceStatus;
       confirmPhrase: string;
+      reason?: string;
       edits?: AdminCleanPlaceEditPayload;
     };
 

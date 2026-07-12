@@ -30,6 +30,31 @@ import {
   type ParticipationStatus,
 } from "./group-participation.helpers";
 
+type ParticipationAuditValue = {
+  participationStatus: ParticipationStatus;
+  participationSource: ParticipationSource;
+  joinedAt: string;
+  updatedAt: string | null;
+};
+
+function buildParticipationAuditValue(
+  row: Pick<
+    ActionParticipantStatusRow,
+    | "created_at"
+    | "joined_at"
+    | "updated_at"
+    | "participation_status"
+    | "participation_source"
+  >,
+): ParticipationAuditValue {
+  return {
+    participationStatus: row.participation_status,
+    participationSource: row.participation_source,
+    joinedAt: resolveJoinedAt(row),
+    updatedAt: resolveParticipationUpdatedAt(row),
+  };
+}
+
 export type JoinableActionItem = {
   id: string;
   created_at: string;
@@ -72,6 +97,7 @@ export async function loadJoinableActions(
     query
       .select(ACTION_PREVIEW_COLUMNS)
       .eq("action_phase", "pre_action")
+      .eq("moderation_visibility", "visible")
       .in("status", ["approved", "pending"])
       .order("action_date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -87,6 +113,7 @@ export async function loadJoinableActions(
       query
         .select(ACTION_PREVIEW_COLUMNS)
         .eq("action_phase", "pre_action")
+        .eq("moderation_visibility", "visible")
         .eq("id", params.actionId)
         .maybeSingle(),
     );
@@ -366,6 +393,8 @@ export async function reviewActionParticipation(
   joinedAt: string;
   updatedAt: string | null;
   participantsCount: number;
+  previousValue: ParticipationAuditValue;
+  newValue: ParticipationAuditValue;
 }> {
   const existing = await readParticipantRecordById(supabase, {
     actionId: params.actionId,
@@ -403,6 +432,8 @@ export async function reviewActionParticipation(
       joinedAt: resolveJoinedAt(existing),
       updatedAt: resolveParticipationUpdatedAt(existing),
       participantsCount,
+      previousValue: buildParticipationAuditValue(existing),
+      newValue: buildParticipationAuditValue(existing),
     };
   }
 
@@ -430,6 +461,8 @@ export async function reviewActionParticipation(
     joinedAt: resolveJoinedAt(updatedRecord),
     updatedAt: resolveParticipationUpdatedAt(updatedRecord),
     participantsCount,
+    previousValue: buildParticipationAuditValue(existing),
+    newValue: buildParticipationAuditValue(updatedRecord),
   };
 }
 
@@ -447,14 +480,23 @@ export async function addActionParticipationByAdmin(
   joinedAt: string;
   updatedAt: string | null;
   participantsCount: number;
+  previousValue: ParticipationAuditValue | null;
+  newValue: ParticipationAuditValue;
 }> {
   const actionResult = await runSingleActionQuery<{
     status: "pending" | "approved" | "rejected";
+    moderation_visibility?: "visible" | "hidden" | null;
     action_phase: ActionPhase;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
   if (!actionResult) {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  if (actionResult.moderation_visibility === "hidden") {
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;
@@ -514,6 +556,8 @@ export async function addActionParticipationByAdmin(
       joinedAt: resolveJoinedAt(updatedRecord),
       updatedAt: resolveParticipationUpdatedAt(updatedRecord),
       participantsCount,
+      previousValue: buildParticipationAuditValue(existing),
+      newValue: buildParticipationAuditValue(updatedRecord),
     };
   }
 
@@ -538,6 +582,8 @@ export async function addActionParticipationByAdmin(
     joinedAt: resolveJoinedAt(insertedRecord),
     updatedAt: resolveParticipationUpdatedAt(insertedRecord),
     participantsCount,
+    previousValue: null,
+    newValue: buildParticipationAuditValue(insertedRecord),
   };
 }
 
@@ -611,11 +657,18 @@ export async function joinActionParticipation(
 }> {
   const actionResult = await runSingleActionQuery<{
     status: "pending" | "approved" | "rejected";
+    moderation_visibility?: "visible" | "hidden" | null;
     action_phase: ActionPhase;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
   if (!actionResult) {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  if (actionResult.moderation_visibility === "hidden") {
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;

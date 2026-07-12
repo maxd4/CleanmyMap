@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from"vitest";
+import { beforeEach, describe, expect, it, vi } from"vitest";
 import { ModerationClientError, postAdminModeration } from"@/lib/admin/moderation-client";
 import { runImportConfirm, runImportDryRun } from"./services";
 import {
@@ -68,6 +68,8 @@ function createState(
  cleanPlaceStatus:"validated",
  moderationConfirmed: true,
  moderationConfirmationText:"CONFIRMER MODERATION",
+ moderationReason:"",
+ moderationVisibility:"unchanged",
  actionEditDraft: null,
  cleanPlaceEditDraft: null,
  setModerationResult: vi.fn(),
@@ -78,6 +80,10 @@ function createState(
 }
 
 describe("admin workflow actions", () => {
+ beforeEach(() => {
+ vi.clearAllMocks();
+ });
+
  it("surfaces dry-run errors in state", async () => {
  vi.mocked(runImportDryRun).mockRejectedValueOnce(new Error("Dry-run invalide."));
  const state = createState();
@@ -151,6 +157,7 @@ describe("admin workflow actions", () => {
  id:"action-1",
  });
  const state = createState({
+ moderationReason:"Correction des données terrain validée.",
  actionEditDraft: {
  actorName:"Marie Admin",
  associationName:"Action spontanée",
@@ -193,6 +200,7 @@ describe("admin workflow actions", () => {
  entityType:"action",
  id:"action-1",
  status:"approved",
+ reason:"Correction des données terrain validée.",
  edits: expect.objectContaining({
  actionDate:"2026-04-22",
  locationLabel:"Canal Saint-Martin",
@@ -203,6 +211,56 @@ describe("admin workflow actions", () => {
  plastiqueKg: 1,
  }),
  }),
+ }),
+ );
+ });
+
+ it("blocks sensitive action moderation when the reason is missing", async () => {
+ const state = createState({
+ actionStatus:"rejected",
+ moderationReason:"non",
+ });
+ const actions = createAdminWorkflowActions({
+ state,
+ csvExportUrl:"/api/reports/actions.csv",
+ jsonExportUrl:"/api/reports/actions.json",
+ mutatePreview: vi.fn(),
+ });
+
+ await actions.onModerateEntity();
+
+ expect(state.setModerationState).toHaveBeenCalledWith("error");
+ expect(state.setErrorMessage).toHaveBeenLastCalledWith(
+ "Veuillez renseigner un motif d'au moins 5 caractères pour cette opération sensible.",
+ );
+ expect(postAdminModeration).not.toHaveBeenCalled();
+ });
+
+ it("sends moderation visibility changes with the reason", async () => {
+ vi.mocked(postAdminModeration).mockResolvedValueOnce({
+ status:"ok",
+ entityType:"action",
+ id:"action-1",
+ });
+ const state = createState({
+ moderationVisibility:"hidden",
+ moderationReason:"Contenu à vérifier avant publication.",
+ });
+ const actions = createAdminWorkflowActions({
+ state,
+ csvExportUrl:"/api/reports/actions.csv",
+ jsonExportUrl:"/api/reports/actions.json",
+ mutatePreview: vi.fn(),
+ });
+
+ await actions.onModerateEntity();
+
+ expect(postAdminModeration).toHaveBeenCalledWith(
+ expect.objectContaining({
+ entityType:"action",
+ id:"action-1",
+ moderationVisibility:"hidden",
+ reason:"Contenu à vérifier avant publication.",
  }),
  );
  });

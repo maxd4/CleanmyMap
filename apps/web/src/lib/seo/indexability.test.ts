@@ -22,13 +22,19 @@ describe("indexability helpers", () => {
     expect(publicSitemapPaths).not.toContain("/form-comparison");
     expect(publicSitemapPaths).not.toContain("/sign-in");
     expect(publicSitemapPaths).not.toContain("/sign-up");
+
     expect(publicSitemapPaths).toContain("/actions/map");
     expect(publicSitemapPaths).toContain(EXPLORER_ROUTE);
+    expect(publicSitemapPaths).toContain("/learn/ecole");
+
+    // Aucun page.tsx canonique /learn n'existe dans l'état audité.
+    expect(publicSitemapPaths).not.toContain("/learn");
 
     for (const prefix of privatePrefixes) {
       expect(
         publicSitemapPaths.some(
-          (pathname) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+          (pathname) =>
+            pathname === prefix || pathname.startsWith(`${prefix}/`),
         ),
       ).toBe(false);
     }
@@ -41,8 +47,9 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath("/actions/new")).toBe(true);
     expect(isPrivateAppPath("/partners/dashboard")).toBe(true);
     expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
+
     expect(isPrivateAppPath("/actions/map")).toBe(false);
-    expect(isPrivateAppPath("/learn")).toBe(false);
+    expect(isPrivateAppPath("/learn/ecole")).toBe(false);
   });
 
   it("only emits public visible section routes for the sitemap", () => {
@@ -52,6 +59,7 @@ describe("indexability helpers", () => {
     const privateRoutes = [...privateSectionRoutes] as readonly string[];
 
     expect(publicVisibleRoutes.length).toBeGreaterThan(0);
+
     for (const route of publicVisibleRoutes) {
       expect(route.startsWith("/sections/")).toBe(true);
       expect(isPrivateAppPath(route)).toBe(false);

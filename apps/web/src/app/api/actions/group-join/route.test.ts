@@ -30,6 +30,7 @@ type ActionRow = {
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
+  moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
 };
@@ -42,7 +43,7 @@ type ParticipantRow = {
   user_id: string;
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "import";
+  participation_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
 type ManyResult<T> = {
@@ -82,7 +83,7 @@ type ParticipantsChain = {
     user_id: string;
     joined_at?: string;
     participation_status?: "pending" | "confirmed" | "cancelled";
-    participation_source?: "group_form" | "admin" | "import";
+    participation_source?: "group_form" | "admin" | "admin_override" | "import";
   }) => ParticipantsChain;
   then: (
     resolve: (value: {
@@ -130,6 +131,12 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
         if (state.filters["status"] && action["status"] !== state.filters["status"]) {
           return false;
         }
+        if (
+          state.filters["moderation_visibility"] &&
+          (action["moderation_visibility"] ?? "visible") !== state.filters["moderation_visibility"]
+        ) {
+          return false;
+        }
         const allowedActionIds = state.inFilters["id"];
         if (allowedActionIds && !allowedActionIds.includes(action["id"])) {
           return false;
@@ -147,6 +154,12 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
           return false;
         }
         if (state.filters["status"] && action["status"] !== state.filters["status"]) {
+          return false;
+        }
+        if (
+          state.filters["moderation_visibility"] &&
+          (action["moderation_visibility"] ?? "visible") !== state.filters["moderation_visibility"]
+        ) {
           return false;
         }
         const allowedActionIds = state.inFilters["id"];
@@ -167,6 +180,12 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
             return false;
           }
           if (state.filters["status"] && action["status"] !== state.filters["status"]) {
+            return false;
+          }
+          if (
+            state.filters["moderation_visibility"] &&
+            (action["moderation_visibility"] ?? "visible") !== state.filters["moderation_visibility"]
+          ) {
             return false;
           }
           const allowedActionIds = state.inFilters["id"];
@@ -305,7 +324,7 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
         user_id: string;
         joined_at?: string;
         participation_status?: "pending" | "confirmed" | "cancelled";
-        participation_source?: "group_form" | "admin" | "import";
+        participation_source?: "group_form" | "admin" | "admin_override" | "import";
       }) => {
         const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
         state.inserting = {
@@ -664,6 +683,35 @@ describe("POST /api/actions/group-join", () => {
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });
 
+  it("does not return actions hidden by moderation visibility", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createSupabaseMock({
+        actions: [
+          makeVisibleGroupAction({
+            id: "action-hidden",
+            created_at: "2026-06-01T10:00:00Z",
+            action_date: "2026-06-10",
+            location_label: "Parc Nord",
+            volunteers_count: 12,
+            duration_minutes: 45,
+            status: "pending",
+            moderation_visibility: "hidden",
+            action_phase: "pre_action",
+            notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+          }),
+        ],
+        participants: [],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/group-join?limit=6"));
+    const body = (await response.json()) as { items?: unknown[] };
+
+    expect(response.status).toBe(200);
+    expect(body.items).toEqual([]);
+  });
+
   it("creates a pending request for an approved action form", async () => {
     const participants: ParticipantRow[] = [];
     const supabase = createSupabaseMock({
@@ -794,10 +842,12 @@ describe("POST /api/actions/group-join", () => {
     expect(participants[0]?.participation_source).toBe("group_form");
   });
 
-  it("keeps normal joins pending for admin-like users", async () => {
+  it.each(["admin", "elu", "max"] as const)(
+    "keeps normal joins pending for %s users",
+    async (role) => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-1",
-      role: "admin",
+        role,
     });
 
     const participants: ParticipantRow[] = [];
@@ -827,15 +877,19 @@ describe("POST /api/actions/group-join", () => {
 
     const body = (await response.json()) as {
       participationStatus?: string;
+        participationSource?: string;
       participantsCount?: number;
     };
 
     expect(response.status).toBe(200);
     expect(body.participationStatus).toBe("pending");
+      expect(body.participationSource).toBe("group_form");
     expect(body.participantsCount).toBe(0);
     expect(participants[0]?.participation_status).toBe("pending");
+      expect(participants[0]?.participation_source).toBe("group_form");
     expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
-  });
+    },
+  );
 
   it("rejects joining a pending action", async () => {
     const supabase = createSupabaseMock({

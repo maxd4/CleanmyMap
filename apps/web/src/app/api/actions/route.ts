@@ -464,17 +464,13 @@ export async function POST(request: Request) {
       organizers: organizerResolution.organizers,
       manualParticipants: participantResolution.participants,
       status:
-        normalizedPayload.actionPhase === "pre_action"
-          ? canAutoApproveOwnSubmission
-            ? "approved"
-            : "pending"
-          : normalizedPayload.recordType === "action"
-            ? isQuickSubmission
+        normalizedPayload.recordType === "action"
+          ? normalizedPayload.actionPhase === "post_action_draft"
+            ? "pending"
+            : canAutoApproveOwnSubmission
               ? "approved"
-              : canAutoApproveOwnSubmission
-                ? "approved"
-                : "pending"
-            : resolveActionCreationStatus(canAutoApproveOwnSubmission),
+              : "pending"
+          : resolveActionCreationStatus(canAutoApproveOwnSubmission),
     });
 
     emitActionCreated({

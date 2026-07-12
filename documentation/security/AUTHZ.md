@@ -67,6 +67,29 @@ Règle de lecture:
 - parcours normal: créer, rejoindre, modérer selon le rôle métier et la propriété de l'action;
 - dérogation admin: explicite, serveur, journalisée, réservée aux rôles `admin`, `elu` et `max`;
 - un admin qui rejoint via le flux normal reste traité comme une demande normale `group_form`.
+- un organisateur ou coorganisateur autorisé peut gérer la file de sa propre action sans devenir modérateur global;
+- une pré-action ouverte au groupe reste une action prévue, pas une collecte validée ni une preuve d'impact.
+
+Règle de visibilité:
+
+- le masquage de modération utilise `moderation_visibility`, séparé du statut de publication;
+- une action masquée est exclue des listes publiques, de la carte et de la page Formulaire de groupe;
+- la restauration de visibilité ne valide pas automatiquement l'action et ne contourne pas le statut métier.
+
+Règle d'audit:
+
+- les opérations sensibles passent par le journal d'audit admin existant;
+- `appendActionModerationAudit(...)` centralise le contrat d'audit action avec auteur, action cible, opération, issue, motif obligatoire si sensible, valeurs avant/après et cible utilisateur éventuelle;
+- les nouvelles dérogations de participation utilisent `participation_source = admin_override`; `admin` reste une valeur historique acceptée en lecture;
+- un retrait admin d'un participant confirmé est journalisé comme `admin_remove_participant`, distinct d'un refus de demande en attente;
+- le journal d'audit d'une action est lisible par le créateur, les organisateurs/coorganisateurs autorisés et les rôles `admin`, `elu`, `max`;
+- les motifs sensibles doivent contenir au moins 5 caractères après trim;
+- les détails techniques libres ne doivent pas écraser les champs canoniques d'audit.
+
+Limites actuelles:
+
+- `change_organizer` n'a pas encore de commande produit dédiée; ne pas l'implémenter via une édition silencieuse des coorganisateurs;
+- `reopen_action` n'est pas modélisé tant qu'aucun statut de clôture réel n'existe.
 
 ### Côté Client (Composants React)
 Utiliser le hook de session ou les fonctions de `lib/authz` si nécessaire.
