@@ -39,43 +39,6 @@ export async function POST(request: Request) {
 }
 ```
 
-## API Endpoint
-
-```
-GET /api/system/backpressure
-```
-
-Response:
-```json
-{
-  "import": { "active": 1, "queued": 2, "available": false },
-  "batch": { "active": 0, "queued": 0, "available": true },
-  "event": { "active": 5, "queued": 10, "available": false },
-  "timestamp": 1714567890000
-}
-```
-
-## UI Feedback Component
-
-```typescript
-import { BackpressureFeedback } from "@/components/ui/backpressure-feedback";
-
-<BackpressureFeedback
-  status="queued"
-  queuePosition={3}
-  estimatedTime={15}
-  showDetails={true}
-/>
-```
-
-### Status Types
-- `idle` - No operation
-- `loading` - Initial load
-- `processing` - Active work
-- `queued` - Waiting for capacity
-- `success` - Completed
-- `error` - Failed
-
 ## Applied To
 
 ### Routes with Backpressure
@@ -103,13 +66,12 @@ When backpressure triggers:
 
 ## Monitoring
 
-Check backpressure status via:
-```bash
-curl https://cleanmymap.com/api/system/backpressure
-```
+Le backpressure reste un mécanisme interne côté serveur. Il n'expose plus d'endpoint
+de supervision UI dédié dans le dépôt courant.
 
-The client hook should only poll while the screen is visible. When the tab loses focus
-or the panel is not active, suspend refreshes instead of keeping a live interval running.
+Conserver les contrôles au plus près des routes qui exécutent les opérations lourdes.
+Si un suivi devient nécessaire, l'implémenter au niveau de la route ou du tableau de
+bord concerné, sans polling de fond générique.
 
 ## Future Enhancements
 

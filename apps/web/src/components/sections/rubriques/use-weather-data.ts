@@ -17,6 +17,10 @@ import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-locat
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { formatDateShort } from "@/components/sections/rubriques/helpers";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
+import {
+  readStoredWeatherLocation,
+  storeWeatherLocation,
+} from "./weather-location-storage";
 import type {
   OpenMeteoResponse,
   WeatherDataStatus,
@@ -24,8 +28,6 @@ import type {
   WeatherLocationSuggestion,
   WeatherPoint,
 } from "./weather-types";
-
-const WEATHER_LOCATION_STORAGE_KEY = "cmm.weather.selected-location";
 
 const DEFAULT_LOCATION: WeatherLocation = {
   label: "France",
@@ -48,51 +50,6 @@ type ReverseLocationResponse = {
 
 type WeatherIssue = "weather_unavailable" | "weather_empty" | null;
 
-function isWeatherLocation(value: unknown): value is WeatherLocation {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<WeatherLocation>;
-  return (
-    typeof candidate.label === "string" &&
-    typeof candidate.subtitle === "string" &&
-    typeof candidate.latitude === "number" &&
-    typeof candidate.longitude === "number" &&
-    (typeof candidate.importance === "number" || candidate.importance === null)
-  );
-}
-
-function readStoredWeatherLocation(): WeatherLocation | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(WEATHER_LOCATION_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as unknown;
-    return isWeatherLocation(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function storeWeatherLocation(location: WeatherLocation): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(WEATHER_LOCATION_STORAGE_KEY, JSON.stringify(location));
-  } catch {
-    // Silent fallback: the weather screen still works without persistence.
-  }
-}
-
 function buildFallbackWeatherLocation(label: string, subtitle: string | null): WeatherLocation {
   return {
     label: label.trim() || DEFAULT_LOCATION.label,
@@ -103,21 +60,19 @@ function buildFallbackWeatherLocation(label: string, subtitle: string | null): W
   };
 }
 
-async function resolveWeatherLocationFromPreference(
-  preference: NonNullable<ReturnType<typeof extractTerritoryLocationPreferenceFromMetadata>>,
+async function resolveWeatherLocationFromLabel(
+  label: string,
+  subtitle: string | null,
 ): Promise<WeatherLocation> {
-  if (preference.level === "country") {
-    return buildFallbackWeatherLocation(preference.label, preference.subtitle ?? "Vue nationale");
-  }
-
-  const localSuggestion = getLocalGeoAddressSuggestions(preference.label, 1)[0];
+  const fallback = buildFallbackWeatherLocation(label, subtitle);
+  const localSuggestion = getLocalGeoAddressSuggestions(label, 1)[0];
   if (localSuggestion) {
     return localSuggestion;
   }
 
   try {
     const response = await fetch(
-      `/api/geo/address-suggestions?q=${encodeURIComponent(preference.label)}&limit=1`,
+      `/api/geo/address-suggestions?q=${encodeURIComponent(label)}&limit=1`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -136,7 +91,17 @@ async function resolveWeatherLocationFromPreference(
     // Ignore network or parsing failures and fall back to a neutral label.
   }
 
-  return buildFallbackWeatherLocation(
+  return fallback;
+}
+
+async function resolveWeatherLocationFromPreference(
+  preference: NonNullable<ReturnType<typeof extractTerritoryLocationPreferenceFromMetadata>>,
+): Promise<WeatherLocation> {
+  if (preference.level === "country") {
+    return buildFallbackWeatherLocation(preference.label, preference.subtitle ?? "Vue nationale");
+  }
+
+  return resolveWeatherLocationFromLabel(
     preference.label,
     preference.subtitle ?? "Localisation choisie",
   );
@@ -252,7 +217,10 @@ export function useWeatherData() {
     setSelectedLocation(location);
     setLocationQuery(location.label);
     setSelectedForecastDayIndex(0);
-    storeWeatherLocation(location);
+    storeWeatherLocation({
+      label: location.label,
+      subtitle: location.subtitle,
+    });
   };
 
   useEffect(() => {
@@ -265,16 +233,28 @@ export function useWeatherData() {
       return;
     }
 
-    hasResolvedInitialLocationRef.current = true;
-    hasManualLocationRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      setSelectedLocation(storedLocation);
-      setLocationQuery(storedLocation.label);
-      setSelectedForecastDayIndex(0);
-    }, 0);
+    let isCancelled = false;
+
+    void resolveWeatherLocationFromLabel(storedLocation.label, storedLocation.subtitle).then(
+      (location) => {
+        if (isCancelled || hasResolvedInitialLocationRef.current || hasManualLocationRef.current) {
+          return;
+        }
+
+        hasResolvedInitialLocationRef.current = true;
+        hasManualLocationRef.current = true;
+        setSelectedLocation(location);
+        setLocationQuery(location.label);
+        setSelectedForecastDayIndex(0);
+        storeWeatherLocation({
+          label: location.label,
+          subtitle: location.subtitle,
+        });
+      },
+    );
 
     return () => {
-      window.clearTimeout(timeoutId);
+      isCancelled = true;
     };
   }, []);
 

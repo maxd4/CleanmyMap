@@ -11,7 +11,7 @@
 
 ## Vue d'ensemble
 
-La page aide à choisir le bon créneau d’action et à préparer le terrain.
+La page aide à choisir le bon créneau d'action et à préparer le terrain.
 
 Elle combine :
 
@@ -20,20 +20,20 @@ Elle combine :
 - des prévisions horaires ;
 - une recommandation de vigilance ;
 - une checklist de sécurité ;
-- un kit conseillé selon le format d’action.
+- un kit conseillé selon le format d'action.
 
 ## Parcours
 
 ### 1. Choix du lieu
 
-L’utilisateur saisit une commune, une ville ou un lieu précis.
+L'utilisateur saisit une commune, une ville ou un lieu précis.
 
 Le composant de recherche :
 
 - propose des suggestions ;
 - gère le clavier ;
 - conserve la sélection active ;
-- réouvre le champ quand l’utilisateur recommence une recherche.
+- réouvre le champ quand l'utilisateur recommence une recherche.
 
 ### 2. Consultation météo
 
@@ -49,15 +49,15 @@ Une fois la localisation définie, la page affiche :
 
 La colonne de préparation résume :
 
-- l’équipement ;
+- l'équipement ;
 - la durée indicative ;
-- l’hydratation ;
+- l'hydratation ;
 - la vigilance terrain ;
 - les gestes de sécurité.
 
 ### 4. Sécurité
 
-La page rappelle ce qu’il ne faut pas toucher :
+La page rappelle ce qu'il ne faut pas toucher :
 
 - déchets dangereux ;
 - objets suspects ;
@@ -82,7 +82,7 @@ La météo est en cours de chargement.
 
 ### `empty`
 
-Aucune donnée météo exploitable n’est disponible.
+Aucune donnée météo exploitable n'est disponible.
 
 ### `error`
 
@@ -95,6 +95,6 @@ Les prévisions et les recommandations sont disponibles.
 ## Notes d'audit
 
 - La page reste publique.
-- La route `guide` n’est qu’un alias de confort vers cette page.
-- La documentation doit rester centrée sur la météo d’action, pas sur une météo d’illustration.
-- Aucun dossier photo n’est requis ici tant qu’aucune capture officielle n’est produite.
+- La route `guide` n'est qu'un alias de confort vers cette page.
+- La documentation doit rester centrée sur la météo d'action, pas sur une météo d'illustration.
+- Aucun dossier photo n'est requis ici tant qu'aucune capture officielle n'est produite.

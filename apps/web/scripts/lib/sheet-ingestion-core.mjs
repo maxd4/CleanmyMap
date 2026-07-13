@@ -244,8 +244,42 @@ export async function sleep(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function normalizeGeocodeLabel(rawAddress) {
+  if (typeof rawAddress !== "string") {
+    return null;
+  }
+
+  const normalized = fixMojibake(rawAddress)
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized || normalized.length > 120) {
+    return null;
+  }
+
+  if (
+    /(?:https?:\/\/|www\.)/i.test(normalized) ||
+    /[^\s]+@[^\s]+\.[^\s]+/.test(normalized) ||
+    /[<>`{}[\]\\]/.test(normalized)
+  ) {
+    return null;
+  }
+
+  if (!/^[\p{L}\p{N}\s''.,;:()/-]+$/u.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export async function geocodeAddress(address, params) {
-  const query = encodeURIComponent(`${address}, Paris, France`);
+  const normalizedAddress = normalizeGeocodeLabel(address);
+  if (!normalizedAddress) {
+    return { latitude: null, longitude: null };
+  }
+
+  const query = encodeURIComponent(`${normalizedAddress}, Paris, France`);
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=fr&q=${query}`;
   const response = await fetch(url, {
     headers: {
@@ -274,17 +308,22 @@ export function createGeocodeResolver(params) {
   const cache = new Map();
 
   return async function resolve(address) {
-    if (!cache.has(address)) {
+    const normalizedAddress = normalizeGeocodeLabel(address);
+    if (!normalizedAddress) {
+      return { latitude: null, longitude: null };
+    }
+
+    if (!cache.has(normalizedAddress)) {
       const resolved = await geocodeAddress(address, {
         userAgent: params.userAgent,
         acceptLanguage: params.acceptLanguage ?? "fr",
       });
-      cache.set(address, resolved);
+      cache.set(normalizedAddress, resolved);
       if (delayMs > 0) {
         await sleep(delayMs);
       }
     }
-    return cache.get(address) ?? { latitude: null, longitude: null };
+    return cache.get(normalizedAddress) ?? { latitude: null, longitude: null };
   };
 }
 

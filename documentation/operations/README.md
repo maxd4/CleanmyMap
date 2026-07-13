@@ -30,8 +30,8 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 
 ### Mémoire de session
 - `agent-memory-governance.md` - doctrine de mémoire persistante, cycle de travail autonome et clôture de session
-- `../sessions/history/latest-session.md` - mémoire volatile de la dernière session
-- `../project_context.md` - contexte semi-stable du projet
+- résumé de clôture de la dernière session
+- contexte courant du projet
 
 ### Sécurité publication et config
 - `pre-release-security-check.md`

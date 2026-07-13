@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "./types";
 
 export type ReportsWeather = {
@@ -300,12 +299,12 @@ export function detailLevelToModules(id: DetailLevelId): ModuleState {
 }
 
 export function buildRecentReports(params: {
-  overview?: PilotageOverview | null;
+  overviewGeneratedAt?: string | null;
   activeScopeLabel: string;
   period: PeriodId;
   detailLevel: DetailLevelId;
 }): RecentReportRow[] {
-  const generatedAt = formatDateTime(params.overview?.generatedAt);
+  const generatedAt = formatDateTime(params.overviewGeneratedAt ?? undefined);
   const windows: Array<{ key: PeriodId; detail: DetailLevelId; period: string }> = [
     { key: "six_months", detail: params.detailLevel, period: periodLabel(params.period) },
     { key: "current_year", detail: "default", period: "Année en cours" },

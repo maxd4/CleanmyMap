@@ -12,7 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { readFile, writeFile, sha256, nowISO, PROJECT_ROOT } from './utils';
+import { writeFile, sha256, nowISO, PROJECT_ROOT } from './utils';
 import type { BackupEntry, BackupManifest } from './types';
 
 // ============================================================

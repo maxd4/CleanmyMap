@@ -1,27 +1,11 @@
-"use client";
-
-import { useMemo } from "react";
 import { ArrowRight, CalendarDays, Eye, FileText, Map, ShieldCheck, Sparkles } from "lucide-react";
-import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
-import type { ActionDataContract } from "@/lib/actions/data-contract";
-import type { CommunityEventItem } from "@/lib/community/http";
 import type { ReportModel } from "@/components/reports/web-document/types";
 import { toFrInt, toFrNumber } from "@/components/reports/web-document/analytics";
 import { SectionHeader } from "@/components/ui/page-structure";
 
-type ReportsWeather = {
-  current?: {
-    temperature_2m?: number;
-    precipitation?: number;
-    wind_speed_10m?: number;
-  };
-} | null;
-
 type ReportsImpactReadingsSectionProps = {
-  contracts: ActionDataContract[];
-  communityEvents: CommunityEventItem[];
-  weather: ReportsWeather;
+  report: ReportModel;
 };
 
 type SnapshotItem = {
@@ -128,19 +112,9 @@ function SnapshotGroupCard({ group }: { group: SnapshotGroup }) {
 }
 
 export function ReportsImpactReadingsSection({
-  contracts,
-  communityEvents,
-  weather,
+  report,
 }: ReportsImpactReadingsSectionProps) {
-  const model = useReportsWebDocumentModel({
-    initialContracts: contracts,
-    initialCommunityEvents: communityEvents,
-    initialWeather: weather,
-  });
-
-  const report = model.report;
-
-  const snapshotGroups = useMemo(() => buildSnapshotGroups(report), [report]);
+  const snapshotGroups = buildSnapshotGroups(report);
 
   return (
     <CmmGrid

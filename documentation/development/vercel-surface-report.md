@@ -6,14 +6,14 @@ Ce rapport est généré à partir de l'arbre courant du dépôt. Il sert à vis
 
 | Surface | Entrées | Invocations | Edge Requests | Origin Transfer |
 | --- | --- | --- | --- | --- |
-| API routes | 70 | élevé | faible | moyen |
-| Pages dynamiques | 19 | moyen | faible | faible |
-| Middleware / proxy | 1 | élevé | élevé | faible |
-| Clerk | 80 | élevé | moyen | faible |
-| Supabase | 118 | élevé | faible | moyen |
+| API routes | 73 | élevé | faible | moyen |
+| Pages dynamiques | 21 | moyen | faible | faible |
+| Middleware / proxy | 0 | faible | faible | faible |
+| Clerk | 89 | élevé | faible | faible |
+| Supabase | 128 | élevé | faible | moyen |
 | PostHog | 8 | moyen | faible | moyen |
 | Sentry | 4 | faible | faible | faible |
-| Leaflet | 12 | faible | faible | élevé |
+| Leaflet | 11 | faible | faible | élevé |
 
 ## Lecture du risque
 
@@ -26,14 +26,17 @@ Ce rapport est généré à partir de l'arbre courant du dépôt. Il sert à vis
 Risque estimé: Invocations **élevé** / Edge Requests **faible** / Origin Transfer **moyen**.
 
 Chaque route API peut déclencher une invocation Vercel. Les exports, les routes auth et les endpoints no-store augmentent surtout la fréquence d'appels et le coût d'origine.
-Les lectures de profil et de gamification montées au rendu doivent privilégier un cache `private` court et des bornes modestes, plutôt qu'un rafraîchissement systématique au montage.
 
 ### Inventaire
 
+- `apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts`
 - `apps/web/src/app/api/account/profile-role/route.ts` — auth
+- `apps/web/src/app/api/actions/[actionId]/audit/route.ts` — force-dynamic
 - `apps/web/src/app/api/actions/[actionId]/group-join/route.ts` — auth, force-dynamic
+- `apps/web/src/app/api/actions/[actionId]/route.ts` — auth, force-dynamic
 - `apps/web/src/app/api/actions/group-join/route.ts` — auth, force-dynamic
 - `apps/web/src/app/api/actions/import/route.ts`
+- `apps/web/src/app/api/actions/map/route.ts` — force-dynamic
 - `apps/web/src/app/api/actions/prefill/route.ts` — auth
 - `apps/web/src/app/api/actions/route.ts` — auth, force-dynamic
 - `apps/web/src/app/api/admin/codex-usage/route.ts`
@@ -62,16 +65,15 @@ Les lectures de profil et de gamification montées au rendu doivent privilégier
 - `apps/web/src/app/api/documentation/[slug]/route.ts`
 - `apps/web/src/app/api/email/test/route.ts`
 - `apps/web/src/app/api/environmental-impact/route.ts` — auth
-- `apps/web/src/app/api/gamification/analytics/funnel/route.ts`
-- `apps/web/src/app/api/gamification/analytics/points/route.ts` — auth, cache court
+- `apps/web/src/app/api/gamification/analytics/funnel/route.ts` — force-dynamic
+- `apps/web/src/app/api/gamification/analytics/points/route.ts` — auth
 - `apps/web/src/app/api/gamification/badges/[userId]/increment/route.ts` — auth
 - `apps/web/src/app/api/gamification/badges/[userId]/route.ts` — auth
 - `apps/web/src/app/api/gamification/badges/list/route.ts` — auth
-- `apps/web/src/app/api/gamification/leaderboard/route.ts` — auth, cache court
-- `apps/web/src/app/api/gamification/me/route.ts` — auth, cache court
+- `apps/web/src/app/api/gamification/leaderboard/route.ts` — auth
+- `apps/web/src/app/api/gamification/me/route.ts` — auth
 - `apps/web/src/app/api/gamification/points/add/route.ts` — auth
-- `apps/web/src/app/api/gamification/points/history/route.ts` — auth, cache court
-- `apps/web/src/app/api/gamification/points/me/route.ts` — auth, cache court
+- `apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts`
 - `apps/web/src/app/api/gamification/quiz/progress/route.ts` — auth
 - `apps/web/src/app/api/gamification/referrals/route.ts` — auth
 - `apps/web/src/app/api/gamification/xp_audit/admin/route.ts`
@@ -87,7 +89,7 @@ Les lectures de profil et de gamification montées au rendu doivent privilégier
 - `apps/web/src/app/api/recycling/breakdown/route.ts`
 - `apps/web/src/app/api/reports/actions.csv/route.ts`
 - `apps/web/src/app/api/reports/actions.json/route.ts`
-- `apps/web/src/app/api/reports/elus-dossier/route.ts`
+- `apps/web/src/app/api/reports/elus-dossier/route.ts` — no-store
 - `apps/web/src/app/api/reports/governance-monthly/route.ts`
 - `apps/web/src/app/api/route/recommend/route.ts` — auth
 - `apps/web/src/app/api/sandbox/runbook-checks/route.ts`
@@ -95,10 +97,10 @@ Les lectures de profil et de gamification montées au rendu doivent privilégier
 - `apps/web/src/app/api/services/route.ts`
 - `apps/web/src/app/api/spots/route.ts` — auth
 - `apps/web/src/app/api/stripe/webhook/route.ts` — headers
-- `apps/web/src/app/api/system/backpressure/route.ts`
 - `apps/web/src/app/api/uptime/route.ts`
 - `apps/web/src/app/api/users/checklist-progress/route.ts` — auth
-- `apps/web/src/app/api/users/profile/display-name-mode/route.ts` — cache court
+- `apps/web/src/app/api/users/map-viewport-fallback/route.ts` — auth
+- `apps/web/src/app/api/users/profile/display-name-mode/route.ts` — auth
 - `apps/web/src/app/api/users/profile/handle/route.ts` — auth
 
 ## Pages dynamiques
@@ -106,7 +108,6 @@ Les lectures de profil et de gamification montées au rendu doivent privilégier
 Risque estimé: Invocations **faible** / Edge Requests **faible** / Origin Transfer **faible**.
 
 Les pages dynamiques font remonter les recalculs côté serveur ; elles deviennent sensibles quand elles chargent des métriques temps réel ou des données protégées.
-Les pages publiques Learn ont été sorties de cette catégorie: `apps/web/src/app/learn/bonnes-pratiques/page.tsx`, `apps/web/src/app/learn/comprendre/page.tsx` et `apps/web/src/app/learn/sentrainer/page.tsx` lisent maintenant la langue côté client, donc elles ne dépendent plus des cookies serveur.
 
 ### Pages détectées
 
@@ -114,12 +115,14 @@ Les pages publiques Learn ont été sorties de cette catégorie: `apps/web/src/a
 - `apps/web/src/app/(app)/actions/new/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/admin/godmode/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/admin/page.tsx` — auth, cookies, headers
+- `apps/web/src/app/(app)/admin/quiz-bank/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/dashboard/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/explorer/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/parcours/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/partners/dashboard/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/partners/onboarding/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/pilotage/page.tsx` — auth, cookies, headers
+- `apps/web/src/app/(app)/prints/report/page.tsx` — auth, headers
 - `apps/web/src/app/(app)/profil/[profile]/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/profil/page.tsx` — auth, cookies, headers
 - `apps/web/src/app/(app)/reports/page.tsx` — auth, cookies, headers
@@ -132,30 +135,25 @@ Les pages publiques Learn ont été sorties de cette catégorie: `apps/web/src/a
 
 ## Middleware / proxy
 
-Dans ce repo, l'entrée middleware côté Next est `apps/web/src/proxy.ts`.
+Dans ce repo, l'entrée middleware côté Next est `apps/web/proxy.ts`.
 
 Risque estimé: Invocations **élevé** / Edge Requests **élevé** / Origin Transfer **faible**.
 
 Le proxy Next agit sur toutes les requêtes correspondantes. Le rate limit et la protection Clerk y font monter directement les Edge Requests.
-Dans CleanMyMap, la règle cible est plus stricte: le middleware ne doit couvrir que les pages réellement protégées, le proxy Clerk et quelques endpoints publics qui ont un vrai besoin de rate limit. Les API déjà gardées dans leur handler ne doivent pas être ajoutées au matcher par réflexe, sinon on paie une seconde fois le coût Edge sans gain de sécurité.
 
 ### Fichiers
 
-- `apps/web/src/proxy.ts`
+
 
 ## Usages Clerk
 
-Risque estimé: Invocations **élevé** / Edge Requests **moyen** / Origin Transfer **faible**.
+Risque estimé: Invocations **élevé** / Edge Requests **faible** / Origin Transfer **faible**.
 
 Clerk se trouve à la frontière auth. Les usages serveur et middleware augmentent les invocations et ajoutent du travail sur les requêtes protégées.
-Le shell de navigation global a été séparé: les pages publiques rendent maintenant une variante sans `useUser`, et la branche Clerk complète ne se monte que sur les routes protégées via `isProtectedRoutePath`.
-Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées: les listes d'événements, les suggestions de chat et les checklists ne doivent plus tourner en live permanent.
 
 ### Fichiers
 
 - `apps/web/src/app/(app)/actions/history/page.tsx` — Clerk gate
-- `apps/web/src/app/(app)/admin/page.tsx` — Clerk gate
-- `apps/web/src/app/(app)/admin/services/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/dashboard/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/parcours/[profile]/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/parcours/page.tsx` — Clerk gate
@@ -163,11 +161,14 @@ Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées
 - `apps/web/src/app/(app)/partners/onboarding/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/prints/report/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/profil/[profile]/page.tsx` — Clerk gate
+- `apps/web/src/app/(app)/reports/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/signalement/page.tsx` — Clerk gate
 - `apps/web/src/app/(app)/sponsor-portal/page.tsx` — Clerk gate
+- `apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts` — Clerk server
 - `apps/web/src/app/api/account/profile-role/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/actions/[actionId]/group-join/route.ts` — Clerk auth, Clerk server
+- `apps/web/src/app/api/actions/[actionId]/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/actions/group-join/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/actions/prefill/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/actions/route.ts` — Clerk auth, Clerk server
@@ -190,8 +191,6 @@ Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées
 - `apps/web/src/app/api/gamification/leaderboard/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/gamification/me/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/gamification/points/add/route.ts` — Clerk auth, Clerk server
-- `apps/web/src/app/api/gamification/points/history/route.ts` — Clerk auth, Clerk server
-- `apps/web/src/app/api/gamification/points/me/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/gamification/quiz/progress/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/gamification/referrals/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/gamification/xp_audit/me/route.ts` — Clerk auth, Clerk server
@@ -201,10 +200,12 @@ Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées
 - `apps/web/src/app/api/send/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/spots/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/users/checklist-progress/route.ts` — Clerk auth, Clerk server
-- `apps/web/src/app/api/users/profile/display-name-mode/route.ts` — Clerk server
+- `apps/web/src/app/api/users/map-viewport-fallback/route.ts` — Clerk auth, Clerk server
+- `apps/web/src/app/api/users/profile/display-name-mode/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/api/users/profile/handle/route.ts` — Clerk auth, Clerk server
 - `apps/web/src/app/sign-in/[[...sign-in]]/page.tsx` — Clerk client
 - `apps/web/src/app/sign-up/[[...sign-up]]/page.tsx` — Clerk client
+- `apps/web/src/components/account/account-identity-chip.tsx` — Clerk client
 - `apps/web/src/components/account/account-setup-form.tsx` — Clerk client
 - `apps/web/src/components/account/user-location-onboarding-form.tsx` — Clerk client
 - `apps/web/src/components/actions/actions-history-list.tsx` — Clerk client
@@ -212,15 +213,21 @@ Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées
 - `apps/web/src/components/chat/chat-shell.tsx` — Clerk client, Clerk hook
 - `apps/web/src/components/chat/chat-shell.utils.ts` — Clerk client
 - `apps/web/src/components/chat/hooks/use-chat-submit.ts` — Clerk client
+- `apps/web/src/components/gamification/CleanZonesBadgeWrapper.tsx` — Clerk client, Clerk hook
 - `apps/web/src/components/gamification/ExplorerBadgeWrapper.tsx` — Clerk client, Clerk hook
+- `apps/web/src/components/gamification/FormsBadgeWrapper.tsx` — Clerk client, Clerk hook
+- `apps/web/src/components/layout/app-shell-surface.tsx` — Clerk client
 - `apps/web/src/components/learn/environmental-quiz.tsx` — Clerk client, Clerk hook
-- `apps/web/src/components/navigation/app-navigation-ribbon.tsx` — Clerk client, route-gated shell
-- `apps/web/src/components/navigation/notification-bell.tsx` — Clerk client, Clerk hook, protected routes only
+- `apps/web/src/components/navigation/app-navigation-ribbon.tsx` — Clerk client
+- `apps/web/src/components/navigation/notification-bell.tsx` — Clerk client, Clerk hook
 - `apps/web/src/components/partners/onboarding/use-partner-onboarding.ts` — Clerk client
 - `apps/web/src/components/profil/impact-profile-page.tsx` — Clerk gate
-- `apps/web/src/components/sections/rubriques/feedback-section.tsx` — Clerk client
+- `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` — Clerk client
 - `apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx` — Clerk client
+- `apps/web/src/components/sections/rubriques/guide-section.tsx` — Clerk client
 - `apps/web/src/components/sections/rubriques/use-annuaire-logic.ts` — Clerk client
+- `apps/web/src/components/sections/rubriques/use-kit-data.ts` — Clerk client
+- `apps/web/src/components/sections/rubriques/use-weather-data.ts` — Clerk client
 - `apps/web/src/components/ui/clerk-required-gate.tsx` — Clerk gate
 - `apps/web/src/lib/actions/organizers.ts` — Clerk server
 - `apps/web/src/lib/admin/access.ts` — Clerk auth, Clerk server
@@ -229,10 +236,12 @@ Les surfaces communautaires les plus bavardes ont été bornées et dé-pollées
 - `apps/web/src/lib/auth/safe-session.ts` — Clerk auth, Clerk server
 - `apps/web/src/lib/auth/sync.ts` — Clerk server
 - `apps/web/src/lib/auth/user-location.ts` — Clerk auth, Clerk server
+- `apps/web/src/lib/auth/user-territory.ts` — Clerk auth, Clerk server
+- `apps/web/src/lib/authz-identity-names.ts` — Clerk server
+- `apps/web/src/lib/authz-identity.ts` — Clerk auth, Clerk server
 - `apps/web/src/lib/authz.ts` — Clerk auth, Clerk server
 - `apps/web/src/lib/services/clerk.ts` — Clerk server
 - `apps/web/src/lib/supabase/clerk-rls.ts` — Clerk auth, Clerk server
-- `apps/web/src/proxy.ts` — Clerk middleware, Clerk server
 
 ## Usages Supabase
 
@@ -250,20 +259,16 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/scripts/export-actions-backup.mjs` — Supabase client
 - `apps/web/scripts/export-supabase-archive.mjs` — Supabase client
 - `apps/web/scripts/import-actions-backup.mjs` — Supabase client
-- `apps/web/scripts/sync-google-sheet-to-supabase.mjs` — Supabase client historique (flux désactivé)
 - `apps/web/scripts/sync-validated-local-store.mjs` — Supabase client
 - `apps/web/src/app/(app)/admin/page.tsx` — Server client
-- `apps/web/src/app/(app)/dashboard/page.tsx` — Server client
 - `apps/web/src/app/(app)/missions/[id]/page.tsx` — Server client
-- `apps/web/src/app/(app)/pilotage/page.tsx` — Server client
-- `apps/web/src/app/(app)/prints/report/page.tsx` — Server client
-- `apps/web/src/app/(app)/profil/[profile]/page.tsx` — Server client
-- `apps/web/src/app/(app)/reports/page.tsx` — Server client
-- `apps/web/src/app/(app)/sponsor-portal/page.tsx` — Server client
 - `apps/web/src/app/admin/gamification/xp-audit/page.tsx` — Server client
+- `apps/web/src/app/api/actions/[actionId]/audit/route.ts` — Server client
 - `apps/web/src/app/api/actions/[actionId]/group-join/route.ts` — Server client
+- `apps/web/src/app/api/actions/[actionId]/route.ts` — Server client
 - `apps/web/src/app/api/actions/group-join/route.ts` — Server client
 - `apps/web/src/app/api/actions/import/route.ts` — Server client
+- `apps/web/src/app/api/actions/map/route.ts` — Server client
 - `apps/web/src/app/api/actions/prefill/route.ts` — Server client
 - `apps/web/src/app/api/actions/route.ts` — Server client
 - `apps/web/src/app/api/admin/moderation/route.ts` — Admin client, Server client
@@ -283,34 +288,35 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/app/api/gamification/leaderboard/route.ts` — Server client
 - `apps/web/src/app/api/gamification/me/route.ts` — Server client
 - `apps/web/src/app/api/gamification/points/add/route.ts` — Server client
-- `apps/web/src/app/api/gamification/points/history/route.ts` — Server client
-- `apps/web/src/app/api/gamification/points/me/route.ts` — Server client
+- `apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts` — Server client
 - `apps/web/src/app/api/gamification/quiz/progress/route.ts` — Server client
 - `apps/web/src/app/api/gamification/referrals/route.ts` — Server client
 - `apps/web/src/app/api/gamification/xp_audit/admin/route.ts` — Server client
 - `apps/web/src/app/api/gamification/xp_audit/me/route.ts` — Server client
 - `apps/web/src/app/api/health/route.ts` — Server client
 - `apps/web/src/app/api/newsletter/subscribe/route.ts` — Server client
-- `apps/web/src/app/api/pilotage/overview/route.ts` — Server client
 - `apps/web/src/app/api/recycling/breakdown/route.ts` — Server client
 - `apps/web/src/app/api/reports/actions.csv/route.ts` — Server client
 - `apps/web/src/app/api/reports/actions.json/route.ts` — Server client
 - `apps/web/src/app/api/reports/elus-dossier/route.ts` — Server client
+- `apps/web/src/app/api/reports/governance-monthly/route.ts` — Server client
 - `apps/web/src/app/api/route/recommend/route.ts` — Server client
 - `apps/web/src/app/api/spots/route.ts` — Server client
 - `apps/web/src/app/api/users/profile/handle/route.ts` — Clerk RLS client
 - `apps/web/src/app/onboarding/page.tsx` — Server client
-- `apps/web/src/components/chat/chat-shell.tsx` — Supabase client
 - `apps/web/src/components/chat/hooks/use-chat-data.ts` — Supabase client
 - `apps/web/src/components/chat/hooks/use-chat-submit.ts` — Supabase client
 - `apps/web/src/components/chat/ui/chat-feed-states.tsx` — Supabase client
-- `apps/web/src/lib/accueil/data.ts` — Server client
+- `apps/web/src/lib/actions/group-participation.helpers.ts` — Supabase client
 - `apps/web/src/lib/actions/group-participation.ts` — Supabase client
+- `apps/web/src/lib/actions/map-route.ts` — Server client, Supabase client
 - `apps/web/src/lib/actions/organizers.ts` — Supabase client
+- `apps/web/src/lib/actions/participant-summaries.ts` — Supabase client
 - `apps/web/src/lib/actions/pollution-score-references.ts` — Supabase client
 - `apps/web/src/lib/actions/query.ts` — Supabase client
 - `apps/web/src/lib/actions/store.ts` — Supabase client
 - `apps/web/src/lib/actions/training.ts` — Supabase client
+- `apps/web/src/lib/actions/unified-source-cache.ts` — Server client
 - `apps/web/src/lib/actions/unified-source.ts` — Supabase client
 - `apps/web/src/lib/admin/access.ts` — Server client
 - `apps/web/src/lib/admin/action-moderation-edits.ts` — Server client
@@ -319,16 +325,20 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/lib/admin/role-management.ts` — Server client, Supabase client
 - `apps/web/src/lib/analytics/funnel-store.ts` — Server client
 - `apps/web/src/lib/auth/sync.ts` — Admin client
-- `apps/web/src/lib/authz.ts` — Server client
+- `apps/web/src/lib/authz-identity.ts` — Server client
 - `apps/web/src/lib/chat/chat-notifications.ts` — Supabase client
+- `apps/web/src/lib/chat/user-search.ts` — Clerk RLS client
 - `apps/web/src/lib/community/bug-reports-store.ts` — Supabase mirror
 - `apps/web/src/lib/community/creator-inbox-loader.ts` — Server client
 - `apps/web/src/lib/community/discussion-rate-limit.ts` — Supabase client
+- `apps/web/src/lib/community/event-notification-targets.ts` — Supabase client
+- `apps/web/src/lib/community/event-rsvp-summaries.ts` — Supabase client
+- `apps/web/src/lib/community/report-events.ts` — Server client
 - `apps/web/src/lib/contact/contact-requests-store.ts` — Supabase mirror
 - `apps/web/src/lib/data/local-sync.ts` — Supabase client
 - `apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts` — Server client
 - `apps/web/src/lib/environmental-impact-estimator/dashboard-capture.ts` — Server client
-- `apps/web/src/lib/environmental-impact-estimator/project-signals.ts` — Supabase client
+- `apps/web/src/lib/environmental-impact-estimator/project-signals.impl.ts` — Supabase client
 - `apps/web/src/lib/environmental-impact-estimator/service-email-events-store.ts` — Server client
 - `apps/web/src/lib/environmental-impact-estimator/snapshot-store.ts` — Server client
 - `apps/web/src/lib/events/handlers.ts` — Server client
@@ -336,28 +346,36 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/lib/gamification/announcements.ts` — Supabase client
 - `apps/web/src/lib/gamification/annual-reset.ts` — Supabase client
 - `apps/web/src/lib/gamification/badges/listing.ts` — Supabase client
+- `apps/web/src/lib/gamification/counters-client.ts` — Supabase client
+- `apps/web/src/lib/gamification/counters.ts` — Supabase client
 - `apps/web/src/lib/gamification/infinite-badges-server.ts` — Server client
+- `apps/web/src/lib/gamification/notifications.ts` — Supabase client
+- `apps/web/src/lib/gamification/points/analytics.ts` — Supabase client
 - `apps/web/src/lib/gamification/points/system.ts` — Supabase client
 - `apps/web/src/lib/gamification/progression-backfill.ts` — Supabase client
-- `apps/web/src/lib/gamification/progression-data.ts` — Supabase client
+- `apps/web/src/lib/gamification/progression-data.ts` — Server client, Supabase client
 - `apps/web/src/lib/gamification/progression-leaderboard.ts` — Supabase client
 - `apps/web/src/lib/gamification/progression-tracking.ts` — Supabase client
 - `apps/web/src/lib/gamification/quiz-balance-progress.ts` — Supabase client
 - `apps/web/src/lib/gamification/quiz-progress.ts` — Supabase client
-- `apps/web/src/lib/gamification/referral-lineage.ts` — Supabase client
+- `apps/web/src/lib/gamification/referral-lineage.ts` — Server client, Supabase client
+- `apps/web/src/lib/gamification/referrals-cache.ts` — Server client
 - `apps/web/src/lib/gamification/referrals.ts` — Supabase client
 - `apps/web/src/lib/gamification/sensitive-zone-badge.ts` — Supabase client
 - `apps/web/src/lib/governance/governance-monthly-report-store.ts` — Server client
+- `apps/web/src/lib/governance/governance-monthly-report.ts` — Server client
+- `apps/web/src/lib/learning/quiz-pedagogical-metrics.ts` — Server client, Supabase client
 - `apps/web/src/lib/notifications/client.ts` — Supabase client
 - `apps/web/src/lib/partners/onboarding-requests-store.ts` — Supabase mirror
 - `apps/web/src/lib/photo-upload.ts` — Supabase client
-- `apps/web/src/lib/pilotage/overview.ts` — Supabase client
+- `apps/web/src/lib/public-surface-snapshots.ts` — Server client
 - `apps/web/src/lib/route/recommendation-assistant.ts` — Supabase client
 - `apps/web/src/lib/sections/checklist-progress-store.ts` — Server client
 - `apps/web/src/lib/sections/runbook-checks-store.ts` — Server client
 - `apps/web/src/lib/supabase/clerk-rls.ts` — Clerk RLS client, Supabase client
 - `apps/web/src/lib/supabase/client.ts` — Supabase client
 - `apps/web/src/lib/supabase/mirror.ts` — Server client, Supabase client, Supabase mirror
+- `apps/web/src/lib/supabase/profile-avatar-storage.ts` — Supabase client
 - `apps/web/src/lib/supabase/server.ts` — Admin client, Server client, Supabase client
 - `apps/web/src/lib/supabase/storage-usage-service.ts` — Server client
 
@@ -366,15 +384,12 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 Risque estimé: Invocations **moyen** / Edge Requests **faible** / Origin Transfer **moyen**.
 
 PostHog ajoute du JavaScript client et des appels analytics. Le coût monte surtout via le bundle et les captures répétées.
-La réduction la plus rentable est de garder le tracker pageview et le client PostHog derrière le consentement analytique, plutôt que de les charger sur tout le shell.
 
 ### Fichiers
 
 - `apps/web/src/app/api/actions/route.ts` — Server tracking
 - `apps/web/src/app/api/spots/route.ts` — Server tracking
 - `apps/web/src/app/layout.tsx` — Provider
-- `apps/web/src/components/analytics/project-pageview-tracker.tsx` — Client tracking
-- `apps/web/src/components/ui/conditional-analytics.tsx` — Consent gate, analytics host
 - `apps/web/src/components/posthog-provider.tsx` — Client init, Provider
 - `apps/web/src/lib/analytics.server.ts` — Server client, Server tracking
 - `apps/web/src/lib/analytics/navigation-client.ts` — Client init
@@ -399,36 +414,23 @@ Sentry reste surtout un coût de diagnostic et de build, avec peu d'impact runti
 Risque estimé: Invocations **faible** / Edge Requests **faible** / Origin Transfer **élevé**.
 
 Leaflet et react-leaflet gonflent le bundle client. Le coût principal est le transfert d'origine et le temps de chargement des cartes.
-La bonne pratique dans CleanMyMap est de ne déclencher le chunk Leaflet que quand la zone cartographique devient utile à l'écran, avec un placeholder léger avant cela.
 
 ### Fichiers
 
 - `apps/web/src/components/actions/action-drawing-map.tsx` — Leaflet, Leaflet Draw, React Leaflet
 - `apps/web/src/components/actions/actions-map-canvas.tsx` — Leaflet, React Leaflet
-- `apps/web/src/components/actions/actions-map-canvas.utils.ts` — Leaflet
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` — Leaflet
 - `apps/web/src/components/actions/map/map-controls.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/actions/map/map-layers.tsx` — Leaflet, Leaflet cluster, React Leaflet
 - `apps/web/src/components/actions/smart-routing-map.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/maps/territory-map-comparison-cards.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/missions/mission-map.tsx` — Leaflet, React Leaflet
-- `apps/web/src/components/ui/use-in-view-once.ts` — viewport gating for heavy client chunks
 - `apps/web/src/components/sections/rubriques/annuaire-map-canvas.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/sections/rubriques/compost-map-canvas.tsx` — Leaflet, React Leaflet
 - `apps/web/src/types/leaflet-draw.d.ts` — Leaflet, Leaflet Draw
 
 ## Lecture prioritaire
 
-Ordre de correction recommandé:
-
-1. `proxy.ts` et le matcher Clerk, parce que c'est la surface la plus sensible pour `Edge Requests` et qu'un mauvais périmètre paie chaque visite.
-2. Les routes API appelées au montage ou en polling, parce qu'elles dominent le risque `Invocations` quand elles sont répétées.
-3. Les pages dynamiques et les gros Server Components, parce qu'elles font monter le coût de rendu et le transfert origine.
-4. Les surfaces Leaflet et PostHog, parce qu'elles pèsent surtout sur le bundle client et le transfert, pas sur le middleware.
-
-En pratique:
-
-- garder le middleware réduit aux vraies routes protégées et au proxy Clerk;
-- déplacer les rate limits route-locales hors du proxy quand elles ne matche plus aucune route;
-- rendre les chats, panneaux communauté et trackers plus paresseux au montage;
-- laisser Leaflet et les trackers à la fin de la revue Edge Requests, sauf preuve qu'ils traversent vraiment le matcher.
+- `proxy.ts` reste la surface la plus sensible pour `Edge Requests`.
+- Les routes d'export et les pages cache-bypassées dominent le risque `Invocations`.
+- Les composants Leaflet et PostHog sont les premiers contributeurs au `Origin Transfer` côté client.

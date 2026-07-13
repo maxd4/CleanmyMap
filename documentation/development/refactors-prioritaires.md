@@ -7,7 +7,7 @@ Ce document ordonne les refactors transverses qui ne sont pas déjà pilotés pa
 Il ne doit pas dupliquer :
 
 - `documentation/architecture/monolith-split-plan.md` pour les gros fichiers ;
-- le backlog de validation globale pour les erreurs révélées par lint, typecheck, tests ou build ;
+- le backlog de validation globale du dépôt pour les erreurs révélées par lint, typecheck, tests ou build ;
 - `documentation/security/github-audit-backlog.md` pour les alertes de sécurité et GitHub ;
 - `documentation/pages_site/plan-correction-ui-contenu.md` pour les corrections UI globales.
 

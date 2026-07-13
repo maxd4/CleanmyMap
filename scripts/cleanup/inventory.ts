@@ -37,6 +37,16 @@ const TARGET_FILES: Array<{ path: string; type: 'CSS' | 'JS' | 'FIGMA' }> = [
 /** Répertoire de sortie du rapport */
 const REPORT_DIR = 'apps/artifacts/dark-cleanup-backup';
 
+export function escapeMarkdownTableCell(value: string): string {
+  return String(value ?? '')
+    .replaceAll('\\', '\\\\')
+    .replaceAll('|', '\\|')
+    .replaceAll('`', '\\`')
+    .replaceAll('\r\n', ' ')
+    .replaceAll('\r', ' ')
+    .replaceAll('\n', ' ');
+}
+
 // ============================================================
 // ANALYSE
 // ============================================================
@@ -127,8 +137,9 @@ function buildMarkdownReport(report: InventoryReport): string {
       lines.push('| Ligne | Correspondance | Contenu |');
       lines.push('|-------|---------------|---------|');
       for (const ref of kindRefs!.slice(0, 20)) {
-        const content = ref.lineContent.replace(/\|/g, '\\|').slice(0, 80);
-        lines.push(`| ${ref.lineNumber} | \`${ref.match}\` | ${content} |`);
+        const match = escapeMarkdownTableCell(ref.match).slice(0, 80);
+        const content = escapeMarkdownTableCell(ref.lineContent).slice(0, 80);
+        lines.push(`| ${ref.lineNumber} | ${match} | ${content} |`);
       }
       if (kindRefs!.length > 20) {
         lines.push(`| ... | *(${kindRefs!.length - 20} autres)* | |`);

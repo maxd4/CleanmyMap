@@ -4,14 +4,6 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { chromium } from "playwright";
-import {
-  clickProfileMenu,
-  clickSelector,
-  closeCookieBanner,
-  openBlockMenu,
-  openPreferencesMenu,
-  wait as waitAction,
-} from "./capture-actions.mjs";
 import { screenCaptureRoutes } from "./capture-routes.mjs";
 
 const baseUrl = process.env.BASE_URL?.trim() || "http://localhost:3000";

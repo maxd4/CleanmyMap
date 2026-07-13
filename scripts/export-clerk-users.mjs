@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_OUTPUT_BASE = path.join("artifacts", "clerk-users");
@@ -38,7 +39,14 @@ function resolveOutputBasePath(value) {
     throw new Error("Invalid --out value: use a local filesystem path, not a URL.");
   }
 
-  return path.resolve(value);
+  const resolved = path.resolve(value);
+  const workspaceRoot = process.cwd();
+  const relative = path.relative(workspaceRoot, resolved);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("Invalid --out value: output must stay within the current workspace.");
+  }
+
+  return resolved;
 }
 
 function parseDotEnv(content) {
@@ -130,8 +138,6 @@ function getPrimaryEmail(user) {
 
 function normaliseUser(user) {
   const publicMetadata = user.publicMetadata ?? user.public_metadata ?? {};
-  const privateMetadata = user.privateMetadata ?? user.private_metadata ?? {};
-  const unsafeMetadata = user.unsafeMetadata ?? user.unsafe_metadata ?? {};
   return {
     id: user.id ?? "",
     username: user.username ?? "",
@@ -142,10 +148,6 @@ function normaliseUser(user) {
     updatedAt: asIso(user.updatedAt ?? user.updated_at),
     lastSignInAt: asIso(user.lastSignInAt ?? user.last_sign_in_at),
     publicMetadata,
-    privateMetadata,
-    unsafeMetadata,
-    emailAddresses: user.emailAddresses ?? user.email_addresses ?? [],
-    raw: user,
   };
 }
 
@@ -160,9 +162,6 @@ function toCsv(rows) {
     "updatedAt",
     "lastSignInAt",
     "publicMetadata",
-    "privateMetadata",
-    "unsafeMetadata",
-    "emailAddresses",
   ];
 
   const lines = [header.join(",")];
@@ -178,9 +177,6 @@ function toCsv(rows) {
         row.updatedAt,
         row.lastSignInAt,
         row.publicMetadata,
-        row.privateMetadata,
-        row.unsafeMetadata,
-        row.emailAddresses,
       ]
         .map(csvEscape)
         .join(","),
@@ -224,7 +220,7 @@ async function main() {
     throw new Error(`Invalid --limit value: ${String(limit)}`);
   }
 
-  const outputBase = resolveOutputBasePath(String(getArg("out", DEFAULT_OUTPUT_BASE)));
+  const outputBase = resolveOutputBasePath(DEFAULT_OUTPUT_BASE);
   const outputDir = path.dirname(outputBase);
   await mkdir(outputDir, { recursive: true });
 
@@ -266,7 +262,15 @@ async function main() {
   console.log(`CSV:  ${path.resolve(csvPath)}`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+const isDirectRun =
+  typeof process.argv[1] === "string" &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
+
+export { normaliseUser, resolveOutputBasePath, toCsv };

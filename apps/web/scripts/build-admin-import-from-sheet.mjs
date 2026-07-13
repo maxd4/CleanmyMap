@@ -9,6 +9,7 @@ import {
   buildRouteLocationLabel,
   findColumnIndex,
   fixMojibake,
+  normalizeGeocodeLabel,
   parseBooleanDropdown,
   parseCoordinates,
   parseCoordsFromText,
@@ -426,22 +427,26 @@ async function main() {
     }
     if (arrivalLocationLabel) {
       arrivalCoordinates = parseCoordsFromText(arrivalLocationLabel);
+      const normalizedArrivalLocation = normalizeGeocodeLabel(arrivalLocationLabel);
       if (
         (arrivalCoordinates.latitude === null ||
           arrivalCoordinates.longitude === null) &&
+        normalizedArrivalLocation &&
         geocodeEnabled
       ) {
-        arrivalCoordinates = await resolveGeocode(arrivalLocationLabel);
+        arrivalCoordinates = await resolveGeocode(normalizedArrivalLocation);
       }
     }
+    const normalizedDepartureLocation = normalizeGeocodeLabel(
+      departureLocationLabel || rawFallbackLocationLabel || locationLabel,
+    );
     if (
       (departureCoordinates.latitude === null ||
         departureCoordinates.longitude === null) &&
+      normalizedDepartureLocation &&
       geocodeEnabled
     ) {
-      departureCoordinates = await resolveGeocode(
-        departureLocationLabel || rawFallbackLocationLabel || locationLabel,
-      );
+      departureCoordinates = await resolveGeocode(normalizedDepartureLocation);
     }
 
     const associationNormalized = normalizeAssociation(
@@ -647,8 +652,13 @@ async function main() {
   const cleanPlaceItems = [];
   for (const label of Array.from(cleanPlaceLabels)) {
     let coordinates = parseCoordsFromText(label);
-    if ((coordinates.latitude === null || coordinates.longitude === null) && geocodeEnabled) {
-      coordinates = await resolveGeocode(label);
+    const normalizedLabel = normalizeGeocodeLabel(label);
+    if (
+      (coordinates.latitude === null || coordinates.longitude === null) &&
+      geocodeEnabled &&
+      normalizedLabel
+    ) {
+      coordinates = await resolveGeocode(normalizedLabel);
     }
     cleanPlaceItems.push({
       type: "clean_place",

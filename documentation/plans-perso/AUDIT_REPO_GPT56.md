@@ -223,10 +223,16 @@ Même pour un projet solo, une protection minimale de `main` évite une partie d
 Les familles explicitement encore listées comprennent notamment :
 
 - `js/file-system-race` dans `scripts/split-bibliography.mjs` ;
+- `js/file-system-race` dans `scripts/pre-release-check.mjs` ; le parcours a été durci localement avec `readdirSync(..., { withFileTypes: true })` et un test d'arbre temporaire ;
+- `js/incomplete-sanitization` dans `scripts/summarize-jsonl.mjs` et `scripts/cicd-metrics-report.mjs` ; les tableaux Markdown échappent maintenant `\\`, `|`, les backticks et les retours ligne ;
 - `js/http-to-file-access` dans `scripts/export-clerk-users.mjs` ;
-- `js/incomplete-sanitization` dans `scripts/cleanup/run-inventory.js` ;
-- `js/file-access-to-http` dans `apps/web/scripts/lib/sheet-ingestion-core.mjs` ;
+- `scripts/export-clerk-users.mjs` a été durci localement pour réduire l'export aux champs nécessaires et empêcher une sortie hors workspace ;
+- `js/incomplete-sanitization` dans `scripts/cleanup/inventory.ts` ; le doublon historique `scripts/cleanup/run-inventory.js` a été supprimé dans le lot `GHA-020` et `inventory.ts` a été durci localement sur l'échappement Markdown ;
+- `js/clear-text-storage-of-sensitive-data` dans `apps/web/src/components/sections/rubriques/use-weather-data.ts` ; le stockage local a été réduit aux champs non sensibles et la migration supprime les coordonnées en clair ;
+- `js/file-access-to-http` dans `apps/web/scripts/lib/sheet-ingestion-core.mjs` ; les points d'appel normalisent désormais les libellés avant géocodage et le résolveur rejette les entrées qui ne ressemblent pas à une adresse ou un lieu ;
 - `js/insecure-temporary-file` dans `apps/web/scripts/upload-sentry-sourcemaps.mjs`.
+- Le script historique `apps/web/scripts/sync-real-data-from-sheet.mjs` a été supprimé; le plan ne doit plus le traiter comme un consommateur actif.
+- Le wrapper historique `apps/web/scripts/sync-google-sheet-to-supabase.mjs` a aussi été supprimé; les alertes CodeQL associées ont été rejetées côté GitHub comme historique mort.
 
 ### Recommandation
 

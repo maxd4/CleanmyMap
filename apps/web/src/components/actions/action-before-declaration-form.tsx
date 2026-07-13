@@ -243,13 +243,9 @@ function sanitizePreActionForm(form: FormState): FormState {
   next.departureTime = next.departureTime.trim();
   next.locationLabel = next.departureLocationLabel.trim() || next.actionTitle;
   next.departureLocationLabel = next.departureLocationLabel.trim();
-  next.plannedObjective = next.plannedObjective;
-  next.estimatedDifficulty = next.estimatedDifficulty;
   next.accessibility = next.accessibility.trim();
   next.safetyInstructions = next.safetyInstructions.trim();
   next.recommendedMaterials = next.recommendedMaterials.trim();
-  next.creatorRole = next.creatorRole;
-  next.preparationState = next.preparationState;
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
   next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
   next.volunteersCount = next.volunteersCount.trim() || "1";
@@ -262,7 +258,6 @@ function sanitizePreActionForm(form: FormState): FormState {
   }
   next.enterpriseName = next.enterpriseName.trim();
   next.actorName = next.actorName.trim();
-  next.placeType = next.placeType;
   next.durationMinutes = next.durationMinutes.trim();
 
   if (next.associationName !== ENTREPRISE_ASSOCIATION_OPTION) {

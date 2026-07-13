@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_WINDOW_DAYS = 30;
 const DEFAULT_GITHUB_LIMIT = 10;
@@ -195,12 +196,16 @@ function formatDurationMs(value) {
   return `${minutes}m${String(remainingSeconds).padStart(2, "0")}s`;
 }
 
-function escapeTableCell(value) {
+export function escapeTableCell(value) {
   const normalized = value === null || value === undefined ? "n/a" : String(value);
-  return normalized.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  return normalized
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/`/g, "\\`")
+    .replace(/\r?\n/g, " ");
 }
 
-function markdownTable(headers, rows) {
+export function markdownTable(headers, rows) {
   const headerRow = `| ${headers.map(escapeTableCell).join(" | ")} |`;
   const separatorRow = `| ${headers.map(() => "---").join(" | ")} |`;
   const bodyRows = rows.map((row) => `| ${row.map(escapeTableCell).join(" | ")} |`);
@@ -473,7 +478,7 @@ function summarizeVercelDeployments(deployments) {
   ];
 }
 
-async function main() {
+export async function main() {
   const options = parseArgs(process.argv.slice(2));
   const repo = readRepoInfo();
   const windowStart = new Date(Date.now() - options.windowDays * 24 * 60 * 60 * 1000);
@@ -615,7 +620,13 @@ async function main() {
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack || error.message : String(error));
-  process.exitCode = 1;
-});
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    process.exitCode = 1;
+  });
+}

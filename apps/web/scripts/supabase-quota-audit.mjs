@@ -84,10 +84,6 @@ function splitLines(text) {
   return text.split(/\r?\n/);
 }
 
-function lineNumberFromIndex(text, index) {
-  return text.slice(0, index).split(/\r?\n/).length;
-}
-
 function getStatement(lines, startIndex, maxLookahead = 12) {
   const fragments = [];
   for (let index = startIndex; index < Math.min(lines.length, startIndex + maxLookahead); index += 1) {

@@ -300,16 +300,12 @@ function buildMapItems(
     .slice(0, limit);
 }
 
-function buildMapSourceHealth(
-  localUnavailable: boolean,
-): NonNullable<ActionMapResponse["sourceHealth"]> {
+function buildMapSourceHealth(): NonNullable<ActionMapResponse["sourceHealth"]> {
   return {
-    partial: localUnavailable,
-    failedSources: localUnavailable
-      ? ["actions"]
-      : ([] as NonNullable<ActionMapResponse["sourceHealth"]>["failedSources"]),
+    partial: false,
+    failedSources: [],
     availableSources: ["actions", "spots"],
-    warnings: localUnavailable ? ["Partial data: source(s) unavailable."] : [],
+    warnings: [],
   };
 }
 
@@ -493,6 +489,6 @@ export async function fetchMapActions(
     daysWindow: config.floorDate === null ? null : config.days,
     items,
     partialSource: false,
-    sourceHealth: buildMapSourceHealth(false),
+    sourceHealth: buildMapSourceHealth(),
   };
 }

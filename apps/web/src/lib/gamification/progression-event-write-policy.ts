@@ -331,7 +331,6 @@ export async function writeProgressionEventWithPolicy<T extends { error?: unknow
       case "failed":
         return outcome.result;
       case "throw":
-        lastError = outcome.error;
         throw outcome.error;
     }
   }

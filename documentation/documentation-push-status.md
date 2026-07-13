@@ -21,8 +21,8 @@ Snapshot de visibilité Git pour les dossiers de documentation.
 │  └─ ✅ web/
 │     ├─ ✅ src/
 │     ├─ ✅ src/app/docs/[...segments]/route.ts
-│     ├─ ✅ src/app/brand/[...asset]/route.ts
-│     ├─ ✅ src/app/images/textures/[...asset]/route.ts
+│     ├─ ✅ public/brand/
+│     ├─ ✅ public/images/textures/
 │     ├─ ⚪ .next/
 │     └─ ⚪ .next-sourcemap-test/
 ├─ ✅ documentation/

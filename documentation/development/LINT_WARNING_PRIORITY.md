@@ -75,7 +75,6 @@ Corriger les routes et les helpers qui servent plusieurs écrans, surtout quand 
 - `apps/web/src/components/sections/rubriques/annuaire-thematic-exploration.tsx`
 - `apps/web/src/components/sections/rubriques/discussion-badges-panel.tsx`
 - `apps/web/src/components/sections/rubriques/legal-section.tsx`
-- `apps/web/src/components/ui/backpressure-feedback.tsx`
 - `apps/web/src/lib/chat/channels.ts`
 - `apps/web/src/lib/chat/chat-notification-targets.ts`
 - `apps/web/src/lib/reports/csv.ts`

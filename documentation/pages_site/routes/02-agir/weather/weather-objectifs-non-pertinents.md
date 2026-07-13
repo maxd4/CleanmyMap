@@ -15,4 +15,4 @@ Ce document sert de mémoire locale de rejet pour la page.
 ## Règle de mémoire
 
 - Si une idée de cette liste redevient pertinente, la sortir explicitement de ce document avant de la reproposer.
-- Tant qu’elle figure ici, elle doit être considérée comme écartée par défaut.
+- Tant qu'elle figure ici, elle doit être considérée comme écartée par défaut.

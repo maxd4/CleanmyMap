@@ -44,7 +44,6 @@ import {
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
-import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 
 function toIsoDateKey(value: Date): string {
@@ -96,14 +95,14 @@ export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
   communityEvents: CommunityEventItem[];
   weather: ReportsWeather;
-  overview?: PilotageOverview | null;
+  overviewGeneratedAt?: string | null;
 };
 
 export function ReportsWebDocument({
   contracts,
   communityEvents,
   weather,
-  overview,
+  overviewGeneratedAt,
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -140,12 +139,12 @@ export function ReportsWebDocument({
   const recentRows = useMemo(
     () =>
       buildRecentReports({
-        overview,
+        overviewGeneratedAt,
         activeScopeLabel,
         period: effectivePeriod,
         detailLevel,
       }),
-    [activeScopeLabel, detailLevel, effectivePeriod, overview],
+    [activeScopeLabel, detailLevel, effectivePeriod, overviewGeneratedAt],
   );
 
   const defaultTitle = buildReportTitle(activeScopeLabel, detailLevel);

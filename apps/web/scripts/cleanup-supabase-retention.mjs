@@ -175,20 +175,6 @@ async function collectExpiredBucketPaths(bucket, cutoff, prefix = "") {
   return paths;
 }
 
-async function deleteBucketObjects(bucket, cutoff) {
-  const paths = await collectExpiredBucketPaths(bucket, cutoff);
-  if (paths.length === 0) {
-    return 0;
-  }
-
-  const { error } = await supabase.storage.from(bucket).remove(paths);
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return paths.length;
-}
-
 async function pruneLocalStore(fileName, cutoff, outDir) {
   const sourcePath = join(process.cwd(), "data", "local-db", fileName);
   try {

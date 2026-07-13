@@ -57,7 +57,7 @@ npm run checks
 - `apps/web/src/components` : composants réutilisables par domaine (`accueil`, `ui`, `actions`, `sections`, `reports`, `navigation`, `admin`, `learn`, etc.).
 - `apps/web/src/lib` : logique métier, navigation, sections registry, auth, Supabase, PostHog, validation, services, env, utilitaires.
 - `apps/web/src/hooks` : hooks React ciblés.
-- les logos et textures du site sont servis par des routes locales du projet plutôt que par `public/`.
+- les logos et textures du site sont servis par des fichiers statiques dans `apps/web/public/`.
 - `apps/web/data/raw` : import de données brutes.
 - `apps/web/data/local-db` : snapshots locaux de données.
 - `apps/web/scripts` : scripts d'import, sync, export, doctor, bootstrap.

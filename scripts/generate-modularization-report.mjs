@@ -4,28 +4,18 @@
  * Usage: node scripts/generate-modularization-report.mjs <fichier-modularisé>
  */
 
-import { readFileSync, writeFileSync, statSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+import { basename, join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-const args = process.argv.slice(2);
-if (args.length === 0) {
-  console.error('Usage: node scripts/generate-modularization-report.mjs <fichier-modularisé>');
-  process.exit(1);
-}
-
-const targetFile = args[0];
-const reportDate = new Date().toISOString().split('T')[0];
-
-// Analyser le fichier
-function analyzeFile(filePath) {
+export function analyzeFile(filePath) {
   try {
-    const stats = statSync(filePath);
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, 'utf8');
     const lines = content.split('\n').length;
-    
+
     return {
       exists: true,
-      size: stats.size,
+      size: Buffer.byteLength(content, 'utf8'),
       lines,
       imports: (content.match(/^import /gm) || []).length,
       exports: (content.match(/^export /gm) || []).length,
@@ -35,15 +25,22 @@ function analyzeFile(filePath) {
   }
 }
 
-const fileInfo = analyzeFile(targetFile);
+export function main(args = process.argv.slice(2)) {
+  if (args.length === 0) {
+    console.error('Usage: node scripts/generate-modularization-report.mjs <fichier-modularisé>');
+    process.exit(1);
+  }
 
-if (!fileInfo.exists) {
-  console.error(`❌ Fichier non trouvé: ${targetFile}`);
-  process.exit(1);
-}
+  const targetFile = args[0];
+  const reportDate = new Date().toISOString().split('T')[0];
+  const fileInfo = analyzeFile(targetFile);
 
-// Générer le rapport
-const report = `# Rapport de Modularisation
+  if (!fileInfo.exists) {
+    console.error(`❌ Fichier non trouvé: ${targetFile}`);
+    process.exit(1);
+  }
+
+  const report = `# Rapport de Modularisation
 
 **Fichier** : \`${targetFile}\`  
 **Date** : ${reportDate}
@@ -123,28 +120,36 @@ nouveau-dossier/
 **Généré le** : ${new Date().toISOString()}
 `;
 
-// Sauvegarder le rapport
-const reportPath = join(
-  process.cwd(),
-  'documentation',
-  'sessions',
-  'history',
-  `modularization-${reportDate}-${targetFile.split('/').pop()}.md`
-);
+  const reportPath = join(
+    process.cwd(),
+    'documentation',
+    'sessions',
+    'history',
+    `modularization-${reportDate}-${basename(targetFile)}.md`,
+  );
 
-try {
-  writeFileSync(reportPath, report);
-  console.log(`✅ Rapport généré : ${reportPath}`);
-  console.log('\n📊 Métriques du fichier :');
-  console.log(`   Taille : ${(fileInfo.size / 1024).toFixed(1)} KB`);
-  console.log(`   Lignes : ${fileInfo.lines}`);
-  console.log(`   Imports : ${fileInfo.imports}`);
-  console.log(`   Exports : ${fileInfo.exports}`);
-  console.log('\n💡 N\'oubliez pas de :');
-  console.log('   1. Compléter le rapport généré');
-  console.log('   2. Mettre à jour MODULARIZATION_PROGRESS.md');
-  console.log('   3. Documenter dans MODULARIZATION_SESSION_REPORT.md\n');
-} catch (error) {
-  console.error(`❌ Erreur lors de la génération du rapport : ${error.message}`);
-  process.exit(1);
+  try {
+    writeFileSync(reportPath, report);
+    console.log(`✅ Rapport généré : ${reportPath}`);
+    console.log('\n📊 Métriques du fichier :');
+    console.log(`   Taille : ${(fileInfo.size / 1024).toFixed(1)} KB`);
+    console.log(`   Lignes : ${fileInfo.lines}`);
+    console.log(`   Imports : ${fileInfo.imports}`);
+    console.log(`   Exports : ${fileInfo.exports}`);
+    console.log('\n💡 N\'oubliez pas de :');
+    console.log('   1. Compléter le rapport généré');
+    console.log('   2. Mettre à jour MODULARIZATION_PROGRESS.md');
+    console.log('   3. Documenter dans MODULARIZATION_SESSION_REPORT.md\n');
+  } catch (error) {
+    console.error(`❌ Erreur lors de la génération du rapport : ${error.message}`);
+    process.exit(1);
+  }
+}
+
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  main();
 }

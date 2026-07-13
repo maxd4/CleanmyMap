@@ -5,7 +5,7 @@ import {
   DASHBOARD_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
-import { PROXY_MATCHER_PATTERNS } from "../proxy";
+import { config, PROXY_MATCHER_PATTERNS } from "../proxy";
 
 describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {
@@ -42,19 +42,13 @@ describe("proxy protected routes", () => {
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/actions/history(.*)",
       "/actions/new(.*)",
-      "/api/actions(.*)",
-      "/api/admin(.*)",
-      "/api/analytics(.*)",
-      "/api/community(.*)",
-      "/api/gamification(.*)",
-      "/api/services(.*)",
-      "/api/users(.*)",
     ];
 
     for (const pattern of required) {
       expect(PROXY_MATCHER_PATTERNS).toContain(pattern);
     }
 
+    expect(PROXY_MATCHER_PATTERNS).toEqual(config.matcher);
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sections(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-in(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-up(.*)");
@@ -62,9 +56,6 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/__clerk/(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/(api|trpc)(.*)");
+    expect(PROXY_MATCHER_PATTERNS.every((pattern) => !pattern.startsWith("/api/"))).toBe(true);
   });
 });

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="CleanMyMap">
+  <rect width="1200" height="630" rx="48" fill="#0f172a"/>
+  <rect x="58" y="58" width="1084" height="514" rx="36" fill="none" stroke="#34d399" stroke-width="6" opacity="0.55"/>
+  <circle cx="210" cy="315" r="114" fill="#059669"/>
+  <path d="M210 230c-48 0-86 38-86 85s38 85 86 85 86-38 86-85-38-85-86-85Zm0 40c25 0 46 20 46 45s-21 45-46 45-46-20-46-45 21-45 46-45Z" fill="#ecfeff"/>
+  <text x="390" y="292" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="800">CleanMyMap</text>
+  <text x="390" y="360" fill="#cbd5e1" font-family="Arial, Helvetica, sans-serif" font-size="30">Carte citoyenne de dépollution, de coordination et d’impact</text>
+  <text x="390" y="414" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="24">Version générée par le code, sans dossier public statique</text>
+</svg>

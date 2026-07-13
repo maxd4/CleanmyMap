@@ -41,7 +41,7 @@ describe("reports web document shared helpers", () => {
     expect(buildReportTitle("Global", "default")).toBe("Rapport d'impact - Global - Par défaut");
 
     const rows = buildRecentReports({
-      overview: { generatedAt: "2026-05-04T14:30:00.000Z" } as never,
+      overviewGeneratedAt: "2026-05-04T14:30:00.000Z",
       activeScopeLabel: "Global",
       period: "current_year",
       detailLevel: "default",

@@ -1,6 +1,6 @@
 # Gouvernance des quotas Vercel de CleanMyMap
 
-Dernière vérification: 2026-06-28
+Dernière vérification: 2026-07-13
 
 Objectif: repérer tôt les régressions de coût Vercel avant qu'une fonctionnalité ne fasse grimper les quotas sans alerte.
 
@@ -100,8 +100,7 @@ Points de vérification concrets dans ce dépôt:
 - `apps/web/src/lib/swr-config.ts` maintient certains flux vivants avec `refreshInterval: 120_000`;
 - `apps/web/src/components/sections/rubriques/elus-section.tsx` revalide `GET /api/pilotage/overview` toutes les 10 minutes;
 - `apps/web/src/components/actions/map-feed/use-actions-map-viewport.ts` fait un fetch de fallback au montage de la carte;
-- `apps/web/src/components/ui/backpressure-feedback.tsx` contient un hook de polling à 15 secondes, mais le fichier n'est pas référencé ailleurs à ce stade;
-- `apps/web/src/proxy.ts` ne couvre que les surfaces protégées, donc il ne s'exécute pas sur tout le site, mais il reste compté quand les routes protégées sont touchées.
+- `apps/web/proxy.ts` ne couvre que les surfaces protégées, donc il ne s'exécute pas sur tout le site, mais il reste compté quand les routes protégées sont touchées.
 
 Lecture pratique:
 
@@ -113,7 +112,22 @@ Mitigations déjà appliquées dans le code:
 
 - `GET /api/health` et `GET /api/uptime` renvoient maintenant des réponses cacheables par le CDN;
 - le polling du centre de notifications est plus lent quand le panneau est fermé;
+- la surface backpressure UI/API a été retirée après confirmation de l'absence de consommateur runtime;
 - les refresh SWR les plus visibles ont une cadence plus espacée pour éviter les revalidations inutiles sur les onglets inactifs.
+
+## Bilan du plan Vercel désormais archivé
+
+Le backlog `vercel-reduction-backlog.md` a été consolidé dans la documentation courante et ne comporte plus de lot actif.
+
+Les points utiles à conserver sont désormais résumés ici, dans `vercel-route-cost-audit.md` et dans `vercel-surface-report.md`:
+
+- le proxy `apps/web/proxy.ts` ne couvre que les surfaces protégées, pas tout le site;
+- `/reports` ne prépare plus les deux branches coûteuses en même temps et le rendu serveur est piloté par l'onglet actif;
+- la surface backpressure UI/API a été supprimée après vérification de l'absence de consommateur runtime;
+- les assets déterministes ont été statifiés sous `apps/web/public/`;
+- un seul cron Vercel reste planifié dans `apps/web/vercel.json`, sur `/api/cron/storage-usage`.
+
+Le dernier rappel historique de l'ancien backlog concernait la génération PDF serveur de `governance-monthly`. Il n'y a plus de lot actif à exécuter, mais ce flux reste le bon point d'attention si sa logique de génération change à nouveau.
 
 ### Bundles client et composants dynamiques
 
@@ -126,8 +140,8 @@ Les composants chargés en `dynamic(..., { ssr: false })` protègent parfois le 
 
 | Fichier | Pourquoi c'est sensible | Lecture pratique |
 | --- | --- | --- |
-| [apps/web/src/app/page.tsx](../../apps/web/src/app/page.tsx) | `dynamic = "force-dynamic"` et `revalidate = 0` rendent la page d'accueil entièrement dynamique. | Toute visite passe par du rendu server-side et ne profite pas d'un cache durable. |
-| [apps/web/src/app/(app)/reports/page.tsx](../../apps/web/src/app/(app)/reports/page.tsx) | La page agrège Supabase + météo externe avec `cache: "no-store"`. | Chaque rendu déclenche des lectures serveur et une requête externe non cachée. |
+| [apps/web/src/app/page.tsx](../../apps/web/src/app/page.tsx) | La page d'accueil est en ISR avec `revalidate = 300` et recharge périodiquement ses compteurs. | Chaque visite ne passe plus par un rendu dynamique permanent, mais la régénération périodique et les lectures serveur restent à surveiller. |
+| [apps/web/src/app/(app)/reports/page.tsx](../../apps/web/src/app/(app)/reports/page.tsx) | La page agrège Supabase + météo externe avec un fetch météo en `revalidate: 900`. | Chaque rendu déclenche des lectures serveur et une requête externe cacheable, donc le coût vient surtout du volume de données et des doublons de chargement. |
 | [apps/web/src/lib/actions/http.ts](../../apps/web/src/lib/actions/http.ts) + RPC `actions_map_feed` | La carte lit directement Supabase avec bounding box, zoom, filtres et limite. | Le coût Vercel baisse, mais il faut surveiller la taille des réponses et la fréquence des rerenders côté client. |
 | [apps/web/src/app/api/actions/[actionId]/group-join/route.ts](../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Route dynamique de rapprochement d'actions groupées. | Chaque adhésion ou synchronisation déclenche une exécution serveur supplémentaire. |
 | [apps/web/src/app/api/actions/route.ts](../../apps/web/src/app/api/actions/route.ts) | GET dynamique pour la vue liste + POST de création avec rate limit. | C'est une surface de forte activité: lecture, écriture et déclencheurs d'événements. |
