@@ -1,9 +1,10 @@
 # Audit des routes les plus coûteuses de CleanMyMap
 
-Dernière vérification: 2026-06-28
+Dernière vérification: 2026-07-13
 
 Ce document liste les routes qui concentrent le plus de coût potentiel sur Vercel.
 Il complète [la gouvernance Vercel](./vercel-quota-governance.md) avec une lecture route par route.
+Il reprend aussi la synthèse opérationnelle utile de l'ancien backlog Vercel, désormais archivé.
 
 Méthode:
 - croisement du code runtime,
@@ -15,9 +16,9 @@ Méthode:
 
 | Route | Pourquoi elle existe | Données chargées | Impact potentiel sur Vercel |
 | --- | --- | --- | --- |
-| [`/`](../../apps/web/src/app/page.tsx) | Accueil public et point d'entrée du produit. | Contenu d'accueil, navigation, données de pilotage utilisées par la home. | Page `force-dynamic` avec `revalidate = 0`: chaque visite consomme une invocation et évite le cache durable. |
-| [`/reports`](../../apps/web/src/app/(app)/reports/page.tsx) | Vue d'impact et de synthèse pour le pilotage. | Supabase (`loadPilotageOverview`, `fetchUnifiedActionContracts`, `fetchCommunityEvents`) et météo externe. | Plusieurs sources chargées en parallèle + `cache: "no-store"` sur la météo: coût élevé en invocations et en transfert origine. |
-| [`/api/actions`](../../apps/web/src/app/api/actions/route.ts) | Liste publique/privée des actions et création d'actions. | Contrats d'actions unifiés, filtres de statut, coordonnées, métadonnées et écriture action/spot. | Route très fréquentée, `dynamic = "force-dynamic"`, lecture + écriture, risque élevé sur `Invocations` et `Fast Origin Transfer`. |
+| [`/`](../../apps/web/src/app/page.tsx) | Accueil public et point d'entrée du produit. | Contenu d'accueil, navigation, données de pilotage utilisées par la home. | Page en ISR avec `revalidate = 300`: chaque visite ne consomme plus une exécution serveur permanente, mais la génération périodique reste un coût à surveiller. |
+| [`/reports`](../../apps/web/src/app/(app)/reports/page.tsx) | Vue d'impact et de synthèse pour le pilotage. | Supabase (`loadPilotageOverview`, `fetchUnifiedActionContracts`, `loadCachedReportCommunityEvents`) et météo externe. | Plusieurs sources chargées en parallèle + météo en `revalidate = 900`: coût élevé en invocations et en transfert origine, mais sans `no-store` sur le flux météo. |
+| [`/api/actions`](../../apps/web/src/app/api/actions/route.ts) | Liste publique/privée des actions et création d'actions. | Contrats d'actions unifiés, filtres de statut, coordonnées, métadonnées et écriture action/spot; le GET n'expanse plus les contrats au-delà de `2x` le `limit` demandé. | Route très fréquentée, `dynamic = "force-dynamic"`, lecture + écriture, risque élevé sur `Invocations` et `Fast Origin Transfer`. |
 | Carte des actions (`actions_map_feed`) | Alimente la carte des actions sans passer par une route Vercel dédiée. | Vue bornée par viewport, filtres de période, d'impact et de qualité appliqués côté client, avec lecture directe Supabase. | Le risque se déplace vers Supabase et le bundle client, mais on supprime les invocations Vercel du proxy carte. |
 | [`/api/actions/[actionId]/group-join`](../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Active ou désactive le formulaire de groupe pour une action donnée. | Action cible, métadonnées de notes, organisateurs, état d'approbation. | Route dynamique avec lecture + écriture Supabase; chaque interaction déclenche une exécution serveur. |
 | [`/api/actions/group-join`](../../apps/web/src/app/api/actions/group-join/route.ts) | Liste et jonction des actions groupées. | Actions rejoignables, contexte utilisateur, écriture d'adhésion et recalcul de progression. | Appelée à la navigation et à l'action utilisateur; le POST ajoute de la charge calcul + écriture. |
@@ -30,6 +31,7 @@ Méthode:
 | [`/api/gamification/analytics/funnel`](../../apps/web/src/app/api/gamification/analytics/funnel/route.ts) | Mesure la conversion de la gamification. | `user_points` avec plusieurs filtres et agrégats de comptage. | `revalidate = 300` limite la dérive, mais la route reste sensible aux dashboards fréquents. |
 | [`/api/gamification/badges/list`](../../apps/web/src/app/api/gamification/badges/list/route.ts) | Charge l'état des badges pour l'utilisateur connecté. | Badges utilisateur + progression via Supabase. | Le handler est simple, mais le client appelle la route en `no-store`: coût accentué par les rechargements fréquents. |
 | [`/api/documentation/[slug]`](../../apps/web/src/app/api/documentation/[slug]/route.ts) | Sert quelques documents Markdown de référence en téléchargement. | Fichiers Markdown du dossier `documentation/plans`. | Route désormais cacheable côté CDN (`s-maxage=86400`): beaucoup moins d'allers-retours vers l'origine pour des fichiers statiques. |
+| Assets statiques de marque et textures | Remplacent les anciens handlers `brand/[...asset]` et `images/textures/[...asset]`. | SVG statiques sous `apps/web/public/brand/` et `apps/web/public/images/textures/`. | Zéro invocation serveur pour ces assets; le coût se limite au transfert CDN et au rendu client. |
 
 ## Lecture utile pour la revue de PR
 
@@ -61,7 +63,7 @@ Même sans visite humaine, plusieurs surfaces du dépôt peuvent générer des h
 - `apps/web/src/lib/swr-config.ts` garde certains écrans vivants avec `refreshInterval: 120_000`;
 - `apps/web/src/components/sections/rubriques/elus-section.tsx` rafraîchit le dashboard de pilotage toutes les 10 minutes;
 - `apps/web/src/components/actions/map-feed/use-actions-map-viewport.ts` déclenche un fallback réseau au montage;
-- `apps/web/src/proxy.ts` reste comptabilisé dès qu'une route protégée est touchée par un robot ou un monitor.
+- `apps/web/proxy.ts` reste comptabilisé dès qu'une route protégée est touchée par un robot ou un monitor.
 
 Mesures de réduction du bruit déjà en place:
 

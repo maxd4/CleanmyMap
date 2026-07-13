@@ -3,7 +3,7 @@
 | **2**  | `documentation/plans/ateliers_DU.md`                                   | 🔴 Critique               | Backlog opérationnel canonique des chantiers encore réellement actionnables.                                  | **Bien avancé historiquement, mais actif** : plusieurs lots absorbés ; restent 9 messages principaux A–I et 2 conditionnels, avec priorité aux tests de non-régression, à la validation humaine des contenus et à la fiabilité des indicateurs.                                  |
 | **3**  | `documentation/development/bugs-structurants.md`                       | 🔴 Haute                  | Identifie les problèmes structurels pouvant affecter plusieurs parties du produit.                            | **Non soldé explicitement** : le mismatch registry/navigation est classé à forte probabilité et fort impact, suivi des données géolocalisées partielles et des imports admin hétérogènes.                                                                                        |
 | **4**  | `documentation/product/roadmap-priorisee.md`                           | 🔴 Haute                  | Définit les priorités produit globales et les chantiers immédiats de CleanMyMap.                              | **Partiellement exécuté** : le socle applicatif est acquis, mais les trois priorités immédiates restent les tests de non-régression, la validation humaine des contenus et la fiabilité des indicateurs.                                                                         |
-| **5**  | `documentation/development/vercel-reduction-backlog.md`                | 🟠 Haute                  | Réduit la consommation et les risques liés aux quotas Vercel.                                                 | **Très avancé** : 5 optimisations importantes déjà exécutées ; il ne reste qu'un vrai P1 explicite, la génération PDF serveur de `governance-monthly`.                                                                                                                           |
+| **5**  | `documentation/development/vercel-quota-governance.md`                | 🟠 Haute                  | Réduit la consommation et les risques liés aux quotas Vercel.                                                 | **Archivé** : le backlog Vercel a été consolidé dans `vercel-quota-governance.md`, `vercel-route-cost-audit.md` et `vercel-surface-report.md`; plus aucun lot actif.                                                                                                             |
 | **6**  | `documentation/architecture/monolith-split-plan.md`                    | 🟠 Haute                  | Découpe les fichiers massifs et fortement couplés pour améliorer maintenance, tests et stabilité.             | **Partiel** : plusieurs monolithes critiques ont déjà été découpés, mais 3 cibles haute priorité et de nombreuses cibles moyennes restent ouvertes. C'est aujourd'hui le plan de modularisation technique le plus actuel.                                                        |
 | **7**  | `documentation/pages_site/plan-correction-ui-contenu.md`               | 🟠 Haute à moyenne        | Organise la correction progressive des pages, palettes, surcharges textuelles et incohérences UI.             | **Environ à mi-parcours structurellement** : lots 1, 2 et 3 exécutés ; lot 8 très avancé ; lots 4 à 7 encore non exécutés.                                                                                                                                                       |
 | **8**  | `documentation/plans/backlog-validation-globale.md`                    | 🟡 Moyenne                | Conserve les problèmes révélés par lint, typecheck, tests et build.                                           | **Presque terminé** : P0, P1 et P2 sont résolus ; seuls restent les travaux P3 de dette lint et de complexité. Le dépôt passait lint, typecheck, tests et build lors de la dernière validation consignée.                                                                        |
@@ -107,10 +107,10 @@ Objectif :
 - chaque jour doit afficher jour, date, météo, température, pluie/vent si dispo ;
 - code couleur du fond et du contour :
   - vert = conditions favorables / soleil ;
-  - orange = risque d’intempérie ou vigilance légère ;
+  - orange = risque d'intempérie ou vigilance légère ;
   - rouge = conditions défavorables.
 
-Ajouter sous la météo une section “Matériel recommandé” en 3 colonnes :
+Ajouter sous la météo une section "Matériel recommandé" en 3 colonnes :
 1. Standard
 2. Chaleur
 3. Intempéries
@@ -164,7 +164,7 @@ Replace placeholder, shortcut-like, or generic badge icons with high-quality, vi
 Requirements:
 - redesign all badge icons
 - make them unique, clear, and aesthetically strong
-- keep full consistency with the site’s branding and visual system
+- keep full consistency with the site's branding and visual system
 - ensure each icon matches the meaning of its badge
 - avoid cheap, default, emoji-like, or shortcut-looking visuals
 - make icons clean, readable, and scalable at small sizes

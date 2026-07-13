@@ -37,9 +37,9 @@ La page sert à :
 - `SectionRenderer` rend `WeatherSection` pour cette rubrique.
 - `/sections/guide` redirige vers `/sections/weather`.
 - La page est visible sans compte.
-- L’état `access refused` n’est pas un état normal de cette surface.
-- Les données météo proviennent d’Open-Meteo et d’une résolution locale puis distante des lieux.
-- La localisation initiale peut venir de la préférence utilisateur, d’un choix manuel stocké ou de la géolocalisation si elle est autorisée.
+- L'état `access refused` n'est pas un état normal de cette surface.
+- Les données météo proviennent d'Open-Meteo et d'une résolution locale puis distante des lieux.
+- La localisation initiale peut venir de la préférence utilisateur, d'un choix manuel stocké ou de la géolocalisation si elle est autorisée.
 
 ## Structure UI
 
@@ -66,7 +66,7 @@ ready
 ```txt
 Page canonique en place.
 Documentation réalignée sur le runtime météo actuel.
-La famille reste Agir tant que le runtime n’est pas arbitrée autrement.
+La famille reste Agir tant que le runtime n'est pas arbitrée autrement.
 ```
 
 ## Références

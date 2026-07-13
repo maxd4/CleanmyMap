@@ -40,33 +40,8 @@ const PROTECTED_APP_PAGE_MATCHER_PATTERNS = PROTECTED_APP_PAGE_ROUTE_PREFIXES.ma
   (prefix) => `${prefix}(.*)`,
 );
 
-const PROXY_AUTH_CONTEXT_API_ROUTE_PATTERNS = [
-  "/api/account(.*)",
-  "/api/actions(.*)",
-  "/api/admin(.*)",
-  "/api/analytics(.*)",
-  "/api/chat(.*)",
-  "/api/community(.*)",
-  "/api/contact(.*)",
-  "/api/environmental-impact(.*)",
-  "/api/gamification(.*)",
-  "/api/partners(.*)",
-  "/api/pilotage(.*)",
-  "/api/recommend(.*)",
-  "/api/recycling(.*)",
-  "/api/reports(.*)",
-  "/api/route(.*)",
-  "/api/sandbox(.*)",
-  "/api/send(.*)",
-  "/api/services(.*)",
-  "/api/spots(.*)",
-  "/api/users(.*)",
-  "/api/email/test(.*)",
-] as const;
-
 export const PROXY_MATCHER_PATTERNS = [
   ...PROTECTED_APP_PAGE_MATCHER_PATTERNS,
-  ...PROXY_AUTH_CONTEXT_API_ROUTE_PATTERNS,
 ] as const;
 
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
@@ -182,43 +157,5 @@ export async function proxy(req: NextRequest, evt: NextFetchEvent) {
 }
 
 export const config = {
-  matcher: [
-    "/admin",
-    "/dashboard",
-    "/actions/history",
-    "/actions/new",
-    "/declaration",
-    "/form-comparison",
-    "/onboarding",
-    "/partners/dashboard",
-    "/partners/network",
-    "/partners/onboarding",
-    "/parcours",
-    "/prints/report",
-    "/profil",
-    "/reglages",
-    "/signalement",
-    "/sponsor-portal",
-    "/api/account(.*)",
-    "/api/actions(.*)",
-    "/api/admin(.*)",
-    "/api/analytics(.*)",
-    "/api/chat(.*)",
-    "/api/community(.*)",
-    "/api/contact(.*)",
-    "/api/environmental-impact(.*)",
-    "/api/gamification(.*)",
-    "/api/partners(.*)",
-    "/api/pilotage(.*)",
-    "/api/recommend(.*)",
-    "/api/recycling(.*)",
-    "/api/reports(.*)",
-    "/api/route(.*)",
-    "/api/sandbox(.*)",
-    "/api/send(.*)",
-    "/api/services(.*)",
-    "/api/spots(.*)",
-    "/api/users(.*)",
-    "/api/email/test(.*)",
-  ],
+  matcher: [...PROXY_MATCHER_PATTERNS],
 };

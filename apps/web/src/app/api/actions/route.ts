@@ -157,7 +157,7 @@ async function buildActionsRoutePayload(url: URL) {
 
   const supabase = getSupabaseServerClient();
   const result = await fetchUnifiedActionContracts(supabase, {
-    limit: Math.max(limit * 4, limit),
+    limit: Math.max(limit * 2, limit),
     status,
     floorDate,
     requireCoordinates: false,

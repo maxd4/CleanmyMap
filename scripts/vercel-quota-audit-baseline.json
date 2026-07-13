@@ -1,9 +1,11 @@
 {
-  "generatedAt": "2026-06-23T10:32:47.163Z",
+  "generatedAt": "2026-07-13T16:45:23.109Z",
   "routeHandlers": [
+    "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
@@ -43,8 +45,6 @@
     "apps/web/src/app/api/gamification/leaderboard/route.ts",
     "apps/web/src/app/api/gamification/me/route.ts",
     "apps/web/src/app/api/gamification/points/add/route.ts",
-    "apps/web/src/app/api/gamification/points/history/route.ts",
-    "apps/web/src/app/api/gamification/points/me/route.ts",
     "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",
@@ -69,41 +69,36 @@
     "apps/web/src/app/api/services/route.ts",
     "apps/web/src/app/api/spots/route.ts",
     "apps/web/src/app/api/stripe/webhook/route.ts",
-    "apps/web/src/app/api/system/backpressure/route.ts",
     "apps/web/src/app/api/uptime/route.ts",
     "apps/web/src/app/api/users/checklist-progress/route.ts",
+    "apps/web/src/app/api/users/map-viewport-fallback/route.ts",
     "apps/web/src/app/api/users/profile/display-name-mode/route.ts",
     "apps/web/src/app/api/users/profile/handle/route.ts",
-    "apps/web/src/app/brand/[...asset]/route.ts",
-    "apps/web/src/app/docs/[...segments]/route.ts",
-    "apps/web/src/app/images/textures/[...asset]/route.ts"
+    "apps/web/src/app/docs/[...segments]/route.ts"
   ],
   "dynamicRenders": [
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/route.ts",
     "apps/web/src/app/api/gamification/analytics/funnel/route.ts"
   ],
   "noStoreFetches": [
-    "apps/web/src/app/(app)/reports/page.tsx",
     "apps/web/src/app/api/community/funnel.csv/route.ts",
-    "apps/web/src/components/admin/free-plan-services-panel.tsx",
+    "apps/web/src/app/api/reports/elus-dossier/route.ts",
     "apps/web/src/components/dashboard/report-export-smoke-card.tsx",
     "apps/web/src/components/dashboard/storage-usage-panel.tsx",
-    "apps/web/src/components/dashboard/system-status-panel.tsx",
     "apps/web/src/components/reports/admin-workflow/services.ts",
     "apps/web/src/components/reports/web-document/use-reports-web-document-model.ts",
     "apps/web/src/components/sections/rubriques/elus-section.tsx",
     "apps/web/src/components/sections/rubriques/gamification/index.tsx",
-    "apps/web/src/components/sections/rubriques/guide-section.tsx",
     "apps/web/src/components/sections/rubriques/recycling-section.tsx",
-    "apps/web/src/components/sections/rubriques/use-kit-data.ts",
     "apps/web/src/components/sections/rubriques/use-weather-data.ts",
     "apps/web/src/lib/actions/http.ts",
-    "apps/web/src/lib/actions/operation-audit.ts",
-    "apps/web/src/lib/community/http.ts"
+    "apps/web/src/lib/actions/map-http.ts",
+    "apps/web/src/lib/actions/operation-audit.ts"
   ],
   "externalFetches": [
     "apps/web/src/app/(app)/reports/page.tsx",
@@ -119,7 +114,6 @@
     "apps/web/src/app/api/reports/actions.json/route.ts"
   ],
   "cronPaths": [
-    "/api/cron/environmental-impact",
     "/api/cron/storage-usage"
   ]
 }

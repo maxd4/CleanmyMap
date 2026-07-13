@@ -720,7 +720,7 @@ La formulation la plus défendable est donc la suivante :
 
 Le précédent chiffre de **400 kWh** reste plausible si une grande partie des milliards de tokens correspond à des lectures répétées ou mises en cache. Il devient trop faible si le compteur contient beaucoup de générations, de raisonnement ou de traitements de très longs contextes.
 
-### Hypothèse par token contre hypothèse par temps d’utilisation
+### Hypothèse par token contre hypothèse par temps d'utilisation
 
 L'estimation par token se rapproche davantage du travail réellement envoyé aux modèles. Elle capture mieux les énormes contextes des agents de programmation, les répétitions de contexte et la charge liée aux appels multiples.
 
@@ -803,7 +803,7 @@ La génération d'images augmente bien l'impact, mais elle reste secondaire face
 
 Ces résultats couvrent principalement l'inférence et l'infrastructure opérationnelle. Ils n'intègrent pas correctement la fabrication des GPU, la construction des centres de données, l'entraînement des modèles, ton ordinateur personnel, Vercel ou Supabase. Ils servent surtout à fixer des ordres de grandeur robustes et à comparer les scénarios sans confondre tokens comptabilisés et impact physique direct.
 
-### Développement web avec l’IA et trajectoire climatique individuelle
+### Développement web avec l'IA et trajectoire climatique individuelle
 
 L'empreinte carbone moyenne d'un Français se situe aujourd'hui autour de **8 à 10 tCO₂e par an**. Pour rester compatible avec une trajectoire mondiale alignée sur l'Accord de Paris, l'ordre de grandeur souvent retenu à long terme est d'environ **2 tCO₂e par personne et par an**. Ce seuil n'est pas une limite individuelle écrite dans l'accord lui-même, mais une traduction des réductions nécessaires à l'échelle mondiale.
 

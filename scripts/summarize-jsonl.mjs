@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_ROOT = path.join(os.homedir(), ".codex");
 
@@ -201,11 +202,15 @@ function finalizeSummary(summary) {
   };
 }
 
-function escapeCell(value) {
-  return String(value ?? "n/a").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+export function escapeCell(value) {
+  return String(value ?? "n/a")
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/`/g, "\\`")
+    .replace(/\r?\n/g, " ");
 }
 
-function table(headers, rows) {
+export function table(headers, rows) {
   const head = `| ${headers.map(escapeCell).join(" | ")} |`;
   const sep = `| ${headers.map(() => "---").join(" | ")} |`;
   const body = rows.map((row) => `| ${row.map(escapeCell).join(" | ")} |`);
@@ -316,7 +321,7 @@ function printMarkdown(report) {
   console.log(table(["file", "start", "end", "duration", "models", "token/usage"], rows));
 }
 
-function main() {
+export function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!existsSync(options.root)) {
     console.error(`Root directory not found: ${options.root}`);
@@ -336,4 +341,10 @@ function main() {
   printMarkdown(report);
 }
 
-main();
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  main();
+}

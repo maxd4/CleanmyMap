@@ -292,7 +292,7 @@ function main() {
     const webDir = path.join(process.cwd(), 'apps/web');
     
     // Forcer l'exécution d'ESLint même s'il y a des warnings
-    const lintOutput = execSync('npx eslint . --max-warnings=1000', { 
+    execSync('npx eslint . --max-warnings=1000', {
       encoding: 'utf8',
       cwd: webDir,
       stdio: 'pipe'

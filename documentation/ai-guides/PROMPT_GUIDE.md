@@ -8,6 +8,80 @@ Ce guide définit les bonnes pratiques pour l'utilisation de l'IA (LLM, Agents) 
 3. **Atomicité** : Demander une seule modification structurelle par prompt.
 4. **Validation Humaine** : Tout code généré doit être relu et testé selon la grille de décision IA.
 
+## Interprétation Des Plans Et Backlog Fournis Par ChatGPT
+
+Les plans, backlogs et instructions fournis par ChatGPT doivent être traités comme un cadre d'objectif,
+de contraintes métier et de validation.
+Ils ne représentent pas nécessairement l'état réel du dépôt.
+
+### Limites Du Contexte ChatGPT
+
+ChatGPT peut ne pas avoir accès à :
+
+- l'état actuel complet du dépôt local ;
+- les modifications non commit ou non poussées ;
+- les fichiers exclus par `.gitignore` ;
+- les fichiers `.env` et autres secrets locaux ;
+- l'état réel du terminal, des processus et des outils installés ;
+- toutes les variables d'environnement Vercel ;
+- toute la configuration Supabase ;
+- les différences entre environnement local, preview et production ;
+- les changements intervenus depuis sa dernière lecture du projet.
+
+### Vérifications Obligatoires Avant Toute Modification Significative
+
+1. Inspecter l'état réel du dépôt, les fichiers concernés, `git status`, les diffs locaux, les conventions existantes et les dépendances pertinentes.
+2. Vérifier les hypothèses du prompt contre le code et l'infrastructure réellement disponibles.
+3. Rechercher les abstractions, fonctions, types, migrations, scripts ou mécanismes existants avant d'en créer de nouveaux.
+4. Ne jamais supposer qu'un chemin de fichier, une architecture, un nom de fonction, une table, une variable ou une stratégie proposée par ChatGPT existe réellement.
+5. Adapter l'implémentation lorsque l'état réel du projet l'exige, sans perdre l'objectif, les contraintes critiques ni les invariants demandés.
+
+### Priorité Des Sources De Vérité
+
+En cas de contradiction, utiliser cet ordre de priorité :
+
+1. l'état réel du système et les contraintes de sécurité ;
+2. le code local actuel et les modifications non commit ;
+3. le schéma, les migrations et l'infrastructure réellement déployés ;
+4. les conventions et l'architecture existantes du projet ;
+5. la documentation actuelle du dépôt ;
+6. le prompt ChatGPT.
+
+Le prompt reste prioritaire pour définir l'intention fonctionnelle et les contraintes explicites,
+sauf impossibilité technique, contradiction avec l'état réel ou risque de régression.
+
+### Liberté D'Implémentation
+
+Le projet réel peut justifier d'autres fichiers à modifier,
+la réutilisation d'une abstraction existante,
+l'évitement d'une migration inutile,
+la modification d'une stratégie proposée,
+ou un élargissement raisonnable du périmètre lorsque cela est indispensable à une implémentation cohérente.
+
+Toute divergence importante doit être justifiée dans le compte rendu final.
+
+### Infrastructure Et Secrets
+
+Ne jamais afficher, copier dans un rapport, commit ou document de travail :
+
+- les clés privées ;
+- les tokens ;
+- les mots de passe ;
+- les secrets `.env` ;
+- les credentials Supabase, Vercel ou services tiers.
+
+Inspecter leur présence et leur rôle lorsque nécessaire, sans exposer leur valeur.
+
+### Validation Finale Obligatoire
+
+Avant de déclarer la tâche terminée :
+
+- vérifier que l'objectif fonctionnel réel est satisfait ;
+- exécuter les validations pertinentes du projet ;
+- vérifier les régressions potentielles ;
+- distinguer clairement ce qui a été vérifié de ce qui reste non vérifiable ;
+- signaler toute hypothèse importante encore non confirmée.
+
 ## Bibliothèque de Prompts par Cas d'Usage
 
 ### 1. Développement UI / Composants

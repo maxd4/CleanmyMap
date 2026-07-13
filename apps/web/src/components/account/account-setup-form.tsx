@@ -248,9 +248,7 @@ export function AccountSetupForm({
             <WifiOff className="h-7 w-7" />
           </SystemStateIcon>
           <SystemStateMeta variant="offline" label="Contexte local">
-            {clerkReachable
-              ? "Clerk n'a pas terminé son chargement sur localhost."
-              : "Clerk n'est pas joignable dans cette session locale."}
+            Clerk n&apos;est pas joignable dans cette session locale.
           </SystemStateMeta>
           <SystemStateTitle variant="offline">
             Session Clerk indisponible

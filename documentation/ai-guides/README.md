@@ -101,6 +101,13 @@ Documentation optimisée pour les agents IA qui développent ce projet.
    - 6 situations types avec réactions
    - Templates de propositions
 
+### 🧾 Interprétation des plans ChatGPT
+
+1. **[PROMPT_GUIDE.md](./PROMPT_GUIDE.md)**
+   - Cadre d'interprétation des plans et backlog fournis par ChatGPT
+   - Vérifications obligatoires avant modification significative
+   - Priorité des sources de vérité et validation finale
+
 ### ⚡ Qualité De Code Gemini Flash
 
 8. **[GEMINI_FLASH_QUALITY_GUIDE.md](./GEMINI_FLASH_QUALITY_GUIDE.md)**

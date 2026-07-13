@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 /**
  * Script de vérification pré-déploiement pour CleanMyMap.
@@ -46,20 +47,19 @@ function checkSecretsInBuild() {
   }
 
   function scanDir(dir) {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-      const fullPath = path.join(dir, file);
-      const stat = fs.statSync(fullPath);
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
 
-      if (stat.isDirectory()) {
-        if (file !== "node_modules" && file !== ".next" && file !== ".git") {
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules" && entry.name !== ".next" && entry.name !== ".git") {
           scanDir(fullPath);
         }
       } else if (
-        file.endsWith(".tsx") ||
-        file.endsWith(".ts") ||
-        file.endsWith(".js") ||
-        file.endsWith(".mjs")
+        entry.name.endsWith(".tsx") ||
+        entry.name.endsWith(".ts") ||
+        entry.name.endsWith(".js") ||
+        entry.name.endsWith(".mjs")
       ) {
         const content = fs.readFileSync(fullPath, "utf8");
         if (!isClientBundleCandidate(fullPath, content)) {
@@ -112,13 +112,23 @@ function checkForbiddenFiles() {
   return issuesFound;
 }
 
-console.log("--- CLEANMYMAP PRE-RELEASE CHECK ---");
-const forbiddenFileIssues = checkForbiddenFiles();
-const secretExposureIssues = checkSecretsInBuild();
-const totalIssues = forbiddenFileIssues + secretExposureIssues;
-console.log(`Resume: ${totalIssues} probleme(s) detecte(s).`);
-console.log("--- FIN DU CHECK ---");
+export function runPreReleaseCheck() {
+  console.log("--- CLEANMYMAP PRE-RELEASE CHECK ---");
+  const forbiddenFileIssues = checkForbiddenFiles();
+  const secretExposureIssues = checkSecretsInBuild();
+  const totalIssues = forbiddenFileIssues + secretExposureIssues;
+  console.log(`Resume: ${totalIssues} probleme(s) detecte(s).`);
+  console.log("--- FIN DU CHECK ---");
+  return totalIssues;
+}
 
-if (process.argv.includes("--exit-on-error") && totalIssues > 0) {
-  process.exit(1);
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  const totalIssues = runPreReleaseCheck();
+  if (process.argv.includes("--exit-on-error") && totalIssues > 0) {
+    process.exit(1);
+  }
 }

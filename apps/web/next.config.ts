@@ -2,9 +2,7 @@ import path from "path";
 import type { NextConfig } from "next";
 
 const repoRoot = path.resolve(__dirname, "../..");
-const appRoot = path.resolve(__dirname);
 const env = process.env;
-const isProduction = env["NODE_ENV"] === "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

@@ -6,7 +6,7 @@
 
 - **What changed**
   - Added a consolidated memory/governance section in:
-    - `documentation/operations/agent-memory-governance.md`
+    - the operations memory/governance entry point
   - Added development-facing references in:
     - `documentation/development/AI_MINDSET_KAIZEN.md`
     - `documentation/development/AI_DEVELOPER_GUIDE.md`

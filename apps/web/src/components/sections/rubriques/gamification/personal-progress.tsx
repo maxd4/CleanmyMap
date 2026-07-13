@@ -144,7 +144,7 @@ export function PersonalProgress({
                 />
               </div>
             )}
-            {!loading && progression?.yearToDateImpact && (
+            {progression?.yearToDateImpact && (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] p-5">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">

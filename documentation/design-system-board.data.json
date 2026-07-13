@@ -28,7 +28,6 @@
       "components/navigation"
     ],
     "uiFiles": [
-      "backpressure-feedback.tsx",
       "clerk-required-gate.tsx",
       "cmm-block-accent.tsx",
       "cmm-button.tsx",

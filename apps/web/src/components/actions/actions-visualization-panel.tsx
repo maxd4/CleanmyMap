@@ -172,7 +172,7 @@ export function ActionsVisualizationPanel({
         </div>
       )}
 
-      {!isLoading && !error && (
+      {!error && (
         <>
           <div className="grid gap-6 lg:grid-cols-2">
             <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8 relative overflow-hidden group hover:bg-sky-50 transition-all duration-500">

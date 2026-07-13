@@ -590,11 +590,6 @@ async function buildData() {
   };
 }
 
-function replaceStat(html, label, value) {
-  const pattern = new RegExp(`(<div class="k">${label}<\\/div>\\s*<div class="v">)([^<]+)(<\\/div>)`, "s");
-  return html.replace(pattern, `$1${value}$3`);
-}
-
 function buildDynamicHtml(templateHtml, data) {
   const sourceList = data.sources.list.join(" / ");
   let html = templateHtml;

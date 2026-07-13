@@ -4,17 +4,15 @@ import { describe, expect, it } from "vitest";
 import { ReportsPageTabs } from "./reports-page-tabs";
 
 describe("ReportsPageTabs", () => {
-  it("starts on the requested default tab", () => {
+  it("marks the requested tab as active", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsPageTabs, {
-        defaultTab: "pilotage",
-        generation: React.createElement("div", null, "generation-section"),
-        pilotage: React.createElement("div", null, "pilotage-section"),
+        activeTab: "pilotage",
       }),
     );
 
-    expect(markup).toContain("cmm-grid-shell");
-    expect(markup).toContain("pilotage-section");
-    expect(markup).not.toContain("generation-section");
+    expect(markup).toContain("aria-current=\"page\"");
+    expect(markup).toContain("?tab=pilotage");
+    expect(markup).not.toContain("?tab=generation");
   });
 });

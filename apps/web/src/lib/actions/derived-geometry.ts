@@ -158,8 +158,6 @@ export function parseDrawingFromGeoJson(
   } catch {
     return null;
   }
-
-  return null;
 }
 
 function resolveStoredDrawing(params: {

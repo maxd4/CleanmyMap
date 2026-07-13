@@ -8,7 +8,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const APP_ROOT = path.join(REPO_ROOT, "apps", "web", "src", "app");
 const INDEX_PATH = path.join(REPO_ROOT, "documentation", "pages_site", "INDEX.md");
-const ROUTES_DOC_ROOT = path.join(REPO_ROOT, "documentation", "pages_site", "routes");
 const SECTION_REGISTRY_PATH = path.join(
   REPO_ROOT,
   "apps",
