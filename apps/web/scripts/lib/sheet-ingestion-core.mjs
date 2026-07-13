@@ -266,7 +266,7 @@ export function normalizeGeocodeLabel(rawAddress) {
     return null;
   }
 
-  if (!/^[\p{L}\p{N}\s''.,;:()/-]+$/u.test(normalized)) {
+  if (!/^[\p{L}\p{N}\s'.,;:()/-]+$/u.test(normalized)) {
     return null;
   }
 
