@@ -21,10 +21,16 @@ node_modules/
 /.next/
 apps/.next/
 apps/web/.next/
+**/.next-sourcemap-test/
 *.tsbuildinfo
 cache/
 tmp/
 output/
+**/artifacts/
+backups/
+**/backups/
+scratch/
+**/scratch/
 legacy/backups/
 *.log
 *.out
@@ -54,7 +60,6 @@ documentation/pages_site/routes/04-reseau-discussions/partners-network/partnersh
 
 .vercel
 .playwright-mcp/
-apps/web/.next-sourcemap-test/
 apps/web/data/local-db/*.json
 /*.log
 /*.png

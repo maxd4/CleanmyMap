@@ -6,28 +6,44 @@
   "files.exclude": {
     "**/.git": true,
     "**/.next": true,
+    "**/.next-sourcemap-test": true,
     "**/.vercel": true,
+    "**/artifacts": true,
     "**/build": true,
     "**/coverage": true,
     "**/dist": true,
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/backups": true,
+    "**/scratch": true
   },
   "files.watcherExclude": {
     "**/.git/**": true,
     "**/.next/**": true,
+    "**/.next-sourcemap-test/**": true,
     "**/.vercel/**": true,
+    "**/artifacts/**": true,
     "**/build/**": true,
     "**/coverage/**": true,
     "**/dist/**": true,
-    "**/node_modules/**": true
+    "**/node_modules/**": true,
+    "**/backups/**": true,
+    "**/scratch/**": true,
+    "**/companion-app/node_modules/**": true,
+    "**/companion-app/**": true
   },
   "search.exclude": {
     "**/.git": true,
     "**/.next": true,
+    "**/.next-sourcemap-test": true,
     "**/.vercel": true,
+    "**/artifacts": true,
     "**/build": true,
     "**/coverage": true,
     "**/dist": true,
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/backups": true,
+    "**/scratch": true,
+    "**/companion-app/node_modules": true,
+    "**/companion-app": true
   }
 }
