@@ -27,15 +27,23 @@ Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
 
 ---
 
-## 1. Source de vérité et répartition du travail
+## 1. Source de vérité et politique GitHub
 
-### Projet local
+### GitHub
 
-Le projet local est la source de vérité. Il est plus exhaustif car contient tout ce qui est ignoré sur github tel que les secrets, les clés, certaines fiches de documentation personnelles, les caches, les commandes de localhost.
+- Utiliser GitHub comme source de vérité.
+- Lecture libre du dépôt.
+- Écriture uniquement si l'utilisateur l'autorise explicitement dans la conversation.
+- Dans ce cas, créer une branche dédiée.
+- Committer les modifications.
+- Ouvrir une Pull Request vers `main`.
+- Ne jamais pousser directement sur `main`.
+- Ne jamais fusionner une PR.
+- Sans autorisation explicite, rester en lecture seule.
 
-### GitHub est la seconde source de vérité du projet
+### Répartition du travail
 
-Si un agent IA n'a pas accès aux fichiers locaux alors il se réfère à github, régulièrement mis a jour par codex.
+Le checkout local sert au travail courant, mais il ne doit pas contredire l'état de GitHub.
 
 Avant toute analyse, réécriture, création ou modification visant un fichier précis du dépôt :
 
@@ -65,11 +73,11 @@ Un agent utilisé pour l'analyse, la rédaction ou la conception peut :
 - produire des versions complètes corrigées ;
 - joindre des fichiers prêts à intégrer.
 
-Il ne doit pas créer de branche, commit, pull request ou push sans demande explicite et sans capacité prévue pour cela.
+Il ne doit jamais écrire sans autorisation explicite de l'utilisateur. Quand l'écriture est autorisée, il doit passer par une branche dédiée, commit et PR vers `main`, sans push direct sur `main` et sans fusionner la PR.
 
 ### Intégrateur local
 
-L'intégrateur local, notamment Codex, intervient principalement pour :
+L’intégrateur local, notamment Codex, intervient principalement pour :
 
 - vérifier la cohérence avec le checkout local complet ;
 - intégrer les fichiers fournis ;
@@ -77,7 +85,15 @@ L'intégrateur local, notamment Codex, intervient principalement pour :
 - propager les changements transversaux nécessaires ;
 - signaler les conflits avec le code réel.
 
-Aucun push GitHub n'est obligatoire par défaut. Un push n'est effectué que si l'utilisateur le demande ou si le workflow explicitement approuvé l'exige.
+Sans autorisation explicite, l’intégrateur reste en lecture seule.
+
+Quand l'utilisateur autorise une écriture, le flux attendu est :
+
+- créer une branche dédiée ;
+- committer les changements ;
+- ouvrir une Pull Request vers `main` ;
+- ne jamais pousser directement sur `main` ;
+- ne jamais fusionner la PR.
 
 ---
 
