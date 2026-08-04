@@ -101,7 +101,14 @@ describe("POST /api/actions", () => {
     });
     pickTraceableActorNameMock.mockReturnValue("Test User");
     trackServerEventMock.mockResolvedValue(undefined);
-    buildPostActionRetentionLoopMock.mockResolvedValue(null);
+    buildPostActionRetentionLoopMock.mockResolvedValue({
+      summary: "2.5 kg collectes",
+      badge: null,
+      xpAwarded: 0,
+      thanksMessage: "Merci.",
+      share: { text: "Action", url: "/actions/history" },
+      nextActionSuggestion: "Voir la carte.",
+    });
     emitActionCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
     emitSpotCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
@@ -139,9 +146,14 @@ describe("POST /api/actions", () => {
       }),
     );
 
-    const body = (await response.json()) as { id?: string; error?: string };
+    const body = (await response.json()) as {
+      id?: string;
+      error?: string;
+      retentionLoop?: { badge: string | null; xpAwarded: number };
+    };
     expect(response.status).toBe(201);
     expect(body.id).toBe("action-test-1");
+    expect(body.retentionLoop).toMatchObject({ badge: null, xpAwarded: 0 });
     expect(createActionMock).toHaveBeenCalledTimes(1);
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),

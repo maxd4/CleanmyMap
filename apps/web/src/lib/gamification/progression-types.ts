@@ -265,7 +265,8 @@ export type PersonalTimelineItem = {
 
 export type PostActionRetentionLoop = {
   summary: string;
-  badge: string;
+  badge: string | null;
+  xpAwarded: number;
   thanksMessage: string;
   share: {
     text: string;

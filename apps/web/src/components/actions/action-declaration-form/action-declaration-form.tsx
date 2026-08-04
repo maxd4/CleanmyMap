@@ -107,6 +107,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     submissionState,
     errorMessage,
     createdId,
+    recordedAction,
     retentionLoop,
     loadedActionPhase,
     isHydratingAction,
@@ -603,6 +604,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssues={validationIssues}
           retentionLoop={retentionLoop}
+          recordedAction={recordedAction}
             showGroupInvite={canShowGroupInvite}
           isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
           groupJoinHref={

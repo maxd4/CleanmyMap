@@ -380,9 +380,26 @@ export async function buildPostActionRetentionLoop(
   }
 
   const progression = await getUserProgression(supabase, params.userId);
+  const actionProgressionEvents = await supabase
+    .from("progression_events")
+    .select("status_phase, xp_awarded")
+    .eq("user_id", params.userId)
+    .eq("source_table", "actions")
+    .eq("source_id", params.actionId);
+  const xpAwarded = actionProgressionEvents.error
+    ? 0
+    : ((actionProgressionEvents.data ?? []) as Array<{
+        status_phase?: string | null;
+        xp_awarded?: number | null;
+      }>).reduce((total, event) => {
+        if (event.status_phase !== "validated") {
+          return total;
+        }
+        const value = Number(event.xp_awarded ?? 0);
+        return Number.isFinite(value) && value > 0 ? total + value : total;
+      }, 0);
   const qualityScore = actionQualityScoreFromRow(action);
   const qualityLabel = qualityScore >= 80 ? "A" : qualityScore >= 60 ? "B" : "C";
-  const latestBadge = progression.badges[0] ?? "Contributeur actif";
   const associationName = parseAssociationNameFromActionNotes(action.notes);
   const thanksMessage =
     associationName !== "Sans association"
@@ -409,7 +426,10 @@ export async function buildPostActionRetentionLoop(
 
   return {
     summary,
-    badge: latestBadge,
+    // A current badge is not proof that this action unlocked it. Only expose
+    // a badge when a future attribution event is explicitly linked to this action.
+    badge: null,
+    xpAwarded: Math.round(xpAwarded * 100) / 100,
     thanksMessage,
     share: {
       text: shareText,

@@ -14,6 +14,8 @@ import type {
   SubmissionState,
   ValidationIssue,
 } from "./action-declaration-form.model";
+import type { ActionEditorRecord } from "@/lib/actions/http";
+import { buildPostActionSummary } from "@/lib/actions/post-action-summary";
 
 type ActionDeclarationFormFeedbackProps = {
   submissionState: SubmissionState;
@@ -22,6 +24,7 @@ type ActionDeclarationFormFeedbackProps = {
   hasAttemptedSubmit: boolean;
   validationIssues: ValidationIssue[];
   retentionLoop: PostActionRetentionLoop | null;
+  recordedAction?: ActionEditorRecord | null;
   groupJoinHref?: string | null;
   showGroupInvite?: boolean;
   isAutoApprovedSubmission?: boolean;
@@ -35,6 +38,7 @@ export function ActionDeclarationFormFeedback({
   hasAttemptedSubmit,
   validationIssues,
   retentionLoop,
+  recordedAction = null,
   groupJoinHref,
   showGroupInvite,
   isAutoApprovedSubmission = false,
@@ -57,6 +61,9 @@ export function ActionDeclarationFormFeedback({
     return new URL(groupJoinHref, window.location.origin).toString();
   }, [groupJoinHref, showGroupInvite]);
   const [groupLinkCopied, setGroupLinkCopied] = useState(false);
+  const postActionSummary = recordedAction
+    ? buildPostActionSummary(recordedAction)
+    : null;
 
   async function handleShare() {
     if (!retentionLoop) return;
@@ -132,11 +139,14 @@ export function ActionDeclarationFormFeedback({
 
       {/* Succès */}
       {submissionState === "success" && (
-        <div className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-5 space-y-4 shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl">
+        <div
+          data-testid="post-action-confirmation"
+          className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-5 space-y-4 shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl"
+        >
           <div className="flex items-start gap-3">
             <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-emerald-950">Déclaration envoyée</p>
+              <p className="text-sm font-semibold text-emerald-950">Action enregistrée</p>
               <p className="text-xs text-emerald-900/70 mt-0.5">
                 {isAutoApprovedSubmission
                   ? "Publiée immédiatement. Elle est déjà visible dans les formulaires de groupe, mais les nouvelles participations restent soumises à validation."
@@ -148,16 +158,89 @@ export function ActionDeclarationFormFeedback({
             </div>
           </div>
 
+          {postActionSummary ? (
+            <div className="space-y-4 rounded-2xl border border-emerald-200/70 bg-white/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                    Données enregistrées · confirmation exploitable
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-emerald-950">
+                    {postActionSummary.action.locationLabel} · {postActionSummary.action.actionDate}
+                  </p>
+                </div>
+                <span className="rounded-full border border-emerald-200 bg-[#ECF8EF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-900">
+                  {postActionSummary.impactStatus === "validated"
+                    ? "Données validées"
+                    : "En attente de validation"}
+                </span>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-4">
+                <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Déchets</p>
+                  <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.wasteKg} kg</p>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Mégots</p>
+                  <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.cigaretteButts}</p>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Bénévoles</p>
+                  <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.volunteersCount}</p>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Durée</p>
+                  <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.durationMinutes} min</p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-800">Résumé de l&apos;impact</p>
+                  <span className="text-[11px] font-semibold text-emerald-900/70">
+                    Confiance des données: {postActionSummary.quality.score}/100 ({postActionSummary.quality.grade})
+                  </span>
+                </div>
+                <div className="mt-2 grid gap-2 md:grid-cols-3">
+                  {postActionSummary.impact.map((metric) => (
+                    <div key={metric.id} className="rounded-xl border border-emerald-100 bg-white p-3">
+                      <p className="text-xs font-semibold text-emerald-800">{metric.label}</p>
+                      <p className="mt-1 text-xl font-black text-emerald-950">
+                        {metric.value} {metric.unit}
+                      </p>
+                      <p className="mt-1 text-[10px] leading-4 text-emerald-900/65">{metric.method}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-emerald-900/65">
+                  {postActionSummary.methodology.label} · {postActionSummary.methodology.version} · confiance calculée avec les règles {postActionSummary.quality.rulesVersion}.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 text-xs leading-5 text-amber-950">
+              La référence est enregistrée, mais les données détaillées n&apos;ont pas pu être relues. Aucun impact ou bonus n&apos;est affiché sans preuve enregistrée.
+            </div>
+          )}
+
           {retentionLoop && (
             <div className="rounded-2xl border border-emerald-200/70 bg-[#ECF8EF] p-3 space-y-1">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-emerald-950">🌿 {retentionLoop.summary}</p>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900 shrink-0">
-                  {retentionLoop.badge}
-                </span>
+                {retentionLoop.badge ? (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900 shrink-0">
+                    Badge attribué: {retentionLoop.badge}
+                  </span>
+                ) : null}
               </div>
               <p className="text-xs text-emerald-900/80">{retentionLoop.thanksMessage}</p>
               <p className="text-xs text-emerald-900/70">💡 {retentionLoop.nextActionSuggestion}</p>
+              {retentionLoop.xpAwarded > 0 ? (
+                <p className="text-xs font-bold text-emerald-800">+{retentionLoop.xpAwarded} XP attribué</p>
+              ) : (
+                <p className="text-xs text-emerald-900/70">Aucun XP attribué à ce stade: il sera calculé après validation.</p>
+              )}
             </div>
           )}
 
@@ -259,7 +342,28 @@ export function ActionDeclarationFormFeedback({
                 Nouvelle déclaration
               </button>
             )}
-              <Link
+            <Link
+              href="/actions/map"
+              prefetch={false}
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-950 hover:bg-sky-100 transition"
+            >
+              Voir la carte
+            </Link>
+            <Link
+              href="/reports"
+              prefetch={false}
+              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-950 hover:bg-rose-100 transition"
+            >
+              Ouvrir le rapport
+            </Link>
+            <Link
+              href="/actions/new"
+              prefetch={false}
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-100 transition"
+            >
+              Prochaine action
+            </Link>
+            <Link
                 href="/actions/history"
                 prefetch={false}
                 className="rounded-lg border border-emerald-200/70 bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-950 hover:bg-emerald-200 transition"

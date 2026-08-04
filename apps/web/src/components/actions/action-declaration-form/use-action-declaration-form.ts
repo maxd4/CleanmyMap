@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from "react";
-import { createAction, fetchActionById, updateAction } from "@/lib/actions/http";
+import {
+  createAction,
+  fetchActionById,
+  updateAction,
+  type ActionEditorRecord,
+} from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import type {
@@ -89,6 +94,7 @@ export function useActionDeclarationForm({
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [recordedAction, setRecordedAction] = useState<ActionEditorRecord | null>(null);
   const [retentionLoop, setRetentionLoop] = useState<PostActionRetentionLoop | null>(null);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
@@ -421,8 +427,11 @@ export function useActionDeclarationForm({
       const result = initialActionId
         ? await updateAction(initialActionId, submissionPayload)
         : await createAction(submissionPayload);
-      setCreatedId("id" in result ? result.id : result.actionId);
+      const persistedActionId = "id" in result ? result.id : result.actionId;
+      setCreatedId(persistedActionId);
       setRetentionLoop("retentionLoop" in result ? result.retentionLoop ?? null : null);
+      const persistedAction = await fetchActionById(persistedActionId).catch(() => null);
+      setRecordedAction(persistedAction);
       setSubmissionState("success");
       setShowConfirmation(false);
       setLoadedActionPhase("post_action_complete");
@@ -451,6 +460,7 @@ export function useActionDeclarationForm({
     submissionState,
     errorMessage,
     createdId,
+    recordedAction,
     retentionLoop,
     loadedActionPhase,
     isHydratingAction,

@@ -142,7 +142,8 @@ type ActionCreationResponse = {
   id: string;
   retentionLoop?: {
     summary: string;
-    badge: string;
+    badge: string | null;
+    xpAwarded: number;
     thanksMessage: string;
     share: { text: string; url: string };
     nextActionSuggestion: string;
@@ -171,7 +172,8 @@ export async function createAction(
   id: string;
   retentionLoop?: {
     summary: string;
-    badge: string;
+    badge: string | null;
+    xpAwarded: number;
     thanksMessage: string;
     share: { text: string; url: string };
     nextActionSuggestion: string;
@@ -294,6 +296,7 @@ export type ActionPrefillResponse = {
 
 export type ActionEditorRecord = {
   id: string;
+  createdAt: string;
   status: ActionStatus;
   actionPhase: ActionPhase;
   preparationData: ActionPreparationData | null;
@@ -320,6 +323,11 @@ export type ActionEditorRecord = {
   wasteBreakdown?: unknown;
   photos?: unknown;
   visionEstimate?: unknown;
+  manualDrawing?: {
+    kind: "polyline" | "polygon";
+    coordinates: [number, number][];
+  } | null;
+  recordType?: string | null;
 };
 
 export type ActionEditorResponse = {
