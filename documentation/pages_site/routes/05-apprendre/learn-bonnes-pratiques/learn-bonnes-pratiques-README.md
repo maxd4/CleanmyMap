@@ -30,6 +30,8 @@
 - **Hiérarchie UX** : l'essentiel reste visible en premier, les compléments passent en accordéons fermés par défaut.
 - **Sources secondaires** : ADEME, Gestes Propres, ministère
 - **Baromètre IFOP × Gestes Propres** : données déclaratives, 2 001 répondants, septembre 2025, PDF canonique conservé dans `documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/`
+- **Étude IFOP sur les dépôts** : enquête menée en 2024, volet quantitatif auprès de 2 003 personnes et volet qualitatif dans quatre villes ; PDF canonique conservé dans le même dossier.
+- **Validation éditoriale** : les contenus Gestes Propres et IFOP suivent le contrat `documentation/architecture/content-validation.md` avant publication. Les faits, estimations et recommandations sont conservés dans des collections séparées.
 - **Navigation** : les routes existantes sont conservées, sans changement de destination.
 - **Priorité de correction** : moyenne
 
