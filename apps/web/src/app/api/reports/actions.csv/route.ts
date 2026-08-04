@@ -162,6 +162,11 @@ export async function GET(request: Request) {
                 },
           )
         : null,
+      data_quality_status: contract.dataQuality?.status ?? null,
+      data_quality_anomalies: contract.dataQuality?.anomalies.map((anomaly) => anomaly.code).join("|") ?? null,
+      measures_provenance: contract.dataQuality?.provenance.measures ?? null,
+      geometry_provenance: contract.dataQuality?.provenance.geometry ?? null,
+      impact_provenance: contract.dataQuality?.provenance.impact ?? null,
     }));
 
     const csv = buildActionsCsv(rows);

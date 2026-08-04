@@ -4,6 +4,8 @@ export type ActionStatus = (typeof ACTION_STATUSES)[number];
 
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
 
+import type { ActionDataQualitySummary } from "./data-quality";
+
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionGeometryKind = "point" | "polyline" | "polygon";
@@ -131,6 +133,7 @@ export type ActionListItem = {
   to_fix_priority?: boolean;
   impact_level?: ActionImpactLevel;
   waste_breakdown?: ActionWasteBreakdown | null;
+  data_quality?: ActionDataQualitySummary;
   contract?: {
     id: string;
     type: ActionRecordType;
@@ -176,6 +179,7 @@ export type ActionListItem = {
       photos?: ActionPhotoAsset[] | null;
       visionEstimate?: ActionVisionEstimate | null;
     };
+    dataQuality?: ActionDataQualitySummary;
   };
 };
 
@@ -270,6 +274,7 @@ export type ActionMapItem = Pick<
   to_fix_priority?: boolean;
   impact_level?: ActionImpactLevel;
   waste_breakdown?: ActionWasteBreakdown | null;
+  data_quality?: ActionDataQualitySummary;
   contract?: {
     id: string;
     type: ActionRecordType;

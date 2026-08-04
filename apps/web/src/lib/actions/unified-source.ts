@@ -5,6 +5,12 @@ import {
   ACTION_ENTITY_TYPES,
   buildActionDataContract,
 } from "@/lib/actions/data-contract";
+import {
+  auditActionContract,
+  auditActionData,
+} from "@/lib/actions/data-quality";
+import type { ActionContractCreatePayload } from "@/lib/actions/contract-builders";
+import { normalizeCreatePayload } from "@/lib/actions/contract-builders";
 import type {
   ActionDataContract,
   ActionEntityType,
@@ -23,6 +29,29 @@ type UnifiedActionContractsParams = {
 };
 
 type UnifiedSourceName = "actions" | "spots" | "local";
+
+export function normalizeExternalActionImport(
+  payload: ActionContractCreatePayload,
+): {
+  payload: ReturnType<typeof normalizeCreatePayload>;
+  dataQuality: ReturnType<typeof auditActionData>;
+} {
+  const normalizedPayload = normalizeCreatePayload(payload);
+  return {
+    payload: normalizedPayload,
+    dataQuality: auditActionData({
+      observedAt: payload.dates.observedAt,
+      locationLabel: payload.location.label,
+      latitude: payload.location.latitude,
+      longitude: payload.location.longitude,
+      wasteKg: payload.metadata.wasteKg,
+      cigaretteButts: payload.metadata.cigaretteButts,
+      volunteersCount: payload.metadata.volunteersCount,
+      durationMinutes: payload.metadata.durationMinutes,
+      visionEstimate: payload.metadata.visionEstimate,
+    }),
+  };
+}
 
 export type UnifiedSourceHealth = {
   partial: boolean;
@@ -50,7 +79,7 @@ type TrashSpotterSpotRow = {
 function toActionContractFromRow(row: StoredAction): ActionDataContract {
   const parsedNotes = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedNotes.cleanNotes);
-  return buildActionDataContract({
+  const contract = buildActionDataContract({
     id: row.id,
     type: "action",
     status: row.status,
@@ -87,6 +116,23 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     manualDrawing: parsedNotes.manualDrawing,
     manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
   });
+
+  return {
+    ...contract,
+    dataQuality: auditActionData({
+      observedAt: row.action_date,
+      locationLabel: row.location_label,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      wasteKg: row.waste_kg,
+      cigaretteButts: row.cigarette_butts,
+      volunteersCount: row.volunteers_count,
+      durationMinutes: row.duration_minutes,
+      geometrySource: row.geometry_source ?? contract.geometry.geometrySource,
+      geometryConfidence: row.geometry_confidence ?? contract.geometry.confidence,
+      hasGeometry: contract.geometry.coordinates.length > 0,
+    }),
+  };
 }
 
 function mapSpotStatusToActionStatus(status: TrashSpotterSpotRow["status"]): ActionStatus {
@@ -121,7 +167,7 @@ function mapSpotTypeToEntityType(
 }
 
 function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
-  return buildActionDataContract({
+  const contract = buildActionDataContract({
     id: row.id,
     type: mapSpotTypeToEntityType(row.spot_type),
     status: mapSpotStatusToActionStatus(row.status),
@@ -138,6 +184,19 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
     geometrySource: row.geometry_source ?? null,
     notes: row.notes,
   });
+
+  return {
+    ...contract,
+    dataQuality: auditActionData({
+      observedAt: row.created_at,
+      locationLabel: row.label,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      geometrySource: row.geometry_source ?? contract.geometry.geometrySource,
+      geometryConfidence: row.geometry_confidence ?? contract.geometry.confidence,
+      hasGeometry: contract.geometry.coordinates.length > 0,
+    }),
+  };
 }
 
 function dedupeContracts(
@@ -315,7 +374,10 @@ function buildUnifiedActionContracts(
       ...localContracts,
     ]),
     types,
-  ).filter((contract) => !isTestLikeContract(contract));
+    ).filter((contract) => !isTestLikeContract(contract)).map((contract) => ({
+      ...contract,
+      dataQuality: contract.dataQuality ?? auditActionContract(contract),
+    }));
 
   const isTruncated = rawContracts.length > limit;
   const items = rawContracts

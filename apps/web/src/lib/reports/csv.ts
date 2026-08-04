@@ -31,6 +31,11 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   manual_drawing_points?: number | null;
   manual_drawing_coordinates_json?: string | null;
   manual_drawing_geojson?: string | null;
+  data_quality_status?: "ok" | "warning" | "blocking" | null;
+  data_quality_anomalies?: string | null;
+  measures_provenance?: "measured" | "derived" | "estimated" | "missing" | null;
+  geometry_provenance?: "measured" | "derived" | "estimated" | "missing" | null;
+  impact_provenance?: "derived" | null;
 };
 
 export type ReportQuery = {
@@ -200,6 +205,11 @@ function buildActionsCsvHeader(): string[] {
     "manual_drawing_points",
     "manual_drawing_coordinates_json",
     "manual_drawing_geojson",
+    "data_quality_status",
+    "data_quality_anomalies",
+    "measures_provenance",
+    "geometry_provenance",
+    "impact_provenance",
   ];
 }
 
@@ -236,6 +246,11 @@ function buildActionsCsvCells(row: ActionCsvRowWithDrawing): Array<string | numb
     toCsvCellValue(row.manual_drawing_points),
     toCsvCellValue(row.manual_drawing_coordinates_json),
     toCsvCellValue(row.manual_drawing_geojson),
+    toCsvCellValue(row.data_quality_status),
+    toCsvCellValue(row.data_quality_anomalies),
+    toCsvCellValue(row.measures_provenance),
+    toCsvCellValue(row.geometry_provenance),
+    toCsvCellValue(row.impact_provenance),
   ];
 }
 

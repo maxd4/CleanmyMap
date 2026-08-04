@@ -40,6 +40,39 @@ function makeMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
 }
 
 describe("computeBusinessAlerts", () => {
+  it("surfaces blocking contract quality anomalies", () => {
+    const alerts = computeBusinessAlerts({
+      actions: [
+        makeAction({
+          data_quality: {
+            version: "test",
+            status: "blocking",
+            anomalies: [],
+            blockingAnomalies: [],
+            warnings: [],
+            geolocation: {
+              state: "partial",
+              provenance: "missing",
+              hasCoordinates: false,
+              hasGeometry: false,
+            },
+            provenance: {
+              measures: "measured",
+              geometry: "missing",
+              impact: "derived",
+            },
+            confidence: null,
+          },
+        }),
+      ],
+      mapItems: [],
+    });
+
+    expect(alerts.some((alert) => alert.id === "blocking-data-quality")).toBe(
+      true,
+    );
+  });
+
   it("returns moderation backlog and zone critical alerts", () => {
     const alerts = computeBusinessAlerts({
       actions: [

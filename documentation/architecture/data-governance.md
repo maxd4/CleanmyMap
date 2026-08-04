@@ -132,6 +132,12 @@ apps/web/src/lib/actions/unified-source.ts
 
 est un point central de normalisation des actions.
 
+Toute ingestion externe, y compris l'import administrateur, doit appeler la
+normalisation de ce module avant l'ecriture dans `actions`, puis utiliser le store
+canonique. Les anomalies de date, de mesure et de geolocalisation sont exposees
+par `apps/web/src/lib/actions/data-quality.ts` afin que dashboard, rapports et
+exports partagent le meme diagnostic.
+
 Ne pas créer un nouveau chemin d'ingestion concurrent sans vérifier :
 
 - contrat canonique ;
