@@ -4,6 +4,10 @@ import {
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  buildMonthlyActionDataQualityReview,
+} from "@/lib/actions/data-quality";
+import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 
 export const runtime = "nodejs";
 const GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET = "reports";
@@ -24,6 +28,33 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const qualityReview = url.searchParams.get("quality") === "1";
+  if (qualityReview) {
+    const month = url.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return Response.json(
+        { status: "error", error: "Le mois doit respecter le format YYYY-MM." },
+        { status: 400 },
+      );
+    }
+    const supabase = getSupabaseServerClient();
+    const { items, sourceHealth } = await fetchUnifiedActionContracts(supabase, {
+      limit: 2000,
+      status: null,
+      floorDate: `${month}-01`,
+      requireCoordinates: false,
+      types: null,
+    });
+    return Response.json({
+      status: "ok",
+      review: buildMonthlyActionDataQualityReview({ contracts: items, month }),
+      sourceHealth,
+    }, {
+      headers: {
+        "Cache-Control": GOVERNANCE_MONTHLY_REPORT_JSON_CACHE_CONTROL,
+      },
+    });
+  }
   const format = parseFormat(url.searchParams.get("format"));
   const month = url.searchParams.get("month");
   const report = await loadGovernanceMonthlyReport(month);

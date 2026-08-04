@@ -19,7 +19,7 @@ Il classe les dossiers lourds avant tout nettoyage automatique et distingue ce q
 | `node_modules` | `771.63 MB` | Non | `npm install` à la racine | `npm install` à la racine | Oui | Oui, pour le workspace racine | Non | `PRESERVE_WARM` |
 | `companion-app/node_modules` | `257.96 MB` | Non | `npm install` dans `companion-app` | `npm install` dans `companion-app` | Oui pour le companion | Oui, si le companion est travaillé | Non | `PRESERVE_WARM` |
 | `artifacts` | `61.97 MB` | Non | Scripts d’audit, captures, logs et exports divers | Selon le sous-dossier; pas un bloc unique prouvé régénérable | Non | Non | Non, classification par sous-dossier requise | `PRESERVE_PROJECT` |
-| `backups` | `0.06 MB` | Oui, au moins pour `backups/actions-backup-2026-04-24T07-54-44.951Z.json` | Scripts de sauvegarde et archives manuelles | Selon le backup; récréation possible mais pas suffisante pour suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
+| `backups` | `0.06 MB` | Oui, selon les archives conservées | Scripts de sauvegarde et archives manuelles | Selon le backup; récréation possible mais pas suffisante pour suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
 | `scratch` | `0.03 MB` | Oui, plusieurs scripts utiles existent | Scripts ponctuels et brouillons techniques | Selon le script; pas de suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
 | `.vercel` | `39.27 MB` | Non | Liaison Vercel locale et variables de preview | `vercel link` / reconfiguration Vercel | Non | Oui, pour le déploiement local et preview | Non | `PRESERVE_PROJECT` |
 

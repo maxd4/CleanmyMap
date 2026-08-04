@@ -70,7 +70,6 @@
     "apps/web/src/app/api/services/route.ts",
     "apps/web/src/app/api/spots/route.ts",
     "apps/web/src/app/api/stripe/webhook/route.ts",
-    "apps/web/src/app/api/system/backpressure/route.ts",
     "apps/web/src/app/api/uptime/route.ts",
     "apps/web/src/app/api/users/checklist-progress/route.ts",
     "apps/web/src/app/api/users/map-viewport-fallback/route.ts",

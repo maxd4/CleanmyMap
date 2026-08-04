@@ -4,6 +4,7 @@ import {
 } from "../actions/data-contract";
 import { estimateActionWasteKg } from "../actions/impact-calculators";
 import { evaluateActionQuality } from "../actions/quality";
+import { auditActionContract } from "../actions/data-quality";
 import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -211,7 +212,10 @@ function computeWindowMetrics(
     moderationDelayDays: round1(median(pendingAges)),
     pendingCount: pending.length,
     iurIndex: round1(impactVolumeKg / ((DIGITAL_IMPACT_CONSTANTS.ANNUAL_COST_KG_CO2E / DIGITAL_IMPACT_CONSTANTS.DAYS_PER_YEAR) * periodDays)),
-    anomaliesCount: approved.filter((a) => (Number(a.metadata.wasteKg) > 500 && !a.metadata.notesPlain) || !a.dates.observedAt).length,
+    anomaliesCount: approved.filter(
+      (record) =>
+        (record.dataQuality ?? auditActionContract(record)).anomalies.length > 0,
+    ).length,
     reliability: buildReliability({
       approvedActions,
       completeness,

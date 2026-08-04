@@ -12,6 +12,7 @@ export type AdminErrorCode =
   | "dry_run_required"
   | "dry_run_expired"
   | "dry_run_mismatch"
+  | "data_quality_blocking"
   | "server_error"
   | "backpressure";
 

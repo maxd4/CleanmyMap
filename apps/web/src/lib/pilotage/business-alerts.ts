@@ -131,6 +131,21 @@ export function computeBusinessAlerts(params: {
 
   const approved = params.actions.filter((item) => item.status === "approved");
   if (approved.length > 0) {
+    const blockingQualityCount = approved.filter(
+      (item) => item.data_quality?.status === "blocking",
+    ).length;
+    if (blockingQualityCount > 0) {
+      output.push({
+        id: "blocking-data-quality",
+        title: "Anomalies data bloquantes",
+        severity: "high",
+        ageLabel: "Contrat qualite courant",
+        impactLabel: `${blockingQualityCount} action(s) a revoir avant diffusion`,
+        actionHref: "/actions/history",
+        actionLabel: "Revoir les anomalies",
+      });
+    }
+
     const qualityScores = approved.map((item) => evaluateActionQuality(item));
     const averageQuality =
       qualityScores.reduce((acc, row) => acc + row.score, 0) /

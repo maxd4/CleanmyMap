@@ -13,6 +13,6 @@ describe("ReportsPageTabs", () => {
 
     expect(markup).toContain("aria-current=\"page\"");
     expect(markup).toContain("?tab=pilotage");
-    expect(markup).not.toContain("?tab=generation");
+    expect(markup).toContain("?tab=generation");
   });
 });

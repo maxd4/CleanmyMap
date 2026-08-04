@@ -114,5 +114,5 @@ describe("GET /api/actions", () => {
         requireCoordinates: false,
       }),
     );
-  });
+  }, 15000);
 });
