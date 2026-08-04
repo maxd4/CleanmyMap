@@ -694,14 +694,6 @@ export function LearnPracticeThemeTabs({
               </ol>
             </CmmCard>
 
-            {theme === "reduire" ? (
-              <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
-            ) : null}
-
-            {theme === "reduire" ? <LearnGestesPropresBarometer locale={locale} /> : null}
-
-            {theme === "reduire" ? <LearnIfopDepotsSection locale={locale} /> : null}
-
             <div className="space-y-3">
               <div className="flex items-end justify-between gap-3">
                 <div>
@@ -740,6 +732,14 @@ export function LearnPracticeThemeTabs({
                 </div>
               ) : null}
             </div>
+
+            {theme === "reduire" ? (
+              <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
+            ) : null}
+
+            {theme === "reduire" ? <LearnGestesPropresBarometer locale={locale} /> : null}
+
+            {theme === "reduire" ? <LearnIfopDepotsSection locale={locale} /> : null}
 
             {theme === "tri" ? (
               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
