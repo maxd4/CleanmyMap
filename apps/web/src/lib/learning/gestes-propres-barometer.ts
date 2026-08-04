@@ -50,7 +50,7 @@ export type GestesPropresBarometerStudy = {
   validation: ContentValidationRecord;
 };
 
-const GESTES_PROPRES_BAROMETER_SOURCE = "documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestespropres-Barometre_2025.pdf";
+const GESTES_PROPRES_BAROMETER_SOURCE = "/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf";
 
 function createMetric(metric: Omit<GestesPropresBarometerMetric, "unit">): GestesPropresBarometerMetric {
   return { ...metric, unit: "percent" };
@@ -349,7 +349,7 @@ export const GESTES_PROPRES_BAROMETER_2025: GestesPropresBarometerStudy = {
   validation: createPublishedLearningValidation({
     id: "learn.gestes-propres.barometer-2025",
     sourceName: "IFOP × Gestes Propres — Baromètre 2025",
-    sourceUrl: "/docs/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestespropres-Barometre_2025.pdf",
+    sourceUrl: GESTES_PROPRES_BAROMETER_SOURCE,
     sourceDate: "2025-12-17",
     sourceDatePrecision: "day",
     sourceDateBasis: "document",

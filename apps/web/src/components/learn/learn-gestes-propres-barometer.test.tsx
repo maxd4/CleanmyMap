@@ -27,7 +27,7 @@ describe("LearnGestesPropresBarometer", () => {
     expect(markup).toContain("98%");
     expect(markup).toContain("94%");
     expect(markup).toContain("Consulter le baromètre complet");
-    expect(markup).toContain("/docs/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestespropres-Barometre_2025.pdf");
+    expect(markup).toContain("/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf");
     expect(markup).toContain("94 %");
     expect(markup).not.toContain("98 %");
   });

@@ -32,7 +32,7 @@ export type IfopDepotsStudy = {
   validation: ContentValidationRecord;
 };
 
-const SOURCE_PDF = "/docs/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestesprorpe-ifop-depots.pdf";
+const SOURCE_PDF = "/learn/bonnes-pratiques/gestesprorpe-ifop-depots.pdf";
 
 const metrics: IfopDepotsMetric[] = [
   {
@@ -157,7 +157,7 @@ export const IFOP_DEPOTS_STUDY: IfopDepotsStudy = {
     fr: "Volet quantitatif en ligne auprès de 2 003 personnes représentatives, complété par des entretiens qualitatifs de 2 h 30 avec 3 personnes dans quatre villes : Paris, Dijon, Bordeaux et Rouen.",
     en: "Online quantitative survey among 2,003 representative people, complemented by 2.5-hour qualitative interviews with 3 people in four cities: Paris, Dijon, Bordeaux and Rouen.",
   },
-  pdfPath: "documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestesprorpe-ifop-depots.pdf",
+  pdfPath: SOURCE_PDF,
   pageCount: 11,
   featuredMetricIds: ["authors-of-illegal-dumping", "authors-expect-pickup", "unknown-collection-options", "know-environmental-risks"],
   metrics,

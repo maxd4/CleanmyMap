@@ -11,6 +11,6 @@ describe("LearnIfopDepotsSection", () => {
     expect(markup).toContain("44%");
     expect(markup).toContain("Données déclaratives");
     expect(markup).toContain("ils ne remplacent pas une mesure terrain");
-    expect(markup).toContain("gestesprorpe-ifop-depots.pdf");
+    expect(markup).toContain("/learn/bonnes-pratiques/gestesprorpe-ifop-depots.pdf");
   });
 });

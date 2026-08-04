@@ -17,7 +17,7 @@ function getMetric(id: string) {
 
 export function LearnIfopDepotsSection({ locale, className }: { locale: LearnLocale; className?: string }) {
   const featuredMetrics = IFOP_DEPOTS_STUDY.featuredMetricIds.map(getMetric);
-  const pdfHref = `/docs/${IFOP_DEPOTS_STUDY.pdfPath.replace(/^documentation\//, "")}`;
+  const pdfHref = IFOP_DEPOTS_STUDY.pdfPath;
 
   return (
     <section
