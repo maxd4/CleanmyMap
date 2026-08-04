@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import { parseDrawingFromNotes } from "@/lib/actions/drawing";
 import { buildPersistedNotes, loadActionById } from "@/lib/actions/store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -27,10 +28,13 @@ function buildActionEditorPayload(
     return null;
   }
 
-  const metadata = extractActionMetadataFromNotes(row.notes);
+  const parsedDrawing = parseDrawingFromNotes(row.notes);
+  const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
   return {
     id: row.id,
+    createdAt: row.created_at,
     status: row.status,
+    recordType: "action",
     actionPhase: row.action_phase,
     preparationData: row.preparation_data,
     createdByClerkId: row.created_by_clerk_id,
@@ -55,6 +59,7 @@ function buildActionEditorPayload(
     wasteBreakdown: metadata.wasteBreakdown,
     photos: metadata.photos,
     visionEstimate: metadata.visionEstimate,
+    manualDrawing: parsedDrawing.manualDrawing,
   };
 }
 

@@ -112,7 +112,8 @@ export type DeclarationMode = "quick" | "complete";
 
 export type PostActionRetentionLoop = {
   summary: string;
-  badge: string;
+  badge: string | null;
+  xpAwarded: number;
   thanksMessage: string;
   share: {
     text: string;
