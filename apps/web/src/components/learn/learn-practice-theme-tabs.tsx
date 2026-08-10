@@ -21,6 +21,7 @@ import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres-campaign";
 import { LearnGestesPropresBarometer } from "@/components/learn/learn-gestes-propres-barometer";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
+import { LearnIfopDepotsSection } from "@/components/learn/learn-ifop-depots-section";
 
 export type LearnPracticeThemeId = "tri" | "compost" | "reduire";
 
@@ -693,12 +694,6 @@ export function LearnPracticeThemeTabs({
               </ol>
             </CmmCard>
 
-            {theme === "reduire" ? (
-              <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
-            ) : null}
-
-            {theme === "reduire" ? <LearnGestesPropresBarometer locale={locale} /> : null}
-
             <div className="space-y-3">
               <div className="flex items-end justify-between gap-3">
                 <div>
@@ -737,6 +732,14 @@ export function LearnPracticeThemeTabs({
                 </div>
               ) : null}
             </div>
+
+            {theme === "reduire" ? (
+              <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
+            ) : null}
+
+            {theme === "reduire" ? <LearnGestesPropresBarometer locale={locale} /> : null}
+
+            {theme === "reduire" ? <LearnIfopDepotsSection locale={locale} /> : null}
 
             {theme === "tri" ? (
               <LearnGestesPropresInsightsSection locale={locale} theme={theme} scope="theme" />
