@@ -47,6 +47,13 @@
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
+## Frontière d'accès et de rendu
+
+- La page est dynamique et protégée : elle ne doit pas être pré-rendue avec des données sponsor ou de pilotage privilégiées.
+- `getSafeAuthSession()` est résolu avant toute lecture de pilotage ; un utilisateur non authentifié reçoit immédiatement l'état de connexion requis.
+- La validation du profil via `AccountCompletionGate` intervient avant le chargement de l'overview sponsor.
+- Les données sponsor ne sont chargées qu'après validation de l'accès serveur ; leur indisponibilité produit un état partiel contrôlé.
+
 
 
 ## Références legacy
