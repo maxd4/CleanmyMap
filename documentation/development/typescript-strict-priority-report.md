@@ -19,6 +19,11 @@ Le contrôle strict `noPropertyAccessFromIndexSignature` est maintenant vert. Ce
 - Aucun warning strict TypeScript actif au moment de cette vérification.
 - Le backlog ci-dessus est clos et conservé seulement comme trace historique.
 
+`noUncheckedIndexedAccess` reste volontairement hors du contrat standard. Une passe
+exploratoire du 10/08/2026 fait encore ressortir des accès indexés non prouvés dans
+des composants et des tests ; ils doivent être traités par lots fonctionnels avant
+d'envisager son activation, sans remplacer mécaniquement les accès par des `!`.
+
 ## Lot clos
 
 - `mission-qr`

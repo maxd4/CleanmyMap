@@ -81,6 +81,7 @@ La validation complète couvre notamment :
 - audit Vercel CI ;
 - build de production ;
 - typecheck de l'application compagnon ;
+- tests Node déterministes des scripts de maintenance ;
 - maintenance Python lorsque l'environnement la permet.
 
 Les E2E ne sont pas lancés automatiquement par défaut.
@@ -96,6 +97,7 @@ npm run check:agent-skills
 
 npm run typecheck
 npm run lint
+npm run test:scripts
 npm run test
 npm run test:security
 npm run test:regression-gates
@@ -144,6 +146,12 @@ Diagnostic détaillé :
 
 ```bash
 npx tsc --noEmit --pretty false
+```
+
+Pour exclure un résultat issu du cache TypeScript web :
+
+```bash
+npx tsc --noEmit --pretty false --skipLibCheck --incremental false
 ```
 
 Sortie complète :
