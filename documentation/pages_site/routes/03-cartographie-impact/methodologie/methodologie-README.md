@@ -32,7 +32,12 @@ statistiques GitHub du dépôt
 dates de génération et de lancement
 ```
 
-Une erreur de chargement ne doit pas rendre la page entière inutilisable.
+La page publique consomme le dernier snapshot d’impact disponible. La génération
+live des signaux opérationnels est séparée du rendu public et reste réservée aux
+parcours serveur, admin ou cron prévus à cet effet.
+
+En l’absence de snapshot, la page affiche un état partiel avec les valeurs vides
+prévues ; cette indisponibilité ne doit pas rendre la page entière inutilisable.
 
 ## Palette
 
