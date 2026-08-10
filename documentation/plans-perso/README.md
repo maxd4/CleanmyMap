@@ -9,12 +9,15 @@ Ils ne doivent pas être indexés comme documentation publique de référence.
 
 ## Lecture rapide
 
-1. `backlog-validation-globale.md` - backlog de correction après les vérifications globales
-2. `ateliers_DU.md` - backlog opérationnel actif
-3. `ateliers_DU_execution_rapide.md` - trace d'exécution du lot déjà absorbé
-4. `dossier_validation_institutionnelle.md` - dossier de validation et de cohérence
-5. `rapport_impact/impact_IA.md` - gouvernance IA, sobriété et arbitrages
-6. `journal_impact_DU.md` - narratif DU et trace d'apprentissage
+1. `ateliers_DU.md` - backlog opérationnel actif
+2. `ateliers_DU_execution_rapide.md` - trace d'exécution du lot déjà absorbé
+3. `dossier_validation_institutionnelle.md` - dossier de validation et de cohérence
+4. `rapport_impact/impact_IA.md` - gouvernance IA, sobriété et arbitrages
+5. `journal_impact_DU.md` - narratif DU et trace d'apprentissage
+
+L'ancien backlog global n'est plus présent dans ce dépôt. Ne pas recréer ce plan
+ni le citer comme source active : les constats courants doivent être vérifiés
+dans le code, les tests et `ateliers_DU.md`.
 
 ---
 
