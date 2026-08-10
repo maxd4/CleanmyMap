@@ -83,12 +83,17 @@ function getSeverityEmoji(severity) {
   return map[severity] || '⚪';
 }
 
+function normalizeFilePath(filePath) {
+  return filePath.trim().replaceAll('\\', '/');
+}
+
 function matchFileToRubrique(filePath) {
+  const normalizedPath = normalizeFilePath(filePath);
   for (const [key, config] of Object.entries(RUBRIQUES)) {
     if (key === 'other') continue; // Skip catch-all
     
     for (const pattern of config.patterns) {
-      if (filePath.includes(pattern)) {
+      if (normalizedPath.includes(pattern)) {
         return key;
       }
     }
@@ -103,14 +108,16 @@ function parseLintOutput(lintOutput) {
   let currentFile = null;
   
   for (const line of lines) {
-    // Détecter les fichiers (chemins absolus Windows)
-    if (line.match(/^[A-Z]:\\.+\.(tsx?|jsx?|mjs)$/)) {
-      currentFile = line;
+    const cleanLine = line.replace(/\u001b\[[0-9;]*m/g, '').trim();
+
+    // Détecter les fichiers (chemins absolus Windows ou POSIX)
+    if (cleanLine.match(/^(?:[A-Z]:[\\/]|\/).+\.(tsx?|jsx?|mjs)$/)) {
+      currentFile = normalizeFilePath(cleanLine);
       continue;
     }
     
     // Détecter les warnings/erreurs
-    const warningMatch = line.match(/^\s*(\d+):(\d+)\s+(warning|error)\s+(.+?)\s+([a-z-/@]+)$/);
+    const warningMatch = cleanLine.match(/^(\d+):(\d+)\s+(warning|error)\s+(.+?)\s+([a-zA-Z0-9._/@-]+)$/);
     if (warningMatch && currentFile) {
       const [, lineNum, colNum, type, message, ruleId] = warningMatch;
       
@@ -189,7 +196,7 @@ function generateMarkdownReport(analyses) {
   const now = new Date().toLocaleDateString('fr-FR');
   
   let markdown = `# Rapport d'Audit ESLint par Rubrique\n\n`;
-  markdown += `**Généré le** : ${now}  \n`;
+  markdown += `**Généré le** : ${now}\n`;
   markdown += `**Commande** : \`npm run lint:audit\`\n\n`;
   
   // Résumé global
@@ -206,7 +213,7 @@ function generateMarkdownReport(analyses) {
   if (totalWarnings === 0 && totalErrors === 0) {
     markdown += `## 🎉 Félicitations !\n\n`;
     markdown += `Aucun warning ou erreur ESLint détecté. Le code est parfaitement propre !\n\n`;
-    return markdown;
+    return `${markdown.trimEnd()}\n`;
   }
   
   // Tableau de bord par rubrique
@@ -280,64 +287,46 @@ function generateMarkdownReport(analyses) {
     markdown += `\n`;
   }
   
-  return markdown;
+  return `${markdown.trimEnd()}\n`;
 }
 
 function main() {
   console.log('🚀 Démarrage de l\'audit ESLint par rubrique...\n');
-  
+
+  // Le répertoire .next contient du JavaScript généré et ne doit pas
+  // polluer l'audit des sources versionnées.
+  console.log('📋 Exécution d\'ESLint...');
+  const webDir = path.join(process.cwd(), 'apps/web');
+  let fullOutput = '';
+  let exitCode = 0;
+
   try {
-    // Exécuter ESLint directement dans le workspace apps/web
-    console.log('📋 Exécution d\'ESLint...');
-    const webDir = path.join(process.cwd(), 'apps/web');
-    
-    // Forcer l'exécution d'ESLint même s'il y a des warnings
-    execSync('npx eslint . --max-warnings=1000', {
+    fullOutput = execSync('npx eslint src --max-warnings=1000', {
       encoding: 'utf8',
       cwd: webDir,
       stdio: 'pipe'
     });
-    
-    console.log('✅ Aucun warning détecté !');
-    
-    // Générer un rapport vide
-    const report = generateMarkdownReport([]);
-    const reportPath = path.join(__dirname, '../documentation/development/LINT_AUDIT_REPORT.md');
-    fs.writeFileSync(reportPath, report, 'utf8');
-    
-    console.log(`📄 Rapport généré : ${reportPath}`);
-    console.log(`🎉 Code parfaitement propre !`);
-    
   } catch (error) {
-    // ESLint retourne un code d'erreur avec des warnings
-    console.log('⚠️ Warnings détectés, analyse en cours...');
-    
-    // Combiner stdout et stderr car les warnings peuvent être dans les deux
-    const fullOutput = (error.stdout || '') + '\n' + (error.stderr || '');
-    const warnings = parseLintOutput(fullOutput);
-    console.log(`📊 ${warnings.length} warnings analysés`);
-    
-    if (warnings.length === 0) {
-      console.log('ℹ️ Aucun warning parsé, génération d\'un rapport vide...');
-      const report = generateMarkdownReport([]);
-      const reportPath = path.join(__dirname, '../documentation/development/LINT_AUDIT_REPORT.md');
-      fs.writeFileSync(reportPath, report, 'utf8');
-      console.log(`📄 Rapport généré : ${reportPath}`);
-      return;
-    }
-    
-    const analyses = analyzeWarnings(warnings);
-    const report = generateMarkdownReport(analyses);
-    
-    // Sauvegarder le rapport
-    const reportPath = path.join(__dirname, '../documentation/development/LINT_AUDIT_REPORT.md');
-    fs.writeFileSync(reportPath, report, 'utf8');
-    
-    console.log(`📄 Rapport généré : ${reportPath}`);
-    console.log(`\n🎯 Résumé :`);
-    console.log(`   - ${analyses.reduce((sum, a) => sum + a.totalErrors, 0)} erreurs totales`);
-    console.log(`   - ${analyses.reduce((sum, a) => sum + a.totalWarnings, 0)} warnings totaux`);
-    console.log(`   - ${analyses.filter(a => a.totalWarnings > 0 || a.totalErrors > 0).length}/${analyses.length} rubriques nécessitent une attention`);
+    fullOutput = (error.stdout || '') + '\n' + (error.stderr || '');
+    exitCode = error.status || 1;
+  }
+
+  const diagnostics = parseLintOutput(fullOutput);
+  const analyses = analyzeWarnings(diagnostics);
+  const report = generateMarkdownReport(analyses);
+  const reportPath = path.join(__dirname, '../documentation/development/LINT_AUDIT_REPORT.md');
+  fs.writeFileSync(reportPath, report, 'utf8');
+
+  console.log(`📄 Rapport généré : ${reportPath}`);
+  console.log(`📊 ${diagnostics.length} diagnostics analysés`);
+  console.log(`   - ${analyses.reduce((sum, a) => sum + a.totalErrors, 0)} erreurs totales`);
+  console.log(`   - ${analyses.reduce((sum, a) => sum + a.totalWarnings, 0)} warnings totaux`);
+
+  if (exitCode !== 0) {
+    console.error(`❌ ESLint a échoué avec le code ${exitCode}.`);
+    process.exitCode = exitCode;
+  } else {
+    console.log('✅ Audit ESLint terminé.');
   }
 }
 
@@ -345,4 +334,10 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { parseLintOutput, analyzeWarnings, generateMarkdownReport };
+module.exports = {
+  analyzeWarnings,
+  generateMarkdownReport,
+  matchFileToRubrique,
+  normalizeFilePath,
+  parseLintOutput,
+};
