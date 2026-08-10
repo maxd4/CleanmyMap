@@ -78,7 +78,7 @@ Message C
 Priorite 2 - Clarification produit
 
 Message D
-"Redefinis la responsabilite de `/dashboard`, `/reports`, `/pilotage` et `/observatoire`, puis supprime les doublons analytiques entre ces pages sans retirer d'information utile ni casser les parcours coeur. Livre la repartition des roles par page, les simplifications retenues et les points restant a arbitrer."
+"Redefinis la responsabilite de `/dashboard`, `/reports`, `/pilotage` et `/sections/open-data`, puis supprime les doublons analytiques entre ces pages sans retirer d'information utile ni casser les parcours coeur. Livre la repartition des roles par page, les simplifications retenues et les points restant a arbitrer."
 
 Message E
 "Cree une politique d'usage IA et de partage des donnees vers des services externes, avec cas autorises, cas interdits, anonymisation minimale et controle avant partage. Ne laisse aucune regle implicite. Livre la politique, la checklist de controle et les cas limites."
