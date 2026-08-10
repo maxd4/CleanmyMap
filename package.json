@@ -61,6 +61,7 @@
     "metrics:jsonl": "node scripts/summarize-jsonl.mjs",
     "modularize:report": "node scripts/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
+    "test:scripts": "node --test scripts/*.test.mjs scripts/lint-audit-direct.test.js",
     "test:security": "npm run test:security -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test",

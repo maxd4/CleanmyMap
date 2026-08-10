@@ -116,6 +116,7 @@ if ($webRelevant) {
     Invoke-Step { npm run check:lockfile-policy } "check:lockfile-policy"
     Invoke-Step { npm run typecheck } "typecheck"
     Invoke-Step { npm run lint } "lint"
+    Invoke-Step { npm run test:scripts } "test:scripts"
     Invoke-Step { npm run test } "test"
     Invoke-Step { npm run test:security } "test:security"
     Invoke-Step { npm run test:regression-gates } "test:regression-gates"
