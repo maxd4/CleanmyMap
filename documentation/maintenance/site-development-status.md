@@ -2,6 +2,10 @@
 
 Date de génération: 2026-04-28
 
+> Snapshot historique. Ce document ne remplace pas `documentation/pages_site/INDEX.md`
+> ni l'audit `npm run audit:pages-site-drift`. Les routes et scores doivent être
+> revalidés avant toute décision actuelle.
+
 ## Résumé global
 
 Le site n'est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54/100**. Les écrans centraux les plus défendables se situent plus près de **63/100** que de 74/100.
@@ -70,7 +74,7 @@ Axes notés:
 | Déclaration simple         | `/declaration-simple`      | 71             | 69  | 70  | 66                   | 68            | 68         | 67               | 68          | Utilisable          | Moyenne  |
 | Comparaison interne        | Interne uniquement         | 58             | 56  | 55  | 53                   | 55            | 54         | 52               | 55          | Fonctionnel partiel | Moyenne  |
 | Méthodologie               | `/methodologie`            | 74             | 72  | 72  | 75                   | 70            | 67         | 76               | 72          | Utilisable          | Moyenne  |
-| Observatoire public        | `/observatoire`            | 82             | 80  | 81  | 80                   | 78            | 75         | 78               | 79          | Presque prêt        | Basse    |
+| Données ouvertes           | `/sections/open-data`      | 81             | 79  | 80  | 78                   | 78            | 75         | 77               | 78          | Utilisable          | Moyenne  |
 | Onboarding localisation    | `/onboarding/localisation` | 57             | 55  | 54  | 53                   | 55            | 58         | 50               | 54          | Fonctionnel partiel | Moyenne  |
 | Parcours personnalisé      | `/parcours`                | 56             | 54  | 53  | 52                   | 53            | 58         | 49               | 53          | Fonctionnel partiel | Moyenne  |
 | Parcours profil            | `/parcours/[profile]`      | 61             | 59  | 58  | 56                   | 58            | 60         | 54               | 58          | Fonctionnel partiel | Moyenne  |
@@ -149,7 +153,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 ### Phase 1 - Cadrage de sortie
 
 1. Figer le périmètre public à 8 à 10 routes maximum.
-   - Garder: `/`, `/explorer`, `/learn/hub`, `/reports`, `/actions/new`, `/actions/map`, `/observatoire`, `/prints/report`, `/sections/community`, `/sponsor-portal`.
+   - Garder: `/`, `/explorer`, `/learn/hub`, `/reports`, `/actions/new`, `/actions/map`, `/sections/open-data`, `/prints/report`, `/sections/community`, `/sponsor-portal`.
    - Mettre hors vitrine publique: `/admin`, `/admin/forms`, `/admin/godmode`, `/profil`, `/parcours`, `/onboarding/localisation`, la comparaison interne des formulaires, `/sign-in`, `/sign-up`, les routes dynamiques non garanties.
 2. Décider explicitement ce qui est public, ce qui est interne, et ce qui est caché dans la navigation.
 3. Marquer dans le code les pages non publicables comme secondaires ou hors menu principal.
