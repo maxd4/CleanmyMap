@@ -95,7 +95,7 @@ describe("POST /api/actions/import", () => {
   it("reports geolocation coverage during dry-run", async () => {
     const { POST } = await import("./route");
     const response = await POST(
-      new Request("http://localhost/api/actions/import?dryRun=1", {
+      new Request("http://localhost/api/actions/import", {
         method: "POST",
         body: JSON.stringify(payload()),
       }),
@@ -108,6 +108,20 @@ describe("POST /api/actions/import", () => {
       stats: { withCoordinates: 1, blockingAnomalies: 0 },
     });
     expect(normalizeExternalActionImportMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let a dry-run query parameter select the write path", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/import?dryRun=0", {
+        method: "POST",
+        body: JSON.stringify(payload()),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(createActionMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ status: "dry_run" });
   });
 
   it("refuses a confirmed import with a blocking normalized anomaly", async () => {

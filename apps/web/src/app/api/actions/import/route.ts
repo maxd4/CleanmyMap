@@ -181,6 +181,7 @@ const adminImportOrganizer = (userId: string): ResolvedActionOrganizer => ({
 export async function POST(request: Request) {
   const operationId = newOperationId();
   const bp = acquireBackpressure("import", operationId);
+  let dryRun = false;
   if (!bp.allowed) {
     return adminErrorResponse({
       status: 429,
@@ -197,9 +198,6 @@ export async function POST(request: Request) {
     releaseBackpressure("import");
     return adminAccessErrorJsonResponse(access, operationId);
   }
-
-  const url = new URL(request.url);
-  const dryRun = url.searchParams.get("dryRun") === "1";
 
   try {
     let payload: unknown;
@@ -243,8 +241,13 @@ export async function POST(request: Request) {
     const normalizedPayload = { items: parsed.data.items };
     const payloadHash = hashImportPayload(normalizedPayload);
     const stats = buildImportStats(preparedItems);
+    const proofToken = extractProofFromRequest(parsed.data, request);
+    const confirmationPhrase = extractConfirmationPhrase(parsed.data, request);
 
-    if (dryRun) {
+    // A request without proof or confirmation is always a preview. The URL
+    // must not decide whether the write path is reachable.
+    if (!proofToken && !confirmationPhrase) {
+      dryRun = true;
       const proof = createDryRunProof({ userId: access.userId, payloadHash });
       await appendAdminOperationAudit({
         operationId,
@@ -266,7 +269,6 @@ export async function POST(request: Request) {
       });
     }
 
-    const proofToken = extractProofFromRequest(parsed.data, request);
     if (!proofToken) {
       await auditImportFailure({
         operationId,
@@ -283,7 +285,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!isValidImportConfirmationPhrase(extractConfirmationPhrase(parsed.data, request))) {
+    if (!isValidImportConfirmationPhrase(confirmationPhrase)) {
       await auditImportFailure({
         operationId,
         userId: access.userId,

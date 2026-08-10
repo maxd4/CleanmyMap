@@ -85,6 +85,7 @@ Invoke-Step { npm run check:root-files } "check:root-files"
 Invoke-Step { npm run check:doc-governance } "check:doc-governance"
 Invoke-Step { npm run check:stack-doc-drift } "check:stack-doc-drift"
 Invoke-Step { npm run check:agent-skills } "check:agent-skills"
+Invoke-Step { npm run check:github-actions } "check:github-actions"
 Invoke-Step { npm run check:doc-visuals } "check:doc-visuals"
 
 # UTF-8 normalization remains available when Python is installed.
