@@ -27,6 +27,9 @@ import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-ga
 
 const SPONSOR_WINDOW_DAYS = 730;
 
+// Justification Vercel: cette page protégée dépend de la session Clerk et ne doit jamais être pré-rendue avec des données sponsor privilégiées.
+export const dynamic = "force-dynamic";
+
 async function loadSponsorOverview() {
   return loadPilotageOverview({
     periodDays: SPONSOR_WINDOW_DAYS,
@@ -36,23 +39,53 @@ async function loadSponsorOverview() {
 
 export default async function SponsorPortalPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
-  const overview = await loadSponsorOverview();
+
+  if (!userId) {
+    return (
+      <ClerkRequiredGate isAuthenticated={false} mode="disabled">
+        <AccountCompletionGate state={null}>
+          <div />
+        </AccountCompletionGate>
+      </ClerkRequiredGate>
+    );
+  }
+
+  const accountCompletion = await loadAccountCompletionGateState({
+    userId,
+    clerkReachable,
+  }).catch(() => null);
+
+  if (accountCompletion?.requirement.requiresSetup) {
+    return (
+      <ClerkRequiredGate isAuthenticated={true} mode="disabled">
+        <AccountCompletionGate state={accountCompletion}>
+          <div />
+        </AccountCompletionGate>
+      </ClerkRequiredGate>
+    );
+  }
+
+  const overview = await loadSponsorOverview().catch((error) => {
+    console.error("[SponsorPortalPage] Failed to load sponsor overview", error);
+    return null;
+  });
   const factors = IMPACT_PROXY_CONFIG.factors;
   const observedUntil = new Date();
   const observedFrom = new Date(observedUntil);
   observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
   const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
   const pageFamily = getPageFamilyById("accueil-pilotage");
-  const accountCompletion = userId
-    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
-    : null;
 
   // Calculs ROI
-  const totalKg = overview.comparison.current.impactVolumeKg;
-  const totalEuroSaved = Math.round(totalKg * factors.euroSavedPerWasteKg);
-  const totalCo2 = Math.round(totalKg * factors.co2KgPerWasteKg);
-  const totalVolunteers = overview.comparison.current.mobilizationCount;
-  const observedZones = overview.zones.slice(0, 3);
+  const totalKg = overview?.comparison.current.impactVolumeKg ?? null;
+  const totalEuroSaved = totalKg === null
+    ? null
+    : Math.round(totalKg * factors.euroSavedPerWasteKg);
+  const totalCo2 = totalKg === null
+    ? null
+    : Math.round(totalKg * factors.co2KgPerWasteKg);
+  const totalVolunteers = overview?.comparison.current.mobilizationCount ?? null;
+  const observedZones = overview?.zones.slice(0, 3) ?? [];
 
   const page = (
     <div className="w-full max-w-[1600px] mx-auto space-y-24 pb-24">
@@ -96,7 +129,7 @@ export default async function SponsorPortalPage() {
             {
               id: "economie-voirie",
               label: "Économie de voirie",
-              value: `${totalEuroSaved.toLocaleString()} €`,
+              value: totalEuroSaved === null ? "n/a" : `${totalEuroSaved.toLocaleString()} €`,
               deltaPercent: "+12%",
               icon: <Euro size={16} aria-hidden="true" />,
               interpretation: "positive",
@@ -104,7 +137,7 @@ export default async function SponsorPortalPage() {
             {
               id: "co2-evite",
               label: "CO2 évité (estimé)",
-              value: `${totalCo2.toLocaleString()} kg`,
+              value: totalCo2 === null ? "n/a" : `${totalCo2.toLocaleString()} kg`,
               deltaPercent: "+8%",
               icon: <Leaf size={16} aria-hidden="true" />,
               interpretation: "positive",
@@ -112,7 +145,7 @@ export default async function SponsorPortalPage() {
             {
               id: "mobilisation-citoyenne",
               label: "Mobilisation citoyenne",
-              value: totalVolunteers.toLocaleString(),
+              value: totalVolunteers === null ? "n/a" : totalVolunteers.toLocaleString(),
               deltaPercent: "+24%",
               icon: <Users size={16} aria-hidden="true" />,
               interpretation: "positive",
@@ -120,7 +153,7 @@ export default async function SponsorPortalPage() {
             {
               id: "masse-extraite",
               label: "Masse extraite",
-              value: `${totalKg.toLocaleString()} kg`,
+              value: totalKg === null ? "n/a" : `${totalKg.toLocaleString()} kg`,
               deltaPercent: "+15%",
               icon: <MapIcon size={16} aria-hidden="true" />,
               interpretation: "positive",
@@ -152,8 +185,8 @@ export default async function SponsorPortalPage() {
           <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/5">
             {[
               { label: "Période", val: `${SPONSOR_WINDOW_DAYS}j` },
-              { label: "Contrats", val: overview.contracts.length },
-              { label: "Zones", val: overview.zones.length },
+              { label: "Contrats", val: overview?.contracts.length ?? "n/a" },
+              { label: "Zones", val: overview?.zones.length ?? "n/a" },
             ].map((stat, i) => (
               <div key={i} className="space-y-1">
                 <p className="text-[9px] font-black uppercase tracking-widest text-white/20">{stat.label}</p>
