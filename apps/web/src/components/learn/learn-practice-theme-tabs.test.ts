@@ -70,14 +70,14 @@ describe("LearnPracticeThemeTabs", () => {
     expect(reduireMarkup).toContain("Trouver la bonne filière");
     expect(reduireMarkup).toContain("Réduire à la source");
     expect(reduireMarkup).toContain("Consulter le baromètre complet");
-    expect(reduireMarkup.indexOf("Campagne à la une")).toBeLessThan(
+    expect(reduireMarkup.indexOf("Guides essentiels")).toBeLessThan(
+      reduireMarkup.indexOf("Campagne à la une"),
+    );
+    expect(reduireMarkup.indexOf("Guides essentiels")).toBeLessThan(
       reduireMarkup.indexOf("Baromètre national 2025"),
     );
-    expect(reduireMarkup.indexOf("Baromètre national 2025")).toBeLessThan(
-      reduireMarkup.indexOf("Guides essentiels"),
-    );
     expect(reduireMarkup.indexOf("Campagne à la une")).toBeLessThan(
-      reduireMarkup.indexOf("Guides essentiels"),
+      reduireMarkup.indexOf("Baromètre national 2025"),
     );
   });
 });

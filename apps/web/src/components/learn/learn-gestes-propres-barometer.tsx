@@ -42,7 +42,7 @@ function getMetricById(id: string): BarometerMetric {
 }
 
 function getPdfHref() {
-  return `/docs/${GESTES_PROPRES_BAROMETER_2025.pdfPath.replace(/^documentation\//, "")}`;
+  return GESTES_PROPRES_BAROMETER_2025.pdfPath;
 }
 
 function BarometerKpiCard({
