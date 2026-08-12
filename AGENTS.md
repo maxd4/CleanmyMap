@@ -176,6 +176,40 @@ documentation/                            documentation structurée
 
 Le dossier racine `supabase/migrations/` est un miroir historique tant que l'ADR de migration n'est pas définitivement appliqué. Ne jamais modifier un seul arbre de migrations sans vérifier l'autre.
 
+## Prévention des monolithes
+
+Ces règles sont impératives et doivent être appliquées spontanément par Codex
+pendant tout développement futur, sans attendre une demande explicite de
+modularisation.
+
+- Pour un fichier ≥ 500 lignes, examiner explicitement les responsabilités du fichier
+  et ses frontières de modules.
+- Pour un fichier ≥ 650 lignes, toute modification doit conclure soit à une façade
+  cohérente dont la cohérence restante est documentée, soit à une extraction.
+- Pour un fichier ≥ 800 lignes, il est interdit d'ajouter une nouvelle responsabilité
+  sans modularisation préalable ou simultanée.
+- Si un changement fait franchir le seuil de 650 lignes, modulariser dans le
+  même lot lorsque l'extraction est pure et présente un faible risque.
+- Pour le réseau, SQLite, la concurrence, les transactions, l'orchestration,
+  le navigateur, le lifecycle ou une décision métier, commencer par une
+  caractérisation du comportement existant. Réaliser ensuite une extraction
+  séparée si nécessaire ; ne pas refactorer opportunistement sans preuve.
+- Vérifier la taille du fichier après chaque modification concernée.
+- Ne jamais simplement déplacer un monolithe dans un nouveau gros helper : les
+  modules doivent avoir des responsabilités cohérentes, une responsabilité
+  unique autant que possible et un graphe de dépendances acyclique.
+- Préserver les contrats publics, les imports historiques, les monkeypatches,
+  l'ordre d'exécution, les exceptions et les side effects.
+- Une façade déjà modularisée peut dépasser 650 lignes uniquement si sa
+  cohérence restante est explicitement documentée dans
+  `docs/ARCHITECTURE_MONOLITHS_AUDIT.md`.
+- Tout nouveau module approchant 500 à 600 lignes doit lui-même être réévalué
+  selon ces règles.
+- Un lot fonctionnel ne doit pas être gonflé par un refactor sensible qui n'est
+  pas nécessaire à l'objectif. Si la frontière est risquée, terminer le lot
+  fonctionnel, puis signaler et préparer immédiatement le lot structurel
+  suivant.
+
 ---
 
 ## 4. Règles critiques de code
