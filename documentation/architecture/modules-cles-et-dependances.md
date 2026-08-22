@@ -56,3 +56,11 @@ Fallback statique:
 - Registry sections <-> navigation <-> renderer.
 - Contrat actions <-> exports <-> rapports.
 - Auth roles <-> routes protegees <-> endpoints admin.
+
+## Pilotage
+
+Les contrats, types, methodes et zones de pilotage sont canoniques dans les
+modules `overview.types.ts`, `overview.methods.ts`, `overview.summary.ts` et
+`overview.zones.ts`. Les variantes a tirets ne sont pas des API de compatibilite
+et ne doivent plus etre reintroduites ; les tests doivent importer les modules
+canoniques.

@@ -14,6 +14,7 @@ import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-s
 import { DashboardTodayPanel } from "@/components/dashboard/dashboard-today-panel";
 import { buildDashboardTodayState, type DashboardRecommendedAction } from "@/lib/dashboard/today";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
+import { buildReportDataAvailabilityNotices } from "@/lib/reports/data-availability";
 import { isAdminLikeProfile, type AppProfile, type ProfileAction } from "@/lib/profiles";
 import type { Locale } from "@/lib/ui/preferences";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -98,6 +99,9 @@ export async function DashboardOverviewSection({
   }
 
   const overview = result.overview;
+  const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
+    overview.dataAvailability,
+  );
   const recommendedAction = resolveRecommendedAction({
     locale,
     profile,
@@ -113,6 +117,15 @@ export async function DashboardOverviewSection({
 
   return (
     <div data-gsap-reveal className="space-y-4">
+      {dataAvailabilityNotices.length > 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900"
+        >
+          {dataAvailabilityNotices.join(" ")}
+        </div>
+      ) : null}
       <ThirtySecondsSummary
         kpis={overview.summary.kpis}
         alert={overview.summary.alert}

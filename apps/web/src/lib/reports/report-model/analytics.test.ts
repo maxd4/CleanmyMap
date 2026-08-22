@@ -6,8 +6,9 @@ import {
  buildExecutiveNarrative,
  buildRouteSteps,
  computeReportModel,
+ computeCommunityEngagementMetrics,
  getWeatherAdvice,
-} from"./analytics";
+} from "@/lib/reports/report-model";
 
 function makeListItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
  return {
@@ -164,6 +165,24 @@ describe("reports web analytics", () => {
  expect(steps[1]?.segmentKm).toBeGreaterThan(0);
  });
 
+ it("does not count a point without contract geometry as a trace", () => {
+ const report = computeReportModel({
+ allItems: [],
+ approvedItems: [],
+ mapItems: [
+ makeMapItem(
+ { id:"m-no-contract", contract: undefined },
+ { label:"Point sans contrat", latitude: 48.85, longitude: 2.35 },
+ ),
+ ],
+ events: [],
+ now: new Date("2026-03-25T12:00:00.000Z"),
+ });
+
+ expect(report.map.points).toBe(1);
+ expect(report.map.traces).toBe(0);
+ });
+
  it("computes model summary and community buckets", () => {
  const report = computeReportModel({
  allItems: [
@@ -177,19 +196,75 @@ describe("reports web analytics", () => {
  now: new Date("2026-03-25T12:00:00.000Z"),
  });
  expect(report.totals.actions).toBe(1);
- expect(report.moderation.pending).toBe(0);
- expect(report.moderation.rejected).toBe(0);
+ expect(report.moderation.pending).toBe(1);
+ expect(report.moderation.rejected).toBe(1);
+ expect(report.moderation.approved).toBe(1);
  expect(report.community.sourceBuckets.citoyen).toBe(1);
- expect(report.community.sourceBuckets.associatif).toBe(0);
- expect(report.community.sourceBuckets.institutionnel).toBe(0);
+ expect(report.community.sourceBuckets.associatif).toBe(1);
+ expect(report.community.sourceBuckets.institutionnel).toBe(1);
  expect(report.impactMethodology.formulas).toHaveLength(4);
  expect(report.impactMethodology.proxyVersion.length).toBeGreaterThan(0);
+ });
+
+ it("keeps approved-only moderation explicitly unavailable", () => {
+ const report = computeReportModel({
+ allItems: [makeListItem({ id:"approved-only", status:"approved" })],
+ approvedItems: [makeListItem({ id:"approved-only", status:"approved" })],
+ mapItems: [makeMapItem({ id:"approved-only" })],
+ events: [],
+ moderationAvailability: "unavailable",
+ now: new Date("2026-03-25T12:00:00.000Z"),
+ });
+
+ expect(report.moderation).toEqual({
+ availability: "unavailable",
+ pending: null,
+ approved: 1,
+ rejected: null,
+ conversion: null,
+ delayDays: null,
+ });
+ expect(report.executive.watchouts[0]).toContain("Indisponible");
+ });
+
+ it("does not score a missing waste measure as complete", () => {
+ const report = computeReportModel({
+ allItems: [makeListItem({ id:"missing-waste", waste_kg:null })],
+ approvedItems: [makeListItem({ id:"missing-waste", waste_kg:null })],
+ mapItems: [makeMapItem({ id:"missing-waste", waste_kg:null })],
+ events: [],
+ });
+
+ expect(report.quality.completenessScore).toBe(0);
+ expect(report.quality.coherenceScore).toBe(0);
+ });
+
+ it("does not assign an unknown source to the citizen bucket", () => {
+ const item = makeListItem({
+ id:"unknown-source",
+ source:undefined as unknown as string,
+ contract: {
+ ...makeListItem().contract as NonNullable<ActionListItem["contract"]>,
+ source:undefined as unknown as string,
+ },
+ });
+ const metrics = computeCommunityEngagementMetrics({
+ leaderboardItems: [item],
+ sourceItems: [item],
+ leaderboardLimit: 8,
+ });
+
+ expect(metrics.sourceBuckets).toEqual({ citoyen: 0, associatif: 0, institutionnel: 0 });
  });
 
  it("returns weather advice by risk thresholds", () => {
  expect(getWeatherAdvice({ temperature: 20, rain: 4, wind: 10 })).toContain("prudent");
  expect(getWeatherAdvice({ temperature: 30, rain: 0, wind: 10 })).toContain("chaud");
  expect(getWeatherAdvice({ temperature: 1, rain: 0, wind: 10 })).toContain("froid");
+ });
+
+ it("does not turn unavailable weather into a cold-weather signal", () => {
+ expect(getWeatherAdvice({ temperature: null, rain: null, wind: null })).toContain("indisponible");
  });
 
  it("builds a narrative suitable for an institutional cover", () => {

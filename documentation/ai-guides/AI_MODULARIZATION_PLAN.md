@@ -38,7 +38,7 @@ Une exécution traite une seule cible principale à la fois.
 
 Traiter une cible uniquement après vérification de son état réel :
 
-- `components/sections/rubriques/free-plan-services-methodology-visual.tsx`
+- ✅ `components/sections/rubriques/free-plan-services-methodology-visual.tsx` — shell 84 lignes ; vues Impact 693 lignes et Quotas 311 lignes extraites, comportements et API publics conservés
 - `components/admin/free-plan-services-visual.tsx`
 - `components/sections/rubriques/partners-network-section.tsx`
 - `app/api/actions/group-join/route.test.ts`

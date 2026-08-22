@@ -15,7 +15,7 @@ Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant su
 |----------|--------|---------|--------|
 | 🔴 CRITIQUE | 1 410 lignes | `lib/environmental-impact-estimator/project-signals.impl.ts` | ✅ Découpé en shell + modules |
 | 🔴 CRITIQUE | 1 125 lignes | `app/api/actions/[actionId]/group-join/route.test.ts` | ✅ Découpé en helpers + fichiers par verbes HTTP |
-| 🟠 HAUTE | 996 lignes | `components/sections/rubriques/free-plan-services-methodology-visual.tsx` | ⏳ À faire |
+| 🟠 HAUTE | 84 lignes (shell) | `components/sections/rubriques/free-plan-services-methodology-visual.tsx` | ✅ Shell + vues Impact (693 lignes) et Quotas (311 lignes) extraits |
 | 🟠 HAUTE | 927 lignes | `components/admin/free-plan-services-visual.tsx` | ⏳ À faire |
 | 🟠 HAUTE | 923 lignes | `components/sections/rubriques/partners-network-section.tsx` | ⏳ À faire |
 | 🟠 HAUTE | 922 lignes | `app/api/actions/group-join/route.test.ts` | ⏳ À faire |

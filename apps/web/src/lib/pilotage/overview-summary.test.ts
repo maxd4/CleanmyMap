@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority } from "./prioritization";
-import { buildSummary, pickDecisionRecommendation } from "./overview-summary";
+import { buildSummary, pickDecisionRecommendation } from "./overview.summary";
 import { ADMIN_ROUTE, DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 function buildComparisonFixture(

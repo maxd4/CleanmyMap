@@ -1,20 +1,9 @@
-import { buildRouteSteps } from "@/components/reports/web-document/analytics";
+import { buildRouteSteps, computeMapCoverageMetrics } from "@/lib/reports/report-model";
 import type { ActionMapItem } from "@/lib/actions/types";
 
 export function computeTerrainMetrics(mapItems: ActionMapItem[]) {
   const mapApproved = mapItems.filter((item) => item.status === "approved");
-  
-  // Traces logic
-  const geolocatedCount = mapApproved.filter((item) => {
-    return item.latitude !== null && item.longitude !== null;
-  }).length;
-
-  const traceCount = mapApproved.filter((item) =>
-    Boolean(item.manual_drawing || item.manual_drawing_geojson || item.contract?.geometry.kind !== "point"),
-  ).length;
-
-  const geoCoverage = mapApproved.length > 0 ? (geolocatedCount / mapApproved.length) * 100 : 0;
-  const traceCoverage = mapApproved.length > 0 ? (traceCount / mapApproved.length) * 100 : 0;
+  const coverage = computeMapCoverageMetrics(mapApproved, { includeGeometryCounts: false });
 
   // Route logic
   const mapApprovedActions = mapApproved.filter((item) => (item.record_type ?? item.contract?.type) === "action");
@@ -23,10 +12,10 @@ export function computeTerrainMetrics(mapItems: ActionMapItem[]) {
 
   return {
     coverage: {
-      geolocatedCount,
-      traceCount,
-      geoCoverage,
-      traceCoverage,
+      geolocatedCount: coverage.geolocatedCount,
+      traceCount: coverage.traceCount,
+      geoCoverage: coverage.geoCoverage,
+      traceCoverage: coverage.traceCoverage,
     },
     routing: {
       steps: routeSteps,

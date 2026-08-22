@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "../actions/data-contract";
-import { buildZones } from "./overview-zones";
+import { buildZones } from "./overview.zones";
 
 describe("buildZones", () => {
   it("aggregates current/previous windows and computes urgency fields", () => {

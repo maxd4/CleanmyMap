@@ -1,25 +1,34 @@
 import {
   mapItemCigaretteButts,
-  mapItemCoordinates,
   mapItemLocationLabel,
   mapItemType,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
 import { evaluateActionQuality } from "@/lib/actions/quality";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
-import { extractArrondissement } from "@/components/sections/rubriques/helpers";
-import type { ReportModel, ReportModelInput } from "../types";
+import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
+import type {
+  ReportModel,
+  ReportModelInput,
+  ReportModerationAvailability,
+} from "./types";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 
 import { normalizeListType } from "./helpers";
 import { average, median } from "./math";
 import { buildRouteSteps, buildMonthRows, buildCalendarRows, buildExecutiveNarrative } from "./builders";
 import { toFrInt, toFrNumber } from "./formatters";
+import {
+  computeCommunityEngagementMetrics,
+  computeEnvironmentalProxyMetrics,
+  computeMapCoverageMetrics,
+} from "./metrics";
 
 export * from "./formatters";
 export * from "./math";
 export * from "./helpers";
 export * from "./builders";
+export * from "./metrics";
 
 function computeTotals(approvedActions: ActionListItem[]) {
   const totalKg = approvedActions.reduce((sum, item) => sum + Number(item.waste_kg || 0), 0);
@@ -32,16 +41,32 @@ function computeTotals(approvedActions: ActionListItem[]) {
   return { totalKg, totalButts, totalVolunteers, totalHours };
 }
 
-function computeModerationStats(allItems: ActionListItem[]) {
+function computeModerationStats(
+  allItems: ActionListItem[],
+  availability: ReportModerationAvailability,
+) {
   const allStatuses = {
     pending: allItems.filter((item) => item.status === "pending").length,
     approved: allItems.filter((item) => item.status === "approved").length,
     rejected: allItems.filter((item) => item.status === "rejected").length,
   };
 
+  if (availability === "unavailable") {
+    return {
+      availability,
+      pending: null,
+      approved: allStatuses.approved,
+      rejected: null,
+      conversion: null,
+      delayDays: null,
+    };
+  }
+
   const moderationProcessed = allStatuses.approved + allStatuses.rejected;
   const moderationConversion =
-    moderationProcessed > 0 ? (allStatuses.approved / moderationProcessed) * 100 : 0;
+    moderationProcessed > 0
+      ? (allStatuses.approved / moderationProcessed) * 100
+      : null;
 
   const moderationDelayDays = allItems
     .map((item) => {
@@ -55,7 +80,14 @@ function computeModerationStats(allItems: ActionListItem[]) {
     })
     .filter((value): value is number => value !== null);
 
-  return { allStatuses, moderationConversion, delayDays: average(moderationDelayDays) };
+  return {
+    availability,
+    pending: allStatuses.pending,
+    approved: allStatuses.approved,
+    rejected: allStatuses.rejected,
+    conversion: moderationConversion,
+    delayDays: moderationDelayDays.length > 0 ? average(moderationDelayDays) : null,
+  };
 }
 
 function computeMapMetrics(mapItems: ActionMapItem[]) {
@@ -63,29 +95,13 @@ function computeMapMetrics(mapItems: ActionMapItem[]) {
   const mapApprovedActions = mapApproved.filter((item) => mapItemType(item) === "action");
   const mapSpots = mapItems.filter((item) => mapItemType(item) === "spot");
   const mapCleanPlaces = mapItems.filter((item) => mapItemType(item) === "clean_place");
-
-  const geolocatedCount = mapApproved.filter((item) => {
-    const coordinates = mapItemCoordinates(item);
-    return coordinates.latitude !== null && coordinates.longitude !== null;
-  }).length;
-
-  const traceCount = mapApproved.filter((item) =>
-    Boolean(item.manual_drawing || item.manual_drawing_geojson || item.contract?.geometry.kind !== "point"),
-  ).length;
-  const polylineCount = mapApproved.filter((item) => {
-    const kind = item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
-    return kind === "polyline";
-  }).length;
-  const polygonCount = mapApproved.filter((item) => {
-    const kind = item.contract?.geometry.kind ?? item.manual_drawing?.kind ?? null;
-    return kind === "polygon";
-  }).length;
-
-  const geoCoverage = mapApproved.length > 0 ? (geolocatedCount / mapApproved.length) * 100 : 0;
-  const traceCoverage = mapApproved.length > 0 ? (traceCount / mapApproved.length) * 100 : 0;
+  const coverage = computeMapCoverageMetrics(mapApproved);
 
   return {
-    mapApprovedActions, mapSpots, mapCleanPlaces, geolocatedCount, traceCount, polylineCount, polygonCount, geoCoverage, traceCoverage
+    mapApprovedActions,
+    mapSpots,
+    mapCleanPlaces,
+    ...coverage,
   };
 }
 
@@ -95,7 +111,10 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
     const hasLocation = item.location_label.trim().length > 2;
     const hasDuration = Number(item.duration_minutes || 0) > 0;
     const hasVolunteers = Number(item.volunteers_count || 0) > 0;
-    const hasWaste = Number(item.waste_kg || 0) >= 0;
+    const hasWaste =
+      item.waste_kg !== null &&
+      Number.isFinite(item.waste_kg) &&
+      item.waste_kg >= 0;
     return hasDate && hasLocation && hasDuration && hasVolunteers && hasWaste;
   });
   const completenessScore =
@@ -104,11 +123,20 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
       : 0;
 
   const coherenceChecks = approvedActions.map((item) => {
-    const waste = Number(item.waste_kg || 0);
-    const butts = Number(item.cigarette_butts || 0);
+    const waste = item.waste_kg;
+    const butts = item.cigarette_butts;
     const volunteers = Number(item.volunteers_count || 0);
     const minutes = Number(item.duration_minutes || 0);
-    return waste >= 0 && butts >= 0 && volunteers >= 1 && minutes >= 5;
+    return (
+      waste !== null &&
+      Number.isFinite(waste) &&
+      waste >= 0 &&
+      butts !== null &&
+      Number.isFinite(butts) &&
+      butts >= 0 &&
+      volunteers >= 1 &&
+      minutes >= 5
+    );
   });
   const coherenceScore =
     coherenceChecks.length > 0 ? (coherenceChecks.filter(Boolean).length / coherenceChecks.length) * 100 : 0;
@@ -153,37 +181,11 @@ function computeCommunityStats(allItems: ActionListItem[], approvedActions: Acti
   const rsvpTotal = rsvp.yes + rsvp.maybe + rsvp.no;
   const participationRate = rsvpTotal > 0 ? (rsvp.yes / rsvpTotal) * 100 : 0;
 
-  const leaderboard = [...approvedActions]
-    .reduce((map, item) => {
-      const actor = item.actor_name?.trim() || "Anonyme";
-      const previous = map.get(actor) ?? { actions: 0, kg: 0, butts: 0 };
-      map.set(actor, {
-        actions: previous.actions + 1,
-        kg: previous.kg + Number(item.waste_kg || 0),
-        butts: previous.butts + Number(item.cigarette_butts || 0),
-      });
-      return map;
-    }, new Map<string, { actions: number; kg: number; butts: number }>())
-    .entries();
-
-  const topLeaderboard = [...leaderboard]
-    .map(([name, stats]) => ({ name, ...stats }))
-    .sort((a, b) => b.actions - a.actions || b.kg - a.kg)
-    .slice(0, 8);
-
-  const badgeConfirmed = topLeaderboard.filter((entry) => entry.actions >= 5).length;
-  const badgeExpert = topLeaderboard.filter((entry) => entry.actions >= 10).length;
-
-  const sourceBuckets = allItems.reduce(
-    (acc, item) => {
-      const source = (item.source ?? item.contract?.source ?? "web_form").toLowerCase();
-      if (source.includes("community")) acc.associatif += 1;
-      else if (source.includes("admin") || source.includes("import")) acc.institutionnel += 1;
-      else acc.citoyen += 1;
-      return acc;
-    },
-    { citoyen: 0, associatif: 0, institutionnel: 0 },
-  );
+  const engagement = computeCommunityEngagementMetrics({
+    leaderboardItems: approvedActions,
+    sourceItems: allItems,
+    leaderboardLimit: 8,
+  });
 
   return {
     totalEvents: events.length,
@@ -191,17 +193,19 @@ function computeCommunityStats(allItems: ActionListItem[], approvedActions: Acti
     pastEvents: eventPast.length,
     rsvp,
     participationRate,
-    topLeaderboard,
-    badgeConfirmed,
-    badgeExpert,
-    sourceBuckets
+    ...engagement,
   };
+}
+
+function formatAreaLabel(label: string): string {
+  const arrondissement = extractArrondissementFromLabel(label);
+  return arrondissement === null ? "Hors arrondissement" : `${arrondissement}e`;
 }
 
 function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
   const byAreaMap = new Map<string, { actions: number; kg: number; butts: number; labels: Set<string> }>();
   for (const item of mapApprovedActions) {
-    const area = extractArrondissement(mapItemLocationLabel(item));
+    const area = formatAreaLabel(mapItemLocationLabel(item));
     const previous = byAreaMap.get(area) ?? {
       actions: 0,
       kg: 0,
@@ -236,7 +240,7 @@ function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
 export function computeReportModel(input: ReportModelInput): ReportModel {
   const now = input.now ?? new Date();
   const nowMs = now.getTime();
-  const allItems = input.allItems.filter((item) => item.status === "approved");
+  const allItems = input.allItems;
   const approvedItems = input.approvedItems.filter((item) => item.status === "approved");
   const mapItems = input.mapItems.filter((item) => item.status === "approved");
   const events = input.events;
@@ -244,7 +248,10 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
   const approvedActions = approvedItems.filter((item) => normalizeListType(item) === "action");
 
   const totals = computeTotals(approvedActions);
-  const moderationStats = computeModerationStats(allItems);
+  const moderationStats = computeModerationStats(
+    allItems,
+    input.moderationAvailability ?? "available",
+  );
   const mapMetrics = computeMapMetrics(mapItems);
   const qualityMetrics = computeQualityMetrics(approvedActions, nowMs);
   const byArea = computeAreaStats(mapMetrics.mapApprovedActions);
@@ -273,9 +280,7 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
   const routeSteps = buildRouteSteps(mapMetrics.mapApprovedActions, 6);
   const routeDistance = routeSteps.reduce((sum, step) => sum + step.segmentKm, 0);
 
-  const recyclableKg = totals.totalKg * 0.55;
-  const triIndex =
-    totals.totalKg > 0 ? Math.max(0, Math.min(100, 100 - (totals.totalButts / Math.max(totals.totalKg, 1)) * 0.7)) : 0;
+  const environmental = computeEnvironmentalProxyMetrics(totals.totalButts, totals.totalKg);
 
   const sixMonthsFloor = nowMs - 183 * 24 * 60 * 60 * 1000;
   const twelveMonthsFloor = nowMs - 365 * 24 * 60 * 60 * 1000;
@@ -299,8 +304,6 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
     butts: twelveMonthsItems.reduce((sum, item) => sum + Number(item.cigarette_butts || 0), 0),
   };
 
-  const waterProtectedLiters = Math.round(totals.totalButts * 500);
-  const co2AvoidedKg = totals.totalButts * 0.0014;
 
   const annualRows = byArea.slice(0, 8).map((row) => [
     row.area,
@@ -353,8 +356,11 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       traceCoverage: mapMetrics.traceCoverage,
     },
     moderation: {
-      ...moderationStats.allStatuses,
-      conversion: moderationStats.moderationConversion,
+      availability: moderationStats.availability,
+      pending: moderationStats.pending,
+      approved: moderationStats.approved,
+      rejected: moderationStats.rejected,
+      conversion: moderationStats.conversion,
       delayDays: moderationStats.delayDays,
     },
     quality: {
@@ -374,12 +380,15 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       spotCount: mapMetrics.mapSpots.length,
       cleanPlaceCount: mapMetrics.mapCleanPlaces.length,
     },
-    recycling: { recyclableKg, triIndex },
+    recycling: {
+      recyclableKg: environmental.recyclableKg,
+      triIndex: environmental.triIndex,
+    },
     climate: {
       six: climate6,
       twelve: climate12,
-      waterProtectedLiters,
-      co2AvoidedKg,
+      waterProtectedLiters: environmental.waterProtectedLiters,
+      co2AvoidedKg: environmental.co2AvoidedKg,
     },
     community: communityStats,
     impactMethodology: buildPersonalImpactMethodology(qualityMetrics.pollutionScoreAverage),

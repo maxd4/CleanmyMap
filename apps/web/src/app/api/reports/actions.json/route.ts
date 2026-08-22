@@ -201,7 +201,10 @@ export async function GET(request: Request) {
       headers["X-Export-Warning"] = "Dataset truncated to limit";
     }
     if (sourceHealth.partial) {
-      headers["X-Data-Warning"] = sourceHealth.warnings.join(" |");
+      headers["X-Data-Warning"] =
+        sourceHealth.warnings.length > 0
+          ? sourceHealth.warnings.join(" | ")
+          : "Source dataset partial or unavailable";
     }
 
     return new Response(json, {

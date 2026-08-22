@@ -13,6 +13,8 @@ export type ChapterDef = {
   audience: ChapterAudience;
 };
 
+export type ReportModerationAvailability = "available" | "unavailable";
+
 export type AreaStats = {
   area: string;
   actions: number;
@@ -59,11 +61,12 @@ export type ReportModel = {
     traceCoverage: number;
   };
   moderation: {
-    pending: number;
+    availability: ReportModerationAvailability;
+    pending: number | null;
     approved: number;
-    rejected: number;
-    conversion: number;
-    delayDays: number;
+    rejected: number | null;
+    conversion: number | null;
+    delayDays: number | null;
   };
   quality: {
     completenessScore: number;
@@ -125,4 +128,5 @@ export type ReportModelInput = {
   events: CommunityEventItem[];
   now?: Date;
   contracts?: ActionDataContract[];
+  moderationAvailability?: ReportModerationAvailability;
 };

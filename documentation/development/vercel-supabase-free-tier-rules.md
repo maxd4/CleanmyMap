@@ -38,6 +38,61 @@ Conséquences pratiques:
 | Encadrer les fonctions coûteuses | Cartographie, chat, quiz, génération de documents: bornes de volume, fréquence, cache et durée d'exécution à définir avant mise en prod |
 | Garder une trace des choix techniques | Noter le choix, le coût, le risque et la raison du placement pour pouvoir arbitrer ensuite |
 
+## Intégration GitHub Supabase : configuration canonique
+
+Snapshot vérifié le 12 août 2026 pour le projet Supabase
+`supabase-vercel-codex` et le dépôt `maxd4/CleanmyMap` :
+
+| Paramètre | Valeur canonique | Règle |
+| --- | --- | --- |
+| Dépôt GitHub | `maxd4/CleanmyMap` | Ne pas reconnecter un autre dépôt pour contourner un échec de provisioning |
+| Branche de production | `main` | Conserver la même branche que le flux de livraison du dépôt |
+| Working directory | `apps/web` | Ne jamais remplacer par `.` : le workspace web porte `config.toml` et les migrations actives |
+| Branching automatique | indisponible sur le plan Free | Ne pas attendre une branche Preview automatique pour chaque Pull Request |
+
+La configuration a été corrigée de `.` vers `apps/web`, puis rechargée dans
+l’interface Supabase pour vérifier sa persistance. Aucun fichier du dépôt,
+migration, historique `schema_migrations`, donnée Supabase, workflow GitHub ou
+paramètre Vercel n’a été modifié dans cette opération.
+
+### Procédure de diagnostic d’un provisioning Supabase en échec
+
+Lorsque le journal contient :
+
+```text
+Remote migration versions not found in local migrations directory.
+```
+
+contrôler d’abord le chemin d’intégration avant toute action sur la base :
+
+1. dépôt : `maxd4/CleanmyMap` ;
+2. branche : `main` ;
+3. répertoire : `apps/web` ;
+4. migrations locales : `apps/web/supabase/migrations/` ;
+5. liste des versions distante et locale ;
+6. nouveau workflow Supabase après la correction.
+
+Ne pas réparer l’historique distant, supprimer une migration, lancer `db push`,
+`db reset` ou modifier `schema_migrations` pour compenser un mauvais
+`Working directory`. La correction de configuration et le retry officiel sont
+deux étapes distinctes.
+
+Au 12 août 2026, les listes locale et distante contenaient chacune 85 versions
+concordantes, mais la branche Supabase `main` restait marquée
+`MIGRATIONS_FAILED` car aucun nouveau workflow n’était encore visible après la
+correction. Le projet Supabase lui-même restait `ACTIVE_HEALTHY`. Il faut donc
+revalider l’état de la branche après le prochain retry, sans conclure à une
+régression applicative avant cette étape.
+
+### Relation avec Vercel
+
+Une Preview Vercel peut rester en échec tant que le provisioning associé n’est
+pas résolu. Pour #105, le déploiement du SHA
+`f199aaa66d3b0aa910d028a60c63df2e4cefae12` restait en `ERROR` avec
+`BUILD_FAILED: Resource provisioning failed`, sans événement de build. Cette
+information ne permet pas d’attribuer l’échec aux migrations ou au code Next.js
+avant un nouveau provisioning Supabase et un nouveau déploiement Vercel.
+
 ## Tables centrales à documenter en priorité
 
 Ces tables reviennent souvent dans les hotspots de quota. Les documenter évite de les traiter comme des tables génériques.

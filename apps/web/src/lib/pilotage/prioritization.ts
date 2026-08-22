@@ -19,10 +19,10 @@ export type ZoneComparisonRow = {
   previousCoverageRate: number;
   deltaCoverageRateAbsolute: number;
   deltaCoverageRatePercent: number;
-  currentModerationDelayDays: number;
-  previousModerationDelayDays: number;
-  deltaModerationDelayDaysAbsolute: number;
-  deltaModerationDelayDaysPercent: number;
+  currentModerationDelayDays: number | null;
+  previousModerationDelayDays: number | null;
+  deltaModerationDelayDaysAbsolute: number | null;
+  deltaModerationDelayDaysPercent: number | null;
   normalizedScore: number;
   urgency: "critique" | "elevee" | "moderee";
   justification: string;
@@ -58,9 +58,12 @@ function severityFromScore(score: number): OperationalPriority["severity"] {
 
 function backlogPriority(
   comparison: PilotageComparisonResult,
-): OperationalPriority {
+): OperationalPriority | null {
   const pending = comparison.current.pendingCount;
   const delay = comparison.current.moderationDelayDays;
+  if (pending === null || delay === null) {
+    return null;
+  }
   const pendingScore = Math.min(
     100,
     (pending / PILOTAGE_THRESHOLDS.backlogCriticalCount) * 100,
@@ -259,7 +262,7 @@ export function buildOperationalPriorities(params: {
     coveragePriority(params.comparison),
     sobrietyPriority(params.comparison),
     dataIntegrityPriority(params.comparison),
-  ];
+  ].filter((item): item is OperationalPriority => item !== null);
 
   return all
     .map((item) => {

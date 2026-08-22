@@ -47,8 +47,12 @@ vi.mock("@/components/reports/AnimatedImpactMetrics", () => ({
 }));
 
 vi.mock("@/components/reports/deferred-reports-web-document", () => ({
-  DeferredReportsWebDocument: () =>
-    React.createElement("section", { "data-testid": "report-generation" }, "Génération"),
+  DeferredReportsWebDocument: ({ isTruncated }: { isTruncated?: boolean }) =>
+    React.createElement(
+      "section",
+      { "data-testid": "report-generation", "data-truncated": isTruncated ? "true" : "false" },
+      "Génération",
+    ),
 }));
 
 vi.mock("@/components/reports/page-sections/reports-page-v2-layout", () => ({
@@ -180,7 +184,7 @@ vi.mock("@/lib/pilotage/analytics-data-utils", () => ({
   aggregateMonthlyAnalytics: mocks.aggregateMonthlyAnalytics,
 }));
 
-vi.mock("@/components/reports/web-document/analytics", () => ({
+vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
 }));
 
@@ -242,6 +246,14 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-active-tab="pilotage"');
     expect(markup).toContain('data-testid="summary-kpis"');
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 90, limit: 2200 });
+    expect(markup).toContain("Objectifs et repères");
+    expect(markup).toContain(
+      "Ces valeurs de référence ne sont pas calculées à partir de la fenêtre du rapport.",
+    );
+    expect(markup).toContain("Objectif réduction déchets");
+    expect(markup).toContain("Repère mobilisation");
+    expect(markup).toContain("Repère précision GPS");
+    expect(markup).toContain("Repère émissions évitées");
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
   });
@@ -252,6 +264,34 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-active-tab="generation"');
     expect(markup).toContain("Génération réservée");
     expect(markup).not.toContain('data-testid="csv-export"');
+  });
+
+  it("propagates a truncated generation dataset to the report document", async () => {
+    mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
+    mocks.toProfile.mockReturnValue("admin");
+    mocks.isAdminLikeProfile.mockReturnValue(true);
+    mocks.fetchCachedUnifiedActionContracts.mockResolvedValue({
+      items: [contract],
+      isTruncated: true,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+    try {
+      const markup = renderToStaticMarkup(
+        await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }),
+      );
+
+      expect(markup).toContain('data-testid="report-generation"');
+      expect(markup).toContain('data-truncated="true"');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("exposes CSV export for an admin and preserves the empty-data fallback", async () => {

@@ -114,6 +114,12 @@ describe("GET /api/reports/elus-dossier", () => {
     fetchUnifiedActionContractsMock.mockResolvedValue({
       items: [contract],
       isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
     });
     filterActionContractsByScopeMock.mockImplementation((items) => items);
     computePeriodComparisonMock.mockReturnValue({ current: {}, previous: {} });
@@ -157,7 +163,9 @@ describe("GET /api/reports/elus-dossier", () => {
       "private, max-age=300, stale-while-revalidate=86400",
     );
     expect(markdownResponse.headers.get("X-Deliverable-Format")).toBe("md");
-    expect(await markdownResponse.text()).toContain("# Dossier elu - Pack institutionnel");
+    const markdown = await markdownResponse.text();
+    expect(markdown).toContain("# Dossier elu - Pack institutionnel");
+    expect(markdown).toContain("Disponibilité des données");
   });
 
   it("returns 409 when the pdf cache is missing and points to the browser export", async () => {
@@ -210,6 +218,12 @@ describe("GET /api/reports/elus-dossier", () => {
         },
       ],
       isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
     });
 
     const { GET } = await import("./route");
@@ -230,5 +244,33 @@ describe("GET /api/reports/elus-dossier", () => {
     expect(body.summary.totalKg).toBe(0);
     expect(body.summary.totalVolunteers).toBe(4);
     expect(body.summary.geocoverageRate).toBe(0);
+  });
+
+  it("marks institutional exports when the unified source is partial", async () => {
+    fetchUnifiedActionContractsMock.mockResolvedValueOnce({
+      items: [contract],
+      isTruncated: false,
+      sourceHealth: {
+        partial: true,
+        failedSources: ["spots"],
+        availableSources: ["actions"],
+        warnings: ["spots unavailable"],
+      },
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/reports/elus-dossier?format=json"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("X-Export-Warning")).toBe("spots unavailable");
+    await expect(response.json()).resolves.toMatchObject({
+      isTruncated: false,
+      sourceHealth: {
+        partial: true,
+        failedSources: ["spots"],
+      },
+    });
   });
 });

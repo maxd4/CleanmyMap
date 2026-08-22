@@ -2,7 +2,12 @@
 
 import type { ReactNode } from "react";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import type { ReportModel } from "./types";
+import { toFrOptionalNumber } from "@/lib/reports/report-model";
+import type { ReportModel } from "@/lib/reports/report-model/types";
+import {
+  buildReportDataAvailabilityNotices,
+  type ReportDataAvailability,
+} from "@/lib/reports/data-availability";
 
 export type ReportsWeather = {
   current?: {
@@ -104,6 +109,7 @@ type ReportsWebDocumentModelLike = {
     coveragePercent: number;
   };
   exportRows: Array<Record<string, string | number | null>>;
+  dataAvailability?: ReportDataAvailability;
 };
 
 export function GenerationStageCard({
@@ -335,6 +341,9 @@ export function buildPdfData(params: {
 }) {
   const { model, detailLevel, period, reportTitle, scopeLabel, surfaceProxy } = params;
   const report = model.report;
+  const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
+    model.dataAvailability ?? {},
+  );
   const executive = report.executive as {
     summary: string;
     watchouts: string[];
@@ -353,6 +362,7 @@ export function buildPdfData(params: {
       title: "Synthèse exécutive",
       subtitle: "Vue d’ensemble du rapport",
       lines: [
+        ...dataAvailabilityNotices,
         executive.summary,
         `Lecture: ${executive.readinessLabel}.`,
         model.weatherAdvice,
@@ -532,8 +542,8 @@ export function buildPdfData(params: {
           subtitle: "Validation, modération et traçabilité",
           lines: [
             `Couverture compte: ${model.accountScopeCoverage.coveragePercent.toFixed(1)}%.`,
-            `Modération: ${report.moderation.approved} approuvés / ${report.moderation.rejected} rejetés.`,
-            `Délai moyen: ${report.moderation.delayDays.toFixed(1)} jours.`,
+            `Modération: ${report.moderation.approved} approuvés / ${report.moderation.rejected === null ? "indisponible" : `${report.moderation.rejected} rejetés`}.`,
+            `Délai moyen: ${toFrOptionalNumber(report.moderation.delayDays)} jours.`,
           ],
       }
       : buildLockedSectionChapter({

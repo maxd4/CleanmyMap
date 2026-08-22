@@ -68,9 +68,10 @@ export function TabPill({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-sm font-medium shadow-[0_10px_30px_-24px_rgba(15,23,42,0.3)] transition",
+        "inline-flex items-center gap-3 rounded-2xl border px-5 py-3 text-sm font-medium shadow-[0_10px_30px_-24px_rgba(15,23,42,0.3)] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
         getTabTone(active),
       )}
     >
@@ -87,13 +88,14 @@ export function ServiceIconCard({ service, selected, onSelect, onHover }: Servic
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={() => onSelect(service.key)}
       onMouseEnter={() => onHover(service.key)}
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(service.key)}
       onBlur={() => onHover(null)}
       className={cn(
-        "group rounded-[1.4rem] border bg-white p-4 text-left shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-24px_rgba(15,23,42,0.28)]",
+        "group rounded-[1.4rem] border bg-white p-4 text-left shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-24px_rgba(15,23,42,0.28)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500",
         selected ? "border-rose-300 ring-1 ring-rose-200" : "border-slate-200",
       )}
     >
@@ -154,8 +156,15 @@ export function ServiceIconCard({ service, selected, onSelect, onHover }: Servic
   );
 }
 
+const MIN_VISIBLE_QUOTA_PERCENT = 2;
+const MAX_QUOTA_PERCENT = 100;
+
 export function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }) {
-  const width = metric.consumedPercent === null ? 0 : Math.max(2, Math.min(100, metric.consumedPercent));
+  const isMeasured = metric.consumedPercent !== null;
+  const width =
+    metric.consumedPercent === null
+      ? 0
+      : Math.max(MIN_VISIBLE_QUOTA_PERCENT, Math.min(MAX_QUOTA_PERCENT, metric.consumedPercent));
   const missingLabel = metric.source === "reference" ? "Non calculé" : "Historique insuffisant";
   const stateLabel =
     metric.state === "NA" ? missingLabel : formatServiceQuotaStateLabel(metric.state);
@@ -188,7 +197,19 @@ export function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }
             </div>
           </div>
 
-          <div className="h-2 overflow-hidden rounded-full bg-rose-100">
+          <div
+            className="h-2 overflow-hidden rounded-full bg-rose-100"
+            role={isMeasured ? "progressbar" : undefined}
+            aria-label={isMeasured ? `${metric.label}: ${formatPercent(metric.consumedPercent)}` : undefined}
+            aria-valuemin={isMeasured ? 0 : undefined}
+            aria-valuemax={isMeasured ? MAX_QUOTA_PERCENT : undefined}
+            aria-valuenow={
+              isMeasured
+                ? Math.max(0, Math.min(MAX_QUOTA_PERCENT, metric.consumedPercent ?? 0))
+                : undefined
+            }
+            aria-valuetext={isMeasured ? `${formatPercent(metric.consumedPercent)} — ${stateLabel}` : undefined}
+          >
             {metric.consumedPercent === null ? (
               <div className="h-full w-full rounded-full border border-dashed border-slate-300 bg-transparent" />
             ) : (

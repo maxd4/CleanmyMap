@@ -377,7 +377,8 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Inclus ACV");
     expect(markup).toContain("Hors production");
     expect(markup).toContain("Hors quotas web");
-    expect(markup).not.toContain("NA");
+   expect(markup).not.toContain("NA");
+    expect(markup).toContain('aria-pressed="false"');
     expect(markup).not.toContain("Détail de la contribution");
     expect(markup).not.toContain("Relais actif");
     expect(markup).not.toContain("Voir la charte");
@@ -519,7 +520,11 @@ describe("FreePlanServicesMethodologyVisual", () => {
     expect(markup).toContain("Quotas &amp; plans des services web");
     expect(markup).toContain("Quotas &amp; plans");
     expect(markup).toContain("Impact carbone");
-    expect(markup).toContain("Survolez une carte pour afficher le détail");
+   expect(markup).toContain("Survolez une carte pour afficher le détail");
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('role="progressbar"');
+    expect(markup).toContain('aria-valuemin="0"');
+    expect(markup).toContain('aria-valuemax="100"');
     expect(markup).toContain("Supabase - stockage");
     expect(markup).toContain("Repo public");
     expect(markup).toContain("runners standards gratuits et illimités");

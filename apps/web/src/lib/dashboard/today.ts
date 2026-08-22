@@ -218,13 +218,19 @@ function buildDashboardReadyState(params: {
     validation: {
       label: text(locale, "Éléments à traiter", "Items to review"),
       title:
-        pendingCount > 0
+        pendingCount === null
+          ? text(locale, "Indisponible", "Unavailable")
+          : pendingCount > 0
           ? text(locale, `${pendingCount} en attente`, `${pendingCount} pending`)
           : text(locale, "Aucun élément en attente", "No pending items"),
       detail: text(
         locale,
-        `${approvedCount} validées · délai médian ${moderationDelay.toFixed(1)} j`,
-        `${approvedCount} approved · median delay ${moderationDelay.toFixed(1)} d`,
+        moderationDelay === null
+          ? `${approvedCount} validées · délai médian indisponible`
+          : `${approvedCount} validées · délai médian ${moderationDelay.toFixed(1)} j`,
+        moderationDelay === null
+          ? `${approvedCount} approved · median delay unavailable`
+          : `${approvedCount} approved · median delay ${moderationDelay.toFixed(1)} d`,
       ),
       meta: text(locale, `Fiabilité ${reliabilityLabel}`, `Reliability ${reliabilityLabel}`),
     },

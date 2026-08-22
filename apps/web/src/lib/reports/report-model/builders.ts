@@ -5,11 +5,18 @@ import {
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
-import { monthKey } from "@/components/sections/rubriques/helpers";
-import type { MonthRow, ReportModel, RouteStep } from "../types";
+import type { MonthRow, ReportModel, RouteStep } from "./types";
 import { distanceKm, scoreAction } from "./math";
-import { toFrInt, toFrNumber } from "./formatters";
+import { toFrInt, toFrNumber, toFrOptionalNumber } from "./formatters";
 import { average } from "./math";
+
+function monthKey(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 7) || "n/a";
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
 
 export function buildRouteSteps(items: ActionMapItem[], maxStops: number): RouteStep[] {
   const geolocated = items
@@ -145,7 +152,9 @@ export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative
     report.quality.completenessScore,
     report.quality.coherenceScore,
     report.map.geoCoverage,
-    report.moderation.conversion,
+    ...(report.moderation.conversion === null
+      ? []
+      : [report.moderation.conversion]),
   ]);
 
   const readinessLabel =
@@ -162,7 +171,7 @@ export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative
 
   const summary = [
     topAreaSummary,
-    `La géolocalisation atteint ${toFrNumber(report.map.geoCoverage)}%, la qualité de données ${toFrNumber(report.quality.completenessScore)}% et la conversion de modération ${toFrNumber(report.moderation.conversion)}%.`,
+    `La géolocalisation atteint ${toFrNumber(report.map.geoCoverage)}%, la qualité de données ${toFrNumber(report.quality.completenessScore)}% et la conversion de modération ${toFrOptionalNumber(report.moderation.conversion)}%.`,
   ].join(" ");
 
   return {
@@ -182,7 +191,7 @@ export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative
       "Documenter la crédibilité des indicateurs avant diffusion institutionnelle.",
     ],
     watchouts: [
-      `Délai de modération moyen: ${toFrNumber(report.moderation.delayDays)} jours.`,
+      `Délai de modération moyen: ${toFrOptionalNumber(report.moderation.delayDays)} jours.`,
       `Taux de traces/polygones: ${toFrNumber(report.map.traceCoverage)}%.`,
       "Les montants restent des proxies de décision et doivent être lus avec la méthodologie jointe.",
     ],

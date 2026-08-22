@@ -8,10 +8,13 @@ export function normalizeListType(item: ActionListItem): "action" | "spot" | "cl
 }
 
 export function getWeatherAdvice(params: {
-  temperature: number;
-  rain: number;
-  wind: number;
+  temperature: number | null;
+  rain: number | null;
+  wind: number | null;
 }): string {
+  if (params.temperature === null || params.rain === null || params.wind === null) {
+    return "Niveau météo indisponible: vérifier les conditions locales avant l'action.";
+  }
   if (params.rain >= 3 || params.wind >= 40) {
     return "Niveau météo prudent: renforcer EPI, réduire durée et sécuriser les points d'appui.";
   }
