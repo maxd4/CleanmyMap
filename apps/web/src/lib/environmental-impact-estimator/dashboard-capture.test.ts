@@ -1,13 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION } from "./constants";
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
-import { loadEnvironmentalImpactDashboard } from "./dashboard-capture";
+import {
+  loadEnvironmentalImpactDashboard,
+  loadEnvironmentalImpactDashboardSnapshotOnly,
+} from "./dashboard-capture";
 
 const listEnvironmentalImpactSnapshotsMock = vi.hoisted(() => vi.fn());
 const loadEnvironmentalImpactProjectSignalsMock = vi.hoisted(() => vi.fn());
 const computeEnvironmentalImpactEstimateMock = vi.hoisted(() => vi.fn());
 const loadGitHubRepositoryStatsMock = vi.hoisted(() => vi.fn());
 const upsertEnvironmentalImpactSnapshotMock = vi.hoisted(() => vi.fn());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./snapshot-store", () => ({
   getEnvironmentalImpactSnapshotDate: vi.fn((value: string) => value.slice(0, 10)),
@@ -28,10 +32,14 @@ vi.mock("@/lib/github/github-repository-stats", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: vi.fn(() => ({})),
+  getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
 describe("dashboard capture", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("uses the latest snapshot before recomputing live signals", async () => {
     const snapshot = {
       version: "snapshot-version",
@@ -121,5 +129,46 @@ describe("dashboard capture", () => {
     expect(loadEnvironmentalImpactProjectSignalsMock).toHaveBeenCalledTimes(1);
     expect(loadGitHubRepositoryStatsMock).toHaveBeenCalledWith("maxd4/CleanmyMap");
     expect(computeEnvironmentalImpactEstimateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns no public dashboard when the snapshot-only history is empty", async () => {
+    listEnvironmentalImpactSnapshotsMock.mockResolvedValueOnce([]);
+
+    const result = await loadEnvironmentalImpactDashboardSnapshotOnly({ historyLimit: 24 });
+
+    expect(result).toBeNull();
+    expect(loadEnvironmentalImpactProjectSignalsMock).not.toHaveBeenCalled();
+    expect(computeEnvironmentalImpactEstimateMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("reads the latest snapshot without requiring live signals or service role access", async () => {
+    const snapshot = {
+      version: "snapshot-version",
+      model: {
+        generatedAt: "2026-06-26T08:00:00.000Z",
+        infrastructure: {
+          generatedAt: "2026-06-26T08:00:00.000Z",
+        },
+      },
+      signals: {
+        generatedAt: "2026-06-26T08:00:00.000Z",
+        launchedAt: "2026-01-01T00:00:00.000Z",
+      },
+    } as EnvironmentalImpactSnapshotRecord;
+    listEnvironmentalImpactSnapshotsMock.mockResolvedValueOnce([snapshot]);
+
+    const result = await loadEnvironmentalImpactDashboardSnapshotOnly({ historyLimit: 24 });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      version: "snapshot-version",
+      model: snapshot.model,
+      signals: snapshot.signals,
+      snapshots: [snapshot],
+    });
+    expect(loadEnvironmentalImpactProjectSignalsMock).not.toHaveBeenCalled();
+    expect(computeEnvironmentalImpactEstimateMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

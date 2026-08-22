@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadEnvironmentalImpactDashboard } from "@/lib/environmental-impact-estimator/dashboard-capture";
+import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
 import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-client";
 import type {
@@ -44,32 +44,31 @@ export default async function MethodologiePage() {
   let impactGeneratedAt: string | null = null;
   let impactLaunchedAt: string | null = null;
 
-  try {
-    const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap");
-    const dashboardPromise = loadEnvironmentalImpactDashboard({
-      userId: null,
-      historyLimit: 24,
-      githubRepositoryStats: githubStatsPromise,
-    });
-    const [dashboard, resolvedGitHubStats] = await Promise.all([
-      dashboardPromise,
-      githubStatsPromise,
-    ]);
+  const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap").catch((error) => {
+    console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
+    return null;
+  });
 
-    freePlanServices = dashboard.model.infrastructure.services;
-    impactTotals = {
-      monthlyKgCo2eProxy: dashboard.model.infrastructure.monthlyKgCo2eProxy ?? null,
-      annualKgCo2eProxy: dashboard.model.infrastructure.annualKgCo2eProxy ?? null,
-      totalKgCo2eProxy: dashboard.model.infrastructure.totalKgCo2eProxy ?? null,
-      generatedAt: dashboard.model.infrastructure.generatedAt ?? null,
-    };
-    impactSnapshots = dashboard.snapshots;
-    impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
-    impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
-    githubStats = resolvedGitHubStats;
+  try {
+    const dashboard = await loadEnvironmentalImpactDashboardSnapshotOnly({ historyLimit: 24 });
+
+    if (dashboard) {
+      freePlanServices = dashboard.model.infrastructure.services;
+      impactTotals = {
+        monthlyKgCo2eProxy: dashboard.model.infrastructure.monthlyKgCo2eProxy ?? null,
+        annualKgCo2eProxy: dashboard.model.infrastructure.annualKgCo2eProxy ?? null,
+        totalKgCo2eProxy: dashboard.model.infrastructure.totalKgCo2eProxy ?? null,
+        generatedAt: dashboard.model.infrastructure.generatedAt ?? null,
+      };
+      impactSnapshots = dashboard.snapshots;
+      impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
+      impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
+    }
   } catch (error) {
     console.error("[MethodologiePage] Failed to load public impact services", error);
   }
+
+  githubStats = await githubStatsPromise;
 
   return (
     <MethodologiePageClient
