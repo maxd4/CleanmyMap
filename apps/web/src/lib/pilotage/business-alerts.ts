@@ -73,7 +73,7 @@ function extractArea(label: string): string {
   return `${matched[1]}e`;
 }
 
-function oldestPendingDays(values: string[]): number {
+function oldestPendingDays(values: string[]): number | null {
   const nowMs = Date.now();
   const ages = values
     .map((createdAt) => {
@@ -86,7 +86,7 @@ function oldestPendingDays(values: string[]): number {
     .filter((value): value is number => value !== null);
 
   if (ages.length === 0) {
-    return 0;
+    return null;
   }
   return round1(Math.max(...ages));
 }
@@ -113,16 +113,21 @@ export function computeBusinessAlerts(params: {
 
   if (pending.length > 0) {
     const severity: AlertSeverity =
-      pending.length >= 80 || pendingOldestDays >= 14
+      pending.length >= 80 ||
+      (pendingOldestDays !== null && pendingOldestDays >= 14)
         ? "high"
-        : pending.length >= 30 || pendingOldestDays >= 7
+        : pending.length >= 30 ||
+            (pendingOldestDays !== null && pendingOldestDays >= 7)
           ? "medium"
           : "low";
     output.push({
       id: "moderation-backlog",
       title: "Backlog moderation a traiter",
       severity,
-      ageLabel: `Anciennete max ${pendingOldestDays.toFixed(1)} j`,
+      ageLabel:
+        pendingOldestDays === null
+          ? "Anciennete indisponible"
+          : `Anciennete max ${pendingOldestDays.toFixed(1)} j`,
       impactLabel: `${pending.length} actions en attente`,
       actionHref: ADMIN_ROUTE,
       actionLabel: "Traiter la file admin",
