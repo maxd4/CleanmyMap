@@ -31,6 +31,104 @@ function Invoke-Step([scriptblock]$Action, [string]$Label) {
     }
 }
 
+function Invoke-ParallelSteps {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$Steps,
+        [ValidateRange(1, 8)]
+        [int]$ThrottleLimit = 3
+    )
+
+    if ($Steps.Count -eq 0) {
+        return
+    }
+
+    $repoRoot = (Get-Location).Path
+    $pending = [System.Collections.Queue]::new()
+    foreach ($step in $Steps) {
+        $pending.Enqueue($step)
+    }
+
+    $running = @{}
+    $failures = @()
+    $jobScript = {
+        param(
+            [string]$RepoRoot,
+            [string]$Label,
+            [string]$Command
+        )
+
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+        Set-Location -LiteralPath $RepoRoot
+        $output = [System.Collections.Generic.List[string]]::new()
+
+        try {
+            Invoke-Expression $Command 2>&1 | ForEach-Object {
+                [void]$output.Add([string]$_)
+            }
+            $exitCode = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+        } catch {
+            [void]$output.Add($_.Exception.Message)
+            $exitCode = 1
+        }
+
+        [pscustomobject]@{
+            Label = $Label
+            ExitCode = $exitCode
+            Output = $output.ToArray()
+        }
+    }
+
+    while ($pending.Count -gt 0 -or $running.Count -gt 0) {
+        while ($pending.Count -gt 0 -and $running.Count -lt $ThrottleLimit) {
+            $step = $pending.Dequeue()
+            $job = Start-Job -ScriptBlock $jobScript -ArgumentList @(
+                $repoRoot,
+                $step.Label,
+                $step.Command
+            )
+            $running[$job.Id] = $job
+        }
+
+        $completed = @($running.Values | Where-Object {
+            $_.State -in @("Completed", "Failed", "Stopped")
+        })
+        if ($completed.Count -eq 0) {
+            Start-Sleep -Milliseconds 100
+            continue
+        }
+
+        foreach ($job in $completed) {
+            $received = @(Receive-Job -Job $job -ErrorAction SilentlyContinue)
+            $result = @($received | Where-Object {
+                $_.PSObject.Properties.Name -contains "ExitCode"
+            } | Select-Object -Last 1)
+
+            if ($result.Count -eq 0) {
+                $failures += "parallel job $($job.Id) did not return a result"
+            } else {
+                $stepResult = $result[0]
+                Write-Host ""
+                Write-Host "==> $($stepResult.Label) [parallel]"
+                foreach ($line in @($stepResult.Output)) {
+                    Write-Host $line
+                }
+                if ($stepResult.ExitCode -ne 0) {
+                    $failures += "$($stepResult.Label) failed with exit code $($stepResult.ExitCode)"
+                }
+            }
+
+            Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+            [void]$running.Remove($job.Id)
+        }
+    }
+
+    if ($failures.Count -gt 0) {
+        throw ("Parallel checks failed:`n- " + ($failures -join "`n- "))
+    }
+}
+
 function Test-AnyChangedFile([string[]]$Files, [scriptblock]$Predicate) {
     foreach ($file in $Files) {
         if (& $Predicate $file) {
@@ -79,14 +177,16 @@ $pythonRelevant = $Scope -eq "full" -or (Test-AnyChangedFile $changedFiles {
     return $file -like "maintenance/python/*.py" -or $file -like "maintenance/python/*/*.py"
 })
 
-# Always-on repository and security governance.
-Invoke-Step { npm run security:secrets } "security:secrets"
-Invoke-Step { npm run check:root-files } "check:root-files"
-Invoke-Step { npm run check:doc-governance } "check:doc-governance"
-Invoke-Step { npm run check:stack-doc-drift } "check:stack-doc-drift"
-Invoke-Step { npm run check:agent-skills } "check:agent-skills"
-Invoke-Step { npm run check:github-actions } "check:github-actions"
-Invoke-Step { npm run check:doc-visuals } "check:doc-visuals"
+# Always-on repository and security governance are read-only and independent.
+Invoke-ParallelSteps @(
+    [pscustomobject]@{ Label = "security:secrets"; Command = "npm run security:secrets" },
+    [pscustomobject]@{ Label = "check:root-files"; Command = "npm run check:root-files" },
+    [pscustomobject]@{ Label = "check:doc-governance"; Command = "npm run check:doc-governance" },
+    [pscustomobject]@{ Label = "check:stack-doc-drift"; Command = "npm run check:stack-doc-drift" },
+    [pscustomobject]@{ Label = "check:agent-skills"; Command = "npm run check:agent-skills" },
+    [pscustomobject]@{ Label = "check:github-actions"; Command = "npm run check:github-actions" },
+    [pscustomobject]@{ Label = "check:doc-visuals"; Command = "npm run check:doc-visuals" }
+) 3
 
 # UTF-8 normalization remains available when Python is installed.
 $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
@@ -114,14 +214,38 @@ if ($null -ne $pythonCommand) {
 }
 
 if ($webRelevant) {
-    Invoke-Step { npm run check:lockfile-policy } "check:lockfile-policy"
-    Invoke-Step { npm run typecheck } "typecheck"
-    Invoke-Step { npm run lint } "lint"
-    Invoke-Step { npm run test:scripts } "test:scripts"
+    # These read-only static gates are independent and safe to run concurrently.
+    $staticWebSteps = @(
+        [pscustomobject]@{ Label = "check:lockfile-policy"; Command = "npm run check:lockfile-policy" },
+        [pscustomobject]@{ Label = "typecheck"; Command = "npm run typecheck" },
+        [pscustomobject]@{ Label = "lint"; Command = "npm run lint" },
+        [pscustomobject]@{ Label = "audit:vercel:ci"; Command = "npm run audit:vercel:ci" }
+    )
+
+    if ($companionRelevant) {
+        $staticWebSteps += [pscustomobject]@{
+            Label = "companion:typecheck"
+            Command = "npm --prefix companion-app run typecheck"
+        }
+    }
+
+    $staticWebSteps += [pscustomobject]@{
+        Label = "test:scripts"
+        Command = "npm run test:scripts"
+    }
+
+    Invoke-ParallelSteps $staticWebSteps 4
+
+    # The full Vitest command includes every src/**/*.test.ts file. This guard
+    # prevents silently dropping the targeted suites if that scope ever narrows.
+    $vitestConfig = Get-Content -Raw "apps/web/vitest.config.ts"
+    if (-not $vitestConfig.Contains("src/**/*.test.ts")) {
+        throw "The full Vitest suite no longer covers src/**/*.test.ts; targeted gates must be restored here."
+    }
+
     Invoke-Step { npm run test } "test"
     Invoke-Step { npm run test:security } "test:security"
     Invoke-Step { npm run test:regression-gates } "test:regression-gates"
-    Invoke-Step { npm run audit:vercel:ci } "audit:vercel:ci"
 
     if ($buildRelevant -and -not $SkipBuild) {
         Invoke-Step { npm run build } "build"
@@ -134,7 +258,7 @@ if ($webRelevant) {
     Write-Host "No web-relevant changes detected; web quality gates skipped."
 }
 
-if ($companionRelevant) {
+if ($companionRelevant -and -not $webRelevant) {
     Invoke-Step { npm --prefix companion-app run typecheck } "companion:typecheck"
 }
 
