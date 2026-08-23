@@ -139,6 +139,9 @@ La lane maintenance reste disponible à part :
 npm run checks:maintenance
 ```
 
+La correspondance entre les jobs GitHub Actions et les contrôles reproductibles
+localement est documentée dans [l'audit de reproductibilité des workflows](documentation/operations/github-governance.md#reproductibilité-locale-des-workflows).
+
 Les tests E2E sont séparés car Playwright peut nécessiter l'installation locale de Chromium :
 
 ```bash

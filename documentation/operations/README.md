@@ -36,6 +36,7 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 ### Sécurité publication et config
 - `pre-release-security-check.md`
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
+- `github-governance.md` - garde-fous GitHub et reproductibilité locale des workflows
 - `OPENAI_API_KEY` reste un secret local/serveur et ne doit jamais être traité comme un env public
 - les runbooks internes de mémoire et de session restent hors index public
 - `github-vercel-governance-audit.md` - audit synthétique de la gouvernance GitHub/Vercel
