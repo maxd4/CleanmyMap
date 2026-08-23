@@ -1,5 +1,36 @@
 # Change Log
 
+## 2026-08-23
+
+### Audit de reproductibilité locale des GitHub Actions
+
+- **What changed**
+  - Documented the jobs and local command equivalents for:
+    - `.github/workflows/ci.yml`
+    - `.github/workflows/codeql.yml`
+  - Added the local validation sequence and the required build variables.
+  - Linked the guidance from the root, development and operations documentation indexes.
+
+- **Why**
+  - Distinguish the checks that can be run before a push from the GitHub-only
+    orchestration and CodeQL publication steps.
+
+- **Where**
+  - `documentation/operations/github-governance.md`
+  - `README.md`
+  - `documentation/development/README.md`
+  - `documentation/operations/README.md`
+
+- **Validation**
+  - `npm run check:github-actions`
+  - Result: `OK: 2 workflow file(s) audited.`
+
+- **Compatibility notes**
+  - Documentation-only change. No workflow, script or runtime behavior changed.
+  - `documentation/repo-docs/wiki/CHANGELOG.md` is referenced by the current
+    documentation policy but is absent from this checkout; this existing
+    changelog remains the operational source of truth.
+
 ## 2026-06-28
 
 ### Doctrine de mémoire persistante et cycle de travail autonome
