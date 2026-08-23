@@ -34,7 +34,6 @@ export function ClerkLocalizationProvider({
  domain={props.proxyUrl ? undefined : props.domain}
   localization={locale ==="fr" ? frFR : enUS}
   appearance={{
- baseTheme: undefined, // Will be handled by Tailwind/CSS
  variables: {
  colorPrimary:"#10b981", // Emerald 500
  },
