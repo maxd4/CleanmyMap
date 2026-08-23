@@ -3,9 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { REPORT_SECTIONS, GLOSSARY_ROWS } from "./constants";
-import { toFrInt, toFrNumber } from "./analytics";
+import {
+  toFrInt,
+  toFrNumber,
+  toFrOptionalInt,
+  toFrOptionalNumber,
+} from "@/lib/reports/report-model";
 import { GeoCoverageRing, InsightBox, MetricCard, MonthlyBars, ReportPage, ReportTable } from "./ui";
-import type { ReportModel } from "./types";
+import type { ReportModel } from "@/lib/reports/report-model/types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ReportAccountScopeCoverage } from "@/lib/reports/scope";
 
@@ -472,8 +477,8 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <InsightBox
             title="Validation des données"
             lines={[
-              `Conversion de modération: ${toFrNumber(report.moderation.conversion)}%.`,
-              `Délai moyen de traitement: ${toFrNumber(report.moderation.delayDays)} j.`,
+              `Conversion de modération: ${report.moderation.conversion === null ? "Indisponible" : `${toFrNumber(report.moderation.conversion)}%`}.`,
+              `Délai moyen de traitement: ${toFrOptionalNumber(report.moderation.delayDays)} j.`,
               `Couverture compte sur created_by_clerk_id: ${toFrNumber(accountCoverage.coveragePercent)}%.`,
             ]}
           />
@@ -491,9 +496,9 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         <ReportTable
           headers={["Contrôle", "Valeur", "Lecture"]}
           rows={[
-            ["Pending", toFrInt(report.moderation.pending), "En attente de validation"],
+            ["Pending", toFrOptionalInt(report.moderation.pending), "En attente de validation"],
             ["Approved", toFrInt(report.moderation.approved), "Données publiables"],
-            ["Rejected", toFrInt(report.moderation.rejected), "Données non retenues"],
+            ["Rejected", toFrOptionalInt(report.moderation.rejected), "Données non retenues"],
             ["Fraîcheur", `${toFrNumber(report.quality.freshnessDays)} j`, "Temporalité du signal"],
           ]}
         />

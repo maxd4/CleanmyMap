@@ -1,9 +1,15 @@
 import { MASTER_PACK_CHAPTERS, MASTER_PACK_GLOSSARY } from "@/lib/reports/master-pack/constants";
 import { generateRadarChartSvg } from "@/lib/reports/master-pack/components/radar-chart";
 import { computeExecutiveNarrative } from "@/lib/reports/master-pack/analytics/executive";
-import { toFrNumber, toFrInt, toFrDate } from "@/components/reports/web-document/analytics";
-import type { ReportModel } from "@/components/reports/web-document/types";
-import { buildOfficialReportCss } from "./report-pdf-theme";
+import {
+  toFrNumber,
+  toFrInt,
+  toFrDate,
+  toFrOptionalInt,
+  toFrOptionalNumber,
+} from "@/lib/reports/report-model";
+import type { ReportModel } from "@/lib/reports/report-model/types";
+import { buildPdfChapterHeader, buildPdfPrintStyles } from "./generate-pdf-html.templates";
 
 export function collectHeadStyles(): string {
   if (typeof document === "undefined") return "";
@@ -21,15 +27,6 @@ export function generatePdfHtml(
   const executive = reportData ? computeExecutiveNarrative(reportData) : null;
   const printContainer = document.createElement("div");
   printContainer.className = "master-pack-container";
-
-  // --- HELPER: GENERATE CHAPTER HEADER ---
-  const generateChapterHeader = (kicker: string, title: string, subtitle: string) => `
-    <div style="margin-bottom: 40px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
-      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">${kicker}</div>
-      <h2 style="font-family: 'Outfit'; font-size: 36px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.02em;">${title}</h2>
-      <p style="font-size: 14px; color: #64748b; margin-top: 8px; line-height: 1.5;">${subtitle}</p>
-    </div>
-  `;
 
   // 1. Page de Couverture
   const cover = document.createElement("div");
@@ -106,12 +103,18 @@ export function generatePdfHtml(
     page.id = `chapter-${chapter.id}`;
     page.style.padding = "60px";
 
-    let content = generateChapterHeader(chapter.kicker, chapter.title, chapter.subtitle);
+    let content = buildPdfChapterHeader(chapter.kicker, chapter.title, chapter.subtitle);
 
     if (chapter.id === "executif" && reportData) {
       const radarSvg = generateRadarChartSvg([
         { label: "Couverture", value: reportData.map.geoCoverage },
-        { label: "Engagement", value: (reportData.moderation.conversion || 0) * 100 },
+        {
+          label: "Engagement",
+          value:
+            reportData.moderation.conversion === null
+              ? 0
+              : reportData.moderation.conversion * 100,
+        },
         { label: "Qualité", value: reportData.quality.completenessScore },
         { label: "Volume", value: Math.min(100, (reportData.totals.kg / 100) * 100) },
         { label: "Récurrence", value: reportData.quality.coherenceScore },
@@ -159,28 +162,28 @@ export function generatePdfHtml(
                 <span style="font-weight: 700; color: #10b981;">${reportData.moderation.approved} Approuvés</span>
               </div>
               <div style="display: flex; height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 24px;">
-                <div style="width: ${reportData.moderation.conversion}%; background: #10b981;"></div>
-                <div style="width: ${(reportData.moderation.rejected / (reportData.moderation.approved + reportData.moderation.rejected + reportData.moderation.pending || 1)) * 100}%; background: #ef4444;"></div>
+                ${reportData.moderation.availability === "available" ? `<div style="width: ${reportData.moderation.conversion ?? 0}%; background: #10b981;"></div>
+                <div style="width: ${((reportData.moderation.rejected ?? 0) / (reportData.moderation.approved + (reportData.moderation.rejected ?? 0) + (reportData.moderation.pending ?? 0) || 1)) * 100}%; background: #ef4444;"></div>` : `<div style="width: 100%; background: #cbd5e1;"></div>`}
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
                   <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Taux de conversion</div>
-                  <div style="font-size: 24px; font-weight: 700; color: #1e293b;">${reportData.moderation.conversion.toFixed(1)}%</div>
+                  <div style="font-size: 24px; font-weight: 700; color: #1e293b;">${reportData.moderation.conversion === null ? "Indisponible" : `${reportData.moderation.conversion.toFixed(1)}%`}</div>
                 </div>
                 <div>
                   <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Délai moyen</div>
-                  <div style="font-size: 24px; font-weight: 700; color: #1e293b;">${reportData.moderation.delayDays.toFixed(1)}j</div>
+                  <div style="font-size: 24px; font-weight: 700; color: #1e293b;">${reportData.moderation.delayDays === null ? "Indisponible" : `${toFrOptionalNumber(reportData.moderation.delayDays)}j`}</div>
                 </div>
               </div>
             </div>
             <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
               <div style="text-align: center; padding: 12px; border: 1px solid #f1f5f9; border-radius: 12px;">
                 <div style="font-size: 10px; color: #64748b; text-transform: uppercase;">En attente</div>
-                <div style="font-size: 18px; font-weight: 700; color: #f59e0b;">${reportData.moderation.pending}</div>
+                <div style="font-size: 18px; font-weight: 700; color: #f59e0b;">${toFrOptionalInt(reportData.moderation.pending)}</div>
               </div>
               <div style="text-align: center; padding: 12px; border: 1px solid #f1f5f9; border-radius: 12px;">
                 <div style="font-size: 10px; color: #64748b; text-transform: uppercase;">Rejetés</div>
-                <div style="font-size: 18px; font-weight: 700; color: #ef4444;">${reportData.moderation.rejected}</div>
+                <div style="font-size: 18px; font-weight: 700; color: #ef4444;">${toFrOptionalInt(reportData.moderation.rejected)}</div>
               </div>
               <div style="text-align: center; padding: 12px; border: 1px solid #f1f5f9; border-radius: 12px;">
                 <div style="font-size: 10px; color: #64748b; text-transform: uppercase;">Fraîcheur</div>
@@ -439,23 +442,7 @@ export function generatePdfHtml(
   });
 
   const styles = collectHeadStyles();
-  const printStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
-    ${buildOfficialReportCss()}
-    @page { size: A4; margin: 0; }
-    body { font-family: 'Inter', sans-serif; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
-    .master-pack-container { background: #fff; }
-    .report-cover { height: 297mm; width: 210mm; background: linear-gradient(135deg, #17303b, #1a365d); color: white; display: flex; flex-direction: column; padding: 80px; position: relative; overflow: hidden; page-break-after: always; }
-    .report-cover::before { content: ""; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); opacity: 0.03; pointer-events: none; }
-    .data-seal { position: absolute; top: 80px; right: 80px; width: 120px; height: 120px; }
-    .section-title-print { font-family: 'Inter', sans-serif; font-size: 34px; font-weight: 750; color: #1A365D; margin-bottom: 24px; border-bottom: 2px solid #B8C8D0; display: inline-block; }
-    .page-break { page-break-before: always; min-height: 297mm; box-sizing: border-box; }
-    a { text-decoration: none; }
-    @media print {
-      .no-print { display: none !important; }
-      .master-pack-container { width: 210mm; }
-    }
-  `;
+  const printStyles = buildPdfPrintStyles();
 
   return `<!doctype html>
 <html lang="fr">

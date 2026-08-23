@@ -1,13 +1,13 @@
-import { toFrNumber, toFrInt } from "@/components/reports/web-document/analytics";
+import {
+  computeEnvironmentalProxyMetrics,
+  toFrNumber,
+  toFrInt,
+} from "@/lib/reports/report-model";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
 
 export function computeEnvironmentalProxies(totalButts: number, totalKg: number, pollutionScoreAverage: number) {
-  const waterProtectedLiters = Math.round(totalButts * 500);
-  const co2AvoidedKg = totalButts * 0.0014;
-  const recyclableKg = totalKg * 0.55;
-  const triIndex = totalKg > 0 
-    ? Math.max(0, Math.min(100, 100 - (totalButts / Math.max(totalKg, 1)) * 0.7)) 
-    : 0;
+  const { waterProtectedLiters, co2AvoidedKg, recyclableKg, triIndex } =
+    computeEnvironmentalProxyMetrics(totalButts, totalKg);
 
   const methodology = buildPersonalImpactMethodology(pollutionScoreAverage);
 

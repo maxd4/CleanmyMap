@@ -1,7 +1,7 @@
 import { ArrowRight, CalendarDays, Eye, FileText, Map, ShieldCheck, Sparkles } from "lucide-react";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
-import type { ReportModel } from "@/components/reports/web-document/types";
-import { toFrInt, toFrNumber } from "@/components/reports/web-document/analytics";
+import type { ReportModel } from "@/lib/reports/report-model/types";
+import { toFrInt, toFrNumber } from "@/lib/reports/report-model";
 import { SectionHeader } from "@/components/ui/page-structure";
 
 type ReportsImpactReadingsSectionProps = {
