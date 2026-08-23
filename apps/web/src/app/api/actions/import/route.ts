@@ -148,7 +148,7 @@ function buildImportStats(items: PreparedImport[]) {
   for (const item of items) {
     const quality = item.dataQuality;
     if (quality.geolocation.state === "valid") stats.withCoordinates += 1;
-    if (quality.geolocation.state !== "valid") stats.missingCoordinates += 1;
+    if (quality.geolocation.state === "missing") stats.missingCoordinates += 1;
     if (quality.geolocation.state === "partial") stats.partialCoordinates += 1;
     if (quality.geolocation.state === "invalid") stats.invalidCoordinates += 1;
     stats.totalWasteKg += Number(item.payload.wasteKg || 0);
