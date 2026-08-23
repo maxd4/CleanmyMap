@@ -1,3 +1,6 @@
+import type { ContentValidationRecord } from "@/lib/content/content-validation";
+import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres-validation";
+
 export type GestesPropresInsightTheme = "tri" | "reduction" | "collectif";
 
 export type GestesPropresPermissionStatus = "not_requested" | "pending" | "approved";
@@ -20,6 +23,7 @@ export type GestesPropresInsight = {
   image?: string;
   imageCredit?: string;
   permissionStatus: GestesPropresPermissionStatus;
+  validation: ContentValidationRecord;
 };
 
 const GESTES_PROPRES_SOURCE: GestesPropresLocalizedText = {
@@ -27,8 +31,28 @@ const GESTES_PROPRES_SOURCE: GestesPropresLocalizedText = {
   en: "Gestes Propres",
 };
 
+function createInsight(input: Omit<GestesPropresInsight, "validation">): GestesPropresInsight {
+  return {
+    ...input,
+    validation: createPublishedLearningValidation({
+      id: `learn.gestes-propres.insight-${input.id}`,
+      sourceName: input.sourceName.fr,
+      sourceUrl: input.sourceUrl,
+      sourceDate: input.publishedAt,
+      sourceDatePrecision: "day",
+      sourceDateBasis: "publication",
+      evidenceLevel: "moderate",
+      facts: [
+        claim("summary", "fact", input.summary),
+        ...input.keyPoints.map((text, index) => claim(`key-point-${index + 1}`, "fact", text)),
+      ],
+      recommendations: [claim("action", "recommendation", input.action)],
+    }),
+  };
+}
+
 export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
-  {
+  createInsight({
     id: "automobilistes-plus-jeter",
     title: {
       fr: "Pourquoi les automobilistes sont-ils susceptibles de plus jeter ?",
@@ -61,8 +85,8 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/73-pourquoi-les-automobilistes-sont-ils-susceptibles-de-plus-jeter",
     publishedAt: "2026-05-22",
     permissionStatus: "not_requested",
-  },
-  {
+  }),
+  createInsight({
     id: "poubelles-trop-discretes",
     title: {
       fr: "Poubelles trop discrètes : un frein à la propreté de nos rues ?",
@@ -95,8 +119,8 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/65-poubelles-trop-discretes-un-frein-a-la-proprete-de-nos-rues",
     publishedAt: "2026-04-22",
     permissionStatus: "not_requested",
-  },
-  {
+  }),
+  createInsight({
     id: "suppression-poubelles",
     title: {
       fr: "La suppression des poubelles",
@@ -129,8 +153,8 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/63-la-suppression-des-poubelles",
     publishedAt: "2026-03-23",
     permissionStatus: "not_requested",
-  },
-  {
+  }),
+  createInsight({
     id: "commercants-levier-activer",
     title: {
       fr: "Commerçants : un levier à activer",
@@ -163,8 +187,8 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/69-commercants-un-levier-a-activer",
     publishedAt: "2026-04-28",
     permissionStatus: "not_requested",
-  },
-  {
+  }),
+  createInsight({
     id: "que-faire-de-mes-objets",
     title: {
       fr: "Découvrez « Que Faire de Mes Objets », l’outil de l'ADEME pour mieux trier, donner et recycler !",
@@ -197,8 +221,8 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/41-decouvrez-que-faire-de-mes-objets-loutil-de-lademe-pour-mieux-trier-donner-et-recycler",
     publishedAt: "2025-02-04",
     permissionStatus: "not_requested",
-  },
-  {
+  }),
+  createInsight({
     id: "pollution-lingettes",
     title: {
       fr: "L’AMF et Gestes Propres s’associent dans une campagne de sensibilisation contre la pollution des lingettes.",
@@ -231,5 +255,5 @@ export const GESTES_PROPRES_INSIGHTS: GestesPropresInsight[] = [
     sourceUrl: "https://www.gestespropres.com/article/43-lamf-et-gestes-propres-sassocient-dans-une-campagne-de-sensibilisation-contre-la-pollution-des-lingettes",
     publishedAt: "2025-02-03",
     permissionStatus: "not_requested",
-  },
+  }),
 ];

@@ -28,3 +28,17 @@ Fallback statique:
 ## Points de controle
 - Traçabilite des imports
 - Validation qualite avant exploitation analytique
+
+## Sources éditoriales et institutionnelles
+
+Les contenus environnementaux et institutionnels suivent un contrat distinct du
+flux d'actions :
+
+```txt
+apps/web/src/lib/content/content-validation.ts
+```
+
+Avant affichage public, la source, sa date et sa précision, le niveau de preuve,
+le responsable et la dernière revue doivent être renseignés. Les claims sont
+séparés entre fait, estimation et recommandation. Voir
+`documentation/architecture/content-validation.md`.
