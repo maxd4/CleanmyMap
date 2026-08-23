@@ -21,34 +21,16 @@ import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import { StorageBusinessContributionPanel } from "@/components/dashboard/storage-business-contribution-panel";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import {
+  buildStorageUsageViewModel,
+  formatStorageUsageDelta as formatDelta,
+  formatStorageUsagePercent as formatPercent,
+  type StorageUsageResponse,
+} from "@/lib/dashboard/storage-usage-view-model";
+import {
   formatStorageBytes,
   type StorageUsageBreakdownItem,
-  type StorageUsageHistoryPoint,
-  type StorageUsageMonthComparison,
-  type StorageUsageSnapshot,
 } from "@/lib/supabase/storage-usage";
-import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
-import type { StorageUsageCronStatus } from "@/lib/supabase/storage-usage-cron";
 import { cn } from "@/lib/utils";
-
-type StorageUsageResponse = {
-  status: "ok" | "degraded";
-  current: StorageUsageSnapshot;
-  businessContributions: StorageBusinessContributionReport;
-  history: Array<
-    StorageUsageHistoryPoint & {
-      bucketBreakdown: StorageUsageBreakdownItem[];
-      extensionBreakdown: StorageUsageBreakdownItem[];
-      businessBreakdown: StorageUsageBreakdownItem[];
-    }
-  >;
-  comparison: StorageUsageMonthComparison;
-  cron: StorageUsageCronStatus;
-  warnings: string[];
-  timestamp: string;
-  error?: string;
-  details?: string;
-};
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -57,17 +39,6 @@ const fetcher = async <T,>(url: string): Promise<T> => {
   }
   return (await response.json()) as T;
 };
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function formatDelta(value: number): string {
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${formatStorageBytes(Math.abs(value))}`;
-}
 
 function BreakdownTable({
   title,
@@ -143,29 +114,11 @@ export function StorageUsagePanel() {
   const isRefreshing = usage.isValidating;
   const hasError = Boolean(usage.error);
 
-  const chartData = (usage.data?.history ?? [])
-    .slice()
-    .reverse()
-    .map((point) => ({
-      monthLabel: point.monthLabel,
-      usedGb: point.totalBytes / (1024 * 1024 * 1024),
-      quotaGb:
-        (usage.data?.current.quotaBytes ?? 1024 * 1024 * 1024) /
-        (1024 * 1024 * 1024),
-      usagePercent: point.usagePercent,
-    }));
+  const { chartData, comparisonData } = buildStorageUsageViewModel(usage.data);
 
   const current = usage.data?.current ?? null;
-  const comparison = usage.data?.comparison ?? null;
   const cron = usage.data?.cron ?? null;
   const warnings = usage.data?.warnings ?? [];
-  const comparisonData: StorageUsageMonthComparison = comparison ?? {
-    previousSnapshotMonth: null,
-    deltaBytes: 0,
-    deltaPercent: null,
-    bucketGrowth: [],
-    extensionGrowth: [],
-  };
 
   const statusTone =
     current && current.usagePercent >= 100
