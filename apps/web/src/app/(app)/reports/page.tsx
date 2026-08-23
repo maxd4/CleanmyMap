@@ -7,24 +7,23 @@ import {
 } from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
-import { computeReportModel } from "@/components/reports/web-document/analytics";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
-import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
+import {
+  NavigationGrid,
+  type NavigationGridItem,
+} from "@/components/ui/navigation-grid";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { getActionOperationalContext, toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
-import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
-import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
-import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { getServerLocale } from "@/lib/server-preferences";
 import {
   getProfileLabel,
   getProfilePrimaryAction,
@@ -32,20 +31,18 @@ import {
   isAdminLikeProfile,
   toProfile,
 } from "@/lib/profiles";
-import { getServerLocale } from "@/lib/server-preferences";
+import {
+  buildEmptyReportsModel,
+  buildReportsSummaryKpis,
+  loadReportsGenerationData,
+  loadReportsPilotageData,
+  toReportsExportRow,
+  type ReportsSummaryKpi,
+} from "@/lib/reports/page-data";
 import type { Locale } from "@/lib/ui/preferences";
 import type { ProfileAction } from "@/lib/profiles";
 import type { MethodDefinition } from "@/lib/pilotage/overview";
-import type { ReportModel } from "@/components/reports/web-document/types";
-
-type ReportsSummaryKpi = {
-  label: string;
-  value: string;
-  previousValue: string;
-  deltaAbsolute: string;
-  deltaPercent: string;
-  interpretation: "positive" | "negative" | "neutral";
-};
+import type { ReportModel } from "@/lib/reports/report-model/types";
 
 type ReportsPageTabId = "generation" | "pilotage";
 
@@ -62,7 +59,7 @@ type ReportsPilotageContentParams = {
   navigationItems: NavigationGridItem[];
   overview: { methods: MethodDefinition[] } | null;
   report: ReportModel;
-  monthlyData: ReturnType<typeof aggregateMonthlyAnalytics>;
+  monthlyData: Awaited<ReturnType<typeof loadReportsPilotageData>>["monthlyData"];
   canAccessExports: boolean;
   exportRows: Record<string, unknown>[] | null;
 };
@@ -101,35 +98,45 @@ function buildReportsPilotageContent({
           <div className="space-y-10">
             <AnimatedImpactMetrics kpis={summaryKpis} />
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  Objectifs et repères
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Ces valeurs de référence ne sont pas calculées à partir de la fenêtre du rapport.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               <section className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                  Réduction Déchets
+                  Objectif réduction déchets
                 </p>
                 <p className="mt-2 text-2xl font-black text-slate-950">78%</p>
                 <p className="mt-1 text-sm text-slate-500">Objectif Q2 2026</p>
               </section>
               <section className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                  Mobilisation
+                  Repère mobilisation
                 </p>
                 <p className="mt-2 text-2xl font-black text-slate-950">45%</p>
                 <p className="mt-1 text-sm text-slate-500">Nouveaux bénévoles</p>
               </section>
               <section className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                  Qualité Data
+                  Repère précision GPS
                 </p>
                 <p className="mt-2 text-2xl font-black text-slate-950">92%</p>
                 <p className="mt-1 text-sm text-slate-500">Précision GPS</p>
               </section>
               <section className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                  Impact CO2
+                  Repère émissions évitées
                 </p>
                 <p className="mt-2 text-2xl font-black text-slate-950">65%</p>
                 <p className="mt-1 text-sm text-slate-500">Émissions évitées</p>
               </section>
+              </div>
             </div>
 
             <NavigationGrid
@@ -222,127 +229,6 @@ function buildReportsPilotageContent({
   );
 }
 
-async function loadPilotageData() {
-  const [overview, communityEvents] = await Promise.all([
-    loadPilotageOverview({
-      periodDays: 90,
-      limit: 2200,
-    }),
-    loadCachedReportCommunityEvents(120).catch(() => []),
-  ]);
-
-  const actionListItems = overview.contracts.map((contract) => toActionListItem(contract));
-  const actionMapItems = overview.contracts.map((contract) => toActionMapItem(contract));
-
-  return {
-    overview,
-    communityEvents,
-    report: computeReportModel({
-      allItems: actionListItems,
-      approvedItems: actionListItems,
-      mapItems: actionMapItems,
-      events: communityEvents,
-    }),
-    monthlyData: aggregateMonthlyAnalytics(overview.contracts),
-  };
-}
-
-async function loadGenerationData() {
-  const [contractsResult, weather] = await Promise.all([
-    import("@/lib/actions/unified-source-cache").then(({ fetchCachedUnifiedActionContracts }) =>
-      fetchCachedUnifiedActionContracts({
-        limit: 1000,
-        status: "approved",
-        floorDate: null,
-        requireCoordinates: false,
-        types: null,
-      }),
-    ),
-    fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
-      { next: { revalidate: 900 } },
-    )
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-        return response.json() as Promise<{
-          current?: {
-            temperature_2m?: number;
-            precipitation?: number;
-            wind_speed_10m?: number;
-          };
-        }>;
-      })
-      .catch(() => null),
-  ]);
-
-  return {
-    contracts: contractsResult.items,
-    weather,
-  };
-}
-
-function toReportsExportRow(contract: ActionDataContract) {
-  const operational = getActionOperationalContext(contract);
-  return {
-    Date: contract.dates.observedAt,
-    Lieu: contract.location.label,
-    Masse_Kg: contract.metadata.wasteKg || 0,
-    Megots: contract.metadata.cigaretteButts || 0,
-    Bénévoles: operational.volunteersCount,
-    Durée_Min: operational.durationMinutes,
-    Charge_Terrain_Min: operational.engagementMinutes,
-    Type_Lieu: operational.placeTypeLabel,
-    Trajet: operational.routeStyleLabel,
-    Ajustement_Trajet: operational.routeAdjustmentMessage ?? "",
-    Type: contract.type,
-    Source: contract.source,
-  };
-}
-
-function buildSummaryKpis(
-  overview: Awaited<ReturnType<typeof loadPilotageOverview>> | null,
-): [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi] {
-  if (!overview) {
-    return [
-      {
-        label: "Impact terrain",
-        value: "n/a",
-        previousValue: "n/a",
-        deltaAbsolute: "n/a",
-        deltaPercent: "n/a",
-        interpretation: "neutral",
-      },
-      {
-        label: "Mobilisation",
-        value: "n/a",
-        previousValue: "n/a",
-        deltaAbsolute: "n/a",
-        deltaPercent: "n/a",
-        interpretation: "neutral",
-      },
-      {
-        label: "Qualité data",
-        value: "n/a",
-        previousValue: "n/a",
-        deltaAbsolute: "n/a",
-        deltaPercent: "n/a",
-        interpretation: "neutral",
-      },
-    ];
-  }
-
-  return overview.summary.kpis.map((kpi) => ({
-    label: kpi.label,
-    value: kpi.value,
-    previousValue: kpi.previousValue,
-    deltaAbsolute: kpi.deltaAbsolute ?? "",
-    deltaPercent: kpi.deltaPercent ?? "",
-    interpretation: kpi.interpretation ?? "neutral",
-  })) as [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi];
-}
-
 export const metadata: Metadata = {
   title: "Rapports d'impact - CleanMyMap",
   description:
@@ -356,7 +242,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   ]);
   const resolvedSearchParams = await searchParams;
   const accountCompletion = userId
-    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(
+        () => null,
+      )
     : null;
   const role =
     userId && clerkReachable
@@ -365,11 +253,17 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const profile = toProfile(role);
   const canAccessReportsPage = Boolean(userId);
   const canAccessDetailedReports = isAdminLikeProfile(profile);
-  const activeTab = resolveReportsTab(resolvedSearchParams.tab, canAccessDetailedReports);
+  const activeTab = resolveReportsTab(
+    resolvedSearchParams.tab,
+    canAccessDetailedReports,
+  );
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
-  const roleLabel =
-    userId ? getProfileLabel(profile, locale) : locale === "fr" ? "Visiteur" : "Visitor";
+  const roleLabel = userId
+    ? getProfileLabel(profile, locale)
+    : locale === "fr"
+      ? "Visiteur"
+      : "Visitor";
 
   if (!canAccessReportsPage) {
     return (
@@ -395,15 +289,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   if (activeTab === "generation") {
     if (canAccessDetailedReports) {
-      const [generationData, communityEvents] = await Promise.all([
-        loadGenerationData().catch(() => null),
-        loadCachedReportCommunityEvents(120).catch(() => []),
-      ]);
+      const generationData = await loadReportsGenerationData().catch(() => null);
 
       const generationContent = generationData ? (
         <DeferredReportsWebDocument
           contracts={generationData.contracts}
-          communityEvents={communityEvents}
+          isTruncated={generationData.isTruncated}
+          sourceHealth={generationData.sourceHealth}
+          communityEvents={generationData.communityEvents}
+          communityEventsAvailability={generationData.communityEventsAvailability}
           weather={generationData.weather}
           overviewGeneratedAt={null}
         />
@@ -424,7 +318,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       return (
         <AccountCompletionGate state={accountCompletion}>
-          <ReportsPageV2Layout activeTab={activeTab} generationContent={generationContent} />
+          <ReportsPageV2Layout
+            activeTab={activeTab}
+            generationContent={generationContent}
+          />
         </AccountCompletionGate>
       );
     }
@@ -452,16 +349,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     );
   }
 
-  const pilotageData = await loadPilotageData().catch(() => null);
+  const pilotageData = await loadReportsPilotageData().catch(() => null);
   const overview = pilotageData?.overview ?? null;
-  const report = pilotageData?.report ?? computeReportModel({
-    allItems: [],
-    approvedItems: [],
-    mapItems: [],
-    events: [],
-  });
+  const report = pilotageData?.report ?? buildEmptyReportsModel();
   const monthlyData = pilotageData?.monthlyData ?? [];
-  const summaryKpis = buildSummaryKpis(overview);
+  const summaryKpis = buildReportsSummaryKpis(overview);
   const navigationItems: NavigationGridItem[] = [
     {
       icon: BarChart3,
@@ -520,12 +412,17 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     report,
     monthlyData,
     canAccessExports: canAccessDetailedReports,
-    exportRows: overview ? overview.contracts.map(toReportsExportRow) : null,
+    exportRows: overview
+      ? overview.contracts.map(toReportsExportRow)
+      : null,
   });
 
   return (
     <AccountCompletionGate state={accountCompletion}>
-      <ReportsPageV2Layout activeTab={activeTab} pilotageContent={pilotageContent} />
+      <ReportsPageV2Layout
+        activeTab={activeTab}
+        pilotageContent={pilotageContent}
+      />
     </AccountCompletionGate>
   );
 }

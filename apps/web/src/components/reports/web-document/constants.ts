@@ -1,4 +1,4 @@
-import type { ChapterDef } from "./types";
+import type { ChapterDef } from "@/lib/reports/report-model/types";
 
 export type ReportTocLink = {
   id: string;

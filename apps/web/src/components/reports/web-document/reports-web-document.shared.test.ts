@@ -115,11 +115,18 @@ describe("reports web document shared helpers", () => {
           moderation: { approved: 2, rejected: 0, delayDays: 1 },
           calendar: [],
         },
+        dataAvailability: {
+          isTruncated: true,
+          communityEventsAvailability: "available",
+        },
       } as never,
     });
 
     expect(pdf.title).toBe("Rapport d'impact - Paris - Exhaustif");
     expect(pdf.rows).toEqual([{ Date: "2026-06-01", Masse_Kg: 4.5 }]);
     expect(pdf.chapters[0]?.lines).toContain("Période: Historique complet · Exhaustif (20 à 28 pages).");
+    expect(pdf.chapters[0]?.lines).toContain(
+      "Données potentiellement partielles : la limite de chargement a été atteinte.",
+    );
   });
 });

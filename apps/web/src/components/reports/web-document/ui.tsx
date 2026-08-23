@@ -1,8 +1,8 @@
 "use client";
 
-import type { ChapterAudience } from"./types";
-import { toFrNumber } from"./analytics";
-import type { MonthRow } from"./types";
+import type { ChapterAudience } from "@/lib/reports/report-model/types";
+import { toFrNumber } from "@/lib/reports/report-model";
+import type { MonthRow } from "@/lib/reports/report-model/types";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 
 export function ReportPage(props: {

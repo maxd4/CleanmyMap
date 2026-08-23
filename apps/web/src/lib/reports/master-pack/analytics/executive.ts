@@ -1,22 +1,24 @@
-import { average, toFrNumber, toFrInt } from "@/components/reports/web-document/analytics";
-import type { ReportModel } from "@/components/reports/web-document/types";
+import {
+  average,
+  toFrNumber,
+  toFrInt,
+  toFrOptionalNumber,
+} from "@/lib/reports/report-model";
+import type {
+  ReportExecutiveNarrative,
+  ReportModel,
+} from "@/lib/reports/report-model/types";
 
-export type ExecutiveNarrative = {
-  readinessScore: number;
-  readinessLabel: string;
-  headline: string;
-  summary: string;
-  evidence: string[];
-  budgetUseCases: string[];
-  watchouts: string[];
-};
+export type ExecutiveNarrative = ReportExecutiveNarrative;
 
 export function computeExecutiveNarrative(report: ReportModel): ExecutiveNarrative {
   const readinessScore = average([
     report.quality.completenessScore,
     report.quality.coherenceScore,
     report.map.geoCoverage,
-    report.moderation.conversion,
+    ...(report.moderation.conversion === null
+      ? []
+      : [report.moderation.conversion]),
   ]);
 
   const readinessLabel =
@@ -46,7 +48,7 @@ export function computeExecutiveNarrative(report: ReportModel): ExecutiveNarrati
       "Renforcement des campagnes de sensibilisation ciblées.",
     ],
     watchouts: [
-      `Délai de traitement : ${toFrNumber(report.moderation.delayDays)} jours.`,
+      `Délai de traitement : ${toFrOptionalNumber(report.moderation.delayDays)} jours.`,
       "Proxies environnementaux à utiliser avec la méthodologie jointe.",
     ],
   };
