@@ -9,7 +9,7 @@ describe("GESTES_PROPRES_BAROMETER_2025", () => {
     expect(GESTES_PROPRES_BAROMETER_2025.organization.fr).toBe("IFOP × Gestes Propres");
     expect(GESTES_PROPRES_BAROMETER_2025.fieldworkPeriod.fr).toBe("Septembre 2025");
     expect(GESTES_PROPRES_BAROMETER_2025.pdfPath).toBe(
-      "documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestespropres-Barometre_2025.pdf",
+      "/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf",
     );
     expect(GESTES_PROPRES_BAROMETER_2025.pageCount).toBe(10);
     expect(GESTES_PROPRES_BAROMETER_2025.sampleSize).toBe(2001);

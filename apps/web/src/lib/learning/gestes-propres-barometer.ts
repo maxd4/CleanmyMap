@@ -1,3 +1,6 @@
+import type { ContentValidationRecord } from "@/lib/content/content-validation";
+import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres-validation";
+
 export type GestesPropresBarometerLocalizedText = {
   fr: string;
   en: string;
@@ -14,6 +17,7 @@ export type GestesPropresBarometerMetric = {
   id: string;
   category: GestesPropresBarometerCategory;
   value: number;
+  unit: "percent";
   label: GestesPropresBarometerLocalizedText;
   context: GestesPropresBarometerLocalizedText;
   interpretationLimit: GestesPropresBarometerLocalizedText;
@@ -43,12 +47,13 @@ export type GestesPropresBarometerStudy = {
   interpretationNote: GestesPropresBarometerLocalizedText;
   featuredKpiIds: string[];
   categories: Record<GestesPropresBarometerCategory, GestesPropresBarometerMetric[]>;
+  validation: ContentValidationRecord;
 };
 
-const GESTES_PROPRES_BAROMETER_SOURCE = "documentation/pages_site/routes/05-apprendre/learn-bonnes-pratiques/gestespropres-Barometre_2025.pdf";
+const GESTES_PROPRES_BAROMETER_SOURCE = "/learn/bonnes-pratiques/gestespropres-Barometre_2025.pdf";
 
-function createMetric(metric: GestesPropresBarometerMetric): GestesPropresBarometerMetric {
-  return metric;
+function createMetric(metric: Omit<GestesPropresBarometerMetric, "unit">): GestesPropresBarometerMetric {
+  return { ...metric, unit: "percent" };
 }
 
 const perception = [
@@ -341,6 +346,44 @@ export const GESTES_PROPRES_BAROMETER_2025: GestesPropresBarometerStudy = {
     social_influence: socialInfluence,
     positive_engagement: positiveEngagement,
   },
+  validation: createPublishedLearningValidation({
+    id: "learn.gestes-propres.barometer-2025",
+    sourceName: "IFOP × Gestes Propres — Baromètre 2025",
+    sourceUrl: GESTES_PROPRES_BAROMETER_SOURCE,
+    sourceDate: "2025-12-17",
+    sourceDatePrecision: "day",
+    sourceDateBasis: "document",
+    evidenceLevel: "strong",
+    facts: [
+      claim(
+        "barometer-methodology",
+        "fact",
+        {
+          fr: "L’enquête a été menée en septembre 2025 auprès de 2 001 personnes représentatives de la population française.",
+          en: "The survey was conducted in September 2025 among 2,001 people representative of the French population.",
+        },
+        [2],
+        {
+          fr: "Les résultats sont déclaratifs : ils ne mesurent pas directement les comportements observés.",
+          en: "The results are self-reported: they do not directly measure observed behavior.",
+        },
+      ),
+      ...Object.values({ perception, declaredPractices, falseBeliefs, socialInfluence, positiveEngagement })
+        .flat()
+        .map((metric) => claim(metric.id, "fact", metric.context, [metric.sourcePage], metric.interpretationLimit)),
+    ],
+    recommendations: [
+      claim(
+        "barometer-reading-rule",
+        "recommendation",
+        {
+          fr: "Présenter les pourcentages comme des perceptions, croyances ou pratiques déclarées, sans les convertir en impact réel.",
+          en: "Present the percentages as perceptions, beliefs or declared practices, without converting them into real-world impact.",
+        },
+        [2],
+      ),
+    ],
+  }),
 };
 
 export const GESTES_PROPRES_BAROMETER_MYTHS: GestesPropresBarometerMyth[] = [

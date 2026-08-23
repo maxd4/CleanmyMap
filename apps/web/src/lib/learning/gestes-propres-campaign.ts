@@ -1,3 +1,6 @@
+import type { ContentValidationRecord } from "@/lib/content/content-validation";
+import { claim, createPublishedLearningValidation } from "@/lib/learning/gestes-propres-validation";
+
 export type GestesPropresCampaignLocalizedText = {
   fr: string;
   en: string;
@@ -23,6 +26,7 @@ export type GestesPropresCampaign = {
   publishedAt: string;
   ctaLabel: GestesPropresCampaignLocalizedText;
   situations: GestesPropresCampaignSituation[];
+  validation: ContentValidationRecord;
 };
 
 const GESTES_PROPRES_SOURCE: GestesPropresCampaignLocalizedText = {
@@ -152,4 +156,41 @@ export const GESTES_PROPRES_CAMPAIGN: GestesPropresCampaign = {
       solutionHref: "/actions/map",
     },
   ],
+  validation: createPublishedLearningValidation({
+    id: "learn.gestes-propres.campaign-2025-2026",
+    sourceName: "Gestes Propres — campagne « Ça va pas s’faire tout seul ! »",
+    sourceUrl: "https://www.gestespropres.com/article/50-ca-va-pas-sfaire-tout-seul",
+    sourceDate: "2025",
+    sourceDatePrecision: "year",
+    sourceDateBasis: "campaign",
+    evidenceLevel: "moderate",
+    facts: [
+      claim(
+        "campaign-period",
+        "fact",
+        {
+          fr: "La campagne a été diffusée en 2025 puis redéployée en 2026.",
+          en: "The campaign was distributed in 2025 and redeployed in 2026.",
+        },
+      ),
+      claim(
+        "campaign-source-scope",
+        "fact",
+        {
+          fr: "La source présente des mises en situation autour du mégot, de la canette, de la bouteille et de l’encombrant.",
+          en: "The source presents scenarios involving a cigarette butt, a can, a bottle and a bulky item.",
+        },
+      ),
+    ],
+    recommendations: [
+      claim(
+        "campaign-good-gesture",
+        "recommendation",
+        {
+          fr: "Orienter chaque déchet vers une poubelle, une filière de tri, une reprise ou une solution locale adaptée.",
+          en: "Direct each item to a bin, sorting stream, take-back service or suitable local solution.",
+        },
+      ),
+    ],
+  }),
 };
