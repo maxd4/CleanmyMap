@@ -16,7 +16,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js 16" />
-  <img src="https://img.shields.io/badge/TypeScript-6-blue?logo=typescript" alt="TypeScript 6" />
+  <img src="https://img.shields.io/badge/TypeScript-7-blue?logo=typescript" alt="TypeScript 7" />
   <img src="https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase" alt="Supabase" />
   <img src="https://img.shields.io/badge/Clerk-Auth-6C47FF?logo=clerk" alt="Clerk" />
   <img src="https://img.shields.io/badge/Vercel-Deploy-000000?logo=vercel" alt="Vercel" />
@@ -42,7 +42,7 @@ Repères actuels :
 
 - Next.js 16 avec App Router ;
 - React 19 ;
-- TypeScript 6 ;
+- TypeScript 7 ;
 - Tailwind CSS 4 ;
 - Supabase/PostgreSQL ;
 - Clerk ;
