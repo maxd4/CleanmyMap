@@ -4,8 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { swrRecentViewOptions } from "@/lib/swr-config";
-import { computeReportModel, getWeatherAdvice } from "./analytics";
+import { computeReportModel, getWeatherAdvice } from "@/lib/reports/report-model";
+import type {
+  CommunityEventsAvailability,
+  ReportDataAvailability,
+} from "@/lib/reports/data-availability";
 import {
   buildReportScopeOptions,
   computeReportAccountScopeCoverage,
@@ -33,13 +38,19 @@ type WasteProfileCategory = {
 
 type UseReportsWebDocumentModelOptions = {
   initialContracts?: ActionDataContract[];
+  initialIsTruncated?: boolean;
+  initialSourceHealth?: UnifiedSourceHealth;
   initialCommunityEvents?: CommunityEventItem[];
+  initialCommunityEventsAvailability?: CommunityEventsAvailability;
   initialWeather?: ReportsWeather;
 };
 
 export function useReportsWebDocumentModel({
   initialContracts,
+  initialIsTruncated = false,
+  initialSourceHealth,
   initialCommunityEvents,
+  initialCommunityEventsAvailability,
   initialWeather,
 }: UseReportsWebDocumentModelOptions = {}) {
   const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
@@ -114,6 +125,15 @@ export function useReportsWebDocumentModel({
     () => initialCommunityEvents ?? community.data?.items ?? [],
     [community.data?.items, initialCommunityEvents],
   );
+  const communityEventsAvailability =
+    initialCommunityEventsAvailability ??
+    (initialCommunityEvents !== undefined
+      ? "available"
+      : community.error
+        ? "unavailable"
+        : community.data
+          ? "available"
+          : undefined);
   const weatherData = initialWeather ?? weather.data ?? null;
 
   const isLoading =
@@ -232,6 +252,7 @@ export function useReportsWebDocumentModel({
         approvedItems: scopedActionsApproved,
         mapItems: scopedMapAll,
         events: scopedCommunity,
+        moderationAvailability: "unavailable",
       }),
     [scopedActionsAll, scopedActionsApproved, scopedCommunity, scopedMapAll],
   );
@@ -254,13 +275,18 @@ export function useReportsWebDocumentModel({
   );
 
   const weatherAdvice = useMemo(() => {
-    const temperature = Number(weatherData?.current?.temperature_2m ?? 0);
-    const rain = Number(weatherData?.current?.precipitation ?? 0);
-    const wind = Number(weatherData?.current?.wind_speed_10m ?? 0);
+    const temperature = weatherData?.current?.temperature_2m ?? null;
+    const rain = weatherData?.current?.precipitation ?? null;
+    const wind = weatherData?.current?.wind_speed_10m ?? null;
     return getWeatherAdvice({ temperature, rain, wind });
   }, [weatherData]);
 
   const activeScopeLabel = formatReportScopeLabel(scope, scopeOptions);
+  const dataAvailability: ReportDataAvailability = {
+    isTruncated: initialIsTruncated,
+    sourceHealth: initialSourceHealth,
+    communityEventsAvailability,
+  };
 
   return {
     scopeKind,
@@ -273,6 +299,8 @@ export function useReportsWebDocumentModel({
     accountScopeCoverage,
     wasteProfile,
     report,
+    isTruncated: initialIsTruncated,
+    dataAvailability,
     weather: {
       data: weatherData,
       error: weather.error,

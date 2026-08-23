@@ -2,8 +2,8 @@
 
 import { BarChart3, FileText, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import { MetricCard } from "./ui";
-import type { ReportModel } from "./types";
-import { buildExecutiveNarrative, toFrInt, toFrNumber } from "./analytics";
+import type { ReportModel } from "@/lib/reports/report-model/types";
+import { buildExecutiveNarrative, toFrInt, toFrNumber } from "@/lib/reports/report-model";
 
 type ReportCoverProps = {
   id?: string;

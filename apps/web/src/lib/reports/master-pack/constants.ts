@@ -1,4 +1,4 @@
-import type { ChapterDef } from "@/components/reports/web-document/types";
+import type { ChapterDef } from "@/lib/reports/report-model/types";
 
 export const MASTER_PACK_CHAPTERS: ChapterDef[] = [
   {
