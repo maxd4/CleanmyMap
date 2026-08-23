@@ -102,6 +102,16 @@ describe("computeBusinessAlerts", () => {
       true,
     );
   });
+
+  it("does not render an invalid pending date as zero days", () => {
+    const alerts = computeBusinessAlerts({
+      actions: [makeAction({ id: "pending-invalid-date", status: "pending", created_at: "not-a-date" })],
+      mapItems: [],
+    });
+
+    const backlog = alerts.find((alert) => alert.id === "moderation-backlog");
+    expect(backlog?.ageLabel).toBe("Anciennete indisponible");
+  });
 });
 
 describe("computeCampaignGoalsByZone", () => {
