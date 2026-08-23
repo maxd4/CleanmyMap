@@ -176,6 +176,60 @@ documentation/                            documentation structurée
 
 Le dossier racine `supabase/migrations/` est un miroir historique tant que l'ADR de migration n'est pas définitivement appliqué. Ne jamais modifier un seul arbre de migrations sans vérifier l'autre.
 
+## Prévention des monolithes
+
+Ces règles doivent être appliquées spontanément par Codex pendant tout
+développement futur. La taille est un signal architectural, pas un objectif de
+refactor : les responsabilités, la cohésion, les dépendances, la testabilité et
+la fréquence de changement priment sur le nombre de lignes.
+
+Repères de revue :
+
+- Moins de 700 lignes : aucune action n'est imposée par la taille seule.
+- De 700 à moins de 900 lignes : vigilance ; extraire uniquement si plusieurs
+  responsabilités réellement séparables existent et si l'extraction clarifie
+  une frontière de module.
+- De 900 à 1200 lignes : effectuer une revue architecturale lors d'une
+  modification significative, sans extraction obligatoire si le module reste
+  cohérent.
+- Au-delà de 1200 lignes : forte présomption de monolithe et recherche active
+  de frontières ; ne pas extraire si cela augmente le couplage ou fragmente une
+  orchestration cohérente.
+- Ne jamais modulariser uniquement pour réduire le nombre de lignes.
+- Éviter les micro-extractions de moins d'environ 100 lignes, sauf vraie
+  frontière de contrat, réutilisation ou dépendance.
+- Une façade déjà déclarée terminée n'est pas rouverte pour sa taille seule.
+  La réévaluer si elle reçoit une nouvelle responsabilité, si sa cohésion se
+  dégrade nettement, ou si elle croît d'environ 200 lignes ou 25 % depuis sa
+  dernière revue. Une façade cohérente peut rester volumineuse ; si cette
+  décision est documentée, utiliser
+  `docs/ARCHITECTURE_MONOLITHS_AUDIT.md` lorsque ce document est présent dans
+  le dépôt.
+- Pour le réseau, SQL, la concurrence, le lifecycle, le navigateur et
+  l'orchestration, préférer une unité cohérente plus grande à une fragmentation
+  artificielle.
+- Les nouveaux modules extraits ne sont pas réévalués parce qu'ils approchent
+  un seuil arbitraire ; les réévaluer s'ils accumulent plusieurs
+  responsabilités, perdent leur cohésion ou deviennent difficiles à tester.
+
+Règles de sûreté structurelle :
+
+- Pour le réseau, SQLite, SQL, la concurrence, les transactions,
+  l'orchestration, le navigateur, le lifecycle ou une décision métier,
+  caractériser d'abord le comportement existant. Réaliser ensuite une
+  extraction séparée si nécessaire ; ne pas refactorer opportunistement sans
+  preuve.
+- Ne jamais simplement déplacer un monolithe dans un nouveau gros helper : les
+  modules doivent avoir des responsabilités cohérentes, une responsabilité
+  unique autant que possible et un graphe de dépendances acyclique.
+- Préserver les contrats publics, les imports historiques, les monkeypatches,
+  l'ordre d'exécution, les exceptions et les side effects.
+- Vérifier la taille après modification lorsqu'elle fait partie du contexte de
+  revue, sans en faire une cible autonome.
+- Un lot fonctionnel ne doit pas être bloqué ou gonflé par une modularisation
+  non nécessaire. Si la frontière est sensible, signaler la dette et préparer
+  le lot structurel séparé.
+
 ---
 
 ## 4. Règles critiques de code
