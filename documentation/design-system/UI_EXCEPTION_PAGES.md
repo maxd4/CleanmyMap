@@ -79,7 +79,6 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 |---|---|---|---:|---|
 | `/pilotage` | Canonique | Pilotage | non | Palette `amber/brun` |
 | `/sponsor-portal` | Canonique | Pilotage | non | Palette `amber/brun` |
-| `/observatoire` | Canonique | Pilotage | non | Palette `amber/brun` |
 | `/sections/elus` | Canonique (section) | Pilotage / gouvernance | non | Gouvernance, même famille pilotage |
 
 ### Admin & Super-admin
@@ -200,7 +199,7 @@ Les pages ci-dessous n'utilisent pas encore le composant canonique directement. 
 | `/admin/services` | en-tête principal harmonisé sur le composant canonique | supervision technique autonome, panneaux internes conservés |
 | `/admin/godmode` | en-tête principal harmonisé sur le composant canonique | accès racine autonome, garde-fou `notFound()` conservé |
 | `/reglages` | en-tête principal harmonisé sur le composant canonique | famille système, layout privé conservé |
-| `/observatoire` | en-tête principal harmonisé sur le composant canonique | surface analytique publique, sections métiers conservées |
+| `/sections/open-data` | en-tête principal harmonisé sur le composant canonique | surface analytique publique, section métier conservée |
 | `/partners/dashboard` | en-tête principal harmonisé sur le composant canonique | page réseau/pilotage, contenu métier conservé |
 | `/partners/network` | redirection vers la page Communauté | onglet Partenaires intégré à `/sections/community` |
 | `/partners/onboarding` | en-tête principal harmonisé sur le composant canonique | parcours partenaire, gate de connexion conservé |

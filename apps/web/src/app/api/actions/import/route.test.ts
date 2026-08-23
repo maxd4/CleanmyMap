@@ -124,6 +124,51 @@ describe("POST /api/actions/import", () => {
     await expect(response.json()).resolves.toMatchObject({ status: "dry_run" });
   });
 
+  it("keeps missing, partial and invalid geolocation counts distinct", async () => {
+    const baseQuality = quality("ok");
+    const missingQuality = {
+      ...baseQuality,
+      geolocation: {
+        ...baseQuality.geolocation,
+        state: "missing" as const,
+        hasCoordinates: false,
+      },
+    };
+    const partialQuality = quality("blocking");
+    const invalidQuality = {
+      ...partialQuality,
+      geolocation: {
+        ...partialQuality.geolocation,
+        state: "invalid" as const,
+      },
+    };
+
+    normalizeExternalActionImportMock
+      .mockReturnValueOnce({ payload: {}, dataQuality: missingQuality })
+      .mockReturnValueOnce({ payload: {}, dataQuality: partialQuality })
+      .mockReturnValueOnce({ payload: {}, dataQuality: invalidQuality });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/import?dryRun=1", {
+        method: "POST",
+        body: JSON.stringify({
+          items: [payload().items[0], payload().items[0], payload().items[0]],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      stats: {
+        withCoordinates: 0,
+        missingCoordinates: 1,
+        partialCoordinates: 1,
+        invalidCoordinates: 1,
+      },
+    });
+  });
+
   it("refuses a confirmed import with a blocking normalized anomaly", async () => {
     normalizeExternalActionImportMock.mockReturnValueOnce({
       payload: {
