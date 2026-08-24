@@ -7,12 +7,12 @@ describe("ReportsPageTabs", () => {
   it("marks the requested tab as active", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsPageTabs, {
-        activeTab: "pilotage",
+        activeTab: "analysis",
       }),
     );
 
     expect(markup).toContain("aria-current=\"page\"");
-    expect(markup).toContain("?tab=pilotage");
+    expect(markup).toContain("?tab=analysis");
     expect(markup).toContain("?tab=generation");
   });
 });

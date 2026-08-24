@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Lire, comparer et partager les données de carte et d'impact.
-- **Action principale attendue** : Explorer la carte ou lire les résultats.
+- **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact partageable.
+- **Action principale attendue** : Exporter ou partager sa carte personnelle.
 - **Palette attendue** : amber / orange
 - **Scope** : à corriger
 - **Terminée** : non
@@ -19,15 +19,15 @@
 - **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
 - **Niveau de surcharge textuelle** : fort
 - **Textes à conserver** :
-- Carte
-- légende
-- chiffres clés
-- résumés d'impact
+- Carte personnelle
+- progression, rang et badges
+- chiffres issus des actions validées
+- lien vers la méthodologie et les rapports collectifs
 - **Textes à réduire ou supprimer** :
 - Commentaires de contexte
 - badges de répétition
 - cartes trop proches visuellement
-- **Bulles / cartes / contextes trop nombreux** : Les widgets de lecture d'impact se superposent facilement avec la carte ou les stats.
+- **Bulles / cartes / contextes trop nombreux** : Les indicateurs territoriaux, comparaisons globales et estimateurs de projet restent dans `/reports`; cette page ne duplique que la lecture personnelle.
 - **Composants UI concernés** :
 - Carte
 - cards d'impact

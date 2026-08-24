@@ -7,10 +7,8 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
-import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import {
@@ -256,30 +254,6 @@ export default async function DashboardPage() {
             </Suspense>
           </div>
 
-          <div data-gsap-reveal className="mt-10">
-            <TerritoryMapComparisonCards
-              title={
-                locale === "fr"
-                  ? "Deux lectures du territoire suivi"
-                  : "Two views of the tracked territory"
-              }
-              subtitle={
-                locale === "fr"
-                  ? "La carte de base sert au repérage opérationnel. La version Terraink joue le rôle de carte de présentation. On garde les deux pour choisir plus tard celle qui sert le mieux l’usage final."
-                  : "The base map supports operational reading. The Terraink version acts as a presentation map. Both are kept so the team can later choose the most useful one."
-              }
-              locationLabel={
-                locale === "fr" ? "Secteur suivi" : "Tracked sector"
-              }
-              tone="amber"
-              note={
-                locale === "fr"
-                  ? "Ici, les deux cartes coexistent volontairement. La base reste la référence terrain; Terraink sert de variante visuelle à comparer."
-                  : "Both cards intentionally coexist here. The base map remains the field reference; Terraink is the visual variant to compare later."
-              }
-            />
-          </div>
-
           {/* ── Séparateur ── */}
           <div className="mt-14 h-px bg-amber-200/24" />
 
@@ -335,26 +309,6 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-14 h-px bg-amber-200/24" />
-
-          {isAdmin ? (
-            <div data-gsap-reveal className="mt-10 space-y-4">
-              <div className="max-w-3xl space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
-                  {locale === "fr" ? "Pilotage administratif" : "Administrative steering"}
-                </p>
-                <h2 className="text-2xl font-black tracking-tight text-white">
-                  {locale === "fr" ? "Exports et modération" : "Exports and moderation"}
-                </h2>
-                <p className="max-w-2xl text-sm leading-relaxed text-white/72">
-                  {locale === "fr"
-                    ? "Le workflow avancé de prévisualisation, confirmation et journal d’opérations a été déplacé ici pour garder la page rapports concentrée sur l’aperçu."
-                    : "The advanced preview, confirmation and audit workflow has been moved here to keep the reports page focused on the preview."}
-                </p>
-              </div>
-
-              <ActionsReportPanel />
-            </div>
-          ) : null}
 
           {/* ── Parrainages + Classement global des niveaux utilisateur ── */}
           <div

@@ -37,7 +37,7 @@ vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
 }));
 
-import { loadReportsGenerationData, loadReportsPilotageData } from "./page-data";
+import { loadReportsAnalysisData, loadReportsGenerationData } from "./page-data";
 
 describe("/reports server data budget", () => {
   beforeEach(() => {
@@ -58,8 +58,8 @@ describe("/reports server data budget", () => {
     });
   });
 
-  it("keeps the pilotage budget centralized without changing its call contract", async () => {
-    const result = await loadReportsPilotageData();
+  it("keeps the shared analysis budget centralized without changing its call contract", async () => {
+    const result = await loadReportsAnalysisData();
 
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({
       periodDays: 90,
@@ -82,7 +82,7 @@ describe("/reports server data budget", () => {
       new Error("community events unavailable"),
     );
 
-    const result = await loadReportsPilotageData();
+    const result = await loadReportsAnalysisData();
 
     expect(result.communityEvents).toEqual([]);
     expect(result.communityEventsAvailability).toBe("unavailable");

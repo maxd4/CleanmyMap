@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BarChart3, FileText } from "lucide-react";
 
-type ReportsPageTabId = "generation" | "pilotage";
+type ReportsPageTabId = "generation" | "analysis";
 
 type ReportsPageTabsProps = {
   activeTab: ReportsPageTabId;
@@ -22,9 +22,9 @@ const TAB_DEFINITIONS: Array<{
     accent: "text-red-600",
   },
   {
-    id: "pilotage",
-    label: "Pilotage",
-    description: "KPI, lecture des résultats et méthodes.",
+    id: "analysis",
+    label: "Analyse",
+    description: "KPI, comparaisons, résultats et méthodes.",
     icon: BarChart3,
     accent: "text-cyan-700",
   },

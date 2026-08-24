@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Lire sa situation immédiate, ses alertes et sa prochaine action depuis un cockpit court.
+- **Action principale attendue** : Déclarer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
 - **Scope** : à corriger
 - **Terminée** : non
@@ -27,7 +27,7 @@
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
+- **Bulles / cartes / contextes trop nombreux** : Le dashboard ne porte ni le workflow d'export/modération ni les comparaisons cartographiques détaillées, réservés aux surfaces dédiées.
 - **Composants UI concernés** :
 - Titre
 - cards métriques
