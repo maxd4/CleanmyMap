@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  collectFiles,
+  stageMatchedArtifacts,
+} from "./lib/sentry-sourcemap-staging.mjs";
 
 function log(message) {
   console.log(`[sentry-sourcemaps] ${message}`);
@@ -17,31 +20,15 @@ function error(message) {
   console.error(`[sentry-sourcemaps] ${message}`);
 }
 
-function collectFiles(rootDir, predicate, results = []) {
-  if (!existsSync(rootDir)) {
-    return results;
-  }
-
-  for (const entry of readdirSync(rootDir, { withFileTypes: true })) {
-    const fullPath = join(rootDir, entry.name);
-    if (entry.isDirectory()) {
-      collectFiles(fullPath, predicate, results);
-      continue;
-    }
-    if (predicate(fullPath)) {
-      results.push(fullPath);
-    }
-  }
-
-  return results;
-}
-
 function runSentryCli(args) {
-  const sentryBin = process.platform === "win32" ? "npx.cmd" : "npx";
+  const sentryBin =
+    process.env.SENTRY_CLI_BIN?.trim() ||
+    (process.platform === "win32" ? "npx.cmd" : "npx");
   const result = spawnSync(sentryBin, ["sentry-cli", ...args], {
     cwd: process.cwd(),
     stdio: "inherit",
     env: process.env,
+    shell: process.platform === "win32" && sentryBin.toLowerCase().endsWith(".cmd"),
   });
 
   if (result.status !== 0) {
@@ -58,21 +45,6 @@ function deleteFiles(files) {
       warn(`Unable to delete ${file}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
-}
-
-function isUploadableArtifact(sourceFile) {
-  return (
-    sourceFile.endsWith(".js") ||
-    sourceFile.endsWith(".jsbundle") ||
-    sourceFile.endsWith(".bundle")
-  );
-}
-
-function copyFileWithParents(source, destinationRoot, sourceRoot) {
-  const relativePath = source.slice(sourceRoot.length + 1);
-  const destination = join(destinationRoot, relativePath);
-  mkdirSync(dirname(destination), { recursive: true });
-  copyFileSync(source, destination);
 }
 
 function resolveSourceFile(source, mapPath) {
@@ -205,31 +177,6 @@ function hydrateSourceMaps(rootDir) {
   }
 
   return { mapsProcessed: maps.length, hydratedSources };
-}
-
-function stageMatchedArtifacts(sourceRoot, sourceMaps) {
-  const stagingRoot = mkdtempSync(join(tmpdir(), "cmm-sentry-"));
-
-  const stagedFiles = [];
-  const skippedMaps = [];
-
-  for (const sourceMap of sourceMaps) {
-    const sourceFile = sourceMap.slice(0, -4);
-    if (!isUploadableArtifact(sourceFile)) {
-      skippedMaps.push(sourceMap);
-      continue;
-    }
-    if (!existsSync(sourceFile)) {
-      skippedMaps.push(sourceMap);
-      continue;
-    }
-
-    copyFileWithParents(sourceFile, stagingRoot, sourceRoot);
-    copyFileWithParents(sourceMap, stagingRoot, sourceRoot);
-    stagedFiles.push(sourceFile);
-  }
-
-  return { stagingRoot, stagedFiles, skippedMaps };
 }
 
 const authToken = process.env.SENTRY_AUTH_TOKEN?.trim();
