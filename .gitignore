@@ -52,6 +52,11 @@ runtime/
 CleanmyMap-sync/
 .gitnexus/
 .codex-remote-attachments/
+
+# Next-generated local agent instructions
+/apps/web/AGENTS.md
+/apps/web/CLAUDE.md
+
 documentation/pages_site/routes/04-reseau-discussions/partners-network/partnerships/
 
 .vercel/
