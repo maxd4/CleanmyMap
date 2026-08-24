@@ -1,14 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
-import { unstable_cache, revalidateTag } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { getCurrentUserIdentity, pickTraceableActorName } from"@/lib/authz";
-import { trackSpotCreated } from"@/lib/gamification/progression";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
-import { trackServerEvent } from"@/lib/analytics.server";
+import { createSignalement } from "@/lib/actions/create-signalement";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {
@@ -139,63 +138,19 @@ export async function POST(request: Request) {
  const supabase = getSupabaseServerClient();
  const identity = await getCurrentUserIdentity();
  const actorName = pickTraceableActorName(identity, undefined) ?? userId;
- const notePrefix = `[spot-by:${actorName}]`;
- const composedNotes = parsed.data.notes?.trim()
- ? `${notePrefix} ${parsed.data.notes.trim()}`
- : notePrefix;
-
- const inserted = await supabase
- .from("trash_spotter_spots")
- .insert({
- created_by_clerk_id: userId,
- user_id: userId,
- label: parsed.data.label,
- spot_type: parsed.data.type,
- latitude: parsed.data.latitude ?? null,
- longitude: parsed.data.longitude ?? null,
- status:"new",
- notes: composedNotes,
- })
- .select(
-"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
- )
- .single();
-
- if (inserted.error) {
- return handleApiError(inserted.error,"POST /api/spots (insert)");
- }
-
- revalidateTag("spots-map", "max");
-
- try {
- await trackSpotCreated(supabase, {
- userId,
- spotId: String(inserted.data.id),
+ const inserted = await createSignalement(supabase, {
+   userId,
+   type: parsed.data.type,
+   label: parsed.data.label,
+   latitude: parsed.data.latitude,
+   longitude: parsed.data.longitude,
+   notes: parsed.data.notes,
+   actorName,
+   consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
  });
- } catch (progressionError) {
- console.error("Progression tracking failed for spot creation", {
- userId,
- spotId: inserted.data.id,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
- });
- }
-
- // Business Tracking
- const consentGranted = hasAnalyticsConsentCookie(request.headers.get("cookie"));
- if (consentGranted) {
- await trackServerEvent(userId,"spot_created", {
- waste_type: inserted.data.spot_type,
- location: inserted.data.label
- }, {
-   consentGranted,
-  });
-}
 
 return NextResponse.json(
- { status:"created", source:"trash_spotter_spots", item: inserted.data },
+ { status:"created", source:"trash_spotter_spots", item: inserted },
  { status: 201 },
 );
  } catch (error) {

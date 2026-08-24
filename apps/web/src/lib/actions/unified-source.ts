@@ -16,7 +16,7 @@ import type {
   ActionEntityType,
 } from "@/lib/actions/data-contract";
 import { fetchActions, type StoredAction } from "@/lib/actions/store";
-import type { ActionStatus } from "@/lib/actions/types";
+import type { ActionSourceName, ActionStatus } from "@/lib/actions/types";
 import { loadLocalActionContracts } from "@/lib/data/map-records";
 import { logFailure } from "@/lib/logging/failure-log";
 
@@ -28,7 +28,7 @@ type UnifiedActionContractsParams = {
   types: ActionEntityType[] | null;
 };
 
-type UnifiedSourceName = "actions" | "spots" | "local";
+type UnifiedSourceName = ActionSourceName;
 
 export function normalizeExternalActionImport(
   payload: ActionContractCreatePayload,
@@ -72,6 +72,18 @@ type TrashSpotterSpotRow = {
   derived_geometry_geojson?: string | null;
   geometry_confidence?: number | null;
   geometry_source?: "manual" | "reference" | "routed" | "estimated_area" | "fallback_point" | null;
+  status: "new" | "validated" | "cleaned";
+  notes: string | null;
+};
+
+type LegacySpotRow = {
+  id: string;
+  created_at: string;
+  created_by_clerk_id?: string | null;
+  label: string;
+  waste_type: string | null;
+  latitude: number | null;
+  longitude: number | null;
   status: "new" | "validated" | "cleaned";
   notes: string | null;
 };
@@ -166,22 +178,34 @@ function mapSpotTypeToEntityType(
   return "clean_place";
 }
 
-function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
+function toSpotContractFromRow(
+  row: TrashSpotterSpotRow | LegacySpotRow,
+  source: "trash_spotter_spots" | "spots_legacy",
+): ActionDataContract {
+  const spotType = "spot_type" in row ? row.spot_type : row.waste_type;
+  const geometry = "derived_geometry_kind" in row
+    ? {
+        kind: row.derived_geometry_kind,
+        geojson: row.derived_geometry_geojson,
+        confidence: row.geometry_confidence,
+        source: row.geometry_source,
+      }
+    : { kind: null, geojson: null, confidence: null, source: null };
   const contract = buildActionDataContract({
     id: row.id,
-    type: mapSpotTypeToEntityType(row.spot_type),
+    type: mapSpotTypeToEntityType(spotType),
     status: mapSpotStatusToActionStatus(row.status),
-    source: "trash_spotter_spots",
+    source,
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.created_at,
     createdAt: row.created_at,
     locationLabel: row.label,
     latitude: row.latitude,
     longitude: row.longitude,
-    derivedGeometryKind: row.derived_geometry_kind ?? null,
-    derivedGeometryGeoJson: row.derived_geometry_geojson ?? null,
-    geometryConfidence: row.geometry_confidence ?? null,
-    geometrySource: row.geometry_source ?? null,
+    derivedGeometryKind: geometry.kind ?? null,
+    derivedGeometryGeoJson: geometry.geojson ?? null,
+    geometryConfidence: geometry.confidence ?? null,
+    geometrySource: geometry.source ?? null,
     notes: row.notes,
   });
 
@@ -192,8 +216,8 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
       locationLabel: row.label,
       latitude: row.latitude,
       longitude: row.longitude,
-      geometrySource: row.geometry_source ?? contract.geometry.geometrySource,
-      geometryConfidence: row.geometry_confidence ?? contract.geometry.confidence,
+      geometrySource: geometry.source ?? contract.geometry.geometrySource,
+      geometryConfidence: geometry.confidence ?? contract.geometry.confidence,
       hasGeometry: contract.geometry.coordinates.length > 0,
     }),
   };
@@ -205,7 +229,7 @@ function dedupeContracts(
   const output: ActionDataContract[] = [];
   const seen = new Set<string>();
   for (const contract of contracts) {
-    const key = `${contract.id}::${contract.type}`;
+    const key = `${contract.source}::${contract.id}::${contract.type}`;
     if (seen.has(key)) {
       continue;
     }
@@ -253,6 +277,7 @@ function isTestLikeContract(contract: ActionDataContract): boolean {
 type UnifiedActionSourceLoadResult = {
   remoteRows: StoredAction[];
   remoteSpots: TrashSpotterSpotRow[];
+  legacySpots: LegacySpotRow[];
   localContracts: ActionDataContract[];
   failedSources: UnifiedSourceName[];
   availableSources: UnifiedSourceName[];
@@ -262,7 +287,7 @@ async function loadUnifiedActionSourceData(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
 ): Promise<UnifiedActionSourceLoadResult> {
-  const [remoteRowsResult, remoteSpotsResult, localContracts] =
+  const [remoteRowsResult, remoteSpotsResult, legacySpotsResult, localContracts] =
     await Promise.allSettled([
       fetchActions(supabase, {
         limit: params.limit + 1, // On demande un de plus pour détecter la troncature
@@ -300,6 +325,36 @@ async function loadUnifiedActionSourceData(
         }
         return (result.data ?? []) as TrashSpotterSpotRow[];
       })(),
+      (async () => {
+        const spotStatuses = mapActionStatusToSpotStatuses(params.status);
+        if (spotStatuses && spotStatuses.length === 0) {
+          return [] as LegacySpotRow[];
+        }
+
+        let query = supabase
+          .from("spots")
+          .select(
+            "id, created_at, created_by_clerk_id, label, waste_type, latitude, longitude, status, notes",
+          )
+          .order("created_at", { ascending: false })
+          .limit(params.limit + 1);
+
+        if (params.floorDate) {
+          query = query.gte("created_at", `${params.floorDate}T00:00:00.000Z`);
+        }
+        if (params.requireCoordinates) {
+          query = query.not("latitude", "is", null).not("longitude", "is", null);
+        }
+        if (spotStatuses) {
+          query = query.in("status", spotStatuses);
+        }
+
+        const result = await query;
+        if (result.error) {
+          throw result.error;
+        }
+        return (result.data ?? []) as LegacySpotRow[];
+      })(),
       loadLocalActionContracts({
         status: params.status,
         floorDate: params.floorDate,
@@ -329,6 +384,15 @@ async function loadUnifiedActionSourceData(
     availableSources.push("spots");
   }
 
+  if (legacySpotsResult.status === "rejected") {
+    failedSources.push("spots_legacy");
+    logFailure("UnifiedSource", "Legacy spots fetch failed", legacySpotsResult.reason, {
+      source: "spots",
+    });
+  } else {
+    availableSources.push("spots_legacy");
+  }
+
   if (localContracts.status === "rejected") {
     throw localContracts.reason;
   }
@@ -337,6 +401,7 @@ async function loadUnifiedActionSourceData(
   return {
     remoteRows: remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [],
     remoteSpots: remoteSpotsResult.status === "fulfilled" ? remoteSpotsResult.value : [],
+    legacySpots: legacySpotsResult.status === "fulfilled" ? legacySpotsResult.value : [],
     localContracts: localContracts.status === "fulfilled" ? localContracts.value : [],
     failedSources,
     availableSources,
@@ -363,6 +428,7 @@ function buildUnifiedSourceHealth(
 function buildUnifiedActionContracts(
   remoteRows: StoredAction[],
   remoteSpots: TrashSpotterSpotRow[],
+  legacySpots: LegacySpotRow[],
   localContracts: ActionDataContract[],
   types: ActionEntityType[] | null,
   limit: number,
@@ -370,7 +436,10 @@ function buildUnifiedActionContracts(
   const rawContracts = filterByTypes(
     dedupeContracts([
       ...remoteRows.map((row) => toActionContractFromRow(row)),
-      ...remoteSpots.map((row) => toSpotContractFromRow(row)),
+      ...remoteSpots.map((row) =>
+        toSpotContractFromRow(row, "trash_spotter_spots"),
+      ),
+      ...legacySpots.map((row) => toSpotContractFromRow(row, "spots_legacy")),
       ...localContracts,
     ]),
     types,
@@ -413,11 +482,12 @@ export async function fetchUnifiedActionContracts(
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
 }> {
-  const { remoteRows, remoteSpots, localContracts, failedSources, availableSources } =
+  const { remoteRows, remoteSpots, legacySpots, localContracts, failedSources, availableSources } =
     await loadUnifiedActionSourceData(supabase, params);
   const { items, isTruncated } = buildUnifiedActionContracts(
     remoteRows,
     remoteSpots,
+    legacySpots,
     localContracts,
     params.types,
     params.limit,

@@ -3,6 +3,7 @@ export const ACTION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
 
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
+export type ActionSourceName = "actions" | "spots" | "spots_legacy" | "local";
 
 import type { ActionDataQualitySummary } from "./data-quality";
 
@@ -190,8 +191,8 @@ export type ActionListResponse = {
   partialSource?: boolean;
   sourceHealth?: {
     partial: boolean;
-    failedSources: Array<"actions" | "spots" | "local">;
-    availableSources: Array<"actions" | "spots" | "local">;
+    failedSources: ActionSourceName[];
+    availableSources: ActionSourceName[];
     warnings: string[];
   };
 };
@@ -327,8 +328,8 @@ export type ActionMapResponse = {
   partialSource?: boolean;
   sourceHealth?: {
     partial: boolean;
-    failedSources: Array<"actions" | "spots" | "local">;
-    availableSources: Array<"actions" | "spots" | "local">;
+    failedSources: ActionSourceName[];
+    availableSources: ActionSourceName[];
     warnings: string[];
   };
 };
