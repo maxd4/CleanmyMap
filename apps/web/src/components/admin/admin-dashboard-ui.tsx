@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { type LucideIcon } from "lucide-react";
+import { AlertTriangle, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import type { Role } from "@/lib/domain-language";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import {
   SourceBadge,
   StatCard,
 } from "@/components/ui/page-structure";
+import type { PageStructureIconName } from "@/components/ui/page-structure";
 
 type AdminMetricState = "positive" | "neutral" | "negative";
 
@@ -58,6 +59,27 @@ const ACTION_ICON_TONES = {
   rose: "bg-rose-100 text-rose-700 border-rose-200/60",
 } as const;
 
+const ADMIN_ICON_MAP = {
+  AlertTriangle,
+  ShieldCheck,
+} satisfies Record<string, LucideIcon>;
+
+export type AdminDashboardIconName = keyof typeof ADMIN_ICON_MAP;
+
+export type AdminActionItem = {
+  id: string;
+  icon: PageStructureIconName;
+  title: string;
+  description: string;
+  badge: string;
+  href?: string;
+  tone?: keyof typeof ACTION_ICON_TONES;
+  footerLabel?: string;
+  iconClassName?: string;
+  iconWrapClassName?: string;
+  badgeClassName?: string;
+};
+
 function resolveTrendLabel(interpretation: AdminMetricState): string {
   if (interpretation === "positive") return "En hausse";
   if (interpretation === "negative") return "À renforcer";
@@ -65,20 +87,22 @@ function resolveTrendLabel(interpretation: AdminMetricState): string {
 }
 
 export function AdminHeroStrip({
-  icon: Icon,
+  icon,
   eyebrow,
   description,
   accessLabel,
   action,
   className,
 }: {
-  icon: LucideIcon;
+  icon: AdminDashboardIconName;
   eyebrow: string;
   description: string;
   accessLabel: string;
   action: ReactNode;
   className?: string;
 }) {
+  const Icon = ADMIN_ICON_MAP[icon];
+
   return (
     <section
       className={cn(
@@ -273,7 +297,7 @@ export function AdminActionCard({
   iconWrapClassName,
   badgeClassName,
 }: {
-  icon: string;
+  icon: PageStructureIconName;
   title: string;
   description: string;
   badge: string;
@@ -317,19 +341,7 @@ export function AdminActionGrid({
   columnsClassName,
   className,
 }: {
-  items: Array<{
-    id: string;
-    icon: string;
-    title: string;
-    description: string;
-    badge: string;
-    href?: string;
-    tone?: keyof typeof ACTION_ICON_TONES;
-    footerLabel?: string;
-    iconClassName?: string;
-    iconWrapClassName?: string;
-    badgeClassName?: string;
-  }>;
+  items: AdminActionItem[];
   compact?: boolean;
   columnsClassName?: string;
   className?: string;
@@ -357,7 +369,7 @@ export function AdminInfoBanner({
   action,
   chips,
   tone = "warm",
-  icon: Icon,
+  icon,
   iconTone = "amber",
   className,
 }: {
@@ -367,11 +379,12 @@ export function AdminInfoBanner({
   action?: ReactNode;
   chips?: string[];
   tone?: keyof typeof INFO_VARIANT_CLASSES;
-  icon?: LucideIcon;
+  icon?: AdminDashboardIconName;
   iconTone?: keyof typeof ACTION_ICON_TONES;
   className?: string;
 }) {
   const textClasses = INFO_VARIANT_TEXT_CLASSES[tone];
+  const Icon = icon ? ADMIN_ICON_MAP[icon] : null;
 
   return (
     <section

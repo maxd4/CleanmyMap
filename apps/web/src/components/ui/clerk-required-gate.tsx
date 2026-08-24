@@ -1,103 +1,128 @@
 "use client";
 
-import type { ReactNode } from"react";
-import { Lock } from "lucide-react";
+import type { ReactNode } from "react";
+import { Lock, WifiOff } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import {
- SystemStateAction,
- SystemStateDescription,
- SystemStateIcon,
- SystemStateLayout,
- SystemStateMeta,
- SystemStateTitle,
+  SystemStateAction,
+  SystemStateDescription,
+  SystemStateIcon,
+  SystemStateLayout,
+  SystemStateMeta,
+  SystemStateTitle,
 } from "@/components/ui/system-state";
 
 type ClerkRequiredGateProps = {
- isAuthenticated: boolean;
- title?: string;
- description?: string;
- mode?:"blur" |"disabled";
- signInHref?: string;
- signInLabel?: string;
- signUpHref?: string;
- signUpLabel?: string;
- badge?: string;
- lockedPreview?: ReactNode;
- children: ReactNode;
+  isAuthenticated: boolean;
+  authUnavailable?: boolean;
+  title?: string;
+  description?: string;
+  mode?: "blur" | "disabled";
+  signInHref?: string;
+  signInLabel?: string;
+  signUpHref?: string;
+  signUpLabel?: string;
+  badge?: string;
+  lockedPreview?: ReactNode;
+  children: ReactNode;
 };
 
 export function ClerkRequiredGate({
- isAuthenticated,
- title ="Connexion requise",
- description ="Connectez-vous à votre compte CleanMyMap pour accéder à cette fonctionnalité. Si vous n'en avez pas encore, créez-en un en quelques secondes.",
- mode ="blur",
- signInHref ="/sign-in",
- signInLabel ="Se connecter",
- signUpHref ="/sign-up",
- signUpLabel ="Créer un compte",
- badge ="Connexion requise",
- lockedPreview,
- children,
+  isAuthenticated,
+  authUnavailable = false,
+  title = "Connexion requise",
+  description = "Connectez-vous à votre compte CleanMyMap pour accéder à cette fonctionnalité. Si vous n'en avez pas encore, créez-en un en quelques secondes.",
+  mode = "blur",
+  signInHref = "/sign-in",
+  signInLabel = "Se connecter",
+  signUpHref = "/sign-up",
+  signUpLabel = "Créer un compte",
+  badge = "Connexion requise",
+  lockedPreview,
+  children,
 }: ClerkRequiredGateProps) {
- if (isAuthenticated) {
- return children;
- }
+  if (isAuthenticated) {
+    return children;
+  }
 
- if (mode ==="disabled") {
- return (
- <section className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
- <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-center">
- <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-emerald-700">
- {badge}
- </p>
- <h2 className="mt-2 text-2xl font-bold tracking-tight cmm-text-primary">
- {title}
- </h2>
- <p className="mt-2 cmm-text-small cmm-text-secondary">{description}</p>
- <div className="mt-5 flex flex-wrap justify-center gap-3">
- <CmmButton href={signInHref} tone="primary">
- {signInLabel}
- </CmmButton>
- <CmmButton href={signUpHref} tone="secondary">
- {signUpLabel}
- </CmmButton>
- </div>
- </div>
- <div aria-hidden="true" className="pointer-events-none select-none opacity-60">
- {children}
- </div>
- </section>
- );
- }
+  if (authUnavailable) {
+    return (
+      <section className="rounded-[2rem] border border-cyan-200/80 bg-white shadow-sm">
+        <SystemStateLayout variant="offline" className="mx-auto max-w-2xl">
+          <SystemStateIcon variant="offline">
+            <WifiOff className="h-7 w-7" />
+          </SystemStateIcon>
+          <SystemStateMeta variant="offline" label="Authentification indisponible">
+            L&apos;état de votre session ne peut pas être vérifié pour le moment.
+          </SystemStateMeta>
+          <SystemStateTitle variant="offline">
+            Authentification temporairement indisponible
+          </SystemStateTitle>
+          <SystemStateDescription variant="offline">
+            Le service d&apos;identité ne répond pas. Réessayez dans quelques instants ; votre compte
+            n&apos;est pas considéré comme déconnecté.
+          </SystemStateDescription>
+          <SystemStateAction>
+            <CmmButton href={signInHref} tone="primary">
+              Réessayer
+            </CmmButton>
+          </SystemStateAction>
+        </SystemStateLayout>
+      </section>
+    );
+  }
 
- return (
- <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-  <div aria-hidden="true" className="pointer-events-none select-none blur-sm opacity-55">
-  {lockedPreview ?? children}
-  </div>
+  if (mode === "disabled") {
+    return (
+      <section className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-center">
+          <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-emerald-700">
+            {badge}
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight cmm-text-primary">{title}</h2>
+          <p className="mt-2 cmm-text-small cmm-text-secondary">{description}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <CmmButton href={signInHref} tone="primary">
+              {signInLabel}
+            </CmmButton>
+            <CmmButton href={signUpHref} tone="secondary">
+              {signUpLabel}
+            </CmmButton>
+          </div>
+        </div>
+        <div aria-hidden="true" className="pointer-events-none select-none opacity-60">
+          {children}
+        </div>
+      </section>
+    );
+  }
 
- <div className="absolute inset-0 flex items-center justify-center bg-white/54 p-4 backdrop-blur-sm">
- <SystemStateLayout variant="forbidden" className="relative z-10 w-full max-w-xl">
- <SystemStateIcon variant="forbidden">
- <Lock className="h-7 w-7" />
- </SystemStateIcon>
- <SystemStateMeta variant="forbidden" label={badge}>
- L&apos;accès est réservé aux comptes autorisés.
- </SystemStateMeta>
- <SystemStateTitle variant="forbidden">{title}</SystemStateTitle>
- <SystemStateDescription variant="forbidden">
- {description}
- </SystemStateDescription>
- <SystemStateAction>
- <CmmButton href={signInHref} tone="primary">
- {signInLabel}
- </CmmButton>
- <CmmButton href={signUpHref} tone="secondary">
- {signUpLabel}
- </CmmButton>
- </SystemStateAction>
- </SystemStateLayout>
- </div>
- </section>
- );
+  return (
+    <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+      <div aria-hidden="true" className="pointer-events-none select-none blur-sm opacity-55">
+        {lockedPreview ?? children}
+      </div>
+
+      <div className="absolute inset-0 flex items-center justify-center bg-white/54 p-4 backdrop-blur-sm">
+        <SystemStateLayout variant="forbidden" className="relative z-10 w-full max-w-xl">
+          <SystemStateIcon variant="forbidden">
+            <Lock className="h-7 w-7" />
+          </SystemStateIcon>
+          <SystemStateMeta variant="forbidden" label={badge}>
+            L&apos;accès est réservé aux comptes autorisés.
+          </SystemStateMeta>
+          <SystemStateTitle variant="forbidden">{title}</SystemStateTitle>
+          <SystemStateDescription variant="forbidden">{description}</SystemStateDescription>
+          <SystemStateAction>
+            <CmmButton href={signInHref} tone="primary">
+              {signInLabel}
+            </CmmButton>
+            <CmmButton href={signUpHref} tone="secondary">
+              {signUpLabel}
+            </CmmButton>
+          </SystemStateAction>
+        </SystemStateLayout>
+      </div>
+    </section>
+  );
 }

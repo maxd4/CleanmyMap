@@ -263,6 +263,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
+        authUnavailable={!clerkReachable}
         mode="blur"
         lockedPreview={
           <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
