@@ -1,8 +1,4 @@
 import type { Metadata } from "next";
-import {
-  AlertTriangle,
-  ShieldCheck,
-} from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
 import { AdminAccessState } from "@/components/ui/admin-access-state";
@@ -16,6 +12,7 @@ import {
   AdminProfileSwitchStrip,
   AdminSectionHeader,
 } from "@/components/admin/admin-dashboard-ui";
+import type { AdminActionItem } from "@/components/admin/admin-dashboard-ui";
 import {
   ModerationByBlockPanel,
   type ModerationBlockSummary,
@@ -311,6 +308,16 @@ export default async function AdminPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
+  if (!clerkReachable) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl items-center justify-center">
+          <AdminAccessState className="w-full" authUnavailable />
+        </div>
+      </div>
+    );
+  }
+
   if (!userId) {
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
@@ -447,7 +454,7 @@ export default async function AdminPage() {
     forecastLabel: getForecastLabel(kpi),
   }));
 
-  const actionTiles = [
+  const actionTiles: AdminActionItem[] = [
     {
       id: "creator-inbox",
       icon: "Inbox",
@@ -483,7 +490,7 @@ export default async function AdminPage() {
     },
   ];
 
-  const quickAccessTiles = [
+  const quickAccessTiles: AdminActionItem[] = [
     {
       id: "declare-action",
       icon: "Activity",
@@ -536,7 +543,7 @@ export default async function AdminPage() {
     },
   ];
 
-  const privacyTiles = [
+  const privacyTiles: AdminActionItem[] = [
     {
       id: "account-settings",
       icon: "Settings",
@@ -595,7 +602,7 @@ export default async function AdminPage() {
 
         <div className="relative mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AdminHeroStrip
-            icon={ShieldCheck}
+            icon="ShieldCheck"
             eyebrow="Espace administratif"
             description="Supervision système et modération critique."
             accessLabel="Accès administration"
@@ -635,7 +642,7 @@ export default async function AdminPage() {
             eyebrow="Alerte"
             title={alertTitle}
             description={alertDetail}
-            icon={AlertTriangle}
+            icon="AlertTriangle"
             tone="light"
             action={
               <AdminPillLink href={recommendedAction.href}>
@@ -725,7 +732,7 @@ export default async function AdminPage() {
               eyebrow="Privilèges système"
               title="Vous avez déjà un niveau de supervision élevé."
               description="Le formulaire de promotion est réservé aux profils de terrain et de coordination nécessitant des droits étendus."
-              icon={ShieldCheck}
+              icon="ShieldCheck"
               tone="warm"
               action={
                 <AdminPillLink href={profileLink} subdued>

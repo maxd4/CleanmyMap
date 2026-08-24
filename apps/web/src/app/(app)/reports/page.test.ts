@@ -119,11 +119,11 @@ vi.mock("@/components/pilotage/kpi-method-block", () => ({
 }));
 
 vi.mock("@/components/ui/clerk-required-gate", () => ({
-  ClerkRequiredGate: ({ children, isAuthenticated }: { children: React.ReactNode; isAuthenticated: boolean }) =>
+  ClerkRequiredGate: ({ children, isAuthenticated, authUnavailable }: { children: React.ReactNode; isAuthenticated: boolean; authUnavailable?: boolean }) =>
     React.createElement(
       "div",
-      { "data-testid": isAuthenticated ? "authenticated-gate" : "signin-gate" },
-      children,
+      { "data-testid": authUnavailable ? "clerk-unavailable-gate" : isAuthenticated ? "authenticated-gate" : "signin-gate" },
+      authUnavailable ? "Authentification temporairement indisponible" : children,
     ),
 }));
 
@@ -221,13 +221,23 @@ describe("/reports page contract", () => {
   });
 
   it("covers the non-connected state without loading reports", async () => {
-    mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: false });
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
 
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
 
     expect(markup).toContain('data-testid="signin-gate"');
     expect(markup).not.toContain('data-testid="reports-layout"');
     expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+  });
+
+  it("keeps Clerk unavailability distinct from an anonymous visitor", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: false });
+
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('data-testid="clerk-unavailable-gate"');
+    expect(markup).not.toContain('data-testid="signin-gate"');
+    expect(markup).toContain("Authentification temporairement indisponible");
   });
 
   it("covers incomplete profile before exposing reports content", async () => {

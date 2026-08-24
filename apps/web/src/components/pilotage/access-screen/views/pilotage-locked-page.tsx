@@ -12,12 +12,28 @@ import {
 export function PilotageLockedPage({
   locale,
   isAuthenticated,
+  authUnavailable = false,
 }: {
   locale: PilotageLocale;
   isAuthenticated: boolean;
+  authUnavailable?: boolean;
 }) {
   const copy = PAGE_COPY[locale];
   const pageFamily = getPageFamilyById("accueil-pilotage");
+  const title = authUnavailable
+    ? locale === "fr"
+      ? "Authentification indisponible"
+      : "Authentication unavailable"
+    : isAuthenticated
+      ? copy.restrictedTitle
+      : copy.lockedTitle;
+  const subtitle = authUnavailable
+    ? locale === "fr"
+      ? "Le service d'identité ne répond pas. Réessayez dans quelques instants ; votre compte n'est pas considéré comme déconnecté."
+      : "The identity service is unavailable. Try again shortly; your account is not considered signed out."
+    : isAuthenticated
+      ? copy.restrictedDescription
+      : copy.lockedDescription;
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8 md:py-10">
       <div className="space-y-8 md:p-2">
@@ -25,10 +41,8 @@ export function PilotageLockedPage({
           <div className="space-y-5">
             <PageHero
               family={pageFamily}
-              title={isAuthenticated ? copy.restrictedTitle : copy.lockedTitle}
-              subtitle={
-                isAuthenticated ? copy.restrictedDescription : copy.lockedDescription
-              }
+              title={title}
+              subtitle={subtitle}
               badges={
                 <>
                   <PageHeroBadge family={pageFamily}>
@@ -93,7 +107,9 @@ export function PilotageLockedPage({
                   {locale === "fr" ? "Accès visible, contenu réservé" : "Visible access, reserved content"}
                 </h2>
               </div>
-              {isAuthenticated ? (
+              {authUnavailable ? (
+                <TriangleAlert className="h-8 w-8 text-orange-100" aria-hidden="true" />
+              ) : isAuthenticated ? (
                 <ShieldAlert className="h-8 w-8 text-orange-100" aria-hidden="true" />
               ) : (
                 <LockKeyhole className="h-8 w-8 text-orange-100" aria-hidden="true" />
@@ -117,13 +133,17 @@ export function PilotageLockedPage({
                   {locale === "fr" ? "Profil détecté" : "Detected profile"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-white">
-                  {locale === "fr" ? "Connexion" : "Connection"} {isAuthenticated ? "active" : "requise"}
+                  {authUnavailable
+                    ? locale === "fr"
+                      ? "État indisponible"
+                      : "State unavailable"
+                    : `${locale === "fr" ? "Connexion" : "Connection"} ${isAuthenticated ? "active" : "requise"}`}
                 </p>
               </div>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              {!isAuthenticated ? (
+              {!isAuthenticated && !authUnavailable ? (
                 <Link
                   href={buildPilotageSignInHref()}
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-slate-900 transition hover:-translate-y-[1px] hover:bg-orange-50"

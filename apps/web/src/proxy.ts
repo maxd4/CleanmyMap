@@ -17,7 +17,7 @@ import {
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 
-const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
+export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
   "/actions/history",
@@ -36,12 +36,41 @@ const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   SPONSOR_PORTAL_ROUTE,
 ] as const;
 
-const PROTECTED_APP_PAGE_MATCHER_PATTERNS = PROTECTED_APP_PAGE_ROUTE_PREFIXES.map(
-  (prefix) => `${prefix}(.*)`,
-);
+export const CLERK_CONTEXT_ROUTE_PREFIXES = ["/pilotage", "/reports"] as const;
+
+// These API families need Clerk request context for auth() or centralized
+// authz helpers. Their handlers keep the authentication/authorization decision
+// and therefore remain outside auth.protect() in this proxy.
+export const CLERK_CONTEXT_API_ROUTE_PREFIXES = [
+  "/api/account",
+  "/api/actions",
+  "/api/admin",
+  "/api/analytics",
+  "/api/chat",
+  "/api/community",
+  "/api/contact",
+  "/api/email",
+  "/api/environmental-impact",
+  "/api/gamification",
+  "/api/partners",
+  "/api/pilotage",
+  "/api/recycling",
+  "/api/reports",
+  "/api/route",
+  "/api/sandbox",
+  "/api/send",
+  "/api/services",
+  "/api/spots",
+  "/api/users",
+] as const;
+
+const toMatcherPatterns = (prefixes: readonly string[]) =>
+  prefixes.map((prefix) => `${prefix}(.*)`);
 
 export const PROXY_MATCHER_PATTERNS = [
-  ...PROTECTED_APP_PAGE_MATCHER_PATTERNS,
+  ...toMatcherPatterns(PROTECTED_APP_PAGE_ROUTE_PREFIXES),
+  ...toMatcherPatterns(CLERK_CONTEXT_ROUTE_PREFIXES),
+  ...toMatcherPatterns(CLERK_CONTEXT_API_ROUTE_PREFIXES),
 ] as const;
 
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
@@ -71,11 +100,21 @@ function isProtectedAppPage(pathname: string): boolean {
   );
 }
 
+export function isClerkContextOnlyRoute(pathname: string): boolean {
+  return CLERK_CONTEXT_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 function isApiRoute(pathname: string): boolean {
   return pathname.startsWith("/api/");
 }
 
 function clerkUnavailableResponse(req: NextRequest): NextResponse {
+  if (isClerkContextOnlyRoute(req.nextUrl.pathname)) {
+    return nextWithSeoHeaders(req);
+  }
+
   if (isApiRoute(req.nextUrl.pathname)) {
     return NextResponse.json(
       {
