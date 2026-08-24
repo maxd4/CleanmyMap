@@ -101,7 +101,10 @@ export function isActivePollutionItem(
     return false;
   }
 
-  return item.source_status !== "cleaned";
+  return (
+    item.source_status !== "cleaned" &&
+    resolveItemPollutionScores(item, DEFAULT_POLLUTION_SCORE_REFERENCES).severityScore > 0
+  );
 }
 
 export function selectNearestActivePollution(

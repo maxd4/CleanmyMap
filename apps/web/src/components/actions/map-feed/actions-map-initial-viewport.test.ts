@@ -19,7 +19,7 @@ function buildItem(overrides: Partial<ActionMapItem>): ActionMapItem {
     latitude: 48.8566,
     longitude: 2.3522,
     waste_kg: 0,
-    cigarette_butts: 0,
+    cigarette_butts: 10,
     status: "approved",
     record_type: "other",
     source: "trash_spotter_spots",
@@ -61,6 +61,7 @@ describe("actions map initial viewport", () => {
     const highSeverity = buildItem({ id: "high", waste_kg: 20 });
     const cleanPlace = buildItem({ id: "clean", record_type: "clean_place" });
     const cleanedSpot = buildItem({ id: "cleaned", source_status: "cleaned" });
+    const blueSpot = buildItem({ id: "blue", waste_kg: 0, cigarette_butts: 0 });
     const historicalAction = buildItem({
       id: "history",
       record_type: "action",
@@ -71,6 +72,7 @@ describe("actions map initial viewport", () => {
     expect(selectNearestActivePollution([lowSeverity, highSeverity], reference)?.id).toBe("high");
     expect(isActivePollutionItem(cleanPlace)).toBe(false);
     expect(isActivePollutionItem(cleanedSpot)).toBe(false);
+    expect(isActivePollutionItem(blueSpot)).toBe(false);
     expect(isActivePollutionItem(historicalAction)).toBe(false);
   });
 
