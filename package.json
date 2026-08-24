@@ -87,6 +87,8 @@
     "session:bootstrap": "node scripts/session_bootstrap.mjs",
     "session:close": "node scripts/update_session_memory.mjs",
     "session:budget": "node scripts/context-budget-check.mjs",
+    "context:gpt:check": "node scripts/generate-gpt-context.mjs --check",
+    "context:gpt:sync": "node scripts/generate-gpt-context.mjs",
     "screenshots": "node documentation/liberte-UX-UI/capture-pages.mjs",
     "screenshots:screen": "node documentation/pages_site/screen/capture-pages.mjs",
     "audit:supabase-migration-trees": "node scripts/audit-supabase-migration-trees.mjs"

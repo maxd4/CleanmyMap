@@ -32,5 +32,5 @@ format:
     urlcolor: blue
     citecolor: blue
 
-    include-in-header: .quarto/cleanmymap-pdf.tex
+    include-in-header: quarto-templates/cleanmymap-pdf.tex
     keep-tex: false
