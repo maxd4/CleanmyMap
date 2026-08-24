@@ -48,8 +48,9 @@ pour chaque lot de code, test ou documentation.
 
 ## 5. Modularisation
 
-- Une PR traite une cible principale et conserve ses props, exports, routes et
-  contrats publics.
+- Un lot traite une cible principale et conserve ses props, exports, routes et
+  contrats publics ; une modularisation directement liée, sûre et utile peut
+  rester dans le lot fonctionnel qui traverse la zone.
 - Extraire d'abord les constantes et helpers purs, puis la logique d'état, puis
   le rendu.
 - Ajouter ou conserver les tests avant de supprimer une implémentation legacy.
@@ -61,9 +62,9 @@ pour chaque lot de code, test ou documentation.
 ## 6. Validation et livraison
 
 - Lancer les contrôles ciblés après chaque correction, puis les contrôles adaptés
-  au risque avant la PR.
+  au risque avant la livraison.
 - Une commande échouée reste échouée dans le rapport, même si une autre commande
   passe avec un environnement temporaire différent.
 - Préserver les modifications utilisateur hors périmètre avec un staging ciblé.
-- Livrer sur une branche dédiée et ouvrir une PR ; ne jamais pousser directement
-  sur `main` ni fusionner automatiquement.
+- Suivre la politique Git canonique du dépôt pour la branche, le commit et le
+  push ; ne pas la dupliquer ici.

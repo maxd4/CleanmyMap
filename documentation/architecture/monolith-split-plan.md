@@ -4,8 +4,11 @@
 
 ## Objectif
 
-Réduire les fichiers applicatifs dépassant 1000 lignes en modules testables, sans régression fonctionnelle.
-Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant suppression du code legacy**.
+Réduire la dette structurelle des fichiers applicatifs repérés par le radar en
+modules testables, sans régression fonctionnelle. Le seuil d'enforcement est
+un signal de revue, pas une taille cible pour les modules.
+Règle : **un lot structurel par cible principale**, **API publique inchangée**,
+**tests avant suppression du code legacy**.
 
 ---
 
@@ -54,11 +57,15 @@ lots détaillés plus bas doivent être revalidés contre ce radar avant exécut
 ## Contraintes globales
 
 - Conserver les APIs publiques (props, hook signatures, exports nommés).
-- Une PR par monolithe.
-- Taille cible : **< 1000 lignes** par défaut pour tout fichier applicatif.
-- Viser **500 à 700 lignes** pour les shells UI quand c'est encore lisible.
+- Un lot structurel par cible principale ; une modularisation directement liée,
+  sûre et utile peut rester dans le lot fonctionnel qui traverse la zone.
+- Ne pas fixer de taille cible arbitraire pour les modules : évaluer plutôt la
+  cohésion, les responsabilités, le couplage, la duplication, la testabilité et
+  le contexte nécessaire à une modification locale.
 - Ajouter des tests de logique avant de supprimer le code source.
-- Toute exception au seuil courant doit rester dans `scripts/heavy-files-baseline.json` avec justification.
+- `scripts/heavy-files-baseline.json` reste un inventaire temporaire de dette
+  historique : toute nouvelle entrée doit être explicitement justifiée et
+  mesurée ; retirer les entrées devenues obsolètes ou repassées sous les seuils.
 - Commande de vérification recommandée : tests ciblés d'abord, puis `node scripts/check-top-heavy-files.mjs --top=25`.
 - Ajouter un `npm run typecheck -w apps/web` ciblé quand la modification touche vraiment le typage ou les contrats exportés.
 - Si le typecheck ciblé est trop coûteux pour une étape intermédiaire de refactor, le repousser à la fin du lot, sans supprimer les tests ciblés ni le contrôle des fichiers lourds.

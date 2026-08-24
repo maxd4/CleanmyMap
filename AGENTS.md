@@ -189,6 +189,24 @@ développement futur. La taille est un signal architectural, pas un objectif de
 refactor : les responsabilités, la cohésion, les dépendances, la testabilité et
 la fréquence de changement priment sur le nombre de lignes.
 
+Pendant tout chantier fonctionnel, évaluer aussi la dette structurelle des
+fichiers et dossiers réellement traversés par le changement. Si une
+modularisation ou une réorganisation directement liée est sûre, utile et
+proportionnée, l'intégrer au même lot ; sinon, créer le lot structurel
+immédiatement suivant sans élargir le chantier à l'ensemble du dépôt. Une zone
+modifiée doit être laissée au moins aussi simple, cohérente et testable
+qu'avant.
+
+Favoriser des modules orientés responsabilités ou domaines, des routes et
+pages minces, des dépendances localisées et des dossiers structurés plutôt que
+de grands répertoires plats. La dette ne se mesure pas à la taille seule :
+prendre aussi en compte la multiplicité des responsabilités, le couplage, la
+duplication, la fréquence de changement, la difficulté de test et la quantité
+de contexte nécessaire pour effectuer une modification locale. Un objectif
+architectural explicite est de réduire le contexte que les agents doivent
+relire, donc les coûts et tokens ainsi que le risque de modifications hors
+périmètre, sans créer de micro-fichiers artificiels.
+
 Repères de revue :
 
 - Moins de 700 lignes : aucune action n'est imposée par la taille seule.
@@ -203,14 +221,14 @@ Repères de revue :
   orchestration cohérente.
 - Ne jamais modulariser uniquement pour réduire le nombre de lignes.
 - Éviter les micro-extractions de moins d'environ 100 lignes, sauf vraie
-  frontière de contrat, réutilisation ou dépendance.
+  frontière de contrat, réutilisation ou dépendance ; ce repère n'est pas une
+  taille cible arbitraire pour les modules.
 - Une façade déjà déclarée terminée n'est pas rouverte pour sa taille seule.
   La réévaluer si elle reçoit une nouvelle responsabilité, si sa cohésion se
   dégrade nettement, ou si elle croît d'environ 200 lignes ou 25 % depuis sa
   dernière revue. Une façade cohérente peut rester volumineuse ; si cette
-  décision est documentée, utiliser
-  `docs/ARCHITECTURE_MONOLITHS_AUDIT.md` lorsque ce document est présent dans
-  le dépôt.
+  décision doit être tracée, utiliser le plan canonique
+  `documentation/architecture/monolith-split-plan.md`.
 - Pour le réseau, SQL, la concurrence, le lifecycle, le navigateur et
   l'orchestration, préférer une unité cohérente plus grande à une fragmentation
   artificielle.
@@ -235,6 +253,16 @@ Règles de sûreté structurelle :
 - Un lot fonctionnel ne doit pas être bloqué ou gonflé par une modularisation
   non nécessaire. Si la frontière est sensible, signaler la dette et préparer
   le lot structurel séparé.
+
+Le fichier `scripts/heavy-files-baseline.json` est un inventaire temporaire de
+dette historique, pas une autorisation permanente de dépasser les seuils. Ne
+pas y ajouter un nouveau fichier pour contourner le garde-fou, sauf exception
+explicitement justifiée et mesurée dans le lot concerné. Lorsqu'un fichier
+baseline est refactoré sous les seuils, retirer son entrée. Lorsqu'il est
+significativement modifié, réévaluer sa cohésion et profiter du chantier pour
+réduire sa dette si cela reste sûr et pertinent. Le garde-fou en mode
+`--enforce` doit signaler les entrées baseline devenues obsolètes afin que ce
+ratchet reste vérifiable.
 
 ---
 
