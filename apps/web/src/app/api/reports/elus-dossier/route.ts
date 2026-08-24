@@ -7,6 +7,7 @@ import {
 import { toActionListItem } from"@/lib/actions/data-contract";
 import { evaluateActionQuality } from"@/lib/actions/quality";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from"@/lib/actions/unified-source";
 import {
  buildPersonalImpactMethodology,
 } from"@/lib/gamification/progression-impact";
@@ -61,6 +62,17 @@ function buildDateFloor(daysWindow: number): string {
 function toFiniteNumber(value: unknown): number {
  const number = typeof value === "number" ? value : Number(value);
  return Number.isFinite(number) ? number : 0;
+}
+
+function formatOptionalNumber(value: number | null, digits = 1): string {
+ return value === null ? "indisponible" : value.toFixed(digits);
+}
+
+function formatOptionalSigned(value: number | null, suffix = ""): string {
+ if (value === null) {
+  return "indisponible";
+ }
+ return `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix}`;
 }
 
 function sumApprovedMetric<T>(
@@ -139,6 +151,8 @@ function buildMethodology(shared: PersonalImpactMethodology) {
 function buildMarkdownPack(payload: {
  generatedAt: string;
  periodDays: number;
+ isTruncated: boolean;
+ sourceHealth: UnifiedSourceHealth;
  summary: {
  totalActions: number;
  totalKg: number;
@@ -175,15 +189,28 @@ function buildMarkdownPack(payload: {
  .slice(0, 12)
  .map(
  (zone) =>
- `- ${zone.area}: actions ${zone.currentActions}/${zone.previousActions} (${zone.deltaActionsAbsolute >= 0 ?"+" :""}${zone.deltaActionsAbsolute.toFixed(1)} ; ${zone.deltaActionsPercent.toFixed(1)}%), kg ${zone.currentKg.toFixed(1)}/${zone.previousKg.toFixed(1)} (${zone.deltaKgAbsolute >= 0 ?"+" :""}${zone.deltaKgAbsolute.toFixed(1)} ; ${zone.deltaKgPercent.toFixed(1)}%), couverture ${zone.currentCoverageRate.toFixed(1)}%/${zone.previousCoverageRate.toFixed(1)}% (${zone.deltaCoverageRateAbsolute >= 0 ?"+" :""}${zone.deltaCoverageRateAbsolute.toFixed(1)} pt), delai moderation ${zone.currentModerationDelayDays.toFixed(1)}j/${zone.previousModerationDelayDays.toFixed(1)}j (${zone.deltaModerationDelayDaysAbsolute >= 0 ?"+" :""}${zone.deltaModerationDelayDaysAbsolute.toFixed(1)}j). Action: ${zone.recommendedAction}`,
+ `- ${zone.area}: actions ${zone.currentActions}/${zone.previousActions} (${zone.deltaActionsAbsolute >= 0 ?"+" :""}${zone.deltaActionsAbsolute.toFixed(1)} ; ${zone.deltaActionsPercent.toFixed(1)}%), kg ${zone.currentKg.toFixed(1)}/${zone.previousKg.toFixed(1)} (${zone.deltaKgAbsolute >= 0 ?"+" :""}${zone.deltaKgAbsolute.toFixed(1)} ; ${zone.deltaKgPercent.toFixed(1)}%), couverture ${zone.currentCoverageRate.toFixed(1)}%/${zone.previousCoverageRate.toFixed(1)}% (${zone.deltaCoverageRateAbsolute >= 0 ?"+" :""}${zone.deltaCoverageRateAbsolute.toFixed(1)} pt), delai moderation ${formatOptionalNumber(zone.currentModerationDelayDays)}j/${formatOptionalNumber(zone.previousModerationDelayDays)}j (${formatOptionalSigned(zone.deltaModerationDelayDaysAbsolute, "j")}). Action: ${zone.recommendedAction}`,
  )
  .join("\n");
+
+ const availability = [
+  payload.isTruncated
+   ? "- Volume: partiellement charge (limite atteinte)."
+   : "- Volume: aucune troncature détectée dans la fenêtre chargée.",
+  payload.sourceHealth.partial
+   ? "- Sources: résultat partiel, certains indicateurs ne sont pas exhaustifs."
+   : "- Sources: résultat unifié sans source marquée partielle.",
+  ...payload.sourceHealth.warnings.map((warning) => `- Avertissement source: ${warning}`),
+ ];
 
  return [
 "# Dossier elu - Pack institutionnel",
 "",
  `Genere le ${payload.generatedAt}`,
  `Periode observee: ${payload.periodDays} jours`,
+"",
+"## Disponibilité des données",
+ ...availability,
 "",
 "## Resume executif",
  `- Actions validees: ${payload.summary.totalActions}`,
@@ -360,7 +387,7 @@ export async function GET(request: Request) {
   );
  }
 
- const { items: contracts, isTruncated } = await fetchUnifiedActionContracts(
+ const { items: contracts, isTruncated, sourceHealth: fetchedSourceHealth } = await fetchUnifiedActionContracts(
  supabase,
  {
  limit: Math.max(limit * 2, limit),
@@ -370,6 +397,12 @@ export async function GET(request: Request) {
  types: null,
  },
  );
+ const sourceHealth: UnifiedSourceHealth = fetchedSourceHealth ?? {
+  partial: false,
+  failedSources: [],
+  availableSources: ["actions"],
+  warnings: [],
+ };
 
  const scopeContracts = filterActionContractsByScope(contracts, {
   kind: scope.kind,
@@ -435,6 +468,7 @@ export async function GET(request: Request) {
  decisionPriorities: buildDecisionPriorities(benchmark),
  zoneComparisons: overview.zones,
  isTruncated,
+ sourceHealth,
  methodology,
  methodologyText: [
 "Sources: actions/clean_place/spot unifiees sur la fenetre courante.",
@@ -453,8 +487,16 @@ export async function GET(request: Request) {
   cacheControl: ELUS_DOSSIER_RESPONSE_CACHE_CONTROL,
  });
  const headers: Record<string, string> = { ...responseHeaders };
- if (isTruncated) {
- headers["X-Export-Warning"] ="Dataset truncated to limit";
+ const exportWarnings = [
+  ...(isTruncated ? ["Dataset truncated to limit"] : []),
+  ...(sourceHealth.partial || sourceHealth.failedSources.length > 0
+   ? sourceHealth.warnings.length > 0
+     ? sourceHealth.warnings
+     : ["Source dataset partial or unavailable"]
+   : []),
+ ];
+ if (exportWarnings.length > 0) {
+ headers["X-Export-Warning"] = exportWarnings.join(" | ");
  }
 
  if (format ==="md") {

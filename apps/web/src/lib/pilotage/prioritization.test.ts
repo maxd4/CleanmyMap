@@ -162,4 +162,17 @@ describe("buildOperationalPriorities", () => {
     expect(result[0].impactEstimate.length).toBeGreaterThan(0);
     expect(result[0].suggestedOwner.length).toBeGreaterThan(0);
   });
+
+  it("does not create a moderation priority when moderation is unavailable", () => {
+    const comparison = buildComparisonFixture();
+    comparison.current.pendingCount = null;
+    comparison.previous.pendingCount = null;
+    comparison.current.moderationDelayDays = null;
+    comparison.previous.moderationDelayDays = null;
+    comparison.metrics.moderationDelayDays = null;
+
+    const result = buildOperationalPriorities({ comparison, zones: [] });
+
+    expect(result.some((priority) => priority.id === "admin-backlog")).toBe(false);
+  });
 });

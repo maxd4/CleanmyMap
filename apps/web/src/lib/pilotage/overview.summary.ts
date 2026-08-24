@@ -17,18 +17,23 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
     comparison.metrics.coverageRate.interpretation === "negative"
       ? Math.abs(comparison.metrics.coverageRate.deltaPercent)
       : 0;
+  const moderationComparison = comparison.metrics.moderationDelayDays;
   const moderationRisk =
-    comparison.metrics.moderationDelayDays.interpretation === "negative"
-      ? Math.abs(comparison.metrics.moderationDelayDays.deltaPercent)
+    moderationComparison?.interpretation === "negative"
+      ? Math.abs(moderationComparison.deltaPercent)
       : 0;
 
   const ranked = [
-    {
-      risk: moderationRisk,
-      href: ADMIN_ROUTE,
-      label: "Traiter backlog moderation",
-      reason: `Delai moderation en degradation (${comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j, ${comparison.current.moderationDelayDays.toFixed(1)} j actuels).`,
-    },
+    ...(moderationComparison
+      ? [
+          {
+            risk: moderationRisk,
+            href: ADMIN_ROUTE,
+            label: "Traiter backlog moderation",
+            reason: `Delai moderation en degradation (${moderationComparison.deltaAbsolute >= 0 ? "+" : ""}${moderationComparison.deltaAbsolute.toFixed(1)} j, ${comparison.current.moderationDelayDays?.toFixed(1)} j actuels).`,
+          },
+        ]
+      : []),
     {
       risk: qualityRisk,
       href: "/actions/history",
@@ -49,7 +54,9 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
       href: DASHBOARD_ROUTE,
       label: "Maintenir le pilotage courant",
       reason:
-        "Aucune degradation majeure detectee sur qualite, couverture ou moderation.",
+        moderationComparison
+          ? "Aucune degradation majeure detectee sur qualite, couverture ou moderation."
+          : "Aucune degradation majeure detectee sur qualite ou couverture; moderation indisponible avec la source actuelle.",
     };
   }
 
@@ -64,7 +71,11 @@ export function buildSummary(
   comparison: PilotageComparisonResult,
   priorities: OperationalPriority[],
 ): DecisionSummary {
-  const topPriority = priorities[0];
+  const topPriority = priorities.find(
+    (priority) =>
+      priority.id !== "admin-backlog" ||
+      comparison.metrics.moderationDelayDays !== null,
+  );
   const recommendedAction = pickDecisionRecommendation(comparison);
 
   return {

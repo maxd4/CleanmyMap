@@ -15,8 +15,8 @@ export type PilotageWindowMetrics = {
   mobilizationCount: number;
   qualityScore: number;
   coverageRate: number;
-  moderationDelayDays: number;
-  pendingCount: number;
+  moderationDelayDays: number | null;
+  pendingCount: number | null;
   iurIndex: number;
   anomaliesCount: number;
   reliability: {
@@ -52,10 +52,16 @@ export type PilotageComparisonResult = {
     mobilizationCount: PilotageMetricComparison;
     qualityScore: PilotageMetricComparison;
     coverageRate: PilotageMetricComparison;
-    moderationDelayDays: PilotageMetricComparison;
+    moderationDelayDays: PilotageMetricComparison | null;
     iurIndex: PilotageMetricComparison;
     anomaliesCount: PilotageMetricComparison;
   };
+};
+
+export type PilotageModerationAvailability = "available" | "unavailable";
+
+export type PilotageComparisonOptions = {
+  moderationAvailability?: PilotageModerationAvailability;
 };
 
 function round1(value: number): number {
@@ -154,6 +160,7 @@ function computeWindowMetrics(
   records: ActionDataContract[],
   windowEndMs: number,
   periodDays: number,
+  moderationAvailability: PilotageModerationAvailability,
 ): PilotageWindowMetrics {
   const approved = records.filter((record) => record.status === "approved");
   const pending = records.filter((record) => record.status === "pending");
@@ -189,7 +196,7 @@ function computeWindowMetrics(
   const coverageRate =
     approvedActions > 0 ? (geolocatedCount / approvedActions) * 100 : 0;
 
-  const pendingAges = pending
+  const pendingAges = moderationAvailability === "available" ? pending
     .map((record) => {
       const createdAt = parseDateMs(
         record.dates.createdAt ?? record.dates.importedAt,
@@ -201,7 +208,7 @@ function computeWindowMetrics(
     })
     .filter(
       (value): value is number => value !== null && Number.isFinite(value),
-    );
+    ) : [];
 
   return {
     approvedActions,
@@ -209,8 +216,9 @@ function computeWindowMetrics(
     mobilizationCount,
     qualityScore: round1(qualityScore),
     coverageRate: round1(coverageRate),
-    moderationDelayDays: round1(median(pendingAges)),
-    pendingCount: pending.length,
+    moderationDelayDays:
+      moderationAvailability === "available" ? round1(median(pendingAges)) : null,
+    pendingCount: moderationAvailability === "available" ? pending.length : null,
     iurIndex: round1(impactVolumeKg / ((DIGITAL_IMPACT_CONSTANTS.ANNUAL_COST_KG_CO2E / DIGITAL_IMPACT_CONSTANTS.DAYS_PER_YEAR) * periodDays)),
     anomaliesCount: approved.filter(
       (record) =>
@@ -268,7 +276,10 @@ export function computePilotageComparison(
   records: ActionDataContract[],
   periodDays: number,
   now: Date = new Date(),
+  options: PilotageComparisonOptions = {},
 ): PilotageComparisonResult {
+  const moderationAvailability =
+    options.moderationAvailability ?? "available";
   const nowMs = now.getTime();
   const currentFloorMs = nowMs - periodDays * DAY_MS;
   const previousFloorMs = currentFloorMs - periodDays * DAY_MS;
@@ -289,8 +300,18 @@ export function computePilotageComparison(
     );
   });
 
-  const current = computeWindowMetrics(currentRecords, nowMs, periodDays);
-  const previous = computeWindowMetrics(previousRecords, currentFloorMs, periodDays);
+  const current = computeWindowMetrics(
+    currentRecords,
+    nowMs,
+    periodDays,
+    moderationAvailability,
+  );
+  const previous = computeWindowMetrics(
+    previousRecords,
+    currentFloorMs,
+    periodDays,
+    moderationAvailability,
+  );
 
   return {
     formulaVersion: PILOTAGE_FORMULA_VERSION,
@@ -324,11 +345,14 @@ export function computePilotageComparison(
         previous.coverageRate,
         false,
       ),
-      moderationDelayDays: compareMetric(
-        current.moderationDelayDays,
-        previous.moderationDelayDays,
-        true,
-      ),
+      moderationDelayDays:
+        moderationAvailability === "available"
+          ? compareMetric(
+              current.moderationDelayDays ?? 0,
+              previous.moderationDelayDays ?? 0,
+              true,
+            )
+          : null,
       iurIndex: compareMetric(
         current.iurIndex,
         previous.iurIndex,

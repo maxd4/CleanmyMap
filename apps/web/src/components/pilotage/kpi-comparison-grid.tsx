@@ -103,17 +103,27 @@ export function KpiComparisonGrid({
  moderationDelay: (
  <KpiComparisonCard
  label={mergedLabels.moderationDelay}
- value={`${comparison.current.moderationDelayDays.toFixed(1)} j`}
- previousValue={`${comparison.previous.moderationDelayDays.toFixed(1)} j`}
- deltaAbsolute={signed(
- comparison.metrics.moderationDelayDays.deltaAbsolute,
-" j",
- )}
- deltaPercent={signed(
- comparison.metrics.moderationDelayDays.deltaPercent,
-"%",
- )}
- interpretation={comparison.metrics.moderationDelayDays.interpretation}
+ value={
+ comparison.current.moderationDelayDays === null
+ ? "Indisponible"
+ : `${comparison.current.moderationDelayDays.toFixed(1)} j`
+ }
+ previousValue={
+ comparison.previous.moderationDelayDays === null
+ ? "Indisponible"
+ : `${comparison.previous.moderationDelayDays.toFixed(1)} j`
+ }
+ deltaAbsolute={
+ comparison.metrics.moderationDelayDays === null
+ ? "Indisponible"
+ : signed(comparison.metrics.moderationDelayDays.deltaAbsolute, " j")
+ }
+ deltaPercent={
+ comparison.metrics.moderationDelayDays === null
+ ? "Indisponible"
+ : signed(comparison.metrics.moderationDelayDays.deltaPercent, "%")
+ }
+ interpretation={comparison.metrics.moderationDelayDays?.interpretation ?? "neutral"}
  />
  ),
  };

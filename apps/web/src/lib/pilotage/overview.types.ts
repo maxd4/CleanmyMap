@@ -1,4 +1,5 @@
 import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
+import type { UnifiedSourceHealth } from "../actions/unified-source";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority, ZoneComparisonRow } from "./prioritization";
 
@@ -35,6 +36,11 @@ export type DecisionSummary = {
   };
 };
 
+export type PilotageDataAvailability = {
+  isTruncated: boolean;
+  sourceHealth: UnifiedSourceHealth;
+};
+
 export type PilotageOverview = {
   generatedAt: string;
   periodDays: number;
@@ -44,6 +50,7 @@ export type PilotageOverview = {
   methods: MethodDefinition[];
   zones: ZoneComparisonRow[];
   summary: DecisionSummary;
+  dataAvailability: PilotageDataAvailability;
   contracts: ActionDataContract[]; // Raw contracts for exports
 };
 

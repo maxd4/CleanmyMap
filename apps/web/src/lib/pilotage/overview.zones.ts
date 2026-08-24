@@ -1,5 +1,6 @@
 import { buildTerritorialBenchmark } from "../analytics/territorial-benchmark";
 import type { ActionDataContract } from "../actions/data-contract";
+import type { PilotageModerationAvailability } from "./metrics";
 import type { ZoneComparisonRow } from "./prioritization";
 import {
   DAY_MS,
@@ -13,6 +14,7 @@ export function buildZones(
   contracts: ActionDataContract[],
   periodDays: number,
   now: Date,
+  moderationAvailability: PilotageModerationAvailability = "available",
 ): ZoneComparisonRow[] {
   const nowMs = now.getTime();
   const currentFloorMs = nowMs - periodDays * DAY_MS;
@@ -47,7 +49,9 @@ export function buildZones(
       contract.location.latitude !== null && contract.location.longitude !== null;
     const createdMs = parseDateMs(contract.dates.createdAt ?? contract.dates.importedAt);
     const pendingAgeDays =
-      contract.status === "pending" && createdMs !== null
+      moderationAvailability === "available" &&
+      contract.status === "pending" &&
+      createdMs !== null
         ? Math.max(0, (nowMs - createdMs) / DAY_MS)
         : null;
 
@@ -133,25 +137,33 @@ export function buildZones(
         safePercentDelta(currentCoverageRate, previousCoverageRate),
       );
       const currentModerationDelayDays =
-        current.pendingAgesDays.length > 0
+        moderationAvailability === "available" && current.pendingAgesDays.length > 0
           ? round1(
               current.pendingAgesDays.reduce((acc, value) => acc + value, 0) /
                 current.pendingAgesDays.length,
             )
-          : 0;
+          : moderationAvailability === "available"
+            ? 0
+            : null;
       const previousModerationDelayDays =
-        previous.pendingAgesDays.length > 0
+        moderationAvailability === "available" && previous.pendingAgesDays.length > 0
           ? round1(
               previous.pendingAgesDays.reduce((acc, value) => acc + value, 0) /
                 previous.pendingAgesDays.length,
             )
-          : 0;
-      const deltaModerationDelayDaysAbsolute = round1(
-        currentModerationDelayDays - previousModerationDelayDays,
-      );
-      const deltaModerationDelayDaysPercent = round1(
-        safePercentDelta(currentModerationDelayDays, previousModerationDelayDays),
-      );
+          : moderationAvailability === "available"
+            ? 0
+            : null;
+      const deltaModerationDelayDaysAbsolute =
+        currentModerationDelayDays === null || previousModerationDelayDays === null
+          ? null
+          : round1(currentModerationDelayDays - previousModerationDelayDays);
+      const deltaModerationDelayDaysPercent =
+        currentModerationDelayDays === null || previousModerationDelayDays === null
+          ? null
+          : round1(
+              safePercentDelta(currentModerationDelayDays, previousModerationDelayDays),
+            );
       const benchmarkRow = benchmarkByArea.get(area);
       const normalizedScore = benchmarkRow?.normalizedScore ?? 0;
 

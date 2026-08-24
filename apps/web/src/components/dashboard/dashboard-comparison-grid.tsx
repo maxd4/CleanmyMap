@@ -90,13 +90,27 @@ export function DashboardComparisonGrid({
  />
  <KpiComparisonCard
  label={labelWithTooltip("Delai moderation")}
- value={`${overview.comparison.current.moderationDelayDays.toFixed(1)} j`}
- previousValue={`${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`}
- deltaAbsolute={`${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ?"+" :""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`}
- deltaPercent={`${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ?"+" :""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`}
- interpretation={
- overview.comparison.metrics.moderationDelayDays.interpretation
+ value={
+ overview.comparison.current.moderationDelayDays === null
+ ? "Indisponible"
+ : `${overview.comparison.current.moderationDelayDays.toFixed(1)} j`
  }
+ previousValue={
+ overview.comparison.previous.moderationDelayDays === null
+ ? "Indisponible"
+ : `${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`
+ }
+ deltaAbsolute={
+ overview.comparison.metrics.moderationDelayDays === null
+ ? "Indisponible"
+ : `${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ?"+" :""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`
+ }
+ deltaPercent={
+ overview.comparison.metrics.moderationDelayDays === null
+ ? "Indisponible"
+ : `${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ?"+" :""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`
+ }
+ interpretation={overview.comparison.metrics.moderationDelayDays?.interpretation ?? "neutral"}
  />
  <KpiComparisonCard
  label={labelWithTooltip("Mobilisation")}
