@@ -2,6 +2,14 @@ export const ACTION_STATUSES = ["pending", "approved", "rejected"] as const;
 
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
 
+export type ActionMapViewportQuery = {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  zoom: number | null;
+};
+
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
 export type ActionSourceName = "actions" | "spots" | "spots_legacy" | "local";
 
@@ -118,6 +126,7 @@ export type ActionListItem = {
   status: ActionStatus;
   record_type?: LegacyActionRecordType;
   source?: string;
+  source_status?: string | null;
   notes_plain?: string | null;
   observed_at?: string;
   geometry_kind?: ActionGeometryKind | null;
@@ -256,6 +265,7 @@ export type ActionMapItem = Pick<
   | "status"
   | "created_by_clerk_id"
 > & {
+  source_status?: string | null;
   volunteers_count?: number | null;
   duration_minutes?: number | null;
   notes_plain?: string | null;

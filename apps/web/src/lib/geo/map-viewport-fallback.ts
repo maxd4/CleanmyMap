@@ -7,70 +7,21 @@ import {
   getTerritoryArrondissementCenter,
 } from "./paris-arrondissements";
 
-type GeoPoint = {
+export type GeoPoint = {
   latitude: number;
   longitude: number;
 };
-
-type MajorCity = GeoPoint & {
-  label: string;
-};
-
-const MAJOR_FRENCH_CITIES: MajorCity[] = [
-  { label: "Paris", latitude: 48.8566, longitude: 2.3522 },
-  { label: "Lyon", latitude: 45.764, longitude: 4.8357 },
-  { label: "Marseille", latitude: 43.2965, longitude: 5.3698 },
-  { label: "Lille", latitude: 50.6292, longitude: 3.0573 },
-  { label: "Bordeaux", latitude: 44.8378, longitude: -0.5792 },
-  { label: "Toulouse", latitude: 43.6045, longitude: 1.444 },
-  { label: "Nantes", latitude: 47.2184, longitude: -1.5536 },
-  { label: "Rennes", latitude: 48.1173, longitude: -1.6778 },
-  { label: "Strasbourg", latitude: 48.5734, longitude: 7.7521 },
-  { label: "Montpellier", latitude: 43.6108, longitude: 3.8767 },
-  { label: "Nice", latitude: 43.7102, longitude: 7.262 },
-  { label: "Grenoble", latitude: 45.1885, longitude: 5.7245 },
-  { label: "Rouen", latitude: 49.4432, longitude: 1.0993 },
-  { label: "Brest", latitude: 48.3904, longitude: -4.4861 },
-];
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
-function distanceKm(left: GeoPoint, right: GeoPoint): number {
-  const earthRadiusKm = 6371;
-  const dLat = toRadians(right.latitude - left.latitude);
-  const dLon = toRadians(right.longitude - left.longitude);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(left.latitude)) *
-      Math.cos(toRadians(right.latitude)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function normalize(value: number): number {
   return Number(value.toFixed(6));
-}
-
-export function findNearestMajorCity(point: GeoPoint): MajorCity {
-  let nearest = MAJOR_FRENCH_CITIES[0];
-  let nearestDistance = Number.POSITIVE_INFINITY;
-
-  for (const city of MAJOR_FRENCH_CITIES) {
-    const candidateDistance = distanceKm(point, city);
-    if (candidateDistance < nearestDistance) {
-      nearest = city;
-      nearestDistance = candidateDistance;
-    }
-  }
-
-  return nearest;
 }
 
 export function buildViewportFromPoints(points: GeoPoint[]): MapViewportState | null {
@@ -196,9 +147,9 @@ async function resolvePreferencePoint(
     : null;
 }
 
-export async function resolveMapViewportFallback(
+export async function resolveMapFallbackReference(
   preference: TerritoryLocationPreference | null,
-): Promise<MapViewportState | null> {
+): Promise<GeoPoint | null> {
   if (!preference) {
     return null;
   }
@@ -208,6 +159,12 @@ export async function resolveMapViewportFallback(
     return null;
   }
 
-  const nearestCity = findNearestMajorCity(point);
-  return buildViewportFromPoints([point, nearestCity]);
+  return point;
+}
+
+export async function resolveMapViewportFallback(
+  preference: TerritoryLocationPreference | null,
+): Promise<MapViewportState | null> {
+  const point = await resolveMapFallbackReference(preference);
+  return point ? buildViewportFromPoints([point]) : null;
 }

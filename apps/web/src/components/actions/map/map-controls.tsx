@@ -5,10 +5,12 @@ import { type LatLngTuple } from "leaflet";
 
 export function MapControls({
   center,
+  zoom,
   variant = "default",
   tone = "sky",
 }: {
   center: LatLngTuple;
+  zoom: number;
   variant?: "default" | "immersive";
   tone?: "sky" | "emerald";
 }) {
@@ -24,7 +26,7 @@ export function MapControls({
     >
       <button
         type="button"
-        onClick={() => map.flyTo(center, 12)}
+        onClick={() => map.flyTo(center, zoom)}
         aria-label="Recentrer la carte"
         className={[
           "flex w-fit items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-black text-slate-950 backdrop-blur-xl transition max-sm:px-4",

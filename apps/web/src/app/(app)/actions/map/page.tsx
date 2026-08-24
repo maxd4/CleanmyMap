@@ -92,7 +92,14 @@ function ActionsMapPageContent() {
 
   const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const { viewport: mapViewport, handleViewportChange } = useActionsMapViewport();
+  const {
+    viewport: mapViewport,
+    viewportRequest,
+    viewportRequestKey,
+    recenterViewport,
+    handleManualViewportInteraction,
+    handleViewportChange,
+  } = useActionsMapViewport(undefined, references);
   const mapExportTargetRef = useRef<HTMLDivElement | null>(null);
   const handleSelectAction = (actionId: string) => {
     setSelectedActionId((current) => (current === actionId ? null : actionId));
@@ -206,7 +213,11 @@ function ActionsMapPageContent() {
             onResetFilters={handleResetFilters}
             mapExportTargetRef={mapExportTargetRef}
             initialViewport={mapViewport}
+            viewportRequest={viewportRequest}
+            viewportRequestKey={viewportRequestKey}
+            recenterViewport={recenterViewport}
             onViewportChange={handleViewportChange}
+            onViewportInteraction={handleManualViewportInteraction}
           />
         </section>
 

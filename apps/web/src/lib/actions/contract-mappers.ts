@@ -97,6 +97,7 @@ export function toActionMapItem(
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
+    source_status: contract.sourceStatus ?? contract.status,
     created_by_clerk_id: contract.createdByClerkId ?? null,
     manual_drawing: contract.metadata.manualDrawing,
     manual_drawing_geojson: getActionManualDrawingGeoJson(
@@ -149,6 +150,7 @@ export function toActionListItem(
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
+    source_status: contract.sourceStatus ?? contract.status,
     created_by_clerk_id: contract.createdByClerkId ?? null,
     notes_plain: contract.metadata.notesPlain,
     observed_at: contract.dates.observedAt,

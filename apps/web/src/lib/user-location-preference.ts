@@ -210,6 +210,13 @@ export function extractTerritoryLocationPreferenceFromMetadata(
   return buildTerritorySelectionFromMetadata(metadata, locationType);
 }
 
+export function extractResidenceLocationPreferenceFromMetadata(
+  metadata: ClerkMetadata,
+): TerritoryLocationPreference | null {
+  const preference = extractTerritoryLocationPreferenceFromMetadata(metadata);
+  return preference?.locationType === "residence" ? preference : null;
+}
+
 export function createTerritoryLocationMetadata(
   selection: TerritoryLocationSelection,
   locationType: UserLocationType,

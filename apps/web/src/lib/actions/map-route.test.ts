@@ -77,6 +77,21 @@ describe("parseMapActionsParams", () => {
     expect(params.status).toBeNull();
     expect(params.floorDate).toBeNull();
   });
+
+  it("parses bounded viewport parameters for progressive map searches", () => {
+    const params = parseMapActionsParams(
+      new URL("http://localhost/api/actions/map?south=48.8&west=2.2&north=48.9&east=2.4&zoom=12"),
+      () => null,
+    );
+
+    expect(params.viewport).toEqual({
+      south: 48.8,
+      west: 2.2,
+      north: 48.9,
+      east: 2.4,
+      zoom: 12,
+    });
+  });
 });
 
 describe("buildMapActionsRouteResult", () => {
@@ -105,6 +120,28 @@ describe("buildMapActionsRouteResult", () => {
         requireCoordinates: true,
         status: "approved",
         limit: 40,
+      }),
+    );
+  });
+
+  it("forwards bounded viewport parameters to the unified source", async () => {
+    const deps = buildDeps();
+
+    await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?south=48.8&west=2.2&north=48.9&east=2.4&zoom=12"),
+      deps,
+    );
+
+    expect(deps.fetchUnifiedActionContracts).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        viewport: {
+          south: 48.8,
+          west: 2.2,
+          north: 48.9,
+          east: 2.4,
+          zoom: 12,
+        },
       }),
     );
   });

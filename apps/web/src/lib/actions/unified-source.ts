@@ -16,7 +16,11 @@ import type {
   ActionEntityType,
 } from "@/lib/actions/data-contract";
 import { fetchActions, type StoredAction } from "@/lib/actions/store";
-import type { ActionSourceName, ActionStatus } from "@/lib/actions/types";
+import type {
+  ActionMapViewportQuery,
+  ActionSourceName,
+  ActionStatus,
+} from "@/lib/actions/types";
 import { loadLocalActionContracts } from "@/lib/data/map-records";
 import { logFailure } from "@/lib/logging/failure-log";
 
@@ -26,6 +30,7 @@ type UnifiedActionContractsParams = {
   floorDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
+  viewport?: ActionMapViewportQuery;
 };
 
 type UnifiedSourceName = ActionSourceName;
@@ -96,6 +101,7 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     type: "action",
     status: row.status,
     source: "actions",
+    sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.action_date,
     createdAt: row.created_at,
@@ -196,6 +202,7 @@ function toSpotContractFromRow(
     type: mapSpotTypeToEntityType(spotType),
     status: mapSpotStatusToActionStatus(row.status),
     source,
+    sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.created_at,
     createdAt: row.created_at,
@@ -294,6 +301,7 @@ async function loadUnifiedActionSourceData(
         status: params.status,
         floorDate: params.floorDate ?? undefined,
         requireCoordinates: params.requireCoordinates,
+        viewport: params.viewport,
       }),
       (async () => {
         const spotStatuses = mapActionStatusToSpotStatuses(params.status);
@@ -314,6 +322,13 @@ async function loadUnifiedActionSourceData(
         }
         if (params.requireCoordinates) {
           query = query.not("latitude", "is", null).not("longitude", "is", null);
+        }
+        if (params.viewport) {
+          query = query
+            .gte("latitude", params.viewport.south)
+            .lte("latitude", params.viewport.north)
+            .gte("longitude", params.viewport.west)
+            .lte("longitude", params.viewport.east);
         }
         if (spotStatuses) {
           query = query.in("status", spotStatuses);
@@ -344,6 +359,13 @@ async function loadUnifiedActionSourceData(
         }
         if (params.requireCoordinates) {
           query = query.not("latitude", "is", null).not("longitude", "is", null);
+        }
+        if (params.viewport) {
+          query = query
+            .gte("latitude", params.viewport.south)
+            .lte("latitude", params.viewport.north)
+            .gte("longitude", params.viewport.west)
+            .lte("longitude", params.viewport.east);
         }
         if (spotStatuses) {
           query = query.in("status", spotStatuses);
@@ -456,6 +478,27 @@ function buildUnifiedActionContracts(
   return { items, isTruncated };
 }
 
+function filterContractsByViewport(
+  contracts: ActionDataContract[],
+  viewport?: ActionMapViewportQuery,
+): ActionDataContract[] {
+  if (!viewport) {
+    return contracts;
+  }
+
+  return contracts.filter((contract) => {
+    const { latitude, longitude } = contract.location;
+    return (
+      latitude !== null &&
+      longitude !== null &&
+      latitude >= viewport.south &&
+      latitude <= viewport.north &&
+      longitude >= viewport.west &&
+      longitude <= viewport.east
+    );
+  });
+}
+
 export function parseEntityTypesParam(
   raw: string | null,
 ): ActionEntityType[] | null {
@@ -488,7 +531,7 @@ export async function fetchUnifiedActionContracts(
     remoteRows,
     remoteSpots,
     legacySpots,
-    localContracts,
+    filterContractsByViewport(localContracts, params.viewport),
     params.types,
     params.limit,
   );

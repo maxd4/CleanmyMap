@@ -70,6 +70,7 @@ export type ActionDataContract = {
   type: ActionEntityType;
   status: ActionStatus;
   source: string;
+  sourceStatus?: string | null;
   createdByClerkId?: string | null;
   location: ActionDataLocation;
   geometry: ActionDataGeometry;
@@ -83,6 +84,7 @@ export type BuildActionContractParams = {
   type: ActionEntityType;
   status: ActionStatus;
   source: string;
+  sourceStatus?: string | null;
   createdByClerkId?: string | null;
   observedAt: string;
   createdAt?: string | null;
@@ -283,6 +285,7 @@ export function buildActionDataContract(
     type: params.type,
     status: params.status,
     source: params.source,
+    sourceStatus: params.sourceStatus ?? params.status,
     createdByClerkId: params.createdByClerkId ?? null,
     location: {
       label: params.locationLabel,

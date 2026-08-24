@@ -10,6 +10,7 @@ import type {
   ResolvedActionOrganizer,
   ResolvedActionParticipant,
 } from "@/lib/actions/organizers";
+import type { ActionMapViewportQuery } from "@/lib/actions/types";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import {
   buildPersistedGeometry,
@@ -110,6 +111,7 @@ function buildActionListQuery(
     status: ActionStatus | null;
     floorDate?: string;
     requireCoordinates?: boolean;
+    viewport?: ActionMapViewportQuery;
   },
   selectFields: string,
 ) {
@@ -131,6 +133,13 @@ function buildActionListQuery(
   if (params.requireCoordinates) {
     nextQuery = nextQuery.not("latitude", "is", null).not("longitude", "is", null);
   }
+  if (params.viewport) {
+    nextQuery = nextQuery
+      .gte("latitude", params.viewport.south)
+      .lte("latitude", params.viewport.north)
+      .gte("longitude", params.viewport.west)
+      .lte("longitude", params.viewport.east);
+  }
 
   return nextQuery;
 }
@@ -142,6 +151,7 @@ async function fetchActionRows(
     status: ActionStatus | null;
     floorDate?: string;
     requireCoordinates?: boolean;
+    viewport?: ActionMapViewportQuery;
   },
 ): Promise<StoredAction[]> {
   try {
@@ -281,6 +291,7 @@ export async function fetchActions(
     status: ActionStatus | null;
     floorDate?: string;
     requireCoordinates?: boolean;
+    viewport?: ActionMapViewportQuery;
   },
 ): Promise<StoredAction[]> {
   return fetchActionRows(supabase, params);
