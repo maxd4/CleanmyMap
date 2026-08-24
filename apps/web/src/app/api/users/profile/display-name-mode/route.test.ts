@@ -82,6 +82,7 @@ describe("PATCH /api/users/profile/display-name-mode", () => {
     expect(body.displayName).toBe("Ada Admin");
     expect(body.displayNameMode).toBe("full_name");
     expect(body.handle).toBe("ada_admin");
+    expect(getCurrentUserIdentityMock).toHaveBeenCalledWith({ userId: "user-1" });
   }, 15000);
 
   it("updates the display name mode and derived display name", async () => {
