@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
@@ -57,14 +58,33 @@ def _iter_text_files(root: Path) -> list[Path]:
     return iter_text_files(root)
 
 
+def _gitignore_patterns(gitignore_path: Path) -> list[str]:
+    patterns: list[str] = []
+    for raw_line in gitignore_path.read_text(encoding="utf-8").splitlines():
+        pattern = raw_line.strip()
+        if not pattern or pattern.startswith("#") or pattern.startswith("!"):
+            continue
+        patterns.append(pattern)
+    return patterns
+
+
+def _pattern_protects_artifacts(pattern: str) -> bool:
+    normalized = pattern.lstrip("/").removesuffix("/")
+    return normalized in {"artifacts", "**/artifacts"}
+
+
+def _pattern_protects_filename(pattern: str, filename: str) -> bool:
+    normalized = pattern.lstrip("/")
+    if normalized.startswith("**/"):
+        normalized = normalized[3:]
+    if "/" in normalized or normalized.endswith("/"):
+        return False
+    return fnmatchcase(filename, normalized)
+
+
 def _rule_runtime_artifacts(root: Path) -> CleanupAuditRuleResult:
     gitignore_path = root / ".gitignore"
-    required_entries = {
-        "artifacts/",
-        "streamlit.out.log",
-        "streamlit.err.log",
-        ".streamlit_pid.txt",
-    }
+    required_filenames = ("streamlit.out.log", "streamlit.err.log", ".streamlit_pid.txt")
     runtime_files = [
         path
         for path in [
@@ -90,8 +110,13 @@ def _rule_runtime_artifacts(root: Path) -> CleanupAuditRuleResult:
             recommendations_en=["Create a .gitignore and add runtime artifact entries."],
         )
 
-    lines = {line.strip() for line in gitignore_path.read_text(encoding="utf-8").splitlines() if line.strip()}
-    missing_entries = sorted(entry for entry in required_entries if entry not in lines)
+    patterns = _gitignore_patterns(gitignore_path)
+    missing_entries: list[str] = []
+    if not any(_pattern_protects_artifacts(pattern) for pattern in patterns):
+        missing_entries.append("artifacts/ or **/artifacts/")
+    for filename in required_filenames:
+        if not any(_pattern_protects_filename(pattern, filename) for pattern in patterns):
+            missing_entries.append(filename)
 
     if missing_entries:
         return CleanupAuditRuleResult(

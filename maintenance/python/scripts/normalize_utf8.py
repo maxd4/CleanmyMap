@@ -58,14 +58,6 @@ MOJIBAKE_MARKERS = (
     "\ufffd",
 )
 
-SMART_PUNCTUATION_CORRECTIONS = {
-    "\u2019": "'",
-    "\u201c": '"',
-    "\u201d": '"',
-    "\u00a0": " ",
-}
-
-
 @dataclass(slots=True)
 class FileNormalizationResult:
     path: Path
@@ -107,11 +99,10 @@ def _try_redecode(text: str, source_encoding: str) -> str | None:
 def _apply_direct_replacements(text: str) -> tuple[str, bool]:
     fixed = text
     changed = False
-    for corrections in (MOJIBAKE_CORRECTIONS, SMART_PUNCTUATION_CORRECTIONS):
-        for src, dst in corrections.items():
-            if src in fixed:
-                fixed = fixed.replace(src, dst)
-                changed = True
+    for src, dst in MOJIBAKE_CORRECTIONS.items():
+        if src in fixed:
+            fixed = fixed.replace(src, dst)
+            changed = True
     return fixed, changed
 
 
