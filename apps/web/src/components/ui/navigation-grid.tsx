@@ -1,7 +1,15 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  BarChart3,
+  Compass,
+  DownloadCloud,
+  FileText,
+  Info,
+  Layers,
+  LockKeyhole,
   PlusCircle,
+  Settings,
   ShieldCheck,
   Search,
   UserPlus,
@@ -24,8 +32,16 @@ export interface NavigationGridItem {
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  BarChart3,
+  Compass,
+  DownloadCloud,
+  FileText,
+  Info,
+  Layers,
+  LockKeyhole,
   ShieldCheck,
   Search,
+  Settings,
   UserPlus,
   LayoutDashboard,
   ArrowRight,

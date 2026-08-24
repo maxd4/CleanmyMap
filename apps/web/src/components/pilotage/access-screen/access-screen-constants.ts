@@ -1,11 +1,3 @@
-import {
-  BarChart3,
-  Compass,
-  FileText,
-  LockKeyhole,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
 import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 import type { AppProfile } from "@/lib/profiles";
 import {
@@ -83,7 +75,7 @@ export const PAGE_COPY: Record<
 export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): NavigationGridItem[] {
   const baseItems: NavigationGridItem[] = [
     {
-      icon: BarChart3,
+      icon: "BarChart3",
       title: locale === "fr" ? "Mon espace" : "Dashboard",
       desc:
         locale === "fr"
@@ -97,7 +89,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       href: DASHBOARD_ROUTE,
     },
     {
-      icon: FileText,
+      icon: "FileText",
       title: locale === "fr" ? "Rapports" : "Reports",
       desc:
         locale === "fr"
@@ -111,7 +103,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       href: REPORTS_ROUTE,
     },
     {
-      icon: Compass,
+      icon: "Compass",
       title: locale === "fr" ? "Carte des actions" : "Action map",
       desc:
         locale === "fr"
@@ -128,7 +120,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
 
   const adminItems: NavigationGridItem[] = [
     {
-      icon: Settings,
+      icon: "Settings",
       title: locale === "fr" ? "Administration" : "Administration",
       desc:
         locale === "fr"
@@ -142,7 +134,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       href: ADMIN_ROUTE,
     },
     {
-      icon: ShieldCheck,
+      icon: "ShieldCheck",
       title: locale === "fr" ? "Portail décideur" : "Decision portal",
       desc:
         locale === "fr"
@@ -159,7 +151,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
 
   if (profile === "max") {
     adminItems.push({
-      icon: LockKeyhole,
+      icon: "LockKeyhole",
       title: locale === "fr" ? "God Mode" : "God Mode",
       desc:
         locale === "fr"

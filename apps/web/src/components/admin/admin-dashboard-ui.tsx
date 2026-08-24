@@ -260,7 +260,7 @@ export function AdminMetricGrid({
 }
 
 export function AdminActionCard({
-  icon: Icon,
+  icon,
   title,
   description,
   badge,
@@ -273,7 +273,7 @@ export function AdminActionCard({
   iconWrapClassName,
   badgeClassName,
 }: {
-  icon: LucideIcon;
+  icon: string;
   title: string;
   description: string;
   badge: string;
@@ -288,7 +288,7 @@ export function AdminActionCard({
 }) {
   return (
     <ActionCard
-      icon={Icon}
+      icon={icon}
       title={title}
       description={description}
       badge={badge}
@@ -319,7 +319,7 @@ export function AdminActionGrid({
 }: {
   items: Array<{
     id: string;
-    icon: LucideIcon;
+    icon: string;
     title: string;
     description: string;
     badge: string;

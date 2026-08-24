@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import {
-  Activity,
   AlertTriangle,
-  BookOpenText,
-  Database,
-  Download,
-  HardDrive,
-  Inbox,
-  Settings,
   ShieldCheck,
-  Trash2,
 } from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
@@ -458,7 +450,7 @@ export default async function AdminPage() {
   const actionTiles = [
     {
       id: "creator-inbox",
-      icon: Inbox,
+      icon: "Inbox",
       title: "Inbox créateur",
       description:
         onboardingStatus.pending > 0
@@ -469,7 +461,7 @@ export default async function AdminPage() {
     },
     {
       id: "export-data",
-      icon: Download,
+      icon: "Download",
       title: "Exporter les données",
       description:
         publishedEntries.length > 0
@@ -480,7 +472,7 @@ export default async function AdminPage() {
     },
     {
       id: "system-control",
-      icon: Activity,
+      icon: "Activity",
       title: "Contrôle système",
       description:
         moderationAudit.error > 0
@@ -494,7 +486,7 @@ export default async function AdminPage() {
   const quickAccessTiles = [
     {
       id: "declare-action",
-      icon: Activity,
+      icon: "Activity",
       title: "Déclarer une action",
       description: "Enregistrer une intervention terrain.",
       href: "/actions/new",
@@ -504,7 +496,7 @@ export default async function AdminPage() {
     },
     {
       id: "manage-data",
-      icon: Database,
+      icon: "Database",
       title: "Gérer les données",
       description: "Valider, corriger, enrichir.",
       href: "/actions/history",
@@ -514,7 +506,7 @@ export default async function AdminPage() {
     },
     {
       id: "quiz-bank",
-      icon: BookOpenText,
+      icon: "BookOpenText",
       title: "Revue quiz",
       description: "Filtrer et corriger la banque de questions.",
       href: "/admin/quiz-bank",
@@ -524,7 +516,7 @@ export default async function AdminPage() {
     },
     {
       id: "traceability",
-      icon: ShieldCheck,
+      icon: "ShieldCheck",
       title: "Renforcer traçabilité",
       description: "Qualité data en baisse.",
       href: "/admin/services#governance-report",
@@ -534,7 +526,7 @@ export default async function AdminPage() {
     },
     {
       id: "site-health",
-      icon: HardDrive,
+      icon: "HardDrive",
       title: "Santé du site",
       description: "Contrôler les flux et l'état général.",
       href: "/admin/services",
@@ -547,7 +539,7 @@ export default async function AdminPage() {
   const privacyTiles = [
     {
       id: "account-settings",
-      icon: Settings,
+      icon: "Settings",
       title: "Paramètres du compte",
       description: "Gérer vos préférences et vos données.",
       href: "/reglages",
@@ -557,7 +549,7 @@ export default async function AdminPage() {
     },
     {
       id: "privacy",
-      icon: ShieldCheck,
+      icon: "ShieldCheck",
       title: "Confidentialité",
       description: "Gérez comment vos données sont utilisées et partagées.",
       href: "/politique-confidentialite",
@@ -567,7 +559,7 @@ export default async function AdminPage() {
     },
     {
       id: "delete-account",
-      icon: Trash2,
+      icon: "Trash2",
       title: "Suppression du compte",
       description: "Vous pouvez supprimer votre compte à tout moment.",
       href: `mailto:${contactEmail}?subject=${encodeURIComponent(
