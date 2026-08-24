@@ -76,7 +76,7 @@ Utiliser `npm run build:clean -w apps/web` si:
 - la build se comporte différemment après un échec précédent;
 - le log pointe vers `.next` plutôt que vers le code applicatif.
 
-Ce script supprime `apps/web/.next` et `apps/web/.turbo`, puis relance le build stable Webpack.
+Ce script supprime `apps/web/.next` et `apps/web/.turbo`, puis relance le build natif Turbopack.
 
 ## Ce qu'il ne faut pas faire
 
@@ -89,10 +89,10 @@ Ce script supprime `apps/web/.next` et `apps/web/.turbo`, puis relance le build 
 
 Si un conflit Turbopack empêche le déploiement:
 
-1. garder temporairement le chemin Webpack stable;
-2. documenter le conflit séparément;
-3. traiter l'optimisation Turbopack comme une tâche à part;
-4. ne pas mélanger cette optimisation avec la correction de build.
+1. reproduire le conflit sur une base propre;
+2. distinguer défaut du code, incompatibilité de dépendance, configuration ou environnement;
+3. documenter le conflit séparément;
+4. ne pas réintroduire automatiquement un forçage Webpack comme contournement.
 
 ## Résultat attendu
 
