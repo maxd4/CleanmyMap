@@ -2,15 +2,6 @@
 
 Ce dossier contient 25 fichiers au total, sans sous-dossiers, pour un téléversement direct dans ChatGPT.
 
-## Régénération
-
-La table ci-dessous est le manifeste explicite du snapshot. Les chemins de la
-colonne « Emplacement d'origine » sont les sources canoniques ; les fichiers
-de ce dossier sont des dérivés destinés au contexte ChatGPT.
-
-Vérifier la synchronisation avec `npm run context:gpt:check` et régénérer avec
-`npm run context:gpt:sync`. Ne pas maintenir manuellement les copies dérivées.
-
 ## Fichiers retenus
 
 | Fichier copié | Emplacement d'origine | Pourquoi il a été sélectionné |
