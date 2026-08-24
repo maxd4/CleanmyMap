@@ -54,7 +54,7 @@ Current major baselines:
 - Keep public-facing text in French unless explicitly localized.
 - Do not create root-level files without justification.
 - Do not create worktrees, sibling copies or parallel repositories without explicit user approval.
-- Do not modify `documentation/pepite/` or `documentation/gpt-context/` without explicit user approval.
+- Do not modify `documentation/pepite/` without explicit user approval.
 
 ## Supabase
 
@@ -131,15 +131,18 @@ Never claim a check was executed when it was not.
 
 ## Mirror governance
 
-This skill is consumed from two paths:
+`.agents/skills/` is the canonical repository skill catalogue consumed by the
+Agents runtime. `.codex/skills/` is the governed Codex mirror for the
+`cleanmymap-*` subset; the two runtimes need both paths, but only the canonical
+tree is edited directly.
 
-```txt
-.codex/skills/cleanmymap-repo/SKILL.md
-.agents/skills/cleanmymap-repo/SKILL.md
-```
-
-They must remain byte-identical and are checked by:
+The recursive mirror check covers every skill directory under `.codex/skills/`
+and compares all files, not only `SKILL.md`:
 
 ```bash
 npm run check:agent-skills
+node scripts/check-agent-skill-mirrors.mjs --sync
 ```
+
+Use `--sync` only after reviewing the canonical `.agents/skills/` tree. Do not
+maintain a second hand-edited copy in `.codex/skills/`.
