@@ -43,10 +43,10 @@ function buildDisplayNameModeCacheKey(userId: string): string {
 
 async function loadCachedDisplayNameMode(
   userId: string,
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
 ): Promise<DisplayNameModeResponse | null> {
   const cached = unstable_cache(
     async () => {
-      const identity = await getCurrentUserIdentity();
       if (!identity || identity.userId !== userId) {
         return null;
       }
@@ -77,7 +77,8 @@ export async function GET() {
   const userId = devBypass?.userId ?? clerkUserId;
   if (!userId) return unauthorizedJsonResponse();
 
-  const payload = await loadCachedDisplayNameMode(userId);
+  const identity = await getCurrentUserIdentity({ userId });
+  const payload = await loadCachedDisplayNameMode(userId, identity);
   if (!payload) return unauthorizedJsonResponse();
 
   return NextResponse.json(payload, {
