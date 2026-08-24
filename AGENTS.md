@@ -178,7 +178,9 @@ maintenance/python/                       maintenance Python hors runtime princi
 documentation/                            documentation structurée
 ```
 
-Le dossier racine `supabase/migrations/` est un miroir historique tant que l'ADR de migration n'est pas définitivement appliqué. Ne jamais modifier un seul arbre de migrations sans vérifier l'autre.
+`apps/web/supabase/migrations/` est l'unique arbre de migrations éditable.
+Ne pas créer ou réintroduire `supabase/migrations/`; le garde-fou
+`npm run audit:supabase-migration-trees` bloque ce second arbre.
 
 ## Prévention des monolithes
 

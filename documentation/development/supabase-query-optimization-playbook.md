@@ -44,7 +44,7 @@ then the first question is not "how do we make the filter faster?" but:
 
 The pollution score for `actions` is not a fixed threshold. It is a relative score built from a database reference:
 
-- the RPC [`action_pollution_score_references`](../../supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql) computes the largest approved action per volunteer in `public.actions`;
+- the RPC [`action_pollution_score_references`](../../apps/web/supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql) computes the largest approved action per volunteer in `public.actions`;
 - the frontend normalizes each action against that reference in [`apps/web/src/lib/actions/pollution-score.ts`](../../apps/web/src/lib/actions/pollution-score.ts);
 - `100%` is therefore assigned to the biggest approved action currently available in the database for the relevant axis;
 - the score must stay dynamic and must not be replaced by a fixed constant just to reduce warnings or simplify the query path.
