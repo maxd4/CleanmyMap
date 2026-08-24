@@ -33,12 +33,15 @@ Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
 
 - Utiliser GitHub comme source de vérité.
 - Lecture libre du dépôt.
-- Écriture uniquement si l'utilisateur l'autorise explicitement dans la conversation.
-- Dans ce cas, créer une branche dédiée.
-- Committer les modifications.
-- Ouvrir une Pull Request vers `main`.
-- Ne jamais pousser directement sur `main`.
-- Ne jamais fusionner une PR.
+- Le checkout de travail par défaut est directement `main`.
+- Après autorisation explicite de l'utilisateur, committer directement sur `main`.
+- Après les validations pertinentes, pousser directement vers `origin/main`.
+- Ne pas créer de Pull Request pour le développement courant.
+- Ne créer une branche temporaire que sur demande explicite de l'utilisateur.
+- Ne créer un worktree que sur demande explicite de l'utilisateur.
+- Ne jamais pousser avec `--force` ni réécrire l'historique publié de `main`.
+- Toujours préserver les changements locaux et les stashes existants.
+- Toujours vérifier le diff exact et les validations pertinentes avant un push.
 - Sans autorisation explicite, rester en lecture seule.
 
 ### Répartition du travail
@@ -73,7 +76,7 @@ Un agent utilisé pour l'analyse, la rédaction ou la conception peut :
 - produire des versions complètes corrigées ;
 - joindre des fichiers prêts à intégrer.
 
-Il ne doit jamais écrire sans autorisation explicite de l'utilisateur. Quand l'écriture est autorisée, il doit passer par une branche dédiée, commit et PR vers `main`, sans push direct sur `main` et sans fusionner la PR.
+Il ne doit jamais écrire sans autorisation explicite de l'utilisateur. Quand l'écriture est autorisée, le travail validé est intégré directement sur `main`, committé puis poussé vers `origin/main` selon les garde-fous du dépôt, sans branche temporaire ni Pull Request.
 
 ### Intégrateur local
 
@@ -89,11 +92,12 @@ Sans autorisation explicite, l’intégrateur reste en lecture seule.
 
 Quand l'utilisateur autorise une écriture, le flux attendu est :
 
-- créer une branche dédiée ;
-- committer les changements ;
-- ouvrir une Pull Request vers `main` ;
-- ne jamais pousser directement sur `main` ;
-- ne jamais fusionner la PR.
+- vérifier que le checkout est sur `main` et que les changements étrangers sont identifiés ;
+- modifier de manière ciblée ;
+- exécuter les tests et garde-fous pertinents ;
+- committer directement sur `main` ;
+- pousser vers `origin/main` sans `--force` ;
+- vérifier que `main` et `origin/main` désignent le même SHA.
 
 ---
 
@@ -544,3 +548,32 @@ Il est interdit de :
 - laisser des placeholders ou routes cassées après une modification ;
 - prétendre avoir testé sans validation réelle ;
 - considérer une ancienne conversation comme source de vérité supérieure au dépôt actuel.
+
+---
+
+## 12. Gestion du contexte des conversations
+
+Avant d'exécuter une tâche complexe, évaluer si le contexte actuel de la conversation reste suffisamment fiable.
+
+Si l'une des situations suivantes apparaît :
+
+- la conversation mélange plusieurs chantiers différents ;
+- des décisions architecturales importantes risquent d'être perdues ;
+- le contexte devient trop volumineux pour raisonner correctement ;
+- la tâche nécessite une compréhension globale qui dépasse le contexte utile ;
+- des signes d'oubli ou de perte de précision apparaissent ;
+
+ne pas commencer immédiatement l'implémentation.
+
+À la place :
+
+1. indiquer brièvement pourquoi une nouvelle conversation améliorerait la fiabilité ;
+2. fournir une passation courte contenant :
+   - l'état actuel du chantier ;
+   - le dernier commit Git ;
+   - les fichiers modifiés ;
+   - les décisions importantes à conserver ;
+   - la prochaine étape exacte ;
+3. attendre confirmation avant de continuer.
+
+Privilégier une nouvelle conversation plutôt qu'une reconstruction approximative d'un contexte perdu.
