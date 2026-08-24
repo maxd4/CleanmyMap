@@ -115,7 +115,7 @@ export function HomeCommunityActivity({
                       {item.timeLabel}
                     </p>
                   </div>
-                  <p className="truncate text-sm text-white">
+                  <p className="break-words text-sm text-white">
                     {item.action}{" "}
                     <span className="font-semibold text-white">
                       @{item.location}

@@ -262,7 +262,7 @@ export function HomeCommunityCredibility({
                           {item.timeLabel}
                         </p>
                       </div>
-                      <p className="truncate text-[13px] text-white/92">
+                      <p className="break-words text-[13px] text-white/92">
                         {item.action}{" "}
                         <span className="font-semibold text-white">
                           @{item.location}

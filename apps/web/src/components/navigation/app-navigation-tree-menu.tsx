@@ -143,12 +143,13 @@ export function AppNavigationTreeMenu({
       <button
         ref={triggerRef}
         type="button"
+        aria-label={locale === "fr" ? "Sommaire" : "Summary"}
         aria-expanded={isOpen}
         aria-controls={`${idBase}-panel`}
         aria-haspopup="dialog"
         onClick={toggleMenu}
         className={cn(
-          "inline-flex min-h-11 min-w-[9.5rem] items-center justify-center gap-2 rounded-full border px-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+          "inline-flex h-11 min-h-11 w-11 min-w-11 items-center justify-center gap-2 rounded-full border px-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:h-auto sm:min-h-11 sm:w-auto sm:min-w-[9.5rem] sm:px-4",
           "border-cyan-200/24 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] hover:border-cyan-100/40 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400",
           isOpen && "scale-[1.01]",
         )}
@@ -162,7 +163,7 @@ export function AppNavigationTreeMenu({
         >
           <List className="h-4 w-4 shrink-0" aria-hidden="true" />
         </span>
-        <span className="cmm-text-caption font-bold uppercase tracking-[0.16em]">
+        <span className="hidden cmm-text-caption font-bold uppercase tracking-[0.16em] sm:inline">
           {locale === "fr" ? "Sommaire" : "Summary"}
         </span>
         <ChevronDown
