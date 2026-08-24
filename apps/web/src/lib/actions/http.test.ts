@@ -159,6 +159,60 @@ describe("buildMapActionsQueryString", () => {
 });
 
 describe("fetchMapActions", () => {
+  it("uses the healthy API response even when a viewport is present", async () => {
+    const apiItem = {
+      id: "api-map-1",
+      action_date: "2026-06-01",
+      location_label: "Quai de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      status: "approved",
+      created_by_clerk_id: null,
+    };
+    const outsideViewportItem = {
+      ...apiItem,
+      id: "api-map-outside",
+      latitude: 49.2,
+      longitude: 2.3522,
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: "ok",
+          count: 2,
+          daysWindow: 30,
+          items: [apiItem, outsideViewportItem],
+          partialSource: false,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchMapActions({
+      status: "approved",
+      viewport: {
+        center: [48.8566, 2.3522],
+        zoom: 13,
+        bounds: {
+          south: 48.7,
+          west: 2.2,
+          north: 48.95,
+          east: 2.5,
+        },
+      },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/actions/map?"),
+      expect.objectContaining({ method: "GET", cache: "no-store" }),
+    );
+    expect(mocks.rpcMock).not.toHaveBeenCalled();
+    expect(result.items).toEqual([apiItem]);
+    expect(result.count).toBe(1);
+  });
+
   it("falls back to the browser RPC when the snapshot route is unavailable", async () => {
     const rpcRow = {
       source: "actions",
@@ -223,7 +277,10 @@ describe("fetchMapActions", () => {
       },
     });
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/actions/map?"),
+      expect.objectContaining({ method: "GET", cache: "no-store" }),
+    );
     expect(mocks.getSupabaseBrowserClientMock).toHaveBeenCalledTimes(1);
     expect(mocks.fetchActionPollutionScoreReferencesMock).toHaveBeenCalledTimes(1);
     expect(mocks.rpcMock).toHaveBeenCalledTimes(1);

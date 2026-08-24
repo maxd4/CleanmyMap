@@ -1,5 +1,6 @@
 import type {
   ActionImpactLevel,
+  ActionMapItem,
   ActionMapResponse,
   ActionStatus,
 } from "@/lib/actions/types";
@@ -24,7 +25,7 @@ import {
 } from "./pollution-score";
 import type { ActionDataContract, ActionEntityType } from "./contract-model";
 import { buildActionDataContract } from "./data-contract";
-import { toActionMapItem } from "./contract-mappers";
+import { mapItemCoordinates, toActionMapItem } from "./contract-mappers";
 import {
   clampInteger,
   normalizeQualityMin,
@@ -300,6 +301,29 @@ function buildMapItems(
     .slice(0, limit);
 }
 
+function filterMapItemsByViewport(
+  items: ActionMapItem[],
+  viewport: MapViewportState | null | undefined,
+): ActionMapItem[] {
+  if (!viewport) {
+    return items;
+  }
+
+  return items.filter((item) => {
+    const { latitude, longitude } = mapItemCoordinates(item);
+    if (latitude === null || longitude === null) {
+      return false;
+    }
+
+    return (
+      latitude >= viewport.bounds.south &&
+      latitude <= viewport.bounds.north &&
+      longitude >= viewport.bounds.west &&
+      longitude <= viewport.bounds.east
+    );
+  });
+}
+
 function buildMapSourceHealth(): NonNullable<ActionMapResponse["sourceHealth"]> {
   return {
     partial: false,
@@ -432,28 +456,29 @@ export async function fetchMapActions(
   params: FetchMapActionsParams = {},
 ): Promise<ActionMapResponse> {
   const query = buildMapActionsQueryString(params);
-  if (!params.viewport) {
-    try {
-      const response = await fetch(`/api/actions/map?${query}`, {
-        method: "GET",
-        cache: "no-store",
-      });
-      if (response.ok) {
-        const body = (await response.json().catch(() => null)) as
-          | ActionMapResponse
-          | null;
-        if (
-          body &&
-          typeof body === "object" &&
-          Array.isArray(body.items) &&
-          typeof body.count === "number"
-        ) {
-          return body;
-        }
+  try {
+    const response = await fetch(`/api/actions/map?${query}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (response.ok) {
+      const body = (await response.json().catch(() => null)) as
+        | ActionMapResponse
+        | null;
+      if (
+        body &&
+        typeof body === "object" &&
+        Array.isArray(body.items) &&
+        typeof body.count === "number"
+      ) {
+        const items = filterMapItemsByViewport(body.items, params.viewport);
+        return params.viewport
+          ? { ...body, count: items.length, items }
+          : body;
       }
-    } catch {
-      // Fallback below.
     }
+  } catch {
+    // Fallback below.
   }
 
   const config = resolveMapFetchConfig(params);

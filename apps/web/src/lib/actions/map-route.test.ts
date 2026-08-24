@@ -37,7 +37,12 @@ function buildDeps(overrides?: Partial<Parameters<typeof buildMapActionsRouteRes
     }),
     toActionMapItem: vi.fn().mockImplementation((contract: { id: string; status: string }) => ({
       id: contract.id,
+      action_date: "2026-06-01",
+      location_label: "Quai de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
       status: contract.status,
+      created_by_clerk_id: null,
       quality_score: 80,
       impact_level: "critique",
       contract: {
@@ -87,6 +92,10 @@ describe("buildMapActionsRouteResult", () => {
       status: "ok",
       count: 1,
       partialSource: false,
+    });
+    expect(result.body.items[0]).toMatchObject({
+      latitude: 48.8566,
+      longitude: 2.3522,
     });
     expect(result.headers).toBeUndefined();
     expect(deps.getSupabaseServerClient).toHaveBeenCalledWith(false);
