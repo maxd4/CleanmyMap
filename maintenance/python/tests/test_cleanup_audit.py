@@ -4,19 +4,21 @@ import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from src.maintenance.cleanup_audit import (
     compute_cooldown_remaining_seconds,
     run_cleanup_audit,
 )
 
 
-def _write_clean_fixture(root: Path) -> None:
+def _write_clean_fixture(root: Path, artifact_rule: str = "artifacts/") -> None:
     (root / "documentation" / "operations").mkdir(parents=True)
     (root / "documentation" / "pages_site").mkdir(parents=True)
     (root / ".gitignore").write_text(
         "\n".join(
             [
-                "artifacts/",
+                artifact_rule,
                 "streamlit.out.log",
                 "streamlit.err.log",
                 ".streamlit_pid.txt",
@@ -57,6 +59,40 @@ def test_cleanup_audit_returns_deterministic_structure(tmp_path: Path) -> None:
         "utf8_bom",
         "docs_wiring",
     }
+
+
+@pytest.mark.parametrize("artifact_rule", ["artifacts/", "**/artifacts/"])
+def test_cleanup_audit_accepts_semantic_artifact_patterns(tmp_path: Path, artifact_rule: str) -> None:
+    _write_clean_fixture(tmp_path, artifact_rule=artifact_rule)
+
+    report = run_cleanup_audit(tmp_path).to_dict()
+
+    assert report["status"] == "clean"
+    assert next(rule for rule in report["rules"] if rule["rule_id"] == "runtime_artifacts")["status"] == "ok"
+
+
+@pytest.mark.parametrize("missing_pattern", ["streamlit.out.log", "streamlit.err.log", ".streamlit_pid.txt"])
+def test_cleanup_audit_requires_streamlit_protections(tmp_path: Path, missing_pattern: str) -> None:
+    _write_clean_fixture(tmp_path)
+    patterns = [line for line in (tmp_path / ".gitignore").read_text(encoding="utf-8").splitlines() if line != missing_pattern]
+    (tmp_path / ".gitignore").write_text("\n".join(patterns) + "\n", encoding="utf-8")
+
+    report = run_cleanup_audit(tmp_path).to_dict()
+    runtime_rule = next(rule for rule in report["rules"] if rule["rule_id"] == "runtime_artifacts")
+
+    assert runtime_rule["status"] == "error"
+    assert missing_pattern in runtime_rule["technical_details"][0]
+
+
+def test_cleanup_audit_detects_complete_absence_of_runtime_protection(tmp_path: Path) -> None:
+    _write_clean_fixture(tmp_path)
+    (tmp_path / ".gitignore").write_text("# unrelated protection\n", encoding="utf-8")
+
+    report = run_cleanup_audit(tmp_path).to_dict()
+    runtime_rule = next(rule for rule in report["rules"] if rule["rule_id"] == "runtime_artifacts")
+
+    assert runtime_rule["status"] == "error"
+    assert "artifacts/ or **/artifacts/" in runtime_rule["technical_details"][0]
 
 
 def test_cleanup_audit_detects_rule_violations(tmp_path: Path) -> None:
