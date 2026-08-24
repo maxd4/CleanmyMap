@@ -49,4 +49,36 @@ describe("overview summary", () => {
     expect(recommendation.href.startsWith("/")).toBe(true);
     expect(recommendation.label.length).toBeGreaterThan(0);
   });
+
+  it("does not turn unavailable moderation into a backlog signal", () => {
+    const now = new Date("2026-04-10T00:00:00.000Z");
+    const approvedOnly = [
+      buildActionDataContract({
+        id: "approved-only",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 10,
+        volunteersCount: 4,
+      }),
+    ];
+    const comparison = computePilotageComparison(approvedOnly, 30, now, {
+      moderationAvailability: "unavailable",
+    });
+    const priorities = buildOperationalPriorities({ comparison, zones: [] });
+    const summary = buildSummary(comparison, priorities);
+    const recommendation = pickDecisionRecommendation(comparison);
+
+    expect(comparison.current.pendingCount).toBeNull();
+    expect(comparison.current.moderationDelayDays).toBeNull();
+    expect(priorities.some((priority) => priority.id === "admin-backlog")).toBe(false);
+    expect(recommendation.href).not.toBe("/admin");
+    expect(recommendation.reason).toContain("moderation indisponible");
+    expect(summary.alert.title).not.toContain("moderation");
+  });
 });
