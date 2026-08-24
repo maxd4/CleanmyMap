@@ -1,8 +1,14 @@
 .agents/
 .codex/
+.gitnexus/
+.codex-remote-attachments/
 .cursor/
 .mcp.json
 .vscode/
+artifacts/
+backups/
+scratch/
+.playwright-mcp/
 apps/web/.next-sourcemap-test/
 apps/web/.next/
 apps/web/artifacts/

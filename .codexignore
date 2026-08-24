@@ -9,6 +9,7 @@ apps/web/.next/
 **/.next-sourcemap-test/
 .vercel/
 **/.vercel/
+.gitnexus/
 .playwright-mcp/
 .codex-remote-attachments/
 .cursor/
