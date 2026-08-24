@@ -1,9 +1,6 @@
-# Quarto build caches and temporary artifacts
-/.quarto/.quarto/
-/.quarto/project-cache/
-/.quarto/quarto-session-temp*/
-/.quarto/xref/
-/.quarto/*quarto_files/
+# Quarto build caches and temporary artifacts. Durable templates live in
+# documentation/quarto-templates/.
+/.quarto/
 
 # Rendered exports in documentation are generated from Markdown/Quarto sources
 **/*.pdf

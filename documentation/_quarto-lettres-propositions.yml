@@ -29,5 +29,5 @@ format:
     urlcolor: blue
     citecolor: blue
 
-    include-in-header: .quarto/styles/cleanmymap-letter.tex
+    include-in-header: quarto-templates/cleanmymap-letter.tex
     keep-tex: false
