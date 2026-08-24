@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getCurrentUserTerritoryLocationPreference } from "@/lib/auth/user-territory";
 import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { resolveMapViewportFallback } from "@/lib/geo/map-viewport-fallback";
+import {
+  buildViewportFromPoints,
+  resolveMapFallbackReference,
+} from "@/lib/geo/map-viewport-fallback";
 import { auth } from "@clerk/nextjs/server";
 
 export const runtime = "nodejs";
@@ -31,12 +34,14 @@ export async function GET() {
 
   try {
     const preference = await getCurrentUserTerritoryLocationPreference();
-    const viewport = await resolveMapViewportFallback(preference);
+    const reference = await resolveMapFallbackReference(preference);
+    const viewport = reference ? buildViewportFromPoints([reference]) : null;
 
     return NextResponse.json(
       {
         status: "ok",
         viewport,
+        reference,
       },
       {
         headers: MAP_VIEWPORT_FALLBACK_CACHE_HEADERS,

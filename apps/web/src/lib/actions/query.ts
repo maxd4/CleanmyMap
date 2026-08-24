@@ -17,6 +17,7 @@ export type ActionQuery = PromiseLike<ActionQueryResult<unknown>> & {
   is: (...args: unknown[]) => ActionQuery;
   not: (...args: unknown[]) => ActionQuery;
   gte: (...args: unknown[]) => ActionQuery;
+  lte: (...args: unknown[]) => ActionQuery;
   maybeSingle: () => ActionQueryTerminal;
 };
 

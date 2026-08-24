@@ -6,13 +6,13 @@ type MapCenter = [number, number];
 
 export const PARIS_CENTER: MapCenter = [48.8566, 2.3522];
 const PARIS_INTRAMUROS_BOUND_SPAN = {
-  latitude: 0.092,
-  longitude: 0.122,
+  latitude: 0.028,
+  longitude: 0.038,
 };
 
 function createViewportBounds(center: MapCenter, zoom: number): MapViewportState["bounds"] {
   const normalizedZoom = Math.max(10, Math.min(16, Math.round(zoom)));
-  const zoomScale = normalizedZoom >= 14 ? 0.75 : normalizedZoom >= 13 ? 1 : 1.2;
+  const zoomScale = 2 ** (15 - normalizedZoom);
   const latHalfSpan = (PARIS_INTRAMUROS_BOUND_SPAN.latitude * zoomScale) / 2;
   const lonHalfSpan = (PARIS_INTRAMUROS_BOUND_SPAN.longitude * zoomScale) / 2;
 

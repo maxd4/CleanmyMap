@@ -2,20 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
 import {
   buildViewportFromPoints,
-  findNearestMajorCity,
   resolveMapViewportFallback,
 } from "./map-viewport-fallback";
 
 describe("map viewport fallback", () => {
-  it("selects the nearest major city for a given point", () => {
-    expect(
-      findNearestMajorCity({
-        latitude: 45.764,
-        longitude: 4.8357,
-      }).label,
-    ).toBe("Lyon");
-  });
-
   it("builds a viewport that contains all source points", () => {
     const viewport = buildViewportFromPoints([
       { latitude: 48.8566, longitude: 2.3522 },
@@ -31,7 +21,7 @@ describe("map viewport fallback", () => {
     expect(viewport?.zoom).toBeGreaterThanOrEqual(9);
   });
 
-  it("resolves a fallback viewport from a geocoded territory label", async () => {
+  it("resolves a strict local fallback viewport from a geocoded territory label", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => [
@@ -63,6 +53,8 @@ describe("map viewport fallback", () => {
       expect(viewport?.bounds.north).toBeGreaterThanOrEqual(45.764);
       expect(viewport?.bounds.west).toBeLessThanOrEqual(4.8357);
       expect(viewport?.bounds.east).toBeGreaterThanOrEqual(4.8357);
+      expect(viewport?.center).toEqual([45.764, 4.8357]);
+      expect(viewport?.zoom).toBe(13);
     } finally {
       global.fetch = originalFetch;
     }

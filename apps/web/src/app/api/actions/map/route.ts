@@ -30,6 +30,15 @@ function buildMapActionsSnapshotKey(url: URL): string {
     impact: parsed.impact ?? "all",
     scopeKind: parsed.scope.kind,
     scopeValue: parsed.scope.value ?? "all",
+    viewport: parsed.viewport
+      ? [
+          parsed.viewport.south,
+          parsed.viewport.west,
+          parsed.viewport.north,
+          parsed.viewport.east,
+          parsed.viewport.zoom ?? "auto",
+        ].join(":")
+      : "global",
   });
 }
 

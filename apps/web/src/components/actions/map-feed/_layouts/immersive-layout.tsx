@@ -37,7 +37,11 @@ type ImmersiveLayoutProps = {
   zoneQuery?: string;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
   initialViewport?: MapViewportState | null;
+  viewportRequest?: MapViewportState | null;
+  viewportRequestKey?: number;
+  recenterViewport?: MapViewportState | null;
 };
 
 export function ImmersiveLayout({
@@ -61,7 +65,11 @@ export function ImmersiveLayout({
   zoneQuery = "",
   mapExportTargetRef,
   onViewportChange,
+  onViewportInteraction,
   initialViewport,
+  viewportRequest,
+  viewportRequestKey,
+  recenterViewport,
 }: ImmersiveLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -139,7 +147,11 @@ export function ImmersiveLayout({
                 fullViewport={fullViewport}
                 tone={tone}
                 onViewportChange={onViewportChange}
+                onViewportInteraction={onViewportInteraction}
                 initialViewport={initialViewport}
+                viewportRequest={viewportRequest}
+                viewportRequestKey={viewportRequestKey}
+                recenterViewport={recenterViewport}
               />
             )}
           </div>

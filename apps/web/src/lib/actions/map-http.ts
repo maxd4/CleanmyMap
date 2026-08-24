@@ -58,7 +58,7 @@ type ActionsMapFeedRow = {
   created_at: string;
   updated_at: string | null;
   created_by_clerk_id: string | null;
-  status: ActionStatus;
+  status: string;
   observed_at: string;
   location_label: string;
   latitude: number | string | null;
@@ -170,6 +170,17 @@ function toActionEntityType(raw: string | null | undefined): ActionEntityType {
   return "action";
 }
 
+function toActionStatusFromMapFeedRow(
+  entityType: string | null | undefined,
+  rawStatus: string,
+): ActionStatus {
+  if (entityType === "spot") {
+    return rawStatus === "validated" || rawStatus === "cleaned" ? "approved" : "pending";
+  }
+
+  return rawStatus === "pending" || rawStatus === "rejected" ? rawStatus : "approved";
+}
+
 function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContract {
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
@@ -177,8 +188,9 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
   return buildActionDataContract({
     id: row.id,
     type: toActionEntityType(row.entity_type),
-    status: row.status,
+    status: toActionStatusFromMapFeedRow(row.entity_type, row.status),
     source: row.source,
+    sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.observed_at,
     createdAt: row.created_at,

@@ -17,7 +17,11 @@ export type ActionsMapCanvasComponent = ComponentType<{
   fullViewport?: boolean;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
   initialViewport?: MapViewportState | null;
+  viewportRequest?: MapViewportState | null;
+  viewportRequestKey?: number;
+  recenterViewport?: MapViewportState | null;
 }>;
 
 export type ActionsMapFeedProps = {

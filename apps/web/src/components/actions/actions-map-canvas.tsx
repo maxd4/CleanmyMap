@@ -21,7 +21,10 @@ import {
   TrashSpotterMarkers,
   isTrashSpotterItem,
 } from "./map/map-layers";
-import { getActionsMapCenter } from "./actions-map-canvas.utils";
+import {
+  createActionsMapViewport,
+  getActionsMapCenter,
+} from "./actions-map-canvas.utils";
 import type { MapViewportState } from "./map/map-export.types";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
@@ -38,15 +41,27 @@ type ActionsMapCanvasProps = {
   className?: string;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
   initialViewport?: MapViewportState | null;
+  viewportRequest?: MapViewportState | null;
+  viewportRequestKey?: number;
+  recenterViewport?: MapViewportState | null;
 };
 
 function MapViewportReporter({
   onViewportChange,
+  onViewportInteraction,
 }: {
   onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
 }) {
   const map = useMapEvents({
+    dragstart: () => {
+      onViewportInteraction?.();
+    },
+    zoomstart: () => {
+      onViewportInteraction?.();
+    },
     moveend: () => {
       onViewportChange?.(resolveViewportState(map));
     },
@@ -78,29 +93,21 @@ function resolveViewportState(map: LeafletMap): MapViewportState {
 }
 
 function MapViewportSync({
-  viewport,
+  viewportRequest,
+  viewportRequestKey,
 }: {
-  viewport: MapViewportState | null;
+  viewportRequest: MapViewportState | null;
+  viewportRequestKey: number;
 }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!viewport) {
+    if (!viewportRequest) {
       return;
     }
 
-    map.fitBounds(
-      [
-        [viewport.bounds.south, viewport.bounds.west],
-        [viewport.bounds.north, viewport.bounds.east],
-      ],
-      {
-        animate: false,
-        padding: [24, 24],
-        maxZoom: viewport.zoom,
-      },
-    );
-  }, [map, viewport]);
+    map.setView(viewportRequest.center, viewportRequest.zoom, { animate: false });
+  }, [map, viewportRequest, viewportRequestKey]);
 
   return null;
 }
@@ -114,11 +121,19 @@ export function ActionsMapCanvas({
   className,
   tone = "sky",
   onViewportChange,
+  onViewportInteraction,
   initialViewport = null,
+  viewportRequest = null,
+  viewportRequestKey = 0,
+  recenterViewport = null,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const mapCenter = initialViewport?.center ?? center;
   const mapZoom = initialViewport?.zoom ?? (compact ? 11 : 12);
+  const logicalRecenterViewport =
+    recenterViewport ??
+    initialViewport ??
+    createActionsMapViewport(center, compact ? 11 : 12);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
   const isEmerald = tone === "emerald";
   const mapShellClasses = isEmerald
@@ -202,9 +217,20 @@ export function ActionsMapCanvas({
             : `h-[68vh] min-h-[34rem] w-full transition-colors duration-500 md:h-[74vh] md:min-h-[42rem] ${mapCanvasClass}`
         }
         >
-        <MapViewportSync viewport={initialViewport} />
-        <MapViewportReporter onViewportChange={onViewportChange} />
-        <MapControls center={mapCenter} variant={compact ? "default" : "immersive"} tone={tone} />
+        <MapViewportSync
+          viewportRequest={viewportRequest}
+          viewportRequestKey={viewportRequestKey}
+        />
+        <MapViewportReporter
+          onViewportChange={onViewportChange}
+          onViewportInteraction={onViewportInteraction}
+        />
+        <MapControls
+          center={logicalRecenterViewport.center}
+          zoom={logicalRecenterViewport.zoom}
+          variant={compact ? "default" : "immersive"}
+          tone={tone}
+        />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer

@@ -4,6 +4,7 @@ import type {
   ActionMapItem,
 } from "@/lib/actions/data-contract";
 import type {
+  ActionMapViewportQuery,
   ActionImpactLevel,
   ActionMapResponse,
   ActionStatus,
@@ -38,6 +39,7 @@ export type ParseMapActionsParams = {
   qualityMin: number | null;
   impact: ActionImpactLevel | null;
   scope: ReportScope;
+  viewport?: ActionMapViewportQuery;
 };
 
 export type MapActionsRouteDependencies = {
@@ -50,6 +52,7 @@ export type MapActionsRouteDependencies = {
       floorDate: string | null;
       requireCoordinates: boolean;
       types: ActionRecordType[] | null;
+      viewport?: ActionMapViewportQuery;
     },
   ) => Promise<FetchUnifiedActionContractsResult>;
   parseEntityTypesParam: (raw: string | null) => ActionRecordType[] | null;
@@ -117,6 +120,40 @@ function parseFloorDateParam(url: URL, days: number): string | null {
   return buildDateFloor(days);
 }
 
+function parseFiniteQueryNumber(url: URL, key: string): number | null {
+  const raw = url.searchParams.get(key);
+  if (!raw || raw.trim() === "") {
+    return null;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseViewportParam(url: URL): ActionMapViewportQuery | undefined {
+  const south = parseFiniteQueryNumber(url, "south");
+  const west = parseFiniteQueryNumber(url, "west");
+  const north = parseFiniteQueryNumber(url, "north");
+  const east = parseFiniteQueryNumber(url, "east");
+  const zoom = parseFiniteQueryNumber(url, "zoom");
+
+  if (
+    south === null ||
+    west === null ||
+    north === null ||
+    east === null ||
+    south >= north ||
+    west >= east ||
+    south < -90 ||
+    north > 90 ||
+    west < -180 ||
+    east > 180
+  ) {
+    return undefined;
+  }
+
+  return { south, west, north, east, zoom };
+}
+
 export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapActionsRouteDependencies["parseEntityTypesParam"]): ParseMapActionsParams {
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 80);
   const days = parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 30);
@@ -129,6 +166,7 @@ export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapAction
     qualityMin: parseQualityMin(url.searchParams.get("qualityMin")),
     impact: parseImpactParam(url.searchParams.get("impact")),
     scope: resolveReportScopeFromQuery(url),
+    viewport: parseViewportParam(url),
   };
 }
 
@@ -144,6 +182,7 @@ export async function buildMapActionsRouteResult(
     floorDate: params.floorDate,
     requireCoordinates: true,
     types: params.types,
+    viewport: params.viewport,
   });
 
   const now = new Date();

@@ -25,7 +25,11 @@ type ActionsMapFeedContentProps = {
   onResetFilters?: () => void;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
+  onViewportInteraction?: () => void;
   initialViewport?: MapViewportState | null;
+  viewportRequest?: MapViewportState | null;
+  viewportRequestKey?: number;
+  recenterViewport?: MapViewportState | null;
 };
 
 export function ActionsMapFeedContent({
@@ -41,7 +45,11 @@ export function ActionsMapFeedContent({
   onResetFilters,
   mapExportTargetRef,
   onViewportChange,
+  onViewportInteraction,
   initialViewport = null,
+  viewportRequest = null,
+  viewportRequestKey = 0,
+  recenterViewport = null,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -111,8 +119,12 @@ export function ActionsMapFeedContent({
     zoneQuery,
     mapExportTargetRef,
     initialViewport,
+    viewportRequest,
+    viewportRequestKey,
+    recenterViewport,
     tone,
     onViewportChange,
+    onViewportInteraction,
   };
 
   return (
@@ -177,7 +189,14 @@ export function ActionsMapFeed({
   mapExportTargetRef,
   onViewportChange,
 }: ActionsMapFeedProps) {
-  const { viewport: mapViewport, handleViewportChange } = useActionsMapViewport(onViewportChange);
+  const {
+    viewport: mapViewport,
+    viewportRequest,
+    viewportRequestKey,
+    recenterViewport,
+    handleManualViewportInteraction,
+    handleViewportChange,
+  } = useActionsMapViewport(onViewportChange);
 
   const feedData = useMapFeedData({
     types,
@@ -206,7 +225,11 @@ export function ActionsMapFeed({
       onResetFilters={onResetFilters}
       mapExportTargetRef={mapExportTargetRef}
       initialViewport={mapViewport}
+      viewportRequest={viewportRequest}
+      viewportRequestKey={viewportRequestKey}
+      recenterViewport={recenterViewport}
       onViewportChange={handleViewportChange}
+      onViewportInteraction={handleManualViewportInteraction}
     />
   );
 }

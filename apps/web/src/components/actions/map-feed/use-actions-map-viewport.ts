@@ -5,6 +5,13 @@ import {
   createActionsMapViewport,
 } from "@/components/actions/actions-map-canvas.utils";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import { fetchMapActions } from "@/lib/actions/map-http";
+import {
+  resolveInitialMapViewport,
+  selectMapReferencePoint,
+  type MapReferencePoint,
+} from "./actions-map-initial-viewport";
 
 function sameViewport(left: MapViewportState | null, right: MapViewportState | null): boolean {
   if (!left || !right) {
@@ -22,28 +29,97 @@ function sameViewport(left: MapViewportState | null, right: MapViewportState | n
   );
 }
 
+function sameViewportPosition(left: MapViewportState | null, right: MapViewportState | null): boolean {
+  if (!left || !right) {
+    return false;
+  }
+
+  return (
+    Math.abs(left.center[0] - right.center[0]) < 0.00001 &&
+    Math.abs(left.center[1] - right.center[1]) < 0.00001 &&
+    left.zoom === right.zoom
+  );
+}
+
+type FallbackPayload = {
+  viewport?: MapViewportState | null;
+  reference?: MapReferencePoint | null;
+};
+
+export function shouldApplyAutomaticViewport(params: {
+  isMounted: boolean;
+  hasManualViewportChange: boolean;
+  hasAutomaticViewportApplied: boolean;
+  nextViewport: MapViewportState | null;
+}): boolean {
+  return (
+    params.isMounted &&
+    Boolean(params.nextViewport) &&
+    !params.hasManualViewportChange &&
+    !params.hasAutomaticViewportApplied
+  );
+}
+
 export function useActionsMapViewport(
   onViewportChange?: (viewport: MapViewportState) => void,
+  pollutionScoreReferences?: PollutionScoreReferences | null,
 ) {
   const [viewport, setViewport] = useState<MapViewportState | null>(
     DEFAULT_ACTIONS_MAP_VIEWPORT,
   );
+  const [viewportRequest, setViewportRequest] = useState<MapViewportState | null>(null);
+  const [viewportRequestKey, setViewportRequestKey] = useState(0);
+  const [recenterViewport, setRecenterViewport] = useState<MapViewportState>(
+    DEFAULT_ACTIONS_MAP_VIEWPORT,
+  );
   const hasReceivedInitialViewportReportRef = useRef(false);
   const hasManualViewportChangeRef = useRef(false);
-  const hasGeolocationViewportAppliedRef = useRef(false);
-  const hasFallbackViewportAppliedRef = useRef(false);
+  const hasAutomaticViewportAppliedRef = useRef(false);
   const isMountedRef = useRef(true);
   const pendingProgrammaticViewportRef = useRef<MapViewportState | null>(null);
+  const hasStartedInitialResolutionRef = useRef(false);
 
-  const loadFallbackViewport = useCallback(async (): Promise<MapViewportState | null> => {
-    if (
-      hasManualViewportChangeRef.current ||
-      hasGeolocationViewportAppliedRef.current ||
-      hasFallbackViewportAppliedRef.current
-    ) {
-      return null;
-    }
+  const applyAutomaticViewport = useCallback(
+    async (reference: MapReferencePoint, stableFallback: MapViewportState | null) => {
+      if (hasManualViewportChangeRef.current || hasAutomaticViewportAppliedRef.current) {
+        return;
+      }
 
+      let nextViewport = stableFallback;
+      try {
+        const resolution = await resolveInitialMapViewport({
+          reference,
+          pollutionScoreReferences,
+          fetchActions: fetchMapActions,
+        });
+        nextViewport = resolution.viewport;
+      } catch {
+        // Keep the strict local reference viewport when the map API is unavailable.
+      }
+
+      if (!shouldApplyAutomaticViewport({
+        isMounted: isMountedRef.current,
+        hasManualViewportChange: hasManualViewportChangeRef.current,
+        hasAutomaticViewportApplied: hasAutomaticViewportAppliedRef.current,
+        nextViewport,
+      })) {
+        return;
+      }
+      if (!nextViewport) {
+        return;
+      }
+
+      hasAutomaticViewportAppliedRef.current = true;
+      pendingProgrammaticViewportRef.current = nextViewport;
+      setRecenterViewport(nextViewport);
+      setViewportRequest(nextViewport);
+      setViewportRequestKey((current) => current + 1);
+      setViewport(nextViewport);
+    },
+    [pollutionScoreReferences],
+  );
+
+  const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
     try {
       const response = await fetch("/api/users/map-viewport-fallback", {
         headers: {
@@ -55,63 +131,67 @@ export function useActionsMapViewport(
         return null;
       }
 
-      const payload = (await response.json()) as {
-        viewport?: MapViewportState | null;
-      };
-
-      if (
-        !isMountedRef.current ||
-        !payload?.viewport ||
-        hasManualViewportChangeRef.current ||
-        hasGeolocationViewportAppliedRef.current ||
-        hasFallbackViewportAppliedRef.current
-      ) {
-        return null;
-      }
-
-      return payload.viewport;
+      return (await response.json()) as FallbackPayload;
     } catch {
-      /* Silent fallback: geolocation or the Paris default will remain available. */
       return null;
     }
   }, []);
 
-  const applyFallbackViewport = useCallback(async () => {
-    const nextViewport = await loadFallbackViewport();
-    if (
-      !isMountedRef.current ||
-      !nextViewport ||
-      hasManualViewportChangeRef.current ||
-      hasGeolocationViewportAppliedRef.current ||
-      hasFallbackViewportAppliedRef.current
-    ) {
-      return;
-    }
-
-    hasFallbackViewportAppliedRef.current = true;
-    pendingProgrammaticViewportRef.current = nextViewport;
-    setViewport(nextViewport);
-  }, [loadFallbackViewport]);
-
   const queueFallbackViewport = useCallback(() => {
     queueMicrotask(() => {
-      void applyFallbackViewport();
+      void (async () => {
+        const payload = await loadFallbackViewport();
+        if (
+          !payload ||
+          !isMountedRef.current ||
+          hasManualViewportChangeRef.current ||
+          hasAutomaticViewportAppliedRef.current
+        ) {
+          return;
+        }
+
+        if (payload.reference) {
+          const residenceReference = selectMapReferencePoint(null, payload.reference);
+          if (residenceReference) {
+            await applyAutomaticViewport(residenceReference, payload.viewport ?? null);
+          }
+          return;
+        }
+
+        if (payload.viewport) {
+          await applyAutomaticViewport(
+            {
+              latitude: payload.viewport.center[0],
+              longitude: payload.viewport.center[1],
+            },
+            payload.viewport,
+          );
+        }
+      })();
     });
-  }, [applyFallbackViewport]);
+  }, [applyAutomaticViewport, loadFallbackViewport]);
 
   useEffect(() => {
     isMountedRef.current = true;
+    if (hasStartedInitialResolutionRef.current) {
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+    hasStartedInitialResolutionRef.current = true;
+
     const cleanup = () => {
       isMountedRef.current = false;
     };
 
-    if (!canRequestGeolocation() || hasManualViewportChangeRef.current) {
-      queueFallbackViewport();
-      return cleanup;
-    }
+    const handleGeolocationFailure = () => {
+      if (!hasManualViewportChangeRef.current) {
+        queueFallbackViewport();
+      }
+    };
 
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      queueFallbackViewport();
+    if (!canRequestGeolocation() || typeof navigator === "undefined" || !navigator.geolocation) {
+      handleGeolocationFailure();
       return cleanup;
     }
 
@@ -121,20 +201,19 @@ export function useActionsMapViewport(
           return;
         }
 
-        const nextViewport = createActionsMapViewport(
-          [
-            Number(position.coords.latitude.toFixed(6)),
-            Number(position.coords.longitude.toFixed(6)),
-          ],
-          14,
-        );
-        hasGeolocationViewportAppliedRef.current = true;
-        pendingProgrammaticViewportRef.current = nextViewport;
-        setViewport(nextViewport);
+        const gpsReference = {
+          latitude: Number(position.coords.latitude.toFixed(6)),
+          longitude: Number(position.coords.longitude.toFixed(6)),
+        };
+        const reference = selectMapReferencePoint(gpsReference, null);
+        if (reference) {
+          void applyAutomaticViewport(
+            reference,
+            createActionsMapViewport([reference.latitude, reference.longitude], 12),
+          );
+        }
       },
-      () => {
-        queueFallbackViewport();
-      },
+      handleGeolocationFailure,
       {
         enableHighAccuracy: true,
         timeout: 6000,
@@ -143,11 +222,19 @@ export function useActionsMapViewport(
     );
 
     return cleanup;
-  }, [queueFallbackViewport]);
+  }, [applyAutomaticViewport, queueFallbackViewport]);
+
+  const handleManualViewportInteraction = useCallback(() => {
+    if (pendingProgrammaticViewportRef.current) {
+      return;
+    }
+    hasManualViewportChangeRef.current = true;
+    pendingProgrammaticViewportRef.current = null;
+  }, []);
 
   const handleViewportChange = useCallback(
     (nextViewport: MapViewportState) => {
-      const isProgrammaticViewport = sameViewport(
+      const isProgrammaticViewport = sameViewportPosition(
         nextViewport,
         pendingProgrammaticViewportRef.current,
       );
@@ -185,6 +272,10 @@ export function useActionsMapViewport(
 
   return {
     viewport,
+    viewportRequest,
+    viewportRequestKey,
+    recenterViewport,
+    handleManualViewportInteraction,
     handleViewportChange,
   };
 }

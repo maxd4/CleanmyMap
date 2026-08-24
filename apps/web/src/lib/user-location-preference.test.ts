@@ -4,6 +4,7 @@ import {
   createGreaterParisMetadataFromZoneName,
   extractGreaterParisLocationPreferenceFromMetadata,
   extractTerritoryLocationPreferenceFromMetadata,
+  extractResidenceLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
 } from "./user-location-preference";
 
@@ -126,7 +127,7 @@ it("extracts a complete preference from metadata", () => {
     });
   });
 
-  it("keeps arrondissement preference compatibility through the national extractor", () => {
+it("keeps arrondissement preference compatibility through the national extractor", () => {
     const result = extractGreaterParisLocationPreferenceFromMetadata({
       territoryLocationType: "work",
       territoryLabel: "Paris 11e",
@@ -141,4 +142,19 @@ it("extracts a complete preference from metadata", () => {
       arrondissementCity: "Paris",
       locationType: "work",
     });
+});
+
+it("excludes work preference from the map fallback reference", () => {
+  expect(
+    extractResidenceLocationPreferenceFromMetadata({
+      territoryLocationType: "work",
+      territoryLabel: "Lyon",
+    }),
+  ).toBeNull();
+  expect(
+    extractResidenceLocationPreferenceFromMetadata({
+      territoryLocationType: "residence",
+      territoryLabel: "Lyon",
+    })?.locationType,
+  ).toBe("residence");
 });
