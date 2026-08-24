@@ -247,7 +247,7 @@ Ce point doit être lu comme un ordre de grandeur, non comme une mesure instrume
 * Le rapport reste source canonique en `impact_IA.md`, mais le rendu PDF peut nécessiter une copie temporaire en `.qmd` si Quarto signale la présence d'éléments exécutables ou de shortcodes.
 * Toujours vérifier que le front matter YAML se termine bien par `---` avant le contenu du rapport.
 * Les séparateurs `{{< pagebreak >}}` doivent rester dans le corps du document, jamais dans le front matter.
-* La commande de rendu validée est `quarto render impact_IA.qmd --to pdf`, lancée depuis le dossier `documentation/plans/rapport_impact`.
+* La commande de rendu validée est `quarto render impact_IA.qmd --to pdf`, lancée depuis le dossier `documentation/plans-perso/rapport_impact`.
 * Après un rendu réussi, supprimer les fichiers temporaires et intermédiaires générés par Quarto (`.qmd` de travail, `.aux`, `.log`, `.tex`, `.toc`, dossiers `_files`) afin de laisser le sous-dossier propre.
 * Si le rendu échoue, inspecter d'abord les erreurs de structure du Markdown ou du YAML avant de modifier le fond du texte.
 

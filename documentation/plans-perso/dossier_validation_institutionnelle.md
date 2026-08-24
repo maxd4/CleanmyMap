@@ -2,7 +2,7 @@
 
 ## Objet
 
-Ce dossier couvre le **Message 13** de `documentation/plans/ateliers_DU.md`.
+Ce dossier couvre le **Message 13** de `documentation/plans-perso/ateliers_DU.md`.
 
 Il regroupe les pieces de preuve institutionnelles necessaires pour justifier le projet sur les plans :
 
@@ -15,7 +15,7 @@ Il regroupe les pieces de preuve institutionnelles necessaires pour justifier le
 
 ### 1. Audit d'impact IA
 
-- [impact_IA.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/rapport_impact/impact_IA.md)
+- [impact_IA.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans-perso/rapport_impact/impact_IA.md)
 
 Contient :
 
@@ -28,7 +28,7 @@ Contient :
 
 ### 2. Journal d'impact DU
 
-- [journal_impact_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/journal_impact_DU.md)
+- [journal_impact_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans-perso/journal_impact_DU.md)
 
 Contient :
 

@@ -139,7 +139,6 @@ Ne pas modifier, déplacer, supprimer, renommer ou dupliquer sans demande explic
 
 ```txt
 documentation/pepite/
-documentation/gpt-context/
 ```
 
 ---

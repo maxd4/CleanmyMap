@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(".");
@@ -41,7 +41,8 @@ function listTrackedFiles() {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .filter((path) => isSensitiveTextFile(path));
+    .filter((path) => isSensitiveTextFile(path))
+    .filter((path) => existsSync(resolve(ROOT, path)));
 }
 
 function validateUtf8Buffer(buffer, relativePath) {

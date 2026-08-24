@@ -23,11 +23,10 @@ Avant exécution :
 1. les règles globales du dépôt
 2. `documentation/security/README.md`
 3. `documentation/security/github-audit-backlog.md`
-4. `documentation/plans-perso/AUDIT_REPO_GPT56.md`
-5. `.github/workflows/ci.yml`
-6. `.github/workflows/codeql.yml`
-7. `.github/dependabot.yml`
-8. `package.json`
+4. `.github/workflows/ci.yml`
+5. `.github/workflows/codeql.yml`
+6. `.github/dependabot.yml`
+7. `package.json`
 
 Ensuite, ne lire que les fichiers nécessaires à l'item en cours.
 

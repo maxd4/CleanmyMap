@@ -9,11 +9,10 @@ Ils ne doivent pas être indexés comme documentation publique de référence.
 
 ## Lecture rapide
 
-1. `ateliers_DU.md` - backlog opérationnel actif
-2. `ateliers_DU_execution_rapide.md` - trace d'exécution du lot déjà absorbé
-3. `dossier_validation_institutionnelle.md` - dossier de validation et de cohérence
-4. `rapport_impact/impact_IA.md` - gouvernance IA, sobriété et arbitrages
-5. `journal_impact_DU.md` - narratif DU et trace d'apprentissage
+1. `ateliers_DU.md` - backlog opérationnel actif unique, également consommé par la route documentaire interne
+2. `dossier_validation_institutionnelle.md` - dossier de validation et de cohérence
+3. `rapport_impact/` - sources de référence pour l'impact IA, la sobriété et les méthodes associées
+4. `journal_impact_DU.md` - narratif DU et trace d'apprentissage
 
 L'ancien backlog global n'est plus présent dans ce dépôt. Ne pas recréer ce plan
 ni le citer comme source active : les constats courants doivent être vérifiés
@@ -24,6 +23,7 @@ dans le code, les tests et `ateliers_DU.md`.
 ## Règle d'usage
 
 - Ces fichiers peuvent être consommés par l'IA pendant la session.
+- `ateliers_DU.md` est le seul backlog actif de ce dossier ; les autres fichiers conservés sont des pièces de référence ou de preuve.
 - Ils ne doivent pas être dupliqués dans les index publics du hub.
 - Si un lot est absorbé, le plan doit être réécrit ou retiré plutôt que dupliqué ailleurs.
 - Toute modification ou ajout de code ayant un impact social ou environnemental non négligeable doit être consigné dans [journal_impact_DU.md](./journal_impact_DU.md) avec au minimum la date, une explication courte du changement et son impact bénéfique ou négatif.
