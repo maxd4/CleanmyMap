@@ -41,12 +41,43 @@ export type ActionRow = {
 };
 
 export type SpotRow = {
+  id?: string;
+  source?: "trash_spotter_spots" | "spots_legacy";
   created_at: string;
   created_by_clerk_id: string;
   latitude: number | null;
   longitude: number | null;
   status: string;
 };
+
+export function mergeSignalementSpotRows(
+  canonicalRows: SpotRow[],
+  legacyRows: SpotRow[],
+): SpotRow[] {
+  const seenIds = new Set<string>();
+  const rows = [
+    ...canonicalRows.map((row) => ({ ...row, source: "trash_spotter_spots" as const })),
+    ...legacyRows.map((row) => ({ ...row, source: "spots_legacy" as const })),
+  ].filter((row) => {
+    const id = row.id?.trim();
+    if (!id) {
+      return true;
+    }
+    if (seenIds.has(id)) {
+      return false;
+    }
+    seenIds.add(id);
+    return true;
+  });
+
+  return rows.sort((left, right) => {
+    const createdAtOrder = right.created_at.localeCompare(left.created_at);
+    if (createdAtOrder !== 0) {
+      return createdAtOrder;
+    }
+    return left.source === "trash_spotter_spots" ? -1 : 1;
+  });
+}
 
 export type ReportRow = {
   created_at: string;

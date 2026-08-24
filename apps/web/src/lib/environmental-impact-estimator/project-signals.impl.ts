@@ -11,6 +11,7 @@ import {
   countProjectPageViews,
   countTrainingPhotos,
   isWithinWindow,
+  mergeSignalementSpotRows,
   orderProjectSignalRows,
   parseDateOrNull,
   PROJECT_SIGNAL_VOLUME_NOTE,
@@ -592,7 +593,8 @@ export async function loadEnvironmentalImpactProjectSignals(
     oldestProfileCreatedAt,
     accountCreatedAt,
     actions,
-    spots,
+    canonicalSpots,
+    legacySpots,
     funnelEvents,
     progressionEvents,
     reports,
@@ -616,11 +618,19 @@ export async function loadEnvironmentalImpactProjectSignals(
     ),
     orderProjectSignalRows<SpotRow>(
       supabase
+        .from("trash_spotter_spots")
+        .select("id, created_at, created_by_clerk_id, latitude, longitude, status, spot_type")
+        .limit(PROJECT_SIGNAL_ROW_LIMIT),
+      [["created_at", false], ["id", false]],
+    ),
+    orderProjectSignalRows<SpotRow>(
+      supabase
         .from("spots")
-        .select("created_at, created_by_clerk_id, latitude, longitude, status")
+        .select("id, created_at, created_by_clerk_id, latitude, longitude, status, waste_type")
         .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [
         ["created_at", false],
+        ["id", false],
         ["created_by_clerk_id", false],
         ["latitude", false],
         ["longitude", false],
@@ -725,29 +735,20 @@ export async function loadEnvironmentalImpactProjectSignals(
     ),
   ]);
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
-
-  const error = [
-    actions.error,
-    spots.error,
-    funnelEvents.error,
-    progressionEvents.error,
-    reports.error,
-    trainingExamples.error,
-    serviceEmails.error,
-    communityEvents.error,
-    eventRsvps.error,
-    appNotifications.error,
-  ].find(Boolean);
-
+  const error = [actions.error, canonicalSpots.error, legacySpots.error, funnelEvents.error,
+    progressionEvents.error, reports.error, trainingExamples.error, serviceEmails.error,
+    communityEvents.error, eventRsvps.error, appNotifications.error].find(Boolean);
   if (error) {
     throw new Error(error?.message ?? "Impossible de charger les signaux environnementaux du projet.");
   }
-
   return buildEnvironmentalImpactProjectSignals(
     {
       profiles: [],
       actions: (actions.data ?? []) as ActionRow[],
-      spots: (spots.data ?? []) as SpotRow[],
+      spots: mergeSignalementSpotRows(
+        (canonicalSpots.data ?? []) as SpotRow[],
+        (legacySpots.data ?? []) as SpotRow[],
+      ),
       funnelEvents: (funnelEvents.data ?? []) as FunnelRow[],
       progressionEvents: (progressionEvents.data ?? []) as ProgressionRow[],
       reports: (reports.data ?? []) as ReportRow[],
