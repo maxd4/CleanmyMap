@@ -90,7 +90,7 @@
   "overrides": {
     "@babel/core": "7.29.7",
     "js-yaml": "5.2.1",
-    "postcss": "8.5.10",
+    "postcss": "8.5.23",
     "ws": "8.21.0"
   }
 }
