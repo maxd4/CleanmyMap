@@ -92,6 +92,17 @@ provenance de chaque entrée (`trash_spotter_spots` ou `spots`), la fusion et le
 tri de la file, les changements de statut et la lecture utilisée par la copie
 locale validée. Aucune suppression de table n'est incluse dans cette phase.
 
+La gamification des Clean Zones applique la même priorité :
+`trash_spotter_spots` est la source primaire et `spots` n'est qu'une
+compatibilité de lecture. L'identité de comptage est déterminée par les
+coordonnées normalisées du lieu, la provenance des lignes fusionnées est
+conservée et un lieu ne peut produire qu'un seul événement XP. Le schéma
+reconstructible de `public.spots` ne contient pas `validated_at` ni
+`cleaned_at` ; `created_at` n'est donc jamais utilisé comme preuve de
+validation. Une attribution legacy déjà enregistrée est reconnue pour
+préserver l'historique, mais aucune nouvelle attribution legacy n'est créée
+sans preuve persistée.
+
 ## Validation des entrées
 
 Toute API modifiant une donnée métier doit valider l'entrée.
