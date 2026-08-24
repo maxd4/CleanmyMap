@@ -12,24 +12,21 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
-import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import {
   getProfileLabel,
   getProfilePrimaryAction,
   getSwitchableProfiles,
   isAdminLikeProfile,
-  toProfile,
 } from "@/lib/profiles";
 import {
-  getServerDisplayMode,
   getServerLocale,
 } from "@/lib/server-preferences";
 import { getTranslation } from "@/lib/i18n/server-translation";
-import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
-import { loadUserLevelRankingSummary } from "@/lib/gamification/progression-data";
+import {
+  loadDashboardPageData,
+  type DashboardPageData,
+} from "@/lib/dashboard/page-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
@@ -42,29 +39,7 @@ export const metadata: Metadata = {
     "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
 };
 
-type ReferralDashboardSummary = Awaited<
-  ReturnType<typeof fetchCachedReferralSummary>
->;
-
-async function loadDashboardOverviewResult(
-  locale: "fr" | "en",
-): Promise<{ status: "ok"; overview: Awaited<ReturnType<typeof loadPilotageOverview>> } | { status: "error"; message: string }> {
-  try {
-    const overview = await loadPilotageOverview({
-      periodDays: 30,
-      limit: 1800,
-    });
-    return { status: "ok", overview };
-  } catch {
-    return {
-      status: "error",
-      message:
-        locale === "fr"
-          ? "Les données de Mon espace sont momentanément indisponibles."
-          : "Dashboard data is temporarily unavailable.",
-    };
-  }
-}
+type ReferralDashboardSummary = DashboardPageData["referralSummary"];
 
 function DashboardReferralCard({
   locale,
@@ -215,26 +190,17 @@ export default async function DashboardPage() {
     );
   }
 
-  const accountCompletion = await loadAccountCompletionGateState({
-    userId,
-    clerkReachable,
-  }).catch(() => null);
-
-  const [role, displayMode] = await Promise.all([
-    accountCompletion
-      ? Promise.resolve(accountCompletion.role)
-      : getCurrentUserRoleLabel().catch(() => "benevole" as const),
-    getServerDisplayMode(),
-  ]);
-  const [userLevelRanking, referralSummary] = await Promise.all([
-    loadUserLevelRankingSummary(userId),
-    fetchCachedReferralSummary(userId).catch(() => null),
-  ]);
-  const profile = accountCompletion?.currentProfile ?? toProfile(role);
+  const {
+    accountCompletion,
+    displayMode,
+    profile,
+    userLevelRanking,
+    referralSummary,
+    overviewPromise,
+  } = await loadDashboardPageData({ userId, clerkReachable, locale });
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
-  const overviewPromise = loadDashboardOverviewResult(locale);
   const pageFamily = resolvePageFamily(DASHBOARD_ROUTE);
   const isAdmin = isAdminLikeProfile(profile);
   const switchableProfiles = isAdmin

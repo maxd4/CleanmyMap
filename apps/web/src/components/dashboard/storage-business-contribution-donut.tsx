@@ -4,218 +4,19 @@ import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
-import type {
-  StorageBusinessContributionHistoryPoint,
-  StorageBusinessContributionReport,
-  StorageBusinessContributionItem,
-} from "@/lib/supabase/storage-business-contribution";
-
-const STORAGE_COLORS = [
-  "#38bdf8",
-  "#34d399",
-  "#f59e0b",
-  "#fb7185",
-  "#a78bfa",
-  "#f97316",
-  "#22c55e",
-] as const;
-
-const PRESSURE_COLORS = [
-  "#60a5fa",
-  "#22c55e",
-  "#f97316",
-  "#f43f5e",
-  "#c084fc",
-  "#14b8a6",
-  "#eab308",
-] as const;
-
-type ContributionMetricMode = "storage" | "pressure";
-
-type ContributionChartItem = {
-  key: string;
-  label: string;
-  value: number;
-  previousValue: number;
-  deltaValue: number;
-  deltaPercent: number | null;
-  sharePercent: number;
-};
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function formatSignedPercent(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) {
-    return "Base absente";
-  }
-
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${formatPercent(Math.abs(value))}%`;
-}
-
-function formatSignedNumber(value: number): string {
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${Math.abs(Math.round(value))}`;
-}
-
-function formatMonthReference(reportMonth: string | null): string {
-  if (!reportMonth) {
-    return "Base absente";
-  }
-
-  const parsed = new Date(`${reportMonth}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return reportMonth;
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(parsed);
-}
-
-function getModeLabel(mode: ContributionMetricMode): string {
-  return mode === "pressure" ? "Pression" : "Stockage";
-}
-
-function getModeDescription(mode: ContributionMetricMode): string {
-  return mode === "pressure"
-    ? "Répartition de la pression de pilotage par métier, calculée à partir du volume, de la croissance et de l'accélération."
-    : "Répartition du stockage par métier sur le mois courant, avec comparaison au mois N-1.";
-}
-
-function getModeValueLabel(mode: ContributionMetricMode, value: number): string {
-  return mode === "pressure" ? `${Math.round(value)} pts` : formatStorageBytes(value);
-}
-
-function formatSignedStorageBytes(value: number): string {
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${formatStorageBytes(Math.abs(value))}`;
-}
-
-function getModeDeltaLabel(mode: ContributionMetricMode, value: number): string {
-  return mode === "pressure" ? `${formatSignedNumber(value)} pts` : formatSignedStorageBytes(value);
-}
-
-function getModeColors(mode: ContributionMetricMode) {
-  return mode === "pressure" ? PRESSURE_COLORS : STORAGE_COLORS;
-}
-
-function getHistoryPoint(
-  item: StorageBusinessContributionItem,
-  index: number,
-): StorageBusinessContributionHistoryPoint | null {
-  return item.history[index] ?? null;
-}
-
-function computePressureValue(point: {
-  currentBytes: number;
-  currentCount: number;
-  sharePercent: number;
-  deltaPercent: number | null;
-  accelerationPercent: number | null;
-}): number {
-  const volumeScore = Math.min(14, Math.log10(point.currentBytes + 1) * 2.5);
-  const shareScore = Math.min(56, point.sharePercent * 0.58);
-  const growthScore = Math.min(18, Math.max(0, point.deltaPercent ?? 0) * 0.32);
-  const accelerationScore = Math.min(12, Math.max(0, point.accelerationPercent ?? 0) * 0.14);
-  const countScore = Math.min(8, point.currentCount * 0.45);
-
-  return Math.max(1, Math.round(volumeScore + shareScore + growthScore + accelerationScore + countScore));
-}
-
-function resolvePressurePoint(
-  item: StorageBusinessContributionItem,
-  historyPoint: StorageBusinessContributionHistoryPoint | null,
-  fallbackBytes: number,
-  fallbackCount: number,
-): {
-  currentBytes: number;
-  currentCount: number;
-  sharePercent: number;
-  deltaPercent: number | null;
-  accelerationPercent: number | null;
-} {
-  if (historyPoint) {
-    return {
-      currentBytes: historyPoint.currentBytes,
-      currentCount: historyPoint.currentCount,
-      sharePercent: historyPoint.sharePercent,
-      deltaPercent: historyPoint.deltaPercent,
-      accelerationPercent: historyPoint.accelerationPercent,
-    };
-  }
-
-  return {
-    currentBytes: fallbackBytes,
-    currentCount: fallbackCount,
-    sharePercent: item.currentSharePercent,
-    deltaPercent: item.deltaPercent,
-    accelerationPercent: item.accelerationPercent,
-  };
-}
-
-function buildStorageChartData(report: StorageBusinessContributionReport): ContributionChartItem[] {
-  const sorted = report.items
-    .slice()
-    .sort((left, right) => right.currentBytes - left.currentBytes);
-
-  return sorted.map((item) => ({
-    key: item.id,
-    label: item.label,
-    value: item.currentBytes,
-    previousValue: item.previousBytes,
-    deltaValue: item.deltaBytes,
-    deltaPercent: item.deltaPercent,
-    sharePercent: item.currentSharePercent,
-  }));
-}
-
-function buildPressureChartData(report: StorageBusinessContributionReport): ContributionChartItem[] {
-  const sorted = report.items
-    .slice()
-    .sort((left, right) => right.currentBytes - left.currentBytes);
-
-  const mapped = sorted.map((item) => {
-    const currentPoint = resolvePressurePoint(
-      item,
-      getHistoryPoint(item, 0),
-      item.currentBytes,
-      item.currentCount,
-    );
-    const previousPoint = resolvePressurePoint(
-      item,
-      getHistoryPoint(item, 1),
-      item.previousBytes,
-      item.previousCount,
-    );
-
-    const currentValue = computePressureValue(currentPoint);
-    const previousValue = computePressureValue(previousPoint);
-
-    return {
-      key: item.id,
-      label: item.label,
-      value: currentValue,
-      previousValue,
-      deltaValue: currentValue - previousValue,
-      deltaPercent: previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : null,
-      sharePercent: 0,
-    };
-  });
-
-  const totalValue = mapped.reduce((sum, item) => sum + item.value, 0);
-
-  return mapped.map((item) => ({
-    ...item,
-    sharePercent: totalValue > 0 ? (item.value / totalValue) * 100 : 0,
-  }));
-}
+import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
+import {
+  buildStorageBusinessContributionDonutViewModel,
+  formatMonthReference,
+  formatPercent,
+  formatSignedPercent,
+  getModeDeltaLabel,
+  getModeDescription,
+  getModeLabel,
+  getModeValueLabel,
+  type ContributionChartItem,
+  type ContributionMetricMode,
+} from "@/lib/dashboard/storage-business-contribution-donut-view-model";
 
 function ChartTooltip({
   active,
@@ -351,22 +152,21 @@ export function StorageBusinessContributionDonut({
 }) {
   const [mode, setMode] = useState<ContributionMetricMode>("storage");
 
-  const data = useMemo(
-    () => (mode === "pressure" ? buildPressureChartData(report) : buildStorageChartData(report)),
-    [mode, report],
-  );
+  const {
+    data,
+    currentTotalValue,
+    previousTotalValue,
+    deltaValue,
+    leadingItem,
+    leadingDelta,
+    modeColors,
+  } = useMemo(() => buildStorageBusinessContributionDonutViewModel(report, mode), [mode, report]);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(data[0]?.key ?? null);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const selectedItem =
     data.find((item) => item.key === (hoveredKey ?? selectedKey)) ?? data[0] ?? null;
-  const currentTotalValue = data.reduce((sum, item) => sum + item.value, 0);
-  const previousTotalValue = data.reduce((sum, item) => sum + item.previousValue, 0);
-  const deltaValue = currentTotalValue - previousTotalValue;
-  const leadingItem = data[0] ?? null;
-  const leadingDelta = data.slice().sort((left, right) => right.deltaValue - left.deltaValue)[0] ?? null;
-  const modeColors = getModeColors(mode);
 
   return (
     <section className={cn("rounded-3xl border border-white/5 bg-white/5 p-4", className)}>
