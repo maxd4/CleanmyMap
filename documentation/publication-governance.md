@@ -26,6 +26,8 @@ Ces fichiers ou sous-arbres ne doivent pas être exposés comme documentation pu
 - [`documentation/maintenance/vercel_deployments.txt`](./maintenance/vercel_deployments.txt)
 - [`documentation/rapport_IA/`](./rapport_IA/)
 - [`backups/actions-backup-2026-04-24T07-54-44.951Z.json`](../backups/actions-backup-2026-04-24T07-54-44.951Z.json)
+- `.codex-remote-attachments/` (captures de sessions et d'outillage)
+- `backups/` et `scratch/` (données et scripts locaux non destinés à la publication)
 - Les archives Python historiques et leurs dumps ne doivent pas être exposés comme documentation publique.
 
 ---

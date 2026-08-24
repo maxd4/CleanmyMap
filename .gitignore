@@ -18,20 +18,15 @@ htmlcov/
 playwright-report/
 test-results/
 node_modules/
-/.next/
-apps/.next/
-apps/web/.next/
+**/.next/
 **/.next-sourcemap-test/
 *.tsbuildinfo
 cache/
 tmp/
 output/
 **/artifacts/
-backups/
 **/backups/
-scratch/
 **/scratch/
-legacy/backups/
 *.log
 *.out
 *.err
@@ -41,7 +36,6 @@ app.py.conflict_backup
 .streamlit_pid.txt
 streamlit.out.log
 streamlit.err.log
-artifacts/
 data/cleanmymap.db
 data/cleanmymap.db-wal
 data/cleanmymap.db-shm
@@ -56,15 +50,15 @@ runtime/
 *secrets*
 *credentials*
 CleanmyMap-sync/
+.gitnexus/
+.codex-remote-attachments/
 documentation/pages_site/routes/04-reseau-discussions/partners-network/partnerships/
 
-.vercel
+.vercel/
 .playwright-mcp/
 apps/web/data/local-db/*.json
-/*.log
 /*.png
 /*.webp
-/*.tmp
 /*.bak
 
 # Machine-local MCP configs
