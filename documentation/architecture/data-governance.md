@@ -43,7 +43,8 @@ apps/web/src/lib/domain-language.ts
 | Entité | Table principale | Contrat |
 |---|---|---|
 | Action | `public.actions` | `ActionStatus`, `ActionListItem` et contrats actions |
-| Spot | `public.spots` | contrats spots |
+| Signalement `spot` / `clean_place` | `public.trash_spotter_spots` | `SignalementModerationSource`, contrats unifiés |
+| Spot legacy | `public.spots` | compatibilité de lecture/modération en extinction |
 | Profil | `public.profiles` | modèle Profile |
 | Mission GPS | `public.missions` | types de `companion-app/types/mission.ts` |
 | Point GPS | `public.gps_points` | types mission/location |
@@ -73,6 +74,23 @@ Toute évolution de statut doit traverser :
 - exports ;
 - tests ;
 - documentation.
+
+### Signalements et modération
+
+`public.trash_spotter_spots` est la source canonique runtime pour les nouveaux
+signalements `spot` et `clean_place`. Les créations applicatives et la file de
+modération passent par cette table et utilisent ses colonnes `spot_type`,
+`validated_at` et `cleaned_at`.
+
+`public.spots` est conservée temporairement comme source legacy explicite pour
+les anciens enregistrements encore à traiter. Elle ne doit plus recevoir de
+nouvelles écritures applicatives. Son champ `waste_type` reste propre au
+chemin legacy et ne doit pas être converti en `spot_type`.
+
+La capacité `apps/web/src/lib/admin/signalement-moderation.ts` porte la
+provenance de chaque entrée (`trash_spotter_spots` ou `spots`), la fusion et le
+tri de la file, les changements de statut et la lecture utilisée par la copie
+locale validée. Aucune suppression de table n'est incluse dans cette phase.
 
 ## Validation des entrées
 

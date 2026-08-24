@@ -11,6 +11,11 @@ export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
 export type ModerationCleanPlaceStatus = "new" | "validated" | "cleaned";
 export type ModerationVisibility = "unchanged" | "visible" | "hidden";
+export type ModerationSignalementSource = "trash_spotter_spots" | "spots";
+export type ModerationSourceTable =
+  | "actions"
+  | "submissions"
+  | ModerationSignalementSource;
 
 export type AdminActionEditPayload = {
   actorName?: string | null;
@@ -56,6 +61,7 @@ export type ModerationPayload =
       entityType: "clean_place";
       id: string;
       status: ModerationCleanPlaceStatus;
+      sourceTable?: ModerationSignalementSource;
       confirmPhrase: string;
       reason?: string;
       edits?: AdminCleanPlaceEditPayload;
@@ -65,7 +71,7 @@ export type ModerationSuccessResponse = {
   status: "ok";
   entityType: ModerationEntityType;
   id: string;
-  sourceTable?: string;
+  sourceTable?: ModerationSourceTable;
   copiedToLocalValidatedStore?: boolean;
   operationId?: string;
 };
@@ -216,12 +222,18 @@ function buildModerationSuccessResponse(
     operationId?: unknown;
   },
 ): ModerationSuccessResponse {
+  const sourceTable = value.sourceTable;
   return {
     status: "ok",
     entityType: value.entityType,
     id: value.id,
     sourceTable:
-      typeof value.sourceTable === "string" ? value.sourceTable : undefined,
+      sourceTable === "actions" ||
+      sourceTable === "submissions" ||
+      sourceTable === "trash_spotter_spots" ||
+      sourceTable === "spots"
+        ? sourceTable
+        : undefined,
     copiedToLocalValidatedStore:
       typeof value.copiedToLocalValidatedStore === "boolean"
         ? value.copiedToLocalValidatedStore
