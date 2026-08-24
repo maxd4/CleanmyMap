@@ -227,14 +227,23 @@ bonus_xp = floor(eligible_forms / 10) * 2  // un bonus par décennie
   - `notes` non nulles
   - `validated_at` ou `cleaned_at` antérieur d au moins 24h
 
-- **Source 2** : table `spots` (source alternative pour les déclarations de pollution)
+- **Source 2** : table `spots` (compatibilité legacy en extinction)
   - `status = validated` ou `cleaned`
   - `created_by_clerk_id` correspondant à l utilisateur
   - `latitude` et `longitude` non nulles
   - `notes` non nulles
-  - `validated_at` ou `cleaned_at` antérieur d au moins 24h
+  - aucune nouvelle attribution XP n est déduite de cette table : le schéma
+    reconstructible de `public.spots` ne contient ni `validated_at` ni
+    `cleaned_at`, et `created_at` ne constitue pas une preuve de validation
+  - une ligne legacy peut rester visible dans le comptage uniquement si un
+    événement `clean_zone_task` existant prouve qu elle a déjà été récompensée
 
-**Déduplication** : fusionner les résultats des deux sources en s appuyant sur une clé canonique de lieu afin d éviter tout double comptage
+**Déduplication** : fusionner les résultats des deux sources avec une identité
+canonique déterministe basée sur les coordonnées normalisées à 5 décimales
+(`coordinates:<latitude>:<longitude>`). `trash_spotter_spots` est prioritaire
+pour représenter le lieu, tandis que la provenance complète des lignes
+canonicales et legacy est conservée. Une identité ne produit qu un candidat et
+qu un événement XP, même si elle existe dans les deux tables.
 
 **Garde-fou de cooldown** :
 
@@ -248,25 +257,33 @@ bonus_xp = floor(eligible_forms / 10) * 2  // un bonus par décennie
 normalized_candidates =
   union all des lignes de trash_spotter_spots et de spots,
   après projection vers :
-  canonical_place_key, source_table, source_id, status, latitude, longitude,
-  notes, validated_at_or_cleaned_at
+  canonical_place_key, primary_source, provenance, status, latitude, longitude,
+  notes, validation_evidence
 
 eligible_candidates =
-  lignes où status IN ('validated', 'cleaned')
+  lignes canoniques où status IN ('validated', 'cleaned')
   ET latitude IS NOT NULL ET longitude IS NOT NULL
   ET notes IS NOT NULL
   ET validated_at_or_cleaned_at <= now - interval '24 hours'
+  OU lignes legacy déjà couvertes par un événement XP existant
 
 deduped_candidates =
   première ligne par canonical_place_key,
-  ordonnée d abord par validated_at_or_cleaned_at ASC,
-  puis par priorité de source si nécessaire pour départager les égalités
+  ordonnée d abord par priorité de source (`trash_spotter_spots`, puis `spots`),
+  puis par ID stable; la provenance de toutes les lignes correspondantes est
+  conservée
 
 clean_zones_count = count(distinct canonical_place_key)
 
-per_task_xp = 1 par zone éligible (via insertion dans progression_events)
+per_task_xp = 1 par zone éligible via
+  `progression_events(source_table = 'clean_zones', source_id =
+  'clean-zone:<canonical_place_key>')`
 bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 ```
+
+La compatibilité avec les anciennes clés d événement (`spots` + `spot-id:*` et
+`trash_spotter_spots` + `clean-id:*`) est conservée en lecture afin de ne pas
+réattribuer un XP historique. Aucune migration n étend la table legacy.
 
 **Direction visuelle** :
 

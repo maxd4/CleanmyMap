@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { collectEligibleCleanZoneSources } from "@/lib/gamification/clean-zones";
+import {
+  collectEligibleCleanZoneSources,
+  type CleanZoneCanonicalRow,
+  type CleanZoneLegacyRow,
+  type CleanZoneProgressionEvent,
+} from "@/lib/gamification/clean-zones";
 import { auditXpAttribution } from "@/lib/gamification/notifications";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
@@ -20,7 +25,6 @@ import {
   type GamificationExplorerSummary,
   type QuizProgressionFamily,
 } from "./families";
-import type { CleanZoneSpotRow } from "../clean-zones";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
@@ -139,40 +143,72 @@ async function loadCleanZoneSourcesForUser(
     const now = new Date();
     const cooldownCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: cleanPlaces } = await supabase
-      .from("trash_spotter_spots")
-      .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
-      .eq("user_id", userId)
-      .eq("spot_type", "clean_place")
-      .in("status", ["validated", "cleaned"])
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .not("notes", "is", null)
-      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
-      .limit(CLEAN_ZONE_SOURCE_LIMIT);
-
-    const cleanPlaceRows = toCleanZoneSpotRows(cleanPlaces);
-    const { data: spots } = await supabase
-      .from("spots")
-      .select("id, status, latitude, longitude, notes, cleaned_at, validated_at")
-      .eq("created_by_clerk_id", userId)
-      .in("status", ["validated", "cleaned"])
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .not("notes", "is", null)
-      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
-      .limit(CLEAN_ZONE_SOURCE_LIMIT);
+    const [cleanPlacesResult, spotsResult, progressionEventsResult] = await Promise.all([
+      supabase
+        .from("trash_spotter_spots")
+        .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
+        .eq("user_id", userId)
+        .eq("spot_type", "clean_place")
+        .in("status", ["validated", "cleaned"])
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .not("notes", "is", null)
+        .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
+        .limit(CLEAN_ZONE_SOURCE_LIMIT),
+      // public.spots has no validated_at/cleaned_at columns. Do not infer a
+      // validation timestamp from created_at; legacy XP is retained only via
+      // an already recorded progression event below.
+      supabase
+        .from("spots")
+        .select("id, status, latitude, longitude, notes")
+        .eq("created_by_clerk_id", userId)
+        .in("status", ["validated", "cleaned"])
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .not("notes", "is", null)
+        .limit(CLEAN_ZONE_SOURCE_LIMIT),
+      supabase
+        .from("progression_events")
+        .select("source_table, source_id")
+        .eq("user_id", userId)
+        .eq("event_type", "clean_zone_task")
+        .or("source_table.eq.clean_zones,source_table.eq.trash_spotter_spots,source_table.eq.spots"),
+    ]);
 
     return collectEligibleCleanZoneSources({
-      cleanPlaces: cleanPlaceRows,
-      otherSpots: toCleanZoneSpotRows(spots),
+      cleanPlaces: toCanonicalCleanZoneRows(cleanPlacesResult.data),
+      otherSpots: toLegacyCleanZoneRows(spotsResult.data),
+      progressionEvents: toCleanZoneProgressionEvents(progressionEventsResult.data),
       now,
     });
   });
 }
 
-function toCleanZoneSpotRows(rows: unknown): CleanZoneSpotRow[] {
-  return Array.isArray(rows) ? (rows as CleanZoneSpotRow[]) : [];
+function toCanonicalCleanZoneRows(rows: unknown): CleanZoneCanonicalRow[] {
+  return Array.isArray(rows) ? (rows as CleanZoneCanonicalRow[]) : [];
+}
+
+function toLegacyCleanZoneRows(rows: unknown): CleanZoneLegacyRow[] {
+  return Array.isArray(rows) ? (rows as CleanZoneLegacyRow[]) : [];
+}
+
+function toCleanZoneProgressionEvents(rows: unknown): CleanZoneProgressionEvent[] {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows.filter(
+    (row): row is { source_table: string; source_id: string } =>
+      Boolean(
+        row &&
+          typeof row === "object" &&
+          typeof (row as { source_table?: unknown }).source_table === "string" &&
+          typeof (row as { source_id?: unknown }).source_id === "string",
+      ),
+  ).map((row) => ({
+    sourceTable: row.source_table,
+    sourceId: row.source_id,
+  }));
 }
 
 function appendBadges(
@@ -188,25 +224,31 @@ async function awardCleanZoneSourceProgressionEvents(
   cleanZoneSources: ReturnType<typeof collectEligibleCleanZoneSources>,
 ): Promise<void> {
   for (const source of cleanZoneSources) {
+    if (source.progressionEventRecorded) {
+      continue;
+    }
+
     await awardProgressionEventIfMissing(supabase, {
       userId,
-      sourceTable: source.sourceTable,
-      sourceId: source.sourceId,
+      sourceTable: source.progressionSourceTable,
+      sourceId: source.progressionSourceId,
       eventType: "clean_zone_task",
       statusPhase: "validated",
       xp: 1,
       metadata: {
-        origin: source.key.startsWith("clean:") ? "clean" : "spot",
-        spot_id: source.sourceId.replace(/^[^-]+-id:/, ""),
+        origin: source.sourceTable === "trash_spotter_spots" ? "canonical" : "legacy",
+        canonical_place_key: source.canonicalPlaceKey,
+        spot_id: source.sourceId,
+        provenance: source.provenance,
       },
-      auditLabel: `Clean zone task ${source.sourceId} awarded`,
+      auditLabel: `Clean zone task ${source.key} awarded`,
       notifyPayload: {
         type: "clean_zone_task_awarded",
         userId,
-        sourceTable: source.sourceTable,
-        sourceId: source.sourceId,
+        sourceTable: source.progressionSourceTable,
+        sourceId: source.progressionSourceId,
         xp: 1,
-        dedupeKey: `clean_zone_task_awarded:${source.sourceTable}:${source.sourceId}`,
+        dedupeKey: `clean_zone_task_awarded:${source.progressionSourceTable}:${source.progressionSourceId}`,
       },
     });
   }
