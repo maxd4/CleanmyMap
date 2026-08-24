@@ -5,6 +5,7 @@ import {
   loadEnvironmentalImpactProjectSignals,
   PROJECT_SIGNAL_ROW_LIMIT,
 } from "./project-signals";
+import { mergeSignalementSpotRows } from "./project-signals.calculations";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {
@@ -321,6 +322,72 @@ it("loads project signals with deterministic ordering under the cap", async () =
     ]);
 });
 
+it("counts canonical signalements, keeps legacy history and removes mirrored duplicates", () => {
+  const canonicalRows = [
+    {
+      id: "shared-signalement",
+      created_at: "2026-05-10T12:00:00Z",
+      created_by_clerk_id: "user-1",
+      latitude: 48.85,
+      longitude: 2.35,
+      status: "validated",
+    },
+    {
+      id: "canonical-only",
+      created_at: "2026-05-09T12:00:00Z",
+      created_by_clerk_id: "user-1",
+      latitude: 48.86,
+      longitude: 2.36,
+      status: "cleaned",
+    },
+  ];
+  const legacyRows = [
+    {
+      id: "shared-signalement",
+      created_at: "2026-05-08T12:00:00Z",
+      created_by_clerk_id: "user-1",
+      latitude: 48.85,
+      longitude: 2.35,
+      status: "validated",
+    },
+    {
+      id: "legacy-only",
+      created_at: "2026-05-07T12:00:00Z",
+      created_by_clerk_id: "user-1",
+      latitude: 48.87,
+      longitude: 2.37,
+      status: "validated",
+    },
+  ];
+  const spots = mergeSignalementSpotRows(canonicalRows, legacyRows);
+
+  expect(spots.map((row) => [row.id, row.source])).toEqual([
+    ["shared-signalement", "trash_spotter_spots"],
+    ["canonical-only", "trash_spotter_spots"],
+    ["legacy-only", "spots_legacy"],
+  ]);
+
+  const signals = buildEnvironmentalImpactProjectSignals(
+    {
+      profiles: [],
+      actions: [],
+      spots,
+      funnelEvents: [],
+      progressionEvents: [],
+      reports: [],
+      trainingExamples: [],
+      serviceEmails: [],
+      communityEvents: [],
+      eventRsvps: [],
+      appNotifications: [],
+    },
+    { generatedAt: "2026-05-20T12:00:00.000Z", userId: null },
+  );
+
+  expect(signals.siteInput.apiRequests).toBe(3);
+  expect(signals.siteInput.maps).toBe(3);
+});
+
 it("uses GitHub Actions runs as a direct monthly deployment source when available", () => {
   const now = new Date();
   const rows = {
@@ -454,9 +521,21 @@ function createProjectSignalsLoadSupabaseMock(orderingsByTable: Map<string, Arra
                 status: "approved",
               },
             ]);
+          case "trash_spotter_spots":
+            return createProjectSignalsQueryChain(orderingsByTable, table, [
+              {
+                id: "canonical-load",
+                created_at: "2026-05-06T12:00:00Z",
+                created_by_clerk_id: "user-1",
+                latitude: 48.85,
+                longitude: 2.35,
+                status: "validated",
+              },
+            ]);
           case "spots":
             return createProjectSignalsQueryChain(orderingsByTable, table, [
               {
+                id: "legacy-load",
                 created_at: "2026-05-04T12:00:00Z",
                 created_by_clerk_id: "user-2",
                 latitude: 48.85,
