@@ -77,11 +77,13 @@ vi.mock("@/components/reports/reports-impact-readings-section", () => ({
 }));
 
 vi.mock("@/components/ui/navigation-grid", () => ({
-  NavigationGrid: ({ items }: { items: Array<{ href: string }> }) =>
+  NavigationGrid: ({ items }: { items: Array<{ href: string; icon: string }> }) =>
     React.createElement(
       "nav",
       { "data-testid": "reports-navigation" },
-      items.map((item) => React.createElement("a", { key: item.href, href: item.href }, item.href)),
+      items.map((item) =>
+        React.createElement("a", { key: item.href, href: item.href, "data-icon": item.icon }, item.href),
+      ),
     ),
 }));
 
@@ -256,6 +258,10 @@ describe("/reports page contract", () => {
     expect(markup).toContain("Repère émissions évitées");
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
+    expect(markup).toContain('data-icon="BarChart3"');
+    expect(markup).toContain('data-icon="Info"');
+    expect(markup).toContain('data-icon="Layers"');
+    expect(markup).toContain('data-icon="DownloadCloud"');
   });
 
   it("keeps the generation tab permission-gated for a non-admin profile", async () => {

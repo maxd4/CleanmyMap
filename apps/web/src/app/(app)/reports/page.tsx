@@ -1,10 +1,4 @@
 import type { Metadata } from "next";
-import {
-  BarChart3,
-  DownloadCloud,
-  Info,
-  Layers,
-} from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
@@ -356,7 +350,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const summaryKpis = buildReportsSummaryKpis(overview);
   const navigationItems: NavigationGridItem[] = [
     {
-      icon: BarChart3,
+      icon: "BarChart3",
       title: "Comparaisons",
       desc: "Comparer 30j / 90j / 12m.",
       iconBg: "bg-red-500/20",
@@ -367,7 +361,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       href: "#comparisons",
     },
     {
-      icon: Info,
+      icon: "Info",
       title: "Méthode KPI",
       desc: "Lire la méthode et les sources.",
       iconBg: "bg-cyan-500/20",
@@ -378,7 +372,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       href: "#method",
     },
     {
-      icon: Layers,
+      icon: "Layers",
       title: "Vue mensuelle",
       desc: "Consulter les agrégats et les tendances.",
       iconBg: "bg-red-500/20",
@@ -389,7 +383,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       href: "#cockpit",
     },
     {
-      icon: DownloadCloud,
+      icon: "DownloadCloud",
       title: "Exports",
       desc: "Exporter PDF, Excel et synthèse.",
       iconBg: "bg-cyan-500/20",
