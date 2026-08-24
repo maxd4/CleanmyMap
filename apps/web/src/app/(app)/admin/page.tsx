@@ -25,6 +25,10 @@ import { runActionQuery } from "@/lib/actions/query";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
 import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
 import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
+import {
+  listModeratableSignalements,
+  type ModeratableSignalement,
+} from "@/lib/admin/signalement-moderation";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import type { PublishedPartnerAnnuaireEntry } from "@/lib/partners/published-annuaire-entries-store";
 import {
@@ -56,13 +60,7 @@ type PendingActionModerationRow = {
   duration_minutes: number;
 };
 
-type PendingSpotModerationRow = {
-  id: string;
-  created_at: string;
-  label: string;
-  status: "new" | "validated" | "cleaned";
-  waste_type: "clean_place" | "spot";
-};
+type PendingSpotModerationRow = ModeratableSignalement;
 
 async function loadAdminOverview() {
   return loadPilotageOverview({
@@ -102,23 +100,13 @@ async function loadModerationQueues() {
         .from("actions")
         .select("id", { count: "exact", head: true })
         .eq("status", "pending"),
-      supabase
-        .from("spots")
-        .select("id, created_at, label, status, waste_type", {
-          count: "exact",
-        })
-        .eq("status", "new")
-        .order("created_at", { ascending: false })
-        .limit(6),
+      listModeratableSignalements(supabase, { status: "new", limit: 6 }),
       supabase
         .from("action_participants")
         .select("id", { count: "exact", head: true })
         .eq("participation_status", "pending"),
     ]);
 
-  if (pendingSpots.error) {
-    throw new Error(pendingSpots.error.message);
-  }
   if (pendingActionsCount.error) {
     throw new Error(pendingActionsCount.error.message);
   }
@@ -129,8 +117,8 @@ async function loadModerationQueues() {
   return {
     pendingActions,
     pendingActionsCount: Number(pendingActionsCount.count ?? 0),
-    pendingSpots: (pendingSpots.data ?? []) as PendingSpotModerationRow[],
-    pendingSpotsCount: Number(pendingSpots.count ?? 0),
+    pendingSpots: pendingSpots.items as PendingSpotModerationRow[],
+    pendingSpotsCount: pendingSpots.count,
     pendingGroupJoinRequestsCount: Number(pendingGroupJoinRequests.count ?? 0),
   };
 }
@@ -235,7 +223,7 @@ function buildModerationBlockSummaries(params: {
       samples: [
         ...params.pendingSpots.slice(0, 3).map((spot) => ({
           label: spot.label,
-          meta: `${spot.waste_type === "spot" ? "Spot" : "Lieu propre"} · ${formatModerationDate(spot.created_at)}`,
+          meta: `${(spot.sourceTable === "spots" ? spot.waste_type : spot.spot_type) === "spot" ? "Spot" : "Lieu propre"} · ${spot.sourceTable} · ${formatModerationDate(spot.created_at)}`,
         })),
         ...(params.pendingSpots.length === 0
           ? [

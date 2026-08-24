@@ -8,7 +8,10 @@ const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
 const syncUserActionProgressionMock = vi.hoisted(() => vi.fn());
 const invalidatePublicSurfaceSnapshotsByRouteMock = vi.hoisted(() => vi.fn());
 const copyValidatedActionToLocalStoreMock = vi.hoisted(() => vi.fn());
+const copyValidatedSpotToLocalStoreMock = vi.hoisted(() => vi.fn());
+const moderateSignalementMock = vi.hoisted(() => vi.fn());
 const emitActionValidatedMock = vi.hoisted(() => vi.fn());
+const emitSpotValidatedMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -25,13 +28,17 @@ vi.mock("@/lib/admin/operation-audit", () => ({
 
 vi.mock("@/lib/data/local-sync", () => ({
   copyValidatedActionToLocalStore: copyValidatedActionToLocalStoreMock,
-  copyValidatedSpotToLocalStore: vi.fn(),
+  copyValidatedSpotToLocalStore: copyValidatedSpotToLocalStoreMock,
+}));
+
+vi.mock("@/lib/admin/signalement-moderation", () => ({
+  moderateSignalement: moderateSignalementMock,
 }));
 
 vi.mock("@/lib/events/emit", () => ({
   emitActionRejected: vi.fn(),
   emitActionValidated: emitActionValidatedMock,
-  emitSpotValidated: vi.fn(),
+  emitSpotValidated: emitSpotValidatedMock,
 }));
 
 vi.mock("@/lib/actions/organizers", () => ({
@@ -62,6 +69,15 @@ describe("POST /api/admin/moderation", () => {
     copyValidatedActionToLocalStoreMock.mockResolvedValue({
       source: "actions",
       copied: true,
+    });
+    copyValidatedSpotToLocalStoreMock.mockResolvedValue(true);
+    moderateSignalementMock.mockResolvedValue({
+      found: true,
+      sourceTable: "trash_spotter_spots",
+      signalement: {
+        id: "spot-1",
+        created_by_clerk_id: "creator-1",
+      },
     });
   });
 
@@ -224,6 +240,53 @@ describe("POST /api/admin/moderation", () => {
       "api/actions",
       "api/actions/map",
     ]);
+  });
+
+  it("moderates a canonical signalement and returns its source", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          sourceTable: "trash_spotter_spots",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+          edits: { wasteType: "legacy-value", label: "Zone validée" },
+        }),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      status?: string;
+      sourceTable?: string;
+      copiedToLocalValidatedStore?: boolean;
+    };
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: "ok",
+      sourceTable: "trash_spotter_spots",
+      copiedToLocalValidatedStore: true,
+    });
+    expect(moderateSignalementMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        id: "spot-1",
+        preferredSource: "trash_spotter_spots",
+      }),
+    );
+    expect(copyValidatedSpotToLocalStoreMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "spot-1",
+      "admin-1",
+      "trash_spotter_spots",
+    );
+    expect(emitSpotValidatedMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "creator-1" }),
+    );
   });
 
   it("rejects sensitive action moderation without a valid reason", async () => {
@@ -517,27 +580,9 @@ describe("POST /api/admin/moderation", () => {
   });
 
   it("returns a sanitized error when the underlying database update fails", async () => {
-    const updateMock = vi.fn(() => ({
-      eq: vi.fn(() => ({
-        select: vi.fn(() => ({
-          maybeSingle: vi.fn().mockResolvedValue({
-            data: null,
-            error: {
-              message: 'syntax error at or near "spots"',
-            },
-          }),
-        })),
-      })),
-    }));
-    const fromMock = vi.fn((table: string) => {
-      if (table !== "spots") {
-        throw new Error(`Unexpected table ${table}`);
-      }
-      return {
-        update: updateMock,
-      };
-    });
-    getSupabaseAdminClientMock.mockReturnValue({ from: fromMock });
+    moderateSignalementMock.mockRejectedValueOnce(
+      new Error('syntax error at or near "trash_spotter_spots"'),
+    );
 
     const { POST } = await import("./route");
     const response = await POST(

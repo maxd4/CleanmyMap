@@ -78,6 +78,8 @@ export const cleanPlaceEditsSchema = z
   })
   .optional();
 
+export type AdminCleanPlaceEdits = z.infer<typeof cleanPlaceEditsSchema>;
+
 type ExistingActionRow = {
   action_date: string;
   location_label: string;

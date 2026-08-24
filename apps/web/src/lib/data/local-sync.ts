@@ -12,6 +12,10 @@ import {
   extractActionMetadataFromNotes,
 } from "@/lib/actions/metadata";
 import { runSingleActionQuery } from "@/lib/actions/query";
+import {
+  readSignalementForModeration,
+  type SignalementModerationSource,
+} from "@/lib/admin/signalement-moderation";
 
 type ActionRow = {
   id: string;
@@ -44,16 +48,6 @@ type LegacySubmissionRow = {
   commentaire: string | null;
   status: string | null;
   est_propre: boolean | null;
-};
-
-type SpotRow = {
-  id: string;
-  created_at: string;
-  label: string;
-  latitude: number | null;
-  longitude: number | null;
-  notes: string | null;
-  status: string;
 };
 
 function toDisplayableMap(latitude: number | null, longitude: number | null) {
@@ -157,11 +151,14 @@ function fromLegacySubmissionRow(
   };
 }
 
-function fromSpotRow(
-  row: SpotRow,
+function fromModeratedSignalement(
+  row: Awaited<ReturnType<typeof readSignalementForModeration>>,
   source: LocalRecordSource,
   validatedBy: string,
 ): LocalDataRecord {
+  if (!row) {
+    throw new Error("Signalement not found");
+  }
   return {
     id: `validated-spot-${row.id}`,
     recordType: "clean_place",
@@ -178,10 +175,10 @@ function fromSpotRow(
     map: toDisplayableMap(row.latitude, row.longitude),
     trace: {
       externalId: row.id,
-      originTable: "spots",
+      originTable: row.sourceTable,
       validatedBy,
-      validatedAt: new Date().toISOString(),
-      notes: null,
+      validatedAt: row.validated_at ?? new Date().toISOString(),
+      notes: row.sourceTable === "spots" ? row.waste_type : row.spot_type,
     },
   };
 }
@@ -233,17 +230,18 @@ export async function copyValidatedSpotToLocalStore(
   supabase: SupabaseClient,
   spotId: string,
   validatedBy: string,
+  preferredSource?: SignalementModerationSource,
 ): Promise<boolean> {
-  const row = await supabase
-    .from("spots")
-    .select("id, created_at, label, latitude, longitude, notes, status")
-    .eq("id", spotId)
-    .maybeSingle();
-  if (row.error || !row.data) {
+  const row = await readSignalementForModeration(
+    supabase,
+    spotId,
+    preferredSource,
+  );
+  if (!row) {
     return false;
   }
   await upsertLocalRecords(LOCAL_DB_FILES.validated, [
-    fromSpotRow(row.data as SpotRow, "admin_validation", validatedBy),
+    fromModeratedSignalement(row, "admin_validation", validatedBy),
   ]);
   return true;
 }

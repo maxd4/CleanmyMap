@@ -4,7 +4,6 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from"@/lib/supabase/s
 import {
  actionEditsSchema,
  buildAdminActionUpdates,
- buildAdminCleanPlaceUpdates,
  cleanPlaceEditsSchema,
 } from"@/lib/admin/action-moderation-edits";
 import { extractActionMetadataFromNotes } from"@/lib/actions/metadata";
@@ -30,6 +29,10 @@ import {
  syncUserActionProgression,
 } from"@/lib/gamification/progression-tracking";
 import { invalidatePublicSurfaceSnapshotsByRoute } from"@/lib/public-surface-snapshots";
+import {
+ moderateSignalement,
+ type SignalementModerationSource,
+} from"@/lib/admin/signalement-moderation";
 
 export const runtime ="nodejs";
 const MODERATION_CONFIRM_PHRASE ="CONFIRMER MODERATION";
@@ -48,6 +51,7 @@ const cleanPlacePayloadSchema = z.object({
  entityType: z.literal("clean_place"),
  id: z.string().trim().min(1),
  status: z.enum(["new","validated","cleaned"]),
+ sourceTable: z.enum(["trash_spotter_spots","spots"]).optional(),
  confirmPhrase: z.string().trim().max(120).optional(),
  reason: z.string().trim().max(500).optional(),
  edits: cleanPlaceEditsSchema,
@@ -311,29 +315,6 @@ async function updateActionStatus(
  return { source:"submissions", found: Boolean(legacy.data) };
 }
 
-async function updateSpotStatus(
- supabase: ReturnType<typeof getSupabaseServerClient>,
- id: string,
- status:"new" |"validated" |"cleaned",
- edits?: z.infer<typeof cleanPlaceEditsSchema>,
-): Promise<boolean> {
- const updated = await supabase
- .from("spots")
- .update(buildAdminCleanPlaceUpdates(status, edits))
- .eq("id", id)
- .select("id")
- .maybeSingle();
- if (updated.error) {
-  console.error("[Admin Moderation] Spot update failed", {
-   id,
-   status,
-   message: updated.error.message,
-  });
-  throw new Error("Database update failed");
- }
- return Boolean(updated.data);
-}
-
 export async function POST(request: Request) {
  const operationId = newOperationId();
  const access = await requireAdminAccess();
@@ -585,13 +566,13 @@ let copied = false;
  });
  }
 
- const updated = await updateSpotStatus(
- supabase,
- parsed.data.id,
- parsed.data.status,
- parsed.data.edits,
- );
- if (!updated) {
+ const signalementUpdate = await moderateSignalement(supabase, {
+  id: parsed.data.id,
+  status: parsed.data.status,
+  edits: parsed.data.edits,
+  preferredSource: parsed.data.sourceTable as SignalementModerationSource | undefined,
+ });
+ if (!signalementUpdate.found || !signalementUpdate.signalement) {
  await appendAdminOperationAudit({
  operationId,
  at: new Date().toISOString(),
@@ -620,20 +601,20 @@ let copied = false;
       supabase,
       parsed.data.id,
       access.userId,
+      signalementUpdate.sourceTable ?? undefined,
     );
-
-    const { data: spotDetails } = await supabase
-      .from("spots")
-      .select("created_by_clerk_id")
-      .eq("id", parsed.data.id)
-      .single();
 
     emitSpotValidated({
       spotId: parsed.data.id,
-      userId: spotDetails?.created_by_clerk_id || "",
+      userId: signalementUpdate.signalement.created_by_clerk_id || "",
       moderatorId: access.userId,
 });
   }
+
+  await invalidatePublicSurfaceSnapshotsByRoute([
+    "api/actions",
+    "api/actions/map",
+  ]);
 
   await appendAdminOperationAudit({
  operationId,
@@ -646,7 +627,7 @@ let copied = false;
  entityType: parsed.data.entityType,
  targetStatus: parsed.data.status,
  ...(reason ? { reason } : {}),
- sourceTable:"spots",
+ sourceTable: signalementUpdate.sourceTable,
  copiedToLocalValidatedStore: copied,
  editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
  },
@@ -658,7 +639,7 @@ let copied = false;
  status:"ok",
  entityType:"clean_place",
  id: parsed.data.id,
- sourceTable:"spots",
+ sourceTable: signalementUpdate.sourceTable,
  copiedToLocalValidatedStore: copied,
  },
  });
