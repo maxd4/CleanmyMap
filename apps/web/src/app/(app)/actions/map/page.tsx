@@ -11,7 +11,6 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
@@ -156,13 +155,21 @@ function ActionsMapPageContent() {
           wasteKg: stats.wasteKg,
           butts: stats.butts,
           volunteers: stats.volunteers,
-          co2AvoidedKg: stats.wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
-          waterSavedLiters: Math.round(stats.butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt),
-          euroSaved: Math.round(stats.wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg),
+          co2AvoidedKg: stats.co2AvoidedKg,
+          waterSavedLiters: stats.waterSavedLiters,
+          euroSaved: stats.euroSaved,
         },
         visibleCount > 0,
       ),
-    [stats.butts, stats.volunteers, stats.wasteKg, visibleCount],
+    [
+      stats.butts,
+      stats.co2AvoidedKg,
+      stats.euroSaved,
+      stats.volunteers,
+      stats.wasteKg,
+      stats.waterSavedLiters,
+      visibleCount,
+    ],
   );
 
   const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";

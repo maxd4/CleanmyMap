@@ -12,7 +12,7 @@ import {
   isVisibleWithCategoryFilter,
   type MarkerCategory,
 } from "@/components/actions/map-marker-categories";
-import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
+import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { formatMapFreshnessLabel } from "../actions-map-freshness.utils";
 import {
   matchesZoneQuery,
@@ -128,12 +128,20 @@ export function useMapFeedData({
   );
 
   const summary = useMemo(() => {
-    const totalKg = items.reduce((acc, item) => acc + (mapItemWasteKg(item) ?? 0), 0);
-    const totalButts = items.reduce(
-      (acc, item) => acc + (mapItemCigaretteButts(item) ?? 0),
-      0,
+    const totals = sumActionImpactKpis(
+      items.map(
+        (item) =>
+          item.contract ?? {
+            metadata: {
+              wasteKg: item.waste_kg,
+              cigaretteButts: item.cigarette_butts,
+              volunteersCount: item.volunteers_count,
+              wasteBreakdown: item.waste_breakdown,
+            },
+          },
+      ),
     );
-    return { totalKg, totalButts };
+    return { totalKg: totals.wasteKg, totalButts: totals.butts };
   }, [items]);
 
   const failedSources = data?.sourceHealth?.failedSources ?? [];

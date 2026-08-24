@@ -1,7 +1,6 @@
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import { estimateActionWasteKg } from "@/lib/actions/impact-calculators";
+import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 export type HomeCommunityActivityItem = {
   id: string;
@@ -203,34 +202,9 @@ export function computeLandingCounters(
   floorDate: string,
 ) {
   const inWindow = getAccueilVisibleContracts(contracts, floorDate);
-
-  const wasteKg = inWindow.reduce(
-    (acc, contract) => acc + estimateActionWasteKg(contract),
-    0,
-  );
-  const butts = inWindow.reduce(
-    (acc, contract) => acc + Number(contract.metadata.cigaretteButts || 0),
-    0,
-  );
-  const volunteers = inWindow.reduce(
-    (acc, contract) => acc + Number(contract.metadata.volunteersCount || 0),
-    0,
-  );
-
-  const co2AvoidedKg = wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg;
-  const waterSavedLiters = Math.round(
-    butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
-  );
-  const euroSaved = Math.round(
-    wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg,
-  );
+  const impact = sumActionImpactKpis(inWindow);
 
   return {
-    wasteKg,
-    butts,
-    volunteers,
-    co2AvoidedKg,
-    waterSavedLiters,
-    euroSaved,
+    ...impact,
   };
 }
