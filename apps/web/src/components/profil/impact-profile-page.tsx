@@ -7,7 +7,6 @@ import confetti from "canvas-confetti";
 import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { ImpactCard } from "@/components/profil/impact-card";
-import { EnvironmentalImpactEstimatorPanel } from "@/components/environmental-impact-estimator/environmental-impact-estimator-panel";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
@@ -15,11 +14,6 @@ import {
   fetchCurrentAccountIdentity,
   type CurrentAccountIdentity,
 } from "@/lib/account/current-account-identity";
-import {
-  computeEnvironmentalImpactEstimate,
-} from "@/lib/environmental-impact-estimator/service";
-import { ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS } from "@/lib/environmental-impact-estimator/constants";
-import type { EnvironmentalImpactDashboardResponse } from "@/lib/environmental-impact-estimator/types";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { logFailure } from "@/lib/logging/failure-log";
 
@@ -53,15 +47,6 @@ export default function ImpactProfilePage() {
   const [currentAccountIdentity, setCurrentAccountIdentity] =
     useState<CurrentAccountIdentity | null>(null);
   const classes = getBlockClasses("impact");
-  const impactKey = currentAccountIdentity?.userId
-    ? ["environmental-impact-dashboard", currentAccountIdentity.userId]
-    : null;
-  const { data: impactData } = useSWR<EnvironmentalImpactDashboardResponse>(
-    impactKey,
-    () => fetchJson<EnvironmentalImpactDashboardResponse>("/api/environmental-impact"),
-  );
-  const environmentalImpactModel =
-    impactData?.model ?? computeEnvironmentalImpactEstimate();
 
   const { data: meData, isLoading } = useSWR<GamificationMeResponse>(
     "gamification-me",
@@ -280,93 +265,26 @@ export default function ImpactProfilePage() {
           </div>
 
           <section className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
-                  Ancrages CleanMyMap
-                </p>
-                <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
-                  Ordres de grandeur projet à utiliser comme base de lecture
-                </h3>
-              </div>
-              <p className="text-xs leading-relaxed text-slate-600">
-                Ces valeurs servent à ancrer le calcul du rapport et les comparaisons
-                entre développement, assistance IA et usage annuel bénévole.
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
+                Impact collectif
+              </p>
+              <h3 className="text-lg font-black tracking-tight text-slate-950">
+                Les comparaisons globales restent dans les rapports
+              </h3>
+              <p className="text-sm leading-relaxed text-slate-600">
+                Cette page reste centrée sur votre progression, vos badges et vos actions validées.
+                Les indicateurs territoriaux, les méthodes et les exports collectifs sont regroupés
+                dans la surface de rapports.
               </p>
             </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              {ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS.map((anchor) => (
-                <article
-                  key={anchor.key}
-                  className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
-                        {anchor.label}
-                      </p>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                        {anchor.description}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-red-500/15 bg-red-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
-                      Ancre projet
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                        Énergie
-                      </p>
-                      <p className="mt-2 text-xl font-black text-slate-950">
-                        {anchor.kWhEquivalent === null
-                          ? "—"
-                          : `${new Intl.NumberFormat("fr-FR", {
-                              maximumFractionDigits: 0,
-                            }).format(anchor.kWhEquivalent)} kWh`}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                        CO2e
-                      </p>
-                      <p className="mt-2 text-xl font-black text-slate-950">
-                        {anchor.kgCo2eProxy === null
-                          ? "—"
-                          : `${new Intl.NumberFormat("fr-FR", {
-                              maximumFractionDigits: 1,
-                            }).format(anchor.kgCo2eProxy)} kg`}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                        Eau
-                      </p>
-                      <p className="mt-2 text-xl font-black text-slate-950">
-                        {anchor.waterLitersEquivalent === null
-                          ? "—"
-                          : `${new Intl.NumberFormat("fr-FR", {
-                              maximumFractionDigits: 0,
-                            }).format(anchor.waterLitersEquivalent)} L`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="mt-4 text-xs leading-relaxed text-slate-600">
-                    {anchor.comparisonNote}
-                  </p>
-                </article>
-              ))}
-            </div>
+            <Link
+              href="/reports"
+              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-600 transition-colors hover:text-red-500"
+            >
+              Consulter les rapports collectifs <span className="text-lg">→</span>
+            </Link>
           </section>
-
-          <EnvironmentalImpactEstimatorPanel
-            model={environmentalImpactModel}
-            signals={impactData?.signals ?? null}
-            snapshots={impactData?.snapshots ?? []}
-          />
         </div>
       </div>
     </div>

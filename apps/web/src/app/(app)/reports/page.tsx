@@ -29,7 +29,7 @@ import {
   buildEmptyReportsModel,
   buildReportsSummaryKpis,
   loadReportsGenerationData,
-  loadReportsPilotageData,
+  loadReportsAnalysisData,
   toReportsExportRow,
   type ReportsSummaryKpi,
 } from "@/lib/reports/page-data";
@@ -38,13 +38,13 @@ import type { ProfileAction } from "@/lib/profiles";
 import type { MethodDefinition } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 
-type ReportsPageTabId = "generation" | "pilotage";
+type ReportsPageTabId = "generation" | "analysis";
 
 type ReportsPageProps = {
   searchParams: Promise<{ tab?: string }>;
 };
 
-type ReportsPilotageContentParams = {
+type ReportsAnalysisContentParams = {
   locale: Locale;
   roleLabel: string;
   primaryAction: ProfileAction;
@@ -53,7 +53,7 @@ type ReportsPilotageContentParams = {
   navigationItems: NavigationGridItem[];
   overview: { methods: MethodDefinition[] } | null;
   report: ReportModel;
-  monthlyData: Awaited<ReturnType<typeof loadReportsPilotageData>>["monthlyData"];
+  monthlyData: Awaited<ReturnType<typeof loadReportsAnalysisData>>["monthlyData"];
   canAccessExports: boolean;
   exportRows: Record<string, unknown>[] | null;
 };
@@ -62,14 +62,18 @@ function resolveReportsTab(
   requestedTab: string | undefined,
   canAccessDetailedReports: boolean,
 ): ReportsPageTabId {
-  if (requestedTab === "generation" || requestedTab === "pilotage") {
-    return requestedTab;
+  if (requestedTab === "generation") {
+    return "generation";
   }
 
-  return canAccessDetailedReports ? "generation" : "pilotage";
+  if (requestedTab === "analysis" || requestedTab === "pilotage") {
+    return "analysis";
+  }
+
+  return canAccessDetailedReports ? "generation" : "analysis";
 }
 
-function buildReportsPilotageContent({
+function buildReportsAnalysisContent({
   locale,
   roleLabel,
   primaryAction,
@@ -81,7 +85,7 @@ function buildReportsPilotageContent({
   monthlyData,
   canAccessExports,
   exportRows,
-}: ReportsPilotageContentParams) {
+}: ReportsAnalysisContentParams) {
   return (
     <div className="space-y-8">
       <PageReadingTemplate
@@ -202,7 +206,7 @@ function buildReportsPilotageContent({
           {canAccessExports ? (
             <CTAGroup>
               <RubriqueExcelExportButton
-                rubriqueTitle="Reporting et pilotage"
+                rubriqueTitle="Rapport d'impact"
                 data={exportRows ?? undefined}
               />
             </CTAGroup>
@@ -344,10 +348,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     );
   }
 
-  const pilotageData = await loadReportsPilotageData().catch(() => null);
-  const overview = pilotageData?.overview ?? null;
-  const report = pilotageData?.report ?? buildEmptyReportsModel();
-  const monthlyData = pilotageData?.monthlyData ?? [];
+  const analysisData = await loadReportsAnalysisData().catch(() => null);
+  const overview = analysisData?.overview ?? null;
+  const report = analysisData?.report ?? buildEmptyReportsModel();
+  const monthlyData = analysisData?.monthlyData ?? [];
   const summaryKpis = buildReportsSummaryKpis(overview);
   const navigationItems: NavigationGridItem[] = [
     {
@@ -396,7 +400,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     },
   ];
 
-  const pilotageContent = buildReportsPilotageContent({
+  const analysisContent = buildReportsAnalysisContent({
     locale,
     roleLabel,
     primaryAction,
@@ -416,7 +420,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     <AccountCompletionGate state={accountCompletion}>
       <ReportsPageV2Layout
         activeTab={activeTab}
-        pilotageContent={pilotageContent}
+        analysisContent={analysisContent}
       />
     </AccountCompletionGate>
   );

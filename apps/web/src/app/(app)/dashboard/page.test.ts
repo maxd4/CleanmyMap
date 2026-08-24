@@ -79,16 +79,6 @@ vi.mock("@/components/navigation/role-primary-actions", () => ({
     ),
 }));
 
-vi.mock("@/components/reports/actions-report-panel", () => ({
-  ActionsReportPanel: () =>
-    React.createElement(
-      "section",
-      { "data-testid": "admin-export-workflow" },
-      React.createElement("a", { href: "/api/reports/actions.csv" }, "CSV"),
-      React.createElement("a", { href: "/api/reports/actions.json" }, "JSON"),
-    ),
-}));
-
 vi.mock("@/components/ui/cmm-button", () => ({
   CmmButton: ({ href, children }: { href?: string; children: React.ReactNode }) =>
     React.createElement(href ? "a" : "button", { href }, children),
@@ -103,10 +93,6 @@ vi.mock("@/components/account/account-completion-gate", () => ({
           "Profil incomplet",
         )
       : children,
-}));
-
-vi.mock("@/components/maps/territory-map-comparison-cards", () => ({
-  TerritoryMapComparisonCards: () => React.createElement("section", { "data-testid": "territory-map" }),
 }));
 
 vi.mock("@/components/ui/page-header", () => ({
@@ -217,7 +203,7 @@ describe("/dashboard page contract", () => {
     expect(markup).toContain('href="/reports"');
   });
 
-  it("exposes CSV and JSON workflow only for an admin-like profile", async () => {
+  it("keeps reporting and moderation workflows out of the dashboard", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "admin-1", clerkReachable: true });
     mocks.loadAccountCompletionGateState.mockResolvedValue({
       ...completeAccountState,
@@ -228,8 +214,9 @@ describe("/dashboard page contract", () => {
 
     const markup = renderToStaticMarkup(await DashboardPage());
 
-    expect(markup).toContain('data-testid="admin-export-workflow"');
-    expect(markup).toContain('href="/api/reports/actions.csv"');
-    expect(markup).toContain('href="/api/reports/actions.json"');
+    expect(markup).not.toContain("admin-export-workflow");
+    expect(markup).not.toContain("/api/reports/actions.csv");
+    expect(markup).not.toContain("/api/reports/actions.json");
+    expect(markup).not.toContain("territory-map");
   });
 });

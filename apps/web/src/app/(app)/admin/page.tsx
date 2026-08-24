@@ -17,6 +17,7 @@ import {
   ModerationByBlockPanel,
   type ModerationBlockSummary,
 } from "@/components/admin/moderation-by-block-panel";
+import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
@@ -671,6 +672,16 @@ export default async function AdminPage() {
           <div id="moderation-par-bloc" className="mt-10">
             <ModerationByBlockPanel blocks={moderationBlocks} />
           </div>
+
+          <section className="mt-10" id="workflow-administration">
+            <AdminSectionHeader
+              eyebrow="Workflow administration"
+              description="Filtrer, prévisualiser, confirmer et journaliser les opérations d'export et de modération."
+            />
+            <div className="mt-4">
+              <ActionsReportPanel />
+            </div>
+          </section>
 
           <section className="mt-10">
             <AdminSectionHeader

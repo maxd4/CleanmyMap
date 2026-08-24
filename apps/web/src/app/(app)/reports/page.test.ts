@@ -56,15 +56,15 @@ vi.mock("@/components/reports/deferred-reports-web-document", () => ({
 }));
 
 vi.mock("@/components/reports/page-sections/reports-page-v2-layout", () => ({
-  ReportsPageV2Layout: ({ activeTab, generationContent, pilotageContent }: {
+  ReportsPageV2Layout: ({ activeTab, generationContent, analysisContent }: {
     activeTab: string;
     generationContent?: React.ReactNode;
-    pilotageContent?: React.ReactNode;
+    analysisContent?: React.ReactNode;
   }) =>
     React.createElement(
       "main",
       { "data-testid": "reports-layout", "data-active-tab": activeTab },
-      activeTab === "generation" ? generationContent : pilotageContent,
+      activeTab === "generation" ? generationContent : analysisContent,
     ),
 }));
 
@@ -252,10 +252,10 @@ describe("/reports page contract", () => {
     expect(markup).toContain("Profil incomplet");
   });
 
-  it("loads the 90-day pilotage window and renders primary KPIs", async () => {
+  it("loads the 90-day analysis window and renders primary KPIs", async () => {
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
 
-    expect(markup).toContain('data-active-tab="pilotage"');
+    expect(markup).toContain('data-active-tab="analysis"');
     expect(markup).toContain('data-testid="summary-kpis"');
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 90, limit: 2200 });
     expect(markup).toContain("Objectifs et repères");
@@ -318,6 +318,7 @@ describe("/reports page contract", () => {
 
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
 
+    expect(markup).toContain('data-active-tab="analysis"');
     expect(markup).toContain('data-testid="csv-export"');
     expect(markup).toContain('data-row-count="0"');
     expect(markup).toContain('data-testid="summary-kpis"');

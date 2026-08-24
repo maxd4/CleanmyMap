@@ -14,7 +14,7 @@ export type ReportsSummaryKpi = {
   interpretation: "positive" | "negative" | "neutral";
 };
 
-export async function loadReportsPilotageData() {
+export async function loadReportsAnalysisData() {
   const [overview, communityEventsResult] = await Promise.all([
     loadPilotageOverview({
       periodDays: REPORT_DATA_BUDGET.pilotage.periodDays,
