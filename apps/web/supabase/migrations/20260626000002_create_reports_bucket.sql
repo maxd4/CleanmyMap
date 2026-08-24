@@ -21,33 +21,9 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- Reports are private and are accessed through server-only clients after the
+-- application-level admin check. No client storage policy is granted here;
+-- the service role bypasses object RLS for the server-side upload/download.
 drop policy if exists "reports service insert" on storage.objects;
-create policy "reports service insert"
-on storage.objects
-for insert
-with check (
-  bucket_id = 'reports'
-  and auth.role() = 'service_role'
-);
-
 drop policy if exists "reports service update" on storage.objects;
-create policy "reports service update"
-on storage.objects
-for update
-using (
-  bucket_id = 'reports'
-  and auth.role() = 'service_role'
-)
-with check (
-  bucket_id = 'reports'
-  and auth.role() = 'service_role'
-);
-
 drop policy if exists "reports service delete" on storage.objects;
-create policy "reports service delete"
-on storage.objects
-for delete
-using (
-  bucket_id = 'reports'
-  and auth.role() = 'service_role'
-);

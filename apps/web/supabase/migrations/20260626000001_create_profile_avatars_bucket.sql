@@ -28,33 +28,41 @@ on storage.objects
 for select
 using (bucket_id = 'avatars');
 
-drop policy if exists "avatars service insert" on storage.objects;
-create policy "avatars service insert"
+drop policy if exists "avatars owner insert" on storage.objects;
+create policy "avatars owner insert"
 on storage.objects
 for insert
 with check (
   bucket_id = 'avatars'
-  and auth.role() = 'service_role'
+  and coalesce((select auth.jwt() ->> 'sub'), '') <> ''
+  and (storage.foldername(name))[1] = 'profiles'
+  and (storage.foldername(name))[2] = (select auth.jwt() ->> 'sub')
 );
 
-drop policy if exists "avatars service update" on storage.objects;
-create policy "avatars service update"
+drop policy if exists "avatars owner update" on storage.objects;
+create policy "avatars owner update"
 on storage.objects
 for update
 using (
   bucket_id = 'avatars'
-  and auth.role() = 'service_role'
+  and coalesce((select auth.jwt() ->> 'sub'), '') <> ''
+  and (storage.foldername(name))[1] = 'profiles'
+  and (storage.foldername(name))[2] = (select auth.jwt() ->> 'sub')
 )
 with check (
   bucket_id = 'avatars'
-  and auth.role() = 'service_role'
+  and coalesce((select auth.jwt() ->> 'sub'), '') <> ''
+  and (storage.foldername(name))[1] = 'profiles'
+  and (storage.foldername(name))[2] = (select auth.jwt() ->> 'sub')
 );
 
-drop policy if exists "avatars service delete" on storage.objects;
-create policy "avatars service delete"
+drop policy if exists "avatars owner delete" on storage.objects;
+create policy "avatars owner delete"
 on storage.objects
 for delete
 using (
   bucket_id = 'avatars'
-  and auth.role() = 'service_role'
+  and coalesce((select auth.jwt() ->> 'sub'), '') <> ''
+  and (storage.foldername(name))[1] = 'profiles'
+  and (storage.foldername(name))[2] = (select auth.jwt() ->> 'sub')
 );
