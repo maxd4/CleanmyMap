@@ -1,11 +1,11 @@
 # ADR-006 — Source de vérité des migrations Supabase
 
-**Statut : proposé — à valider après comparaison complète**  
-**Date : 11 juillet 2026**
+**Statut : accepté et appliqué**
+**Date : 11 juillet 2026 — application : 24 août 2026**
 
 ## Contexte
 
-Deux arbres de migrations existent :
+Deux arbres de migrations existaient avant l'application de cet ADR :
 
 ```txt
 apps/web/supabase/migrations/
@@ -59,26 +59,29 @@ apps/web/supabase/migrations/
 apps/web/supabase/seed.sql
 ```
 
-Le dossier racine :
+Le dossier racine historique :
 
 ```txt
 supabase/migrations/
 ```
 
-est traité comme miroir historique jusqu'à comparaison et suppression contrôlée.
+est supprimé après comparaison contrôlée. Il ne doit plus être recréé.
 
-## Conditions avant suppression du miroir
+## Vérifications d'application
 
-Ne supprimer aucun fichier avant :
+La suppression du miroir a été précédée par :
 
-1. comparaison exhaustive des noms ;
-2. comparaison des contenus ;
-3. vérification des tests ;
-4. vérification des scripts ;
-5. vérification des docs ;
-6. reconstruction locale ;
-7. vérification du projet Supabase lié ;
-8. plan de rollback.
+1. une comparaison exhaustive des noms, contenus et ordre ;
+2. l'identification et le transfert des quatre migrations présentes uniquement
+   dans le miroir ;
+3. la vérification des références de tests, scripts et documentation ;
+4. la validation du workspace Supabase canonique ;
+5. l'activation d'un garde-fou qui échoue si le miroir racine réapparaît.
+
+La migration `20260625000001_territory_metadata_compatibility.sql` a été
+transférée sous le nom `20260625000005_territory_metadata_compatibility.sql`,
+car le timestamp `20260625000001` était déjà utilisé dans l'arbre canonique.
+Le contenu SQL est inchangé.
 
 ## Migration documentaire
 
@@ -94,17 +97,21 @@ apps/web/README.md
 
 ## Tests
 
-Les tests de migration doivent lire uniquement la source canonique après bascule.
-
-Ajouter si nécessaire un garde-fou temporaire qui détecte une divergence tant que les deux arbres coexistent.
+Les tests de migration lisent uniquement la source canonique après bascule.
+Le garde-fou `npm run audit:supabase-migration-trees` vérifie que le dossier
+racine interdit est absent et qu'aucun timestamp de migration n'est dupliqué.
 
 ## Conséquences
 
 Après application complète :
 
-- un seul arbre éditable ;
+- un seul arbre éditable : `apps/web/supabase/migrations/` ;
 - CLI, tests et docs alignés ;
 - moins de risque d'agent sur le mauvais chemin.
+
+Le rollback du changement de dépôt consiste à restaurer le commit de ce lot.
+Cela ne remplace pas une vérification de l'historique de migrations d'une base
+distante avant déploiement.
 
 ## Interdiction
 

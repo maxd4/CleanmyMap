@@ -75,20 +75,16 @@ documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 
 ## Migrations
 
-Le workspace Supabase actif possède :
+Le workspace Supabase canonique possède :
 
 ```txt
 apps/web/supabase/config.toml
 apps/web/supabase/migrations/
 ```
 
-Un second arbre existe encore :
-
-```txt
-supabase/migrations/
-```
-
-Ne pas modifier un seul arbre sans appliquer la stratégie de l'ADR-006.
+Il s'agit du seul arbre de migrations éditable. Le garde-fou
+`npm run audit:supabase-migration-trees` échoue si un second arbre racine est
+recréé.
 
 ## Budget de contexte
 

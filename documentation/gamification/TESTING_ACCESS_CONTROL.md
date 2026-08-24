@@ -123,7 +123,7 @@ npm run supabase:migrations:up
 
 **Migration template:**
 ```sql
--- supabase/migrations/20260529000000_add_user_roles.sql
+-- apps/web/supabase/migrations/20260529000000_add_user_roles.sql
 CREATE TABLE user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id TEXT NOT NULL UNIQUE,
