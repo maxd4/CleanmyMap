@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export interface NavigationGridItem {
-  icon: LucideIcon | string;
+  icon: NavigationGridIconName;
   title: string;
   desc: string;
   iconBg: string;
@@ -31,7 +31,7 @@ export interface NavigationGridItem {
   href: string;
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
+const ICON_MAP = {
   BarChart3,
   Compass,
   DownloadCloud,
@@ -47,7 +47,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ArrowRight,
   Handshake,
   Users,
-};
+} satisfies Record<string, LucideIcon>;
+
+export type NavigationGridIconName = keyof typeof ICON_MAP;
 
 interface NavigationGridProps {
   items: NavigationGridItem[];
@@ -108,10 +110,7 @@ export function NavigationGrid({
   return (
     <div className={`grid gap-4 ${gridCols}`}>
       {items.map((item) => {
-        const IconComponent =
-          typeof item.icon === "string"
-            ? ICON_MAP[item.icon] || PlusCircle
-            : item.icon;
+        const IconComponent = ICON_MAP[item.icon] || PlusCircle;
 
         return (
         <Link

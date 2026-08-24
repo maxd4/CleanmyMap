@@ -20,8 +20,13 @@ async function loadOverview() {
 }
 
 export default async function PilotageAccessPage() {
-  const { userId } = await getSafeAuthSession();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = (await getServerLocale()) as PilotageLocale;
+
+  if (!clerkReachable) {
+    return <PilotageLockedPage locale={locale} isAuthenticated={false} authUnavailable />;
+  }
+
   const role = userId
     ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
     : ("anonymous" as const);

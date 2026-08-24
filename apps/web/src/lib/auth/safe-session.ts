@@ -8,6 +8,7 @@ import {
 export type SafeAuthSession = {
   userId: string | null;
   clerkReachable: boolean;
+  state: "authenticated" | "anonymous" | "unavailable";
 };
 
 export async function getSafeAuthSession(): Promise<SafeAuthSession> {
@@ -16,14 +17,17 @@ export async function getSafeAuthSession(): Promise<SafeAuthSession> {
     return {
       userId: getDevAuthBypassUserId(),
       clerkReachable: true,
+      state: "authenticated",
     };
   }
 
   try {
     const session = await auth();
+    const userId = session.userId ?? null;
     return {
-      userId: session.userId ?? null,
+      userId,
       clerkReachable: true,
+      state: userId ? "authenticated" : "anonymous",
     };
   } catch (error) {
     const isExpectedDynamicUsage =
@@ -40,6 +44,7 @@ export async function getSafeAuthSession(): Promise<SafeAuthSession> {
     return {
       userId: null,
       clerkReachable: false,
+      state: "unavailable",
     };
   }
 }
