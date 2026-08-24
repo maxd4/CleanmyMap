@@ -48,7 +48,7 @@ const actionToneClasses: Record<CardTone, string> = {
   indigo: "border-indigo-300/30 bg-indigo-500/8 shadow-[0_16px_36px_-30px_rgba(99,102,241,0.18)]",
 };
 
-const ACTION_ICON_MAP: Record<string, LucideIcon> = {
+const ACTION_ICON_MAP = {
   Activity,
   BookOpenText,
   Database,
@@ -58,7 +58,9 @@ const ACTION_ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   ShieldCheck,
   Trash2,
-};
+} satisfies Record<string, LucideIcon>;
+
+export type PageStructureIconName = keyof typeof ACTION_ICON_MAP;
 
 export type SectionHeaderProps = {
   eyebrow?: ReactNode;
@@ -271,7 +273,7 @@ export function SourceBadge({
 }
 
 export type ActionCardProps = {
-  icon: LucideIcon | string;
+  icon: PageStructureIconName;
   title: string;
   description: string;
   badge: string;
@@ -297,10 +299,7 @@ export function ActionCard({
   iconWrapClassName,
   badgeClassName,
 }: ActionCardProps) {
-  const Icon =
-    typeof icon === "string"
-      ? ACTION_ICON_MAP[icon] ?? PlusCircle
-      : icon;
+  const Icon = ACTION_ICON_MAP[icon] ?? PlusCircle;
 
   const content = (
     <>

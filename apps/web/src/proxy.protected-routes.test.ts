@@ -5,7 +5,14 @@ import {
   DASHBOARD_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
-import { config, PROXY_MATCHER_PATTERNS } from "../proxy";
+import {
+  CLERK_CONTEXT_API_ROUTE_PREFIXES,
+  CLERK_CONTEXT_ROUTE_PREFIXES,
+  config,
+  isClerkContextOnlyRoute,
+  PROTECTED_APP_PAGE_ROUTE_PREFIXES,
+  PROXY_MATCHER_PATTERNS,
+} from "./proxy";
 
 describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {
@@ -35,13 +42,16 @@ describe("proxy protected routes", () => {
     }
   });
 
-  it("keeps the middleware matcher limited to protected surfaces", () => {
+  it("keeps the middleware matcher limited to protected and context surfaces", () => {
     const required = [
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/actions/history(.*)",
       "/actions/new(.*)",
+      "/pilotage(.*)",
+      "/reports(.*)",
+      ...CLERK_CONTEXT_API_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
     ];
 
     for (const pattern of required) {
@@ -52,10 +62,17 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sections(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-in(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-up(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/reports(.*)");
+    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/pilotage");
+    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/reports");
+    expect(CLERK_CONTEXT_ROUTE_PREFIXES).toEqual(["/pilotage", "/reports"]);
+    expect(isClerkContextOnlyRoute("/pilotage")).toBe(true);
+    expect(isClerkContextOnlyRoute("/reports/exports")).toBe(true);
+    expect(isClerkContextOnlyRoute("/api/reports/actions.json")).toBe(false);
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
-    expect(PROXY_MATCHER_PATTERNS.every((pattern) => !pattern.startsWith("/api/"))).toBe(true);
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/manifest(.*)");
+    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
   });
 });
