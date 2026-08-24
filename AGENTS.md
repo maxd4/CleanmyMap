@@ -557,6 +557,14 @@ La réponse finale doit indiquer :
 - validations exécutées ;
 - erreurs rencontrées ;
 - validations restantes.
+- Lorsqu'une exécution de prompt a traversé un fichier monolithique, un dossier
+  mal structuré, une duplication importante, un couplage excessif ou une dette
+  architecturale notable, le signaler explicitement dans le compte rendu, même
+  si la dette n'a pas été corrigée dans le lot. En une phrase, indiquer le
+  fichier ou dossier concerné, la nature de la dette, si elle a été corrigée et,
+  sinon, si elle mérite un lot suivant. Limiter ce signalement au périmètre
+  réellement traversé : ne pas en faire un audit global du dépôt ni bloquer une
+  livraison fonctionnelle valide.
 
 Ne pas donner de long raisonnement interne.
 
