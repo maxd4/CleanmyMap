@@ -10,19 +10,15 @@ Il faut distinguer trois niveaux.
 
 Les migrations Supabase versionnées décrivent le schéma attendu.
 
-Le workspace CLI actif est actuellement :
+Le workspace CLI canonique est :
 
 ```txt
 apps/web/supabase/
 ```
 
-Un second arbre historique existe sous :
-
-```txt
-supabase/migrations/
-```
-
-Voir `adr/ADR-006-supabase-migrations-source-of-truth.md` avant toute suppression ou migration d'arborescence.
+Il n'existe pas de second arbre éditable. Le garde-fou
+`npm run audit:supabase-migration-trees` doit rester vert avant toute
+modification de migration.
 
 ### Base distante
 

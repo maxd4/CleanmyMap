@@ -188,7 +188,8 @@ Workspace CLI actuel :
 apps/web/supabase/
 ```
 
-Un miroir historique existe encore à la racine. Voir `ADR-006` avant toute suppression.
+Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
+`ADR-006` pour la décision de source de vérité.
 
 ## Contrôles avant production
 

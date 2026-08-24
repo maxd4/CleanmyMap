@@ -4,27 +4,28 @@ import crypto from "node:crypto";
 
 const repoRoot = process.cwd();
 
-const trees = [
-  {
-    label: "workspace",
-    dir: path.join(repoRoot, "apps", "web", "supabase", "migrations"),
-  },
-  {
-    label: "root",
-    dir: path.join(repoRoot, "supabase", "migrations"),
-  },
-];
+const canonicalDir = path.join(repoRoot, "apps", "web", "supabase", "migrations");
+const forbiddenMirrorDir = path.join(repoRoot, "supabase", "migrations");
 
-for (const tree of trees) {
-  if (!fs.existsSync(tree.dir)) {
-    console.error(
-      `Supabase migration tree audit failed: missing ${path.relative(repoRoot, tree.dir)}`,
-    );
-    process.exit(1);
-  }
+if (!fs.existsSync(canonicalDir)) {
+  console.error(
+    `Supabase migration audit failed: missing ${path.relative(repoRoot, canonicalDir)}`,
+  );
+  process.exit(1);
 }
 
-function readTree(dir) {
+if (fs.existsSync(forbiddenMirrorDir)) {
+  console.error(
+    [
+      "Supabase migration audit failed: the deprecated root migration tree exists:",
+      `- ${path.relative(repoRoot, forbiddenMirrorDir)}`,
+      "Use apps/web/supabase/migrations/ as the only editable migration source.",
+    ].join("\n"),
+  );
+  process.exit(2);
+}
+
+function readCanonicalMigrations(dir) {
   const files = fs
     .readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
@@ -40,76 +41,38 @@ function readTree(dir) {
   );
 }
 
-const workspace = readTree(trees[0].dir);
-const root = readTree(trees[1].dir);
+const canonical = readCanonicalMigrations(canonicalDir);
+const duplicateVersions = [];
+const versions = new Map();
 
-const allNames = [...new Set([...workspace.keys(), ...root.keys()])].sort();
-const onlyWorkspace = [];
-const onlyRoot = [];
-const divergent = [];
-const identical = [];
-
-for (const name of allNames) {
-  const workspaceFile = workspace.get(name);
-  const rootFile = root.get(name);
-
-  if (!workspaceFile) {
-    onlyRoot.push(name);
+for (const name of canonical.keys()) {
+  const version = name.match(/^(\d+)_/)?.[1];
+  if (!version) {
     continue;
   }
 
-  if (!rootFile) {
-    onlyWorkspace.push(name);
-    continue;
-  }
+  const names = versions.get(version) ?? [];
+  names.push(name);
+  versions.set(version, names);
+}
 
-  if (workspaceFile.sha256 !== rootFile.sha256) {
-    divergent.push(name);
-    continue;
+for (const [version, names] of versions) {
+  if (names.length > 1) {
+    duplicateVersions.push(`${version}: ${names.join(", ")}`);
   }
-
-  identical.push(name);
 }
 
 console.log("Supabase migration tree audit");
-console.log(`- workspace files: ${workspace.size}`);
-console.log(`- root files: ${root.size}`);
-console.log(`- identical: ${identical.length}`);
-console.log(`- only workspace: ${onlyWorkspace.length}`);
-console.log(`- only root: ${onlyRoot.length}`);
-console.log(`- divergent content: ${divergent.length}`);
+console.log(`- canonical files: ${canonical.size}`);
+console.log("- root mirror: absent");
+console.log(`- duplicate versions: ${duplicateVersions.length}`);
 
-function printGroup(title, files) {
-  if (files.length === 0) {
-    return;
+if (duplicateVersions.length > 0) {
+  console.error("\nDuplicate Supabase migration versions:");
+  for (const duplicate of duplicateVersions) {
+    console.error(`- ${duplicate}`);
   }
-
-  console.log(`\n${title}`);
-  for (const file of files) {
-    console.log(`- ${file}`);
-  }
+  process.exit(2);
 }
 
-printGroup("Only in apps/web/supabase/migrations", onlyWorkspace);
-printGroup("Only in supabase/migrations", onlyRoot);
-printGroup("Same filename, divergent content", divergent);
-
-if (
-  onlyWorkspace.length === 0 &&
-  onlyRoot.length === 0 &&
-  divergent.length === 0
-) {
-  console.log("\nMigration trees are currently identical.");
-  process.exit(0);
-}
-
-console.error(
-  [
-    "",
-    "Migration trees are not identical.",
-    "Do not delete or modify one tree blindly.",
-    "Follow documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md.",
-  ].join("\n"),
-);
-
-process.exit(2);
+console.log("\nOnly apps/web/supabase/migrations/ is editable.");
