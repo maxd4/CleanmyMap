@@ -36,6 +36,7 @@ Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
 - Le checkout de travail par défaut est directement `main`.
 - Après autorisation explicite de l'utilisateur, committer directement sur `main`.
 - Après les validations pertinentes, pousser directement vers `origin/main`.
+- À chaque fin d’exécution de message ayant produit des modifications, créer le commit dédié et pousser vers `origin/main`; ne déroger qu’en cas de consigne explicite contraire ou de blocage signalé.
 - Ne pas créer de Pull Request pour le développement courant.
 - Ne créer une branche temporaire que sur demande explicite de l'utilisateur.
 - Ne créer un worktree que sur demande explicite de l'utilisateur.
