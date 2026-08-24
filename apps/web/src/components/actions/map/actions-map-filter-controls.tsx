@@ -43,12 +43,12 @@ export function ActionsMapFilterControls({
   onReset,
 }: ActionsMapFilterControlsProps) {
   return (
-    <div className="grid w-full gap-3 sm:gap-4">
-      <label className="flex flex-col gap-1 lg:col-span-full">
+    <div className="grid w-full grid-cols-1 gap-3 sm:gap-4">
+      <label className="min-w-0 flex flex-col gap-1 lg:col-span-full">
         <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
           Zone
         </span>
-        <div className="flex overflow-hidden rounded-2xl border border-sky-200/80 bg-white shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/12">
+        <div className="flex min-w-0 overflow-hidden rounded-2xl border border-sky-200/80 bg-white shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/12">
           <span className="flex items-center justify-center px-3 text-sky-700">
             <Search size={15} />
           </span>
@@ -76,8 +76,8 @@ export function ActionsMapFilterControls({
         </p>
       </label>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_auto]">
-        <label className="flex flex-col gap-1">
+      <div className="min-w-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_auto]">
+        <label className="min-w-0 flex flex-col gap-1">
           <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
             Période
           </span>
@@ -86,14 +86,14 @@ export function ActionsMapFilterControls({
             onChange={(event) =>
               onDateScopeChange(event.target.value as ActionsMapDateScope)
             }
-            className="h-11 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
+            className="h-11 w-full min-w-0 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
           >
             <option value="current_year">Année en cours</option>
             <option value="all_time">Depuis la création</option>
           </select>
         </label>
 
-        <label className="flex flex-col gap-1">
+        <label className="min-w-0 flex flex-col gap-1">
           <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
             Statut
           </span>
@@ -102,7 +102,7 @@ export function ActionsMapFilterControls({
             onChange={(event) =>
               onStatusChange(event.target.value as ActionsMapStatusFilter)
             }
-            className="h-11 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
+            className="h-11 w-full min-w-0 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

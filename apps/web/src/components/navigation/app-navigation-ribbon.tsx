@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { List, Settings2, MessageSquare } from "lucide-react";
+import { List, Settings2, MessageSquare, LogIn, UserPlus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
@@ -496,7 +496,7 @@ function AppNavigationRibbonShell({
               }}
               onMouseEnter={openFeedbackMenu}
               onMouseLeave={closeFeedbackMenuOnHover}
-              className="relative shrink-0"
+              className="relative shrink-0 max-[380px]:hidden"
             >
               <summary
                 ref={feedbackTriggerRef}
@@ -574,18 +574,24 @@ function AppNavigationRibbonShell({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white/82 transition hover:text-white sm:h-auto sm:w-auto sm:px-3"
                 >
-                  {locale === "fr" ? "Se connecter" : "Sign in"}
+                  <LogIn className="h-4 w-4 sm:hidden" aria-hidden="true" />
+                  <span className="hidden sm:inline">
+                    {locale === "fr" ? "Se connecter" : "Sign in"}
+                  </span>
                 </Link>
                 <Link
                   href="/sign-up"
                   prefetch={false}
                   aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95 sm:h-auto sm:w-auto sm:px-4"
                 >
-                  {locale === "fr" ? "S'inscrire" : "Sign up"}
+                  <UserPlus className="h-4 w-4 sm:hidden" aria-hidden="true" />
+                  <span className="hidden sm:inline">
+                    {locale === "fr" ? "S'inscrire" : "Sign up"}
+                  </span>
                 </Link>
               </div>
             ) : null}
