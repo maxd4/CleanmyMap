@@ -10,7 +10,7 @@ Résumé d'ouverture:
 Ce journal ne conserve que les **ajouts de code** réalisés en lien direct avec :
 
 - les apprentissages issus des ateliers du DU ;
-- les besoins de gouvernance, de sobriété et de fiabilité formalisés dans `documentation/plans/rapport_impact/impact_IA.md`.
+- les besoins de gouvernance, de sobriété et de fiabilité formalisés dans `documentation/plans-perso/rapport_impact/impact_IA.md`.
 
 Toute modification ou ajout de code ayant un impact social ou environnemental non négligeable doit être enregistré ici avec, au minimum, la date, une explication courte du changement et son impact bénéfique ou négatif. Si l'impact est négatif, une solution concrète pour le réduire doit aussi être proposée.
 
@@ -25,7 +25,7 @@ Toute modification ou ajout de code ayant un impact social ou environnemental no
 2026-05-24 - Ajout d'un mode de démarrage local propre (`dev:clean`) et d'un mode port strict (`dev:strict`) pour éviter les caches Next/Turbopack corrompus et les faux localhost causés par un second serveur sur un port de secours. La route notifications a aussi été durcie en dev pour renvoyer un état vide au lieu d'erreurs 500 quand Supabase/Clerk n'est pas prêt. Impact bénéfique: moins de bruit, moins de confusion entre anciennes et nouvelles versions, et moins de relances inutiles du serveur local. Impact négatif: un peu plus de surface de commandes de dev, compensée par des consignes de démarrage plus claires.
 
 Il ne sert ni de backlog, ni de plan d'action général, ni de dossier institutionnel.
-Les priorités actives restent dans [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).
+Les priorités actives restent dans [documentation/plans-perso/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans-perso/ateliers_DU.md).
 La seule zone de directives encore exploitables ici est l'**annexe A**.
 
 Ce cadre poursuit deux objectifs. D'abord, montrer un impact reel des ateliers sur le projet web avec une lecture critique, structuree et credible. Ensuite, disposer d'un support de pilotage capable de justifier les choix techniques, environnementaux et institutionnels devant un jury ou un partenaire externe.
@@ -36,10 +36,10 @@ Le journal détaillé renvoie aux autres pièces de travail ci-dessous pour gard
 
 ```mermaid
 flowchart TD
-  AJ["documentation/plans/ateliers_DU.md"]
-  RI["documentation/plans/rapport_impact/impact_IA.md"]
-  GI["documentation/plans/rapport_impact/graphique_impact_CO2e.md"]
-  JI["documentation/plans/journal_impact_DU.md"]
+  AJ["documentation/plans-perso/ateliers_DU.md"]
+  RI["documentation/plans-perso/rapport_impact/impact_IA.md"]
+  GI["documentation/plans-perso/rapport_impact/graphique_impact_CO2e.md"]
+  JI["documentation/plans-perso/journal_impact_DU.md"]
   EI["Estimateur d'impact environnemental"]
   QG["Impact numérique des services suivis<br/>des services web utilisés"]
 
@@ -120,7 +120,7 @@ Lecture rapide:
 | 13/05/26 | **Automatisation des statistiques d'audit** | Création de `update-audit-stats.mjs` pour synchroniser dynamiquement les métriques de code avec le dossier d'impact. |
 | 13/05/26 | **Audit des Écarts (Roadmap vs Réalité)** | Identification technique des manquements (Campagnes, Qualité de donnée) pour prioriser les futurs sprints. |
 | 13/05/26 | **Reporting qualité CI/CD orienté pilotage** | Création de `scripts/cicd-metrics-report.mjs` et de `documentation/maintenance/ci-cd-metrics-report.md` pour suivre les runs GitHub Actions, le cache et les déploiements Vercel dans une logique de mesure continue. |
-| 13/05/26 | **Audit exécutable des messages Ateliers DU** | Formalisation de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots déjà absorbés, les écarts encore ouverts et l'ordre d'attaque réaliste. |
+| 13/05/26 | **Audit exécutable des messages Ateliers DU** | Formalisation de l'audit des lots absorbés, des écarts encore ouverts et de l'ordre d'attaque réaliste. |
 | 20/05/26 | **Socle d'estimateur d'impact environnemental** | Mise en place de l'architecture du calcul transparent pour le site et l'utilisateur, avec postes visibles, hypothèses versionnées et panneau UI prêt à brancher dans le rapport d'impact IA. |
 | 21/05/26 | **Séparation Codex / GPT-5.4 mini** | Distinction explicite entre les sessions Codex et le modèle GPT-5.4 mini utilisé pendant le développement du site, avec badge ACV dédié, pour éviter de mélanger développement et production. |
 | 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex — développement du site pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
@@ -205,7 +205,7 @@ Lecture rapide:
 Le plan d'écarts supprimé a été absorbé dans ce journal. Les améliorations effectivement implémentées sont désormais tracées ici comme références de preuve, avec distinction explicite entre `réalisé`, `partiellement réalisé` et `à faire`.
 
 **Nettoyage du backlog de session :**
-Les prompts deja executes ont ete retires des fichiers de pilotage actifs. Les prompts restants ont ete regroupes par priorite operationnelle dans `documentation/plans/ateliers_DU.md`. `documentation/plans/ateliers_DU_execution_rapide.md` devient une trace d'execution et non un second backlog.
+Les prompts deja executes ont ete retires des fichiers de pilotage actifs. Les prompts restants ont ete regroupes par priorite operationnelle dans `ateliers_DU.md`. Les traces d'execution ne constituent pas un second backlog.
 
 ## 6. Annexe A - Bibliothèque de pilotage IA
 

@@ -20,7 +20,7 @@ La source de vérité active est [`impact_IA.md`](./impact_IA.md).
 
 ## Règle d'usage
 
-- Ne pas recréer une autre copie vivante du rapport ailleurs dans `documentation/plans/`.
+- Ne pas recréer une autre copie vivante du rapport ailleurs que dans `documentation/plans-perso/`.
 - Si un nouveau contenu concerne le bilan d'impact IA, il doit être ajouté dans `impact_IA.md` ou dans un fichier explicitement référencé depuis ce dossier.
 - Les documents obsolètes ou remplacés peuvent être archivés ailleurs, mais ce sous-dossier reste le point d'entrée actif du rapport d'impact.
 
@@ -30,5 +30,5 @@ La source de vérité active est [`impact_IA.md`](./impact_IA.md).
 - Avant tout rendu, vérifier que le front matter YAML est bien fermé par un `---` avant le premier bloc de contenu.
 - Si Quarto signale qu'un document Markdown doit utiliser l'extension `.qmd`, créer temporairement une copie locale `impact_IA.qmd` dans ce même dossier, lancer le rendu dessus, puis supprimer la copie et les artefacts intermédiaires après succès.
 - Commande validée pour le rendu PDF depuis ce dossier: `quarto render impact_IA.qmd --to pdf`
-- Le PDF final est généré dans `documentation/plans/_output/rapport_impact/impact_IA.pdf`.
+- Le PDF final est généré dans `documentation/plans-perso/_output/rapport_impact/impact_IA.pdf`.
 - En cas d'échec, vérifier en priorité `impact_IA.log`, `impact_IA.tex` et le positionnement des séparateurs `---` du front matter, puis nettoyer les fichiers temporaires avant de recommencer.
