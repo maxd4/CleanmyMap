@@ -90,4 +90,42 @@ describe("computePilotageComparison", () => {
 
     expect(result.current.impactVolumeKg).toBe(1.5);
   });
+
+  it("keeps approved metrics reliable without treating approved-only moderation as zero", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "approved-current",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 12,
+        volunteersCount: 5,
+      }),
+    ];
+
+    const available = computePilotageComparison(
+      contracts,
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+    const unavailable = computePilotageComparison(
+      contracts,
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+      { moderationAvailability: "unavailable" },
+    );
+
+    expect(unavailable.current.approvedActions).toBe(available.current.approvedActions);
+    expect(unavailable.current.impactVolumeKg).toBe(available.current.impactVolumeKg);
+    expect(unavailable.current.qualityScore).toBe(available.current.qualityScore);
+    expect(unavailable.current.coverageRate).toBe(available.current.coverageRate);
+    expect(unavailable.current.pendingCount).toBeNull();
+    expect(unavailable.current.moderationDelayDays).toBeNull();
+    expect(unavailable.metrics.moderationDelayDays).toBeNull();
+  });
 });

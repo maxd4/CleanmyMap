@@ -11,6 +11,7 @@ import {
 } from "../access-screen-utils";
 import type { PilotageLocale } from "../access-screen-constants";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
+import { buildReportDataAvailabilityNotices } from "@/lib/reports/data-availability";
 import { PilotageOverviewSupportSections } from "./pilotage-overview-support-sections";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
@@ -47,8 +48,21 @@ export function PilotageOverviewContent({
   const topPriorities = overview?.priorities ?? [];
 
   if (overview) {
+    const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
+      overview.dataAvailability,
+    );
+
     return (
       <>
+        {dataAvailabilityNotices.length > 0 ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-2xl border border-amber-200/40 bg-amber-100/10 p-4 text-sm leading-6 text-orange-100"
+          >
+            {dataAvailabilityNotices.join(" ")}
+          </div>
+        ) : null}
         <PilotageOverviewSurfaceTabs locale={locale} overview={overview} />
 
         <div className="space-y-8">

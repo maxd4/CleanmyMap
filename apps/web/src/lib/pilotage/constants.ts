@@ -1,5 +1,11 @@
 export const PILOTAGE_FORMULA_VERSION = "2026.04.10-v1";
 
+/**
+ * Minimum source window required to compare the current and previous 365-day
+ * periods. It is deliberately independent from the selected display window.
+ */
+export const PILOTAGE_COMPARISON_HISTORY_DAYS = 730;
+
 export const PILOTAGE_THRESHOLDS = {
   deltaStablePercent: 3,
   deltaStrongPercent: 15,

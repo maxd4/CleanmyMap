@@ -19,9 +19,10 @@ export function pickDecisionRecommendation(
     comparison.metrics.coverageRate.interpretation === "negative"
       ? Math.abs(comparison.metrics.coverageRate.deltaPercent)
       : 0;
+  const moderationComparison = comparison.metrics.moderationDelayDays;
   const moderationRisk =
-    comparison.metrics.moderationDelayDays.interpretation === "negative"
-      ? Math.abs(comparison.metrics.moderationDelayDays.deltaPercent)
+    moderationComparison?.interpretation === "negative"
+      ? Math.abs(moderationComparison.deltaPercent)
       : 0;
 
   const ranked = [
@@ -30,7 +31,9 @@ export function pickDecisionRecommendation(
       risk: moderationRisk,
       href: ADMIN_ROUTE,
       label: "Traiter backlog moderation",
-      reason: `Delai moderation en degradation (${comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j, ${comparison.current.moderationDelayDays.toFixed(1)} j actuels).`,
+      reason: moderationComparison
+        ? `Delai moderation en degradation (${moderationComparison.deltaAbsolute >= 0 ? "+" : ""}${moderationComparison.deltaAbsolute.toFixed(1)} j, ${comparison.current.moderationDelayDays?.toFixed(1)} j actuels).`
+        : "Delai moderation indisponible avec la source actuelle.",
     },
     {
       key: "quality" as const,
