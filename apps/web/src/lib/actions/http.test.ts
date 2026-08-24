@@ -57,6 +57,12 @@ function expectMapActionsFallbackResult(
   expect(result.items[0]?.cigarette_butts_pollution_score).toBe(100);
   expect(result.items[0]?.impact_level).toBe("fort");
   expect(result.items[0]?.contract?.metadata.associationName).toBe("Collectif Demo");
+  expect(result.items[0]?.contract?.type).toBe("action");
+  expect(result.items[0]?.contract?.dates.observedAt).toBe("2026-06-01");
+  expect(result.items[0]?.contract?.location.latitude).toBe(48.8566);
+  expect(result.items[0]?.contract?.metadata.wasteKg).toBe(10);
+  expect(result.items[0]?.contract?.metadata.cigaretteButts).toBe(300);
+  expect(result.items[0]?.contract?.metadata.volunteersCount).toBe(5);
   expect(result.items[0]?.contract?.metadata.manualDrawing).toEqual({
     kind: "polyline",
     coordinates: [
