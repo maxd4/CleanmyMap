@@ -116,6 +116,14 @@ const offenders = rows.filter(
 );
 const baseline = loadBaseline();
 const newOffenders = offenders.filter((row) => !baseline.has(row.file));
+const offenderPaths = new Set(offenders.map((row) => row.file));
+const staleBaselineEntries = [...baseline].filter((file) => {
+  const absolutePath = resolve(repoRoot, file);
+  const coveredByScanRoot = scanRoots.some(
+    (root) => absolutePath === root || absolutePath.startsWith(`${root}${sep}`),
+  );
+  return coveredByScanRoot && !offenderPaths.has(file);
+});
 
 console.log(
   `Top heavy files (${scanRoots
@@ -133,8 +141,21 @@ for (const row of rows.slice(0, Math.max(1, topCount))) {
   );
 }
 
+if (staleBaselineEntries.length > 0) {
+  console.log("");
+  console.log(
+    `Entrées baseline obsolètes à retirer (${staleBaselineEntries.length}):`,
+  );
+  for (const file of staleBaselineEntries) {
+    console.log(` - ${file}`);
+  }
+}
+
 if (offenders.length === 0) {
   console.log("OK: aucun fichier au-dessus des seuils.");
+  if (enforce && staleBaselineEntries.length > 0) {
+    process.exit(1);
+  }
   process.exit(0);
 }
 
@@ -157,7 +178,7 @@ if (newOffenders.length > 0) {
   }
 }
 
-if (enforce && newOffenders.length > 0) {
+if (enforce && (newOffenders.length > 0 || staleBaselineEntries.length > 0)) {
   process.exit(1);
 }
 
