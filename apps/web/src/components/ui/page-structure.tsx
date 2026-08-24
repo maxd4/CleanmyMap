@@ -2,7 +2,20 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  BookOpenText,
+  Database,
+  Download,
+  HardDrive,
+  Inbox,
+  PlusCircle,
+  Settings,
+  ShieldCheck,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import { CmmButtonGroup } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +46,18 @@ const actionToneClasses: Record<CardTone, string> = {
   violet: "border-violet-300/30 bg-violet-500/8 shadow-[0_16px_36px_-30px_rgba(139,92,246,0.18)]",
   rose: "border-rose-300/30 bg-rose-500/8 shadow-[0_16px_36px_-30px_rgba(244,63,94,0.18)]",
   indigo: "border-indigo-300/30 bg-indigo-500/8 shadow-[0_16px_36px_-30px_rgba(99,102,241,0.18)]",
+};
+
+const ACTION_ICON_MAP: Record<string, LucideIcon> = {
+  Activity,
+  BookOpenText,
+  Database,
+  Download,
+  HardDrive,
+  Inbox,
+  Settings,
+  ShieldCheck,
+  Trash2,
 };
 
 export type SectionHeaderProps = {
@@ -246,7 +271,7 @@ export function SourceBadge({
 }
 
 export type ActionCardProps = {
-  icon: LucideIcon;
+  icon: LucideIcon | string;
   title: string;
   description: string;
   badge: string;
@@ -260,7 +285,7 @@ export type ActionCardProps = {
 };
 
 export function ActionCard({
-  icon: Icon,
+  icon,
   title,
   description,
   badge,
@@ -272,6 +297,11 @@ export function ActionCard({
   iconWrapClassName,
   badgeClassName,
 }: ActionCardProps) {
+  const Icon =
+    typeof icon === "string"
+      ? ACTION_ICON_MAP[icon] ?? PlusCircle
+      : icon;
+
   const content = (
     <>
       <div className="flex items-start justify-between gap-4">
