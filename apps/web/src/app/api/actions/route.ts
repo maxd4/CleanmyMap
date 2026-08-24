@@ -4,36 +4,28 @@ import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createActionSchema } from "@/lib/validation/action";
 import {
-  createAction,
-  resolveActionCreationStatus,
-} from "@/lib/actions/store";
-import {
   canAutoApproveOwnAction,
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
 import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
 import { toActionListItem } from "@/lib/actions/data-contract";
 import {
-  resolveActionOrganizers,
-  resolveDefaultActionOrganizerIds,
-  resolveActionParticipants,
-} from "@/lib/actions/organizers";
-import {
   fetchUnifiedActionContracts,
   parseEntityTypesParam,
 } from "@/lib/actions/unified-source";
+import {
+  ActionCreationValidationError,
+  createActionSubmission,
+} from "@/lib/actions/create-submission";
 import { buildActionInsights } from "@/lib/actions/insights";
 import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
-import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
-import { buildPostActionRetentionLoop as buildActionRetentionLoop } from "@/lib/gamification/progression";
-import { trackServerEvent } from "@/lib/analytics.server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { resolveReportQuery } from "@/lib/reports/csv";
-import { emitActionCreated, emitSpotCreated } from "@/lib/events/emit";
 import { verifyRateLimit, createServerRateLimitResponse } from "@/lib/rate-limit";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
+import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
@@ -334,168 +326,38 @@ export async function POST(request: Request) {
         return validationErrorResponse(details);
       }
     }
-    const isSpontaneousAction =
-      normalizedPayload.recordType === "action" &&
-      normalizedPayload.associationName === "Action spontanée";
-    const providedOrganizerAccounts = normalizedPayload.organizerAccounts ?? [];
-    const organizerAccounts =
-      providedOrganizerAccounts.length > 0
-        ? providedOrganizerAccounts
-        : normalizedPayload.recordType === "action" && !isSpontaneousAction
-          ? resolveDefaultActionOrganizerIds({
-              creatorUserId: userId,
-              creatorIsAdminLike: isCreatorAdminLike,
-            })
-          : [];
-    const organizerResolution =
-      normalizedPayload.recordType === "action"
-        ? await resolveActionOrganizers({
-            supabase,
-            creator: {
-              userId,
-              displayName: resolvedIdentity.displayName,
-              handle: resolvedIdentity.handle,
-              username: resolvedIdentity.username,
-              email: resolvedIdentity.email,
-            },
-            organizerAccounts,
-            includeCreatorAsPrimary: isSpontaneousAction,
-        })
-        : { organizers: [], unresolvedTokens: [] as string[] };
-
-    if (organizerResolution.unresolvedTokens.length > 0) {
-      return validationErrorResponse({
-        organizerAccounts: [
-          `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,
-        ],
-      });
-    }
-
-    const participantResolution =
-      normalizedPayload.recordType === "action"
-        ? await resolveActionParticipants({
-            supabase,
-            creator: {
-              userId,
-              displayName: resolvedIdentity.displayName,
-              handle: resolvedIdentity.handle,
-              username: resolvedIdentity.username,
-              email: resolvedIdentity.email,
-            },
-            participantAccounts: normalizedPayload.participantAccounts,
-            organizerIds: organizerResolution.organizers.map(
-              (organizer) => organizer.userId,
-            ),
-          })
-        : { participants: [], unresolvedTokens: [] as string[] };
-
-    if (participantResolution.unresolvedTokens.length > 0) {
-      return validationErrorResponse({
-        participantAccounts: [
-          `Comptes participants introuvables: ${participantResolution.unresolvedTokens.join(", ")}`,
-        ],
-      });
-    }
-
-    if (
-      normalizedPayload.recordType === "clean_place" ||
-      normalizedPayload.recordType === "spot"
-    ) {
-      const label = normalizedPayload.locationLabel.trim();
-      if (label.length < 2) {
-        return validationErrorResponse({
-          locationLabel: ["Le lieu propre doit être renseigné."],
-        });
-      }
-
-      const composedNotes = normalizedPayload.notes?.trim()
-        ? `[spot-by:${actorName}] ${normalizedPayload.notes.trim()}`
-        : `[spot-by:${actorName}]`;
-
-      const inserted = await supabase
-        .from("spots")
-        .insert({
-          created_by_clerk_id: userId,
-          label,
-          waste_type: normalizedPayload.recordType,
-          latitude: normalizedPayload.latitude ?? null,
-          longitude: normalizedPayload.longitude ?? null,
-          status: "new",
-          notes: composedNotes,
-        })
-        .select("id, created_at, label, waste_type, latitude, longitude, status, notes")
-        .single();
-
-      if (inserted.error) {
-        return handleApiError(inserted.error, "POST /api/actions (spot insert)");
-      }
-
-      emitSpotCreated({
-        spotId: String(inserted.data.id),
+    try {
+      const created = await createActionSubmission({
+        supabase,
         userId,
-        label: inserted.data.label,
-        wasteType: inserted.data.waste_type,
-      });
-
-      const consentGranted = hasAnalyticsConsentCookie(request.headers.get("cookie"));
-      if (consentGranted) {
-        await trackServerEvent(
+        payload: normalizedPayload,
+        creator: {
           userId,
-          "spot_created",
-          {
-            waste_type: inserted.data.waste_type,
-            location: inserted.data.label,
-          },
-          {
-            consentGranted,
-          },
-        );
-      }
+          displayName: resolvedIdentity.displayName,
+          handle: resolvedIdentity.handle,
+          username: resolvedIdentity.username,
+          email: resolvedIdentity.email,
+        },
+        isCreatorAdminLike,
+        canAutoApproveOwnSubmission,
+        consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
+      });
 
       return NextResponse.json(
-        { status: "created", id: inserted.data.id, source: "spots", retentionLoop: null },
+        {
+          status: "created",
+          id: created.id,
+          source: created.source,
+          retentionLoop: created.kind === "action" ? created.retentionLoop : null,
+        },
         { status: 201 },
       );
+    } catch (error) {
+      if (error instanceof ActionCreationValidationError) {
+        return validationErrorResponse(error.fieldErrors);
+      }
+      throw error;
     }
-
-    const created = await createAction(supabase, {
-      userId,
-      payload: normalizedPayload,
-      organizers: organizerResolution.organizers,
-      manualParticipants: participantResolution.participants,
-      status:
-        normalizedPayload.recordType === "action"
-          ? normalizedPayload.actionPhase === "post_action_draft"
-            ? "pending"
-            : canAutoApproveOwnSubmission
-              ? "approved"
-              : "pending"
-          : resolveActionCreationStatus(canAutoApproveOwnSubmission),
-    });
-
-    emitActionCreated({
-      actionId: created.id,
-      userId,
-      locationLabel: normalizedPayload.locationLabel,
-      wasteKg: Number(normalizedPayload.wasteKg) || 0,
-    });
-
-    // Track if this is a new place
-    import("@/lib/gamification/progression-tracking").then(({ trackNewPlaceVisited }) => {
-      trackNewPlaceVisited(supabase, {
-        userId,
-        locationLabel: normalizedPayload.locationLabel,
-      }).catch((err) => console.error("trackNewPlaceVisited error", err));
-    });
-
-    const retentionLoop = await buildActionRetentionLoop(supabase, {
-      userId,
-      actionId: created.id,
-    }).catch(() => null);
-    return NextResponse.json(
-      { status: "created", id: created.id, source: "actions", retentionLoop },
-      { status: 201 },
-    );
   } catch (error) {
     return handleApiError(error, "api/actions");
   }

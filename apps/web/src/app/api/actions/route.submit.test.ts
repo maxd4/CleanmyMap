@@ -12,6 +12,7 @@ const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
+const createSignalementMock = vi.hoisted(() => vi.fn());
 const resolveActionCreationStatusMock = vi.hoisted(() =>
   vi.fn((isAutoApprovedSubmission: boolean) =>
     isAutoApprovedSubmission ? "approved" : "pending",
@@ -59,6 +60,10 @@ vi.mock("@/lib/actions/store", () => ({
   resolveActionCreationStatus: resolveActionCreationStatusMock,
 }));
 
+vi.mock("@/lib/actions/create-signalement", () => ({
+  createSignalement: createSignalementMock,
+}));
+
 vi.mock("@/lib/actions/organizers", () => ({
   resolveActionOrganizers: resolveActionOrganizersMock,
   resolveActionParticipants: resolveActionParticipantsMock,
@@ -71,6 +76,17 @@ describe("POST /api/actions", () => {
     vi.clearAllMocks();
     getSupabaseServerClientMock.mockReturnValue({});
     createActionMock.mockResolvedValue({ id: "action-test-1" });
+    createSignalementMock.mockResolvedValue({
+      id: "spot-test-1",
+      created_at: "2026-04-22T00:00:00Z",
+      created_by_clerk_id: "user-test-1",
+      label: "Lieu propre test",
+      spot_type: "clean_place",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      status: "new",
+      notes: "[spot-by:Test User] signalement",
+    });
     resolveActionOrganizersMock.mockResolvedValue({
       organizers: [
         {
@@ -575,43 +591,16 @@ describe("POST /api/actions", () => {
     expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("creates a spot when the payload declares a clean place", async () => {
+  it("routes Quick Signalement spot creation to the canonical source", async () => {
     const { POST } = await import("./route");
-    const insertMock = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: "spot-test-1",
-            created_at: "2026-04-22T00:00:00Z",
-            label: "Lieu propre test",
-            waste_type: "clean_place",
-            latitude: 48.8566,
-            longitude: 2.3522,
-            status: "new",
-            notes: "[spot-by:Test User] signalement",
-          },
-          error: null,
-        }),
-      }),
-    });
-    const supabaseMock = {
-      from: vi.fn((table: string) => {
-        if (table !== "spots") {
-          throw new Error(`Unexpected table ${table}`);
-        }
-        return {
-          insert: insertMock,
-        };
-      }),
-    };
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock);
+    getSupabaseServerClientMock.mockReturnValue({});
 
     const payload = toContractCreatePayload({
-      recordType: "clean_place",
+      recordType: "spot",
       actorName: "Test User",
       associationName: "Action spontanée",
       actionDate: "2026-04-22",
-      locationLabel: "Lieu propre test",
+      locationLabel: "Signalement test",
       latitude: 48.8566,
       longitude: 2.3522,
       wasteKg: 0,
@@ -632,25 +621,20 @@ describe("POST /api/actions", () => {
     const body = (await response.json()) as { id?: string; source?: string };
     expect(response.status).toBe(201);
     expect(body.id).toBe("spot-test-1");
-    expect(body.source).toBe("spots");
-    expect(createActionMock).not.toHaveBeenCalled();
-    expect(emitSpotCreatedMock).toHaveBeenCalledWith({
-      spotId: "spot-test-1",
-      userId: "user-test-1",
-      label: "Lieu propre test",
-      wasteType: "clean_place",
-    });
-    expect(trackServerEventMock).toHaveBeenCalledWith(
-      "user-test-1",
-      "spot_created",
-      {
-        waste_type: "clean_place",
-        location: "Lieu propre test",
-      },
-      {
+    expect(body.source).toBe("trash_spotter_spots");
+    expect(createSignalementMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        userId: "user-test-1",
+        type: "spot",
+        label: "Signalement test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        actorName: "Test User",
         consentGranted: true,
-      },
+      }),
     );
+    expect(createActionMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("rejects unauthenticated submissions", async () => {
