@@ -76,4 +76,19 @@ describe("recovered Supabase migrations", () => {
     );
     expect(executableSql).not.toMatch(/\bcascade\b/i);
   });
+
+  it("hardens the quiz pedagogical metric RPC contract", () => {
+    const migration = readMigration("20260825173757_harden_quiz_pedagogical_metric_rpc.sql");
+    const executableSql = stripSqlComments(migration);
+
+    expect(executableSql).toMatch(/security\s+definer/i);
+    expect(executableSql).toMatch(/set\s+search_path\s*=\s*pg_catalog\s*,\s*public/i);
+    expect(executableSql).toMatch(
+      /revoke\s+all\s+on\s+function[\s\S]+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*service_role/i,
+    );
+    expect(executableSql).toMatch(
+      /grant\s+execute\s+on\s+function[\s\S]+to\s+service_role/i,
+    );
+    expect(executableSql).toMatch(/invalid quiz pedagogical metric/i);
+  });
 });

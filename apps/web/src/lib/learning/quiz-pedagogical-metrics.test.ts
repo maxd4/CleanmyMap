@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import {
   buildQuizPedagogicalMetricsSnapshot,
   normalizeQuizPedagogicalMetricRows,
+  syncQuizPedagogicalMetrics,
   type QuizPedagogicalMetricRow,
 } from "./quiz-pedagogical-metrics";
 
@@ -94,5 +95,48 @@ describe("quiz pedagogical metrics", () => {
     expect(snapshot.hardQuestions.length).toBe(1);
     expect(snapshot.weakSkills.length).toBe(1);
     expect(snapshot.frequentErrors[0]?.errorType).toBe("raisonnement trop simpliste");
+  });
+
+  it("sends bounded session aggregates through the provided server client", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+
+    await syncQuizPedagogicalMetrics(
+      { rpc } as never,
+      {
+        mode: "mixte",
+        playedAt: new Date().toISOString(),
+        totalQuestions: 2,
+        score: 1,
+        questions: [
+          {
+            questionId: "q-1",
+            correct: true,
+            skill: "terrain",
+            pedagogicalType: "multiple-choice",
+            category: "action-terrain",
+          },
+          {
+            questionId: "q-2",
+            correct: false,
+            skill: "estimation",
+            pedagogicalType: "multiple-choice",
+            errorType: "mauvaise estimation",
+            category: "impact-methodologie",
+          },
+        ],
+      },
+    );
+
+    expect(rpc).toHaveBeenCalledTimes(6);
+    expect(rpc).toHaveBeenCalledWith(
+      "increment_quiz_pedagogical_metric",
+      expect.objectContaining({
+        p_bucket_type: "mode",
+        p_attempts: 2,
+        p_correct_count: 1,
+        p_wrong_count: 1,
+        p_session_count: 1,
+      }),
+    );
   });
 });
