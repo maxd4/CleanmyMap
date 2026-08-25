@@ -15,8 +15,6 @@ import {
   presentActionPollutionProjectionWithLocalHistory,
   projectActionPollutionScoreWithLocalHistory,
   selectLocalActionProjectionCalibration,
-  type DerivedPlaceObservation,
-  type LocalRepollutionCalibration,
 } from "./local-repollution-calibration";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
