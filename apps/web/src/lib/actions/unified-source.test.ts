@@ -52,21 +52,6 @@ function canonicalSpot(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function legacySpot(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "legacy-1",
-    created_at: "2026-08-23T10:00:00Z",
-    created_by_clerk_id: "user-2",
-    label: "Historique",
-    waste_type: "clean_place",
-    latitude: 48.85,
-    longitude: 2.35,
-    status: "validated",
-    notes: "ancien signalement",
-    ...overrides,
-  };
-}
-
 function remoteAction(id: string) {
   return {
     id,
@@ -104,14 +89,11 @@ function localAction(id: string) {
   });
 }
 
-function createSupabase(canonicalRows: unknown[], legacyRows: unknown[]) {
+function createSupabase(canonicalRows: unknown[]) {
   return {
     from: vi.fn((table: string) => {
       if (table === "trash_spotter_spots") {
         return queryResult(canonicalRows);
-      }
-      if (table === "spots") {
-        return queryResult(legacyRows);
       }
       throw new Error(`Unexpected source: ${table}`);
     }),
@@ -126,22 +108,30 @@ describe("unified action source", () => {
     loadLocalActionContractsMock.mockResolvedValue([]);
   });
 
-  it("deduplicates a canonical and legacy row with the same UUID and keeps canonical provenance", async () => {
+  it("returns one canonical contract for one canonical signalement", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
-      createSupabase(
-        [canonicalSpot({ id: "same-uuid" })],
-        [legacySpot({ id: "same-uuid" })],
-      ) as never,
+      createSupabase([canonicalSpot()]) as never,
       params(),
     );
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
-      id: "same-uuid",
+      id: "canonical-1",
       type: "spot",
       source: "trash_spotter_spots",
     });
+  });
+
+  it("keeps a canonical clean place as a clean_place contract", async () => {
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([canonicalSpot({ spot_type: "clean_place" })]) as never,
+      params(),
+    );
+
+    expect(result.items[0]?.type).toBe("clean_place");
+    expect(result.items[0]?.source).toBe("trash_spotter_spots");
   });
 
   it("prefers a remote action over a local contract restored from the same externalId", async () => {
@@ -150,7 +140,7 @@ describe("unified action source", () => {
 
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
-      createSupabase([], []) as never,
+      createSupabase([]) as never,
       params(),
     );
 
@@ -162,71 +152,42 @@ describe("unified action source", () => {
     });
   });
 
-  it("keeps distinct IDs even when their coordinates are equal or close", async () => {
+  it("keeps distinct canonical signalements even when coordinates are equal or close", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
-      createSupabase(
-        [canonicalSpot({ id: "canonical-id", latitude: 48.85, longitude: 2.35 })],
-        [legacySpot({ id: "legacy-id", latitude: 48.850001, longitude: 2.350001 })],
-      ) as never,
+      createSupabase([
+        canonicalSpot({ id: "canonical-id", latitude: 48.85, longitude: 2.35 }),
+        canonicalSpot({ id: "second-id", latitude: 48.850001, longitude: 2.350001 }),
+      ]) as never,
       params(),
     );
 
     expect(result.items.map((item) => item.id)).toEqual([
       "canonical-id",
-      "legacy-id",
+      "second-id",
     ]);
   });
 
-  it("applies remote canonical, local fallback, then legacy priority for one ID/type", async () => {
-    loadLocalActionContractsMock.mockResolvedValue([
-      buildActionDataContract({
-        id: "priority-id",
-        type: "spot",
-        status: "approved",
-        source: "google_sheet",
-        observedAt: "2026-08-23",
-        locationLabel: "Local fallback",
-        latitude: 48.85,
-        longitude: 2.35,
-      }),
-    ]);
-
+  it("does not include a legacy spots read in the unified source", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase(
-        [canonicalSpot({ id: "priority-id" })],
-        [legacySpot({ id: "priority-id" })],
-      ) as never,
-      params(),
-    );
+    const supabase = createSupabase([]);
+    const result = await fetchUnifiedActionContracts(supabase as never, params());
 
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]?.source).toBe("trash_spotter_spots");
+    expect(result.items).toEqual([]);
+    expect(supabase.from).not.toHaveBeenCalledWith("spots");
   });
 
-  it("does not interpret legacy waste_type as clean_place", async () => {
+  it("keeps sourceHealth limited to active sources", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
-      createSupabase([], [legacySpot({ waste_type: "clean_place" })]) as never,
-      params(),
-    );
-
-    expect(result.items[0]?.type).toBe("spot");
-    expect(result.items[0]?.source).toBe("spots_legacy");
-  });
-
-  it("keeps sourceHealth unchanged", async () => {
-    const { fetchUnifiedActionContracts } = await import("./unified-source");
-    const result = await fetchUnifiedActionContracts(
-      createSupabase([canonicalSpot()], [legacySpot()]) as never,
+      createSupabase([canonicalSpot()]) as never,
       params(),
     );
 
     expect(result.sourceHealth).toEqual({
       partial: false,
       failedSources: [],
-      availableSources: ["actions", "spots", "spots_legacy", "local"],
+      availableSources: ["actions", "spots", "local"],
       warnings: [],
     });
   });

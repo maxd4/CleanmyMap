@@ -51,28 +51,15 @@ export type TrashSpotterSpotRow = {
   notes: string | null;
 };
 
-export type LegacySpotRow = {
-  id: string;
-  created_at: string;
-  created_by_clerk_id?: string | null;
-  label: string;
-  waste_type: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: "new" | "validated" | "cleaned";
-  notes: string | null;
-};
-
 export type UnifiedActionSourceLoadResult = {
   remoteRows: StoredAction[];
   remoteSpots: TrashSpotterSpotRow[];
-  legacySpots: LegacySpotRow[];
   localContracts: ActionDataContract[];
   failedSources: ActionSourceName[];
   availableSources: ActionSourceName[];
 };
 
-export type UnifiedContractOrigin = "remote" | "local" | "legacy";
+export type UnifiedContractOrigin = "remote" | "local";
 
 export type UnifiedContractCandidate = {
   contract: ActionDataContract;
@@ -132,15 +119,6 @@ function mapCanonicalSpotTypeToEntityType(
   return (spotType ?? "").trim().toLowerCase() === "spot"
     ? "spot"
     : "clean_place";
-}
-
-/**
- * `public.spots` predates the canonical `spot_type` contract. Its
- * `waste_type` describes waste, not the entity kind, so the conservative
- * historical projection is the table's own `spot` meaning.
- */
-function mapLegacySpotToEntityType(): ActionEntityType {
-  return "spot";
 }
 
 function toActionContractFromRow(row: StoredAction): ActionDataContract {
@@ -203,26 +181,18 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
   };
 }
 
-type SpotContractRow = TrashSpotterSpotRow | LegacySpotRow;
-
-function toSpotContractFromRow(
-  row: SpotContractRow,
-  source: "trash_spotter_spots" | "spots_legacy",
-  type: ActionEntityType,
-): ActionDataContract {
-  const geometry = "derived_geometry_kind" in row
-    ? {
-        kind: row.derived_geometry_kind,
-        geojson: row.derived_geometry_geojson,
-        confidence: row.geometry_confidence,
-        source: row.geometry_source,
-      }
-    : { kind: null, geojson: null, confidence: null, source: null };
+function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
+  const geometry = {
+    kind: row.derived_geometry_kind,
+    geojson: row.derived_geometry_geojson,
+    confidence: row.geometry_confidence,
+    source: row.geometry_source,
+  };
   const contract = buildActionDataContract({
     id: row.id,
-    type,
+    type: mapCanonicalSpotTypeToEntityType(row.spot_type),
     status: mapSpotStatusToActionStatus(row.status),
-    source,
+    source: "trash_spotter_spots",
     sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.created_at,
@@ -256,13 +226,5 @@ export function toActionContract(row: StoredAction): ActionDataContract {
 }
 
 export function toCanonicalSpotContract(row: TrashSpotterSpotRow): ActionDataContract {
-  return toSpotContractFromRow(
-    row,
-    "trash_spotter_spots",
-    mapCanonicalSpotTypeToEntityType(row.spot_type),
-  );
-}
-
-export function toLegacySpotContract(row: LegacySpotRow): ActionDataContract {
-  return toSpotContractFromRow(row, "spots_legacy", mapLegacySpotToEntityType());
+  return toSpotContractFromRow(row);
 }

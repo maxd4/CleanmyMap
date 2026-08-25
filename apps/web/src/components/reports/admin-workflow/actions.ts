@@ -212,7 +212,7 @@ function buildCleanPlaceEditPayload(
 ): AdminCleanPlaceEditPayload {
  return {
  label: toRequiredText(draft.label,"Lieu"),
- wasteType: toOptionalText(draft.wasteType),
+ spotType: draft.spotType,
  latitude: toOptionalNumber(draft.latitude,"Latitude"),
  longitude: toOptionalNumber(draft.longitude,"Longitude"),
  notes: toOptionalText(draft.notes),

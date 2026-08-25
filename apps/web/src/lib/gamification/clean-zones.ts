@@ -1,4 +1,4 @@
-export type CleanZoneSourceTable = "trash_spotter_spots" | "spots";
+export type CleanZoneSourceTable = "trash_spotter_spots";
 
 export const CLEAN_ZONE_PROGRESSION_SOURCE_TABLE = "clean_zones" as const;
 
@@ -14,8 +14,6 @@ export type CleanZoneCanonicalRow = CleanZoneBaseRow & {
   validated_at?: string | null;
   cleaned_at?: string | null;
 };
-
-export type CleanZoneLegacyRow = CleanZoneBaseRow;
 
 export type CleanZoneProgressionEvent = {
   sourceTable: string;
@@ -40,7 +38,7 @@ export type CleanZoneSource = {
 
 type CleanZoneCandidate = {
   sourceTable: CleanZoneSourceTable;
-  row: CleanZoneCanonicalRow | CleanZoneLegacyRow;
+  row: CleanZoneCanonicalRow;
   eligible: boolean;
 };
 
@@ -79,16 +77,7 @@ function hasRequiredCleanZoneFields(row: CleanZoneBaseRow): boolean {
   );
 }
 
-function sourcePriority(sourceTable: CleanZoneSourceTable): number {
-  return sourceTable === "trash_spotter_spots" ? 0 : 1;
-}
-
 function compareCandidates(left: CleanZoneCandidate, right: CleanZoneCandidate): number {
-  const sourceOrder = sourcePriority(left.sourceTable) - sourcePriority(right.sourceTable);
-  if (sourceOrder !== 0) {
-    return sourceOrder;
-  }
-
   return left.row.id.localeCompare(right.row.id);
 }
 
@@ -104,12 +93,14 @@ function hasRecordedEventForProvenance(
   provenance: CleanZoneProvenance,
   events: ReadonlySet<string>,
 ): boolean {
-  const sourceIds =
-    provenance.sourceTable === "trash_spotter_spots"
-      ? canonicalProgressionSourceIds(provenance.sourceId)
-      : legacyProgressionSourceIds(provenance.sourceId);
-
-  return sourceIds.some((sourceId) => events.has(`${provenance.sourceTable}:${sourceId}`));
+  return (
+    canonicalProgressionSourceIds(provenance.sourceId).some((sourceId) =>
+      events.has(`${provenance.sourceTable}:${sourceId}`),
+    ) ||
+    legacyProgressionSourceIds(provenance.sourceId).some((sourceId) =>
+      events.has(`spots:${sourceId}`),
+    )
+  );
 }
 
 function toProvenance(candidates: CleanZoneCandidate[]): CleanZoneProvenance[] {
@@ -151,23 +142,16 @@ function buildSource(
 
 export function collectEligibleCleanZoneSources({
   cleanPlaces = [],
-  otherSpots = [],
   progressionEvents = [],
   now = new Date(),
 }: {
   cleanPlaces?: CleanZoneCanonicalRow[];
-  otherSpots?: CleanZoneLegacyRow[];
   progressionEvents?: CleanZoneProgressionEvent[];
   now?: Date;
 }): CleanZoneSource[] {
   const cooldownCutoffIso = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const recordedEvents = new Set(
     progressionEvents.map((event) => `${event.sourceTable}:${event.sourceId}`),
-  );
-  const legacyRecordedIds = new Set(
-    progressionEvents
-      .filter((event) => event.sourceTable === "spots")
-      .flatMap((event) => legacyProgressionSourceIds(event.sourceId)),
   );
   const groups = new Map<string, CleanZoneCandidate[]>();
 
@@ -190,27 +174,6 @@ export function collectEligibleCleanZoneSources({
     groups.set(placeKey, group);
   }
 
-  for (const row of otherSpots) {
-    if (!hasRequiredCleanZoneFields(row)) {
-      continue;
-    }
-
-    const placeKey = canonicalPlaceKey(row);
-    if (!placeKey) {
-      continue;
-    }
-
-    const group = groups.get(placeKey) ?? [];
-    group.push({
-      sourceTable: "spots",
-      row,
-      // public.spots has no validation timestamp. A legacy row is retained
-      // only when an XP event already proves that it was previously awarded.
-      eligible: legacyRecordedIds.has(row.id) || legacyRecordedIds.has(`spot-id:${row.id}`),
-    });
-    groups.set(placeKey, group);
-  }
-
   return [...groups.entries()]
     .filter(([, candidates]) => candidates.some((candidate) => candidate.eligible))
     .sort(([left], [right]) => left.localeCompare(right))
@@ -219,7 +182,6 @@ export function collectEligibleCleanZoneSources({
 
 export function countEligibleCleanZones(input: {
   cleanPlaces?: CleanZoneCanonicalRow[];
-  otherSpots?: CleanZoneLegacyRow[];
   progressionEvents?: CleanZoneProgressionEvent[];
   now?: Date;
 }): number {

@@ -71,7 +71,7 @@ export const actionEditsSchema = z
 export const cleanPlaceEditsSchema = z
   .object({
     label: z.string().trim().min(2).max(200).optional(),
-    wasteType: z.string().trim().max(80).nullable().optional(),
+    spotType: z.enum(["spot", "clean_place"]).optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
     notes: z.string().trim().max(1000).nullable().optional(),
@@ -131,7 +131,7 @@ export function buildAdminCleanPlaceUpdates(
   return {
     status,
     ...(edits?.label !== undefined ? { label: edits.label } : {}),
-    ...(edits?.wasteType !== undefined ? { waste_type: edits.wasteType } : {}),
+    ...(edits?.spotType !== undefined ? { spot_type: edits.spotType } : {}),
     ...(edits?.latitude !== undefined ? { latitude: edits.latitude } : {}),
     ...(edits?.longitude !== undefined ? { longitude: edits.longitude } : {}),
     ...(edits?.notes !== undefined ? { notes: edits.notes } : {}),

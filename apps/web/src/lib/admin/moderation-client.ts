@@ -11,7 +11,7 @@ export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
 export type ModerationCleanPlaceStatus = "new" | "validated" | "cleaned";
 export type ModerationVisibility = "unchanged" | "visible" | "hidden";
-export type ModerationSignalementSource = "trash_spotter_spots" | "spots";
+export type ModerationSignalementSource = "trash_spotter_spots";
 export type ModerationSourceTable =
   | "actions"
   | "submissions"
@@ -41,7 +41,7 @@ export type AdminActionEditPayload = {
 
 export type AdminCleanPlaceEditPayload = {
   label?: string;
-  wasteType?: string | null;
+  spotType?: "spot" | "clean_place";
   latitude?: number | null;
   longitude?: number | null;
   notes?: string | null;
@@ -230,8 +230,7 @@ function buildModerationSuccessResponse(
     sourceTable:
       sourceTable === "actions" ||
       sourceTable === "submissions" ||
-      sourceTable === "trash_spotter_spots" ||
-      sourceTable === "spots"
+      sourceTable === "trash_spotter_spots"
         ? sourceTable
         : undefined,
     copiedToLocalValidatedStore:

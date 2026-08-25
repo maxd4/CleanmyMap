@@ -11,7 +11,7 @@ export type ActionMapViewportQuery = {
 };
 
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
-export type ActionSourceName = "actions" | "spots" | "spots_legacy" | "local";
+export type ActionSourceName = "actions" | "spots" | "local";
 
 import type { ActionDataQualitySummary } from "./data-quality";
 

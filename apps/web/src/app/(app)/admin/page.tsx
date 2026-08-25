@@ -223,7 +223,7 @@ function buildModerationBlockSummaries(params: {
       samples: [
         ...params.pendingSpots.slice(0, 3).map((spot) => ({
           label: spot.label,
-          meta: `${(spot.sourceTable === "spots" ? spot.waste_type : spot.spot_type) === "spot" ? "Spot" : "Lieu propre"} · ${spot.sourceTable} · ${formatModerationDate(spot.created_at)}`,
+          meta: `${spot.spot_type === "spot" ? "Spot" : "Lieu propre"} · ${spot.sourceTable} · ${formatModerationDate(spot.created_at)}`,
         })),
         ...(params.pendingSpots.length === 0
           ? [

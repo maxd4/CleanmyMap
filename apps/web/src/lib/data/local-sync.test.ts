@@ -35,14 +35,12 @@ describe("validated signalement local sync", () => {
       {} as never,
       "canonical-1",
       "admin-1",
-      "trash_spotter_spots",
     );
 
     expect(copied).toBe(true);
     expect(readSignalementForModerationMock).toHaveBeenCalledWith(
       expect.anything(),
       "canonical-1",
-      "trash_spotter_spots",
     );
     expect(upsertLocalRecordsMock).toHaveBeenCalledWith(
       "validated.json",

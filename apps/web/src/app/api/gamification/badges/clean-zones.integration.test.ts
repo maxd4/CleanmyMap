@@ -18,16 +18,6 @@ function canonicalRow(id: string, latitude: number, longitude: number) {
   };
 }
 
-function legacyRow(id: string, latitude: number, longitude: number) {
-  return {
-    id,
-    status: "validated" as const,
-    latitude,
-    longitude,
-    notes: `Legacy spot ${id}`,
-  };
-}
-
 describe("Clean Zones Badge rules", () => {
   it("counts only canonical rows with an expired validation cooldown", () => {
     const sources = collectEligibleCleanZoneSources({
@@ -56,41 +46,47 @@ describe("Clean Zones Badge rules", () => {
     ]);
   });
 
-  it("does not invent a legacy validation timestamp from created_at or an absent field", () => {
-    const legacyWithUnsupportedTimestamp = {
-      ...legacyRow("legacy-unproven", 48.85, 2.35),
-      validated_at: EXPIRED_VALIDATION,
-    };
-
+  it("does not infer validation from created_at when the canonical timestamp is absent", () => {
     expect(
       collectEligibleCleanZoneSources({
-        otherSpots: [legacyWithUnsupportedTimestamp],
+        cleanPlaces: [
+          {
+            id: "unproven",
+            status: "validated",
+            latitude: 48.85,
+            longitude: 2.35,
+            notes: "canonical",
+          },
+        ],
         now: NOW,
       }),
     ).toEqual([]);
   });
 
-  it("keeps a legacy-only place only when an existing XP event proves it was already awarded", () => {
+  it("recognizes historical spots XP events after canonical migration", () => {
     const sources = collectEligibleCleanZoneSources({
-      otherSpots: [legacyRow("legacy-proven", 48.85, 2.35)],
+      cleanPlaces: [canonicalRow("migrated-id", 48.85, 2.35)],
       progressionEvents: [
-        { sourceTable: "spots", sourceId: "spot-id:legacy-proven" },
+        { sourceTable: "spots", sourceId: "spot-id:migrated-id" },
       ],
       now: NOW,
     });
 
     expect(sources).toHaveLength(1);
     expect(sources[0]).toMatchObject({
-      sourceTable: "spots",
-      sourceId: "legacy-proven",
+      sourceTable: "trash_spotter_spots",
+      sourceId: "migrated-id",
+      provenance: [{ sourceTable: "trash_spotter_spots", sourceId: "migrated-id" }],
       progressionEventRecorded: true,
     });
   });
 
-  it("deduplicates the same place across sources, gives canonical precedence, and keeps provenance", () => {
+  it("deduplicates the same canonical place and keeps canonical provenance", () => {
     const sources = collectEligibleCleanZoneSources({
-      cleanPlaces: [canonicalRow("canonical-id", 48.85, 2.35)],
-      otherSpots: [legacyRow("legacy-id", 48.850004, 2.350004)],
+      cleanPlaces: [
+        canonicalRow("canonical-id", 48.85, 2.35),
+        canonicalRow("migrated-id", 48.850004, 2.350004),
+      ],
       now: NOW,
     });
 
@@ -105,16 +101,15 @@ describe("Clean Zones Badge rules", () => {
     });
     expect(sources[0]?.provenance).toEqual([
       { sourceTable: "trash_spotter_spots", sourceId: "canonical-id" },
-      { sourceTable: "spots", sourceId: "legacy-id" },
+      { sourceTable: "trash_spotter_spots", sourceId: "migrated-id" },
     ]);
   });
 
-  it("does not create a second XP candidate when a legacy duplicate already has an XP event", () => {
+  it("does not create a second XP candidate when a migrated canonical row has an old XP event", () => {
     const sources = collectEligibleCleanZoneSources({
-      cleanPlaces: [canonicalRow("canonical-id", 48.85, 2.35)],
-      otherSpots: [legacyRow("legacy-id", 48.85, 2.35)],
+      cleanPlaces: [canonicalRow("migrated-id", 48.85, 2.35)],
       progressionEvents: [
-        { sourceTable: "spots", sourceId: "spot-id:legacy-id" },
+        { sourceTable: "spots", sourceId: "spot-id:migrated-id" },
       ],
       now: NOW,
     });
@@ -123,12 +118,11 @@ describe("Clean Zones Badge rules", () => {
     expect(sources[0]?.progressionEventRecorded).toBe(true);
   });
 
-  it("keeps distinct places as distinct candidates", () => {
+  it("keeps distinct canonical places as distinct candidates", () => {
     const sources = collectEligibleCleanZoneSources({
-      cleanPlaces: [canonicalRow("canonical-one", 48.85, 2.35)],
-      otherSpots: [legacyRow("legacy-two", 48.86, 2.36)],
-      progressionEvents: [
-        { sourceTable: "spots", sourceId: "spot-id:legacy-two" },
+      cleanPlaces: [
+        canonicalRow("canonical-one", 48.85, 2.35),
+        canonicalRow("canonical-two", 48.86, 2.36),
       ],
       now: NOW,
     });

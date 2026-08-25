@@ -187,7 +187,7 @@ export function useAdminWorkflow(
  function buildCleanPlaceEditDraft(item: ActionListItem): CleanPlaceModerationEditDraft {
  return {
  label: item.location_label,
- wasteType: item.record_type ?? "clean_place",
+ spotType: item.contract?.type === "spot" ? "spot" : "clean_place",
  latitude: item.latitude === null ? "" : String(item.latitude),
  longitude: item.longitude === null ? "" : String(item.longitude),
  notes: item.notes_plain ?? item.notes ?? "",
@@ -195,7 +195,10 @@ export function useAdminWorkflow(
  }
 
  function selectActionForModeration(item: ActionListItem) {
- const isCleanPlace = item.source ==="spots" || item.record_type ==="clean_place" || item.record_type ==="other";
+ const isCleanPlace =
+  item.source === "trash_spotter_spots" ||
+  item.record_type ==="clean_place" ||
+  item.record_type ==="other";
  state.setModerationEntityType(isCleanPlace ?"clean_place" :"action");
  state.setModerationId(item.id);
  state.setSelectedActionCreatorId(isCleanPlace ? null : item.created_by_clerk_id?.trim() || null);
