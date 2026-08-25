@@ -24,6 +24,7 @@ const allowedRootFiles = new Set([
   "PRE_PUSH_GUARD.md",
   "README.md",
   "SECURITY.md",
+  "UBIQUITOUS_LANGUAGE.md",
 ]);
 
 const temporaryLegacyRootFiles = new Map([
