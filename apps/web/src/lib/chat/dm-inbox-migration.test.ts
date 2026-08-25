@@ -8,6 +8,13 @@ const migration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const permissionsMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260825230000_harden_chat_dm_inbox_rpc_permissions.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
 
 it("creates an isolated per-user, per-peer read cursor with RLS", () => {
   expect(migration).toContain("create table if not exists public.chat_dm_read_states");
@@ -36,4 +43,19 @@ it("keeps read marking monotone and rejects self or unknown peers", () => {
   expect(migration).toContain("greatest(");
   expect(migration).toContain("revoke all on function public.mark_my_dm_conversation_read(text) from public");
   expect(migration).toContain("grant execute on function public.mark_my_dm_conversation_read(text) to authenticated, service_role");
+});
+
+it("removes the default anon EXECUTE grant from both inbox RPCs", () => {
+  expect(permissionsMigration).toContain(
+    "revoke all on function public.list_my_dm_conversations() from public, anon",
+  );
+  expect(permissionsMigration).toContain(
+    "revoke all on function public.mark_my_dm_conversation_read(text) from public, anon",
+  );
+  expect(permissionsMigration).toContain(
+    "grant execute on function public.list_my_dm_conversations() to authenticated, service_role",
+  );
+  expect(permissionsMigration).toContain(
+    "grant execute on function public.mark_my_dm_conversation_read(text) to authenticated, service_role",
+  );
 });
