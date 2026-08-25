@@ -8,13 +8,11 @@ type StopCandidateInput = {
   latitude: number;
   longitude: number;
   observedAt: string;
-  type: "action" | "clean_place" | "spot";
-  wasteKg: number;
-  butts: number;
 };
 
 export type HotspotRecommendation = {
   zoneLabel: string;
+  /** Historical HTTP field name; value is now an operational signal, not severity. */
   predictedDirtScore: number;
   recentActions: number;
   recentSpots: number;
@@ -67,7 +65,7 @@ export function defaultRouteAssistantPayload() {
   return {
     actNow: "Tu devrais agir ici aujourd'hui: aucun point geolocalise disponible.",
     criticalNearby:
-      "Zone critique proche de toi: impossible a estimer pour le moment.",
+      "Point prioritaire proche de toi: impossible a estimer pour le moment.",
     mostUsefulAction:
       "Action la plus utile en ce moment: declarer des actions geolocalisees.",
     predictedDirtyZones: [] as string[],
@@ -203,10 +201,8 @@ export function buildHotspots(params: {
       latSum: number;
       lngSum: number;
       count: number;
-      recentActions: number;
       recentSpots: number;
-      totalWasteKg: number;
-      totalButts: number;
+      freshnessTotal: number;
     }
   >();
 
@@ -219,40 +215,38 @@ export function buildHotspots(params: {
       latSum: 0,
       lngSum: 0,
       count: 0,
-      recentActions: 0,
       recentSpots: 0,
-      totalWasteKg: 0,
-      totalButts: 0,
+      freshnessTotal: 0,
     };
     current.latSum += candidate.latitude;
     current.lngSum += candidate.longitude;
     current.count += 1;
-    current.totalWasteKg += candidate.wasteKg;
-    current.totalButts += candidate.butts;
+    const ageDays = Math.max(
+      0,
+      (Date.now() - new Date(candidate.observedAt).getTime()) / 86_400_000,
+    );
+    current.freshnessTotal += Math.max(0, 1 - ageDays / 45);
     if (candidate.observedAt >= recentFloor) {
-      if (candidate.type === "spot") {
-        current.recentSpots += 1;
-      } else {
-        current.recentActions += 1;
-      }
+      current.recentSpots += 1;
     }
     byZone.set(key, current);
   }
 
   return [...byZone.values()]
     .map((zone) => {
-      const averageWasteKg = zone.count > 0 ? zone.totalWasteKg / zone.count : 0;
-      const averageButts = zone.count > 0 ? zone.totalButts / zone.count : 0;
+      const averageFreshness =
+        zone.count > 0 ? zone.freshnessTotal / zone.count : 0;
       const eventPressure =
         zone.arrondissement !== null
           ? params.pressureByArrondissement.get(zone.arrondissement) ?? 0
           : 0;
-      const predictedDirtScore =
-        zone.recentActions * 6 +
-        zone.recentSpots * 10 +
-        averageWasteKg * 2.2 +
-        averageButts * 0.015 +
-        eventPressure * 4;
+      // Kept under the historical response field name for HTTP compatibility.
+      // This is an operational signal (validated spot freshness/count and
+      // event pressure), not an environmental severity estimate.
+      const predictedDirtScore = Math.min(
+        10,
+        zone.recentSpots * 1.5 + averageFreshness * 4 + eventPressure * 0.2,
+      );
 
       const avgLat = zone.latSum / Math.max(1, zone.count);
       const avgLng = zone.lngSum / Math.max(1, zone.count);
@@ -265,14 +259,12 @@ export function buildHotspots(params: {
             )
           : null;
       const reason =
-        zone.recentSpots > zone.recentActions
-          ? "Signalements frequents et recurrence locale elevee."
-          : "Volume d'actions/megots + pression evenementielle a surveiller.";
+        "Signalements valides recents et arbitrage operationnel a surveiller.";
 
       return {
         zoneLabel: zone.zoneLabel,
         predictedDirtScore: Number(predictedDirtScore.toFixed(1)),
-        recentActions: zone.recentActions,
+        recentActions: 0,
         recentSpots: zone.recentSpots,
         eventPressure: Number(eventPressure.toFixed(1)),
         distanceKm:
@@ -314,17 +306,17 @@ export function buildProactiveAssistant(params: {
       : "Tu devrais agir ici aujourd'hui: aucun point prioritaire n'a ete identifie.",
     criticalNearby: topHotspot
       ? topHotspot.distanceKm !== null && topHotspot.distanceKm <= 4
-        ? `Zone critique proche de toi: ${topHotspot.zoneLabel} (${topHotspot.distanceKm} km).`
-        : `Zone critique proche de toi: ${topHotspot.zoneLabel}.`
-      : "Zone critique proche de toi: donnees locales insuffisantes.",
+        ? `Point prioritaire proche de toi: ${topHotspot.zoneLabel} (${topHotspot.distanceKm} km).`
+        : `Point prioritaire proche de toi: ${topHotspot.zoneLabel}.`
+      : "Point prioritaire proche de toi: donnees locales insuffisantes.",
     mostUsefulAction: topStop
-      ? `Action la plus utile en ce moment: intervenir sur ${topStop.label} (score ${topStop.score.toFixed(1)}).`
-      : "Action la plus utile en ce moment: renforcer la collecte de donnees geolocalisees.",
+      ? `Intervention la plus utile en ce moment: ${topStop.label} (score operationnel ${topStop.score.toFixed(1)}).`
+      : "Intervention la plus utile en ce moment: renforcer la collecte de donnees geolocalisees.",
     predictedDirtyZones: params.hotspots
       .slice(0, 3)
       .map(
         (zone) =>
-          `${zone.zoneLabel}: risque ${zone.predictedDirtScore.toFixed(1)} (actions ${zone.recentActions}, spots ${zone.recentSpots}, pression evenement ${zone.eventPressure.toFixed(1)}).`,
+          `${zone.zoneLabel}: signal operationnel ${zone.predictedDirtScore.toFixed(1)}/10 (actions legacy ${zone.recentActions}, spots valides ${zone.recentSpots}, pression evenement ${zone.eventPressure.toFixed(1)}).`,
       ),
     eventAnticipation: params.eventSignals,
     hotspots: params.hotspots,

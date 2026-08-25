@@ -17,10 +17,10 @@ import { ActionMapItem } from "@/lib/actions/types";
 import {
   mapItemCigaretteButts,
   mapItemCoordinates,
-  mapItemType,
   mapItemWasteKg,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
+import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
 import {
   resolveInfrastructureEmoji,
@@ -101,12 +101,7 @@ export function resolvePointColor(
 }
 
 export function isTrashSpotterItem(item: ActionMapItem): boolean {
-  const type = mapItemType(item);
-  return (
-    type === "spot" ||
-    item.source === "trash_spotter_spots" ||
-    item.record_type === "other"
-  );
+  return isTrashSpotterActionableItem(item);
 }
 
 export function SignalementMarkers({

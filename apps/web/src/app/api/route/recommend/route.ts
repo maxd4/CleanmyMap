@@ -2,8 +2,15 @@ import { auth } from"@clerk/nextjs/server";
 import { z } from"zod";
 import { NextResponse } from"next/server";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
+import { buildTrashSpotterActionableCandidates } from"@/lib/actions/trash-spotter-actionable-candidates";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
+import {
+ buildTrashSpotterRouteCandidates,
+ distanceKm,
+ selectNextTrashSpotterStop,
+ type TrashSpotterRouteCandidate,
+} from"@/lib/route/trash-spotter-recommendation";
 import {
   buildHotspots,
   buildProactiveAssistant,
@@ -28,49 +35,6 @@ const requestSchema = z.object({
  impactVsDistance: z.number().min(0).max(100).default(65),
  maxStops: z.number().int().min(2).max(12).default(6),
 });
-
-type StopCandidate = {
- id: string;
- label: string;
- latitude: number;
- longitude: number;
- observedAt: string;
- type:"action" |"clean_place" |"spot";
- wasteKg: number;
- butts: number;
- score: number;
- reason: string;
-};
-
-function selectNextStopCandidate(
- current: StopCandidate,
- candidates: StopCandidate[],
- impactWeight: number,
- distanceWeight: number,
-): StopCandidate | undefined {
- let bestCandidate: StopCandidate | undefined;
- let bestValue = Number.NEGATIVE_INFINITY;
-
- for (const candidate of candidates) {
- const dist = distanceKm(current, candidate);
- const composite = candidate.score * impactWeight - dist * 8 * distanceWeight;
- if (composite > bestValue) {
- bestValue = composite;
- bestCandidate = candidate;
- }
- }
-
- return bestCandidate;
-}
-
-function distanceKm(
- a: { latitude: number; longitude: number },
- b: { latitude: number; longitude: number },
-): number {
- const dLat = (a.latitude - b.latitude) * 111;
- const dLon = (a.longitude - b.longitude) * 73;
- return Math.sqrt(dLat * dLat + dLon * dLon);
-}
 
 export async function POST(request: Request) {
  const { userId } = await auth();
@@ -109,57 +73,16 @@ export async function POST(request: Request) {
  status:"approved",
  floorDate: defaultRouteRecommendationFloorDate(),
  requireCoordinates: true,
- types: ["action","clean_place","spot"],
+ // The source loader may still be shared with other action surfaces, but the
+ // candidate capability below accepts only validated canonical spot records.
+ types: ["spot"],
  });
 
- const candidates: StopCandidate[] = contracts
- .filter(
- (item) =>
- item.location.latitude !== null && item.location.longitude !== null,
- )
- .map((item) => {
- const wasteKg = Number(item.metadata.wasteKg || 0);
- const butts = Number(item.metadata.cigaretteButts || 0);
- const impactScore = wasteKg * 4 + butts * 0.03;
- const traceBonus = item.geometry.kind ==="point" ? 0 : 4;
- const volunteersFactor = Math.min(
- 1.4,
- Math.max(0.7, constraints.volunteers / 4),
+ const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
+ const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
+ actionableCandidates,
+ constraints,
  );
- const weatherPenalty =
- constraints.weather ==="ok"
- ? 0
- : constraints.weather ==="rain" || constraints.weather ==="wind"
- ? 3
- : 2;
- const accessibilityPenalty =
- constraints.accessibility ==="strict"
- ? 3
- : constraints.accessibility ==="accessible"
- ? 1
- : 0;
- const securityPenalty = constraints.security ==="renforced" ? 2 : 0;
- const score =
- impactScore * volunteersFactor +
- traceBonus -
- weatherPenalty -
- accessibilityPenalty -
- securityPenalty;
- const reason = `Impact ${wasteKg.toFixed(1)}kg/${butts} mégots, contraintes météo=${constraints.weather}, sécurité=${constraints.security}.`;
- return {
- id: item.id,
- label: item.location.label,
- latitude: Number(item.location.latitude),
- longitude: Number(item.location.longitude),
- observedAt: item.dates.observedAt,
- type: item.type,
- wasteKg,
- butts,
- score,
- reason,
- };
- })
- .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 
   const selected = candidates.slice(0, Math.max(constraints.maxStops * 2, 8));
   const routeStart = selected[0];
@@ -180,7 +103,7 @@ export async function POST(request: Request) {
 
  const impactWeight = constraints.impactVsDistance / 100;
  const distanceWeight = 1 - impactWeight;
- const route: StopCandidate[] = [routeStart];
+ const route: TrashSpotterRouteCandidate[] = [routeStart];
  const unvisited = selected.slice(1);
 
  while (route.length < constraints.maxStops && unvisited.length > 0) {
@@ -189,7 +112,7 @@ export async function POST(request: Request) {
    break;
   }
 
-  const next = selectNextStopCandidate(current, unvisited, impactWeight, distanceWeight);
+  const next = selectNextTrashSpotterStop(current, unvisited, impactWeight, distanceWeight);
   if (!next) {
    break;
   }

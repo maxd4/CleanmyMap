@@ -12,6 +12,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
 import { MapGeometryLegend } from "./map/map-geometry-legend";
@@ -152,7 +153,7 @@ export function ActionsMapCanvas({
       : "border-sky-300/12 bg-[rgba(16,40,64,0.9)] text-sky-100/56 hover:border-sky-300/24 hover:text-sky-50",
   };
   const mainItems = useMemo(
-    () => items.filter((item) => !isTrashSpotterItem(item)),
+    () => items.filter((item) => !isTrashSpotterSpotRecord(item)),
     [items],
   );
   const trashSpotterItems = useMemo(
