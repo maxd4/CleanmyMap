@@ -4,6 +4,7 @@ import {
   getActionOperationalContext,
   getGeometryPresentation,
   mapItemCigaretteButts,
+  mapItemCoordinates,
   mapItemLocationLabel,
   mapItemObservedAt,
   mapItemPostActionPollutionScore,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/actions/data-contract";
 import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import { ActionMapItem } from "@/lib/actions/types";
+import type { CorridorHistory } from "@/lib/actions/corridor-history";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
   formatObservedDate,
@@ -21,6 +23,7 @@ import {
 } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
+import { CorridorPopupContent } from "./corridor-popup-content";
 import { useActionPopupScores } from "./use-action-popup-scores";
 import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
 import {
@@ -30,16 +33,55 @@ import {
   resolveActionMapGeometryViewModel,
 } from "./actions-map-geometry.utils";
 
-export function ActionPopupContent({
+type ActionPopupContentProps = {
+  item: ActionMapItem;
+  color: string;
+  coords: { latitude: number | null; longitude: number | null };
+  onViewGeometry?: () => void;
+  corridorItems?: readonly ActionMapItem[];
+  corridorHistory?: CorridorHistory;
+  onViewGeometryForItem?: (item: ActionMapItem) => void;
+  resolveColorForItem?: (item: ActionMapItem) => string;
+};
+
+export function ActionPopupContent(props: ActionPopupContentProps) {
+  const corridorItems = props.corridorItems ?? [];
+  if (corridorItems.length >= 2 && props.corridorHistory) {
+    return (
+      <CorridorPopupContent
+        corridorItems={corridorItems}
+        corridorHistory={props.corridorHistory}
+        color={props.color}
+        renderAction={(item) => (
+          <SingleActionPopupContent
+            item={item}
+            color={props.resolveColorForItem?.(item) ?? props.color}
+            coords={mapItemCoordinates(item)}
+            onViewGeometry={
+              props.onViewGeometryForItem?.bind(null, item) ?? props.onViewGeometry
+            }
+            wrap={false}
+          />
+        )}
+      />
+    );
+  }
+
+  return <SingleActionPopupContent {...props} wrap />;
+}
+
+function SingleActionPopupContent({
   item,
   color,
   coords,
   onViewGeometry,
+  wrap = true,
 }: {
   item: ActionMapItem;
   color: string;
   coords: { latitude: number | null; longitude: number | null };
   onViewGeometry?: () => void;
+  wrap?: boolean;
 }) {
   const contract = item.contract;
   const geometry = getGeometryPresentation(item);
@@ -108,8 +150,8 @@ export function ActionPopupContent({
       ? "Formulaire fermé par l'organisateur"
       : null;
 
-  return (
-    <div className="min-w-[300px] max-w-[340px] overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/95">
+  const content = (
+    <>
       <ActionPopupContentHeader
         recordTypeLabel={recordTypeLabel}
         locationLabel={locationLabel}
@@ -159,6 +201,16 @@ export function ActionPopupContent({
         isAction={isAction}
         onViewGeometry={onViewGeometry}
       />
+    </>
+  );
+
+  if (!wrap) {
+    return content;
+  }
+
+  return (
+    <div className="min-w-[300px] max-w-[340px] overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/95">
+      {content}
     </div>
   );
 }
