@@ -521,6 +521,15 @@ scans documentaires larges
 
 Préférer une validation ciblée lorsqu'elle suffit.
 
+Les scans statiques et contrôles read-only indépendants peuvent être
+parallélisés avec un throttle borné. Les commandes lourdes — suite Vitest,
+tests Node significatifs, pytest, build/Turbopack et E2E — restent isolées et
+s'exécutent séquentiellement. Dans une même validation, dédupliquer les
+fichiers de test et ne pas relancer séparément un groupe déjà couvert par la
+suite complète ; la validation `changed` doit dériver le build du périmètre
+runtime/config réellement modifié et l'omettre pour la documentation seule ou
+les tests sans effet sur le bundle.
+
 Ne pas laisser tourner inutilement :
 
 - `npm run dev` ;

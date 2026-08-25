@@ -129,53 +129,32 @@ function Invoke-ParallelSteps {
     }
 }
 
-function Test-AnyChangedFile([string[]]$Files, [scriptblock]$Predicate) {
-    foreach ($file in $Files) {
-        if (& $Predicate $file) {
-            return $true
-        }
-    }
-    return $false
-}
-
 Write-Host "CleanMyMap checks"
 Write-Host "Scope: $Scope"
 
 $changedFiles = @(Get-ChangedFiles)
 
-$webRelevant = $Scope -eq "full" -or (Test-AnyChangedFile $changedFiles {
-    param($file)
-    return (
-        $file -like "apps/web/*" -or
-        $file -eq "package.json" -or
-        $file -eq "package-lock.json" -or
-        $file -like "scripts/*" -or
-        $file -like ".github/*"
-    )
-})
+# Keep scope and build classification in one testable Node policy module. This
+# avoids broad "apps/web/*" matches that turn test-only or documentation edits
+# into production builds.
+$policyArgs = @("scripts/validation-policy.mjs", "--scope", $Scope)
+foreach ($file in $changedFiles) {
+    $policyArgs += @("--changed-file", $file)
+}
+$policyArgs += "--json"
+$policyJson = (& node @policyArgs)
+if ($LASTEXITCODE -ne 0) {
+    throw "validation-policy failed with exit code $LASTEXITCODE"
+}
+$policy = $policyJson | ConvertFrom-Json
 
-$buildRelevant = $Scope -eq "full" -or (Test-AnyChangedFile $changedFiles {
-    param($file)
-    return (
-        $file -eq "package.json" -or
-        $file -eq "package-lock.json" -or
-        $file -eq "apps/web/package.json" -or
-        $file -like "apps/web/next.config.*" -or
-        $file -like "apps/web/src/app/*" -or
-        $file -eq "apps/web/src/proxy.ts" -or
-        $file -like "apps/web/src/lib/env*"
-    )
-})
-
-$companionRelevant = $Scope -eq "full" -or (Test-AnyChangedFile $changedFiles {
-    param($file)
-    return $file -like "companion-app/*" -and $file -notlike "companion-app/*.md"
-})
-
-$pythonRelevant = $Scope -eq "full" -or (Test-AnyChangedFile $changedFiles {
-    param($file)
-    return $file -like "maintenance/python/*.py" -or $file -like "maintenance/python/*/*.py"
-})
+$webRelevant = [bool]$policy.webRelevant
+$buildRelevant = [bool]$policy.buildRelevant
+$scriptsRelevant = [bool]$policy.scriptsRelevant
+$companionRelevant = $Scope -eq "full" -or @($changedFiles | Where-Object {
+    $_ -like "companion-app/*" -and $_ -notlike "companion-app/*.md"
+}).Count -gt 0
+$pythonRelevant = [bool]$policy.pythonRelevant
 
 # Always-on repository and security governance are read-only and independent.
 Invoke-ParallelSteps @(
@@ -213,13 +192,18 @@ if ($null -ne $pythonCommand) {
     Write-Warning "Python not found; UTF-8 Python normalization check skipped."
 }
 
+if ($scriptsRelevant) {
+    Invoke-Step { npm run test:scripts } "test:scripts"
+}
+
 if ($webRelevant) {
     # These read-only static gates are independent and safe to run concurrently.
     $staticWebSteps = @(
         [pscustomobject]@{ Label = "check:lockfile-policy"; Command = "npm run check:lockfile-policy" },
         [pscustomobject]@{ Label = "typecheck"; Command = "npm run typecheck" },
         [pscustomobject]@{ Label = "lint"; Command = "npm run lint" },
-        [pscustomobject]@{ Label = "audit:vercel:ci"; Command = "npm run audit:vercel:ci" }
+        [pscustomobject]@{ Label = "audit:vercel:ci"; Command = "npm run audit:vercel:ci" },
+        [pscustomobject]@{ Label = "quality:top-heavy"; Command = "npm run quality:top-heavy" }
     )
 
     if ($companionRelevant) {
@@ -229,23 +213,26 @@ if ($webRelevant) {
         }
     }
 
-    $staticWebSteps += [pscustomobject]@{
-        Label = "test:scripts"
-        Command = "npm run test:scripts"
+    Invoke-ParallelSteps $staticWebSteps 3
+
+    # The full Vitest command includes every source test. This guard prevents
+    # silently dropping the security/regression groups if the include scope narrows.
+    Invoke-Step { node scripts/validation-policy.mjs --assert-full-suite } "vitest coverage guard"
+
+    if ($policy.testMode -eq "full") {
+        Invoke-Step { npm run test } "vitest (full suite)"
+    } elseif ($policy.testMode -eq "targeted") {
+        $targetedArgs = @(
+            "scripts/validation-policy.mjs",
+            "--run-vitest",
+            "--groups",
+            "security,regression"
+        )
+        foreach ($file in @($policy.targetedVitestFiles)) {
+            $targetedArgs += @("--test-file", [string]$file)
+        }
+        Invoke-Step { & node @targetedArgs } "vitest (targeted + security + regression)"
     }
-
-    Invoke-ParallelSteps $staticWebSteps 4
-
-    # The full Vitest command includes every src/**/*.test.ts file. This guard
-    # prevents silently dropping the targeted suites if that scope ever narrows.
-    $vitestConfig = Get-Content -Raw "apps/web/vitest.config.ts"
-    if (-not $vitestConfig.Contains("src/**/*.test.ts")) {
-        throw "The full Vitest suite no longer covers src/**/*.test.ts; targeted gates must be restored here."
-    }
-
-    Invoke-Step { npm run test } "test"
-    Invoke-Step { npm run test:security } "test:security"
-    Invoke-Step { npm run test:regression-gates } "test:regression-gates"
 
     if ($buildRelevant -and -not $SkipBuild) {
         Invoke-Step { npm run build } "build"

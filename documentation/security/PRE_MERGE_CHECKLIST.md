@@ -48,7 +48,9 @@ Utiliser cette page comme checklist commune pour les humains et les agents IA.
 ## 7. GitHub Actions
 
 - Garder des permissions minimales par job.
-- Séparer les jobs rapides des jobs sécurité.
+- Conserver les permissions minimales par job ; lorsqu'une suite Vitest complète
+  couvre explicitement les groupes sécurité et régression, ne pas relancer ces
+  mêmes fichiers dans un job séparé.
 - Les changements Dependabot qui touchent l'auth, les secrets, la CI ou le routage doivent passer en revue renforcée.
 - Les protections bot/rate limiting doivent rester actives sur les surfaces publiques exposées.
 
