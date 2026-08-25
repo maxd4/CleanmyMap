@@ -3,7 +3,6 @@ import { GEOMETRY_CONFIDENCE } from "./geometry-core";
 export const PROJECTION_CONFIDENCE_CONSTANTS = {
   reliableGeometryMinimum: GEOMETRY_CONFIDENCE.PERSISTED_IMPORTED,
   documentedGeometryMinimum: GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY,
-  minimumLocalIntervalsForStrongEvidence: 2,
   minimumSolidEvidenceForMedium: 2,
 } as const;
 
@@ -70,6 +69,11 @@ function resolveGeometryFactor(
   return "approximate";
 }
 
+/**
+ * Local calibration owns the override rule. Confidence only describes the
+ * provenance already resolved by calibration and must not recalculate its
+ * activation threshold.
+ */
 function hasSufficientLocalHistory(
   input: ProjectionConfidenceInput,
 ): boolean {
@@ -77,9 +81,7 @@ function hasSufficientLocalHistory(
   return (
     input.sourceCompleteness === "complete" &&
     calibration?.sourceCompleteness === "complete" &&
-    calibration.provenance === "local_history" &&
-    calibration.validIntervalsCount >=
-      PROJECTION_CONFIDENCE_CONSTANTS.minimumLocalIntervalsForStrongEvidence
+    calibration.provenance === "local_history"
   );
 }
 
