@@ -41,6 +41,9 @@ export function buildZones(
   >();
 
   for (const contract of contracts) {
+    if (contract.type !== "action") {
+      continue;
+    }
     const observedMs = parseDateMs(contract.dates.observedAt);
     if (observedMs === null) {
       continue;
@@ -97,8 +100,12 @@ export function buildZones(
 
   const benchmark = buildTerritorialBenchmark(
     contracts
-      .filter((contract) => contract.status === "approved")
+      .filter(
+        (contract) =>
+          contract.type === "action" && contract.status === "approved",
+      )
       .map((contract) => ({
+        type: contract.type,
         locationLabel: contract.location.label,
         wasteKg: computeActionImpactKpis(contract).wasteKg,
         volunteersCount: computeActionImpactKpis(contract).volunteers,

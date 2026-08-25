@@ -16,7 +16,7 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
   );
 
   sorted.forEach(c => {
-    if (c.status !== "approved") {
+    if (c.type !== "action" || c.status !== "approved") {
       return;
     }
     const date = new Date(c.dates.observedAt);

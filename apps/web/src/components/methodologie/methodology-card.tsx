@@ -71,7 +71,7 @@ export function MethodologyCard({
         )}
       >
         <div className="mb-3 text-[9px] font-black uppercase tracking-[0.2em] text-white/20">
-          Équation Scientifique
+          Formule du proxy
         </div>
         <div className="leading-relaxed text-sky-100/80">{formula}</div>
       </div>
