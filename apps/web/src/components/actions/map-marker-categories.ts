@@ -51,6 +51,14 @@ export const COLOR_TOKENS = {
  BLACK: { h: 0, s: 0, l: 8 }, // Priorité extrême
 };
 
+export const ACTION_PRIORITY_COLOR_STOPS = [
+ { key: "blue", label: "Bleu · faible", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
+ { key: "orange", label: "Orange · moyen", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
+ { key: "red", label: "Rouge · fort", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
+ { key: "violet", label: "Violet · critique", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },
+ { key: "black", label: "Noir · extrême", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK, token: COLOR_TOKENS.BLACK },
+] as const;
+
 export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
  orange: true,
  red: true,
@@ -103,13 +111,7 @@ export function resolveItemPollutionScores(
 export function resolveDynamicColor(score: number): string {
  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
- const stops = [
-  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
-  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
-  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
-  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },
-  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK, token: COLOR_TOKENS.BLACK },
- ] as const;
+ const stops = ACTION_PRIORITY_COLOR_STOPS;
  const upperIndex = stops.findIndex((stop) => normalizedScore <= stop.threshold);
  const index = upperIndex <= 0 ? 1 : upperIndex;
  const lower = stops[index - 1];
