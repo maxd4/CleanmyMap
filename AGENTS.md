@@ -64,6 +64,26 @@ Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
   opération Git destructive. Dans ce cas seulement, décrire brièvement le
   conflit précis et son impact.
 
+### Attribution des validations en worktree parallèle
+
+- Une erreur de test, de typecheck, de lint ou de build qui est
+  identifiable comme provenant de modifications étrangères au périmètre
+  courant est classée `SKIPPED_PARALLEL_CHANTIER`. Elle ne bloque pas le lot :
+  ne pas la corriger, attendre la fin de l'autre chantier ou relancer une
+  suite complète uniquement pour obtenir un état différent.
+- Un échec est bloquant seulement s'il concerne un fichier ou un contrat
+  modifié par le lot courant, s'il est causé par ce changement, ou s'il
+  reproduit une régression réellement présente sur le `main` GitHub publié et
+  pertinente pour le périmètre traité.
+- Prioriser les tests métier ciblés et l'union dédupliquée des tests de
+  sécurité/régression pertinents. Exécuter typecheck, lint et build tant que
+  leurs résultats restent attribuables au lot courant ; interrompre cette
+  validation au premier échec clairement étranger au lot.
+- Ne pas relancer une full suite pour attendre un chantier parallèle. Le
+  compte rendu sépare toujours `VALIDATIONS_DU_LOT` et
+  `SKIPPED_PARALLEL_CHANTIER`, avec la cause et le fichier concernés lorsqu'un
+  contrôle est classé ainsi.
+
 ### Répartition du travail
 
 Le checkout local sert au travail courant, mais il ne doit pas contredire l'état de GitHub.
@@ -568,6 +588,11 @@ npm run checks
 ```
 
 La validation complète doit couvrir les garde-fous de gouvernance, les tests, le typecheck, le lint et le build web. Les tests E2E restent explicites tant qu'ils nécessitent une installation navigateur dédiée.
+
+En présence d'un worktree parallèle, cette couverture est évaluée selon les
+règles d'attribution ci-dessus : un contrôle arrêté par une erreur étrangère au
+lot est reporté dans `SKIPPED_PARALLEL_CHANTIER` et ne dégrade pas le verdict
+du changement courant.
 
 ### Ordre recommandé
 
