@@ -51,6 +51,8 @@ Formule de travail :
 
 Le score sert a comparer des zones entre elles et a prioriser des actions.
 
+Sur la carte d'actions, ce score reste un score historique constaté avant l'action. Il ne doit pas être présenté comme une mesure actuelle ni être augmenté par un malus temporel additif. La carte applique une projection non linéaire de re-pollution documentée dans [`methodologie-carte-actions.md`](./methodologie-carte-actions.md), sans modifier le score historique.
+
 Formule de travail :
 
 `Score = (Densite_megots x 3) + (Densite_plastiques x 2) + (Densite_encombrants x 5)`
