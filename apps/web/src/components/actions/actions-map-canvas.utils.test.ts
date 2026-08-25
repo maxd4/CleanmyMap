@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { getActionsMapCenter, PARIS_CENTER } from "./actions-map-canvas.utils";
+import {
+  DEFAULT_ACTIONS_MAP_VIEWPORT,
+  getActionsMapCenter,
+  NEUTRAL_MAP_CENTER,
+} from "./actions-map-canvas.utils";
 import type { ActionMapItem } from "@/lib/actions/types";
 
 function buildItem(
@@ -20,10 +24,15 @@ function buildItem(
 }
 
 describe("getActionsMapCenter", () => {
-  it("falls back to the default center when there is no geolocated item", () => {
+  it("falls back to a neutral center when there is no geolocated item", () => {
     expect(getActionsMapCenter([buildItem({ latitude: null, longitude: null })])).toEqual(
-      PARIS_CENTER,
+      NEUTRAL_MAP_CENTER,
     );
+  });
+
+  it("does not use Paris as the initial map viewport", () => {
+    expect(DEFAULT_ACTIONS_MAP_VIEWPORT.center).toEqual(NEUTRAL_MAP_CENTER);
+    expect(DEFAULT_ACTIONS_MAP_VIEWPORT.center).not.toEqual([48.8566, 2.3522]);
   });
 
   it("uses the first geolocated item as center", () => {

@@ -80,21 +80,23 @@ export function useActionsMapViewport(
   const hasStartedInitialResolutionRef = useRef(false);
 
   const applyAutomaticViewport = useCallback(
-    async (reference: MapReferencePoint, stableFallback: MapViewportState | null) => {
+    async (reference: MapReferencePoint | null, stableFallback: MapViewportState | null) => {
       if (hasManualViewportChangeRef.current || hasAutomaticViewportAppliedRef.current) {
         return;
       }
 
       let nextViewport = stableFallback;
-      try {
-        const resolution = await resolveInitialMapViewport({
-          reference,
-          pollutionScoreReferences,
-          fetchActions: fetchMapActions,
-        });
-        nextViewport = resolution.viewport;
-      } catch {
-        // Keep the strict local reference viewport when the map API is unavailable.
+      if (reference) {
+        try {
+          const resolution = await resolveInitialMapViewport({
+            reference,
+            pollutionScoreReferences,
+            fetchActions: fetchMapActions,
+          });
+          nextViewport = resolution.viewport;
+        } catch {
+          // Keep the strict local reference viewport when the map API is unavailable.
+        }
       }
 
       if (!shouldApplyAutomaticViewport({
@@ -142,7 +144,6 @@ export function useActionsMapViewport(
       void (async () => {
         const payload = await loadFallbackViewport();
         if (
-          !payload ||
           !isMountedRef.current ||
           hasManualViewportChangeRef.current ||
           hasAutomaticViewportAppliedRef.current
@@ -150,10 +151,22 @@ export function useActionsMapViewport(
           return;
         }
 
+        if (!payload) {
+          await applyAutomaticViewport(null, DEFAULT_ACTIONS_MAP_VIEWPORT);
+          return;
+        }
+
         if (payload.reference) {
           const residenceReference = selectMapReferencePoint(null, payload.reference);
           if (residenceReference) {
-            await applyAutomaticViewport(residenceReference, payload.viewport ?? null);
+            await applyAutomaticViewport(
+              residenceReference,
+              payload.viewport ??
+                createActionsMapViewport(
+                  [residenceReference.latitude, residenceReference.longitude],
+                  12,
+                ),
+            );
           }
           return;
         }
@@ -166,7 +179,10 @@ export function useActionsMapViewport(
             },
             payload.viewport,
           );
+          return;
         }
+
+        await applyAutomaticViewport(null, DEFAULT_ACTIONS_MAP_VIEWPORT);
       })();
     });
   }, [applyAutomaticViewport, loadFallbackViewport]);
