@@ -106,6 +106,24 @@ la preuve que la migration a été appliquée sur tous les environnements
 historiques, que la correspondance de provenance est conservée et qu'aucun
 outil d'import ou opération externe ne dépend encore de la table.
 
+### Maintenance et opérations
+
+Les outils d'opérations suivent la même séparation :
+
+- `export-supabase-archive.mjs` archive `trash_spotter_spots`,
+  `legacy_spot_migrations` et `spots`, ce dernier étant explicitement marqué
+  comme archive legacy dans le manifeste ;
+- `backfill-derived-geometry.mjs` cible par défaut `actions` et
+  `trash_spotter_spots` uniquement ; il ne modifie jamais `spots` ;
+- `db-cleanup-suspect-runtime-records.mjs` peut auditer les lignes `spots` pour
+  le rapport, mais ses suppressions sont limitées à `actions` et
+  `trash_spotter_spots` ; aucune option d'application ne peut supprimer
+  l'archive legacy ;
+- `sync-validated-local-store.mjs` lit la source canonique avant le fallback
+  legacy et ne réécrit jamais `spots` ;
+- les contrôles de coordonnées et les règles d'identité restent indépendants
+  de `waste_type`, qui ne devient jamais un discriminant `spot_type`.
+
 ## Validation des entrées
 
 Toute API modifiant une donnée métier doit valider l'entrée.
