@@ -5,7 +5,11 @@ import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-sn
 import { trackServerEvent } from "@/lib/analytics.server";
 import { trackSpotCreated } from "@/lib/gamification/progression";
 import { logFailure } from "@/lib/logging/failure-log";
-import { stripWasteCategoryMarkersFromNotes } from "@/lib/waste";
+import type { WasteCategorySlug } from "@/lib/waste";
+import {
+  appendWasteCategoriesToNotes,
+  stripWasteCategoryMarkersFromNotes,
+} from "@/lib/waste";
 
 export type SignalementType = "clean_place" | "spot";
 
@@ -16,9 +20,17 @@ export type CreateSignalementParams = {
   latitude?: number | null;
   longitude?: number | null;
   notes?: string;
+  wasteCategories?: readonly WasteCategorySlug[];
   actorName: string;
   consentGranted: boolean;
 };
+
+export class SignalementCreationValidationError extends Error {
+  constructor(public readonly fieldErrors: Record<string, string[]>) {
+    super("Signalement validation failed.");
+    this.name = "SignalementCreationValidationError";
+  }
+}
 
 export type CreatedSignalement = {
   id: string;
@@ -48,11 +60,27 @@ export async function createSignalement(
   params: CreateSignalementParams,
 ): Promise<CreatedSignalement> {
   const label = params.label.trim();
+  const fieldErrors: Record<string, string[]> = {};
+  if (typeof params.latitude !== "number" || !Number.isFinite(params.latitude)) {
+    fieldErrors.latitude = ["La localisation du signalement est requise."];
+  }
+  if (typeof params.longitude !== "number" || !Number.isFinite(params.longitude)) {
+    fieldErrors.longitude = ["La localisation du signalement est requise."];
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new SignalementCreationValidationError(fieldErrors);
+  }
+
   const notePrefix = `[spot-by:${params.actorName}]`;
   const normalizedNotes =
-    params.type === "spot"
-      ? params.notes?.trim()
-      : stripWasteCategoryMarkersFromNotes(params.notes);
+    params.type === "clean_place"
+      ? stripWasteCategoryMarkersFromNotes(params.notes)
+      : params.wasteCategories
+        ? appendWasteCategoriesToNotes(
+            stripWasteCategoryMarkersFromNotes(params.notes),
+            params.wasteCategories,
+          )
+        : params.notes?.trim();
   const composedNotes = normalizedNotes
     ? `${notePrefix} ${normalizedNotes}`
     : notePrefix;

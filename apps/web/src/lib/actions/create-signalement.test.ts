@@ -42,7 +42,7 @@ describe("createSignalement", () => {
       latitude: 48.85,
       longitude: 2.35,
       status: "new",
-      notes: "[spot-by:Test User] mégots",
+      notes: "[spot-by:Test User] mégots\n[cmm-waste:cigarette_butt,broken_glass]",
     };
     const singleMock = vi.fn().mockResolvedValue({ data: created, error: null });
     const selectMock = vi.fn().mockReturnValue({ single: singleMock });
@@ -66,6 +66,7 @@ describe("createSignalement", () => {
       latitude: 48.85,
       longitude: 2.35,
       notes: "mégots",
+      wasteCategories: ["cigarette_butt", "broken_glass"],
       actorName: "Test User",
       consentGranted: true,
     });
@@ -80,7 +81,7 @@ describe("createSignalement", () => {
       latitude: 48.85,
       longitude: 2.35,
       status: "new",
-      notes: "[spot-by:Test User] mégots",
+      notes: "[spot-by:Test User] mégots\n[cmm-waste:cigarette_butt,broken_glass]",
     });
     expect(invalidateSnapshotsMock).toHaveBeenCalledWith([
       "api/actions",
@@ -119,6 +120,8 @@ describe("createSignalement", () => {
       userId: "user-1",
       type: "clean_place",
       label: "Place propre",
+      latitude: 48.8566,
+      longitude: 2.3522,
       notes: "Note manuelle\n[cmm-waste:plastic,broken_glass]",
       actorName: "Test User",
       consentGranted: false,
@@ -131,5 +134,21 @@ describe("createSignalement", () => {
       }),
     );
     expect(insertMock.mock.calls[0]?.[0]?.notes).not.toContain("cmm-waste");
+  });
+
+  it("requires coordinates for every Trash Spotter observation", async () => {
+    const { createSignalement, SignalementCreationValidationError } = await import(
+      "./create-signalement"
+    );
+
+    await expect(
+      createSignalement({} as never, {
+        userId: "user-1",
+        type: "clean_place",
+        label: "Place propre",
+        actorName: "Test User",
+        consentGranted: false,
+      }),
+    ).rejects.toBeInstanceOf(SignalementCreationValidationError);
   });
 });

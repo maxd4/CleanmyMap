@@ -608,6 +608,9 @@ describe("POST /api/actions", () => {
       volunteersCount: 1,
       durationMinutes: 0,
       notes: "signalement",
+      preparationData: {
+        expectedWasteCategories: ["plastic", "broken_glass"],
+      },
       submissionMode: "quick",
     });
 
@@ -630,10 +633,56 @@ describe("POST /api/actions", () => {
         label: "Signalement test",
         latitude: 48.8566,
         longitude: 2.3522,
+        wasteCategories: ["plastic", "broken_glass"],
         actorName: "Test User",
         consentGranted: true,
       }),
     );
+    expect(createActionMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("routes Quick Signalement clean_place without Waste categories", async () => {
+    const { POST } = await import("./route");
+    getSupabaseServerClientMock.mockReturnValue({});
+
+    const payload = toContractCreatePayload({
+      recordType: "clean_place",
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Lieu propre test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteersCount: 1,
+      durationMinutes: 0,
+      notes: "Preuve visuelle jointe",
+      preparationData: null,
+      submissionMode: "quick",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createSignalementMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        userId: "user-test-1",
+        type: "clean_place",
+        label: "Lieu propre test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+      }),
+    );
+    const signalementParams = createSignalementMock.mock.calls.at(-1)?.[1];
+    expect(signalementParams?.wasteCategories).toBeUndefined();
+    expect(signalementParams?.notes).toBe("Preuve visuelle jointe");
     expect(createActionMock).not.toHaveBeenCalled();
   }, 15000);
 

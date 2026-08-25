@@ -19,11 +19,11 @@ const spotStatuses = ["new","validated","cleaned"] as const;
 type SpotStatus = (typeof spotStatuses)[number];
 
 const createSpotSchema = z.object({
- type: z.enum(["clean_place","spot"]).default("spot"),
- label: z.string().trim().min(2).max(255),
- latitude: z.number().min(-90).max(90).nullable().optional(),
- longitude: z.number().min(-180).max(180).nullable().optional(),
- notes: z.string().trim().max(2000).optional(),
+  type: z.enum(["clean_place","spot"]).default("spot"),
+  label: z.string().trim().min(2).max(255),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  notes: z.string().trim().max(2000).optional(),
 });
 
 function parseStatusParam(raw: string | null): SpotStatus | null {

@@ -74,6 +74,12 @@ export function useTrashSpotter(fr: boolean) {
       return;
     }
 
+    if (latitude === undefined || longitude === undefined) {
+      setSpotState("error");
+      setSpotMessage(fr ? "La localisation est requise pour signaler ce lieu." : "Location is required to report this place.");
+      return;
+    }
+
     setSpotState("pending");
 
     try {
