@@ -304,6 +304,9 @@ it("loads project signals with deterministic ordering under the cap", async () =
     });
 
     expect(signals.signalBreakdown?.traffic.pageViewEvents).toBe(2);
+    expect(signals.siteInput.maps).toBe(2);
+    expect(signals.userInput.maps).toBe(2);
+    expect(orderingsByTable.has("spots")).toBe(false);
     expect(getProfilesQueryCount()).toBe(2);
     expect(orderingsByTable.get("profiles-oldest")).toEqual([
       { column: "created_at", ascending: true },
