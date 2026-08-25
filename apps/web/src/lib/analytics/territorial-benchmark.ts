@@ -1,7 +1,9 @@
 import type { ActionEntityType } from "@/lib/actions/contract-model";
+import type { ActionStatus } from "@/lib/actions/types";
 
 export type TerritorialInput = {
   type: ActionEntityType;
+  status: ActionStatus;
   locationLabel: string;
   wasteKg: number;
   volunteersCount: number;
@@ -79,7 +81,7 @@ export function buildTerritorialBenchmark(
     { actionsCount: number; totalKg: number; totalVolunteers: number }
   >();
   for (const row of rows) {
-    if (row.type !== "action") {
+    if (row.type !== "action" || row.status !== "approved") {
       continue;
     }
     const area = extractArrondissement(row.locationLabel);

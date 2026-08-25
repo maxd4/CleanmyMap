@@ -164,7 +164,6 @@ function collectHumanStrings(raw: string): string[] {
 | `lib/route/recommendation-assistant.ts` | alternation order | Réordonné par longueur |
 | `lib/pilotage/business-alerts.ts` | alternation order | Réordonné par longueur |
 | `lib/pilotage/overview.utils.ts` | alternation order | Réordonné par longueur |
-| `lib/pilotage/overview-shared.ts` | alternation order | Réordonné par longueur |
 | `lib/community/engagement.helpers.ts` | alternation order | Réordonné par longueur |
 | `lib/community/engagement/shared.ts` | alternation order | Réordonné par longueur |
 | `lib/analytics/territorial-benchmark.ts` | alternation order | Réordonné par longueur |

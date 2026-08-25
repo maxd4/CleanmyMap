@@ -99,17 +99,13 @@ export function buildZones(
   }
 
   const benchmark = buildTerritorialBenchmark(
-    contracts
-      .filter(
-        (contract) =>
-          contract.type === "action" && contract.status === "approved",
-      )
-      .map((contract) => ({
-        type: contract.type,
-        locationLabel: contract.location.label,
-        wasteKg: computeActionImpactKpis(contract).wasteKg,
-        volunteersCount: computeActionImpactKpis(contract).volunteers,
-      })),
+    contracts.map((contract) => ({
+      type: contract.type,
+      status: contract.status,
+      locationLabel: contract.location.label,
+      wasteKg: computeActionImpactKpis(contract).wasteKg,
+      volunteersCount: computeActionImpactKpis(contract).volunteers,
+    })),
   );
   const benchmarkByArea = new Map(benchmark.map((row) => [row.area, row]));
 
