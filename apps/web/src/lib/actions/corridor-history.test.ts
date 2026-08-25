@@ -80,6 +80,62 @@ describe("corridor history", () => {
     expect(histories[0].calibrationInput.observations).toHaveLength(2);
   });
 
+  it("keeps every grouped source action distinct and losslessly reversible", () => {
+    const sourceActions = [
+      buildAction({
+        id: "action-source-old",
+        day: 0,
+        coordinates: verticalCorridor,
+        wasteKg: 4,
+        cigaretteButts: 100,
+        volunteersCount: 2,
+        durationMinutes: 45,
+      }),
+      buildAction({
+        id: "action-source-middle",
+        day: 12,
+        coordinates: [
+          verticalCorridor[0],
+          verticalCorridor[1],
+          verticalCorridor[2],
+        ],
+        wasteKg: 7,
+        cigaretteButts: 150,
+        volunteersCount: 3,
+        durationMinutes: 60,
+      }),
+      buildAction({
+        id: "action-source-new",
+        day: 30,
+        coordinates: [verticalCorridor[0], verticalCorridor[1]],
+        wasteKg: 10,
+        cigaretteButts: 200,
+        volunteersCount: 4,
+        durationMinutes: 90,
+      }),
+    ];
+    const [history] = groupActionsByCorridor(sourceActions);
+    const sourceById = new Map(sourceActions.map((action) => [action.id, action]));
+
+    expect(history.actions).toHaveLength(sourceActions.length);
+    expect(new Set(history.actions.map((action) => action.id)).size).toBe(
+      sourceActions.length,
+    );
+    expect(history.sourceGeometries.map((geometry) => geometry.actionId).sort()).toEqual(
+      sourceActions.map((action) => action.id).sort(),
+    );
+    expect(history.calibrationInput.observations.map((action) => action.id)).toEqual(
+      history.actions.map((action) => action.id),
+    );
+
+    for (const sourceAction of sourceActions) {
+      expect(sourceById.get(sourceAction.id)).toBe(sourceAction);
+      expect(
+        history.actions.find((action) => action.id === sourceAction.id),
+      ).toBe(sourceAction);
+    }
+  });
+
   it("rejects a simple crossing even when the paths share a point", () => {
     const vertical = buildAction({ id: "vertical", coordinates: verticalCorridor });
     const horizontal = buildAction({

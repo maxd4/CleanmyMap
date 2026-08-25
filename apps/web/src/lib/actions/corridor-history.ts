@@ -41,6 +41,10 @@ export type CorridorCalibrationInput = {
   observations: readonly ActionDataContract[];
 };
 
+/**
+ * Derived in-memory view only: source actions remain independent records and
+ * are never replaced, aggregated, or persisted as a corridor.
+ */
 export type CorridorHistory = {
   derivedCorridorKey: string;
   actions: readonly ActionDataContract[];
