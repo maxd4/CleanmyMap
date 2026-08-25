@@ -27,6 +27,9 @@ import {
 import { logFailure } from "@/lib/logging/failure-log";
 import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
+import { toActionContract } from "@/lib/actions/unified-source/contracts";
+import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/repollution-prediction-evaluation";
+import { persistRepollutionPredictionEvaluation } from "@/lib/actions/repollution-prediction-evaluation-store";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",
@@ -605,5 +608,55 @@ export async function createAction(
   );
   await recordCreateActionTrainingExample(supabase, { actionId, payload });
 
+  if (params.status === "approved") {
+    await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
+  }
+
   return { id: String(actionId) };
+}
+
+/**
+ * Records a prospective evaluation after an approved action reaches the
+ * canonical store. The bounded read is deliberately marked partial: without
+ * a completeness proof it can only use the generic projection fallback.
+ */
+export async function recordRepollutionPredictionEvaluationForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<void> {
+  try {
+    const currentRow = await fetchActionRowById(supabase, actionId);
+    if (!currentRow || currentRow.status !== "approved") {
+      return;
+    }
+
+    const rows = await fetchActionRows(supabase, {
+      limit: 1001,
+      status: "approved",
+      requireCoordinates: true,
+    });
+    const current = toActionContract(currentRow);
+    const previous = [current, ...rows.map(toActionContract)].filter(
+      (observation, index, all) =>
+        observation.id !== current.id ||
+        index === all.findIndex((candidate) => candidate.id === current.id),
+    );
+
+    const result = evaluateRepollutionPredictionBeforeObservation({
+      newObservation: current,
+      previousObservations: previous.filter(
+        (observation) => observation.id !== current.id,
+      ),
+      historyCompleteness: "partial",
+    });
+
+    await persistRepollutionPredictionEvaluation(supabase, result);
+  } catch (error) {
+    logFailure(
+      "Actions/RepollutionEvaluation",
+      "Prospective repollution evaluation could not be recorded",
+      error,
+      { actionId },
+    );
+  }
 }

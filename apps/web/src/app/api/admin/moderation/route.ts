@@ -29,6 +29,7 @@ import {
  syncUserActionProgression,
 } from"@/lib/gamification/progression-tracking";
 import { invalidatePublicSurfaceSnapshotsByRoute } from"@/lib/public-surface-snapshots";
+import { recordRepollutionPredictionEvaluationForAction } from"@/lib/actions/store";
 import {
  moderateSignalement,
 } from"@/lib/admin/signalement-moderation";
@@ -454,6 +455,12 @@ export async function POST(request: Request) {
  hint:"Verifier l'identifiant avant de relancer la moderation.",
  operationId,
  });
+ }
+ if (parsed.data.status ==="approved" && statusUpdate.source ==="actions") {
+  await recordRepollutionPredictionEvaluationForAction(
+   supabase,
+   parsed.data.id,
+  );
  }
  if (visibilityUpdate && !visibilityUpdate.found) {
  await appendAdminOperationAudit({

@@ -2,7 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { parseDrawingFromNotes } from "@/lib/actions/drawing";
-import { buildPersistedNotes, loadActionById } from "@/lib/actions/store";
+import {
+  buildPersistedNotes,
+  loadActionById,
+  recordRepollutionPredictionEvaluationForAction,
+} from "@/lib/actions/store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -295,6 +299,13 @@ export async function PATCH(
 
     if (updateResult.error) {
       throw new Error(updateResult.error.message);
+    }
+
+    if (updateData["status"] === "approved") {
+      await recordRepollutionPredictionEvaluationForAction(
+        supabase,
+        trimmedActionId,
+      );
     }
 
     if (body.participantAccounts !== undefined) {
