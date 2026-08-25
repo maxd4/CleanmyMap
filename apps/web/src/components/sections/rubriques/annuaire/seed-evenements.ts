@@ -1,4 +1,4 @@
-import type { AnnuaireEntry } from "../annuaire-map-canvas";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 export const EVENEMENTS_ENTRIES: AnnuaireEntry[] = [
   {

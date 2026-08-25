@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { AnnuaireEntry } from './annuaire-helpers';
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 interface AnnuaireNetworkGraphProps {
   entries: AnnuaireEntry[];

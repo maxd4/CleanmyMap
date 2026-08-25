@@ -1,4 +1,4 @@
-import type { AnnuaireEntry } from "../annuaire-map-canvas";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import { ASSOCIATIONS_ENTRIES } from "./seed-associations";
 import { ENTREPRISES_ENTRIES } from "./seed-entreprises";
 import { EVENEMENTS_ENTRIES } from "./seed-evenements";

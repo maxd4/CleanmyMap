@@ -10,14 +10,12 @@ import {
  type PartnerTrustState,
 } from"@/lib/partners/onboarding-types";
 import type {
- AnnuaireEntry,
- AssociationImpactHistory,
- AssociationProfile,
- AssociationPublicCall,
- AssociationResource,
-} from"./annuaire-map-canvas";
-
-export type { AnnuaireEntry };
+  AnnuaireEntry,
+  AssociationImpactHistory,
+  AssociationProfile,
+  AssociationPublicCall,
+  AssociationResource,
+} from "@/lib/partners/annuaire-types";
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
 
