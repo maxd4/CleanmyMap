@@ -24,6 +24,11 @@ export type ActionMapGeometryViewModel = {
   drawing: ActionDrawing | null;
 };
 
+export type ActionPolylineEndpointMarkers = {
+  start: CoordinatePair;
+  end: CoordinatePair;
+};
+
 export type ActionMapGeometryMetric = {
   kind: "length" | "area" | null;
   value: number | null;
@@ -413,6 +418,26 @@ export function resolveGeometryConfidenceLabel(
   return presentation.reality === "estimated"
     ? formatGeometryConfidenceLabel(confidence)
     : null;
+}
+
+export function resolvePolylineEndpointMarkers(
+  geometry: Pick<
+    ActionMapGeometryViewModel,
+    "kind" | "positions" | "presentation"
+  >,
+): ActionPolylineEndpointMarkers | null {
+  if (
+    geometry.kind !== "polyline" ||
+    geometry.presentation.origin !== "manual" ||
+    geometry.positions.length < 2
+  ) {
+    return null;
+  }
+
+  return {
+    start: geometry.positions[0],
+    end: geometry.positions[geometry.positions.length - 1],
+  };
 }
 
 export function formatGeometryModeLabel(

@@ -14,6 +14,7 @@ import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
+import { MapGeometryLegend } from "./map/map-geometry-legend";
 import {
   SignalementMarkers,
   ShapeLayers,
@@ -199,6 +200,11 @@ export function ActionsMapCanvas({
           );
         })}
       </div>
+      {compact ? null : (
+        <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
+          <MapGeometryLegend />
+        </div>
+      )}
 
       <MapContainer
         center={mapCenter}

@@ -29,6 +29,7 @@ type ActionPopupContentBodyProps = {
   joinStatusLabel?: string | null;
   hasPollution: boolean;
   isAction: boolean;
+  onViewGeometry?: () => void;
 };
 
 export function ActionPopupContentBody({
@@ -48,6 +49,7 @@ export function ActionPopupContentBody({
   joinStatusLabel,
   hasPollution,
   isAction,
+  onViewGeometry,
 }: ActionPopupContentBodyProps) {
   const wasteLabel = isAction ? "Déchets collectés" : "Déchets";
   const buttsLabel = isAction ? "Mégots collectés" : "Mégots";
@@ -207,6 +209,17 @@ export function ActionPopupContentBody({
             Le partage de ce formulaire est désactivé côté organisateur.
           </span>
         </div>
+      ) : null}
+      {onViewGeometry ? (
+        <CmmButton
+          type="button"
+          onClick={onViewGeometry}
+          tone="tertiary"
+          variant="pill"
+          className="h-11 w-full px-4 text-[11px] font-black uppercase tracking-[0.16em]"
+        >
+          Voir tout le tracé
+        </CmmButton>
       ) : null}
     </div>
   );

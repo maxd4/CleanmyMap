@@ -23,9 +23,26 @@ vi.mock("react-leaflet", () => {
       ),
     Marker: passthrough,
     Polygon: passthrough,
-    Polyline: passthrough,
+    Polyline: ({
+      children,
+      pathOptions,
+    }: {
+      children?: React.ReactNode;
+      pathOptions?: { weight?: number; opacity?: number; interactive?: boolean };
+    }) =>
+      React.createElement(
+        "div",
+        {
+          "data-testid": "map-polyline",
+          "data-weight": pathOptions?.weight,
+          "data-opacity": pathOptions?.opacity,
+          "data-interactive": pathOptions?.interactive,
+        },
+        children,
+      ),
     Popup: passthrough,
     Tooltip: passthrough,
+    useMap: () => ({ fitBounds: vi.fn() }),
   };
 });
 
@@ -43,7 +60,16 @@ vi.mock("./action-pollution-score-references-context", () => ({
 }));
 
 vi.mock("./action-popup-content", () => ({
-  ActionPopupContent: () => React.createElement("div", null, "Popup"),
+  ActionPopupContent: ({
+    onViewGeometry,
+  }: {
+    onViewGeometry?: () => void;
+  }) =>
+    React.createElement(
+      "div",
+      { "data-has-view-geometry": Boolean(onViewGeometry) },
+      "Popup",
+    ),
 }));
 
 vi.mock("./map-geometry-tooltip-content", () => ({
@@ -56,7 +82,15 @@ vi.mock("./map-geometry-tooltip-content", () => ({
   }) => React.createElement("div", { "data-title": title, "data-color": color }, title),
 }));
 
-import { ACTION_MAP_COLOR, resolvePointColor, ShapeLayers, SignalementMarkers } from "./map-layers";
+import {
+  ACTION_MAP_COLOR,
+  ACTION_TRACE_HIT_AREA_WEIGHT,
+  fitActionGeometryBounds,
+  isTrashSpotterItem,
+  resolvePointColor,
+  ShapeLayers,
+  SignalementMarkers,
+} from "./map-layers";
 
 function buildGeolocatedItem(): ActionMapItem {
   return {
@@ -85,8 +119,41 @@ describe("SignalementMarkers", () => {
   });
 });
 
+describe("Trash Spotter layer classification", () => {
+  function buildCanonicalItem(
+    type: "spot" | "clean_place",
+    sourceStatus: "new" | "validated" | "cleaned",
+  ): ActionMapItem {
+    return toActionMapItem(
+      buildActionDataContract({
+        id: `${type}-${sourceStatus}`,
+        type,
+        status: sourceStatus === "new" ? "pending" : "approved",
+        source: "trash_spotter_spots",
+        sourceStatus,
+        observedAt: "2026-08-20",
+        locationLabel: "Quai de test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        wasteCategories: ["plastic"],
+      }),
+    );
+  }
+
+  it("uses the shared actionable rule instead of source or record type alone", () => {
+    expect(isTrashSpotterItem(buildCanonicalItem("spot", "validated"))).toBe(true);
+    expect(isTrashSpotterItem(buildCanonicalItem("spot", "new"))).toBe(false);
+    expect(isTrashSpotterItem(buildCanonicalItem("spot", "cleaned"))).toBe(false);
+    expect(isTrashSpotterItem(buildCanonicalItem("clean_place", "validated"))).toBe(false);
+  });
+});
+
 describe("ShapeLayers", () => {
-  function buildShapeItem(type: "action" | "spot", wasteKg: number): ActionMapItem {
+  function buildShapeItem(
+    type: "action" | "spot",
+    wasteKg: number,
+    kind: "polyline" | "polygon" = "polyline",
+  ): ActionMapItem {
     return toActionMapItem(
       buildActionDataContract({
         id: `${type}-shape`,
@@ -100,11 +167,18 @@ describe("ShapeLayers", () => {
         wasteKg,
         cigaretteButts: 25,
         manualDrawing: {
-          kind: "polyline",
-          coordinates: [
-            [48.8566, 2.3522],
-            [48.8576, 2.3532],
-          ],
+          kind,
+          coordinates:
+            kind === "polygon"
+              ? [
+                  [48.8566, 2.3522],
+                  [48.8576, 2.3522],
+                  [48.8576, 2.3532],
+                ]
+              : [
+                  [48.8566, 2.3522],
+                  [48.8576, 2.3532],
+                ],
         },
       }),
     );
@@ -130,5 +204,52 @@ describe("ShapeLayers", () => {
     expect(markup).toContain("Action · Longueur ~");
     expect(markup).toContain("Trace ");
     expect(markup).toContain(`data-color="${ACTION_MAP_COLOR}"`);
+  });
+
+  it("adds an invisible wider hit-area without changing the visible stroke", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("action", 80)],
+      }),
+    );
+
+    expect(markup).toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
+    expect(markup).toContain('data-opacity="0"');
+    expect(markup).toContain('data-has-view-geometry="true"');
+  });
+
+  it("keeps the explicit framing action for action polygons without adding a hit-area to spots", () => {
+    const actionPolygonMarkup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("action", 80, "polygon")],
+      }),
+    );
+    const spotMarkup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("spot", 80)],
+      }),
+    );
+
+    expect(actionPolygonMarkup).toContain('data-has-view-geometry="true"');
+    expect(spotMarkup).not.toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
+  });
+
+  it("fits bounds only when the explicit view action is invoked", () => {
+    const fitBounds = vi.fn();
+    const map = { fitBounds };
+    const positions: [number, number][] = [
+      [48.8566, 2.3522],
+      [48.8576, 2.3532],
+    ];
+
+    expect(fitActionGeometryBounds(map, positions)).toBe(true);
+    expect(fitBounds).toHaveBeenCalledWith(positions, {
+      padding: [32, 32],
+      maxZoom: 16,
+      animate: true,
+    });
+    fitBounds.mockClear();
+    expect(fitActionGeometryBounds(map, [])).toBe(false);
+    expect(fitBounds).not.toHaveBeenCalled();
   });
 });

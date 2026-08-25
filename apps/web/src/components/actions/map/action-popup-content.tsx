@@ -32,10 +32,12 @@ export function ActionPopupContent({
   item,
   color,
   coords,
+  onViewGeometry,
 }: {
   item: ActionMapItem;
   color: string;
   coords: { latitude: number | null; longitude: number | null };
+  onViewGeometry?: () => void;
 }) {
   const contract = item.contract;
   const geometry = getGeometryPresentation(item);
@@ -144,6 +146,7 @@ export function ActionPopupContent({
         joinStatusLabel={joinStatusLabel}
         hasPollution={hasPollution}
         isAction={isAction}
+        onViewGeometry={onViewGeometry}
       />
     </div>
   );
