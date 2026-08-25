@@ -8,6 +8,7 @@ import { resolveActionTitle } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
+import { resolveProjectionConfidence } from "@/lib/actions/projection-confidence";
 
 function buildActionItem(
   preparationData: { actionTitle?: string } | null,
@@ -140,6 +141,11 @@ describe("action popup presentation", () => {
           t80Days: 100,
           projectedPollutionScore: 47.2,
           isEstimate: true,
+          projectionConfidence: resolveProjectionConfidence({
+            geometryConfidence: 0.58,
+            postActionScoreSource: "model_baseline",
+            sourceCompleteness: "partial",
+          }),
         },
       }),
     );
@@ -147,6 +153,7 @@ describe("action popup presentation", () => {
     expect(markup).toContain("Pollution constatée avant l&#x27;action");
     expect(markup).toContain("Temps depuis la dernière action");
     expect(markup).toContain("Pollution projetée");
+    expect(markup).toContain("Confiance faible");
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");

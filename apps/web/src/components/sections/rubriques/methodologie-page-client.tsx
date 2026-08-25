@@ -24,6 +24,7 @@ import {
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
 } from "@/lib/actions/local-repollution-calibration";
+import { PROJECTION_CONFIDENCE_CONSTANTS } from "@/lib/actions/projection-confidence";
 import {
   ACTION_PRIORITY_COLOR_STOPS,
   resolveDynamicColor,
@@ -496,6 +497,39 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
                 </strong>
               </div>
             ))}
+          </div>
+
+          <div className="rounded-2xl border border-slate-300/20 bg-white/[0.05] p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-200/70">
+              {isFrench ? "Confiance de la projection" : "Projection confidence"}
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300/75">
+              {isFrench
+                ? "Le resolver pur qualifie la robustesse des données d'entrée, pas la probabilité que le modèle soit juste. Il combine la géométrie, la source de S_post, la calibration locale et la complétude de l'historique."
+                : "The pure resolver qualifies input-data robustness, not the probability that the model is correct. It combines geometry, the S_post source, local calibration, and history completeness."}
+            </p>
+            <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-300/75 md:grid-cols-3">
+              <li>
+                {isFrench
+                  ? `Élevée : géométrie fiable (≥ ${PROJECTION_CONFIDENCE_CONSTANTS.reliableGeometryMinimum}), S_post mesuré, au moins ${PROJECTION_CONFIDENCE_CONSTANTS.minimumLocalIntervalsForStrongEvidence} intervalles locaux valides et historique complet.`
+                  : `High: reliable geometry (≥ ${PROJECTION_CONFIDENCE_CONSTANTS.reliableGeometryMinimum}), measured S_post, at least ${PROJECTION_CONFIDENCE_CONSTANTS.minimumLocalIntervalsForStrongEvidence} valid local intervals, and complete history.`}
+              </li>
+              <li>
+                {isFrench
+                  ? `Moyenne : au moins ${PROJECTION_CONFIDENCE_CONSTANTS.minimumSolidEvidenceForMedium} preuves solides, sans réunir toutes les conditions du niveau élevé.`
+                  : `Medium: at least ${PROJECTION_CONFIDENCE_CONSTANTS.minimumSolidEvidenceForMedium} solid proofs without meeting every high-level condition.`}
+              </li>
+              <li>
+                {isFrench
+                  ? "Faible : niveau par défaut pour un baseline de modèle, une géométrie approximative ou un historique insuffisant/partiel."
+                  : "Low: default for a model baseline, approximate geometry, or insufficient/partial history."}
+              </li>
+            </ul>
+            <p className="mt-3 text-xs leading-relaxed text-slate-400">
+              {isFrench
+                ? "Cette confiance est affichée sans modifier la palette, l'opacité ou l'épaisseur de la carte. Le ledger d'erreur futur sera la source de validation statistique ; la confiance ne la remplace pas."
+                : "This confidence is displayed without changing the map palette, opacity, or stroke width. The future error ledger will provide statistical validation; confidence does not replace it."}
+            </p>
           </div>
         </div>
 

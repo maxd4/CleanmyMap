@@ -166,6 +166,7 @@ describe("ShapeLayers", () => {
       id?: string;
       day?: number;
       coordinates?: [number, number][];
+      geometryConfidence?: number;
     } = {},
   ): ActionMapItem {
     return toActionMapItem(
@@ -196,6 +197,7 @@ describe("ShapeLayers", () => {
                   [48.8576, 2.3532],
                 ]),
         },
+        geometryConfidence: overrides.geometryConfidence,
       }),
     );
   }
@@ -229,6 +231,18 @@ describe("ShapeLayers", () => {
     expect(resolvePointColor(action, null, now)).not.toBe(CLEAN_PLACE_COLOR);
     expect(resolvePointColor(spot, null, now)).not.toBe(CLEAN_PLACE_COLOR);
     expect(resolvePointColor(cleanPlace, null, now)).toBe(CLEAN_PLACE_COLOR);
+
+    const reliableGeometryAction = buildShapeItem("action", 80, "polyline", {
+      id: "reliable-geometry-action",
+      geometryConfidence: 1,
+    });
+    const approximateGeometryAction = buildShapeItem("action", 80, "polyline", {
+      id: "approximate-geometry-action",
+      geometryConfidence: 0.24,
+    });
+    expect(resolvePointColor(reliableGeometryAction, null, now)).toBe(
+      resolvePointColor(approximateGeometryAction, null, now),
+    );
   });
 
   it("uses an explicit post-action measurement instead of the zero baseline", () => {

@@ -11,6 +11,7 @@ import {
   formatNumber,
   formatObservedDate,
 } from "./action-popup-content.helpers";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
 
 type CorridorPopupContentProps = {
   corridorItems: readonly ActionMapItem[];
@@ -163,6 +164,11 @@ export function CorridorPopupContent({
               </p>
               <p className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                 {summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel
+              </p>
+              <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {formatProjectionConfidenceLabel(
+                  summary.latestProjection.projectionConfidence.level,
+                )}
               </p>
             </div>
           )}

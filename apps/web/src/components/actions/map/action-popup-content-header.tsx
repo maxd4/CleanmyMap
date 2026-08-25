@@ -5,6 +5,7 @@ import {
   type ScoreReading,
 } from "./action-popup-content.helpers";
 import type { ActionPollutionProjectionPresentation } from "@/lib/actions/revisit-priority";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -180,6 +181,13 @@ export function ActionPopupContentHeader({
             ? "Projection modélisée · pas une mesure en temps réel"
             : "Projection basée sur une mesure post-action"}
         </p>
+        {actionProjection?.projectionConfidence && (
+          <p className="cmm-text-caption font-semibold text-slate-600 dark:text-slate-300">
+            {formatProjectionConfidenceLabel(
+              actionProjection.projectionConfidence.level,
+            )}
+          </p>
+        )}
 
         <div className="rounded-2xl border border-sky-100/80 bg-gradient-to-br from-sky-50 to-white p-3 shadow-sm dark:border-sky-900/60 dark:from-sky-950/30 dark:to-slate-900/40">
           <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">

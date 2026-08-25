@@ -6,6 +6,7 @@ import {
 import type { ActionDataContract } from "./contract-model";
 import { auditActionContract } from "./data-quality";
 import { presentActionPollutionProjection } from "./revisit-priority";
+import type { ProjectionConfidence } from "./projection-confidence";
 
 const METERS_PER_DEGREE_LATITUDE = 111_320;
 
@@ -81,6 +82,7 @@ export type CorridorHistorySummary = {
     projectedScore: number;
     elapsedDays: number;
     isEstimate: boolean;
+    projectionConfidence: ProjectionConfidence;
   } | null;
   calibrationInput: CorridorCalibrationInput;
 };
@@ -472,7 +474,11 @@ export function summarizeCorridorHistory(
           latestScore,
           latestAction.dates.observedAt,
           options.now ?? new Date(),
-          { postActionScore: latestAction.metadata.postActionPollutionScore },
+          {
+            postActionScore: latestAction.metadata.postActionPollutionScore,
+            geometryConfidence: latestAction.geometry.confidence,
+            sourceCompleteness: "partial",
+          },
         )
       : null;
 
@@ -522,6 +528,7 @@ export function summarizeCorridorHistory(
           projectedScore: latestProjection.projectedPollutionScore,
           elapsedDays: latestProjection.elapsedDays,
           isEstimate: latestProjection.isEstimate,
+          projectionConfidence: latestProjection.projectionConfidence,
         }
       : null,
     calibrationInput: history.calibrationInput,
