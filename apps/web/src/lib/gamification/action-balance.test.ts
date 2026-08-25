@@ -27,7 +27,6 @@ function makeAction(params: {
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
   notes: string | null;
-  manual_drawing: null;
 } {
   return {
     id: params.id,
@@ -46,7 +45,6 @@ function makeAction(params: {
     notes: appendActionMetadataToNotes("Action", {
       associationName: params.associationName,
     }),
-    manual_drawing: null,
   };
 }
 

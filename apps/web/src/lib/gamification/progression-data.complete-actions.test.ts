@@ -107,7 +107,6 @@ function buildCompleteActionRows(): ActionRow[] {
       duration_minutes: 45,
       status: "approved",
       notes: completeNotes,
-      manual_drawing: null,
     },
     {
       id: "action-2",
@@ -124,7 +123,6 @@ function buildCompleteActionRows(): ActionRow[] {
       duration_minutes: 45,
       status: "approved",
       notes: completeNotes,
-      manual_drawing: null,
     },
     {
       id: "action-3",
@@ -141,7 +139,6 @@ function buildCompleteActionRows(): ActionRow[] {
       duration_minutes: 45,
       status: "pending",
       notes: completeNotes,
-      manual_drawing: null,
     },
   ];
 }

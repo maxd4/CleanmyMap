@@ -32,7 +32,7 @@ export async function loadUserAnnualImpactStats(
   const result = await runActionQuery<ActionRow>(supabase, (query) =>
     query
       .select(
-        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes",
       )
       .eq("status", "approved")
       .gte("action_date", startDate)

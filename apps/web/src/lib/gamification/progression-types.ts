@@ -1,9 +1,10 @@
-export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
+import type {
+  ActionDrawing,
+  ActionGeometryKind,
+  ActionGeometrySource,
+} from "@/lib/actions/types";
 
-type ActionDrawing = {
-  kind: "polyline" | "polygon";
-  coordinates: [number, number][];
-};
+export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 
 export type ProgressionEventType =
   | "action_declare_pending"
@@ -40,7 +41,10 @@ export type ActionRow = {
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
   notes: string | null;
-  manual_drawing?: ActionDrawing | null;
+  derived_geometry_kind?: ActionGeometryKind | null;
+  derived_geometry_geojson?: string | null;
+  geometry_confidence?: number | null;
+  geometry_source?: ActionGeometrySource | null;
 };
 
 export type ActionOrganizerRow = {

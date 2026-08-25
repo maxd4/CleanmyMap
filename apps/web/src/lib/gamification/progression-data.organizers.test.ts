@@ -53,7 +53,6 @@ function buildAction(overrides: Partial<Record<string, unknown>> = {}) {
     notes: appendActionMetadataToNotes("Action de terrain", {
       associationName: "Action spontanée",
     }),
-    manual_drawing: null,
     ...overrides,
   };
 }

@@ -21,7 +21,6 @@ const DEFAULT_ACTION_ROW: ActionRow = {
   duration_minutes: 0,
   status: "approved",
   notes: null,
-  manual_drawing: null,
 };
 
 function actionRow(input: Partial<ActionRow>): ActionRow {

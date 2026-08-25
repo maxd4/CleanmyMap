@@ -41,7 +41,7 @@ import type {
   ContributorRecognitionSummary,
   ContributorRecognitionSnapshot,
 } from "./progression-types";
-import { toFloat, toInt } from "./progression-utils";
+import { actionRowToDrawing, toFloat, toInt } from "./progression-utils";
 
 type UserProgressionResponse = {
   userId: string;
@@ -93,7 +93,7 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
         quality >= 80 ? "A" : quality >= 60 ? "B" : "C",
       latitude: row.latitude,
       longitude: row.longitude,
-      manualDrawing: row.manual_drawing ?? null,
+      manualDrawing: actionRowToDrawing(row),
     };
   });
 }
