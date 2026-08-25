@@ -21,6 +21,6 @@ describe("LearnGestesPropresMythsSection", () => {
     expect(markup).toContain("aria-expanded=\"false\"");
     expect(markup).toContain("54 %");
     expect(markup).toContain("31 %");
-    expect(markup).toContain("Résultats déclaratifs, sans profilage ni accusation.");
+    expect(markup).toContain("Mesure une croyance, pas une pratique observée.");
   });
 });
