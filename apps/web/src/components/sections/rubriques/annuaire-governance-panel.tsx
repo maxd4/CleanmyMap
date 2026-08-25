@@ -1,6 +1,6 @@
 "use client";
 
-import type { AnnuaireEntry } from "./annuaire-map-canvas";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { ShieldCheck, Info, Sparkles, Target, ArrowUpRight, Users, Clock, Mail } from "lucide-react";

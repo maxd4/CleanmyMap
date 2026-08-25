@@ -17,7 +17,7 @@ import {
   isNearbyEntry, 
   type EnrichedAnnuaireEntry 
 } from "./annuaire-helpers";
-import type { AnnuaireEntry } from "./annuaire-map-canvas";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 
 type PublishedDirectoryResponse = {
   status: "ok";

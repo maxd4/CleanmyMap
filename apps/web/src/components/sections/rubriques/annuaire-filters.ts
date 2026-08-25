@@ -1,4 +1,4 @@
-import type { AnnuaireEntry } from"./annuaire-map-canvas";
+import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import type { ParisArrondissement } from"@/lib/geo/paris-arrondissements";
 
 export type EntityKind = AnnuaireEntry["kind"];

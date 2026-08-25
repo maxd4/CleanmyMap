@@ -85,4 +85,38 @@ describe("Server/Client boundaries", () => {
     expect(reportUsage?.[0]).toBe("<ActionsReportPanel />");
     expect(reportUsage?.[0]).not.toMatch(/\bon[A-Z][A-Za-z]*\s*=/);
   });
+
+  it("keeps Annuaire contracts on the neutral partners domain seam", async () => {
+    const partnersFiles = await collectSourceFiles(
+      path.join(SRC_ROOT, "lib", "partners"),
+    );
+    const violations: string[] = [];
+
+    for (const file of partnersFiles) {
+      const content = await readFile(file, "utf8");
+      if (content.includes("annuaire-map-canvas")) {
+        violations.push(path.relative(process.cwd(), file));
+      }
+    }
+
+    const contractSource = await readFile(
+      path.join(SRC_ROOT, "lib", "partners", "annuaire-types.ts"),
+      "utf8",
+    );
+    const mapSource = await readFile(
+      path.join(
+        SRC_ROOT,
+        "components",
+        "sections",
+        "rubriques",
+        "annuaire-map-canvas.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(violations).toEqual([]);
+    expect(contractSource).not.toMatch(USE_CLIENT_PATTERN);
+    expect(contractSource).not.toMatch(/(?:react-)?leaflet/);
+    expect(mapSource).toContain('from "@/lib/partners/annuaire-types"');
+  });
 });

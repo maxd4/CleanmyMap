@@ -17,7 +17,7 @@ import type {
   AssociationProfile,
   AssociationPublicCall,
   AssociationResource,
-} from "@/components/sections/rubriques/annuaire-map-canvas";
+} from "./annuaire-types";
 import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 
 const STORE_FILE = join(
