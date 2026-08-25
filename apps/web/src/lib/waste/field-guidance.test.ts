@@ -3,6 +3,8 @@ import {
   appendWasteCategoriesToNotes,
   buildWasteFieldGuidance,
   formatWasteGuidanceLines,
+  parseWasteCategoriesFromNotes,
+  stripWasteCategoryMarkersFromNotes,
 } from "@/lib/waste";
 
 describe("canonical waste field guidance", () => {
@@ -43,5 +45,16 @@ describe("canonical waste field guidance", () => {
     const notes = appendWasteCategoriesToNotes("Note organisateur", ["sharps", "other"]);
     expect(notes).toContain("Note organisateur");
     expect(notes).toContain("[cmm-waste:sharps,other]");
+    expect(parseWasteCategoriesFromNotes(notes)).toEqual(["sharps", "other"]);
+    expect(stripWasteCategoryMarkersFromNotes(notes)).toBe("Note organisateur");
+  });
+
+  it("ignores invalid slugs while reading historical notes", () => {
+    expect(
+      parseWasteCategoriesFromNotes(
+        "Ancienne note\n[cmm-waste:cigarette_butt,legacy, UNKNOWN,broken_glass]\n[cmm-waste:cigarette_butt]",
+      ),
+    ).toEqual(["cigarette_butt", "broken_glass"]);
+    expect(parseWasteCategoriesFromNotes("Note sans marqueur")).toEqual([]);
   });
 });

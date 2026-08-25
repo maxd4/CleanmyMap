@@ -1,9 +1,12 @@
 import {
   getWasteCategory,
+  isWasteCategorySlug,
   WASTE_CATEGORY_DEFINITIONS,
   WASTE_CATEGORY_SLUGS,
 } from "./catalog";
 import type { WasteCategoryDefinition, WasteCategorySlug, WasteFamily, WastePickupPolicy } from "./types";
+
+const WASTE_CATEGORIES_MARKER = /\[cmm-waste:([^\]]*)\]/gi;
 
 export const WASTE_FAMILY_ORDER: readonly WasteFamily[] = [
   "nicotine",
@@ -119,6 +122,46 @@ export function appendWasteCategoriesToNotes(
   if (normalized.length === 0) return base || undefined;
   const marker = `[cmm-waste:${normalized.join(",")}]`;
   return base ? `${base}\n${marker}` : marker;
+}
+
+/**
+ * Lit le marqueur transitoire des catégories Waste UX sans exposer les notes
+ * comme contrat de persistance. Les tokens inconnus sont volontairement
+ * ignorés afin de rester rétrocompatible avec les notes historiques tout en
+ * garantissant que seuls les WasteCategorySlug canoniques sortent du parseur.
+ */
+export function parseWasteCategoriesFromNotes(
+  notes: string | null | undefined,
+): WasteCategorySlug[] {
+  if (!notes) {
+    return [];
+  }
+
+  const parsed: WasteCategorySlug[] = [];
+  for (const match of notes.matchAll(WASTE_CATEGORIES_MARKER)) {
+    for (const token of (match[1] ?? "").split(",")) {
+      const normalized = token.trim().toLowerCase();
+      if (isWasteCategorySlug(normalized) && !parsed.includes(normalized)) {
+        parsed.push(normalized);
+      }
+    }
+  }
+
+  return parsed;
+}
+
+export function stripWasteCategoryMarkersFromNotes(
+  notes: string | null | undefined,
+): string | undefined {
+  const cleaned = (notes ?? "")
+    .replace(WASTE_CATEGORIES_MARKER, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  return cleaned || undefined;
 }
 
 export function formatWasteGuidanceLines(

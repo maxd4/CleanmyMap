@@ -16,6 +16,7 @@ import {
   buildPersistedGeometryFromStoredFields,
   type PersistedDerivedGeometry,
 } from "./derived-geometry";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionEntityType = ActionRecordType;
 
@@ -56,6 +57,8 @@ export type ActionDataMetadata = {
   notesPlain: string | null;
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
+  /** Structured Trash Spotter categories read from the transient notes marker. */
+  wasteCategories?: WasteCategorySlug[] | null;
   photos: ActionPhotoAsset[] | null;
   visionEstimate: ActionVisionEstimate | null;
   wasteKg: number;
@@ -111,6 +114,7 @@ export type BuildActionContractParams = {
   notesPlain?: string | null;
   submissionMode?: ActionSubmissionMode | null;
   wasteBreakdown?: ActionWasteBreakdown | null;
+  wasteCategories?: WasteCategorySlug[] | null;
   photos?: ActionPhotoAsset[] | null;
   visionEstimate?: ActionVisionEstimate | null;
   manualDrawing?: ActionDrawing | null;
@@ -220,13 +224,14 @@ function buildActionNoteMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "notes" | "notesPlain" | "submissionMode" | "wasteBreakdown"
+  "notes" | "notesPlain" | "submissionMode" | "wasteBreakdown" | "wasteCategories"
 > {
   return {
     notes: params.notes ?? null,
     notesPlain: params.notesPlain ?? null,
     submissionMode: params.submissionMode ?? null,
     wasteBreakdown: params.wasteBreakdown ?? null,
+    wasteCategories: params.wasteCategories ? [...params.wasteCategories] : null,
   };
 }
 

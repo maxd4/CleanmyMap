@@ -123,6 +123,22 @@ describe("unified action source", () => {
     });
   });
 
+  it("reads structured Trash Spotter categories from the transient notes marker", async () => {
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([
+        canonicalSpot({ notes: "Contexte\n[cmm-waste:plastic,broken_glass,invalid]" }),
+      ]) as never,
+      params(),
+    );
+
+    expect(result.items[0]?.metadata.wasteCategories).toEqual([
+      "plastic",
+      "broken_glass",
+    ]);
+    expect(result.items[0]?.metadata.notes).toBe("Contexte");
+  });
+
   it("keeps a canonical clean place as a clean_place contract", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
@@ -132,6 +148,23 @@ describe("unified action source", () => {
 
     expect(result.items[0]?.type).toBe("clean_place");
     expect(result.items[0]?.source).toBe("trash_spotter_spots");
+  });
+
+  it("never exposes Trash Spotter categories for a canonical clean place", async () => {
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([
+        canonicalSpot({
+          spot_type: "clean_place",
+          notes: "Référence\n[cmm-waste:plastic]",
+        }),
+      ]) as never,
+      params(),
+    );
+
+    expect(result.items[0]?.type).toBe("clean_place");
+    expect(result.items[0]?.metadata.wasteCategories).toEqual([]);
+    expect(result.items[0]?.metadata.notes).toBe("Référence");
   });
 
   it("prefers a remote action over a local contract restored from the same externalId", async () => {

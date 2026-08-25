@@ -23,7 +23,7 @@ import type { SpotFormStatus, SpotType } from "./trash-spotter-types";
 type SpotterFormProps = {
   fr: boolean;
   spotType: SpotType;
-  setSpotType: Dispatch<SetStateAction<SpotType>>;
+  setSpotType: (value: SpotType) => void;
   spotLabel: string;
   setSpotLabel: Dispatch<SetStateAction<string>>;
   spotLatitude: string;
@@ -259,15 +259,17 @@ export const SpotterForm = memo(function SpotterForm({
           />
         </div>
 
-        <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/60 p-4">
-          <WasteCategorySelector
-            value={wasteCategories}
-            onChange={setWasteCategories}
-            fr={fr}
-            idPrefix="trash-spotter-waste"
-          />
-          <WasteFieldSummary value={wasteCategories} fr={fr} className="mt-4" />
-        </div>
+        {spotType === "spot" ? (
+          <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/60 p-4">
+            <WasteCategorySelector
+              value={wasteCategories}
+              onChange={setWasteCategories}
+              fr={fr}
+              idPrefix="trash-spotter-waste"
+            />
+            <WasteFieldSummary value={wasteCategories} fr={fr} className="mt-4" />
+          </div>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
           <button
