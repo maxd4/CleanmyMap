@@ -1,4 +1,9 @@
 import { Answer, Locale, Tone } from "./assistant-constants";
+import {
+  findWasteCategorySlug,
+  getWastePedagogicalProjection,
+} from "@/lib/waste";
+import type { WastePedagogicalProjection } from "@/lib/waste";
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
@@ -48,6 +53,59 @@ function createDefaultAnswer(locale: Locale): Answer {
       };
 }
 
+function buildCanonicalWasteAnswer(
+  projection: WastePedagogicalProjection,
+  locale: Locale,
+  publicSpaceReportNote?: string,
+): Answer {
+  const isNoPickup = projection.pickupPolicy === "no_pickup";
+  const tone =
+    projection.hazardLevel === "critical" || isNoPickup
+      ? "rose"
+      : projection.hazardLevel === "high"
+        ? "amber"
+        : projection.slug === "glass"
+          ? "emerald"
+          : "slate";
+  const kind =
+    projection.slug === "glass"
+      ? "glass"
+      : ["bulky_furniture", "wood", "electrical_equipment", "battery", "medicine"].includes(projection.slug)
+        ? "decheterie"
+        : "specific";
+  const bullets = [
+    `${projection.hazardLabel}. ${projection.pickupLabel}.`,
+    ...(projection.ppe[0]
+      ? [locale === "fr" ? `EPI : ${projection.ppe[0]}` : `PPE: ${projection.ppe[0]}`]
+      : []),
+    projection.instructions[0],
+    projection.prohibitions[0],
+  ].filter(Boolean).slice(0, 4);
+
+  return {
+    kind,
+    tone,
+    badge: projection.label,
+    title: isNoPickup
+      ? locale === "fr"
+        ? `Sécurise et signale : ${projection.label}`
+        : `Secure and report: ${projection.label}`
+      : locale === "fr"
+        ? `La bonne filière pour ${projection.label}`
+        : `The right stream for ${projection.label}`,
+    summary: isNoPickup
+      ? locale === "fr"
+        ? `${projection.pickupLabel}. Oriente le cas vers ${projection.disposalLabel}.`
+        : `${projection.pickupLabel}. Direct the case to ${projection.disposalLabel}.`
+      : locale === "fr"
+        ? `${projection.pickupLabel}. Oriente-le vers ${projection.disposalLabel}.`
+        : `${projection.pickupLabel}. Direct it to ${projection.disposalLabel}.`,
+    bullets,
+    nextStep: locale === "fr" ? `Prochaine étape : ${projection.disposalLabel}.` : `Next step: ${projection.disposalLabel}.`,
+    note: publicSpaceReportNote,
+  };
+}
+
 export function buildAnswer(question: string, locale: Locale): Answer {
   const text = normalizeText(question);
 
@@ -94,17 +152,15 @@ export function buildAnswer(question: string, locale: Locale): Answer {
       ? "à défaut: poubelle grise / ordures ménagères"
       : "if impossible: residual waste bin";
 
-  const batteryKeywords = [
-    "pile",
-    "piles",
-    "batterie",
-    "batteries",
-    "accu",
-    "accus",
-    "battery",
-    "batteries",
-    "power bank",
-  ];
+  const canonicalSlug = findWasteCategorySlug(text);
+  if (canonicalSlug) {
+    return buildCanonicalWasteAnswer(
+      getWastePedagogicalProjection(canonicalSlug, locale),
+      locale,
+      publicSpaceReportNote,
+    );
+  }
+
   const ampouleKeywords = [
     "ampoule",
     "ampoules",
@@ -146,15 +202,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
     "sandale",
     "sandales",
   ];
-  const megotKeywords = [
-    "megot",
-    "megots",
-    "mégot",
-    "mégots",
-    "cigarette",
-    "cigarettes",
-    "tabac",
-  ];
   const greasyCardboardKeywords = [
     "carton gras",
     "carton graisse",
@@ -186,39 +233,12 @@ export function buildAnswer(question: string, locale: Locale): Answer {
     "vetement",
     "vêtement",
     "vêtements",
-    "deee",
-    "petit electro",
-    "petit électro",
-    "medicament",
-    "médicament",
-    "medicaments",
-    "médicaments",
   ];
   const decheterieKeywords = [
     "decheterie",
     "déchèterie",
     "dechetterie",
     "déchetterie",
-    "meuble",
-    "matelas",
-    "canape",
-    "canapé",
-    "armoire",
-    "chaise",
-    "table",
-    "bureau",
-    "gros electro",
-    "gros électro",
-    "electromenager",
-    "électroménager",
-    "frigo",
-    "lave linge",
-    "lavage linge",
-    "tele",
-    "télé",
-    "tv",
-    "ecran",
-    "écran",
     "gravat",
     "gravats",
     "peinture",
@@ -226,14 +246,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
     "huile",
     "aerosol",
     "aérosol",
-  ];
-  const glassKeywords = [
-    "verre",
-    "bocal",
-    "bocaux",
-    "bouteille en verre",
-    "pot en verre",
-    "pots en verre",
   ];
   const packagingKeywords = [
     "bouteille plastique",
@@ -250,40 +262,6 @@ export function buildAnswer(question: string, locale: Locale): Answer {
     "barquette",
     "flacon",
   ];
-
-  if (includesAny(text, megotKeywords)) {
-    return localizedAnswer(
-      locale,
-      {
-        kind: "specific",
-        tone: "slate",
-        badge: "Déchet résiduel",
-        title: "Un mégot ne se recycle pas avec les emballages",
-        summary: `Le bon réflexe est de le garder à part, au sec, puis de le jeter en résiduel ou dans un cendrier de collecte si ta ville en propose (${fallbackBin}).`,
-        bullets: [
-          "Ne le jette pas avec le papier, le plastique ou le verre.",
-          "Utilise un cendrier, un collecteur à mégots ou un petit contenant fermé.",
-          "S'il est dans la rue, ramasse-le seulement si c'est sûr et proprement possible.",
-        ],
-        nextStep: "Cherche un cendrier de collecte ou garde-le avec les déchets non recyclables.",
-        note: publicSpaceReportNote,
-      },
-      {
-        kind: "specific",
-        tone: "slate",
-        badge: "Residual waste",
-        title: "A cigarette butt is not recyclable with packaging",
-        summary: `Keep it separate and dry, then place it in residual waste or a butt collection container if your city provides one (${fallbackBin}).`,
-        bullets: [
-          "Do not mix it with paper, plastic or glass.",
-          "Use an ashtray, a butt collector or a small closed container.",
-          "If it is in the street, only pick it up if it is safe to do so.",
-        ],
-        nextStep: "Look for a butt collector or keep it with the non-recyclable waste.",
-        note: publicSpaceReportNote,
-      },
-    );
-  }
 
   if (includesAny(text, foodWasteKeywords)) {
     return localizedAnswer(
@@ -466,7 +444,7 @@ export function buildAnswer(question: string, locale: Locale): Answer {
         title: "Oui, il faut souvent une collecte spécifique pour cet objet",
         summary: `Cherche une borne, une reprise en magasin, une pharmacie, une association ou une déchèterie selon la filière exacte (${fallbackBin}).`,
         bullets: [
-          "Textiles, médicaments, DEEE et piles suivent souvent une filière séparée.",
+          "Les textiles et autres objets à filière dédiée ne suivent pas forcément le tri des emballages.",
           "Si l'objet a une petite taille mais une matière spéciale, il n'est pas forcément un déchet classique.",
           "Donne-moi l'objet exact si tu veux que je te dise la bonne filière.",
         ],
@@ -480,50 +458,11 @@ export function buildAnswer(question: string, locale: Locale): Answer {
         title: "This often needs a dedicated collection stream",
         summary: `Look for a drop-off box, shop take-back, pharmacy, association or recycling center depending on the exact stream (${fallbackBin}).`,
         bullets: [
-          "Textiles, medicines, WEEE and batteries often follow separate collection routes.",
+          "Textiles and other dedicated-stream items do not necessarily belong with packaging.",
           "A small item with a special material is not necessarily regular waste.",
           "Tell me the exact item and I can point you to the right stream.",
         ],
         nextStep: "Identify the exact item to find the correct drop-off point.",
-        note: reportNote,
-      },
-    );
-  }
-
-  if (includesAny(text, batteryKeywords)) {
-    const reportNote = wantsReport
-      ? locale === "fr"
-        ? "Si la pile ou la batterie est abandonnée dans l'espace public, un signalement sur DansMaRue peut aussi être utile."
-        : "If the battery is abandoned in public space, a DansMaRue-style report can also help."
-      : undefined;
-    return localizedAnswer(
-      locale,
-      {
-        kind: "specific",
-        tone: "amber",
-        badge: "Point de collecte spécifique",
-        title: "Piles et batteries: pas dans la poubelle classique",
-        summary: `Dépose-les dans un point de collecte dédié ou en déchèterie. Ne les mets pas dans le bac ordinaire (${fallbackBin}).`,
-        bullets: [
-          "Les piles et batteries vont dans un circuit séparé.",
-          "Cherche un point de collecte en magasin, mairie ou déchèterie.",
-          "Garde-les à l'écart des déchets humides ou métalliques libres.",
-        ],
-        nextStep: "Cherche une borne piles / batteries ou le point de collecte le plus proche.",
-        note: reportNote,
-      },
-      {
-        kind: "specific",
-        tone: "amber",
-        badge: "Dedicated drop-off",
-        title: "Batteries and cells: not in the regular bin",
-        summary: `Use a dedicated drop-off point or the recycling center. Do not place them in the regular bin (${fallbackBin}).`,
-        bullets: [
-          "Batteries go through a separate collection stream.",
-          "Look for a collection box in a shop, town hall or recycling center.",
-          "Keep them away from wet waste or loose metal items.",
-        ],
-        nextStep: "Look for a batteries drop-off point nearby.",
         note: reportNote,
       },
     );
@@ -543,9 +482,9 @@ export function buildAnswer(question: string, locale: Locale): Answer {
           title: "Oui, la déchèterie est le bon circuit",
           summary: `C'est la bonne filière pour les encombrants, les déchets dangereux et les objets trop gros pour les bacs (${fallbackBin}).`,
           bullets: [
-            "Meubles, matelas, gros électroménager et gravats vont souvent à la déchèterie.",
-            "Peinture, solvants, huiles et aérosols suivent une filière dédiée.",
-            "Si l'objet est électrique mais petit, vérifie d'abord la collecte DEEE.",
+            "Les gravats, peintures, solvants, huiles et aérosols suivent la consigne de la collectivité.",
+            "Vérifie les horaires et les conditions d'accès avant de te déplacer.",
+            "Si l'objet correspond à une catégorie Waste sensible, suis sa projection canonique.",
           ],
           nextStep: "Prépare le dépôt et vérifie les horaires / conditions d'accès de la déchèterie.",
           note: reportNote,
@@ -557,48 +496,11 @@ export function buildAnswer(question: string, locale: Locale): Answer {
           title: "Yes, the recycling center is the right route",
           summary: `It is the correct stream for bulky items, hazardous waste and items too large for regular bins (${fallbackBin}).`,
           bullets: [
-            "Furniture, mattresses, large appliances and rubble usually go to the recycling center.",
-            "Paint, solvents, oils and aerosols follow a dedicated stream.",
-            "If the item is electrical but small, check the WEEE collection stream first.",
+            "Rubble, paint, solvents, oils and aerosols follow local-authority guidance.",
+            "Check opening hours and access conditions before travelling.",
+            "If the item matches a sensitive Waste category, follow its canonical projection.",
           ],
           nextStep: "Check the drop-off conditions and opening hours before you go.",
-          note: reportNote,
-        };
-  }
-
-  if (includesAny(text, glassKeywords)) {
-    const reportNote = wantsReport
-      ? locale === "fr"
-        ? "Si un objet en verre est cassé dans l'espace public, un signalement public peut être utile; pour le verre propre, vise le conteneur verre."
-        : "If broken glass is in public space, a public report may help; for clean glass, use the glass container."
-      : undefined;
-    return locale === "fr"
-      ? {
-          kind: "glass",
-          tone: "emerald",
-          badge: "Verre",
-          title: "Bouteilles et bocaux en verre vont au conteneur verre",
-          summary: `Le verre propre se trie à part. Ne mélange pas avec la vaisselle, le miroir ou la céramique (${fallbackBin}).`,
-          bullets: [
-            "Bouteilles et bocaux en verre: oui.",
-            "Vaisselle, cristal, miroir et céramique: non.",
-            "Si c'est sale ou dangereux, traite l'objet à part avant de le jeter.",
-          ],
-          nextStep: "Vide l'objet et dépose-le dans le conteneur verre dédié.",
-          note: reportNote,
-        }
-      : {
-          kind: "glass",
-          tone: "emerald",
-          badge: "Glass",
-          title: "Glass bottles and jars go to the glass container",
-          summary: `Clean glass is sorted separately. Do not mix it with dishes, mirrors or ceramics (${fallbackBin}).`,
-          bullets: [
-            "Glass bottles and jars: yes.",
-            "Dishes, crystal, mirrors and ceramics: no.",
-            "If it is dirty or dangerous, handle it separately before disposal.",
-          ],
-          nextStep: "Empty it and drop it in the dedicated glass container.",
           note: reportNote,
         };
   }

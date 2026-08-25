@@ -1,5 +1,7 @@
 import type { QuizSchoolTrackId } from "@/components/learn/quiz-school-modes";
 
+import { getWastePedagogicalProjection } from "@/lib/waste";
+
 export type QuizSchoolKitStatus =
   | {
       kind: "source";
@@ -27,6 +29,8 @@ export type QuizSchoolKitStep = {
   lead: string;
   detail: string;
 };
+
+const SHARPS_PEDAGOGY = getWastePedagogicalProjection("sharps", "fr");
 
 export const QUIZ_SCHOOL_KIT_STEPS: QuizSchoolKitStep[] = [
   {
@@ -129,7 +133,7 @@ export const QUIZ_SCHOOL_KIT_BANK: QuizSchoolKitQuestion[] = [
     question: "Une seringue usagée se ramasse comme un déchet banal si elle est au sol.",
     answer: "Faux",
     explanation:
-      "Un objet piquant ou potentiellement souillé peut exposer à un risque sanitaire. Dans ce cas, on ne ramasse pas à main nue et on applique la consigne de sécurité.",
+      `${SHARPS_PEDAGOGY.pickupLabel}. ${SHARPS_PEDAGOGY.instructions[0]} ${SHARPS_PEDAGOGY.prohibitions[0]}`,
     takeaway: "La sécurité passe avant le réflexe de ramassage.",
   },
   {

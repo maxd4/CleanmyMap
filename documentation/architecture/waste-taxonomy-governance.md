@@ -30,7 +30,8 @@ L'audit a trouvé plusieurs vocabulaires historiques :
 | `QuickSignalementForm` | IDs historiques `megots`, `plastique`, `encombrant`, `mixte` | IDs de payload conservés ; labels issus du référentiel |
 | formulaires d'action et admin | champs historiques `waste*Kg` et conditions de mégots | Pas de migration fonctionnelle dans ce lot |
 | communauté | types attendus historiques (`megots`, `plastique`, `verre`, `metal`, `mixte`) | Valeurs de transport conservées ; labels reliés au référentiel |
-| assistant recyclage et learning | mots-clés, exemples et tags pédagogiques | UI et quiz conservés ; convergence progressive possible via les tags |
+| assistant recyclage | reconnaissance et réponses sensibles via `findWasteCategorySlug` et `getWastePedagogicalProjection` ; compléments sans catégorie conservés localement | projection canonique avant les fallbacks complémentaires |
+| Learning / quiz / bonnes pratiques | sécurité terrain et exemples pédagogiques | les règles de catégorie sont dérivées ou validées contre `lib/waste` ; les contenus génériques ou sans catégorie distincte restent pédagogiques |
 | `trash_spotter_spots` | table de signalements `spot` / `clean_place` | Provenance de données, jamais taxonomie de déchets |
 
 Les anciens slugs ne doivent pas être supprimés tant que les payloads et les
@@ -54,6 +55,9 @@ créer une table de taxonomie couplée à la source Trash Spotter.
   sans migration et plan de lecture rétrocompatible.
 - `hazardLevel`, `pickupPolicy` et `prohibitions` servent d'abord à éviter une
   collecte dangereuse ; ils ne constituent pas une habilitation réglementaire.
+- `getWastePedagogicalProjection` est la projection neutre pour les assistants,
+  le Learning et les quiz ; elle expose les labels, exemples, danger, politique
+  de ramassage, EPI, consignes, interdictions, filière et tags sans dépendance UI.
 - Les consignes locales de collecte et les services habilités priment toujours.
 - Les formulaires, la carte et les quiz peuvent afficher des vues adaptées,
   mais ne doivent pas créer une deuxième définition contradictoire d'une

@@ -7,6 +7,7 @@ import {
   getWasteCategory,
   isWasteCategorySlug,
 } from "@/lib/waste";
+import { findWasteCategorySlug, getWastePedagogicalProjection } from "@/lib/waste";
 
 const REQUIRED_SLUGS = [
   "cigarette_butt",
@@ -51,6 +52,17 @@ describe("global waste category contract", () => {
     expect(getWasteCategory("battery").hazardLevel).toBe("high");
     expect(getWasteCategory("sharps").pickupPolicy).toBe("no_pickup");
     expect(getWasteCategory("sharps").disposalRoute).toBe("sharps_collection");
+  });
+
+  it("keeps pedagogical aliases attached to the canonical category contract", () => {
+    expect(findWasteCategorySlug("snus usagé")).toBe("nicotine_pouch");
+    expect(findWasteCategorySlug("verre cassé")).toBe("broken_glass");
+    expect(findWasteCategorySlug("petit électroménager")).toBe("electrical_equipment");
+    expect(getWastePedagogicalProjection("sharps", "fr")).toMatchObject({
+      pickupPolicy: "no_pickup",
+      pickupLabel: "Ne pas ramasser : sécuriser et signaler",
+      disposalRoute: "sharps_collection",
+    });
   });
 
   it("reserves medicine for unused medicine or packaging that still contains medicine", () => {

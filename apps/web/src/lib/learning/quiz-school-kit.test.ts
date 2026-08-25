@@ -7,6 +7,7 @@ import {
   QUIZ_SCHOOL_TEACHER_GUIDE,
   groupQuizSchoolKitQuestionsByTrack,
 } from "./quiz-school-kit";
+import { getWastePedagogicalProjection } from "@/lib/waste";
 
 describe("quiz-school-kit", () => {
   it("keeps a compact starter bank of twenty questions", () => {
@@ -25,5 +26,14 @@ describe("quiz-school-kit", () => {
     expect(
       QUIZ_SCHOOL_KIT_BANK.some((question) => question.status?.kind === "needsReview"),
     ).toBe(true);
+  });
+
+  it("derives the syringe safety explanation from the canonical Waste projection", () => {
+    const syringeQuestion = QUIZ_SCHOOL_KIT_BANK.find((question) => question.id === "ter-1");
+    const sharps = getWastePedagogicalProjection("sharps", "fr");
+
+    expect(syringeQuestion?.explanation).toContain(sharps.pickupLabel);
+    expect(syringeQuestion?.explanation).toContain(sharps.instructions[0]);
+    expect(syringeQuestion?.explanation).toContain(sharps.prohibitions[0]);
   });
 });
