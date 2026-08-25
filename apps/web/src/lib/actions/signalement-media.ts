@@ -7,6 +7,8 @@ import {
   SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES,
   SIGNALEMENT_EVIDENCE_SIGNED_URL_TTL_SECONDS,
   type SignalementEvidenceMimeType,
+  type SignalementMediaReadItem,
+  type SignalementMediaRecord,
   type SignalementMediaUploadState,
 } from "./signalement-media-contract";
 
@@ -22,23 +24,6 @@ export type {
   SignalementMediaUploadState,
 } from "./signalement-media-contract";
 
-export type SignalementMediaRecord = {
-  id: string;
-  signalementId: string;
-  createdAt: string;
-  createdByClerkId: string;
-  clientUploadId: string;
-  storageBucket: typeof SIGNALEMENT_EVIDENCE_BUCKET;
-  storagePath: string;
-  originalName: string;
-  mimeType: SignalementEvidenceMimeType;
-  sizeBytes: number;
-  width: number | null;
-  height: number | null;
-  sortOrder: number;
-  uploadState: SignalementMediaUploadState;
-};
-
 export type SignalementMediaUploadIntent = {
   mediaId: string;
   bucket: typeof SIGNALEMENT_EVIDENCE_BUCKET;
@@ -50,10 +35,6 @@ export type SignalementMediaUploadIntent = {
 export type SignalementMediaReadyResult = {
   media: SignalementMediaRecord;
   alreadyReady: boolean;
-};
-
-export type SignalementMediaReadItem = SignalementMediaRecord & {
-  signedUrl: string;
 };
 
 type SignalementParent = {

@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
+import { SignalementMediaProofs } from "./action-popup-signalement-media";
 
 type ActionPopupContentBodyProps = {
   wasteKg: number;
@@ -30,6 +31,7 @@ type ActionPopupContentBodyProps = {
   joinStatusLabel?: string | null;
   hasPollution: boolean;
   isAction: boolean;
+  signalementId?: string | null;
   onViewGeometry?: () => void;
 };
 
@@ -50,6 +52,7 @@ export function ActionPopupContentBody({
   joinStatusLabel,
   hasPollution,
   isAction,
+  signalementId = null,
   onViewGeometry,
 }: ActionPopupContentBodyProps) {
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
@@ -174,6 +177,8 @@ export function ActionPopupContentBody({
           </button>
         </div>
       )}
+
+      {signalementId ? <SignalementMediaProofs signalementId={signalementId} /> : null}
 
       <div className="flex items-center justify-between border-t border-slate-100 pt-2 cmm-text-caption dark:border-slate-800">
         <div className="flex items-center gap-1.5 text-slate-500">

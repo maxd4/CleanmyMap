@@ -12,3 +12,29 @@ export type SignalementEvidenceMimeType =
   (typeof SIGNALEMENT_EVIDENCE_ALLOWED_MIME_TYPES)[number];
 
 export type SignalementMediaUploadState = "pending" | "ready" | "failed";
+
+export type SignalementMediaRecord = {
+  id: string;
+  signalementId: string;
+  createdAt: string;
+  createdByClerkId: string;
+  clientUploadId: string;
+  storageBucket: typeof SIGNALEMENT_EVIDENCE_BUCKET;
+  storagePath: string;
+  originalName: string;
+  mimeType: SignalementEvidenceMimeType;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  sortOrder: number;
+  uploadState: SignalementMediaUploadState;
+};
+
+export type SignalementMediaReadItem = SignalementMediaRecord & {
+  signedUrl: string;
+};
+
+export type SignalementMediaReadResponse = {
+  status: "ok";
+  items: SignalementMediaReadItem[];
+};

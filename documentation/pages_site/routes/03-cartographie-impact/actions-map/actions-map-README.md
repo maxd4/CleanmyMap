@@ -167,6 +167,11 @@ La page demande une vigilance particulière :
 - composants cartographiques et carrousel chargés dynamiquement ;
 - références de score partagées ;
 - éviter les fetchs supplémentaires à l'ouverture d'un détail.
+- Les preuves photo Trash Spotter ne sont pas chargées avec la carte ni à
+  l'ouverture du popup : le popup spot/clean_place propose une action explicite
+  « Voir les preuves photo ». Le GET média n'est déclenché qu'après ce clic et
+  le résultat est conservé dans l'instance locale du popup ; les actions
+  terrain ne déclenchent aucun contrôle média.
 
 ## États à couvrir
 
