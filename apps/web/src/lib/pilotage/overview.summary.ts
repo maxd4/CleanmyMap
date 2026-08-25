@@ -3,6 +3,7 @@ import type { OperationalPriority } from "./prioritization";
 import type { DecisionSummary } from "./overview.types";
 import { formatSigned } from "./overview.utils";
 import { ADMIN_ROUTE, DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export function pickDecisionRecommendation(comparison: PilotageComparisonResult): {
   href: string;
@@ -38,7 +39,7 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
       risk: qualityRisk,
       href: "/actions/history",
       label: "Renforcer geo-tracabilite",
-      reason: `Qualite data en baisse (${comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)} pt, score actuel ${comparison.current.qualityScore.toFixed(1)}/100).`,
+      reason: `Qualite data en baisse (${comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)} pt, score actuel ${formatScorePercent(comparison.current.qualityScore, 1)}).`,
     },
     {
       risk: coverageRisk,
@@ -101,8 +102,8 @@ export function buildSummary(
       {
         id: "quality",
         label: "Qualite data",
-        value: `${comparison.current.qualityScore.toFixed(1)}/100`,
-        previousValue: `${comparison.previous.qualityScore.toFixed(1)}/100`,
+        value: formatScorePercent(comparison.current.qualityScore, 1),
+        previousValue: formatScorePercent(comparison.previous.qualityScore, 1),
         deltaAbsolute: formatSigned(comparison.metrics.qualityScore.deltaAbsolute),
         deltaPercent: `${formatSigned(comparison.metrics.qualityScore.deltaPercent)}%`,
         interpretation: comparison.metrics.qualityScore.interpretation,

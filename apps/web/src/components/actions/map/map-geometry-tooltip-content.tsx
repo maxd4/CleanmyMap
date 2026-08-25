@@ -1,3 +1,5 @@
+import { formatScorePercent } from "@/lib/formatters/score";
+
 type GeometryTooltipContentProps = {
   title: string;
   geometryModeLabel: string;
@@ -55,9 +57,9 @@ export function GeometryTooltipContent({
       {actionReading ? (
         <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
           <p>
-            Pollution constatée avant l&apos;action : {Math.round(actionReading.historicalScore)}/100
+            Pollution constatée avant l&apos;action : {formatScorePercent(Math.round(actionReading.historicalScore))}
           </p>
-          <p>Pollution projetée : {Math.round(actionReading.projectedScore)}/100</p>
+          <p>Pollution projetée : {formatScorePercent(Math.round(actionReading.projectedScore))}</p>
           <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
           <p>{actionReading.projectionConfidenceLabel}</p>
           {actionReading.isEstimate && (

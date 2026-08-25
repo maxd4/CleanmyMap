@@ -42,6 +42,7 @@ import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildProfileRoute, ADMIN_GODMODE_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { formatScorePercent } from "@/lib/formatters/score";
 import { loadPilotageOverview, type DecisionSummaryKpi } from "@/lib/pilotage/overview";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
@@ -403,10 +404,10 @@ export default async function AdminPage() {
       {
         id: "quality",
         label: "Qualité data",
-        value: `${Math.max(
+        value: formatScorePercent(Math.max(
           0,
           100 - (publicationStatus.pending + onboardingStatus.pending) * 4,
-        )}/100`,
+        )),
         previousValue: "—",
         deltaAbsolute: "—",
         deltaPercent: "—",

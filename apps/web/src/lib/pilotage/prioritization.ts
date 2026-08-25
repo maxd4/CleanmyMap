@@ -4,6 +4,7 @@ import {
   ADMIN_ROUTE,
   PILOTAGE_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export type ZoneComparisonRow = {
   area: string;
@@ -120,7 +121,7 @@ function qualityPriority(
       label: "Corriger les fiches faibles",
     },
     evidence: [
-      `Score qualite: ${qualityScore.toFixed(1)}/100`,
+      `Score qualite: ${formatScorePercent(qualityScore, 1)}`,
       `Geo-couverture: ${coverageRate.toFixed(1)}%`,
     ],
     engineVersion: PRIORITIZATION_RULESET.version,

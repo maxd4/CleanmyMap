@@ -24,6 +24,7 @@ import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
 } from "@/lib/environmental-impact-estimator";
 import { cn } from "@/lib/utils";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type FreePlanServicesResponse = {
   status: "ok" | "error";
@@ -524,7 +525,7 @@ export function FreePlanServicesPanel() {
               </div>
               {serviceRiskLeader ? (
                 <div className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                  Max {serviceRiskLeader.label} · {serviceRiskLeader.score}/100 ·{" "}
+                  Max {serviceRiskLeader.label} · {formatScorePercent(serviceRiskLeader.score)} ·{" "}
                   {formatServiceRiskBandLabel(serviceRiskLeader.band)}
                 </div>
               ) : null}

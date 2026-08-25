@@ -737,7 +737,7 @@ export function InfrastructureMarkers({
                     <div className="flex items-center justify-between gap-3">
                       <span className="cmm-text-caption cmm-text-muted">Seuil infra</span>
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                        {INFRASTRUCTURE_ALERT_THRESHOLD}/100
+                        {formatThresholdScore(INFRASTRUCTURE_ALERT_THRESHOLD)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
@@ -781,7 +781,7 @@ export function InfrastructureMarkers({
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 text-violet-900 dark:text-violet-200">
                     <div className="mt-0.5"><Info size={14} className="text-violet-500" /></div>
                     <p className="text-[10px] leading-relaxed italic">
-                      <strong>Lecture seuil :</strong> besoin déclenché quand la contribution déchets ou mégots atteint {INFRASTRUCTURE_ALERT_THRESHOLD}/100. Le marqueur peut être bac, cendrier ou combiné selon le signal atteint.
+                      <strong>Lecture seuil :</strong> besoin déclenché quand la contribution déchets ou mégots atteint {formatThresholdScore(INFRASTRUCTURE_ALERT_THRESHOLD)}. Le marqueur peut être bac, cendrier ou combiné selon le signal atteint.
                     </p>
                   </div>
                 </div>

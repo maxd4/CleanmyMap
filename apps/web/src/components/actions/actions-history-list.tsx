@@ -23,6 +23,7 @@ import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   canManageGroupJoin,
   formatRecordType,
@@ -175,7 +176,7 @@ export function ActionsHistoryList() {
  Kg: mapItemWasteKg(item as ActionMapItem) ?? 0,
  Mégots: mapItemCigaretteButts(item as ActionMapItem) ?? 0,
  Statut: item.status,
- Qualité: quality ? `${quality.grade} (${quality.score}/100)` :"n/a",
+ Qualité: quality ? `${quality.grade} (${formatScorePercent(quality.score)})` :"n/a",
  Contexte: operational?.placeTypeLabel ??"n/a",
  };
  }),

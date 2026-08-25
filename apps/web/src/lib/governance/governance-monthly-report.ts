@@ -6,6 +6,7 @@ import { buildServiceThresholdAlerts } from "@/lib/environmental-impact-estimato
 import type { StorageUsageReport } from "@/lib/supabase/storage-usage-service";
 import { formatStorageBytes } from "@/lib/supabase/storage-usage";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import { formatScorePercent } from "@/lib/formatters/score";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildGovernanceMethodologyLinks,
@@ -423,7 +424,7 @@ export function buildGovernanceMonthlyReportPayload(params: {
     serviceThresholdAlerts[0]?.serviceLabel ?? storagePrimaryAlert?.label ?? null;
 
   const summary = [
-    `Risque global du mois: ${getGovernanceRiskLabel(governanceRiskScore)} (${governanceRiskScore}/100).`,
+    `Risque global du mois: ${getGovernanceRiskLabel(governanceRiskScore)} (${formatScorePercent(governanceRiskScore)}).`,
     topService
       ? `Service le plus exposé: ${topService.label} (${formatNumber(topService.monthlyKgCo2eProxy ?? 0, 2)} kg CO2e proxy / mois).`
       : "Service le plus exposé: aucune donnée de service disponible.",
@@ -434,7 +435,7 @@ export function buildGovernanceMonthlyReportPayload(params: {
       ? `Alerte principale: [${primaryAlert.severity}] ${primaryAlertLabel} — ${primaryAlert.title}.`
       : "Alerte principale: aucune alerte de seuil active.",
     governanceRiskScore >= GOVERNANCE_RISK_BANNER_THRESHOLD
-      ? `Bandeau rouge de gouvernance: seuil ${GOVERNANCE_RISK_BANNER_THRESHOLD}/100 dépassé.`
+      ? `Bandeau rouge de gouvernance: seuil ${formatScorePercent(GOVERNANCE_RISK_BANNER_THRESHOLD)} dépassé.`
       : "Bandeau rouge de gouvernance: non déclenché.",
   ];
 
@@ -537,9 +538,9 @@ export function buildGovernanceMonthlyReportLines(
     : ["- Aucun historique mensuel n'est encore disponible."];
 
   const coverSummaryLines = [
-    `- Risque global du mois: ${getGovernanceRiskLabel(governanceRiskScore)} (${governanceRiskScore}/100).`,
+    `- Risque global du mois: ${getGovernanceRiskLabel(governanceRiskScore)} (${formatScorePercent(governanceRiskScore)}).`,
     governanceRiskScore >= GOVERNANCE_RISK_BANNER_THRESHOLD
-      ? `- Bandeau rouge de gouvernance: seuil ${GOVERNANCE_RISK_BANNER_THRESHOLD}/100 dépassé.`
+      ? `- Bandeau rouge de gouvernance: seuil ${formatScorePercent(GOVERNANCE_RISK_BANNER_THRESHOLD)} dépassé.`
       : "- Bandeau rouge de gouvernance: non déclenché.",
     payload.impact.topServiceLabel
       ? `- Service le plus exposé: ${payload.impact.topServiceLabel} (${formatNumber(payload.impact.topServiceMonthlyKgCo2eProxy, 2)} kg CO2e proxy / mois).`
@@ -654,7 +655,7 @@ export function buildGovernanceMonthlyReportLines(
     "## Couverture",
     ...coverSummaryLines,
     governanceRiskScore >= GOVERNANCE_RISK_BANNER_THRESHOLD
-      ? `!! Bandeau rouge de gouvernance: ${getGovernanceRiskLabel(governanceRiskScore)} (${governanceRiskScore}/100) - seuil ${GOVERNANCE_RISK_BANNER_THRESHOLD}/100 dépassé.`
+      ? `!! Bandeau rouge de gouvernance: ${getGovernanceRiskLabel(governanceRiskScore)} (${formatScorePercent(governanceRiskScore)}) - seuil ${formatScorePercent(GOVERNANCE_RISK_BANNER_THRESHOLD)} dépassé.`
       : "",
     "",
     "### Historique de couverture",

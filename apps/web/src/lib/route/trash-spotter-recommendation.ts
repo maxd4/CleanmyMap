@@ -1,5 +1,6 @@
 import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { isVolunteerRouteEligible } from "@/lib/actions/trash-spotter-actionable-candidates";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export type TrashSpotterRouteConstraints = {
   accessibility: "standard" | "accessible" | "strict";
@@ -79,7 +80,7 @@ export function buildTrashSpotterRouteCandidates(
       return {
         ...candidate,
         score,
-        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${freshness.toFixed(0)}/100, contraintes météo=${constraints.weather}, sécurité=${constraints.security}.`,
+        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}, contraintes météo=${constraints.weather}, sécurité=${constraints.security}.`,
       };
     })
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));

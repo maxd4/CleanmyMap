@@ -6,6 +6,7 @@ import {
 } from "./action-popup-content.helpers";
 import type { ActionPollutionProjectionPresentation } from "@/lib/actions/revisit-priority";
 import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
+import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -65,7 +66,7 @@ function ScoreRing({
           stroke={color}
           strokeWidth="4"
           strokeDasharray={2 * Math.PI * 24}
-          strokeDashoffset={2 * Math.PI * 24 * (1 - Math.min(100, score) / 100)}
+          strokeDashoffset={2 * Math.PI * 24 * (1 - Math.min(SCORE_SCALE, score) / SCORE_SCALE)}
           strokeLinecap="round"
           className="transition-all duration-1000 ease-out"
         />
@@ -148,7 +149,7 @@ export function ActionPopupContentHeader({
                 Pollution constatée avant l&apos;action
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {Math.round(score)}/100
+                {formatScorePercent(Math.round(score))}
               </p>
             </div>
             <div>
@@ -164,7 +165,9 @@ export function ActionPopupContentHeader({
                 Pollution projetée
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {Math.round(actionProjection?.projectedPollutionScore ?? score)}/100
+                {formatScorePercent(
+                  Math.round(actionProjection?.projectedPollutionScore ?? score),
+                )}
               </p>
             </div>
           </div>
@@ -270,16 +273,16 @@ export function ActionPopupContentHeader({
                       : "border border-rose-200 bg-rose-50 text-rose-800",
               ].join(" ")}
             >
-              Score global {Math.round(score)}/100
+              Score global {formatScorePercent(Math.round(score))}
             </span>
             <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
               {scoreReading.label}
             </span>
             <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              Déchets {Math.round(wasteScore)}/100
+              Déchets {formatScorePercent(Math.round(wasteScore))}
             </span>
             <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              Mégots {Math.round(buttsScore)}/100
+              Mégots {formatScorePercent(Math.round(buttsScore))}
             </span>
           </div>
         </div>

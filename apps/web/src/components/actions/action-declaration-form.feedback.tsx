@@ -16,6 +16,7 @@ import type {
 } from "./action-declaration-form.model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildPostActionSummary } from "@/lib/actions/post-action-summary";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type ActionDeclarationFormFeedbackProps = {
   submissionState: SubmissionState;
@@ -199,7 +200,7 @@ export function ActionDeclarationFormFeedback({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-800">Résumé de l&apos;impact</p>
                   <span className="text-[11px] font-semibold text-emerald-900/70">
-                    Confiance des données: {postActionSummary.quality.score}/100 ({postActionSummary.quality.grade})
+                    Confiance des données: {formatScorePercent(postActionSummary.quality.score)} ({postActionSummary.quality.grade})
                   </span>
                 </div>
                 <div className="mt-2 grid gap-2 md:grid-cols-3">

@@ -13,6 +13,7 @@ import { GeoCoverageRing, InsightBox, MetricCard, MonthlyBars, ReportPage, Repor
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ReportAccountScopeCoverage } from "@/lib/reports/scope";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type WasteProfile = {
   categories: Array<{
@@ -279,8 +280,8 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <InsightBox
             title="Indice de pollution"
             lines={[
-              `Score pollution moyen: ${toFrNumber(report.impactMethodology.pollutionScoreAverage)} / 100.`,
-              `Indice de tri propre: ${toFrNumber(report.recycling.triIndex)} / 100.`,
+              `Score pollution moyen: ${formatScorePercent(report.impactMethodology.pollutionScoreAverage)}.`,
+              `Indice de tri propre: ${formatScorePercent(report.recycling.triIndex)}.`,
               "Les indicateurs environnementaux sont des proxies de décision et non des mesures instrumentales.",
             ]}
           />

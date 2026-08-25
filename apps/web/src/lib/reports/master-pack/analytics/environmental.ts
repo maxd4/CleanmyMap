@@ -4,6 +4,7 @@ import {
   toFrInt,
 } from "@/lib/reports/report-model";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export function computeEnvironmentalProxies(totalButts: number, totalKg: number, pollutionScoreAverage: number) {
   const { waterProtectedLiters, co2AvoidedKg, recyclableKg, triIndex } =
@@ -20,7 +21,7 @@ export function computeEnvironmentalProxies(totalButts: number, totalKg: number,
     display: {
       water: `${toFrInt(waterProtectedLiters)} L d'eau préservés`,
       co2: `${toFrNumber(co2AvoidedKg)} kg CO2e évités`,
-      tri: `${toFrNumber(triIndex)}/100 (Indice de tri)`,
+      tri: `${formatScorePercent(triIndex)} (Indice de tri)`,
     }
   };
 }

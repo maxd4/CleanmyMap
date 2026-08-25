@@ -4,6 +4,7 @@ import type { ChapterAudience } from "@/lib/reports/report-model/types";
 import { toFrNumber } from "@/lib/reports/report-model";
 import type { MonthRow } from "@/lib/reports/report-model/types";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
+import { SCORE_SCALE } from "@/lib/formatters/score";
 
 export function ReportPage(props: {
  id: string;
@@ -153,7 +154,7 @@ export function MonthlyBars(props: { rows: MonthRow[] }) {
 export function GeoCoverageRing(props: { coveragePercent: number; tracePercent: number }) {
  const pct = Math.max(0, Math.min(100, props.coveragePercent));
  const circumference = 2 * Math.PI * 48;
- const dash = (pct / 100) * circumference;
+ const dash = (pct / SCORE_SCALE) * circumference;
 
  return (
  <article className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4">
