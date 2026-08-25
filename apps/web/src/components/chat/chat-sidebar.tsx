@@ -34,6 +34,7 @@ type ChatSidebarProps = {
   topicSectionDescription?: string | null;
   topics: ChatSidebarTopic[];
   tone?: "light" | "dark";
+  presentation?: "default" | "messagerie";
 };
 
 export const ChatSidebar = memo(function ChatSidebar({
@@ -43,8 +44,10 @@ export const ChatSidebar = memo(function ChatSidebar({
   onSelectTopic,
   topics,
   tone = "dark",
+  presentation = "default",
 }: ChatSidebarProps) {
   const isLight = tone === "light";
+  const isMessagerie = presentation === "messagerie";
   const communityChannel = channels.find((channel) => channel.channelType === "community");
   const dmChannel = channels.find((channel) => channel.channelType === "dm");
   const territoryChannel = channels.find((channel) => channel.channelType === "territory");
@@ -63,7 +66,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         icon={channel.icon}
         label={overrides.label ?? channel.label}
         description={overrides.description ?? channel.description}
-        count={overrides.count ?? channel.count}
+        count={isMessagerie ? undefined : overrides.count ?? channel.count}
         accentClass={channel.accentClass.replace(/rose|pink/g, "indigo")}
         chipClass={channel.chipClass.replace(/rose|pink/g, "indigo")}
         isLocked={channel.isLocked}
@@ -73,12 +76,12 @@ export const ChatSidebar = memo(function ChatSidebar({
   };
 
   return (
-    <aside className={`w-24 md:w-80 flex flex-col p-4 space-y-6 overflow-y-auto border-r custom-scrollbar ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50"}`}>
+    <aside className={`custom-scrollbar ${isMessagerie ? "flex w-full shrink-0 flex-row gap-3 overflow-x-auto overflow-y-hidden border-b p-3 md:w-64 md:flex-col md:gap-6 md:overflow-x-hidden md:overflow-y-auto md:border-b-0 md:border-r md:p-4" : "flex w-24 flex-col space-y-6 overflow-y-auto border-r p-4 md:w-80"} ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50"}`}>
       
       {/* CANAUX PUBLICS */}
-      <section className="space-y-2">
+      <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
         <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-          Canaux Publics
+          {isMessagerie ? "Discussions" : "Canaux Publics"}
         </p>
         <div className="space-y-1">
           {renderButton(communityChannel, {
@@ -99,7 +102,8 @@ export const ChatSidebar = memo(function ChatSidebar({
                   onSelectChannel("community");
                   onSelectTopic(topic.id);
                 }}
-                className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 ${
+                aria-pressed={isActive}
+                className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
                   isActive 
                     ? isLight 
                       ? "border-transparent bg-indigo-50/50 text-indigo-700" 
@@ -120,10 +124,11 @@ export const ChatSidebar = memo(function ChatSidebar({
                     {topic.description}
                   </span>
                 </div>
-                {/* Mock count for visual parity with mockup */}
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
-                  {mockCount}
-                </span>
+                {!isMessagerie ? (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
+                    {mockCount}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -137,22 +142,22 @@ export const ChatSidebar = memo(function ChatSidebar({
       </section>
 
       {/* DISCUSSIONS PRIVEES */}
-      <section className="space-y-2">
+      <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
         <div className="flex items-center justify-between px-2">
           <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-            Discussions Privées
+            {isMessagerie ? "Messages privés" : "Discussions Privées"}
           </p>
-          <span className="text-lg leading-none text-slate-400">+</span>
+          {!isMessagerie ? <span className="text-lg leading-none text-slate-400">+</span> : null}
         </div>
         {renderButton(dmChannel, {
           label: "Discussions privées",
           description: "Échanges confidentiels en tête-à-tête",
-          count: 5,
+          count: isMessagerie ? undefined : 5,
         })}
       </section>
 
       {/* FILTRES & REPERES */}
-      <section className="space-y-3 pt-2">
+      {!isMessagerie ? <section className="space-y-3 pt-2">
         <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
           Filtres & Repères
         </p>
@@ -174,10 +179,10 @@ export const ChatSidebar = memo(function ChatSidebar({
             <span>▾</span>
           </button>
         </div>
-      </section>
+      </section> : null}
 
       {/* IMPACT ENSEMBLE */}
-      <div className={`mt-auto mx-2 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden border ${isLight ? "bg-emerald-50 border-emerald-100" : "bg-emerald-500/10 border-emerald-500/20"}`}>
+      {!isMessagerie ? <div className={`mt-auto mx-2 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden border ${isLight ? "bg-emerald-50 border-emerald-100" : "bg-emerald-500/10 border-emerald-500/20"}`}>
         <div className="absolute -right-4 -bottom-4 text-emerald-200/50 dark:text-emerald-500/20">
           <Leaf size={64} />
         </div>
@@ -187,7 +192,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         <p className={`text-[10px] leading-relaxed z-10 font-medium ${isLight ? "text-emerald-600/80" : "text-emerald-300/70"}`}>
           Chaque message partagé rapproche notre territoire d&apos;un environnement plus propre.
         </p>
-      </div>
+      </div> : null}
 
     </aside>
   );

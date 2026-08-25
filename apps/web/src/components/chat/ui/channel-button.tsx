@@ -36,7 +36,8 @@ export function ChannelButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className={`relative flex w-full items-start gap-3 rounded-[1.5rem] border p-3 text-left transition-all duration-300 group ${
+      aria-pressed={active}
+      className={`group relative flex w-full items-start gap-3 rounded-[1.5rem] border p-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
         active
           ? isLight
             ? "border-rose-200 bg-rose-500 text-white shadow-2xl shadow-rose-500/20"
