@@ -16,6 +16,7 @@ import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
 } from "@/lib/actions/current-place-state";
+import type { ActionDataContract } from "@/lib/actions/contract-model";
 import type { CorridorHistory } from "@/lib/actions/corridor-history";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
@@ -134,7 +135,11 @@ function SingleActionPopupContent({
   const geometryModeLabel = formatGeometryModeLabel(geometryView.presentation);
   const geometryPointLabel = formatGeometryPointCount(geometryView.pointCount);
   const geometryMetricLabel = geometryView.metrics.label;
-
+  const dataContract = contract as unknown as ActionDataContract | undefined;
+  const hasQuantifiedPollutionScore =
+    isAction ||
+    currentPlaceState?.scoreKind === "measured" ||
+    typeof dataContract?.metadata.observedPollutionScore === "number";
   const {
     score,
     wasteScore,
@@ -148,6 +153,10 @@ function SingleActionPopupContent({
     cigaretteButts: butts,
     volunteersCount: volunteers,
   });
+  const popupScore =
+    !isAction && typeof dataContract?.metadata.observedPollutionScore === "number"
+      ? dataContract.metadata.observedPollutionScore
+      : score;
   const actionProjection = isAction
     ? presentActionPollutionProjection(
         score,
@@ -181,7 +190,7 @@ function SingleActionPopupContent({
         actionTitle={actionTitle}
         isAction={isAction}
         color={color}
-        score={score}
+        score={popupScore}
         scoreLoading={scoreLoading}
         scoreReading={scoreReading}
         scoreSourceLabel={scoreSourceLabel}
@@ -202,6 +211,7 @@ function SingleActionPopupContent({
         actionProjection={actionProjection}
         displayMode={displayMode}
         currentPlaceState={currentPlaceState}
+        hasQuantifiedPollutionScore={hasQuantifiedPollutionScore}
       />
 
       <ActionPopupContentBody

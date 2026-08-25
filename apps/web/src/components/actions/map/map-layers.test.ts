@@ -5,6 +5,7 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import {
   CLEAN_PLACE_COLOR,
+  TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
@@ -202,7 +203,7 @@ describe("ShapeLayers", () => {
     );
   }
 
-  it("uses revisit priority colors for actions and reserves green for clean places", () => {
+  it("uses projected pollution colors for actions and reserves green for clean places", () => {
     const action = buildShapeItem("action", 80);
     const lowPollutionAction = buildShapeItem("action", 0);
     const spot = buildShapeItem("spot", 80);
@@ -243,6 +244,59 @@ describe("ShapeLayers", () => {
     expect(resolvePointColor(reliableGeometryAction, null, now)).toBe(
       resolvePointColor(approximateGeometryAction, null, now),
     );
+  });
+
+  it("uses a measured Trash Spotter score only when one is explicitly available", () => {
+    const quantifiedSpot = toActionMapItem(
+      buildActionDataContract({
+        id: "quantified-trash-spotter",
+        type: "spot",
+        status: "approved",
+        source: "trash_spotter_spots",
+        sourceStatus: "validated",
+        observedAt: "2026-08-25",
+        locationLabel: "Quai quantifié",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        wasteKg: 40,
+        cigaretteButts: 3000,
+        observedPollutionScore: 63,
+      }),
+    );
+    const qualitativeSpot = toActionMapItem(
+      buildActionDataContract({
+        id: "qualitative-trash-spotter",
+        type: "spot",
+        status: "approved",
+        source: "trash_spotter_spots",
+        sourceStatus: "validated",
+        observedAt: "2026-08-25",
+        locationLabel: "Quai qualitatif",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        wasteKg: 40,
+        cigaretteButts: 3000,
+      }),
+    );
+
+    expect(resolvePointColor(quantifiedSpot)).toBe(resolveDynamicColor(63));
+    expect(
+      resolvePointColor(
+        quantifiedSpot,
+        null,
+        new Date("2027-08-25T00:00:00.000Z"),
+        "observed",
+      ),
+    ).toBe(resolveDynamicColor(63));
+    expect(
+      resolvePointColor(
+        quantifiedSpot,
+        null,
+        new Date("2027-08-25T00:00:00.000Z"),
+        "projected_today",
+      ),
+    ).toBe(resolveDynamicColor(63));
+    expect(resolvePointColor(qualitativeSpot)).toBe(TRASH_SPOTTER_NEUTRAL_COLOR);
   });
 
   it("uses an explicit post-action measurement instead of the zero baseline", () => {
