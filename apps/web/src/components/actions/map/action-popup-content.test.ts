@@ -63,7 +63,37 @@ describe("action popup presentation", () => {
     expect(markup).not.toContain("Parcours récurrent");
     expect(markup).not.toContain("Synthèse");
     expect(markup).toContain("Déchets collectés");
+    expect(markup).not.toContain("Voir les preuves photo");
   });
+
+  it.each(["spot", "clean_place"] as const)(
+    "offers explicit media access for %s without loading it during popup render",
+    (type) => {
+      const item = toActionMapItem(
+        buildActionDataContract({
+          id: `signalement-${type}`,
+          type,
+          status: "pending",
+          source: "trash_spotter",
+          observedAt: "2026-04-08",
+          locationLabel: "Quai de test",
+          latitude: 48.8566,
+          longitude: 2.3522,
+        }),
+      );
+
+      const markup = renderToStaticMarkup(
+        React.createElement(ActionPopupContent, {
+          item,
+          color: "hsl(35, 90%, 50%)",
+          coords: { latitude: 48.8566, longitude: 2.3522 },
+        }),
+      );
+
+      expect(markup).toContain("Voir les preuves photo");
+      expect(markup).not.toContain("Chargement des preuves photo");
+    },
+  );
 
   it("uses actionTitle and falls back to the location", () => {
     expect(resolveActionTitle(buildActionItem({ actionTitle: "Nettoyage du quai" }))).toBe(

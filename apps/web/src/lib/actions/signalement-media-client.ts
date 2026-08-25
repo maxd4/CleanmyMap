@@ -12,6 +12,7 @@ import {
   SIGNALEMENT_EVIDENCE_BUCKET,
   SIGNALEMENT_EVIDENCE_MAX_SIZE_BYTES,
   type SignalementEvidenceMimeType,
+  type SignalementMediaReadItem,
 } from "./signalement-media-contract";
 
 export type SignalementEvidenceUploadItem = {
@@ -23,6 +24,30 @@ export type SignalementEvidenceUploadResult = {
   uploadedCount: number;
   failed: Array<{ item: SignalementEvidenceUploadItem; message: string }>;
 };
+
+export type SignalementMediaReadStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "empty"
+  | "forbidden"
+  | "error";
+
+export type SignalementMediaReadSnapshot = {
+  status: SignalementMediaReadStatus;
+  items: SignalementMediaReadItem[];
+  error: SignalementMediaReadError | null;
+};
+
+export class SignalementMediaReadError extends Error {
+  constructor(
+    message: string,
+    public readonly code: "forbidden" | "not_found" | "request" | "invalid",
+  ) {
+    super(message);
+    this.name = "SignalementMediaReadError";
+  }
+}
 
 function randomClientUploadId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `signalement-photo-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -43,6 +68,117 @@ async function parseError(response: Response, fallback: string): Promise<string>
   } catch {
     return fallback;
   }
+}
+
+export async function fetchSignalementMedia(
+  signalementId: string,
+): Promise<SignalementMediaReadItem[]> {
+  const response = await fetch(
+    `/api/signalements/${encodeURIComponent(signalementId)}/media`,
+    {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (response.status === 403) {
+    throw new SignalementMediaReadError(
+      "Les preuves de ce signalement ne sont pas publiques.",
+      "forbidden",
+    );
+  }
+  if (response.status === 404) {
+    throw new SignalementMediaReadError("Signalement introuvable.", "not_found");
+  }
+  if (!response.ok) {
+    throw new SignalementMediaReadError(
+      await parseError(response, "Les preuves photo n'ont pas pu être chargées."),
+      "request",
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new SignalementMediaReadError(
+      "La réponse des preuves photo est invalide.",
+      "invalid",
+    );
+  }
+  const items = (body as { items?: unknown })?.items;
+  if (!Array.isArray(items)) {
+    throw new SignalementMediaReadError(
+      "La réponse des preuves photo est invalide.",
+      "invalid",
+    );
+  }
+  return items as SignalementMediaReadItem[];
+}
+
+export function createSignalementMediaReadController(
+  signalementId: string,
+  onChange: (snapshot: SignalementMediaReadSnapshot) => void,
+  fetcher: (
+    signalementId: string,
+  ) => Promise<SignalementMediaReadItem[]> = fetchSignalementMedia,
+) {
+  let snapshot: SignalementMediaReadSnapshot = {
+    status: "idle",
+    items: [],
+    error: null,
+  };
+  let inFlight: Promise<void> | null = null;
+
+  const emit = (next: SignalementMediaReadSnapshot) => {
+    snapshot = next;
+    onChange(next);
+  };
+
+  const load = (): Promise<void> => {
+    if (["loading", "ready", "empty", "forbidden"].includes(snapshot.status)) {
+      return inFlight ?? Promise.resolve();
+    }
+    if (inFlight) {
+      return inFlight;
+    }
+
+    emit({ status: "loading", items: [], error: null });
+    inFlight = fetcher(signalementId)
+      .then((items) => {
+        emit({
+          status: items.length > 0 ? "ready" : "empty",
+          items,
+          error: null,
+        });
+      })
+      .catch((error: unknown) => {
+        const normalized =
+          error instanceof SignalementMediaReadError
+            ? error
+            : new SignalementMediaReadError(
+                "Les preuves photo n'ont pas pu être chargées.",
+                "request",
+              );
+        emit({
+          status: normalized.code === "forbidden" ? "forbidden" : "error",
+          items: [],
+          error: normalized,
+        });
+      })
+      .finally(() => {
+        inFlight = null;
+      });
+
+    return inFlight;
+  };
+
+  return {
+    getSnapshot: () => snapshot,
+    load,
+    retry: () => (snapshot.status === "error" ? load() : Promise.resolve()),
+  };
 }
 
 async function uploadOne(

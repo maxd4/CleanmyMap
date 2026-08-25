@@ -24,6 +24,7 @@ import {
   formatRecordType,
   formatStatusLabel,
   isActionMapItem,
+  isSignalementMapItem,
   resolveActionTitle,
 } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
@@ -234,6 +235,7 @@ function SingleActionPopupContent({
         joinStatusLabel={joinStatusLabel}
         hasPollution={hasPollution}
         isAction={isAction}
+        signalementId={isSignalementMapItem(item) ? item.id : null}
         onViewGeometry={onViewGeometry}
       />
     </>

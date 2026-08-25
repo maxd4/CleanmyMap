@@ -22,6 +22,10 @@ export function isActionMapItem(item: ActionMapItem): boolean {
   return item.contract?.type === "action";
 }
 
+export function isSignalementMapItem(item: ActionMapItem): boolean {
+  return item.contract?.type === "spot" || item.contract?.type === "clean_place";
+}
+
 export function resolveActionTitle(item: ActionMapItem): string {
   const metadata = item.contract?.metadata as
     | (NonNullable<ActionMapItem["contract"]>["metadata"] &
