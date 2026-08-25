@@ -253,7 +253,37 @@ Elle doit donc être comprise comme une aide à la priorisation et à la revisit
 
 Trash Spotter reste la source opérationnelle des signalements de pollution actuellement observée.
 
-## 11. Transparence et versionnement
+## 11. Évaluation du modèle
+
+Le dataset réel actuel contient 5 actions réparties sur 5 lieux différents. Il n'existe donc pas encore de répétition temporelle suffisante pour mesurer sérieusement une erreur globale, valider empiriquement la projection ou recalibrer ses constantes.
+
+CleanMyMap prépare un protocole prospectif, sans fuite temporelle :
+
+`projection figée juste avant la nouvelle observation → nouvelle observation quantitative → erreur → agrégation statistique → recalibration future`
+
+Pour une nouvelle observation quantitative exploitable, la capacité domaine `evaluateRepollutionPredictionBeforeObservation` :
+
+1. conserve uniquement les observations strictement antérieures à son timestamp ;
+2. rapproche le lieu avec les règles spatiales centralisées de la calibration locale ;
+3. choisit le dernier état antérieur exploitable ;
+4. applique une calibration locale seulement si elle pouvait déjà être construite à partir de cet historique antérieur complet ;
+5. calcule la projection au timestamp cible, puis la compare au score réellement observé.
+
+Les métriques élémentaires conservées sont :
+
+- `signedError = observedScore - projectedScore` ;
+- `absoluteError = abs(signedError)` ;
+- `squaredError = signedError²`.
+
+Un pourcentage d'erreur n'est pas utilisé comme métrique principale, car il devient instable lorsque le score observé est proche de zéro. Lorsque des évaluations existent, une fonction descriptive peut calculer `sampleCount`, MAE, RMSE et le biais signé. Avec zéro évaluation, le résultat reste explicitement `insufficient_data`.
+
+Une observation non quantifiée, un Trash Spotter actuel, un lieu non rapprochable ou un historique insuffisant produit un résultat `not_evaluable` explicite. Une catégorie de déchet ou le seul type `spot` ne peut jamais être transformé en score arbitraire.
+
+Le ledger append-only conserve la version du modèle et le snapshot des paramètres nécessaires à la reproductibilité. L'idempotence est définie par l'observation évaluée et la version du modèle. La clé `derivedPlaceKey`, lorsqu'elle est conservée, reste un snapshot diagnostique et ne devient pas une identité métier durable.
+
+Aucune recalibration automatique ni optimisation des constantes globales n'est active. Les métriques produisent de l'évidence pour une décision future ; elles ne modifient jamais `T80(S)`, ses constantes ou la calibration locale existante.
+
+## 12. Transparence et versionnement
 
 Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
@@ -265,13 +295,15 @@ Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
 Les constantes de projection doivent être centralisées dans le code afin d'éviter toute divergence entre runtime, tests et documentation.
 
-## 12. Sources internes
+## 13. Sources internes
 
 Sources de vérité techniques principales :
 
 - `apps/web/src/lib/actions/pollution-score.ts` ;
 - `apps/web/src/lib/actions/revisit-priority.ts` — projection, constantes et hook de calibration ;
 - `apps/web/src/lib/actions/local-repollution-calibration.ts` — rapprochement dérivé, intervalles, médiane, confiance et garde de complétude ;
+- `apps/web/src/lib/actions/repollution-prediction-evaluation.ts` — évaluation prospective sans fuite temporelle et agrégat descriptif ;
+- `apps/web/src/lib/actions/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
 - `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champ post-action optionnel ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;

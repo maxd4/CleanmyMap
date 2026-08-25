@@ -6,3 +6,5 @@ export * from "./impact-calculators";
 export * from "./geometry-presentation";
 export * from "./operational-context";
 export * from "./local-repollution-calibration";
+export * from "./repollution-prediction-evaluation";
+export * from "./repollution-prediction-evaluation-store";

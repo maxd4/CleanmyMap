@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
+const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 const loadManualParticipantIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -22,6 +23,8 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/actions/store", () => ({
   loadActionById: loadActionByIdMock,
   buildPersistedNotes: vi.fn(),
+  recordRepollutionPredictionEvaluationForAction:
+    recordRepollutionPredictionEvaluationForActionMock,
 }));
 
 vi.mock("@/lib/actions/group-participation.helpers", () => ({
@@ -106,6 +109,7 @@ describe("PATCH /api/actions/:actionId", () => {
     loadManualParticipantIdsForActionMock.mockResolvedValue(["user-manual-1"]);
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
+    recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     unauthorizedJsonResponseMock.mockReturnValue({ status: 401 });
     handleApiErrorMock.mockResolvedValue(new Response("error", { status: 500 }));
   });
@@ -191,6 +195,10 @@ describe("PATCH /api/actions/:actionId", () => {
         action_phase: "post_action_complete",
         status: "approved",
       }),
+    );
+    expect(recordRepollutionPredictionEvaluationForActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "action-test-1",
     );
   });
 
