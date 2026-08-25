@@ -4,11 +4,12 @@ import {
   PROJECTION_CONFIDENCE_CONSTANTS,
   resolveProjectionConfidence,
 } from "./projection-confidence";
+import { LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS } from "./local-repollution-calibration";
 
 const completeLocalCalibration = {
   provenance: "local_history" as const,
   validIntervalsCount:
-    PROJECTION_CONFIDENCE_CONSTANTS.minimumLocalIntervalsForStrongEvidence,
+    LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride,
   sourceCompleteness: "complete" as const,
 };
 

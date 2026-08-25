@@ -5,6 +5,7 @@ import {
   ACTION_POLLUTION_PROJECTION_CONSTANTS,
   projectedPollutionScore,
 } from "./revisit-priority";
+import { resolveProjectionConfidence } from "./projection-confidence";
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
   areDerivedPlaceLabelsCompatible,
@@ -310,6 +311,23 @@ describe("local repollution calibration", () => {
     );
     expect(selectedCalibration.provenance).toBe("local_history");
     expect(selectedCalibration.calibration?.t80Days).toBeCloseTo(40, 10);
+  });
+
+  it("keeps local_history activation independent from descriptive confidence thresholds", () => {
+    const sequence = buildSequence([40, 40]);
+    const calibration = derive(sequence.actions, sequence.scores).places[0].calibration;
+    const selection = selectLocalActionProjectionCalibration(calibration, "complete");
+    const descriptiveConfidence = resolveProjectionConfidence({
+      geometryConfidence: 0.58,
+      postActionScoreSource: "model_baseline",
+      localCalibration: calibration,
+      sourceCompleteness: "complete",
+    });
+
+    expect(calibration.provenance).toBe("local_history");
+    expect(selection.provenance).toBe("local_history");
+    expect(descriptiveConfidence.level).toBe("low");
+    expect(descriptiveConfidence.factors.localHistory).toBe("sufficient");
   });
 
   it("keeps incomplete datasets on the generic fallback and never learns from them", () => {
