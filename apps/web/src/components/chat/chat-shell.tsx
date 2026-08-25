@@ -59,6 +59,7 @@ export type ChatShellProps = {
   initialMessage?: string;
   tone?: "light" | "dark";
   fullHeight?: boolean;
+  messagerieMode?: boolean;
 };
 
 export function ChatShell({
@@ -69,6 +70,7 @@ export function ChatShell({
   initialMessage,
   tone = "dark",
   fullHeight = false,
+  messagerieMode = false,
 }: ChatShellProps) {
   const isLight = tone === "light";
   const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -396,7 +398,7 @@ export function ChatShell({
           icon: visual.icon,
           label: getChannelTitle(channelType),
           description: "",
-          count: isActive ? messages.length : undefined,
+          count: messagerieMode ? undefined : isActive ? messages.length : undefined,
           accentClass: visual.accentClass,
           chipClass: visual.chipClass,
           isLocked: !isAvailable,
@@ -410,6 +412,7 @@ export function ChatShell({
       effectiveZone,
       territoryFocus,
       messages.length,
+      messagerieMode,
     ],
   );
 
@@ -535,8 +538,8 @@ export function ChatShell({
   );
 
   return (
-    <div className={`flex flex-col ${fullHeight ? "h-full" : "h-[750px]"} overflow-hidden relative ${isLight ? "bg-rose-50/30" : "rounded-[3rem] shadow-2xl backdrop-blur-3xl border border-white/10 bg-slate-900/40"}`}>
-      <div className="flex flex-1 overflow-hidden">
+    <div className={`flex flex-col ${fullHeight ? "h-full min-h-0" : "h-[750px]"} overflow-hidden relative ${isLight ? "bg-rose-50/30" : "rounded-[3rem] shadow-2xl backdrop-blur-3xl border border-white/10 bg-slate-900/40"}`}>
+      <div className={messagerieMode ? "flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row" : "flex min-h-0 flex-1 flex-row overflow-hidden"}>
         <ChatSidebar
           channels={sidebarChannels}
           currentChannelType={activeChannelType}
@@ -546,8 +549,9 @@ export function ChatShell({
           topicSectionDescription={sidebarTopicSectionDescription}
           topics={sidebarTopics}
           tone={isLight ? "light" : "dark"}
+          presentation={messagerieMode ? "messagerie" : "default"}
         />
-        <div className={`flex-1 flex flex-col relative ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
+        <div className={`min-h-0 min-w-0 flex-1 flex flex-col relative ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
@@ -566,6 +570,7 @@ export function ChatShell({
             onConfirmHandle={handleUpdateHandle}
             tone={isLight ? "light" : "dark"}
             showControls={!isLight}
+            isLive={isLive}
           />
 
           {isBugReportChannel ? (
@@ -583,7 +588,7 @@ export function ChatShell({
             <>
               <div
                 ref={scrollRef}
-                className={`flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar ${isLight ? "bg-transparent" : ""}`}
+                className={`min-h-0 flex-1 overflow-y-auto space-y-4 p-4 custom-scrollbar sm:p-6 ${isLight ? "bg-transparent" : ""}`}
               >
                 {feedState === "loading" && <ChatLoadingState tone={isLight ? "light" : "dark"} />}
                 {feedState === "degraded" && (
@@ -639,7 +644,7 @@ export function ChatShell({
           )}
         </div>
         {/* Right Context Sidebar */}
-        {activeChannelType !== "dm" && activeChannelType !== "bug_report" ? (
+        {!messagerieMode && activeChannelType !== "dm" && activeChannelType !== "bug_report" ? (
           <ChatContextSidebar tone={isLight ? "light" : "dark"} />
         ) : null}
       </div>

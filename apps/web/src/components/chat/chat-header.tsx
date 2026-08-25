@@ -24,6 +24,7 @@ type ChatHeaderProps = {
   onConfirmHandle: () => Promise<void>;
   tone?: "light" | "dark";
   showControls?: boolean;
+  isLive?: boolean;
 };
 
 export const ChatHeader = memo(function ChatHeader({
@@ -44,6 +45,7 @@ export const ChatHeader = memo(function ChatHeader({
   onConfirmHandle,
   tone = "dark",
   showControls = true,
+  isLive = false,
 }: ChatHeaderProps) {
   const isLight = tone === "light";
   const [showMeta, setShowMeta] = useState(false);
@@ -60,7 +62,7 @@ export const ChatHeader = memo(function ChatHeader({
                 {activeChannelLabel}
               </h3>
               <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse ${isLight ? "bg-rose-100 text-rose-600" : "bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300"}`}>
-                Live
+                {isLive ? "Direct" : "Actualisation"}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -69,8 +71,7 @@ export const ChatHeader = memo(function ChatHeader({
                 {activeChannelDescription}
               </p>
             </div>
-            {/* Thèmes actifs mock */}
-            {activeChannelType === "community" && (
+            {showControls && activeChannelType === "community" && (
               <div className="flex flex-wrap items-center gap-2 pt-2">
                 <span className={`text-[10px] font-black uppercase tracking-widest ${isLight ? "text-slate-800" : "text-slate-200"}`}>Thèmes actifs :</span>
                 {["coordination", "bénévoles", "diffusion"].map(theme => (

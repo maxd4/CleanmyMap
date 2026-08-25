@@ -8,13 +8,13 @@ La page `Messagerie` sert aux échanges directs entre membres du réseau. Elle d
 
 - une liste de conversations ou de fils
 - des messages à lire et à répondre
-- des états de lecture et de participation
-- des panneaux secondaires pour contextualiser la discussion
+- des états de chargement, d'accès et de participation
+- un contexte minimal intégré au fil actif, sans panneau secondaire concurrent
 
 ## Ce que la page doit préserver
 
 - une palette `pink` cohérente avec le bloc 04
-- une hiérarchie claire entre liste, message actif et informations de contexte
+- une hiérarchie claire entre discussions, fil actif et composition du message
 - des états `loading`, `empty` et `access refused` propres
 - une navigation sans surcharge entre conversations et contenu
 

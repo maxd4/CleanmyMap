@@ -84,7 +84,7 @@ export const ConnectTabs = memo(function ConnectTabs({
   fr: boolean;
 }) {
   return (
-    <div className="flex gap-1.5 rounded-[2rem] border border-rose-100 bg-white p-1.5 shadow-sm">
+    <div className="flex w-full gap-1.5 rounded-[2rem] border border-rose-100 bg-white p-1.5 shadow-sm sm:w-auto">
       {CONNECT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         const tone = TAB_TONES[tab.id];
@@ -93,10 +93,11 @@ export const ConnectTabs = memo(function ConnectTabs({
           <CmmButton
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
+            aria-pressed={isActive}
             tone={isActive ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "group relative flex items-center gap-3 overflow-hidden rounded-[1.5rem] px-6 py-3 transition-all duration-300",
+              "group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-[1.5rem] px-3 py-3 transition-all duration-300 sm:flex-none sm:justify-start sm:gap-3 sm:px-6",
               isActive ? "text-white" : cn("text-slate-600", tone.hoverText),
             )}
           >
