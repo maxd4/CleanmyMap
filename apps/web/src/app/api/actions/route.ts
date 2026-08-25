@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,7 +6,11 @@ import {
   canAutoApproveOwnAction,
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
-import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
+import {
+  getCurrentUserIdentity,
+  pickTraceableActorName,
+  requireAuthenticatedAccess,
+} from "@/lib/authz";
 import { toActionListItem } from "@/lib/actions/data-contract";
 import {
   fetchUnifiedActionContracts,
@@ -258,10 +261,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   const rateLimit = await verifyRateLimit({
     limit: 10,

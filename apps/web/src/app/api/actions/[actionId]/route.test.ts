@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
@@ -12,12 +12,9 @@ const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
-
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/actions/store", () => ({
@@ -64,7 +61,10 @@ describe("PATCH /api/actions/:actionId", () => {
     vi.resetModules();
     vi.clearAllMocks();
 
-    authMock.mockResolvedValue({ userId: "user-test-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "user-test-1",
+    });
     getCurrentUserIdentityMock.mockResolvedValue({
       role: "benevole",
     });

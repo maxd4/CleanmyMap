@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createSignalementMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
   pickTraceableActorName: pickTraceableActorNameMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -26,7 +26,10 @@ describe("POST /api/spots", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-test-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "user-test-1",
+    });
     getSupabaseServerClientMock.mockReturnValue({});
     getCurrentUserIdentityMock.mockResolvedValue({ displayName: "Test User" });
     pickTraceableActorNameMock.mockReturnValue("Test User");
@@ -80,5 +83,95 @@ describe("POST /api/spots", () => {
         consentGranted: true,
       },
     );
+  });
+
+  it("accepts a localhost benevole bypass through the central auth helper", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "dev-benevole",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      displayName: "Bénévole local",
+    });
+    pickTraceableActorNameMock.mockReturnValueOnce("Bénévole local");
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/spots", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "spot",
+          label: "Spot bénévole local",
+          latitude: 48.8566,
+          longitude: 2.3522,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createSignalementMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        userId: "dev-benevole",
+        type: "spot",
+      }),
+    );
+  });
+
+  it("accepts a localhost max bypass without changing the route permission boundary", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "dev-max",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      displayName: "Max local",
+    });
+    pickTraceableActorNameMock.mockReturnValueOnce("Max local");
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/spots", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "spot",
+          label: "Spot max local",
+          latitude: 48.8566,
+          longitude: 2.3522,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createSignalementMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        userId: "dev-max",
+        type: "spot",
+      }),
+    );
+  });
+
+  it("keeps production-style anonymous requests rejected", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/spots", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "spot",
+          label: "Anonymous spot",
+          latitude: 48.8566,
+          longitude: 2.3522,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(createSignalementMock).not.toHaveBeenCalled();
   });
 });

@@ -1,17 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 
-const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
-
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -399,7 +396,7 @@ describe("GET /api/actions/group-join", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({ userId: "user-1" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });
 
@@ -461,7 +458,7 @@ describe("GET /api/actions/group-join", () => {
   }, 15000);
 
   it("keeps the list available when Clerk auth cannot resolve the session", async () => {
-    authMock.mockRejectedValueOnce(new Error("Clerk auth unavailable"));
+    getCurrentUserIdentityMock.mockRejectedValueOnce(new Error("Clerk auth unavailable"));
 
     const supabase = createSupabaseMock({
       actions: [
@@ -678,7 +675,10 @@ describe("POST /api/actions/group-join", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "user-1",
+    });
     getCurrentUserIdentityMock.mockResolvedValue(null);
     refreshProgressionProfileMock.mockResolvedValue(undefined);
   });
@@ -953,7 +953,11 @@ describe("POST /api/actions/group-join", () => {
   });
 
   it("rejects unauthenticated users", async () => {
-    authMock.mockResolvedValueOnce({ userId: null });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
 
     const { POST } = await import("./route");
     const response = await POST(
@@ -967,7 +971,11 @@ describe("POST /api/actions/group-join", () => {
   });
 
   it("rejects Clerk auth failures on POST", async () => {
-    authMock.mockRejectedValueOnce(new Error("Clerk auth unavailable"));
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
 
     const { POST } = await import("./route");
     const response = await POST(

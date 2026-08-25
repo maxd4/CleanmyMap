@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 
 const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
@@ -14,6 +15,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -68,6 +70,7 @@ export type GroupJoinProfileRow = {
 
 export const groupJoinMocks = {
   authMock,
+  requireAuthenticatedAccessMock,
   getCurrentUserIdentityMock,
   getSupabaseServerClientMock,
   loadActionOrganizerIdsForActionMock,
@@ -153,6 +156,16 @@ export function seedGroupJoinTestDefaults() {
   vi.resetModules();
   vi.clearAllMocks();
   authMock.mockResolvedValue({ userId: "user-1" });
+  requireAuthenticatedAccessMock.mockImplementation(async () => {
+    try {
+      const session = await authMock();
+      return session.userId
+        ? { ok: true, userId: session.userId }
+        : { ok: false, status: 401, error: "Unauthorized" };
+    } catch {
+      return { ok: false, status: 401, error: "Unauthorized" };
+    }
+  });
   getCurrentUserIdentityMock.mockResolvedValue(null);
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
   refreshProgressionProfileMock.mockResolvedValue(undefined);

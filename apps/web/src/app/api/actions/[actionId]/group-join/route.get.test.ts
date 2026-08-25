@@ -26,7 +26,10 @@ describe("GET /api/actions/:actionId/group-join", () => {
   });
 
   it("returns pending and confirmed participants for admin moderators", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "admin",
+    });
     const participants = [
       createGroupJoinParticipant({
         id: "participant-1",
@@ -115,7 +118,10 @@ describe("GET /api/actions/:actionId/group-join", () => {
         user_id: "user-3",
       }),
     ];
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "benevole",
+    });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
@@ -161,7 +167,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
   }, 15000);
 
   it("hides moderation rows for anonymous visitors", async () => {
-    authMock.mockResolvedValue({ userId: null });
+    getCurrentUserIdentityMock.mockResolvedValueOnce(null);
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
@@ -214,7 +220,10 @@ describe("GET /api/actions/:actionId/group-join", () => {
   }, 15000);
 
   it("searches candidate accounts for admin moderators", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "elu" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "elu",
+    });
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -260,7 +269,10 @@ describe("GET /api/actions/:actionId/group-join", () => {
   }, 15000);
 
   it("searches candidate accounts for action organizers", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "benevole",
+    });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { parseDrawingFromNotes } from "@/lib/actions/drawing";
@@ -10,7 +9,10 @@ import {
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import {
+  getCurrentUserIdentity,
+  requireAuthenticatedAccess,
+} from "@/lib/authz";
 import {
   canAutoApproveOwnAction,
   canManageAction,
@@ -71,10 +73,11 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const session = await auth();
-  if (!session.userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();
@@ -96,7 +99,7 @@ export async function GET(
 
     const identity = await getCurrentUserIdentity();
     const permissionIdentity = identity
-      ? { userId: session.userId, role: identity.role }
+      ? { userId, role: identity.role }
       : null;
     const organizerIds = await loadActionOrganizerIdsForAction(
       supabase,
@@ -134,10 +137,11 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const session = await auth();
-  if (!session.userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();
@@ -174,7 +178,7 @@ export async function PATCH(
 
     const identity = await getCurrentUserIdentity();
     const permissionIdentity = identity
-      ? { userId: session.userId, role: identity.role }
+      ? { userId, role: identity.role }
       : null;
     const organizerIds = await loadActionOrganizerIdsForAction(
       supabase,
@@ -315,9 +319,9 @@ export async function PATCH(
         current.created_by_clerk_id,
       );
       const resolvedIdentity = identity ?? {
-        displayName: session.userId,
-        handle: session.userId,
-        username: session.userId,
+        displayName: userId,
+        handle: userId,
+        username: userId,
         email: null,
       };
 
@@ -325,9 +329,9 @@ export async function PATCH(
         supabase,
         actionId: trimmedActionId,
         creator: {
-          userId: session.userId,
+          userId,
           displayName:
-            resolvedIdentity.displayName?.trim() || session.userId,
+            resolvedIdentity.displayName?.trim() || userId,
           handle: resolvedIdentity.handle?.trim() || null,
           username: resolvedIdentity.username?.trim() || null,
           email: resolvedIdentity.email?.trim() || null,
@@ -337,10 +341,10 @@ export async function PATCH(
       });
     }
 
-    const actorUserId = identity?.userId ?? session.userId;
+    const actorUserId = identity?.userId ?? userId;
     const shouldAuditModeration =
       Boolean(identity) &&
-      session.userId !== current.created_by_clerk_id &&
+      userId !== current.created_by_clerk_id &&
       canUseAdminOverride(identity);
 
     if (shouldAuditModeration && identity) {

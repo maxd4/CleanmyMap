@@ -1,17 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const fetchRecentActionsByUserMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const unstableCacheMock = vi.hoisted(() => vi.fn((fn: () => Promise<unknown>) => fn));
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
-
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/actions/store", () => ({
@@ -29,7 +26,10 @@ vi.mock("next/cache", () => ({
 describe("GET /api/actions/prefill", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "user-1",
+    });
     getCurrentUserIdentityMock.mockResolvedValue({
       displayName: "Ada Admin",
     });
