@@ -122,6 +122,7 @@ export type ActionListItem = {
   cigarette_butts: number | null;
   waste_pollution_score?: number | null;
   cigarette_butts_pollution_score?: number | null;
+  post_action_pollution_score?: number | null;
   volunteers_count: number;
   duration_minutes: number;
   notes: string | null;
@@ -179,6 +180,7 @@ export type ActionListItem = {
       groupJoinEnabled: boolean | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
+      postActionPollutionScore?: number | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
@@ -265,6 +267,7 @@ export type ActionMapItem = Pick<
   | "cigarette_butts"
   | "waste_pollution_score"
   | "cigarette_butts_pollution_score"
+  | "post_action_pollution_score"
   | "status"
   | "created_by_clerk_id"
 > & {
@@ -324,6 +327,7 @@ export type ActionMapItem = Pick<
       groupJoinEnabled: boolean | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
+      postActionPollutionScore?: number | null;
       wasteCategories?: WasteCategorySlug[] | null;
       volunteersCount: number;
       durationMinutes: number;

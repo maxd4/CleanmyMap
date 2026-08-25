@@ -15,32 +15,32 @@ type LegendItem = {
 const colorItems: LegendItem[] = [
   {
     label: "Bleu",
-    threshold: `priorité < ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}`,
-    note: "Faible priorité de revisite",
+    threshold: `projection < ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}`,
+    note: "Faible pollution projetée",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />,
   },
   {
     label: "Orange",
-    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}-${ACTION_PRIORITY_COLOR_THRESHOLDS.RED - 1}`,
-    note: "Priorité moyenne",
+    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}-${ACTION_PRIORITY_COLOR_THRESHOLDS.RED - 1}`,
+    note: "Pollution projetée moyenne",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]" />,
   },
   {
     label: "Rouge",
-    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.RED}-${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET - 1}`,
-    note: "Priorité forte",
+    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.RED}-${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET - 1}`,
+    note: "Pollution projetée forte",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]" />,
   },
   {
     label: "Violet",
-    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET}-${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK - 1}`,
-    note: "Critique",
+    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET}-${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK - 1}`,
+    note: "Pollution projetée critique",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />,
   },
   {
     label: "Noir",
-    threshold: `priorité ≥ ${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK}`,
-    note: "Priorité extrême",
+    threshold: `projection ≥ ${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK}`,
+    note: "Pollution projetée extrême",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-slate-950 shadow-[0_0_12px_rgba(15,23,42,0.45)]" />,
   },
   {
@@ -99,7 +99,7 @@ export function MapLegend() {
             Légende
           </p>
           <p className="text-sm font-medium leading-relaxed text-slate-600">
-            Les actions combinent la pollution constatée lors de la dernière intervention et une priorité de revisite qui augmente avec l&apos;ancienneté. Le vert est réservé aux lieux explicitement propres.
+            Les actions combinent la pollution constatée avant l&apos;intervention et une projection de re-pollution qui dépend du temps écoulé. Le vert est réservé aux lieux explicitement propres.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -110,7 +110,7 @@ export function MapLegend() {
             Mégots: max mégots / bénévole = 100
           </span>
           <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Couleur action = priorité de revisite
+            Couleur action = pollution projetée
           </span>
         </div>
       </div>

@@ -19,8 +19,9 @@ function buildItem(partial: Partial<ActionMapItem>): ActionMapItem {
  latitude: 48.85,
  longitude: 2.35,
  waste_kg: 0,
- cigarette_butts: 0,
- status:"approved",
+    cigarette_butts: 0,
+    status:"approved",
+    record_type:"other",
  ...partial,
  };
 }

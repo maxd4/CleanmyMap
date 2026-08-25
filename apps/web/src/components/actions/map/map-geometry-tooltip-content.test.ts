@@ -14,16 +14,19 @@ describe("geometry tooltip action reading", () => {
         geometryConfidenceLabel: null,
         color: "hsl(35, 90%, 50%)",
         actionReading: {
-          observedScore: 42,
-          lastAction: "2026-04-08T00:00:00.000Z",
-          revisitPriority: 47.2,
+          historicalScore: 42,
+          projectedScore: 47,
+          elapsedDays: 47,
+          isEstimate: true,
         },
       }),
     );
 
-    expect(markup).toContain("Pollution constatée : 42/100");
-    expect(markup).toContain("Dernière action : 08/04/2026");
-    expect(markup).toContain("Priorité de revisite : 47/100");
+    expect(markup).toContain("Pollution constatée avant l&#x27;action : 42/100");
+    expect(markup).toContain("Pollution projetée : 47/100");
+    expect(markup).toContain("Temps depuis la dernière action : 47 j");
+    expect(markup).toContain("pas une mesure en temps réel");
+    expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");
   });
 });

@@ -185,7 +185,7 @@ function ActionsMapPageContent() {
             family={pageFamily}
             eyebrow="Visualiser / cartographie"
             title="Cartographie des actions"
-            subtitle="Les couleurs indiquent le niveau de pollution constaté lors de la dernière action. Plus cette observation vieillit, plus la priorité de revisite augmente. Elles ne représentent pas une mesure en temps réel."
+            subtitle="Les couleurs indiquent la pollution projetée depuis la dernière action, à partir de la pollution constatée avant l’action et du temps écoulé. Il s’agit d’une estimation, pas d’une mesure en temps réel."
             badges={
               <>
                 <PageHeaderBadge family={pageFamily}>Lecture terrain</PageHeaderBadge>

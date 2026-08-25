@@ -63,6 +63,8 @@ export type ActionDataMetadata = {
   visionEstimate: ActionVisionEstimate | null;
   wasteKg: number;
   cigaretteButts: number;
+  /** Explicit residual pollution measured after the action, when available. */
+  postActionPollutionScore?: number | null;
   volunteersCount: number;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
@@ -98,6 +100,7 @@ export type BuildActionContractParams = {
   longitude: number | null;
   wasteKg?: number | null;
   cigaretteButts?: number | null;
+  postActionPollutionScore?: number | null;
   volunteersCount?: number | null;
   durationMinutes?: number | null;
   actorName?: string | null;
@@ -249,11 +252,20 @@ function buildActionMeasureMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "wasteKg" | "cigaretteButts" | "volunteersCount" | "durationMinutes"
+  | "wasteKg"
+  | "cigaretteButts"
+  | "postActionPollutionScore"
+  | "volunteersCount"
+  | "durationMinutes"
 > {
   return {
     wasteKg: normalizeOptionalNumber(params.wasteKg),
     cigaretteButts: normalizeCount(params.cigaretteButts),
+    postActionPollutionScore:
+      params.postActionPollutionScore === null ||
+      params.postActionPollutionScore === undefined
+        ? undefined
+        : toFiniteNumber(params.postActionPollutionScore, 0),
     volunteersCount: normalizeCount(params.volunteersCount),
     durationMinutes: normalizeCount(params.durationMinutes),
   };
