@@ -126,10 +126,18 @@ ou de nettoyage précisément bornées ; il ne doit jamais être utilisé comme
 substitut d'une session utilisateur HTTP.
 
 État de vérification au 25 août 2026 : les contrats d'authentification et les
-tests offline des flux canonical passent. Le smoke persistant local n'a pas pu
-être exécuté, Docker et le runtime Supabase local n'étant pas disponibles. Le
-smoke production reste à exécuter avec une vraie session Clerk ; aucune donnée
-de smoke n'a donc été créée, validée ou nettoyée en production.
+tests offline des flux canonical passent. Le smoke production authentifié a
+ensuite été exécuté avec une session Clerk temporaire : `POST /api/spots` a
+retourné `201`, la ligne `spot`/`new` a été retrouvée dans
+`trash_spotter_spots`, l'événement `spot_create_pending` est resté à `0` XP,
+aucun `points_ledger`, `xp_audit` ou notification de validation n'a été créé,
+et le signalement est apparu dans les flux spots, actions unifiés et carte.
+Le marker `CMM_PROD_SMOKE_1787677027552` et l'ID de signalement
+`47bcd82a-aed2-45b3-a2e2-2e26f5cb0ab1` ont ensuite été nettoyés avec leurs
+artefacts de progression ; aucune ligne ne subsiste dans la source canonical,
+la table legacy ou `progression_events`. La session Clerk temporaire a été
+révoquée. Le replay persistant local reste non exécuté, Docker et le runtime
+Supabase local n'étant pas disponibles.
 
 ### Maintenance et opérations
 
