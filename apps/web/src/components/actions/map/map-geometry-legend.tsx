@@ -1,5 +1,5 @@
 import {
-  ACTION_PRIORITY_COLOR_STOPS,
+  ACTION_POLLUTION_COLOR_STOPS,
   CLEAN_PLACE_COLOR,
   resolveDynamicColor,
 } from "../map-marker-categories";
@@ -19,7 +19,7 @@ export function MapGeometryLegend() {
           Actions : la couleur représente la pollution projetée depuis la dernière action.
         </p>
         <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
-          {ACTION_PRIORITY_COLOR_STOPS.map((stop) => (
+          {ACTION_POLLUTION_COLOR_STOPS.map((stop) => (
             <p key={stop.key} className="flex min-w-0 items-center gap-1.5">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-900/15"

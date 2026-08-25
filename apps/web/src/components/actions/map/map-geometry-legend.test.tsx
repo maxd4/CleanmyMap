@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  ACTION_PRIORITY_COLOR_STOPS,
+  ACTION_POLLUTION_COLOR_STOPS,
   CLEAN_PLACE_COLOR,
 } from "../map-marker-categories";
 import { MapGeometryLegend } from "./map-geometry-legend";
@@ -27,7 +27,7 @@ describe("MapGeometryLegend", () => {
     expect(markup).toContain("Vert · lieu explicitement propre");
     expect(markup).not.toContain("Vert · faible");
 
-    for (const stop of ACTION_PRIORITY_COLOR_STOPS) {
+    for (const stop of ACTION_POLLUTION_COLOR_STOPS) {
       expect(markup).toContain(stop.label);
     }
     expect(markup).toContain(`background-color:${CLEAN_PLACE_COLOR}`);

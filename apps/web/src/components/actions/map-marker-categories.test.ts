@@ -1,7 +1,7 @@
 import { describe, expect, it } from"vitest";
 import type { ActionMapItem } from"../../lib/actions/types";
 import {
- ACTION_PRIORITY_COLOR_THRESHOLDS,
+ ACTION_POLLUTION_COLOR_THRESHOLDS,
  DEFAULT_VISIBLE_CATEGORIES,
  classifyPollutionColor,
  deriveMarkerCategories,
@@ -130,16 +130,16 @@ describe("map marker categories", () => {
  ).toBe("green");
 
  const midpoint = resolveDynamicColor(
- ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE - 1,
+ ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE - 1,
  );
  expect(midpoint.startsWith("hsl(")).toBe(true);
  expect(midpoint).not.toContain("hsla");
- expect(resolveDynamicColor(ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK)).toContain(
+ expect(resolveDynamicColor(ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK)).toContain(
  "0%, 8%",
  );
   });
 
-  it("maps revisit priority thresholds to blue, orange, red, violet and black", () => {
+  it("maps pollution thresholds to blue, orange, red, violet and black", () => {
     const now = new Date("2026-08-25T00:00:00.000Z");
     const itemAt = (score: number) =>
       buildItem({

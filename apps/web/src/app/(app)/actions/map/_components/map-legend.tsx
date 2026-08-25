@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Cigarette, Info, Trash2 } from "lucide-react";
 import {
-  ACTION_PRIORITY_COLOR_THRESHOLDS,
+  ACTION_POLLUTION_COLOR_THRESHOLDS,
   INFRASTRUCTURE_ALERT_THRESHOLD,
 } from "@/components/actions/map-marker-categories";
 
@@ -15,31 +15,31 @@ type LegendItem = {
 const colorItems: LegendItem[] = [
   {
     label: "Bleu",
-    threshold: `projection < ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}`,
+    threshold: `projection < ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}`,
     note: "Faible pollution projetée",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />,
   },
   {
     label: "Orange",
-    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}-${ACTION_PRIORITY_COLOR_THRESHOLDS.RED - 1}`,
+    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}-${ACTION_POLLUTION_COLOR_THRESHOLDS.RED - 1}`,
     note: "Pollution projetée moyenne",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]" />,
   },
   {
     label: "Rouge",
-    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.RED}-${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET - 1}`,
+    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.RED}-${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET - 1}`,
     note: "Pollution projetée forte",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]" />,
   },
   {
     label: "Violet",
-    threshold: `projection ${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET}-${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK - 1}`,
+    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET}-${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK - 1}`,
     note: "Pollution projetée critique",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />,
   },
   {
     label: "Noir",
-    threshold: `projection ≥ ${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK}`,
+    threshold: `projection ≥ ${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK}`,
     note: "Pollution projetée extrême",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-slate-950 shadow-[0_0_12px_rgba(15,23,42,0.45)]" />,
   },

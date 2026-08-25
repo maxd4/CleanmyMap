@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ACTION_PRIORITY_COLOR_STOPS } from "@/components/actions/map-marker-categories";
+import { ACTION_POLLUTION_COLOR_STOPS } from "@/components/actions/map-marker-categories";
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
 } from "@/lib/actions/local-repollution-calibration";
@@ -52,7 +52,7 @@ describe("ActionMapMethodologySection", () => {
       <ActionMapMethodologySection isFrench />,
     );
 
-    for (const stop of ACTION_PRIORITY_COLOR_STOPS) {
+    for (const stop of ACTION_POLLUTION_COLOR_STOPS) {
       expect(markup).toContain(stop.label);
       expect(markup).toContain(`repère ${stop.threshold}`);
     }

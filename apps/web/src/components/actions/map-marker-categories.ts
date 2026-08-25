@@ -34,7 +34,7 @@ export const SCORE_THRESHOLDS = {
  MEDIUM: 30,
 };
 
-export const ACTION_PRIORITY_COLOR_THRESHOLDS = {
+export const ACTION_POLLUTION_COLOR_THRESHOLDS = {
  BLUE: 0,
  ORANGE: SCORE_THRESHOLDS.MEDIUM,
  RED: SCORE_THRESHOLDS.STRONG,
@@ -48,15 +48,15 @@ export const COLOR_TOKENS = {
  RED: { h: 2, s: 82, l: 62 }, // Fort (rouge clair)
  ORANGE: { h: 35, s: 90, l: 50 }, // Moyen
  GREEN: { h: 142, s: 70, l: 45 }, // Lieu propre explicite
- BLACK: { h: 0, s: 0, l: 8 }, // Priorité extrême
+ BLACK: { h: 0, s: 0, l: 8 }, // Pollution extrême
 };
 
-export const ACTION_PRIORITY_COLOR_STOPS = [
- { key: "blue", label: "Bleu · faible", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
- { key: "orange", label: "Orange · moyen", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
- { key: "red", label: "Rouge · fort", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
- { key: "violet", label: "Violet · critique", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },
- { key: "black", label: "Noir · extrême", threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK, token: COLOR_TOKENS.BLACK },
+export const ACTION_POLLUTION_COLOR_STOPS = [
+ { key: "blue", label: "Bleu · pollution faible", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
+ { key: "orange", label: "Orange · pollution moyenne", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
+ { key: "red", label: "Rouge · pollution forte", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
+ { key: "violet", label: "Violet · pollution critique", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },
+ { key: "black", label: "Noir · pollution extrême", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK, token: COLOR_TOKENS.BLACK },
 ] as const;
 
 export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
@@ -111,7 +111,7 @@ export function resolveItemPollutionScores(
 export function resolveDynamicColor(score: number): string {
  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
- const stops = ACTION_PRIORITY_COLOR_STOPS;
+ const stops = ACTION_POLLUTION_COLOR_STOPS;
  const upperIndex = stops.findIndex((stop) => normalizedScore <= stop.threshold);
  const index = upperIndex <= 0 ? 1 : upperIndex;
  const lower = stops[index - 1];
@@ -152,10 +152,10 @@ export function classifyPollutionColor(
  const score = resolveCategoryScore(item, references, now);
 
  if (mapItemType(item) === "clean_place") return"green";
- if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK) return"black";
- if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET) return"violet";
- if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.RED) return"red";
- if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE) return"orange";
+ if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK) return"black";
+ if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET) return"violet";
+ if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.RED) return"red";
+ if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE) return"orange";
  if ((wasteKg ?? 0) <= 0 && (butts ?? 0) <= 0) return"blue";
  return"blue";
 }

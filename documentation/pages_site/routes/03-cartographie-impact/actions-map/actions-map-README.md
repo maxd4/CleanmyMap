@@ -118,7 +118,7 @@ noir    = pollution projetée extrême
 vert    = lieu explicitement propre uniquement
 ```
 
-La progression entre les repères de couleur est continue. Les seuils exacts sont centralisés dans `ACTION_PRIORITY_COLOR_THRESHOLDS` ; le vert n'est jamais un niveau de faible pollution pour une action.
+La progression entre les repères de couleur est continue. Les seuils exacts sont centralisés dans `ACTION_POLLUTION_COLOR_THRESHOLDS` ; le vert n'est jamais un niveau de faible pollution pour une action.
 
 ## Lecture des tooltips et popups
 

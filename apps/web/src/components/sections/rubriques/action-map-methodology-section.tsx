@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import {
-  ACTION_PRIORITY_COLOR_STOPS,
+  ACTION_POLLUTION_COLOR_STOPS,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 import {
@@ -328,7 +328,7 @@ export function ActionMapMethodologySection({
             {isFrench ? "Couleurs des actions" : "Action colors"}
           </h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {ACTION_PRIORITY_COLOR_STOPS.map((stop) => (
+            {ACTION_POLLUTION_COLOR_STOPS.map((stop) => (
               <p key={stop.key} className="flex items-center gap-2 text-sm text-slate-300/75">
                 <span
                   className="h-3 w-3 rounded-full border border-white/20"
