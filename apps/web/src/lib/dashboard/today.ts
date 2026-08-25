@@ -1,4 +1,5 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
+import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { Locale } from "@/lib/ui/preferences";
 
@@ -87,19 +88,6 @@ function formatStatusLabel(
   return text(locale, "en attente", "pending");
 }
 
-function formatSourceLabel(source: string, locale: Locale): string {
-  if (source === "actions") {
-    return text(locale, "Actions terrain", "Field actions");
-  }
-  if (source === "spots") {
-    return text(locale, "Signalements", "Reports");
-  }
-  if (source === "local") {
-    return text(locale, "Import local", "Local import");
-  }
-  return source;
-}
-
 function formatTypeLabel(contract: ActionDataContract, locale: Locale): string {
   if (contract.type === "clean_place") {
     return text(locale, "Dépollution", "Cleanup");
@@ -113,7 +101,7 @@ function formatTypeLabel(contract: ActionDataContract, locale: Locale): string {
 function formatActivityMeta(contract: ActionDataContract, locale: Locale): string {
   const parts = [
     toDateFormat(locale).format(new Date(contract.dates.observedAt)),
-    formatSourceLabel(contract.source, locale),
+    formatActionSourceLabel(contract.source, locale),
     formatStatusLabel(contract.status, locale),
   ];
   return parts.join(" · ");
@@ -188,7 +176,7 @@ function buildDashboardReadyState(params: {
   const actorLabel =
     latestContract.metadata.actorName?.trim() ||
     latestContract.metadata.associationName?.trim() ||
-    formatSourceLabel(latestContract.source, locale);
+    formatActionSourceLabel(latestContract.source, locale);
   const pendingCount = overview.comparison.current.pendingCount;
   const approvedCount = overview.comparison.current.approvedActions;
   const moderationDelay = overview.comparison.current.moderationDelayDays;

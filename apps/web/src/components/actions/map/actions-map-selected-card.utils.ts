@@ -1,4 +1,5 @@
 import type { ActionMapItem } from "@/lib/actions/types";
+import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import {
   getActionOperationalContext,
   mapItemCigaretteButts,
@@ -117,7 +118,10 @@ export function buildSelectedActionCardModel(
     impactLabel: item.impact_level ?? "faible",
     qualityLabel: item.quality_grade ?? "C",
     dateLabel: formatObservedDate(contract?.dates.observedAt ?? mapItemObservedAt(item)),
-    sourceLabel: contract?.source ?? item.source ?? "n/a",
+    sourceLabel: formatActionSourceLabel(
+      contract?.source ?? item.source ?? "n/a",
+      "fr",
+    ),
     coordinatesLabel: formatCoordinatesLabel(coords.latitude, coords.longitude),
     routeLabel: operational.routeStyleLabel,
     placeTypeLabel: operational.placeTypeLabel,
