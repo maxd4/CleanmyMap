@@ -229,6 +229,28 @@ Le contrat prévoit dès maintenant le champ optionnel
 réellement mesurée. Le read path actuel ne le renseigne pas et aucune donnée de
 persistance n'est inventée.
 
+### Lectures « Observé » et « Projeté aujourd'hui »
+
+Le contrôle compact de la carte propose deux lectures du même état courant,
+résolues par `resolveCurrentPlaceStateViews` à partir des mêmes contrats
+sources :
+
+- **Observé** affiche uniquement la dernière observation terrain réellement
+  disponible. Une mesure `S_post` est alors l'observation post-action la plus
+  récente ; le baseline `S_post = 0` du modèle n'est jamais affiché comme une
+  observation. Un Trash Spotter qualitatif reste « Pollution observée · niveau
+  non quantifié » et un `clean_place` reste explicitement propre.
+- **Projeté aujourd'hui** calcule l'état à la date courante avec la projection
+  existante et la calibration locale lorsqu'elle est activable. Une observation
+  terrain plus récente remplace toujours la projection, y compris dans cette
+  lecture.
+
+La provenance affichée est donc « Observé le … » ou « Projeté aujourd'hui ·
+dernière observation le … ». Le mode change uniquement l'état/source présenté :
+il ne modifie ni le score historique, ni la palette, ni la grammaire
+géométrique. Les polylines restent hors du rapprochement point/zone ; un spot
+ponctuel ne peut pas recolorer un parcours.
+
 ## 9. Couleurs de la carte d'actions
 
 La couleur d'une action représente la pollution projetée, pas l'identité du type `action`.

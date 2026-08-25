@@ -12,10 +12,18 @@ import {
 import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
+import type {
+  CurrentPlaceStateMode,
+  CurrentPlaceStateViews,
+} from "@/lib/actions/current-place-state";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
 import { MapGeometryLegend } from "./map/map-geometry-legend";
+import { useActionPollutionScoreReferences } from "./map/action-pollution-score-references-context";
+import { resolveMapPlaceStateViews } from "./map/actions-map-display-state";
+import { ACTIONS_MAP_DISPLAY_MODE_OPTIONS } from "./map/actions-map-display-mode";
 import {
   SignalementMarkers,
   ShapeLayers,
@@ -48,6 +56,8 @@ type ActionsMapCanvasProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  sourceItems?: ActionMapItem[];
+  sourceCompleteness?: RepollutionDatasetCompleteness;
 };
 
 function MapViewportReporter({
@@ -128,6 +138,8 @@ export function ActionsMapCanvas({
   viewportRequest = null,
   viewportRequestKey = 0,
   recenterViewport = null,
+  sourceItems = items,
+  sourceCompleteness = "partial",
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const mapCenter = initialViewport?.center ?? center;
@@ -137,6 +149,20 @@ export function ActionsMapCanvas({
     initialViewport ??
     createActionsMapViewport(center, compact ? 11 : 12);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
+  const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>(
+    "projected_today",
+  );
+  const { references } = useActionPollutionScoreReferences();
+  const [displayAsOf] = useState(() => new Date());
+  const currentPlaceStateViews = useMemo<CurrentPlaceStateViews[]>(
+    () =>
+      resolveMapPlaceStateViews(sourceItems, {
+        asOf: displayAsOf,
+        sourceCompleteness,
+        pollutionScoreReferences: references,
+      }),
+    [displayAsOf, references, sourceCompleteness, sourceItems],
+  );
   const isEmerald = tone === "emerald";
   const mapShellClasses = isEmerald
     ? "border-emerald-200/30 bg-[rgba(245,251,244,0.98)] shadow-[0_32px_64px_-12px_rgba(34,197,94,0.18)] ring-1 ring-emerald-200/20"
@@ -201,6 +227,30 @@ export function ActionsMapCanvas({
           );
         })}
       </div>
+      <div
+        className="pointer-events-none absolute right-3 top-3 z-[1000]"
+        role="group"
+        aria-label="Mode d’affichage des états"
+      >
+        <div className="pointer-events-auto inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90">
+          {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={[
+                "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
+                displayMode === option.value
+                  ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
+                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+              ].join(" ")}
+              aria-pressed={displayMode === option.value}
+              onClick={() => setDisplayMode(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {compact ? null : (
         <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
           <MapGeometryLegend />
@@ -261,12 +311,16 @@ export function ActionsMapCanvas({
             visible={visibleLayers.points}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
+            displayMode={displayMode}
+            currentPlaceStateViews={currentPlaceStateViews}
           />
           <ShapeLayers
             items={mainItems}
             visible={visibleLayers.shapes}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
+            displayMode={displayMode}
+            currentPlaceStateViews={currentPlaceStateViews}
           />
           <InfrastructureMarkers
             items={mainItems}
@@ -279,6 +333,8 @@ export function ActionsMapCanvas({
             visible={visibleLayers.trashSpotter}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
+            displayMode={displayMode}
+            currentPlaceStateViews={currentPlaceStateViews}
           />
         </LayerGroup>
 

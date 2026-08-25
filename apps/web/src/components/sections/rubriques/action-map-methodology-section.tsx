@@ -148,6 +148,22 @@ export function ActionMapMethodologySection({
         ))}
       </div>
 
+      <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+        <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
+          {isFrench ? "Deux lectures, une même source" : "Two readings, one source"}
+        </h3>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300/75">
+          {isFrench
+            ? "Le contrôle Observé affiche uniquement la dernière observation terrain réelle. Projeté aujourd'hui calcule l'état courant avec le modèle et la calibration disponible ; une observation plus récente reste prioritaire. Le baseline S_post = 0 n'est jamais présenté comme une observation."
+            : "Observed shows only the latest real field observation. Projected today computes the current state with the available model and calibration; a newer observation remains authoritative. The S_post = 0 baseline is never presented as an observation."}
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-slate-400">
+          {isFrench
+            ? "Les libellés de provenance indiquent « Observé le … » ou « Projeté aujourd'hui · dernière observation le … ». La bascule ne réinitialise ni la vue, ni la sélection, ni les calques ; elle ne change pas les couleurs ou la grammaire géométrique."
+            : "Provenance labels show ‘Observed on …’ or ‘Projected today · last observation on …’. Switching does not reset the viewport, selection, or layers; it does not change colors or geometric grammar."}
+        </p>
+      </div>
+
       <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.06] p-5">
         <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
           {isFrench ? "État courant par lieu" : "Current state by place"}

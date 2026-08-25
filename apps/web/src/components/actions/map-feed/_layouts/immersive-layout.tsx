@@ -5,6 +5,7 @@ import type { ActionsMapCanvasComponent } from "../map-feed.types";
 import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -42,6 +43,7 @@ type ImmersiveLayoutProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  sourceCompleteness?: RepollutionDatasetCompleteness;
 };
 
 export function ImmersiveLayout({
@@ -70,6 +72,7 @@ export function ImmersiveLayout({
   viewportRequest,
   viewportRequestKey,
   recenterViewport,
+  sourceCompleteness = "partial",
 }: ImmersiveLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -142,6 +145,8 @@ export function ImmersiveLayout({
             ) : (
               <MapCanvas
                 items={items}
+                sourceItems={allItems}
+                sourceCompleteness={sourceCompleteness}
                 selectedActionId={selectedActionId}
                 onSelectAction={onSelectAction}
                 fullViewport={fullViewport}

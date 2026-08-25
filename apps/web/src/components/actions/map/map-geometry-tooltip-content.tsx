@@ -1,3 +1,4 @@
+import { formatObservedDate } from "./action-popup-content.helpers";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type GeometryTooltipContentProps = {
@@ -13,6 +14,12 @@ type GeometryTooltipContentProps = {
     elapsedDays: number;
     isEstimate: boolean;
     projectionConfidenceLabel: string;
+    displayMode?: "observed" | "projected_today";
+    displaySource?: "observed" | "projected" | "historical";
+    displayedScore?: number | null;
+    displayedScoreKind?: "measured" | "projected" | "unavailable";
+    displayedStateLabel?: string;
+    displayedDate?: string;
   };
 };
 
@@ -56,16 +63,52 @@ export function GeometryTooltipContent({
 
       {actionReading ? (
         <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
-          <p>
-            Pollution constatée avant l&apos;action : {formatScorePercent(Math.round(actionReading.historicalScore))}
-          </p>
-          <p>Pollution projetée : {formatScorePercent(Math.round(actionReading.projectedScore))}</p>
-          <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
-          <p>{actionReading.projectionConfidenceLabel}</p>
-          {actionReading.isEstimate && (
-            <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
-              Estimation · pas une mesure en temps réel
-            </p>
+          {actionReading.displayMode ? (
+            <>
+              <p>
+                {actionReading.displaySource === "projected"
+                  ? `Projeté aujourd’hui · dernière observation le ${
+                      actionReading.displayedDate
+                        ? formatObservedDate(actionReading.displayedDate)
+                        : "date inconnue"
+                    }`
+                  : `Observé le ${
+                      actionReading.displayedDate
+                        ? formatObservedDate(actionReading.displayedDate)
+                        : "date inconnue"
+                    }`}
+              </p>
+              <p>
+                {actionReading.displayedScoreKind === "unavailable"
+                  ? actionReading.displayedStateLabel ?? "Niveau non quantifié"
+                  : `${actionReading.displayedStateLabel ?? "Pollution observée"} : ${formatScorePercent(
+                      Math.round(actionReading.displayedScore ?? 0),
+                    )}`}
+              </p>
+              {actionReading.displaySource === "projected" && (
+                <>
+                  <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+                  <p>{actionReading.projectionConfidenceLabel}</p>
+                  <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                    Estimation · pas une mesure en temps réel
+                  </p>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <p>
+                Pollution constatée avant l&apos;action : {formatScorePercent(Math.round(actionReading.historicalScore))}
+              </p>
+              <p>Pollution projetée : {formatScorePercent(Math.round(actionReading.projectedScore))}</p>
+              <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+              <p>{actionReading.projectionConfidenceLabel}</p>
+              {actionReading.isEstimate && (
+                <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                  Estimation · pas une mesure en temps réel
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : null}

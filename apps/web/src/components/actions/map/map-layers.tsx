@@ -24,6 +24,11 @@ import {
 } from "@/lib/actions/data-contract";
 import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+  CurrentPlaceStateViews,
+} from "@/lib/actions/current-place-state";
 import {
   resolveInfrastructureEmoji,
   CLEAN_PLACE_COLOR,
@@ -62,6 +67,7 @@ import {
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
 import { isActionMapItem } from "./action-popup-content.helpers";
+import { resolveMapPlaceStateForItem } from "./actions-map-display-state";
 import {
   INFRASTRUCTURE_ALERT_THRESHOLD,
 } from "@/components/actions/map-marker-categories";
@@ -93,20 +99,24 @@ export function resolvePointColor(
   item: ActionMapItem,
   references?: PollutionScoreReferences | null,
   now: string | Date | number = new Date(),
+  displayMode: CurrentPlaceStateMode = "projected_today",
+  currentPlaceState: CurrentPlaceState | null = null,
 ): string {
   if (mapItemType(item) === "clean_place") {
     return CLEAN_PLACE_COLOR;
   }
 
   const observedScore = resolveItemPollutionScores(item, references).severityScore;
-  const score = isActionMapItem(item)
-    ? presentActionPollutionProjection(
-        observedScore,
-        mapItemObservedAt(item),
-        now,
-        { postActionScore: mapItemPostActionPollutionScore(item) },
-      ).projectedPollutionScore
-    : observedScore;
+  const score = currentPlaceState?.score ?? (isActionMapItem(item)
+    ? displayMode === "observed"
+      ? mapItemPostActionPollutionScore(item) ?? observedScore
+      : presentActionPollutionProjection(
+          observedScore,
+          mapItemObservedAt(item),
+          now,
+          { postActionScore: mapItemPostActionPollutionScore(item) },
+        ).projectedPollutionScore
+    : observedScore);
 
   return resolveDynamicColor(score);
 }
@@ -120,11 +130,15 @@ export function SignalementMarkers({
   visible = true,
   selectedActionId = null,
   onSelectAction,
+  displayMode = "projected_today",
+  currentPlaceStateViews = [],
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceStateViews?: readonly CurrentPlaceStateViews[];
 }) {
   const { references } = useActionPollutionScoreReferences();
   const now = new Date();
@@ -190,7 +204,18 @@ export function SignalementMarkers({
           return null;
         }
 
-        const color = resolvePointColor(item, references, now);
+        const currentPlaceState = resolveMapPlaceStateForItem(
+          currentPlaceStateViews,
+          item,
+          displayMode,
+        );
+        const color = resolvePointColor(
+          item,
+          references,
+          now,
+          displayMode,
+          currentPlaceState,
+        );
         const geometry = resolveActionMapGeometryViewModel(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const isFallbackPoint = geometry.presentation.strokeStyle === "point";
@@ -230,6 +255,8 @@ export function SignalementMarkers({
                 item={item}
                 color={color}
                 coords={coords}
+                displayMode={displayMode}
+                currentPlaceState={currentPlaceState}
               />
             </Popup>
           </CircleMarker>
@@ -244,11 +271,15 @@ export function ShapeLayers({
   visible = true,
   selectedActionId = null,
   onSelectAction,
+  displayMode = "projected_today",
+  currentPlaceStateViews = [],
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceStateViews?: readonly CurrentPlaceStateViews[];
 }) {
   const { references } = useActionPollutionScoreReferences();
   const map = useMap();
@@ -290,7 +321,18 @@ export function ShapeLayers({
         }
 
         const pollutionScores = resolveItemPollutionScores(item, references);
-        const color = resolvePointColor(item, references, now);
+        const currentPlaceState = resolveMapPlaceStateForItem(
+          currentPlaceStateViews,
+          item,
+          displayMode,
+        );
+        const color = resolvePointColor(
+          item,
+          references,
+          now,
+          displayMode,
+          currentPlaceState,
+        );
         const score = pollutionScores.severityScore;
         const actionProjection = isActionMapItem(item)
           ? presentActionPollutionProjection(
@@ -313,6 +355,24 @@ export function ShapeLayers({
               projectionConfidenceLabel: formatProjectionConfidenceLabel(
                 actionProjection.projectionConfidence.level,
               ),
+              displayMode,
+              displaySource:
+                currentPlaceState?.source ??
+                (displayMode === "projected_today" ? "projected" : "observed"),
+              displayedScore:
+                currentPlaceState?.score ??
+                (displayMode === "projected_today"
+                  ? actionProjection.projectedPollutionScore
+                  : mapItemPostActionPollutionScore(item) ?? score),
+              displayedScoreKind:
+                currentPlaceState?.scoreKind ??
+                (displayMode === "projected_today" ? "projected" : "measured"),
+              displayedStateLabel:
+                currentPlaceState?.stateLabel ??
+                (displayMode === "projected_today"
+                  ? "Pollution projetée"
+                  : "Pollution observée"),
+              displayedDate: currentPlaceState?.date ?? mapItemObservedAt(item),
             }
           : undefined;
         const coords = mapItemCoordinates(item);
@@ -397,11 +457,30 @@ export function ShapeLayers({
                   color={color}
                   coords={coords}
                   onViewGeometry={onViewGeometry}
+                  displayMode={displayMode}
+                  currentPlaceState={currentPlaceState}
+                  resolveCurrentPlaceStateForItem={(targetItem) =>
+                    resolveMapPlaceStateForItem(
+                      currentPlaceStateViews,
+                      targetItem,
+                      displayMode,
+                    )
+                  }
                   corridorItems={corridorItems}
                   corridorHistory={corridorHistory ?? undefined}
                   onViewGeometryForItem={onViewGeometryForItem}
                   resolveColorForItem={(targetItem) =>
-                    resolvePointColor(targetItem, references, now)
+                    resolvePointColor(
+                      targetItem,
+                      references,
+                      now,
+                      displayMode,
+                      resolveMapPlaceStateForItem(
+                        currentPlaceStateViews,
+                        targetItem,
+                        displayMode,
+                      ),
+                    )
                   }
                 />
               </Popup>
@@ -458,11 +537,30 @@ export function ShapeLayers({
                   color={color}
                   coords={coords}
                   onViewGeometry={onViewGeometry}
+                  displayMode={displayMode}
+                  currentPlaceState={currentPlaceState}
+                  resolveCurrentPlaceStateForItem={(targetItem) =>
+                    resolveMapPlaceStateForItem(
+                      currentPlaceStateViews,
+                      targetItem,
+                      displayMode,
+                    )
+                  }
                   corridorItems={corridorItems}
                   corridorHistory={corridorHistory ?? undefined}
                   onViewGeometryForItem={onViewGeometryForItem}
                   resolveColorForItem={(targetItem) =>
-                    resolvePointColor(targetItem, references, now)
+                    resolvePointColor(
+                      targetItem,
+                      references,
+                      now,
+                      displayMode,
+                      resolveMapPlaceStateForItem(
+                        currentPlaceStateViews,
+                        targetItem,
+                        displayMode,
+                      ),
+                    )
                   }
                 />
               </Popup>
@@ -524,11 +622,15 @@ export function TrashSpotterMarkers({
   visible = true,
   selectedActionId = null,
   onSelectAction,
+  displayMode = "projected_today",
+  currentPlaceStateViews = [],
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceStateViews?: readonly CurrentPlaceStateViews[];
 }) {
   const spotItems = items.filter(isTrashSpotterItem);
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
@@ -594,6 +696,11 @@ export function TrashSpotterMarkers({
         }
 
         const isSelected = selectedActionId === item.id;
+        const currentPlaceState = resolveMapPlaceStateForItem(
+          currentPlaceStateViews,
+          item,
+          displayMode,
+        );
 
         return (
           <CircleMarker
@@ -626,6 +733,8 @@ export function TrashSpotterMarkers({
                 item={item}
                 color="#22c55e"
                 coords={coords}
+                displayMode={displayMode}
+                currentPlaceState={currentPlaceState}
               />
             </Popup>
           </CircleMarker>

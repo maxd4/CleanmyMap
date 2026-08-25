@@ -1,12 +1,17 @@
 import { MapPin } from "lucide-react";
 import {
   formatNumber,
+  formatObservedDate,
   getGeometryTone,
   type ScoreReading,
 } from "./action-popup-content.helpers";
 import type { ActionPollutionProjectionPresentation } from "@/lib/actions/revisit-priority";
 import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
 import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+} from "@/lib/actions/current-place-state";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -33,6 +38,8 @@ type ActionPopupContentHeaderProps = {
   wasteKg: number;
   butts: number;
   actionProjection: ActionPollutionProjectionPresentation | null;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceState?: CurrentPlaceState | null;
 };
 
 function ScoreRing({
@@ -108,10 +115,28 @@ export function ActionPopupContentHeader({
   wasteKg,
   butts,
   actionProjection,
+  displayMode,
+  currentPlaceState = null,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
 
   if (isAction) {
+    const hasDisplayState = Boolean(displayMode || currentPlaceState);
+    const isDisplayedProjection = hasDisplayState
+      ? currentPlaceState?.source === "projected" ||
+        (!currentPlaceState && displayMode === "projected_today")
+      : true;
+    const displayedScore = currentPlaceState?.score ??
+      (isDisplayedProjection
+        ? actionProjection?.projectedPollutionScore ?? score
+        : score);
+    const displayedScoreLabel =
+      currentPlaceState?.scoreKind === "unavailable"
+        ? "Niveau non quantifié"
+        : formatScorePercent(Math.round(displayedScore));
+    const displayedDate = currentPlaceState?.date
+      ? formatObservedDate(currentPlaceState.date)
+      : observedAt;
     return (
       <div className="relative space-y-4 overflow-hidden p-5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sky-400/20 via-sky-500/10 to-transparent" />
@@ -149,7 +174,9 @@ export function ActionPopupContentHeader({
                 Pollution constatée avant l&apos;action
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {formatScorePercent(Math.round(score))}
+                {formatScorePercent(
+                  Math.round(actionProjection?.historicalScore ?? score),
+                )}
               </p>
             </div>
             <div>
@@ -162,29 +189,29 @@ export function ActionPopupContentHeader({
             </div>
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                Pollution projetée
+                {isDisplayedProjection ? "Pollution projetée" : "État affiché"}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {formatScorePercent(
-                  Math.round(actionProjection?.projectedPollutionScore ?? score),
-                )}
+                {displayedScoreLabel}
               </p>
             </div>
           </div>
           <ScoreRing
             color={color}
-            score={actionProjection?.projectedPollutionScore ?? score}
+            score={displayedScore}
             scoreLoading={scoreLoading}
-            label="Projection"
+            label={isDisplayedProjection ? "Projection" : "Observé"}
           />
         </div>
 
         <p className="cmm-text-caption font-semibold text-amber-700 dark:text-amber-300">
-          {actionProjection?.isEstimate
+          {isDisplayedProjection
             ? "Projection modélisée · pas une mesure en temps réel"
-            : "Projection basée sur une mesure post-action"}
+            : currentPlaceState?.scoreKind === "unavailable"
+              ? "Observation terrain · niveau non quantifié"
+              : `Observé le ${displayedDate}`}
         </p>
-        {actionProjection?.projectionConfidence && (
+        {isDisplayedProjection && actionProjection?.projectionConfidence && (
           <p className="cmm-text-caption font-semibold text-slate-600 dark:text-slate-300">
             {formatProjectionConfidenceLabel(
               actionProjection.projectionConfidence.level,
@@ -246,6 +273,13 @@ export function ActionPopupContentHeader({
 
   return (
     <div className="relative space-y-4 overflow-hidden p-5">
+      {displayMode && currentPlaceState && (
+        <p className="cmm-text-caption font-semibold text-slate-600">
+          {currentPlaceState.source === "projected"
+            ? `Projeté aujourd’hui · dernière observation le ${formatObservedDate(currentPlaceState.date)}`
+            : `Observé le ${formatObservedDate(currentPlaceState.date)}`}
+        </p>
+      )}
       <div className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${geometryTone.glow}`} />
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
@@ -261,8 +295,13 @@ export function ActionPopupContentHeader({
             {locationLabel}
           </h3>
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span
-              className={[
+            {displayMode && currentPlaceState?.scoreKind === "unavailable" ? (
+              <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+                {currentPlaceState.stateLabel}
+              </span>
+            ) : (
+              <span
+                className={[
                 "rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
                 scoreReading.tone === "sky"
                   ? "border border-sky-200 bg-sky-50 text-sky-800"
@@ -271,10 +310,13 @@ export function ActionPopupContentHeader({
                     : scoreReading.tone === "amber"
                       ? "border border-amber-200 bg-amber-50 text-amber-800"
                       : "border border-rose-200 bg-rose-50 text-rose-800",
-              ].join(" ")}
-            >
-              Score global {formatScorePercent(Math.round(score))}
-            </span>
+                ].join(" ")}
+              >
+                {displayMode && currentPlaceState
+                  ? `Pollution observée ${formatScorePercent(Math.round(currentPlaceState.score ?? score))}`
+                  : `Score global ${formatScorePercent(Math.round(score))}`}
+              </span>
+            )}
             <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
               {scoreReading.label}
             </span>
@@ -286,7 +328,13 @@ export function ActionPopupContentHeader({
             </span>
           </div>
         </div>
-        <ScoreRing color={color} score={score} scoreLoading={scoreLoading} />
+        {displayMode && currentPlaceState?.scoreKind === "unavailable" ? null : (
+          <ScoreRing
+            color={color}
+            score={currentPlaceState?.score ?? score}
+            scoreLoading={scoreLoading}
+          />
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-slate-50/90 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/55">
