@@ -82,10 +82,13 @@ signalements `spot` et `clean_place`. Les créations applicatives et la file de
 modération passent par cette table et utilisent ses colonnes `spot_type`,
 `validated_at` et `cleaned_at`.
 
-`public.spots` est maintenant conservée comme archive historique uniquement :
-aucune création, modération, carte, historique, indicateur ou gamification ne
-la traite comme une source runtime équivalente. Son champ `waste_type` reste
-propre au chemin legacy et n'est pas converti silencieusement en `spot_type`.
+`public.spots` est maintenant conservée comme archive historique uniquement
+pour le runtime applicatif : aucune création, modération, carte, historique,
+indicateur ou gamification ne la traite comme une source runtime équivalente.
+Une commande de maintenance ou de migration peut encore la lire explicitement
+pour une compatibilité offline bornée, sans que cette lecture devienne une voie
+runtime. Son champ `waste_type` reste propre au chemin legacy et n'est pas
+converti silencieusement en `spot_type`.
 
 La migration
 `apps/web/supabase/migrations/20260825000000_migrate_legacy_spots_to_trash_spotter.sql`
@@ -119,8 +122,9 @@ Les outils d'opérations suivent la même séparation :
   le rapport, mais ses suppressions sont limitées à `actions` et
   `trash_spotter_spots` ; aucune option d'application ne peut supprimer
   l'archive legacy ;
-- `sync-validated-local-store.mjs` lit la source canonique avant le fallback
-  legacy et ne réécrit jamais `spots` ;
+- `sync-validated-local-store.mjs` est une commande explicite de synchronisation
+  locale : elle lit la source canonique avant le fallback legacy historique,
+  n'est pas appelée par le runtime web et ne réécrit jamais `spots` ;
 - les contrôles de coordonnées et les règles d'identité restent indépendants
   de `waste_type`, qui ne devient jamais un discriminant `spot_type`.
 

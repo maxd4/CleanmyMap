@@ -201,6 +201,19 @@ documentation/                            documentation structurée
 Ne pas créer ou réintroduire `supabase/migrations/`; le garde-fou
 `npm run audit:supabase-migration-trees` bloque ce second arbre.
 
+## Suppression et dead-code
+
+L'absence de consommateur ou d'import runtime n'est pas, à elle seule, une
+preuve qu'un module peut être supprimé. Avant de supprimer un fichier ou un
+module apparemment inutilisé, vérifier s'il contient une connaissance métier,
+pédagogique, de sécurité ou réglementaire, une configuration, une migration,
+une compatibilité historique, une fixture ou une documentation unique.
+
+Rechercher son successeur et migrer explicitement toute valeur utile avant la
+suppression. Ne conserver aucun doublon lorsque son contenu est déjà porté par
+une source canonique ; préserver en revanche les compatibilités et artefacts
+historiques dont l'usage est encore démontré.
+
 ## Prévention des monolithes
 
 Ces règles doivent être appliquées spontanément par Codex pendant tout
