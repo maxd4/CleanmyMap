@@ -2,6 +2,7 @@ export {
   ENVIRONMENTAL_IMPACT_ESTIMATOR_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_ESTIMATOR_LIMITATIONS,
   ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
+  ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR,
   ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK,
   ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES,
@@ -51,6 +52,8 @@ export type {
   EnvironmentalImpactSecondOrderFactorDefinition,
   EnvironmentalImpactSecondOrderFactorEstimate,
   EnvironmentalImpactSecondOrderFactorKey,
+  EnvironmentalImpactElectricityCalculation,
+  EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactUsageProfileEstimate,
   EnvironmentalImpactUsageProfileInput,
   EnvironmentalImpactPostDefinition,
@@ -71,6 +74,7 @@ export {
   buildEnvironmentalImpactEstimatorMethodology,
   computeEnvironmentalImpactEstimate,
 } from "./service";
+export { buildElectricityEstimate, calculateElectricityCo2e } from "./services/electricity";
 export {
   buildCodexInfrastructureUsageInput,
   buildCodexMonthlyUsageEstimate,

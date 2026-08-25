@@ -17,7 +17,7 @@ Il sert à rendre la contribution de chaque service, poste et journal projet vis
 - Quand une donnée manque, elle est signalée comme non branchée plutôt que remplacée par zéro.
 - Les bornes basses et hautes matérialisent l'incertitude des proxys.
 - Le détail par point affiche la répartition en pourcentage des postes sur la semaine sélectionnée.
-- Un deuxième ordre de lecture décompose le total en CO2 brut, électricité, autres GES, produits chimiques et eau.
+- Un deuxième ordre de lecture décompose le total en CO2 brut, équivalent électrique estimé, autres GES, produits chimiques et eau. La carte électrique indique si un kWh réel a été converti ou si la valeur reste un proxy.
 
 ## Composition du calcul
 
@@ -37,6 +37,7 @@ Le graphique agrège notamment:
 - Les services fixes, comme le nom de domaine, sont amortis sur la période.
 - Les services variables doivent être reliés aux usages réels du projet lorsque c'est possible.
 - Les données externes génériques ne doivent servir qu'en dernier recours.
+- Le repère automobile affiché près des valeurs CO₂e est une comparaison pédagogique issue d'Impact CO₂ / Base Empreinte ADEME, pas une mesure de déplacement du projet.
 
 ## Auditabilité
 

@@ -10,7 +10,9 @@ import type {
   EnvironmentalImpactEstimateInput,
   EnvironmentalImpactEstimateModel,
   EnvironmentalImpactEstimatorMethodology,
+  EnvironmentalImpactUsageProfileEstimate,
 } from "../types";
+import { buildElectricityEstimate } from "./electricity";
 import { normalizeEnvironmentalImpactEstimateInput } from "../validation";
 import { buildInfrastructureEstimate, buildInfrastructureMissingDataNotes } from "./infrastructure";
 import { buildLifecycleEstimate } from "./lifecycle";
@@ -18,7 +20,9 @@ import { buildScopeCurveEstimate, buildScopeEstimate, buildScopeMissingDataNotes
 
 export function buildEnvironmentalImpactEstimatorMethodology(
   generatedAt: string,
+  usageProfile?: Pick<EnvironmentalImpactUsageProfileEstimate, "monthlyElectricityKwh">,
 ): EnvironmentalImpactEstimatorMethodology {
+  const electricity = buildElectricityEstimate(usageProfile ?? { monthlyElectricityKwh: null }, null);
   return {
     version: ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
     generatedAt,
@@ -38,7 +42,11 @@ export function buildEnvironmentalImpactEstimatorMethodology(
       "Le poste Codex — développement du site repose sur un journal hebdomadaire spécifique au projet; sans semaine enregistrée, il reste explicitement à zéro et signalé comme non branché.",
       "Le deuxième ordre détaille la composition interne de l'impact en familles environnementales lisibles.",
       "Les ordres de grandeur fournis par le projet servent d'ancrage spécifique à CleanMyMap pour l'assistance IA, le développement de la première moitié du site et l'usage annuel bénévole.",
+      `Le facteur électrique configuré est de ${electricity.factorKgCo2ePerKwh} kgCO2e/kWh pour ${electricity.source === "input" ? "un calcul kWh × facteur" : "un équivalent électrique proxy tant qu'aucun kWh réel n'est branché"}.`,
+      "Le refroidissement varie fortement selon les data centers: environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces; aucune part fixe n'est attribuée à CleanMyMap.",
+      "Les serveurs accélérés, principalement associés à l'adoption de l'IA, constituent un moteur important de la croissance prévue de la consommation des data centers; aucune part du trafic de CleanMyMap n'est attribuée à l'IA.",
     ],
+    electricity,
   };
 }
 
@@ -90,7 +98,7 @@ export function computeEnvironmentalImpactEstimate(
     version: ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
     generatedAt,
     validation: normalized.validation,
-    methodology: buildEnvironmentalImpactEstimatorMethodology(generatedAt),
+    methodology: buildEnvironmentalImpactEstimatorMethodology(generatedAt, infrastructure.usage),
     dataGaps: [
       ...buildScopeMissingDataNotes(site),
       ...buildScopeMissingDataNotes(user),

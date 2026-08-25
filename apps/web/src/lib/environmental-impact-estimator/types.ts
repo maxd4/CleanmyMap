@@ -126,6 +126,8 @@ export type EnvironmentalImpactInfrastructureMetricsInput = Partial<
 >;
 
 export type EnvironmentalImpactUsageProfileInput = {
+  /** Optional measured electricity consumption. Never inferred from CO2e. */
+  monthlyElectricityKwh?: number | null;
   monthlyPageViews?: number | null;
   monthlyActiveUsers?: number | null;
   monthlySessions?: number | null;
@@ -227,12 +229,27 @@ export type EnvironmentalImpactSecondOrderFactorEstimate =
     source: "input" | "derived" | "reference" | "mixed";
   };
 
+export type EnvironmentalImpactElectricityCalculation =
+  | "measured_kwh_to_co2e"
+  | "proxy_equivalent"
+  | "missing";
+
+export type EnvironmentalImpactElectricityEstimate = {
+  calculation: EnvironmentalImpactElectricityCalculation;
+  factorKgCo2ePerKwh: number;
+  kWh: number | null;
+  kgCo2e: number | null;
+  source: "input" | "derived" | "reference" | "missing";
+  note: string;
+};
+
 export type EnvironmentalImpactSecondOrderEstimate = {
   totalKgCo2eProxy: number | null;
   factorEstimates: EnvironmentalImpactSecondOrderFactorEstimate[];
   notes: string[];
   hypotheses: string[];
   source: "inferred" | "mixed" | "reference";
+  electricity: EnvironmentalImpactElectricityEstimate;
 };
 
 export type EnvironmentalImpactLifecycleAxisKey =
@@ -307,6 +324,7 @@ export type EnvironmentalImpactProjectAnchor = {
 };
 
 export type EnvironmentalImpactUsageProfileEstimate = {
+  monthlyElectricityKwh?: number | null;
   monthlyPageViews: number;
   monthlyActiveUsers: number;
   monthlySessions: number;
@@ -510,6 +528,7 @@ export type EnvironmentalImpactEstimatorMethodology = {
   limitations: string[];
   projectAnchors: EnvironmentalImpactProjectAnchor[];
   notes: string[];
+  electricity: EnvironmentalImpactElectricityEstimate;
 };
 
 export type EnvironmentalImpactEstimateModel = {

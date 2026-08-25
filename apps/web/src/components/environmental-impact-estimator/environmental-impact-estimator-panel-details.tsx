@@ -64,7 +64,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
             </h4>
           </div>
           <p className="text-xs leading-relaxed text-red-100/40">
-            Le total est réparti entre CO2 brut, électricité, autres GES,
+            Le total est réparti entre CO2 brut, équivalent électrique, autres GES,
             produits chimiques et eau.
           </p>
         </div>
@@ -89,6 +89,17 @@ export function EnvironmentalImpactEstimatorPanelDetails({
               <p className="mt-3 text-xs leading-relaxed text-red-100/45">
                 {formatSecondOrderQuantity(factor.quantity, factor.unitLabel)}
               </p>
+              {factor.key === "electricity" ? (
+                <p className="mt-2 text-[10px] leading-relaxed text-red-100/55">
+                  {model.infrastructure.secondOrder.electricity.calculation ===
+                  "measured_kwh_to_co2e"
+                    ? "Calcul : kWh réel × facteur électrique."
+                    : model.infrastructure.secondOrder.electricity.calculation ===
+                        "proxy_equivalent"
+                      ? "Équivalent électrique estimé : pas une consommation mesurée."
+                      : "À compléter : aucun signal électrique disponible."}
+                </p>
+              ) : null}
               <p className="mt-2 text-sm font-black text-white">
                 {formatProxyMass(factor.estimatedKgCo2eProxy)}
               </p>

@@ -10,6 +10,7 @@ import {
   WEEKS_PER_MONTH,
   clampUsageMultiplier,
   hasScopeSignalInput,
+  hasNumericInput,
   hasUsageInput,
   resolveNumber,
   round6,
@@ -288,11 +289,22 @@ export function buildUsageProfileEstimate(
     trafficMetrics.monthlyPageViews,
     trafficMetrics.monthlyActiveUsers,
   );
+  if (hasNumericInput(usageInput?.monthlyElectricityKwh)) {
+    pushProvenance({
+      key: "monthlyElectricityKwh",
+      label: "Électricité mensuelle",
+      value: usageInput.monthlyElectricityKwh,
+      source: "input",
+      detail: "Signal kWh fourni directement; il est converti en CO2e par kWh × facteur électrique.",
+    });
+  }
   const source: "input" | "derived" =
     hasUsageInput(usageInput) || hasScopeSignalInput(siteInput) || hasScopeSignalInput(userInput)
       ? "input"
       : "derived";
   return {
+    monthlyElectricityKwh: resolveNumber(usageInput?.monthlyElectricityKwh, 0) ||
+      (usageInput?.monthlyElectricityKwh === 0 ? 0 : null),
     ...trafficMetrics,
     ...codexMetrics,
     ...operationsMetrics,
@@ -316,6 +328,10 @@ export function projectUsageProfileAtWeek(
   const weeklyScale = 1 / WEEKS_PER_MONTH;
   return {
     ...usage,
+    monthlyElectricityKwh:
+      usage.monthlyElectricityKwh === null || usage.monthlyElectricityKwh === undefined
+        ? usage.monthlyElectricityKwh
+        : round6(usage.monthlyElectricityKwh * weeklyScale * multiplier),
     monthlyPageViews: round6(usage.monthlyPageViews * weeklyScale * multiplier),
     monthlyActiveUsers: round6(usage.monthlyActiveUsers * weeklyScale * multiplier),
     monthlySessions: round6(usage.monthlySessions * weeklyScale * multiplier),

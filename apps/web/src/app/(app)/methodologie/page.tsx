@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
+import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator";
 import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-client";
 import type {
@@ -43,6 +44,7 @@ export default async function MethodologiePage() {
   };
   let impactGeneratedAt: string | null = null;
   let impactLaunchedAt: string | null = null;
+  let impactElectricity = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
 
   const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap").catch((error) => {
     console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
@@ -60,6 +62,7 @@ export default async function MethodologiePage() {
         totalKgCo2eProxy: dashboard.model.infrastructure.totalKgCo2eProxy ?? null,
         generatedAt: dashboard.model.infrastructure.generatedAt ?? null,
       };
+      impactElectricity = dashboard.model.methodology?.electricity ?? impactElectricity;
       impactSnapshots = dashboard.snapshots;
       impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
       impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
@@ -77,6 +80,7 @@ export default async function MethodologiePage() {
       impactSnapshots={impactSnapshots}
       impactGeneratedAt={impactGeneratedAt}
       impactLaunchedAt={impactLaunchedAt}
+      impactElectricity={impactElectricity}
       githubStats={githubStats}
     />
   );

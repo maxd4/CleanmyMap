@@ -48,7 +48,7 @@ describe("MonthlyImpactHistoryChart", () => {
     expect(markup).toContain("environmental_impact_snapshots");
     expect(markup).toContain("10 h = 20 kWh");
     expect(markup).toContain("10 h = 2 kgCO2e");
-    expect(markup).toContain("10 h = 20 km voiture thermique");
+    expect(markup).not.toContain("10 h = 20 km voiture thermique");
     expect(markup).toContain("10 h = 100 L d");
     expect(markup).toContain('stroke-dasharray="10 8"');
     expect(markup).toContain("févr. 2026");

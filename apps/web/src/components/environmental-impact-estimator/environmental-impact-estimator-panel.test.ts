@@ -28,7 +28,10 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Deuxième ordre");
     expect(markup).toContain("CO2 brut");
     expect(markup).toContain("Empreinte matérielle et cycle de vie");
-    expect(markup).toContain("Énergie");
+    expect(markup).toContain("Équivalent électrique estimé");
+    expect(markup).toContain("À compléter — kWh réel non branché");
+    expect(markup).toContain("Équivalent électrique estimé : pas une consommation mesurée.");
+    expect(markup).toContain("Repère : 10 kgCO₂e ≈ 70 km en voiture thermique moyenne.");
     expect(markup).toContain("Serveurs");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");

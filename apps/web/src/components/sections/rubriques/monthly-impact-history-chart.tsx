@@ -517,7 +517,6 @@ export function MonthlyImpactHistoryChart({
               <div className="mt-3 space-y-1 text-sm text-slate-700">
                 <p>10 h = 20 kWh</p>
                 <p>10 h = 2 kgCO2e</p>
-                <p>10 h = 20 km voiture thermique</p>
                 <p>10 h = 100 L d&apos;eau</p>
               </div>
             </div>

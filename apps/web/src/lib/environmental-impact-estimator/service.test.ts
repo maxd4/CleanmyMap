@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildElectricityEstimate,
+  calculateElectricityCo2e,
   computeEnvironmentalImpactEstimate,
   normalizeEnvironmentalImpactEstimateInput,
 } from "./index";
@@ -201,7 +203,9 @@ describe("environmental impact estimator", () => {
     expect(model.lifecycle.totalKgCo2eProxy).toBe(model.infrastructure.totalKgCo2eProxy);
     expect(model.lifecycle.axisEstimates).toHaveLength(5);
     expect(model.lifecycle.componentEstimates).toHaveLength(8);
-    expect(model.lifecycle.axisEstimates[0].label).toBe("Énergie");
+    expect(model.lifecycle.axisEstimates[0].label).toBe("Équivalent électrique estimé");
+    expect(model.infrastructure.secondOrder.electricity.calculation).toBe("proxy_equivalent");
+    expect(model.infrastructure.secondOrder.electricity.kWh).toBeNull();
     expect(model.lifecycle.componentEstimates.some((item) => item.label === "Serveurs")).toBe(
       true,
     );
@@ -213,6 +217,58 @@ describe("environmental impact estimator", () => {
     expect(chatgpt?.status).toBe("derived");
     expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
     expect(chatgpt?.sourceNote).toContain("Inclus ACV");
+  });
+
+  it("keeps electricity conversion directional and explicit", () => {
+    expect(calculateElectricityCo2e(10, 0.35)).toBe(3.5);
+    expect(calculateElectricityCo2e(null, 0.35)).toBeNull();
+
+    const model = computeEnvironmentalImpactEstimate({
+      infrastructure: {
+        usage: {
+          monthlyElectricityKwh: 10,
+          monthlyPageViews: 1,
+        },
+      },
+    });
+    const electricity = model.infrastructure.secondOrder.electricity;
+    const factor = model.infrastructure.secondOrder.factorEstimates.find(
+      (item) => item.key === "electricity",
+    );
+
+    expect(electricity.calculation).toBe("measured_kwh_to_co2e");
+    expect(electricity.kWh).toBe(10);
+    expect(electricity.kgCo2e).toBe(3.5);
+    expect(factor?.quantity).toBe(10);
+    expect(factor?.estimatedKgCo2eProxy).toBe(3.5);
+    expect(model.infrastructure.secondOrder.totalKgCo2eProxy).toBeCloseTo(
+      model.infrastructure.secondOrder.factorEstimates.reduce(
+        (total, item) => total + (item.estimatedKgCo2eProxy ?? 0),
+        0,
+      ),
+      6,
+    );
+    expect(model.lifecycle.axisEstimates[0].quantity).toBe(10);
+    expect(model.lifecycle.axisEstimates[0].estimatedKgCo2eProxy).toBe(3.5);
+    expect(model.lifecycle.axisEstimates.reduce(
+      (total, item) => total + (item.estimatedKgCo2eProxy ?? 0),
+      0,
+    )).toBeCloseTo(model.lifecycle.totalKgCo2eProxy ?? 0, 6);
+  });
+
+  it("keeps missing electricity as à compléter instead of zero or a fake kWh", () => {
+    const missing = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
+    const model = computeEnvironmentalImpactEstimate();
+
+    expect(missing.calculation).toBe("missing");
+    expect(missing.kWh).toBeNull();
+    expect(missing.kgCo2e).toBeNull();
+    expect(missing.note).toContain("À compléter");
+    expect(model.methodology.notes.join(" ")).toContain("0.35 kgCO2e/kWh");
+    expect(model.methodology.notes.join(" ")).toContain("environ 7 %");
+    expect(model.methodology.notes.join(" ")).toContain("plus de 30 %");
+    expect(model.methodology.notes.join(" ")).not.toContain("un tiers du trafic");
+    expect(model.methodology.notes.join(" ")).not.toContain("la moitié");
   });
 
   it("includes Codex weekly journal metrics as a separate infrastructure service", () => {

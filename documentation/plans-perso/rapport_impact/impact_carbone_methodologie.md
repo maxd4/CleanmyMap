@@ -57,3 +57,17 @@ Le bloc impact doit toujours indiquer:
 - la cohérence avec les autres vues du projet.
 
 Si une métrique n'est pas assez fiable pour être publiée, elle doit rester en `NA`.
+
+## CO₂e électrique: mesure, calcul et équivalent proxy
+
+Le moteur distingue explicitement trois états:
+
+- `kWh × facteur électrique`: utilisé uniquement lorsqu'un signal de consommation électrique réel est fourni. Le CO₂e est alors calculé dans ce sens et ne doit pas être ajouté une seconde fois à un proxy déjà inclus dans le même total;
+- `équivalent électrique estimé`: affiché lorsque le moteur répartit un CO₂e proxy entre des familles, sans disposer de kWh. Cette valeur ne signifie pas qu'une consommation électrique a été mesurée;
+- `à compléter`: affiché lorsqu'aucun signal électrique ni proxy exploitable n'est disponible.
+
+Le facteur par défaut du moteur est centralisé à `0,35 kgCO₂e/kWh` pour des serveurs majoritairement américains. Il s'agit d'un ancrage configurable, à remplacer par un facteur eGRID régional ou une localisation électrique réelle du fournisseur dès que cette donnée est connue. Les références de cadrage sont [EPA eGRID](https://www.epa.gov/egrid), [EPA - déterminer les émissions liées à l'électricité](https://www.epa.gov/system/files/documents/2025-01/using-egrid-to-determine-emissions.pdf) et [EIA - facteurs d'émissions de l'électricité](https://www.eia.gov/tools/faqs/faq.php?id=76&t=3).
+
+Les data centers ne reçoivent pas une part de refroidissement universelle: l'IEA indique des situations pouvant aller d'environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces. Les serveurs accélérés, principalement associés à l'adoption de l'IA, sont un moteur important de la croissance prévue de la consommation des data centers; aucune part du trafic ou de l'impact de CleanMyMap n'est attribuée à l'IA sans signal spécifique. Voir [IEA, Energy and AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai).
+
+Le repère d'interface `10 kgCO₂e ≈ 70 km en voiture thermique moyenne` est une comparaison pédagogique indépendante du calcul CleanMyMap. Il est dérivé de l'ordre de grandeur `1,42 kgCO₂e/100 km` de [Impact CO₂ / Base Empreinte ADEME](https://impactco2.fr/outils/transport/itineraire?iframe=1), et ne transforme pas un proxy numérique en distance réellement parcourue.
