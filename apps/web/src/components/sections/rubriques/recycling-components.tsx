@@ -15,6 +15,7 @@ import {
   Droplets
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type RecyclingStats = {
   totalKg: number;
@@ -74,7 +75,7 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
     },
     {
       label: fr ? "Indice tri propre" : "Clean sorting index",
-      value: `${stats.mixedIndex}/100`,
+      value: formatScorePercent(stats.mixedIndex),
       icon: BarChart3,
       color: "text-purple-400",
       bg: "bg-purple-500/10",

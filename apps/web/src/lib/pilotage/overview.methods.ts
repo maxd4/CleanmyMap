@@ -48,7 +48,7 @@ export function buildMethods(): MethodDefinition[] {
       id: "quality-score",
       kpi: "Qualite data",
       formula:
-        "Moyenne des scores /100 (completude, coherence, geoloc, trace, fraicheur).",
+        "Moyenne des scores de qualité exprimés en % (completude, coherence, geoloc, trace, fraicheur).",
       source: "Moteur evaluateActionQuality centralise.",
       recalc: "A chaque chargement de page / API.",
       limits: "Score d'aide a la decision, pas un audit exhaustif.",

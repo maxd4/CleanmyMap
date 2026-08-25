@@ -19,6 +19,7 @@ import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export const runtime ="nodejs";
 
@@ -234,7 +235,7 @@ function buildMarkdownPack(payload: {
 "",
 "## Methode",
  `Version: ${payload.methodology.version} | Proxy: ${payload.methodology.proxyVersion} | Regles qualite: ${payload.methodology.qualityRulesVersion}`,
- `Score pollution moyen: ${payload.methodology.pollutionScoreAverage.toFixed(1)} / 100`,
+ `Score pollution moyen: ${formatScorePercent(payload.methodology.pollutionScoreAverage, 1)}`,
 "",
 "Formules:",
  ...payload.methodology.formulas.map((line) => `- ${line}`),

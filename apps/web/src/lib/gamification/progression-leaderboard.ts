@@ -17,6 +17,7 @@ import {
   getYearToDateStartDate,
   loadUserAnnualImpactStats,
 } from "./annual-reset";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   actionQualityScoreFromRow,
   fetchActionById,
@@ -409,7 +410,7 @@ export async function buildPostActionRetentionLoop(
   const summary = [
     `${Math.round(toFloat(action.waste_kg, 0) * 10) / 10} kg collectes`,
     `${toInt(action.cigarette_butts, 0)} megots retires`,
-    `qualite ${qualityLabel} (${qualityScore}/100)`,
+    `qualite ${qualityLabel} (${formatScorePercent(qualityScore)})`,
   ].join(" - ");
 
   const shareText =

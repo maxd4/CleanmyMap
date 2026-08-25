@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from"react";
 import type { PilotageComparisonResult } from"@/lib/pilotage/metrics";
 import { KpiComparisonCard } from"./kpi-comparison-card";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export type KpiCardKey =
  |"actions"
@@ -93,8 +94,8 @@ export function KpiComparisonGrid({
  quality: (
  <KpiComparisonCard
  label={mergedLabels.quality}
- value={`${comparison.current.qualityScore.toFixed(1)}/100`}
- previousValue={`${comparison.previous.qualityScore.toFixed(1)}/100`}
+ value={formatScorePercent(comparison.current.qualityScore, 1)}
+ previousValue={formatScorePercent(comparison.previous.qualityScore, 1)}
  deltaAbsolute={signed(comparison.metrics.qualityScore.deltaAbsolute)}
  deltaPercent={signed(comparison.metrics.qualityScore.deltaPercent,"%")}
  interpretation={comparison.metrics.qualityScore.interpretation}

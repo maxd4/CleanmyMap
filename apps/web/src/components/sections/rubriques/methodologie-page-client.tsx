@@ -404,14 +404,14 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
           {
             title: isFrench ? "Pollution constatée" : "Observed pollution",
             text: isFrench
-              ? "Score historique S/100 constaté avant l'action. Il n'est jamais réécrit par le temps."
-              : "Historical score S/100 observed before the action. Time never rewrites it.",
+              ? "Score historique S exprimé en % constaté avant l'action. Il n'est jamais réécrit par le temps."
+              : "Historical score S expressed as % observed before the action. Time never rewrites it.",
           },
           {
             title: isFrench ? "Pollution projetée" : "Projected pollution",
             text: isFrench
-              ? "Estimation P/100 calculée depuis le score historique et le temps écoulé."
-              : "Estimate P/100 calculated from the historical score and elapsed time.",
+              ? "Estimation P exprimée en % calculée depuis le score historique et le temps écoulé."
+              : "Estimate P expressed as % calculated from the historical score and elapsed time.",
           },
           {
             title: isFrench ? "Dernière action" : "Last action",

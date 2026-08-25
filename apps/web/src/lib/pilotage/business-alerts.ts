@@ -3,6 +3,7 @@ import { mapItemType } from "../actions/data-contract";
 import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { ActionMapItem, ActionListItem } from "../actions/types";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export type AlertSeverity = "high" | "medium" | "low";
 
@@ -169,7 +170,7 @@ export function computeBusinessAlerts(params: {
         title: "Fiabilite data en degradation",
         severity,
         ageLabel: "Fenetre 90 jours",
-        impactLabel: `Score moyen ${round1(averageQuality)}/100, part C ${round1(gradeCShare * 100)}%`,
+        impactLabel: `Score moyen ${formatScorePercent(averageQuality, 1)}, part C ${round1(gradeCShare * 100)}%`,
         actionHref: "/actions/history",
         actionLabel: "Corriger les lignes faibles",
       });

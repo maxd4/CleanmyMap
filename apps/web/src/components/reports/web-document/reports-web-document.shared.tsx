@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { toFrOptionalNumber } from "@/lib/reports/report-model";
 import type { ReportModel } from "@/lib/reports/report-model/types";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   buildReportDataAvailabilityNotices,
   type ReportDataAvailability,
@@ -371,7 +372,7 @@ export function buildPdfData(params: {
       stats: [
         { label: "Actions validées", value: report.totals.actions },
         { label: "Volume collecte", value: `${report.totals.kg.toFixed(1)} kg` },
-        { label: "Crédibilité data", value: `${executive.readinessScore.toFixed(1)} / 100` },
+        { label: "Crédibilité data", value: formatScorePercent(executive.readinessScore, 1) },
         { label: "Géolocalisation", value: `${report.map.geoCoverage.toFixed(1)}%` },
       ],
     },
@@ -446,11 +447,11 @@ export function buildPdfData(params: {
         { label: "Émissions évitées (proxy)", value: `${report.climate.co2AvoidedKg.toFixed(1)} kg` },
         { label: "Eau préservée (proxy)", value: `${report.climate.waterProtectedLiters.toFixed(0)} L` },
         { label: "Économie de voirie (proxy)", value: `${(report.climate.streetCleaningSavingsEuros ?? 0).toFixed(0)} €` },
-        { label: "Indice de pollution", value: `${report.impactMethodology.pollutionScoreAverage.toFixed(1)} / 100` },
+        { label: "Indice de pollution", value: formatScorePercent(report.impactMethodology.pollutionScoreAverage, 1) },
       ],
       lines: [
         `Surface d’action proxy: ${surfaceProxy.toFixed(1)} m².`,
-        `Indice de tri propre: ${report.recycling.triIndex.toFixed(1)} / 100.`,
+        `Indice de tri propre: ${formatScorePercent(report.recycling.triIndex, 1)}.`,
       ],
     },
     visibleDefaultDetail

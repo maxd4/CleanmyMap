@@ -2,13 +2,14 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
 import { resolveItemPollutionScores } from "@/components/actions/map-marker-categories";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export function formatNumber(value: number, suffix = ""): string {
   return `${value.toLocaleString("fr-FR")}${suffix}`;
 }
 
 export function formatThresholdScore(value: number): string {
-  return `${value.toFixed(1)}/100`;
+  return formatScorePercent(value, 1);
 }
 
 export function getInfrastructureReading(

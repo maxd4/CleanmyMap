@@ -2,6 +2,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { ActionListItem, ActionMapItem, ActionQualityGrade } from "@/lib/actions/types";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   buildJoinHref,
   canManageGroupJoin,
@@ -147,7 +148,7 @@ export function ActionsHistoryListTable({
                             quality.grade,
                           )}`}
                         >
-                          {quality.grade} ({quality.score}/100)
+                          {quality.grade} ({formatScorePercent(quality.score)})
                         </span>
                         <p className="max-w-48 truncate cmm-text-caption cmm-text-muted">
                           {quality.flags[0]

@@ -4,6 +4,7 @@ import { BarChart3, FileText, ShieldCheck, Target, TriangleAlert } from "lucide-
 import { MetricCard } from "./ui";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { buildExecutiveNarrative, toFrInt, toFrNumber } from "@/lib/reports/report-model";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type ReportCoverProps = {
   id?: string;
@@ -75,7 +76,7 @@ export function ReportCover({
             />
             <MetricCard
               label="Crédibilité data"
-              value={`${toFrNumber(narrative.readinessScore)} / 100`}
+              value={formatScorePercent(narrative.readinessScore)}
               hint="Synthèse qualité + modération"
             />
             <MetricCard

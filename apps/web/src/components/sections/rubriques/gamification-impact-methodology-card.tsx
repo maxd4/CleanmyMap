@@ -2,6 +2,7 @@
 
 import { Info, Calculator, FlaskConical, Target, AlertCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type ImpactMethodology = {
   proxyVersion: string;
@@ -60,7 +61,7 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
              <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Score Pollution Moyen</p>
            <div className="flex items-center gap-2">
               <Sparkles size={14} className="text-rose-400 animate-pulse" />
-              <p className="text-2xl font-black text-white tracking-tighter">{methodology.pollutionScoreAverage.toFixed(1)}<span className="text-sm text-slate-500">/100</span></p>
+              <p className="text-2xl font-black text-white tracking-tighter">{formatScorePercent(methodology.pollutionScoreAverage, 1)}</p>
            </div>
         </div>
       </div>

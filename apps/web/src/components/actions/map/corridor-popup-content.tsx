@@ -12,6 +12,7 @@ import {
   formatObservedDate,
 } from "./action-popup-content.helpers";
 import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type CorridorPopupContentProps = {
   corridorItems: readonly ActionMapItem[];
@@ -141,7 +142,7 @@ export function CorridorPopupContent({
             </p>
             {summary.scoreEvolution ? (
               <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {summary.scoreEvolution.first}/100 → {summary.scoreEvolution.latest}/100
+                {formatScorePercent(summary.scoreEvolution.first)} → {formatScorePercent(summary.scoreEvolution.latest)}
                 <span className="ml-2 text-xs font-semibold text-slate-500">
                   ({summary.scoreEvolution.delta >= 0 ? "+" : ""}
                   {summary.scoreEvolution.delta})
@@ -160,7 +161,7 @@ export function CorridorPopupContent({
                 État / projection courant
               </p>
               <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                Pollution projetée : {Math.round(summary.latestProjection.projectedScore)}/100
+                Pollution projetée : {formatScorePercent(Math.round(summary.latestProjection.projectedScore))}
               </p>
               <p className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                 {summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel

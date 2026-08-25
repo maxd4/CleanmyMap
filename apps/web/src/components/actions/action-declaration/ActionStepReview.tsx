@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionDataQualityResult } from "../action-declaration-form.quality";
@@ -144,7 +145,7 @@ export function ActionStepReview({
               <circle
                 strokeWidth="9"
                 strokeDasharray={2 * Math.PI * 40}
-                strokeDashoffset={2 * Math.PI * 40 * (1 - dataQuality.score / 100)}
+                strokeDashoffset={2 * Math.PI * 40 * (1 - dataQuality.score / SCORE_SCALE)}
                 strokeLinecap="round"
                 stroke={dataQuality.score >= 55 ? "#10b981" : dataQuality.score >= 35 ? "#f59e0b" : "#f43f5e"}
                 fill="transparent"
@@ -153,8 +154,9 @@ export function ActionStepReview({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-slate-900">{dataQuality.score}</span>
-              <span className="text-[9px] font-bold text-slate-400">/100</span>
+              <span className="text-xl font-black text-slate-900">
+                {formatScorePercent(dataQuality.score)}
+              </span>
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import { KpiComparisonCard } from"@/components/pilotage/kpi-comparison-card";
 import type { PilotageOverview } from"@/lib/pilotage/overview";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type DashboardComparisonGridProps = {
  overview: PilotageOverview | null;
@@ -74,8 +75,8 @@ export function DashboardComparisonGrid({
  />
  <KpiComparisonCard
  label={labelWithTooltip("Qualite data")}
- value={`${overview.comparison.current.qualityScore.toFixed(1)}/100`}
- previousValue={`${overview.comparison.previous.qualityScore.toFixed(1)}/100`}
+ value={formatScorePercent(overview.comparison.current.qualityScore, 1)}
+ previousValue={formatScorePercent(overview.comparison.previous.qualityScore, 1)}
  deltaAbsolute={`${overview.comparison.metrics.qualityScore.deltaAbsolute >= 0 ?"+" :""}${overview.comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)}`}
  deltaPercent={`${overview.comparison.metrics.qualityScore.deltaPercent >= 0 ?"+" :""}${overview.comparison.metrics.qualityScore.deltaPercent.toFixed(1)}%`}
  interpretation={overview.comparison.metrics.qualityScore.interpretation}

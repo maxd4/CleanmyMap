@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { SCORE_SCALE } from "@/lib/formatters/score";
 
 interface RadialProgressGaugeProps {
   value: number; // 0 to 100
@@ -21,7 +22,7 @@ export function RadialProgressGauge({
 }: RadialProgressGaugeProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (value / 100) * circumference;
+  const offset = circumference - (value / SCORE_SCALE) * circumference;
 
   const colorClasses = {
     red: "stroke-red-500",

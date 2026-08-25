@@ -4,6 +4,7 @@ import { OperationAuditTimeline } from "@/components/actions/operation-audit-tim
 import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
 import { formatDate } from "./actions-history-list.helpers";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 type ActionQualityResult = {
   score: number;
@@ -85,7 +86,7 @@ export function ActionsHistoryListDetails({
       </p>
       <p className="mt-1 cmm-text-small cmm-text-secondary">
         <span className="font-semibold">
-          {selectedQuality.grade} ({selectedQuality.score}/100)
+          {selectedQuality.grade} ({formatScorePercent(selectedQuality.score)})
         </span>
         {" "}
         - points perdus: {selectedLostPoints}
