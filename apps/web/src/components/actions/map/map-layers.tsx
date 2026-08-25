@@ -14,6 +14,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import { divIcon, type Map as LeafletMap } from "leaflet";
 import { Info } from "lucide-react";
 import { ActionMapItem } from "@/lib/actions/types";
+import type { ActionDataContract } from "@/lib/actions/contract-model";
 import {
   mapItemCoordinates,
   mapItemObservedAt,
@@ -30,6 +31,10 @@ import {
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
+import {
+  findCorridorHistoryForAction,
+  groupActionsByCorridor,
+} from "@/lib/actions/corridor-history";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import { ActionPopupContent } from "./action-popup-content";
 import {
@@ -248,6 +253,19 @@ export function ShapeLayers({
   const map = useMap();
   const now = new Date();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+  const actionItemsById = new Map(
+    items
+      .filter((item) => item.contract)
+      .map((item) => [
+        item.id,
+        item,
+      ] as const),
+  );
+  const corridorHistories = groupActionsByCorridor(
+    items
+      .filter((item) => item.contract)
+      .map((item) => item.contract as unknown as ActionDataContract),
+  );
 
   useEffect(() => {
     if (!selectedActionId) {
@@ -299,6 +317,14 @@ export function ShapeLayers({
         );
         const geometryMetricLabel = geometry.metrics.label;
         const isSelected = selectedActionId === item.id;
+        const corridorHistory = isActionMapItem(item)
+          ? findCorridorHistoryForAction(corridorHistories, item.id)
+          : null;
+        const corridorItems = corridorHistory && corridorHistory.actions.length >= 2
+          ? corridorHistory.actions
+              .map((action) => actionItemsById.get(action.id))
+              .filter((candidate): candidate is ActionMapItem => Boolean(candidate))
+          : undefined;
         const endpointMarkers = isActionMapItem(item)
           ? resolvePolylineEndpointMarkers(geometry)
           : null;
@@ -306,6 +332,12 @@ export function ShapeLayers({
           isActionMapItem(item) && geometry.positions.length > 1
             ? () => fitActionGeometryBounds(map, geometry.positions)
             : undefined;
+        const onViewGeometryForItem = (targetItem: ActionMapItem) => {
+          const targetGeometry = resolveActionMapGeometryViewModel(targetItem);
+          if (targetGeometry.positions.length > 1) {
+            fitActionGeometryBounds(map, targetGeometry.positions);
+          }
+        };
 
         if (geometry.kind === "polygon") {
           return (
@@ -357,6 +389,12 @@ export function ShapeLayers({
                   color={color}
                   coords={coords}
                   onViewGeometry={onViewGeometry}
+                  corridorItems={corridorItems}
+                  corridorHistory={corridorHistory ?? undefined}
+                  onViewGeometryForItem={onViewGeometryForItem}
+                  resolveColorForItem={(targetItem) =>
+                    resolvePointColor(targetItem, references, now)
+                  }
                 />
               </Popup>
             </Polygon>
@@ -412,6 +450,12 @@ export function ShapeLayers({
                   color={color}
                   coords={coords}
                   onViewGeometry={onViewGeometry}
+                  corridorItems={corridorItems}
+                  corridorHistory={corridorHistory ?? undefined}
+                  onViewGeometryForItem={onViewGeometryForItem}
+                  resolveColorForItem={(targetItem) =>
+                    resolvePointColor(targetItem, references, now)
+                  }
                 />
               </Popup>
             </Polyline>

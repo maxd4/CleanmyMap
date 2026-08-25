@@ -9,3 +9,4 @@ export * from "./local-repollution-calibration";
 export * from "./repollution-prediction-evaluation";
 export * from "./repollution-prediction-evaluation-store";
 export * from "./current-place-state";
+export * from "./corridor-history";

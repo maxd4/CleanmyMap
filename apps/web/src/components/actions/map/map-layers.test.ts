@@ -67,12 +67,17 @@ vi.mock("./action-pollution-score-references-context", () => ({
 vi.mock("./action-popup-content", () => ({
   ActionPopupContent: ({
     onViewGeometry,
+    corridorItems,
   }: {
     onViewGeometry?: () => void;
+    corridorItems?: readonly ActionMapItem[];
   }) =>
     React.createElement(
       "div",
-      { "data-has-view-geometry": Boolean(onViewGeometry) },
+      {
+        "data-has-view-geometry": Boolean(onViewGeometry),
+        "data-corridor-count": corridorItems?.length ?? 0,
+      },
       "Popup",
     ),
 }));
@@ -157,23 +162,30 @@ describe("ShapeLayers", () => {
     type: "action" | "spot",
     wasteKg: number,
     kind: "polyline" | "polygon" = "polyline",
+    overrides: {
+      id?: string;
+      day?: number;
+      coordinates?: [number, number][];
+    } = {},
   ): ActionMapItem {
     return toActionMapItem(
       buildActionDataContract({
-        id: `${type}-shape`,
+        id: overrides.id ?? `${type}-shape`,
         type,
         status: "approved",
         source: type === "action" ? "actions" : "spots",
-        observedAt: "2026-06-01",
+        observedAt: overrides.day ? `2026-06-${String(overrides.day).padStart(2, "0")}` : "2026-06-01",
         locationLabel: "Quai de test",
         latitude: 48.8566,
         longitude: 2.3522,
         wasteKg,
         cigaretteButts: 25,
+        volunteersCount: 1,
+        durationMinutes: 30,
         manualDrawing: {
           kind,
-          coordinates:
-            kind === "polygon"
+          coordinates: overrides.coordinates ??
+            (kind === "polygon"
               ? [
                   [48.8566, 2.3522],
                   [48.8576, 2.3522],
@@ -182,7 +194,7 @@ describe("ShapeLayers", () => {
               : [
                   [48.8566, 2.3522],
                   [48.8576, 2.3532],
-                ],
+                ]),
         },
       }),
     );
@@ -261,6 +273,52 @@ describe("ShapeLayers", () => {
     expect(markup).toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
     expect(markup).toContain('data-opacity="0"');
     expect(markup).toContain('data-has-view-geometry="true"');
+  });
+
+  it("passes repeated corridor actions to one multi-action popup context", () => {
+    const first = buildShapeItem("action", 80, "polyline", {
+      id: "corridor-old",
+      day: 1,
+    });
+    const recent = buildShapeItem("action", 70, "polyline", {
+      id: "corridor-new",
+      day: 2,
+    });
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [first, recent],
+      }),
+    );
+
+    expect(markup).toContain('data-corridor-count="2"');
+  });
+
+  it("keeps crossing routes in separate popup contexts", () => {
+    const vertical = buildShapeItem("action", 80, "polyline", {
+      id: "corridor-vertical",
+      coordinates: [
+        [48.856, 2.352],
+        [48.857, 2.352],
+        [48.858, 2.352],
+      ],
+    });
+    const horizontal = buildShapeItem("action", 70, "polyline", {
+      id: "corridor-horizontal",
+      coordinates: [
+        [48.857, 2.3505],
+        [48.857, 2.352],
+        [48.857, 2.3535],
+      ],
+    });
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [vertical, horizontal],
+      }),
+    );
+
+    expect(markup).not.toContain('data-corridor-count="2"');
   });
 
   it("keeps the explicit framing action for action polygons without adding a hit-area to spots", () => {

@@ -2,6 +2,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
+import { ActionPopupContent } from "./action-popup-content";
 import { resolveActionTitle } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
@@ -31,6 +33,37 @@ function buildActionItem(
 }
 
 describe("action popup presentation", () => {
+  it("keeps the existing single-action popup without corridor tabs", () => {
+    const item = toActionMapItem(
+      buildActionDataContract({
+        id: "single-action",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        observedAt: "2026-04-08",
+        locationLabel: "Quai de test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        wasteKg: 5,
+        cigaretteButts: 42,
+        volunteersCount: 2,
+        durationMinutes: 45,
+      }),
+    );
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContent, {
+        item,
+        color: "hsl(35, 90%, 50%)",
+        coords: { latitude: 48.8566, longitude: 2.3522 },
+      }),
+    );
+
+    expect(markup).not.toContain("Parcours récurrent");
+    expect(markup).not.toContain("Synthèse");
+    expect(markup).toContain("Déchets collectés");
+  });
+
   it("uses actionTitle and falls back to the location", () => {
     expect(resolveActionTitle(buildActionItem({ actionTitle: "Nettoyage du quai" }))).toBe(
       "Nettoyage du quai",
