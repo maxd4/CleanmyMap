@@ -58,3 +58,33 @@ créer une table de taxonomie couplée à la source Trash Spotter.
 - Les formulaires, la carte et les quiz peuvent afficher des vues adaptées,
   mais ne doivent pas créer une deuxième définition contradictoire d'une
   catégorie.
+
+## Limites métier des catégories sensibles
+
+### `medicine`
+
+`medicine` désigne un médicament non utilisé, périmé ou un contenant qui porte
+encore du médicament. La consigne de référence est le retour en pharmacie dans
+le périmètre de Cyclamed. Une boîte, un blister, un flacon ou un autre emballage
+totalement vide ne doit pas être envoyé automatiquement en pharmacie : sa
+matière et la consigne locale de tri déterminent la suite. Le référentiel ne
+choisit pas la filière locale à la place de la collectivité.
+
+Référence interne : [Info-tri médicament Adelphe / Cyclamed](https://www.cyclamed.org/wp-content/uploads/2025/07/ADELPHE_CYCLAMED_FICHE-REFLEXE_INFO_TRI-MEDICAMENT.pdf), qui distingue les emballages vides des emballages contenant encore un médicament.
+
+### `sharps`
+
+`sharps` est réservé aux seringues et aiguilles à risque, notamment lorsqu'une
+seringue ou une aiguille est trouvée sur le terrain. La politique reste
+`no_pickup` : ne pas ramasser, sécuriser la zone et signaler au service local ou
+habilité approprié. Les lames, cutters et objets coupants génériques ne sont
+pas assimilés à cette catégorie ; ils nécessitent leur propre description et la
+consigne locale appropriée, généralement via `other` lorsque le référentiel ne
+permet pas une qualification plus précise.
+
+DASTRI n'est pas une filière universelle pour tout objet trouvé : son périmètre
+concerne les DASRI perforants produits par les patients en auto-traitement et
+les utilisateurs d'autotests de diagnostic. La décision runtime ne déduit donc
+pas automatiquement « DASTRI » d'un signalement de terrain.
+
+Références internes : [DASTRI — qui sommes-nous ?](https://www.dastri.fr/qui-sommes-nous/) et [DASTRI — autres profils et limites d'agrément](https://www.dastri.fr/espace-dedie-autres-profils/).

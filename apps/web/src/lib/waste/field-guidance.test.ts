@@ -32,10 +32,19 @@ describe("canonical waste field guidance", () => {
     expect(guidance.toAvoid.join(" ")).toMatch(/mains nues|sac souple|mélanger/i);
     expect(guidance.toReport.join(" ")).toMatch(/signaler|service|contenant/i);
     expect(guidance.disposalRoutes).toEqual(expect.arrayContaining([
-      "Service autorisé pour objets piquants/coupants",
+      "Ne pas ramasser ; signaler au service local ou habilité approprié",
       "Point de collecte piles/batteries",
-      "Retour en pharmacie ou filière autorisée",
+      "Médicament non utilisé : pharmacie / Cyclamed ; emballage vide : tri local selon le matériau",
     ]));
+  });
+
+  it("derives bounded medicine and sharps reporting guidance", () => {
+    const guidance = buildWasteFieldGuidance(["medicine", "sharps"]);
+
+    expect(guidance.toReport.join(" ")).toMatch(/pharmacie.*Cyclamed/i);
+    expect(guidance.toReport.join(" ")).toMatch(/ne pas ramasser.*service local.*habilité/i);
+    expect(guidance.toAvoid.join(" ")).toMatch(/totalement vide.*pharmacie/i);
+    expect(guidance.toAvoid.join(" ")).toMatch(/lame.*objet coupant générique/i);
   });
 
   it("keeps manual notes and adds derived preparation guidance", () => {
