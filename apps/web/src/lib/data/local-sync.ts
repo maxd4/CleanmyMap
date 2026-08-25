@@ -65,6 +65,14 @@ function toLocalRecordStatusFromSpotStatus(status: string): LocalRecordStatus {
   return "pending";
 }
 
+function toLocalRecordTypeFromSpotType(
+  spotType: string | null | undefined,
+): LocalRecordType {
+  return String(spotType ?? "").trim().toLowerCase() === "clean_place"
+    ? "clean_place"
+    : "other";
+}
+
 function fromActionRow(
   row: ActionRow,
   source: LocalRecordSource,
@@ -160,7 +168,7 @@ function fromModeratedSignalement(
   }
   return {
     id: `validated-spot-${row.id}`,
-    recordType: "clean_place",
+    recordType: toLocalRecordTypeFromSpotType(row.spot_type),
     status: toLocalRecordStatusFromSpotStatus(row.status),
     source,
     title: row.label,
