@@ -45,10 +45,13 @@ import {
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
+  formatActionGeometryTooltipTitle,
+  resolveGeometryConfidenceLabel,
   resolveActionMapGeometryViewModel,
   resolveInfrastructureAnchor,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
+import { isActionMapItem } from "./action-popup-content.helpers";
 import {
   INFRASTRUCTURE_ALERT_THRESHOLD,
 } from "@/components/actions/map-marker-categories";
@@ -57,10 +60,16 @@ type LeafletClusterLike = {
   getChildCount: () => number;
 };
 
-function resolvePointColor(
+export const ACTION_MAP_COLOR = "#0284c7";
+
+export function resolvePointColor(
   item: ActionMapItem,
   references?: PollutionScoreReferences | null,
 ): string {
+  if (isActionMapItem(item)) {
+    return ACTION_MAP_COLOR;
+  }
+
   const score = resolveItemPollutionScores(item, references).severityScore;
   if (
     (mapItemWasteKg(item) ?? 0) <= 0 &&
@@ -245,7 +254,8 @@ export function ShapeLayers({
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const geometryModeLabel = formatGeometryModeLabel(geometry.presentation);
         const geometryPointsLabel = formatGeometryPointCount(geometry.pointCount);
-        const geometryConfidenceLabel = formatGeometryConfidenceLabel(
+        const geometryConfidenceLabel = resolveGeometryConfidenceLabel(
+          geometry.presentation,
           geometry.confidence,
         );
         const geometryMetricLabel = geometry.metrics.label;
@@ -278,7 +288,14 @@ export function ShapeLayers({
             >
             <Tooltip className="glass-tooltip" direction="auto" sticky>
                 <GeometryTooltipContent
-                  title={`Zone ${Math.round(score)}%`}
+                  title={
+                    isActionMapItem(item)
+                      ? formatActionGeometryTooltipTitle(
+                          "polygon",
+                          geometryMetricLabel,
+                        )
+                      : `Zone ${Math.round(score)}%`
+                  }
                   geometryModeLabel={geometryModeLabel}
                   geometryPointsLabel={geometryPointsLabel}
                   geometryMetricLabel={geometryMetricLabel}
@@ -323,7 +340,14 @@ export function ShapeLayers({
           >
             <Tooltip className="glass-tooltip" direction="auto" sticky>
               <GeometryTooltipContent
-                title={`Trace ${Math.round(score)}%`}
+                title={
+                  isActionMapItem(item)
+                    ? formatActionGeometryTooltipTitle(
+                        "polyline",
+                        geometryMetricLabel,
+                      )
+                    : `Trace ${Math.round(score)}%`
+                }
                 geometryModeLabel={geometryModeLabel}
                 geometryPointsLabel={geometryPointsLabel}
                 geometryMetricLabel={geometryMetricLabel}

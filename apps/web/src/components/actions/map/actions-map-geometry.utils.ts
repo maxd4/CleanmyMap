@@ -161,6 +161,17 @@ function formatAreaLabel(squareMeters: number): string {
   return `Surface ~ ${Math.round(squareMeters)} m²`;
 }
 
+export function formatActionGeometryTooltipTitle(
+  kind: "polyline" | "polygon",
+  metricLabel: string | null,
+): string {
+  if (kind === "polygon") {
+    return `Zone d'action · ${metricLabel ?? "Surface ~ …"}`;
+  }
+
+  return `Action · ${metricLabel ?? "Longueur ~ …"}`;
+}
+
 function resolveGeometryMetric(
   kind: ActionGeometryKind | "point" | null,
   coordinates: CoordinatePair[],
@@ -392,6 +403,15 @@ export function formatGeometryConfidenceLabel(
   }
 
   return `Confiance ${Math.round(confidence * 100)}%`;
+}
+
+export function resolveGeometryConfidenceLabel(
+  presentation: Pick<GeometryPresentation, "reality">,
+  confidence: number | null,
+): string | null {
+  return presentation.reality === "estimated"
+    ? formatGeometryConfidenceLabel(confidence)
+    : null;
 }
 
 export function formatGeometryModeLabel(

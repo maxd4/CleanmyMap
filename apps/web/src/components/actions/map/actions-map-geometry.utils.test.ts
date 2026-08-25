@@ -6,9 +6,11 @@ import {
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
+  formatActionGeometryTooltipTitle,
   normalizeActionDrawing,
   summarizeActionDrawingValidation,
   resolveActionMapGeometryViewModel,
+  resolveGeometryConfidenceLabel,
   resolveInfrastructureAnchor,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
@@ -29,6 +31,46 @@ function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
 }
 
 describe("actions map geometry utils", () => {
+  it("uses métier labels for action polyline and polygon tooltips", () => {
+    expect(
+      formatActionGeometryTooltipTitle("polyline", "Longueur ~ 1,2 km"),
+    ).toBe("Action · Longueur ~ 1,2 km");
+    expect(
+      formatActionGeometryTooltipTitle("polygon", "Surface ~ 850 m²"),
+    ).toBe("Zone d'action · Surface ~ 850 m²");
+  });
+
+  it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
+    expect(
+      resolveGeometryConfidenceLabel({ reality: "real" }, 0.95),
+    ).toBeNull();
+    expect(
+      resolveGeometryConfidenceLabel({ reality: "estimated" }, 0.6),
+    ).toBe("Confiance 60%");
+    expect(
+      resolveGeometryRenderStyle({
+        kind: "polyline",
+        presentation: {
+          origin: "routed",
+          reality: "estimated",
+          label: "Géométrie estimée · routée",
+          strokeStyle: "dashed",
+        },
+      }).dashArray,
+    ).toBe("8 8");
+    expect(
+      resolveGeometryRenderStyle({
+        kind: "polyline",
+        presentation: {
+          origin: "manual",
+          reality: "real",
+          label: "Géométrie réelle · manuelle",
+          strokeStyle: "solid",
+        },
+      }).dashArray,
+    ).toBeUndefined();
+  });
+
   it("normalizes drawing coordinates and rejects incomplete tracés", () => {
     expect(
       normalizeActionDrawing({
