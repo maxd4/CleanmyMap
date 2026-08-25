@@ -21,12 +21,9 @@ function normalizePollutionScoreReferenceRows(
   return [];
 }
 
-function resolvePollutionScoreReferenceValue(
-  value: number | null | undefined,
-  fallback: number,
-): number {
+function isPositiveFiniteReference(value: number | null | undefined): value is number {
   const candidate = Number(value ?? 0);
-  return Number.isFinite(candidate) && candidate > 0 ? candidate : fallback;
+  return Number.isFinite(candidate) && candidate > 0;
 }
 
 export async function fetchActionPollutionScoreReferences(
@@ -41,14 +38,15 @@ export async function fetchActionPollutionScoreReferences(
   const rows = normalizePollutionScoreReferenceRows(result.data);
   const row = rows[0] ?? null;
 
-  return {
-    wastePerVolunteer: resolvePollutionScoreReferenceValue(
-      row?.waste_per_volunteer,
-      DEFAULT_POLLUTION_SCORE_REFERENCES.wastePerVolunteer,
-    ),
-    buttsPerVolunteer: resolvePollutionScoreReferenceValue(
-      row?.butts_per_volunteer,
-      DEFAULT_POLLUTION_SCORE_REFERENCES.buttsPerVolunteer,
-    ),
-  };
+  if (
+    isPositiveFiniteReference(row?.waste_per_volunteer) &&
+    isPositiveFiniteReference(row?.butts_per_volunteer)
+  ) {
+    return {
+      wastePerVolunteer: Number(row.waste_per_volunteer),
+      buttsPerVolunteer: Number(row.butts_per_volunteer),
+    };
+  }
+
+  return DEFAULT_POLLUTION_SCORE_REFERENCES;
 }

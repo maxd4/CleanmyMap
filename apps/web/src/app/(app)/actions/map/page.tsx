@@ -98,7 +98,7 @@ function ActionsMapPageContent() {
     recenterViewport,
     handleManualViewportInteraction,
     handleViewportChange,
-  } = useActionsMapViewport(undefined, references);
+  } = useActionsMapViewport();
   const mapExportTargetRef = useRef<HTMLDivElement | null>(null);
   const handleSelectAction = (actionId: string) => {
     setSelectedActionId((current) => (current === actionId ? null : actionId));

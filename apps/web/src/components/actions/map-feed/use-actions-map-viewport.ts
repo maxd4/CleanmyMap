@@ -5,8 +5,6 @@ import {
   createActionsMapViewport,
 } from "@/components/actions/actions-map-canvas.utils";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
-import { fetchMapActions } from "@/lib/actions/map-http";
 import {
   resolveInitialMapViewport,
   selectMapReferencePoint,
@@ -62,7 +60,6 @@ export function shouldApplyAutomaticViewport(params: {
 
 export function useActionsMapViewport(
   onViewportChange?: (viewport: MapViewportState) => void,
-  pollutionScoreReferences?: PollutionScoreReferences | null,
 ) {
   const [viewport, setViewport] = useState<MapViewportState | null>(
     DEFAULT_ACTIONS_MAP_VIEWPORT,
@@ -90,8 +87,6 @@ export function useActionsMapViewport(
         try {
           const resolution = await resolveInitialMapViewport({
             reference,
-            pollutionScoreReferences,
-            fetchActions: fetchMapActions,
           });
           nextViewport = resolution.viewport;
         } catch {
@@ -118,7 +113,7 @@ export function useActionsMapViewport(
       setViewportRequestKey((current) => current + 1);
       setViewport(nextViewport);
     },
-    [pollutionScoreReferences],
+    [],
   );
 
   const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
