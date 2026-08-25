@@ -108,6 +108,26 @@ Après application complète :
 - CLI, tests et docs alignés ;
 - moins de risque d'agent sur le mauvais chemin.
 
+## Opérations temporaires de benchmark
+
+Une activation ou désactivation temporaire d'extension réalisée pour un
+benchmark, un debug ou un bridge d'image distant ne constitue pas un état
+durable du schéma canonique. Elle ne doit donc pas être ajoutée comme SQL
+rejouable dans une migration applicative.
+
+Les versions historiques `20260819142956`, `20260819143518`, `20260819154147`
+et `20260825130153` sont conservées avec leurs noms et timestamps uniquement
+pour aligner l'arbre local sur un historique Supabase déjà enregistré. Elles
+restent volontairement des migrations no-op documentées : un `db reset` ou un
+replay neuf ne doit ni installer ni supprimer `pg_net` ou `http` par leur
+intermédiaire.
+
+Toute opération de benchmark distante doit suivre sa propre procédure
+ponctuelle, avec vérification de l'effet final et sans `DROP EXTENSION ...
+CASCADE` dans le chemin canonique. Une extension ne doit être imposée par les
+migrations que si elle appartient réellement au contrat durable de
+l'application.
+
 Le rollback du changement de dépôt consiste à restaurer le commit de ce lot.
 Cela ne remplace pas une vérification de l'historique de migrations d'une base
 distante avant déploiement.

@@ -5,6 +5,10 @@ function readMigration(filename: string): string {
   return readFileSync(new URL(`../../../supabase/migrations/${filename}`, import.meta.url), "utf8");
 }
 
+function stripSqlComments(sql: string): string {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--[^\r\n]*/g, "");
+}
+
 describe("recovered Supabase migrations", () => {
   it("keeps the action phase columns required by current routes and stores", () => {
     const migration = readMigration("20260706000001_actions_phase_preparation_data.sql");
@@ -43,5 +47,23 @@ describe("recovered Supabase migrations", () => {
     expect(migration).not.toContain("create or replace function public.current_profile_arrondissement");
     expect(migration).not.toContain("create or replace function public.can_profile_view_territory_message");
     expect(migration).not.toContain("create or replace function public.create_chat_notifications_for_message");
+  });
+
+  it("keeps temporary benchmark extension history as documented no-ops", () => {
+    const historicalTemporaryMigrations = [
+      "20260819142956_temp_enable_pg_net_for_benchmark_fetch.sql",
+      "20260819143518_temp_disable_pg_net_after_benchmark_fetch.sql",
+      "20260819154147_temporary_enable_http_for_benchmark_image_bridge.sql",
+      "20260825130153_disable_temporary_http_extension.sql",
+    ];
+
+    for (const filename of historicalTemporaryMigrations) {
+      const migration = readMigration(filename);
+
+      expect(migration).toMatch(/historical no-op/i);
+      expect(stripSqlComments(migration).trim()).toBe("");
+      expect(migration).not.toMatch(/\b(?:create|drop)\s+extension\b/i);
+      expect(migration).not.toMatch(/\bdrop\s+extension\b[^;]*\bcascade\b/i);
+    }
   });
 });

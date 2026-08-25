@@ -1,1 +1,4 @@
-drop extension if exists http;
+-- Historical no-op kept for Supabase migration-history alignment.
+-- The original operation was a temporary benchmark action and must not run
+-- during a fresh replay of the canonical schema.
+-- Do not reintroduce extension SQL in this version.
