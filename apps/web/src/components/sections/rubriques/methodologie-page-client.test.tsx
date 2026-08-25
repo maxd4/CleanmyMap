@@ -20,6 +20,11 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("Pollution constatée");
     expect(markup).toContain("Pollution projetée");
     expect(markup).toContain("Dernière action");
+    expect(markup).toContain("État courant par lieu");
+    expect(markup).toContain("Pollution observée · niveau non quantifié");
+    expect(markup).toContain("scoreKind measured|projected|unavailable");
+    expect(markup).toContain("Un spot ponctuel ne recolore jamais une polyline");
+    expect(markup).toContain("le read path actuel ne fabrique aucune donnée");
     expect(markup).toContain(projection.t80Formula);
     expect(markup).toContain(projection.projectionFormula);
     expect(markup).toContain("pas une mesure en temps réel");

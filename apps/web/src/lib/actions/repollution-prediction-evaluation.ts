@@ -12,8 +12,8 @@ import {
   normalizeDerivedPlaceLabel,
   selectLocalActionProjectionCalibration,
   type DerivedPlaceObservation,
+  type DerivedPlaceHistory,
   type DeriveLocalRepollutionHistoriesOptions,
-  type LocalRepollutionCalibration,
   type LocalRepollutionScoreResolver,
   type RepollutionDatasetCompleteness,
 } from "./local-repollution-calibration";
@@ -202,22 +202,12 @@ function resolveNotEvaluableReason(
 }
 
 function findPreviousPlace(
-  previousPlaces: Array<{
-    derivedPlaceKey: string;
-    observations: DerivedPlaceObservation[];
-    intervals: Array<unknown>;
-    calibration: LocalRepollutionCalibration;
-  }>,
+  previousPlaces: DerivedPlaceHistory[],
   augmentedPlace: {
     observations: DerivedPlaceObservation[];
   },
   newObservationId: string,
-): {
-  derivedPlaceKey: string;
-  observations: DerivedPlaceObservation[];
-  intervals: Array<unknown>;
-  calibration: LocalRepollutionCalibration;
-} | null {
+): DerivedPlaceHistory | null {
   const previousIds = new Set(
     augmentedPlace.observations
       .filter((observation) => observation.actionId !== newObservationId)
