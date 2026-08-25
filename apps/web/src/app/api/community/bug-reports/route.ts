@@ -21,6 +21,7 @@ import {
  hasRecentSubmission,
 } from"@/lib/security/validation";
 import { logWarning } from "@/lib/logging/failure-log";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 export const runtime ="nodejs";
 
@@ -40,6 +41,9 @@ const statusUpdateSchema = z.object({
 });
 
 export async function POST(request: Request) {
+ const botIdResponse = await requireBotIdHuman();
+ if (botIdResponse) return botIdResponse;
+
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();

@@ -1,5 +1,6 @@
 import path from "path";
 import type { NextConfig } from "next";
+import { withBotId } from "botid/next/config";
 
 const repoRoot = path.resolve(__dirname, "../..");
 const env = process.env;
@@ -101,4 +102,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBotId(nextConfig);

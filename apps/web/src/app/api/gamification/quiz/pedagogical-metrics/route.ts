@@ -3,6 +3,7 @@ import { z } from "zod";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncQuizPedagogicalMetrics } from "@/lib/learning/quiz-pedagogical-metrics";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,9 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const botIdResponse = await requireBotIdHuman();
+  if (botIdResponse) return botIdResponse;
+
   let payload: unknown;
 
   try {

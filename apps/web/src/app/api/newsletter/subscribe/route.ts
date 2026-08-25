@@ -7,6 +7,7 @@ import {
   hasHoneypotSignal,
   hasRecentSubmission,
 } from"@/lib/security/validation";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 const subscribeSchema = z.object({
  email: z.string().trim().email("Format d'email invalide"),
@@ -18,6 +19,9 @@ const subscribeSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const botIdResponse = await requireBotIdHuman();
+    if (botIdResponse) return botIdResponse;
+
     let rawData: unknown;
     try {
       rawData = await request.json();

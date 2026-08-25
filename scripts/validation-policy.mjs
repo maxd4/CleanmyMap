@@ -27,6 +27,9 @@ export const VITEST_GROUPS = Object.freeze({
     "src/app/api/api-boundary.test.ts",
     "src/app/api/actions/route.submit.test.ts",
     "src/app/api/account/profile-role/route.test.ts",
+    "src/lib/botid/protected-routes.test.ts",
+    "src/lib/botid/server.test.ts",
+    "src/app/api/chat/route.test.ts",
   ]),
   regression: Object.freeze([
     "src/lib/actions/contract-regression-gates.test.ts",
