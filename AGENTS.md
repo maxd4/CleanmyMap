@@ -41,9 +41,28 @@ Les mises à jour intermédiaires ne doivent pas commencer par ce canari.
 - Ne créer une branche temporaire que sur demande explicite de l'utilisateur.
 - Ne créer un worktree que sur demande explicite de l'utilisateur.
 - Ne jamais pousser avec `--force` ni réécrire l'historique publié de `main`.
-- Toujours préserver les changements locaux et les stashes existants.
-- Toujours vérifier le diff exact et les validations pertinentes avant un push.
+- Vérifier le diff exact du périmètre logique à committer et les validations
+  pertinentes avant un push.
 - Sans autorisation explicite, rester en lecture seule.
+
+### Worktree parallèle et périmètre de commit
+
+- Le worktree peut rester `dirty` en permanence : plusieurs chantiers peuvent
+  s'exécuter en parallèle dans le même checkout.
+- Les modifications `staged`, `unstaged` ou `untracked` qui sont étrangères au
+  chantier courant ne sont ni un blocage ni une réserve de verdict. Ne pas les
+  corriger, nettoyer, stasher, sauvegarder, déplacer ou inventorier
+  systématiquement.
+- Chaque exécution délimite son périmètre logique, modifie uniquement ce
+  périmètre et stage uniquement les fichiers nécessaires à son commit. Ne pas
+  utiliser une opération de staging globale qui pourrait inclure un autre
+  chantier.
+- Ne signaler l'état parallèle du worktree que s'il provoque une interférence
+  concrète : même fichier modifié de manière incompatible, fichier étranger
+  effectivement inclus dans le commit, impossibilité de produire le commit ou
+  le push demandé, risque réel d'écrasement, ou nécessité exceptionnelle d'une
+  opération Git destructive. Dans ce cas seulement, décrire brièvement le
+  conflit précis et son impact.
 
 ### Répartition du travail
 
@@ -93,7 +112,7 @@ Sans autorisation explicite, l’intégrateur reste en lecture seule.
 
 Quand l'utilisateur autorise une écriture, le flux attendu est :
 
-- vérifier que le checkout est sur `main` et que les changements étrangers sont identifiés ;
+- vérifier que le checkout est sur `main` et définir le périmètre logique du lot ;
 - modifier de manière ciblée ;
 - exécuter les tests et garde-fous pertinents ;
 - committer directement sur `main` ;
