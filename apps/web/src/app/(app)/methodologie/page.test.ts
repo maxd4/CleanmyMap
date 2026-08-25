@@ -53,6 +53,10 @@ describe("/methodologie public page", () => {
     expect(props.impactTotals).toEqual(emptyImpactTotals);
     expect(props.impactSnapshots).toEqual([]);
     expect(props.githubStats).toBe(githubStats);
+    expect(props.impactElectricity).toMatchObject({
+      factorKgCo2ePerKwh: 0.35,
+      calculation: "missing",
+    });
     expect(liveDashboardMock).not.toHaveBeenCalled();
   });
 
@@ -99,6 +103,10 @@ describe("/methodologie public page", () => {
     expect(props.impactSnapshots).toEqual([snapshot]);
     expect(props.impactGeneratedAt).toBe("2026-06-26T08:00:00.000Z");
     expect(props.impactLaunchedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(props.impactElectricity).toMatchObject({
+      factorKgCo2ePerKwh: 0.35,
+      calculation: "missing",
+    });
     expect(liveDashboardMock).not.toHaveBeenCalled();
   });
 

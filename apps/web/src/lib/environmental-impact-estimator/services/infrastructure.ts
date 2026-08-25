@@ -23,6 +23,7 @@ import type {
   EnvironmentalImpactUsageProfileEstimate,
 } from "../types";
 import { buildUsageProfileEstimate, projectUsageProfileAtWeek } from "./usage-profile";
+import { buildElectricityEstimate } from "./electricity";
 import {
   WEEKS_PER_MONTH,
   clamp,
@@ -374,12 +375,14 @@ export function buildInfrastructureSecondOrderEstimate(
     infrastructureMode === "reference" ? "reference" : "mixed";
 
   if (monthlyKgCo2eProxy <= 0) {
+    const electricity = buildElectricityEstimate(usageProfile, null);
     return {
       totalKgCo2eProxy: 0,
       factorEstimates: definitionEntries.map(({ definition }) => ({
         ...definition,
-        quantity: 0,
-        estimatedKgCo2eProxy: 0,
+        quantity: definition.key === "electricity" ? electricity.kWh : 0,
+        estimatedKgCo2eProxy:
+          definition.key === "electricity" ? electricity.kgCo2e : 0,
         sharePercent: 0,
         source,
       })),
@@ -388,6 +391,7 @@ export function buildInfrastructureSecondOrderEstimate(
       ],
       hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
       source,
+      electricity,
     };
   }
 
@@ -398,26 +402,59 @@ export function buildInfrastructureSecondOrderEstimate(
     ),
   );
 
+  const proxyElectricityKgCo2e = round6(
+    monthlyKgCo2eProxy *
+      (scoreTotal > 0
+        ? scoreSignals.electricity / normalizer
+        : ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.find(
+            (definition) => definition.key === "electricity",
+          )!.referenceWeight /
+            Math.max(
+              1,
+              ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.reduce(
+                (acc, item) => acc + item.referenceWeight,
+                0,
+              ),
+            )),
+  );
+  const electricity = buildElectricityEstimate(usageProfile, proxyElectricityKgCo2e);
+  const totalForDecomposition = round6(
+    Math.max(monthlyKgCo2eProxy, electricity.kgCo2e ?? 0),
+  );
+  const nonElectricityDefinitions = definitionEntries.filter(
+    ({ definition }) => definition.key !== "electricity",
+  );
+  const nonElectricityScoreTotal = round6(
+    nonElectricityDefinitions.reduce((acc, { score }) => acc + score, 0),
+  );
+  const nonElectricityWeightTotal = nonElectricityDefinitions.reduce(
+    (acc, { definition }) => acc + definition.referenceWeight,
+    0,
+  );
+
   const factorEstimates = definitionEntries.map(({ definition, score }) => {
-    const normalizedWeight =
-      scoreTotal > 0
-        ? score / normalizer
-        : definition.referenceWeight /
-          Math.max(
-            1,
-            ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.reduce(
-              (acc, item) => acc + item.referenceWeight,
-              0,
-            ),
-          );
-    const estimatedKgCo2eProxy = round6(monthlyKgCo2eProxy * normalizedWeight);
-    const quantity = round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+    const isElectricity = definition.key === "electricity";
+    const estimatedKgCo2eProxy = isElectricity
+      ? electricity.kgCo2e
+      : round6(
+          Math.max(0, totalForDecomposition - (electricity.kgCo2e ?? 0)) *
+            (nonElectricityScoreTotal > 0
+              ? score / nonElectricityScoreTotal
+              : definition.referenceWeight / Math.max(1, nonElectricityWeightTotal)),
+        );
+    const quantity = isElectricity
+      ? electricity.kWh
+      : estimatedKgCo2eProxy === null
+        ? null
+        : round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
 
     return {
       ...definition,
       quantity,
       estimatedKgCo2eProxy,
-      sharePercent: round6(normalizedWeight * 100),
+      sharePercent: round6(
+        (estimatedKgCo2eProxy ?? 0) / Math.max(1, totalForDecomposition) * 100,
+      ),
       source,
     };
   });
@@ -432,9 +469,11 @@ export function buildInfrastructureSecondOrderEstimate(
     notes: [
       "Le deuxième ordre est une décomposition du total premier ordre, pas une couche additionnelle de double comptage.",
       "Les quantités affichées sont des proxys de lecture calculés à partir des signaux CleanMyMap.",
+      electricity.note,
     ],
     hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
     source,
+    electricity,
   };
 }
 
@@ -633,7 +672,7 @@ export function buildInfrastructureEstimate(
       ...ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES,
       `Période de référence: ${referencePeriodMonths} mois.`,
       `Découpage du graphe: ${referencePeriodWeeks} semaines pour un point cliquable par semaine.`,
-      "Le deuxième ordre décompose le total en CO2 brut, électricité, autres GES, produits chimiques et eau.",
+      "Le deuxième ordre décompose le total en CO2 brut, équivalent électrique, autres GES, produits chimiques et eau.",
       "La couche lifecycle complète le CO2e opérationnel avec une lecture de cycle de vie matérielle, eau et e-waste.",
       mode === "measured"
         ? "Les métriques évoluent à partir des signaux d'usage du site et des éventuels inputs explicites."

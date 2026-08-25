@@ -145,7 +145,7 @@ export function formatSharePercent(value: number | null | undefined) {
 
 export function formatSecondOrderQuantity(value: number | null, unitLabel: string) {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return "—";
+    return unitLabel === "kWh" ? "À compléter — kWh réel non branché" : "—";
   }
 
   const maximumFractionDigits =

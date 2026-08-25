@@ -7,6 +7,22 @@ import type {
 export const ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION =
   "environmental-impact-estimator-2026.05-v1";
 
+/**
+ * Default location-based electricity factor for infrastructure mainly hosted
+ * in the United States. It is a configuration anchor, not a measurement of
+ * CleanMyMap's actual provider mix. Replace it when a provider region or a
+ * measured electricity signal is available.
+ */
+export const ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR = {
+  kgCo2ePerKwh: 0.35,
+  region: "Serveurs majoritairement américains",
+  sourceLabel: "EPA eGRID / EIA",
+  sourceUrls: [
+    "https://www.epa.gov/egrid",
+    "https://www.eia.gov/tools/faqs/faq.php?id=74&t=11",
+  ],
+} as const;
+
 export const ENVIRONMENTAL_IMPACT_ESTIMATOR_HYPOTHESES = [
   "Les mesures sont des proxys d'usage et non un bilan carbone certifié.",
   "Une donnée absente signifie 'non branchée' et non zéro.",
@@ -54,7 +70,7 @@ export const ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS = [
 
 export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES = [
   "Le deuxième ordre décompose l'impact total en familles lisibles plutôt qu'en une moyenne globale.",
-  "Le CO2 brut, l'électricité, les autres GES, les produits chimiques et l'eau sont exprimés comme proxys auditables.",
+  "Le CO2 brut, l'équivalent électrique, les autres GES, les produits chimiques et l'eau sont exprimés comme proxys auditables; l'équivalent électrique n'est pas un kWh mesuré.",
   "Les parts sont normalisées à partir des signaux réels du projet pour rester spécifiques à CleanMyMap.",
   "Les quantités affichées sont des équivalents de travail, pas des mesures physiques certifiées.",
   "Le deuxième ordre doit permettre la priorisation, pas prétendre à une ACV complète.",
@@ -73,12 +89,12 @@ export const ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK = 2;
 export const ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS = [
   {
     key: "energy",
-    label: "Énergie",
+    label: "Équivalent électrique estimé",
     unitLabel: "kWh",
-    proxyKgCo2ePerUnit: 0.052,
+    proxyKgCo2ePerUnit: ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR.kgCo2ePerKwh,
     referenceWeight: 0.34,
     rationale:
-      "Lecture énergétique des serveurs, GPU, terminaux et réseaux ramenée en équivalent CO2e.",
+      "Équivalent électrique dérivé du proxy CO2e; aucun kWh réel n'est affirmé sans signal branché.",
   },
   {
     key: "carbon",
@@ -248,11 +264,11 @@ export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
   },
   {
     key: "electricity",
-    label: "Électricité transformée en CO2",
+    label: "Équivalent électrique estimé",
     unitLabel: "kWh",
-    proxyKgCo2ePerUnit: 0.052,
+    proxyKgCo2ePerUnit: ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR.kgCo2ePerKwh,
     referenceWeight: 0.34,
-    rationale: "Conversion proxy d'un usage énergétique électrique vers un équivalent CO2e lisible.",
+    rationale: "Sans kWh réel, le CO2e est réparti comme équivalent électrique proxy; il ne s'agit pas d'une consommation mesurée.",
   },
   {
     key: "otherGhgs",

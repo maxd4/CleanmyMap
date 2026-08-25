@@ -311,6 +311,12 @@ export function EnvironmentalImpactEstimatorPanelOverview({
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+        <p
+          className="xl:col-span-2 text-xs font-medium text-red-100/55"
+          title="Repère documentaire basé sur Impact CO₂ et la Base Empreinte ADEME; il ne constitue pas une conversion des données CleanMyMap."
+        >
+          Repère : 10 kgCO₂e ≈ 70 km en voiture thermique moyenne.
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
           {[model.site, model.user].map((scope) => (
             <article

@@ -50,6 +50,7 @@ const infrastructureMetricsInputSchema = z
 
 const usageProfileInputSchema = z
   .object({
+    monthlyElectricityKwh: quantitySchema.nullable().optional(),
     monthlyPageViews: quantitySchema.nullable().optional(),
     monthlyActiveUsers: quantitySchema.nullable().optional(),
     monthlySessions: quantitySchema.nullable().optional(),

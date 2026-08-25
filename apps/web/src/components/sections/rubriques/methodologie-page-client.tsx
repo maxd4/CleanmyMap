@@ -25,9 +25,11 @@ import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type {
+  EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactSnapshotRecord,
 } from "@/lib/environmental-impact-estimator/types";
+import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
 import { MonthlyImpactHistoryChart } from "./monthly-impact-history-chart";
@@ -68,6 +70,7 @@ type MethodologiePageClientProps = {
   impactGeneratedAt: string | null;
   impactLaunchedAt: string | null;
   githubStats: GitHubRepositoryStats | null;
+  impactElectricity?: EnvironmentalImpactElectricityEstimate | null;
 };
 
 function MethodologyCard({
@@ -333,6 +336,7 @@ export function MethodologiePageClient({
   impactGeneratedAt,
   impactLaunchedAt,
   githubStats,
+  impactElectricity,
 }: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
@@ -340,6 +344,8 @@ export function MethodologiePageClient({
   const { sources, version } = methodology;
   const { t } = useTranslation("methodologie");
   const classes = getBlockClasses("impact");
+  const electricity =
+    impactElectricity ?? buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
 
   return (
     <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-10">
@@ -632,6 +638,28 @@ export function MethodologiePageClient({
             />
 
             <div className="space-y-8">
+              <section className="rounded-[2.5rem] border border-red-400/20 bg-red-400/5 p-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/60">
+                  Méthode électrique
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
+                  CO₂e électrique : statut du calcul
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-red-100/65">
+                  Facteur configuré : {electricity.factorKgCo2ePerKwh} kgCO₂e/kWh
+                  ({electricity.source === "input" ? "signal électrique branché" : "référence " + electricity.note}).
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-red-100/55">
+                  {electricity.calculation === "measured_kwh_to_co2e"
+                    ? "La valeur affichée provient d'un calcul kWh × facteur électrique; elle n'est pas ajoutée une seconde fois au proxy total."
+                    : electricity.calculation === "proxy_equivalent"
+                      ? "La valeur affichée est un équivalent électrique estimé à partir d’un proxy CO₂e. Elle ne représente pas une consommation mesurée."
+                      : "À compléter : aucun kWh réel ni proxy électrique exploitable n'est disponible."}
+                </p>
+                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                  Le facteur sera remplacé lorsqu’une localisation électrique réelle du fournisseur sera connue.
+                </p>
+              </section>
               <FreePlanServicesMethodologyVisual
                 services={freePlanServices}
                 impactTotals={impactTotals}

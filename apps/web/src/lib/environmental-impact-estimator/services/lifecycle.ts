@@ -11,6 +11,7 @@ import type {
   EnvironmentalImpactUsageProfileEstimate,
 } from "../types";
 import { hasNumericInput, round6 } from "./utils";
+import { calculateElectricityCo2e } from "./electricity";
 
 type EnvironmentalImpactLifecycleScoreSignals = Record<
   EnvironmentalImpactLifecycleAxisKey | EnvironmentalImpactLifecycleComponentKey,
@@ -182,7 +183,7 @@ export function buildLifecycleEstimate(
       totalKgCo2eProxy: totalKgCo2eProxy ?? 0,
       axisEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => ({
         ...definition,
-        quantity: 0,
+        quantity: definition.key === "energy" ? usageProfile.monthlyElectricityKwh ?? null : 0,
         estimatedKgCo2eProxy: 0,
         sharePercent: 0,
         source,
@@ -215,6 +216,25 @@ export function buildLifecycleEstimate(
   const axisNormalizer = axisScoreTotal > 0 ? axisScoreTotal : axisTotalWeight;
   const componentNormalizer =
     componentScoreTotal > 0 ? componentScoreTotal : componentTotalWeight;
+  const measuredEnergyKgCo2e = calculateElectricityCo2e(
+    usageProfile.monthlyElectricityKwh,
+  );
+  const totalForAxes = round6(
+    Math.max(totalKgCo2eProxy, measuredEnergyKgCo2e ?? 0),
+  );
+  const nonEnergyDefinitions = ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.filter(
+    (definition) => definition.key !== "energy",
+  );
+  const nonEnergyScoreTotal = round6(
+    nonEnergyDefinitions.reduce(
+      (acc, definition) => acc + scoreSignals[definition.key],
+      0,
+    ),
+  );
+  const nonEnergyWeightTotal = nonEnergyDefinitions.reduce(
+    (acc, definition) => acc + definition.referenceWeight,
+    0,
+  );
 
   const axisEstimates = ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => {
     const score = scoreSignals[definition.key];
@@ -222,14 +242,27 @@ export function buildLifecycleEstimate(
       axisScoreTotal > 0
         ? score / axisNormalizer
         : definition.referenceWeight / Math.max(1, axisTotalWeight);
-    const estimatedKgCo2eProxy = round6((totalKgCo2eProxy ?? 0) * normalizedWeight);
-    const quantity = round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+    const isEnergy = definition.key === "energy";
+    const estimatedKgCo2eProxy = isEnergy
+      ? measuredEnergyKgCo2e ?? round6(totalForAxes * normalizedWeight)
+      : round6(
+          Math.max(0, totalForAxes - (measuredEnergyKgCo2e ?? 0)) *
+            (nonEnergyScoreTotal > 0
+              ? score / nonEnergyScoreTotal
+              : definition.referenceWeight / Math.max(1, nonEnergyWeightTotal)),
+        );
+    const quantity =
+      isEnergy
+        ? usageProfile.monthlyElectricityKwh ?? null
+        : round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
 
     return {
       ...definition,
       quantity,
       estimatedKgCo2eProxy,
-      sharePercent: round6(normalizedWeight * 100),
+      sharePercent: round6(
+        (estimatedKgCo2eProxy / Math.max(1, totalForAxes)) * 100,
+      ),
       source: "mixed" as const,
     };
   });
@@ -259,7 +292,7 @@ export function buildLifecycleEstimate(
   );
 
   return {
-    totalKgCo2eProxy: totalKgCo2eProxy ?? totalFromAxes,
+    totalKgCo2eProxy: totalForAxes ?? totalFromAxes,
     axisEstimates,
     componentEstimates,
     notes: [
