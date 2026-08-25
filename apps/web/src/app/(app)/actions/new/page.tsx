@@ -52,8 +52,6 @@ export default async function NewActionPage({
   const params = searchParams ? await searchParams : undefined;
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
-  const mode = resolveSingleSearchParam(params?.["mode"]);
-  const initialRecordType = mode === "propre" ? "clean_place" : "action";
   const fallbackActorName = isAuthenticated ? userId ?? "unknown-user" : "Aperçu public";
   const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
   const actorNameOptions =
@@ -77,7 +75,6 @@ export default async function NewActionPage({
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
-          initialRecordType={initialRecordType}
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
           isAutoApprovedSubmission={isAutoApprovedSubmission}
@@ -93,7 +90,6 @@ export default async function NewActionPage({
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
-        initialRecordType={initialRecordType}
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
         isAutoApprovedSubmission={isAutoApprovedSubmission}

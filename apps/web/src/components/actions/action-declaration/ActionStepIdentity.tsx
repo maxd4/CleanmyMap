@@ -11,7 +11,6 @@ import {
   Users,
   Clock,
   Sparkles,
-  MapPin,
   User,
   Building,
   ChevronDown,
@@ -102,7 +101,6 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
 }
 
 export function ActionStepIdentity({ form, updateField, userMetadata, recordType, hasAttemptedSubmit }: Props) {
-  const isCleanPlaceMode = recordType === "clean_place";
   const isActionMode = recordType === "action";
   const isSpontaneousAction = form.associationName === "Action spontanée";
   const isEntreprise = form.associationName === "Entreprise" || form.associationName.startsWith("Entreprise - ");
@@ -144,7 +142,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
         <div className="space-y-6">
           <div>
             <SectionTitle color="bg-emerald-500">Type d&apos;action</SectionTitle>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3">
               <button
                 type="button"
                 onClick={() => updateField("recordType", "action")}
@@ -164,24 +162,6 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 </div>
               </button>
 
-              <button
-                type="button"
-                onClick={() => updateField("recordType", "clean_place")}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                  form.recordType === "clean_place" ? "border-sky-300 bg-[#EFFAF3] shadow-sm" : "border-emerald-200/70 bg-[#F3FBF6] hover:border-emerald-300"
-                )}
-              >
-                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                  form.recordType === "clean_place" ? "bg-sky-500 text-white" : "bg-emerald-100 text-emerald-700"
-                )}>
-                  <MapPin size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-emerald-950">Lieu propre</p>
-                  <p className="text-xs text-emerald-900/55">Signalement</p>
-                </div>
-              </button>
             </div>
           </div>
 
@@ -272,7 +252,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
               </div>
             )}
 
-            {isActionMode && !isCleanPlaceMode && (
+            {isActionMode && (
               <div className="mt-4">
                 <ActionParticipantPicker
                   currentUserId={userMetadata.userId}
@@ -309,7 +289,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
               </div>
             )}
 
-            {!isCleanPlaceMode && (
+            {isActionMode && (
               <div className="space-y-6 pt-2">
                 <div>
                   <SectionTitle color="bg-sky-500">Participants &amp; durée</SectionTitle>
@@ -341,7 +321,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
           </div>
         </div>
 
-        {!isCleanPlaceMode ? (
+        {isActionMode ? (
           <aside className="space-y-6 self-start xl:sticky xl:top-6">
             <div>
               <SectionTitle color="bg-emerald-500">Environnement de collecte</SectionTitle>

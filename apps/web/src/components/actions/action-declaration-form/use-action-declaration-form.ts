@@ -50,7 +50,7 @@ type UseActionDeclarationFormProps = {
   };
   initialActionId?: string | null;
   linkedEventId?: string;
-  initialRecordType?: "action" | "clean_place";
+  initialRecordType?: "action";
 };
 
 export function useActionDeclarationForm({
@@ -80,7 +80,10 @@ export function useActionDeclarationForm({
       if (initialActionId) {
         return null;
       }
-      return loadDraftSnapshot(createCleanForm(), initialRecordType);
+      // /actions/new is an action-only entry point. Historical clean_place
+      // records remain readable when explicitly hydrated by id, but a local
+      // draft cannot turn this form back into an observation entry point.
+      return loadDraftSnapshot(createCleanForm(), "action");
     },
     () => null,
   );

@@ -1,4 +1,4 @@
-import { QuickSignalementForm } from "@/components/actions/quick-signalement-form";
+import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -10,7 +10,29 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
-export default async function SignalementPage() {
+type SignalementPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export function resolveSignalementCoordinate(
+  value: string | string[] | undefined,
+  min: number,
+  max: number,
+): number | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw || raw.trim() === "") return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
+}
+
+export default async function SignalementPage({
+  searchParams,
+}: SignalementPageProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const latitude = resolveSignalementCoordinate(params?.lat, -90, 90);
+  const longitude = resolveSignalementCoordinate(params?.lng, -180, 180);
+  const initialLocation =
+    latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : null;
   const { userId, clerkReachable } = await getSafeAuthSession();
   const pageFamily = resolvePageFamily("/signalement");
   const accountCompletion = userId
@@ -70,8 +92,8 @@ export default async function SignalementPage() {
             <PageHeader
               family={pageFamily}
               eyebrow="Agir sur le terrain"
-              title="Signaler Pollution"
-              subtitle="Votre signalement déclenche l'analyse et la priorisation immédiate pour les équipes de dépollution citoyenne."
+              title="Mettre à jour l’état du lieu"
+              subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."
               badges={
                 <>
                   <PageHeaderBadge family={pageFamily}>
@@ -105,7 +127,7 @@ export default async function SignalementPage() {
               }
               className="p-1 sm:p-12"
             >
-              <QuickSignalementForm />
+              <TrashSpotterObservationForm initialLocation={initialLocation} />
             </FamilyRubriqueCard>
           </div>
         </SectionShell>

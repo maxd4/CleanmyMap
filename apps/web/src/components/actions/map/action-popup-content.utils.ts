@@ -14,6 +14,7 @@ export function buildActionUpdateHref(
     return null;
   }
 
-  const baseUrl = `/actions/new?lat=${coords.latitude}&lng=${coords.longitude}`;
-  return hasPollution || isAction ? baseUrl : `${baseUrl}&mode=propre`;
+  const observationUrl = `/signalement?lat=${coords.latitude}&lng=${coords.longitude}`;
+  const actionUrl = `/actions/new?lat=${coords.latitude}&lng=${coords.longitude}`;
+  return hasPollution || isAction ? actionUrl : observationUrl;
 }

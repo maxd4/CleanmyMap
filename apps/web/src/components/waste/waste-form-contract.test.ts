@@ -7,7 +7,7 @@ const read = (relativePath: string) => readFileSync(`${root}/src/${relativePath}
 describe("waste UX registry wiring", () => {
   it("uses the shared selector in the targeted forms", () => {
     expect(read("components/actions/quick-signalement-form.tsx")).toContain("WasteCategorySelector");
-    expect(read("components/sections/rubriques/trash-spotter-components.tsx")).toContain("WasteCategorySelector");
+    expect(read("components/actions/quick-signalement-form.tsx")).toContain("TrashSpotterObservationForm");
     expect(read("components/actions/action-before-declaration-form.tsx")).toContain("WasteCategorySelector");
     expect(read("components/actions/action-declaration/sections/harvest-waste-section.tsx")).toContain("WasteCategorySelector");
   });
@@ -30,7 +30,7 @@ describe("waste UX registry wiring", () => {
 
   it("keeps the storage boundary explicit", () => {
     expect(read("components/actions/action-declaration/payload.ts")).toContain("expectedWasteCategories");
-    expect(read("components/sections/rubriques/use-trash-spotter.ts")).toContain("appendWasteCategoriesToNotes");
+    expect(read("components/sections/rubriques/use-trash-spotter.ts")).not.toContain("createSpot");
   });
 
   it("keeps the selector usable on narrow and wide layouts", () => {

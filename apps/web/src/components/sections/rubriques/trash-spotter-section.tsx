@@ -11,8 +11,9 @@ import {
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
+import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
 import { useTrashSpotter } from "./use-trash-spotter";
-import { SpotterForm, SpotterRecentList } from "./trash-spotter-components";
+import { SpotterRecentList } from "./trash-spotter-components";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -44,25 +45,10 @@ export function TrashSpotterSection() {
   const fr = locale === "fr";
 
   const {
-    spotType,
-    setSpotType,
-    spotLabel,
-    setSpotLabel,
-    spotLatitude,
-    setSpotLatitude,
-    spotLongitude,
-    setSpotLongitude,
-    spotNotes,
-    setSpotNotes,
-    wasteCategories,
-    setWasteCategories,
-    spotState,
-    spotMessage,
-    onCreateSpot,
     isLoading,
     error,
     quality,
-  } = useTrashSpotter(fr);
+  } = useTrashSpotter();
 
   const coveragePercent =
     quality.received > 0 ? Math.round((quality.withCoords / quality.received) * 100) : 0;
@@ -87,13 +73,13 @@ export function TrashSpotterSection() {
             <motion.div variants={itemVariants} className="space-y-5">
               <div className="space-y-2">
                 <h1 className="text-[clamp(2.9rem,6vw,5.4rem)] font-black leading-[0.94] tracking-[-0.06em] text-emerald-950">
-                  {fr ? "Signalement de déchets" : "Trash Spotter"}
+                  {fr ? "Observation de terrain" : "Trash Spotter"}
                 </h1>
               </div>
 
               <p className="max-w-2xl text-base font-medium leading-relaxed text-slate-600 sm:text-lg">
                 {fr
-                  ? "Signalement rapide et cartographie collaborative des zones à traiter."
+                  ? "Observation rapide de l’état d’un lieu et cartographie collaborative."
                   : "Fast reporting and collaborative mapping of areas to treat."}
               </p>
             </motion.div>
@@ -179,24 +165,7 @@ export function TrashSpotterSection() {
                 </div>
               </div>
             ) : (
-              <SpotterForm
-                fr={fr}
-                spotType={spotType}
-                setSpotType={setSpotType}
-                spotLabel={spotLabel}
-                setSpotLabel={setSpotLabel}
-                spotLatitude={spotLatitude}
-                setSpotLatitude={setSpotLatitude}
-                spotLongitude={spotLongitude}
-                setSpotLongitude={setSpotLongitude}
-                spotNotes={spotNotes}
-                setSpotNotes={setSpotNotes}
-                wasteCategories={wasteCategories}
-                setWasteCategories={setWasteCategories}
-                spotState={spotState}
-                spotMessage={spotMessage}
-                onCreateSpot={onCreateSpot}
-              />
+              <TrashSpotterObservationForm />
             )}
           </motion.div>
 
