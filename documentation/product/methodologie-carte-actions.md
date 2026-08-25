@@ -60,6 +60,10 @@ et non comme :
 
 Les quantités collectées servent de proxy de l'état rencontré avant ou pendant l'action. Elles ne constituent pas une mesure instrumentale exhaustive de la pollution du lieu.
 
+Dans l'interface, ce score reste une valeur interne comprise entre 0 et 100,
+mais il est affiché en pourcentage (`x %`). La règle commune de formatage est
+documentée dans [`ui-score-formatting.md`](../development/ui-score-formatting.md).
+
 ## 3. État post-action
 
 La projection distingue :
@@ -281,9 +285,9 @@ Une action doit distinguer explicitement les informations historiques et projet�
 
 Exemple :
 
-> - Pollution constatée avant l'action : 82/100
+> - Pollution constatée avant l'action : 82 %
 > - Temps depuis la dernière action : 31 jours
-> - Pollution projetée : 63/100
+> - Pollution projetée : 63 %
 > Estimation modélisée, pas une mesure en temps réel.
 
 Le score projeté ne doit jamais être présenté comme une observation actuelle.

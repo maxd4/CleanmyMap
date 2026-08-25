@@ -18,6 +18,7 @@ Guides de développement pour agents IA.
 - **conventions-composants.md** - Conventions composants React
 - **conventions-modularisation.md** - Conventions modularisation et lecture des warnings de densité
 - **repo-quality-rules.md** - Règles transversales de preuve, données, tests, documentation et modularisation
+- **ui-score-formatting.md** - Format permanent des scores affichés dans l'interface
 
 ### Diagnostic TypeScript
 - **typescript-anti-errors-playbook.md** - Procédure recommandée pour les erreurs TypeScript et les sorties tronquées.

@@ -21,6 +21,7 @@ Avant toute modification ciblant le dépôt :
 | Sécurité | `security/README.md` |
 | Tests et validation | `development/TESTING.md` |
 | Développement | `development/README.md` |
+| Affichage des scores UI | `development/ui-score-formatting.md` |
 | Produit | `product/README.md` |
 | Design system | `design-system/README.md` |
 | Pages et routes | `pages_site/INDEX.md` |

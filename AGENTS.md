@@ -379,6 +379,17 @@ Ne jamais accéder à `window`, `document`, `navigator` ou une API navigateur pe
 
 Tout texte visible par l'utilisateur est en français, sauf surface explicitement localisée.
 
+### Affichage des scores
+
+Les scores restent calculés et stockés sur l'échelle interne `0–100`, mais tout
+score présenté à l'utilisateur doit être formaté en pourcentage (`63 %`,
+`63,5 %`) et jamais sous la forme `x/100`, `x / 100` ou `x sur 100`. Ne pas
+multiplier ni diviser les valeurs pour ce changement de présentation. Utiliser
+le helper commun `apps/web/src/lib/formatters/score.ts` et maintenir le garde
+anti-régression associé. La règle complète et ses exceptions pour les formules
+techniques sont documentées dans
+`documentation/development/ui-score-formatting.md`.
+
 ### Homepage, header et footer
 
 Ne pas modifier sans demande explicite :
