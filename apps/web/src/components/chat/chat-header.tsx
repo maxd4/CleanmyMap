@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
-import { Sparkles, type LucideIcon, MessageSquare, Share2, User, Info } from "lucide-react";
+import { ArrowLeft, Sparkles, type LucideIcon, MessageSquare, Share2, User, Info } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatUser } from "./chat-types";
@@ -25,6 +25,7 @@ type ChatHeaderProps = {
   tone?: "light" | "dark";
   showControls?: boolean;
   isLive?: boolean;
+  onBackToDmInbox?: () => void;
 };
 
 export const ChatHeader = memo(function ChatHeader({
@@ -46,6 +47,7 @@ export const ChatHeader = memo(function ChatHeader({
   tone = "dark",
   showControls = true,
   isLive = false,
+  onBackToDmInbox,
 }: ChatHeaderProps) {
   const isLight = tone === "light";
   const [showMeta, setShowMeta] = useState(false);
@@ -53,6 +55,16 @@ export const ChatHeader = memo(function ChatHeader({
     <>
       <div className={`p-5 flex items-center justify-between backdrop-blur-xl relative z-30 border-b ${isLight ? "border-rose-100/60 bg-white/70" : "border-pink-100/70 dark:border-slate-800 bg-[rgba(255,248,251,0.9)] dark:bg-slate-900/50"}`}>
         <div className="flex items-center gap-4">
+          {onBackToDmInbox ? (
+            <button
+              type="button"
+              onClick={onBackToDmInbox}
+              aria-label="Retour aux conversations"
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl md:hidden ${isLight ? "bg-white text-slate-500 shadow-sm hover:text-rose-600" : "bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white"}`}
+            >
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+          ) : null}
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${isLight ? "bg-rose-50 text-rose-500" : `bg-pink-50 dark:bg-slate-900 ${activeChannelAccentClass}`}`}>
             <ActiveChannelIcon size={22} />
           </div>

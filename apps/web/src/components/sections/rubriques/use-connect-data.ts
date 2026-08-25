@@ -6,6 +6,29 @@ import { isChatChannelType, type ChatChannelType } from "@/lib/chat/channels";
 import type { ChatUser } from "@/components/chat/chat-types";
 import type { ConnectTab, CommunityAnnouncementTemplateKey } from "./connect-types";
 
+export function buildInitialDmRecipient({
+  channelType,
+  recipientId,
+  recipientLabel,
+  recipientHandle,
+}: {
+  channelType: ChatChannelType;
+  recipientId: string | null;
+  recipientLabel: string | null;
+  recipientHandle: string | null;
+}): ChatUser | null {
+  if (channelType !== "dm" || !recipientId) {
+    return null;
+  }
+
+  return {
+    id: recipientId,
+    display_name: recipientLabel?.trim() || recipientHandle?.trim() || "Membre",
+    handle: recipientHandle?.trim() || recipientId.slice(0, 8),
+    avatar_url: null,
+  };
+}
+
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const [activeTab, setActiveTab] = useState<ConnectTab>(defaultTab);
   const searchParams = useSearchParams();
@@ -26,15 +49,16 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
       ? "dm"
       : "community";
 
-  const initialRecipient: ChatUser | null = useMemo(() => 
-    initialChannelType === "dm" && requestedRecipientId
-      ? {
-          id: requestedRecipientId,
-          display_name: requestedRecipientLabel?.trim() || requestedRecipientHandle?.trim() || "Membre",
-          handle: requestedRecipientHandle?.trim() || requestedRecipientId.slice(0, 8),
-          avatar_url: null,
-        }
-      : null, [initialChannelType, requestedRecipientId, requestedRecipientLabel, requestedRecipientHandle]);
+  const initialRecipient: ChatUser | null = useMemo(
+    () =>
+      buildInitialDmRecipient({
+        channelType: initialChannelType,
+        recipientId: requestedRecipientId,
+        recipientLabel: requestedRecipientLabel,
+        recipientHandle: requestedRecipientHandle,
+      }),
+    [initialChannelType, requestedRecipientId, requestedRecipientLabel, requestedRecipientHandle],
+  );
 
   const initialTab: ConnectTab = useMemo(() =>
     requestedTab === "dm" || initialChannelType === "dm" || defaultTab === "dm"

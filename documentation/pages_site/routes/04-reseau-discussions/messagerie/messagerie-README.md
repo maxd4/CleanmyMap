@@ -1,4 +1,4 @@
-# Groupes de discussion
+# Messagerie
 
 ## Fiche canonique
 
@@ -6,47 +6,35 @@
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/messagerie/page.tsx`
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
+- `apps/web/src/components/sections/rubriques/connect-section.tsx`
+- `apps/web/src/components/chat/chat-shell.tsx`
+- `apps/web/src/app/api/chat/inbox/route.ts`
+- `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
-- **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
+- **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
+- **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : slate — canvas #eef0f3, halo rgba(148, 163, 184, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu pink, code actuel slate / neutral.
-- **Risque de conflit avec les couleurs existantes** : moyen : indigo et pink doivent rester distincts du légal et des zones techniques.
-- **Niveau de surcharge textuelle** : fort
-- **Textes à conserver** :
-- Messages clés
-- liens de navigation
-- CTA réseau
-- état de participation
-- **Textes à réduire ou supprimer** :
-- Accroches longues
-- cartes descriptives en doublon
-- contextes trop bavards
-- **Bulles / cartes / contextes trop nombreux** : Les listes d'acteurs, messages et cartes réseau peuvent saturer la colonne centrale.
-- **Composants UI concernés** :
-- Listes
-- cartes discussion
-- réseau / annuaire
-- messagerie
-- panneaux latéraux
+- **Scope** : lot 1 livré — boîte de conversations privées
+- **Terminée** : lot 1 oui ; salons thématiques, Annonce/Relai et Sondage restent des lots séparés.
+- **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
+- **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`.
+- **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants.
+- **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
+- **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : critique
 
 
 ## États à documenter
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
-- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+- **loading** : skeletons sobres dans la liste DM, sans conversation artificielle.
+- **empty** : aucune conversation privée affichée ; la recherche de membre existante permet de démarrer un échange.
+- **error** : erreur de chargement explicite avec réessai réel, sans faux compteur.
+- **access refused / connexion indisponible** : l'API RLS renvoie l'état d'accès ou de disponibilité approprié.
+- **fil actif** : les messages et pièces jointes existants restent dans le composant chat ; l'ouverture marque le fil lu de façon idempotente.
 
 
 

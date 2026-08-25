@@ -30,3 +30,19 @@ export type ChatMessagesResponse = {
 export type ChatUsersResponse = {
   users: ChatUser[];
 };
+
+export type DmConversation = {
+  peer: ChatUser;
+  lastMessage: {
+    id: string;
+    content: string;
+    createdAt: string;
+    senderId: string;
+    direction: "sent" | "received";
+  };
+  unreadCount: number;
+};
+
+export type DmInboxResponse = {
+  conversations: DmConversation[];
+};
