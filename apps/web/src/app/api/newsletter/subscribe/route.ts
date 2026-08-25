@@ -43,10 +43,9 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.toLowerCase();
-    const rateLimit = await verifyRateLimit({
+    const rateLimit = await verifyRateLimit(request, {
       limit: 5,
       window: 60,
-      key: normalizedEmail,
     });
 
     const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter);

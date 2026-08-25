@@ -229,7 +229,7 @@ export async function POST(request: Request) {
  return validationErrorResponse(parsed.error.flatten().fieldErrors);
  }
 
- const writeRateLimit = await verifyRateLimit({ limit: 6, window: 60, key: userId });
+ const writeRateLimit = await verifyRateLimit(request, { limit: 6, window: 60 });
  const writeRateLimitResponse = createServerRateLimitResponse(
   writeRateLimit.allowed,
   writeRateLimit.retryAfter,

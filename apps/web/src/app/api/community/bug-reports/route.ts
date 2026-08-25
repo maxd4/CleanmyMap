@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
  }
 
- const writeRateLimit = await verifyRateLimit({ limit: 4, window: 300, key: userId });
+ const writeRateLimit = await verifyRateLimit(request, { limit: 4, window: 300 });
  const writeRateLimitResponse = createServerRateLimitResponse(
   writeRateLimit.allowed,
   writeRateLimit.retryAfter,

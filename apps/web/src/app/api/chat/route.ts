@@ -180,7 +180,7 @@ export async function POST(request: Request) {
   const identity = await getCurrentUserIdentity();
   if (!identity) return unauthorizedJsonResponse();
 
-  const writeRateLimit = await verifyRateLimit({ limit: 20, window: 60, key: userId });
+  const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
   const writeRateLimitResponse = createServerRateLimitResponse(
     writeRateLimit.allowed,
     writeRateLimit.retryAfter,

@@ -4,7 +4,6 @@ import { z } from "zod";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { appendContactRequest, updateContactRequestStatus } from "@/lib/contact/contact-requests-store";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
-import { getTrustedClientIp } from "@/lib/rate-limit/utils";
 import {
   createPublicRateLimitResponse,
   hasHoneypotSignal,
@@ -62,12 +61,10 @@ export async function POST(request: Request) {
     return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
   }
 
-  const ip = getTrustedClientIp({ headers: request.headers });
   const normalizedEmail = parsed.data.email.trim().toLowerCase();
-  const writeRateLimit = await verifyRateLimit({
+  const writeRateLimit = await verifyRateLimit(request, {
     limit: 3,
     window: 300,
-    key: `${ip}:${normalizedEmail}`,
   });
   const writeRateLimitResponse = createServerRateLimitResponse(
     writeRateLimit.allowed,
