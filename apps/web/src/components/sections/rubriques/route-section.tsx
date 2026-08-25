@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useState } from "react";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useRouteData } from "./route/hooks/use-route-data";
 import { RouteSummaryCards } from "./route/components/route-summary-cards";
@@ -10,7 +12,13 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const RouteMap = dynamic(
+  () => import("./route/components/route-map").then((module) => module.RouteMap),
+  { ssr: false },
+);
+
 export function RouteSection() {
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const {
     constraints,
     setConstraints,
@@ -146,7 +154,20 @@ export function RouteSection() {
                 )}
 
                 {/* Stops List */}
-                <RouteList hasRoute={hasRoute} picks={picks} fr={fr} />
+                <RouteMap
+                  stops={picks}
+                  routeGeometry={data.routeGeometry}
+                  selectedStopId={selectedStopId}
+                  onSelectStop={setSelectedStopId}
+                  fr={fr}
+                />
+                <RouteList
+                  hasRoute={hasRoute}
+                  picks={picks}
+                  fr={fr}
+                  selectedStopId={selectedStopId}
+                  onSelectStop={setSelectedStopId}
+                />
               </motion.div>
             )}
           </AnimatePresence>
