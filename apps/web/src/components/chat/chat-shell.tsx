@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import useSWR from "swr";
@@ -28,11 +28,14 @@ import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
 import { ChatSidebar } from "./chat-sidebar";
+import { DmInbox } from "./dm-inbox";
 import { ChatContextSidebar } from "./chat-context-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
+import { useDmInbox } from "./hooks/use-dm-inbox";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
-import type { ChatUser } from "./chat-types";
+import type { ChatUser, DmConversation } from "./chat-types";
+import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageItem } from "./ui/chat-message-item";
 import {
   ChatDegradedState,
@@ -204,6 +207,28 @@ export function ChatShell({
     supabase,
   });
 
+  const {
+    conversations,
+    error: dmInboxError,
+    isLoading: isDmInboxLoading,
+    refreshInbox,
+    markConversationRead,
+  } = useDmInbox({
+    enabled: messagerieMode && activeChannelType === "dm",
+    currentUserId: userId,
+    supabase,
+  });
+
+  const sendChatMessageWithInboxRefresh = useCallback(
+    async (params: SendChatMessageParams) => {
+      await sendChatMessage(params);
+      if (params.body.channelType === "dm") {
+        await refreshInbox();
+      }
+    },
+    [refreshInbox, sendChatMessage],
+  );
+
   const { handleSend } = useChatSubmit({
     submitLockRef,
     userId,
@@ -222,7 +247,7 @@ export function ChatShell({
     setSendError,
     setIsUploading,
     supabase,
-    sendChatMessage,
+    sendChatMessage: sendChatMessageWithInboxRefresh,
     setMessage,
     setFile,
     setShowMentions,
@@ -262,6 +287,7 @@ export function ChatShell({
     [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
   );
   const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">("message");
+  const [isDmThreadOpen, setIsDmThreadOpen] = useState(Boolean(initialRecipient));
 
   const metaItems: ChatMetaItem[] = useMemo(
     () => [
@@ -432,6 +458,9 @@ export function ChatShell({
       }
       setComposerMode("message");
       setActiveChannelType(channelType);
+      if (channelType !== "dm") {
+        setIsDmThreadOpen(false);
+      }
     },
     [
       currentRoleLabel,
@@ -441,6 +470,7 @@ export function ChatShell({
       territoryFocus,
       setComposerMode,
       setActiveChannelType,
+      setIsDmThreadOpen,
     ],
   );
 
@@ -500,15 +530,61 @@ export function ChatShell({
       setSelectedRecipient(recipient);
       setRecipientQuery("");
       setIsRecipientPickerOpen(false);
+      setIsDmThreadOpen(true);
     },
-    [setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen],
+    [setIsDmThreadOpen, setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen],
   );
 
   const handleClearRecipient = useCallback(() => {
     setSelectedRecipient(null);
     setRecipientQuery("");
     setIsRecipientPickerOpen(true);
-  }, [setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen]);
+    setIsDmThreadOpen(true);
+  }, [setIsDmThreadOpen, setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen]);
+
+  const handleSelectDmConversation = useCallback(
+    (conversation: DmConversation) => {
+      setActiveChannelType("dm");
+      setSelectedRecipient(conversation.peer);
+      setRecipientQuery("");
+      setIsRecipientPickerOpen(false);
+      setIsDmThreadOpen(true);
+    },
+    [setActiveChannelType, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient],
+  );
+
+  const handleStartDmConversation = useCallback(() => {
+    setActiveChannelType("dm");
+    setSelectedRecipient(null);
+    setRecipientQuery("");
+    setIsRecipientPickerOpen(true);
+    setIsDmThreadOpen(true);
+  }, [setActiveChannelType, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
+
+  const handleBackToDmInbox = useCallback(() => {
+    setSelectedRecipient(null);
+    setRecipientQuery("");
+    setIsRecipientPickerOpen(false);
+    setIsDmThreadOpen(false);
+  }, [setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
+
+  useEffect(() => {
+    if (activeChannelType !== "dm" || !selectedRecipient) {
+      return;
+    }
+
+    const inboxConversation = conversations.find(
+      (conversation) => conversation.peer.id === selectedRecipient.id,
+    );
+    if (
+      inboxConversation &&
+      (inboxConversation.peer.display_name !== selectedRecipient.display_name ||
+        inboxConversation.peer.handle !== selectedRecipient.handle ||
+        inboxConversation.peer.avatar_url !== selectedRecipient.avatar_url)
+    ) {
+      setSelectedRecipient(inboxConversation.peer);
+    }
+  }, [activeChannelType, conversations, selectedRecipient, setSelectedRecipient]);
 
   const handleRecipientQueryChange = useCallback(
     (value: string) => {
@@ -517,6 +593,43 @@ export function ChatShell({
     },
     [setRecipientQuery, setIsRecipientPickerOpen],
   );
+
+  const latestMessageId = messages[messages.length - 1]?.id ?? "empty";
+  const lastMarkedConversationRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !messagerieMode ||
+      activeChannelType !== "dm" ||
+      !selectedRecipient ||
+      feedState === "loading" ||
+      feedState === "degraded"
+    ) {
+      return;
+    }
+
+    const markKey = `${selectedRecipient.id}:${latestMessageId}`;
+    if (lastMarkedConversationRef.current === markKey) {
+      return;
+    }
+
+    lastMarkedConversationRef.current = markKey;
+    void markConversationRead(selectedRecipient.id).catch(() => {
+      if (lastMarkedConversationRef.current === markKey) {
+        lastMarkedConversationRef.current = null;
+      }
+    });
+  }, [
+    activeChannelType,
+    feedState,
+    latestMessageId,
+    markConversationRead,
+    messagerieMode,
+    selectedRecipient,
+  ]);
+
+  const isDmSurface = messagerieMode && activeChannelType === "dm";
+  const showDmThreadOnMobile = !isDmSurface || Boolean(selectedRecipient) || isDmThreadOpen;
 
   const handleStarterPrompt = useCallback(
     (prompt: string) => {
@@ -540,18 +653,32 @@ export function ChatShell({
   return (
     <div className={`flex flex-col ${fullHeight ? "h-full min-h-0" : "h-[750px]"} overflow-hidden relative ${isLight ? "bg-rose-50/30" : "rounded-[3rem] shadow-2xl backdrop-blur-3xl border border-white/10 bg-slate-900/40"}`}>
       <div className={messagerieMode ? "flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row" : "flex min-h-0 flex-1 flex-row overflow-hidden"}>
-        <ChatSidebar
-          channels={sidebarChannels}
-          currentChannelType={activeChannelType}
-          onSelectChannel={handleSelectChannel}
-          onSelectTopic={(topicId) => setActiveTopicId(topicId)}
-          topicSectionTitle={sidebarTopicSectionTitle}
-          topicSectionDescription={sidebarTopicSectionDescription}
-          topics={sidebarTopics}
-          tone={isLight ? "light" : "dark"}
-          presentation={messagerieMode ? "messagerie" : "default"}
-        />
-        <div className={`min-h-0 min-w-0 flex-1 flex flex-col relative ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
+        {isDmSurface ? (
+          <DmInbox
+            conversations={conversations}
+            activePeerId={selectedRecipient?.id ?? null}
+            isLoading={isDmInboxLoading}
+            error={dmInboxError}
+            onSelectConversation={handleSelectDmConversation}
+            onStartConversation={handleStartDmConversation}
+            onRetry={refreshInbox}
+            tone={isLight ? "light" : "dark"}
+            className={!showDmThreadOnMobile ? "flex" : "hidden md:flex"}
+          />
+        ) : (
+          <ChatSidebar
+            channels={sidebarChannels}
+            currentChannelType={activeChannelType}
+            onSelectChannel={handleSelectChannel}
+            onSelectTopic={(topicId) => setActiveTopicId(topicId)}
+            topicSectionTitle={sidebarTopicSectionTitle}
+            topicSectionDescription={sidebarTopicSectionDescription}
+            topics={sidebarTopics}
+            tone={isLight ? "light" : "dark"}
+            presentation={messagerieMode ? "messagerie" : "default"}
+          />
+        )}
+        <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${isDmSurface && !showDmThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
@@ -571,6 +698,7 @@ export function ChatShell({
             tone={isLight ? "light" : "dark"}
             showControls={!isLight}
             isLive={isLive}
+            onBackToDmInbox={isDmSurface && showDmThreadOnMobile ? handleBackToDmInbox : undefined}
           />
 
           {isBugReportChannel ? (
