@@ -43,6 +43,28 @@ Parcours
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
 
+## Règles durables pour les tests authentifiés
+
+- Clerk reste l'AuthN canonique en production. Un test de surface protégée en
+  production doit donc utiliser une vraie session Clerk et le contrôle serveur
+  habituel.
+- Le bypass `CMM_DEV_AUTH_BYPASS_*` est strictement limité au développement et
+  aux hôtes locaux prévus pour les tests. Il ne doit jamais être accepté comme
+  mécanisme d'authentification en production.
+- Les tests navigateur locaux peuvent sélectionner, selon la surface testée,
+  chacun des rôles canoniques : `benevole`, `coordinateur`, `scientifique`,
+  `entreprise`, `elu`, `admin` et `max`. Ils doivent privilégier l'identité qui
+  correspond réellement au rôle vérifié plutôt qu'utiliser `max` par défaut.
+- Les handlers authentifiés réutilisent les helpers centraux compatibles avec
+  Clerk et le bypass local. Ils ne recréent pas une logique d'identification
+  parallèle à partir de `auth()` ou d'en-têtes propres au handler.
+- `service_role` est une identité technique serveur pour les contrôles et
+  opérations explicitement privilégiées ; ce n'est jamais une identité HTTP
+  utilisateur et elle ne remplace jamais la session Clerk.
+- Aucun bypass de production ne doit être ajouté pour faciliter un test. Si une
+  preuve de production est nécessaire, elle doit passer par le parcours et les
+  permissions réels.
+
 ## Catégories d'accès
 
 Chaque surface doit appartenir à une catégorie explicite.
