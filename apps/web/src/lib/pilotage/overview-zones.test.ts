@@ -96,4 +96,60 @@ describe("buildZones", () => {
     const zones = buildZones(contracts, 30, new Date("2026-04-10T00:00:00Z"));
     expect(zones.length).toBeLessThanOrEqual(12);
   });
+
+  it("keeps territorial priority unchanged when approved non-actions have metrics", () => {
+    const actionContracts = [
+      buildActionDataContract({
+        id: "action-only",
+        type: "action",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 10,
+        volunteersCount: 3,
+      }),
+    ];
+    const nonActionContracts = [
+      buildActionDataContract({
+        id: "artificial-spot",
+        type: "spot",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 999,
+        volunteersCount: 99,
+      }),
+      buildActionDataContract({
+        id: "artificial-clean-place",
+        type: "clean_place",
+        status: "approved",
+        source: "test",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 888,
+        volunteersCount: 88,
+      }),
+    ];
+
+    expect(
+      buildZones(
+        [...actionContracts, ...nonActionContracts],
+        30,
+        new Date("2026-04-10T00:00:00Z"),
+      ),
+    ).toEqual(
+      buildZones(actionContracts, 30, new Date("2026-04-10T00:00:00Z")),
+    );
+  });
 });

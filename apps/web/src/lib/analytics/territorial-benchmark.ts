@@ -1,4 +1,7 @@
+import type { ActionEntityType } from "@/lib/actions/contract-model";
+
 export type TerritorialInput = {
+  type: ActionEntityType;
   locationLabel: string;
   wasteKg: number;
   volunteersCount: number;
@@ -76,6 +79,9 @@ export function buildTerritorialBenchmark(
     { actionsCount: number; totalKg: number; totalVolunteers: number }
   >();
   for (const row of rows) {
+    if (row.type !== "action") {
+      continue;
+    }
     const area = extractArrondissement(row.locationLabel);
     const previous = grouped.get(area) ?? {
       actionsCount: 0,

@@ -431,7 +431,8 @@ export async function GET(request: Request) {
  );
 
  const benchmark = buildTerritorialBenchmark(
-  approved.map((contract) => ({
+  approved.filter((contract) => contract.type === "action").map((contract) => ({
+   type: contract.type,
    locationLabel: contract.location.label,
    wasteKg: contract.metadata.wasteKg,
    volunteersCount: contract.metadata.volunteersCount,
