@@ -67,6 +67,30 @@ describe("action popup presentation", () => {
     expect(markup).not.toContain("Déclarer une action");
     expect(markup).not.toContain("pollution");
   });
+
+  it("offers explicit trace framing when the map provides the action", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentBody, {
+        wasteKg: 0,
+        butts: 0,
+        volunteers: 1,
+        durationMinutes: 30,
+        operationalEngagementHours: 0.5,
+        associationName: null,
+        departure: null,
+        arrival: null,
+        notes: null,
+        observedAt: "08/04/2026",
+        sourceLabel: "Source: actions",
+        updateHref: null,
+        hasPollution: false,
+        isAction: true,
+        onViewGeometry: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Voir tout le tracé");
+  });
 });
 
 describe("buildActionUpdateHref", () => {

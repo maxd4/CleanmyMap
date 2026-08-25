@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import {
   CircleMarker,
   Marker,
@@ -8,9 +8,10 @@ import {
   Polyline,
   Popup,
   Tooltip,
+  useMap,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { divIcon } from "leaflet";
+import { divIcon, type Map as LeafletMap } from "leaflet";
 import { Info } from "lucide-react";
 import { ActionMapItem } from "@/lib/actions/types";
 import {
@@ -48,6 +49,7 @@ import {
   formatActionGeometryTooltipTitle,
   resolveGeometryConfidenceLabel,
   resolveActionMapGeometryViewModel,
+  resolvePolylineEndpointMarkers,
   resolveInfrastructureAnchor,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
@@ -61,6 +63,24 @@ type LeafletClusterLike = {
 };
 
 export const ACTION_MAP_COLOR = "#0284c7";
+export const ACTION_TRACE_HIT_AREA_WEIGHT = 18;
+export const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
+
+export function fitActionGeometryBounds(
+  map: Pick<LeafletMap, "fitBounds">,
+  positions: [number, number][],
+): boolean {
+  if (positions.length < 2) {
+    return false;
+  }
+
+  map.fitBounds(positions, {
+    padding: ACTION_TRACE_FIT_PADDING,
+    maxZoom: 16,
+    animate: true,
+  });
+  return true;
+}
 
 export function resolvePointColor(
   item: ActionMapItem,
@@ -224,6 +244,7 @@ export function ShapeLayers({
   onSelectAction?: (actionId: string) => void;
 }) {
   const { references } = useActionPollutionScoreReferences();
+  const map = useMap();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -260,6 +281,13 @@ export function ShapeLayers({
         );
         const geometryMetricLabel = geometry.metrics.label;
         const isSelected = selectedActionId === item.id;
+        const endpointMarkers = isActionMapItem(item)
+          ? resolvePolylineEndpointMarkers(geometry)
+          : null;
+        const onViewGeometry =
+          isActionMapItem(item) && geometry.positions.length > 1
+            ? () => fitActionGeometryBounds(map, geometry.positions)
+            : undefined;
 
         if (geometry.kind === "polygon") {
           return (
@@ -309,6 +337,7 @@ export function ShapeLayers({
                   item={item}
                   color={color}
                   coords={coords}
+                  onViewGeometry={onViewGeometry}
                 />
               </Popup>
             </Polygon>
@@ -316,54 +345,102 @@ export function ShapeLayers({
         }
 
         return (
-          <Polyline
-            key={`shape-${item.id}`}
-            ref={(layer) => {
-              if (layer) {
-                layerRefs.current[item.id] = layer;
-              } else {
-                delete layerRefs.current[item.id];
-              }
-            }}
-            positions={geometry.positions}
-            eventHandlers={{
-              click: () => {
-                onSelectAction?.(item.id);
-              },
-            }}
-            pathOptions={{
-              color: color,
-              weight: (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0),
-              opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.92,
-              dashArray: renderStyle.dashArray,
-            }}
-          >
-            <Tooltip className="glass-tooltip" direction="auto" sticky>
-              <GeometryTooltipContent
-                title={
-                  isActionMapItem(item)
-                    ? formatActionGeometryTooltipTitle(
-                        "polyline",
-                        geometryMetricLabel,
-                      )
-                    : `Trace ${Math.round(score)}%`
+          <Fragment key={`shape-${item.id}`}>
+            <Polyline
+              key={`visible-shape-${item.id}`}
+              ref={(layer) => {
+                if (layer) {
+                  layerRefs.current[item.id] = layer;
+                } else {
+                  delete layerRefs.current[item.id];
                 }
-                geometryModeLabel={geometryModeLabel}
-                geometryPointsLabel={geometryPointsLabel}
-                geometryMetricLabel={geometryMetricLabel}
-                geometryConfidenceLabel={geometryConfidenceLabel}
-                color={color}
+              }}
+              positions={geometry.positions}
+              eventHandlers={{
+                click: () => {
+                  onSelectAction?.(item.id);
+                },
+              }}
+              pathOptions={{
+                color: color,
+                weight: (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0),
+                opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.92,
+                dashArray: renderStyle.dashArray,
+              }}
+            >
+              <Tooltip className="glass-tooltip" direction="auto" sticky>
+                <GeometryTooltipContent
+                  title={
+                    isActionMapItem(item)
+                      ? formatActionGeometryTooltipTitle(
+                          "polyline",
+                          geometryMetricLabel,
+                        )
+                      : `Trace ${Math.round(score)}%`
+                  }
+                  geometryModeLabel={geometryModeLabel}
+                  geometryPointsLabel={geometryPointsLabel}
+                  geometryMetricLabel={geometryMetricLabel}
+                  geometryConfidenceLabel={geometryConfidenceLabel}
+                  color={color}
+                />
+              </Tooltip>
+              <Popup className="glass-popup custom-popup">
+                <ActionPopupContent
+                  key={item.id}
+                  item={item}
+                  color={color}
+                  coords={coords}
+                  onViewGeometry={onViewGeometry}
+                />
+              </Popup>
+            </Polyline>
+            {isActionMapItem(item) && (
+              <Polyline
+                key={`hit-area-${item.id}`}
+                positions={geometry.positions}
+                pathOptions={{
+                  color: color,
+                  weight: ACTION_TRACE_HIT_AREA_WEIGHT,
+                  opacity: 0,
+                  interactive: true,
+                }}
+                eventHandlers={{
+                  click: () => {
+                    onSelectAction?.(item.id);
+                  },
+                }}
               />
-            </Tooltip>
-            <Popup className="glass-popup custom-popup">
-              <ActionPopupContent
-                key={item.id}
-                item={item}
-                color={color}
-                coords={coords}
-              />
-            </Popup>
-          </Polyline>
+            )}
+            {endpointMarkers ? (
+              <>
+                <CircleMarker
+                  center={endpointMarkers.start}
+                  radius={3.5}
+                  interactive={false}
+                  pathOptions={{
+                    color: "#ffffff",
+                    fillColor: color,
+                    fillOpacity: 0.95,
+                    opacity: 0.95,
+                    weight: 1.5,
+                  }}
+                />
+                <CircleMarker
+                  center={endpointMarkers.end}
+                  radius={3.5}
+                  interactive={false}
+                  pathOptions={{
+                    color: "#ffffff",
+                    fillColor: color,
+                    fillOpacity: 0.95,
+                    opacity: 0.95,
+                    weight: 1.5,
+                  }}
+                />
+              </>
+            ) : null}
+          </Fragment>
         );
       })}
     </>

@@ -13,6 +13,7 @@ import {
   resolveGeometryConfidenceLabel,
   resolveInfrastructureAnchor,
   resolveGeometryRenderStyle,
+  resolvePolylineEndpointMarkers,
 } from "./actions-map-geometry.utils";
 
 function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
@@ -117,6 +118,38 @@ describe("actions map geometry utils", () => {
         strokeStyle: "dashed",
       }),
     ).toBe("Zone indicative");
+  });
+
+  it("does not create endpoint markers for routed synthetic polylines", () => {
+    const positions: [number, number][] = [
+      [48.8566, 2.3522],
+      [48.8576, 2.3532],
+    ];
+
+    expect(
+      resolvePolylineEndpointMarkers({
+        kind: "polyline",
+        positions,
+        presentation: {
+          origin: "routed",
+          reality: "estimated",
+          label: "Parcours reconstruit · estimation",
+          strokeStyle: "dashed",
+        },
+      }),
+    ).toBeNull();
+    expect(
+      resolvePolylineEndpointMarkers({
+        kind: "polyline",
+        positions,
+        presentation: {
+          origin: "manual",
+          reality: "real",
+          label: "Géométrie réelle · manuelle",
+          strokeStyle: "solid",
+        },
+      }),
+    ).toEqual({ start: positions[0], end: positions[1] });
   });
 
   it("reserves the dashed stroke for reconstructed routed polylines", () => {
