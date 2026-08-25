@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { Camera, MapPin, CheckCircle, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 import { createAction } from "@/lib/actions/http";
-import { normalizeActionPhotos } from "@/lib/actions/vision";
+import {
+  createSignalementEvidenceUploadItem,
+  uploadSignalementEvidence,
+  type SignalementEvidenceUploadItem,
+} from "@/lib/actions/signalement-media-client";
 import Link from "next/link";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -24,8 +28,11 @@ export function QuickSignalementForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreparingPhotos, setIsPreparingPhotos] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isPartialSuccess, setIsPartialSuccess] = useState(false);
   const [submittedRecordType, setSubmittedRecordType] = useState<QuickSignalementRecordType>("spot");
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<SignalementEvidenceUploadItem[]>([]);
+  const [pendingPhotoUploads, setPendingPhotoUploads] = useState<SignalementEvidenceUploadItem[]>([]);
+  const [submittedSignalementId, setSubmittedSignalementId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { acquire, release } = useSubmissionLock();
   const isCleanPlace = recordType === "clean_place";
@@ -56,19 +63,34 @@ export function QuickSignalementForm() {
     setIsSubmitting(true);
     setError(null);
     try {
-      setIsPreparingPhotos(true);
-      const photoAssets = photos.length > 0 ? await normalizeActionPhotos(photos.slice(0, 3)) : [];
-      await createAction(
+      const created = await createAction(
         buildQuickSignalementPayload({
           recordType,
           categories: selectedCategories,
           location,
-          photos: photoAssets,
           actionDate: new Date().toISOString().split("T")[0],
         }),
       );
+      setSubmittedSignalementId(created.id);
       setSubmittedRecordType(recordType);
-      setIsSuccess(true);
+      if (photos.length > 0) {
+        setIsPreparingPhotos(true);
+        const uploadResult = await uploadSignalementEvidence(
+          created.id,
+          photos,
+        );
+        if (uploadResult.failed.length > 0) {
+          setPendingPhotoUploads(uploadResult.failed.map((failure) => failure.item));
+          setIsPartialSuccess(true);
+          setError(
+            `${uploadResult.failed.length} preuve${uploadResult.failed.length > 1 ? "s" : ""} photo n'a pas pu être transmise.`,
+          );
+        } else {
+          setIsSuccess(true);
+        }
+      } else {
+        setIsSuccess(true);
+      }
     } catch (err) {
       logFailure("QuickSignalement", "Submission failed", err, {
         selectedCategories,
@@ -78,6 +100,32 @@ export function QuickSignalementForm() {
     } finally {
       setIsPreparingPhotos(false);
       setIsSubmitting(false);
+      release();
+    }
+  };
+
+  const retryPhotoUploads = async () => {
+    if (!submittedSignalementId || pendingPhotoUploads.length === 0 || !acquire()) {
+      return;
+    }
+    setIsPreparingPhotos(true);
+    setError(null);
+    try {
+      const uploadResult = await uploadSignalementEvidence(
+        submittedSignalementId,
+        pendingPhotoUploads,
+      );
+      if (uploadResult.failed.length > 0) {
+        setPendingPhotoUploads(uploadResult.failed.map((failure) => failure.item));
+        setError("Certaines preuves photo n'ont pas pu être transmises. Réessayez.");
+        return;
+      }
+      setPendingPhotoUploads([]);
+      setPhotos([]);
+      setIsPartialSuccess(false);
+      setIsSuccess(true);
+    } finally {
+      setIsPreparingPhotos(false);
       release();
     }
   };
@@ -102,9 +150,12 @@ export function QuickSignalementForm() {
           <button 
              onClick={() => {
                setIsSuccess(false);
+               setIsPartialSuccess(false);
                setRecordType("spot");
                setSelectedCategories([]);
                setPhotos([]);
+               setPendingPhotoUploads([]);
+               setSubmittedSignalementId(null);
              }}
             className="flex-1 py-6 rounded-[2rem] bg-white text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-400 transition-all active:scale-95"
           >
@@ -117,6 +168,38 @@ export function QuickSignalementForm() {
             Dashboard
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (isPartialSuccess) {
+    return (
+      <div className="text-center py-16 space-y-10 animate-in zoom-in duration-700">
+        <div className="w-24 h-24 bg-amber-400/20 text-amber-300 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-amber-400/20 border border-amber-400/30">
+          <AlertTriangle size={48} />
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Signalement créé</h2>
+          <p className="text-xl text-white/50 font-medium">
+            Le signalement est conservé, mais une ou plusieurs preuves photo restent à transmettre.
+          </p>
+        </div>
+        <div className="pt-6 flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+          <button
+            onClick={retryPhotoUploads}
+            disabled={isPreparingPhotos}
+            className="flex-1 py-6 rounded-[2rem] bg-amber-300 text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-200 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isPreparingPhotos ? "Nouvel essai..." : "Réessayer les photos"}
+          </button>
+          <Link
+            href={DASHBOARD_ROUTE}
+            className="flex-1 py-6 rounded-[2rem] bg-white/5 border border-white/5 text-white/60 font-black text-xs uppercase tracking-[0.2em] hover:bg-white/10 transition-all text-center flex items-center justify-center"
+          >
+            Continuer
+          </Link>
+        </div>
+        {error && <p className="text-sm font-bold text-amber-200">{error}</p>}
       </div>
     );
   }
@@ -199,7 +282,9 @@ export function QuickSignalementForm() {
             accept="image/jpeg,image/png,image/webp"
             multiple
             onChange={(event) => {
-              const nextFiles = Array.from(event.target.files || []).slice(0, 3);
+              const nextFiles = Array.from(event.target.files || [])
+                .slice(0, 3)
+                .map(createSignalementEvidenceUploadItem);
               setPhotos(nextFiles);
               setError(null);
             }}

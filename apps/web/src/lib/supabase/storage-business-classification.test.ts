@@ -36,6 +36,24 @@ it("uses the explicit business domain before other signals", () => {
   );
 });
 
+it("classifies signalement evidence from its canonical metadata", () => {
+  const classification = classifyStorageBusinessObject({
+    bucketId: "signalement-evidence",
+    name: "signalement-1/media-1.jpg",
+    mimeType: "image/jpeg",
+    metadata: buildStorageBusinessMetadata({
+      businessDomain: "pieces_jointes_photo",
+      sourceTable: "trash_spotter_spots",
+      businessContext: "signalement_evidence",
+      extra: { signalementId: "signalement-1" },
+    }),
+  });
+
+  expect(classification.id).toBe("pieces_jointes_photo");
+  expect(classification.businessContext).toBe("signalement_evidence");
+  expect(classification.sourceTable).toBe("trash_spotter_spots");
+});
+
   it("uses business context before generic bucket heuristics", () => {
     const classification = classifyStorageBusinessObject({
       bucketId: "chat-attachments",

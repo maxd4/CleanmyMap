@@ -51,6 +51,14 @@ describe("storage business taxonomy", () => {
 
     expect(
       classifyStorageBusinessDomain({
+        bucketId: "signalement-evidence",
+        name: "signalement-1/media-1.jpg",
+        mimeType: "image/jpeg",
+      }).id,
+    ).toBe("pieces_jointes_photo");
+
+    expect(
+      classifyStorageBusinessDomain({
         bucketId: "mission-assets",
         name: "mission-99/video.mp4",
         mimeType: "video/mp4",

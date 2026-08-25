@@ -8,7 +8,6 @@ describe("buildQuickSignalementPayload", () => {
       recordType: "spot",
       categories: ["plastic", "broken_glass"],
       location: { lat: 48.8566, lng: 2.3522 },
-      photos: [],
       actionDate: "2026-08-25",
     });
 
@@ -19,6 +18,7 @@ describe("buildQuickSignalementPayload", () => {
     expect(payload.notes).toContain("[cmm-waste:plastic,broken_glass]");
     expect(payload.latitude).toBe(48.8566);
     expect(payload.longitude).toBe(2.3522);
+    expect(payload).not.toHaveProperty("photos");
   });
 
   it("never carries Waste categories into a clean_place contract", () => {
@@ -26,7 +26,6 @@ describe("buildQuickSignalementPayload", () => {
       recordType: "clean_place",
       categories: ["plastic"],
       location: { lat: 48.8566, lng: 2.3522 },
-      photos: [],
       actionDate: "2026-08-25",
     });
 
@@ -35,5 +34,6 @@ describe("buildQuickSignalementPayload", () => {
     expect(payload.notes).not.toContain("cmm-waste");
     expect(payload.notes).not.toContain("plastic");
     expect(payload).not.toHaveProperty("observedPollutionScore");
+    expect(payload).not.toHaveProperty("photos");
   });
 });

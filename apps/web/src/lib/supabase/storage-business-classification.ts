@@ -60,7 +60,9 @@ const SOURCE_TABLE_DOMAIN_MAP: Record<string, StorageBusinessDomainId> = {
   progression_events: "badges_gamification",
   progression_profiles: "badges_gamification",
   reports: "socle_estimateur_impact",
+  signalement_media: "pieces_jointes_photo",
   spots: "actions_terrain",
+  trash_spotter_spots: "pieces_jointes_photo",
   users: "donnees_utilisateur",
 };
 
@@ -93,6 +95,7 @@ const BUSINESS_CONTEXT_DOMAIN_MAP: Record<string, StorageBusinessDomainId> = {
   message_attachment: "messages",
   profile_avatar: "donnees_utilisateur",
   report_export: "socle_estimateur_impact",
+  signalement_evidence: "pieces_jointes_photo",
 };
 
 const METADATA_KEYS = {
