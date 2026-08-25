@@ -110,6 +110,27 @@ la preuve que la migration a été appliquée sur tous les environnements
 historiques, que la correspondance de provenance est conservée et qu'aucun
 outil d'import ou opération externe ne dépend encore de la table.
 
+### Authentification des flux signalements/actions
+
+Les handlers protégés de `/api/spots` et des écritures `/api/actions` utilisent
+le helper central `requireAuthenticatedAccess`. En développement sur un hôte
+localhost, l'identité de test peut être fournie par le bypass
+`CMM_DEV_AUTH_BYPASS_*`, notamment pour les profils `benevole` et `max` déjà
+prévus par les environnements locaux. Ce bypass reste limité au développement
+et ne constitue jamais une identité HTTP de production ni un remplacement de
+Clerk.
+
+En production, Clerk reste obligatoire : une requête sans session conserve la
+réponse `401`. `service_role` est réservé aux opérations serveur de maintenance
+ou de nettoyage précisément bornées ; il ne doit jamais être utilisé comme
+substitut d'une session utilisateur HTTP.
+
+État de vérification au 25 août 2026 : les contrats d'authentification et les
+tests offline des flux canonical passent. Le smoke persistant local n'a pas pu
+être exécuté, Docker et le runtime Supabase local n'étant pas disponibles. Le
+smoke production reste à exécuter avec une vraie session Clerk ; aucune donnée
+de smoke n'a donc été créée, validée ou nettoyée en production.
+
 ### Maintenance et opérations
 
 Les outils d'opérations suivent la même séparation :
