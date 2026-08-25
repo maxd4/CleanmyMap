@@ -218,29 +218,30 @@ export function resolveGeometryRenderStyle(
     };
   }
 
-  const isEstimated = geometry.presentation.strokeStyle === "dashed";
   if (geometry.kind === "polygon") {
+    const isIndicative = geometry.presentation.reality === "estimated";
     return {
       pointRadius: null,
       pointWeight: null,
       pointOpacity: null,
       pointFillOpacity: null,
       strokeWeight: 2,
-      strokeOpacity: isEstimated ? 0.8 : 0.95,
-      fillOpacity: isEstimated ? 0.14 : 0.24,
-      dashArray: isEstimated ? "8 8" : undefined,
+      strokeOpacity: isIndicative ? 0.68 : 0.95,
+      fillOpacity: isIndicative ? 0.14 : 0.32,
+      dashArray: undefined,
     };
   }
 
+  const isReconstructed = geometry.presentation.origin === "routed";
   return {
     pointRadius: null,
     pointWeight: null,
     pointOpacity: null,
     pointFillOpacity: null,
     strokeWeight: 4,
-    strokeOpacity: isEstimated ? 0.75 : 0.92,
+    strokeOpacity: isReconstructed ? 0.75 : 0.92,
     fillOpacity: null,
-    dashArray: isEstimated ? "8 8" : undefined,
+    dashArray: isReconstructed ? "8 8" : undefined,
   };
 }
 
@@ -417,6 +418,18 @@ export function resolveGeometryConfidenceLabel(
 export function formatGeometryModeLabel(
   presentation: GeometryPresentation,
 ): string {
+  if (presentation.origin === "reference") {
+    return "Zone réelle";
+  }
+  if (presentation.origin === "estimated_area") {
+    return "Zone indicative";
+  }
+  if (presentation.origin === "routed") {
+    return "Parcours reconstruit";
+  }
+  if (presentation.origin === "fallback_point") {
+    return "Localisation seule";
+  }
   if (presentation.reality === "real") {
     return "Géométrie réelle";
   }

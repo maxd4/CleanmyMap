@@ -43,21 +43,21 @@ export function getGeometryPresentation(
         label:
           origin === "manual"
             ? "Géométrie réelle · manuelle"
-            : "Géométrie réelle · référence",
+            : "Zone réelle · référence",
         strokeStyle: "solid",
       };
     case "routed":
       return {
         origin,
         reality: "estimated",
-        label: "Géométrie estimée · routée",
+        label: "Parcours reconstruit · estimation",
         strokeStyle: "dashed",
       };
     case "estimated_area":
       return {
         origin,
         reality: "estimated",
-        label: "Géométrie estimée · zone",
+        label: "Zone indicative · emprise estimée",
         strokeStyle: "dashed",
       };
     case "fallback_point":
@@ -65,7 +65,7 @@ export function getGeometryPresentation(
       return {
         origin: "fallback_point",
         reality: "fallback",
-        label: "Point discret · fallback",
+        label: "Localisation seule",
         strokeStyle: "point",
       };
   }

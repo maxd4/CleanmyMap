@@ -53,7 +53,7 @@ describe("actions map geometry utils", () => {
         presentation: {
           origin: "routed",
           reality: "estimated",
-          label: "Géométrie estimée · routée",
+          label: "Parcours reconstruit · estimation",
           strokeStyle: "dashed",
         },
       }).dashArray,
@@ -69,6 +69,77 @@ describe("actions map geometry utils", () => {
         },
       }).dashArray,
     ).toBeUndefined();
+  });
+
+  it("renders a reliable reference polygon as a clear filled solid zone", () => {
+    const style = resolveGeometryRenderStyle({
+      kind: "polygon",
+      presentation: {
+        origin: "reference",
+        reality: "real",
+        label: "Zone réelle · référence",
+        strokeStyle: "solid",
+      },
+    });
+
+    expect(style.fillOpacity).toBe(0.32);
+    expect(style.strokeOpacity).toBe(0.95);
+    expect(style.dashArray).toBeUndefined();
+    expect(
+      formatGeometryModeLabel({
+        origin: "reference",
+        reality: "real",
+        label: "Zone réelle · référence",
+        strokeStyle: "solid",
+      }),
+    ).toBe("Zone réelle");
+  });
+
+  it("renders estimated_area as a transparent solid indicative zone", () => {
+    const style = resolveGeometryRenderStyle({
+      kind: "polygon",
+      presentation: {
+        origin: "estimated_area",
+        reality: "estimated",
+        label: "Zone indicative · emprise estimée",
+        strokeStyle: "dashed",
+      },
+    });
+
+    expect(style.fillOpacity).toBe(0.14);
+    expect(style.strokeOpacity).toBe(0.68);
+    expect(style.dashArray).toBeUndefined();
+    expect(
+      formatGeometryModeLabel({
+        origin: "estimated_area",
+        reality: "estimated",
+        label: "Zone indicative · emprise estimée",
+        strokeStyle: "dashed",
+      }),
+    ).toBe("Zone indicative");
+  });
+
+  it("reserves the dashed stroke for reconstructed routed polylines", () => {
+    const style = resolveGeometryRenderStyle({
+      kind: "polyline",
+      presentation: {
+        origin: "routed",
+        reality: "estimated",
+        label: "Parcours reconstruit · estimation",
+        strokeStyle: "dashed",
+      },
+    });
+
+    expect(style.dashArray).toBe("8 8");
+    expect(style.fillOpacity).toBeNull();
+    expect(
+      formatGeometryModeLabel({
+        origin: "routed",
+        reality: "estimated",
+        label: "Parcours reconstruit · estimation",
+        strokeStyle: "dashed",
+      }),
+    ).toBe("Parcours reconstruit");
   });
 
   it("normalizes drawing coordinates and rejects incomplete tracés", () => {
