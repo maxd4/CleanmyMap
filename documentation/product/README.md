@@ -27,6 +27,7 @@ Point d'entrée de la documentation produit CleanMyMap.
 ### Méthodologie
 
 - `SCIENTIFIC_PROTOCOL.md` ;
+- `methodologie-carte-actions.md` — lecture de la carte d'actions, score constaté, projection de re-pollution, couleurs, géométries et limites ;
 - documentation de méthodologie et impact dans les dossiers techniques ou les fiches de page concernées.
 
 ## Hiérarchie de lecture

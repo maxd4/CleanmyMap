@@ -20,6 +20,10 @@ Expliquer :
 - comment les coûts techniques et quotas sont suivis ;
 - quelles limites accompagnent les chiffres.
 
+La documentation de la page doit également orienter vers la méthodologie spécifique de la carte d'actions :
+
+`documentation/product/methodologie-carte-actions.md`
+
 ## Données chargées
 
 La page tente de charger :
@@ -66,6 +70,13 @@ fiche Méthodologie
 ## Point d'entrée
 
 La page est accessible depuis les surfaces de Cartographie & Impact, notamment la carte.
+
+## Référence carte d'actions
+
+La méthodologie de la carte distingue le score de pollution constatée avant l'action de la pollution projetée par vieillissement non linéaire. Elle documente aussi la séparation Actions / Trash Spotter, le fallback `S_post = 0`, les mesures post-action réelles, la calibration locale et la grammaire géométrique.
+
+La fiche détaillée est [la méthodologie produit de la carte d'actions](../../../../product/methodologie-carte-actions.md).
+
 
 ## Blocs fonctionnels
 
