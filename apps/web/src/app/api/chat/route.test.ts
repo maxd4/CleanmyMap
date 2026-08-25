@@ -266,10 +266,9 @@ describe("GET /api/chat and POST /api/chat", () => {
     expect(response.status).toBe(201);
     expect(body.status).toBe("sent");
     expect(body.message).toEqual(insertedMessage);
-    expect(verifyRateLimitMock).toHaveBeenCalledWith({
+    expect(verifyRateLimitMock).toHaveBeenCalledWith(expect.any(Request), {
       limit: 20,
       window: 60,
-      key: "user-1",
     });
     expect(createServerRateLimitResponseMock).toHaveBeenCalledWith(true, 0);
     expect(reserveDiscussionMessageSlotMock).toHaveBeenCalledWith(

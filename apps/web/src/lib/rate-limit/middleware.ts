@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkRateLimit } from "./store";
-import { getClientIp, getRateLimitConfig, getAuthenticatedUserId, getRateLimitKey } from "./utils";
+import {
+  getClientIp,
+  getRateLimitConfig,
+  getRateLimitIdentity,
+  getRateLimitKey,
+} from "./utils";
 
 export interface RateLimitMiddlewareOptions {
-  route?: string;
   skipPaths?: string[];
   customLimit?: number;
   customWindow?: number;
@@ -45,7 +49,11 @@ function logAbuse(identifier: string, route: string, ip: string): void {
   LOGGED_ABUSE_PATHS.set(key, existing);
 }
 
-export async function rateLimitMiddleware(request: NextRequest, options: RouteHandlerOptions = {}): Promise<{ 
+export async function rateLimitMiddleware(
+  request: NextRequest,
+  method: string,
+  options: RouteHandlerOptions = {},
+): Promise<{
   allowed: boolean; 
   response?: NextResponse; 
 }> {
@@ -60,19 +68,20 @@ export async function rateLimitMiddleware(request: NextRequest, options: RouteHa
     return { allowed: true };
   }
 
-  const userId = await getAuthenticatedUserId();
-  const ip = await getClientIp();
-  const identifier = userId || ip;
-  const config = getRateLimitConfig(path);
-  const rateLimitKey = getRateLimitKey(identifier, path);
+  const identity = await getRateLimitIdentity(request);
+  const ip = await getClientIp(request);
+  const config = getRateLimitConfig(path, method);
+  const limit = options.customLimit ?? config.limit;
+  const window = options.customWindow ?? config.window;
+  const rateLimitKey = getRateLimitKey(identity.key, path, method);
 
   const result = checkRateLimit({
     key: rateLimitKey,
-    limit: config.limit,
-    window: config.window,
+    limit,
+    window,
   });
 
-  const retryAfterSeconds = result.retryAfter || config.window;
+  const retryAfterSeconds = result.retryAfter || window;
   const response = NextResponse.json(
     {
       error: "Trop de tentatives. Réessayez dans quelques instants.",
@@ -88,13 +97,13 @@ export async function rateLimitMiddleware(request: NextRequest, options: RouteHa
         "X-RateLimit-Limit": String(result.limit),
         "X-RateLimit-Remaining": String(result.remaining),
         "X-RateLimit-Reset": String(result.reset),
-        ...(result.retryAfter ? { "Retry-After": String(result.retryAfter) } : {}),
+        "Retry-After": String(retryAfterSeconds),
       },
     },
   );
 
   if (!result.success) {
-    logAbuse(identifier, path, ip);
+    logAbuse(identity.key, path, ip);
     
     response.headers.set("X-RateLimit-Reset", String(result.reset));
     
@@ -104,16 +113,14 @@ export async function rateLimitMiddleware(request: NextRequest, options: RouteHa
   return { allowed: true };
 }
 
-interface RouteHandlerOptions {
-  skipPaths?: string[];
-}
+type RouteHandlerOptions = Pick<RateLimitMiddlewareOptions, "skipPaths" | "customLimit" | "customWindow">;
 
 export function withRateLimit(
   handler: (request: NextRequest) => Promise<NextResponse>,
   options?: RouteHandlerOptions
 ) {
   return async function (request: NextRequest): Promise<NextResponse> {
-    const { allowed, response } = await rateLimitMiddleware(request, options);
+    const { allowed, response } = await rateLimitMiddleware(request, request.method, options);
     
     if (!allowed && response) {
       return response;

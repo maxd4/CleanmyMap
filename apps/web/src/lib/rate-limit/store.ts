@@ -5,6 +5,9 @@ interface TokenBucket {
   lastRefill: number;
 }
 
+// This is intentionally process-local best effort. It is not a global or
+// multi-instance production limiter; the distributed anti-bot/quota layer is
+// a separate future lot.
 const buckets = new Map<string, TokenBucket>();
 
 const LOCKED_KEYS = new Set<string>();

@@ -8,7 +8,7 @@ export function withApiRateLimit(
   options?: RateLimitMiddlewareOptions
 ) {
   return async function rateLimitedHandler(request: NextRequest): Promise<NextResponse> {
-    const { allowed, response } = await rateLimitMiddleware(request, {
+    const { allowed, response } = await rateLimitMiddleware(request, request.method, {
       ...options,
       skipPaths: options?.skipPaths || [],
     });
@@ -32,7 +32,7 @@ export function createRateLimitedHandler(
   options?: RateLimitMiddlewareOptions
   ) {
   return async function handler(request: NextRequest): Promise<NextResponse> {
-    const { allowed, response } = await rateLimitMiddleware(request, options);
+    const { allowed, response } = await rateLimitMiddleware(request, request.method, options);
 
     if (!allowed && response) {
       return response;

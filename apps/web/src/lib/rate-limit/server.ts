@@ -1,33 +1,30 @@
 import { checkRateLimit } from "./store";
-import { getAuthenticatedUserId, getClientIp, getRateLimitKey } from "./utils";
-import { DEFAULT_RATE_LIMITS } from "./types";
+import { getRateLimitConfig, getRateLimitIdentity, getRateLimitKey } from "./utils";
 
 export interface ServerRateLimitOptions {
   limit?: number;
   window?: number;
-  key?: string;
 }
 
-export async function verifyRateLimit(options: ServerRateLimitOptions = {}): Promise<{
+export async function verifyRateLimit(
+  request: Request,
+  options: ServerRateLimitOptions = {},
+): Promise<{
   allowed: boolean;
   limit: number;
   remaining: number;
   retryAfter?: number;
 }> {
-  const writeLimits = DEFAULT_RATE_LIMITS["write"];
-  const { limit = writeLimits.limit, window = writeLimits.window, key } = options;
-  
-  const userId = await getAuthenticatedUserId();
-  const ip = await getClientIp();
-  const identifier = key || userId || ip;
-  
-  const route = "server-api";
-  const rateLimitKey = getRateLimitKey(identifier, route);
+  const pathname = new URL(request.url).pathname;
+  const method = request.method;
+  const config = getRateLimitConfig(pathname, method);
+  const identity = await getRateLimitIdentity(request);
+  const rateLimitKey = getRateLimitKey(identity.key, pathname, method);
   
   const result = checkRateLimit({
     key: rateLimitKey,
-    limit,
-    window,
+    limit: options.limit ?? config.limit,
+    window: options.window ?? config.window,
   });
   
   return {

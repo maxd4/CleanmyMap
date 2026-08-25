@@ -16,6 +16,7 @@ describe("createServerRateLimitResponse", () => {
     };
 
     expect(response!.status).toBe(429);
+    expect(response!.headers.get("Retry-After")).toBe("42");
     expect(body).toMatchObject({
       error: "Trop de tentatives. Réessayez dans quelques instants.",
       message: "Trop de tentatives. Réessayez dans quelques instants.",

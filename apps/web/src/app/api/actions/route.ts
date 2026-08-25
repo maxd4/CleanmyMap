@@ -267,10 +267,9 @@ export async function POST(request: Request) {
   }
   const { userId } = access;
 
-  const rateLimit = await verifyRateLimit({
+  const rateLimit = await verifyRateLimit(request, {
     limit: 10,
     window: 60,
-    key: userId,
   });
 
   const rateLimitResponse = createServerRateLimitResponse(
