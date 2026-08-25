@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { getGeometryPresentation } from "@/lib/actions/geometry-presentation";
 import {
   buildDrawingLeafletPositions,
   formatGeometryConfidenceLabel,
@@ -97,13 +98,41 @@ describe("actions map geometry utils", () => {
   });
 
   it("renders estimated_area as a transparent solid indicative zone", () => {
+    for (const geometrySource of ["manual", "reference", "estimated_area"] as const) {
+      const contractItem = toActionMapItem(
+        buildActionDataContract({
+          id: `${geometrySource}-polygon-contract`,
+          type: "action",
+          status: "approved",
+          source: "actions",
+          observedAt: "2026-04-08",
+          locationLabel: "Zone polygonale",
+          latitude: 48.85,
+          longitude: 2.35,
+          manualDrawing: {
+            kind: "polygon",
+            coordinates: [
+              [48.85, 2.35],
+              [48.851, 2.351],
+              [48.852, 2.35],
+            ],
+          },
+          geometrySource,
+          geometryConfidence: geometrySource === "estimated_area" ? 0.42 : 0.95,
+          wasteKg: 0,
+        }),
+      );
+
+      expect(getGeometryPresentation(contractItem).strokeStyle).toBe("solid");
+    }
+
     const style = resolveGeometryRenderStyle({
       kind: "polygon",
       presentation: {
         origin: "estimated_area",
         reality: "estimated",
         label: "Zone indicative · emprise estimée",
-        strokeStyle: "dashed",
+        strokeStyle: "solid",
       },
     });
 
@@ -115,7 +144,7 @@ describe("actions map geometry utils", () => {
         origin: "estimated_area",
         reality: "estimated",
         label: "Zone indicative · emprise estimée",
-        strokeStyle: "dashed",
+        strokeStyle: "solid",
       }),
     ).toBe("Zone indicative");
   });
