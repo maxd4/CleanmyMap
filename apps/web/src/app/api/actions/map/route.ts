@@ -9,7 +9,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 
 export const runtime = "nodejs";
-// Justification Vercel: la carte dépend des filtres et doit rester fraîche, mais le résultat se snapshotte.
+// Justification Vercel: la carte dépend des filtres et doit rester fraîche.
 export const dynamic = "force-dynamic";
 
 const MAP_ACTIONS_SNAPSHOT_TTL_MINUTES = 15;
@@ -30,37 +30,52 @@ function buildMapActionsSnapshotKey(url: URL): string {
     impact: parsed.impact ?? "all",
     scopeKind: parsed.scope.kind,
     scopeValue: parsed.scope.value ?? "all",
-    viewport: parsed.viewport
-      ? [
-          parsed.viewport.south,
-          parsed.viewport.west,
-          parsed.viewport.north,
-          parsed.viewport.east,
-          parsed.viewport.zoom ?? "auto",
-        ].join(":")
-      : "global",
+    viewport: "global",
   });
+}
+
+function isGeolocatedMapRequest(url: URL): boolean {
+  return Boolean(parseMapActionsParams(url, parseEntityTypesParam).viewport);
+}
+
+async function buildMapActionsPayload(url: URL) {
+  const result = await buildMapActionsRouteResult(url, {
+    getSupabaseServerClient,
+    fetchUnifiedActionContracts,
+    parseEntityTypesParam,
+    buildActionInsights,
+    toActionMapItem,
+    filterActionContractsByScope,
+  });
+
+  return result;
 }
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
+    // Viewport bounds are derived from the user's ephemeral location. Never
+    // send this response through the persistent public snapshot stores.
+    if (isGeolocatedMapRequest(url)) {
+      const result = await buildMapActionsPayload(url);
+      return NextResponse.json(
+        result.body,
+        result.body.partialSource
+          ? {
+              headers: {
+                "X-Data-Warning": "Partial source data",
+              },
+            }
+          : undefined,
+      );
+    }
+
     const snapshot = await loadOrRefreshPublicSurfaceSnapshot({
       snapshotKey: buildMapActionsSnapshotKey(url),
       title: "Actions cartographiques",
       version: MAP_ACTIONS_SNAPSHOT_VERSION,
       ttlMinutes: MAP_ACTIONS_SNAPSHOT_TTL_MINUTES,
-      buildPayload: async () => {
-        const result = await buildMapActionsRouteResult(url, {
-          getSupabaseServerClient,
-          fetchUnifiedActionContracts,
-          parseEntityTypesParam,
-          buildActionInsights,
-          toActionMapItem,
-          filterActionContractsByScope,
-        });
-        return result.body;
-      },
+      buildPayload: async () => (await buildMapActionsPayload(url)).body,
       meta: {
         route: "api/actions/map",
       },

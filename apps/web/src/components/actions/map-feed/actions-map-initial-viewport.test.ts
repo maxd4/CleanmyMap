@@ -10,6 +10,7 @@ import {
   type InitialMapActionsFetcher,
 } from "./actions-map-initial-viewport";
 import { shouldApplyAutomaticViewport } from "./use-actions-map-viewport";
+import { DEFAULT_ACTIONS_MAP_VIEWPORT, NEUTRAL_MAP_CENTER } from "../actions-map-canvas.utils";
 
 function buildItem(overrides: Partial<ActionMapItem>): ActionMapItem {
   return {
@@ -37,6 +38,11 @@ describe("actions map initial viewport", () => {
     expect(selectMapReferencePoint(gps, residence)).toEqual(gps);
     expect(selectMapReferencePoint(null, residence)).toEqual(residence);
     expect(selectMapReferencePoint(null, null)).toBeNull();
+  });
+
+  it("keeps a neutral viewport when GPS and residence are both unavailable", () => {
+    expect(selectMapReferencePoint(null, null)).toBeNull();
+    expect(DEFAULT_ACTIONS_MAP_VIEWPORT.center).toEqual(NEUTRAL_MAP_CENTER);
   });
 
   it("computes a symmetric Haversine distance", () => {
