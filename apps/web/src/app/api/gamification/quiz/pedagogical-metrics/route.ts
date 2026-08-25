@@ -6,8 +6,28 @@ import { syncQuizPedagogicalMetrics } from "@/lib/learning/quiz-pedagogical-metr
 
 export const runtime = "nodejs";
 
+const MAX_QUIZ_SESSION_QUESTIONS = 50;
+const MAX_QUIZ_STRING_LENGTH = 200;
+const MAX_PLAYED_AT_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_PLAYED_AT_FUTURE_SKEW_MS = 5 * 60 * 1000;
+
+const PlayedAtSchema = z.string().datetime({ offset: true }).superRefine((value, context) => {
+  const playedAt = Date.parse(value);
+  const now = Date.now();
+
+  if (
+    playedAt < now - MAX_PLAYED_AT_AGE_MS ||
+    playedAt > now + MAX_PLAYED_AT_FUTURE_SKEW_MS
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "playedAt must be reasonably close to the current time",
+    });
+  }
+});
+
 const QuestionResultSchema = z.object({
-  questionId: z.string().min(1),
+  questionId: z.string().min(1).max(MAX_QUIZ_STRING_LENGTH),
   correct: z.boolean(),
   skill: z.enum([
     "idée reçue",
@@ -19,7 +39,7 @@ const QuestionResultSchema = z.object({
     "cas-limites",
     "mini-enquetes",
   ]),
-  pedagogicalType: z.string().min(1),
+  pedagogicalType: z.string().min(1).max(MAX_QUIZ_STRING_LENGTH),
   errorType: z
     .enum([
       "idée reçue",
@@ -34,9 +54,9 @@ const QuestionResultSchema = z.object({
       "impact indirect ignoré",
     ])
     .optional(),
-  category: z.string().min(1),
-  difficulty: z.string().optional(),
-  trapLevel: z.string().optional(),
+  category: z.string().min(1).max(MAX_QUIZ_STRING_LENGTH),
+  difficulty: z.string().max(MAX_QUIZ_STRING_LENGTH).optional(),
+  trapLevel: z.string().max(MAX_QUIZ_STRING_LENGTH).optional(),
 });
 
 const BodySchema = z.object({
@@ -49,10 +69,35 @@ const BodySchema = z.object({
     "ordres-de-grandeur",
     "tri-securite",
   ]),
-  playedAt: z.string().min(1),
-  totalQuestions: z.number().int().positive(),
+  playedAt: PlayedAtSchema,
+  totalQuestions: z.number().int().positive().max(MAX_QUIZ_SESSION_QUESTIONS),
   score: z.number().int().nonnegative(),
-  questions: z.array(QuestionResultSchema).min(1),
+  questions: z.array(QuestionResultSchema).min(1).max(MAX_QUIZ_SESSION_QUESTIONS),
+}).superRefine((body, context) => {
+  if (body.score > body.totalQuestions) {
+    context.addIssue({
+      code: "custom",
+      path: ["score"],
+      message: "score cannot exceed totalQuestions",
+    });
+  }
+
+  if (body.questions.length !== body.totalQuestions) {
+    context.addIssue({
+      code: "custom",
+      path: ["questions"],
+      message: "questions length must match totalQuestions",
+    });
+  }
+
+  const questionIds = body.questions.map((question) => question.questionId);
+  if (new Set(questionIds).size !== questionIds.length) {
+    context.addIssue({
+      code: "custom",
+      path: ["questions"],
+      message: "questions must contain unique questionId values",
+    });
+  }
 });
 
 export async function POST(request: Request) {
