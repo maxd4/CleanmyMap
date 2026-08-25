@@ -220,30 +220,21 @@ bonus_xp = floor(eligible_forms / 10) * 2  // un bonus par décennie
 
 **Critères d éligibilité** :
 
-- **Source 1** : table `trash_spotter_spots`
+- **Source** : table `trash_spotter_spots`
   - `spot_type = clean_place`
   - `status = validated` ou `cleaned`
   - `latitude` et `longitude` non nulles
   - `notes` non nulles
   - `validated_at` ou `cleaned_at` antérieur d au moins 24h
 
-- **Source 2** : table `spots` (compatibilité legacy en extinction)
-  - `status = validated` ou `cleaned`
-  - `created_by_clerk_id` correspondant à l utilisateur
-  - `latitude` et `longitude` non nulles
-  - `notes` non nulles
-  - aucune nouvelle attribution XP n est déduite de cette table : le schéma
-    reconstructible de `public.spots` ne contient ni `validated_at` ni
-    `cleaned_at`, et `created_at` ne constitue pas une preuve de validation
-  - une ligne legacy peut rester visible dans le comptage uniquement si un
-    événement `clean_zone_task` existant prouve qu elle a déjà été récompensée
+`public.spots` n'est plus lue par la gamification. Les lignes historiques sont
+migrées vers la source canonique par la migration versionnée et les anciennes
+clés d'événement XP sont reconnues uniquement pour préserver l'historique.
 
-**Déduplication** : fusionner les résultats des deux sources avec une identité
-canonique déterministe basée sur les coordonnées normalisées à 5 décimales
-(`coordinates:<latitude>:<longitude>`). `trash_spotter_spots` est prioritaire
-pour représenter le lieu, tandis que la provenance complète des lignes
-canonicales et legacy est conservée. Une identité ne produit qu un candidat et
-qu un événement XP, même si elle existe dans les deux tables.
+**Déduplication** : les lignes canoniques sont regroupées avec une identité
+déterministe basée sur les coordonnées normalisées à 5 décimales
+(`coordinates:<latitude>:<longitude>`). Une identité ne produit qu un candidat
+et qu un événement XP.
 
 **Garde-fou de cooldown** :
 
@@ -255,7 +246,7 @@ qu un événement XP, même si elle existe dans les deux tables.
 
 ```text
 normalized_candidates =
-  union all des lignes de trash_spotter_spots et de spots,
+  lignes de trash_spotter_spots,
   après projection vers :
   canonical_place_key, primary_source, provenance, status, latitude, longitude,
   notes, validation_evidence
@@ -265,13 +256,11 @@ eligible_candidates =
   ET latitude IS NOT NULL ET longitude IS NOT NULL
   ET notes IS NOT NULL
   ET validated_at_or_cleaned_at <= now - interval '24 hours'
-  OU lignes legacy déjà couvertes par un événement XP existant
 
 deduped_candidates =
   première ligne par canonical_place_key,
-  ordonnée d abord par priorité de source (`trash_spotter_spots`, puis `spots`),
-  puis par ID stable; la provenance de toutes les lignes correspondantes est
-  conservée
+  ordonnée par ID stable; la provenance canonique des lignes correspondantes
+  est conservée
 
 clean_zones_count = count(distinct canonical_place_key)
 
@@ -281,9 +270,10 @@ per_task_xp = 1 par zone éligible via
 bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 ```
 
-La compatibilité avec les anciennes clés d événement (`spots` + `spot-id:*` et
+La compatibilité avec les anciennes clés d'événement (`spots` + `spot-id:*` et
 `trash_spotter_spots` + `clean-id:*`) est conservée en lecture afin de ne pas
-réattribuer un XP historique. Aucune migration n étend la table legacy.
+réattribuer un XP historique. La table legacy n'est pas relue et n'est pas
+étendue.
 
 **Direction visuelle** :
 

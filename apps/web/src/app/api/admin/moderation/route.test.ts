@@ -275,14 +275,13 @@ describe("POST /api/admin/moderation", () => {
       expect.anything(),
       expect.objectContaining({
         id: "spot-1",
-        preferredSource: "trash_spotter_spots",
+        status: "validated",
       }),
     );
     expect(copyValidatedSpotToLocalStoreMock).toHaveBeenCalledWith(
       expect.anything(),
       "spot-1",
       "admin-1",
-      "trash_spotter_spots",
     );
     expect(emitSpotValidatedMock).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "creator-1" }),

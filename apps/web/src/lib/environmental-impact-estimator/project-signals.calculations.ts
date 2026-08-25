@@ -42,7 +42,7 @@ export type ActionRow = {
 
 export type SpotRow = {
   id?: string;
-  source?: "trash_spotter_spots" | "spots_legacy";
+  source?: "trash_spotter_spots";
   created_at: string;
   created_by_clerk_id: string;
   latitude: number | null;
@@ -52,13 +52,12 @@ export type SpotRow = {
 
 export function mergeSignalementSpotRows(
   canonicalRows: SpotRow[],
-  legacyRows: SpotRow[],
 ): SpotRow[] {
   const seenIds = new Set<string>();
-  const rows = [
-    ...canonicalRows.map((row) => ({ ...row, source: "trash_spotter_spots" as const })),
-    ...legacyRows.map((row) => ({ ...row, source: "spots_legacy" as const })),
-  ].filter((row) => {
+  const rows = canonicalRows.map((row) => ({
+    ...row,
+    source: "trash_spotter_spots" as const,
+  })).filter((row) => {
     const id = row.id?.trim();
     if (!id) {
       return true;
@@ -75,7 +74,7 @@ export function mergeSignalementSpotRows(
     if (createdAtOrder !== 0) {
       return createdAtOrder;
     }
-    return left.source === "trash_spotter_spots" ? -1 : 1;
+    return left.id?.localeCompare(right.id ?? "") ?? 0;
   });
 }
 

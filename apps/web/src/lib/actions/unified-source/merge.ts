@@ -7,12 +7,11 @@ import type {
 } from "@/lib/actions/data-contract";
 import type { ActionMapViewportQuery } from "@/lib/actions/types";
 import type {
-  LegacySpotRow,
   TrashSpotterSpotRow,
   UnifiedContractCandidate,
   UnifiedContractOrigin,
 } from "./contracts";
-import { toActionContract, toCanonicalSpotContract, toLegacySpotContract } from "./contracts";
+import { toActionContract, toCanonicalSpotContract } from "./contracts";
 import type { StoredAction } from "@/lib/actions/store";
 
 const TEST_MARKERS = [
@@ -113,7 +112,6 @@ function withDataQuality(contract: ActionDataContract): ActionDataContract {
 export function buildUnifiedActionContracts(
   remoteRows: StoredAction[],
   remoteSpots: TrashSpotterSpotRow[],
-  legacySpots: LegacySpotRow[],
   localContracts: ActionDataContract[],
   types: ActionEntityType[] | null,
   limit: number,
@@ -130,10 +128,6 @@ export function buildUnifiedActionContracts(
     ...localContracts.map((contract) => ({
       contract,
       origin: "local" as const,
-    })),
-    ...legacySpots.map((row) => ({
-      contract: toLegacySpotContract(row),
-      origin: "legacy" as const,
     })),
   ];
 

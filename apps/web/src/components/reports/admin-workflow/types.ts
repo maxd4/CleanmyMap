@@ -85,7 +85,7 @@ export type ActionModerationEditDraft = {
 
 export type CleanPlaceModerationEditDraft = {
  label: string;
- wasteType: string;
+ spotType: "spot" | "clean_place";
  latitude: string;
  longitude: string;
  notes: string;

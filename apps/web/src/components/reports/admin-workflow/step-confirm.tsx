@@ -418,7 +418,10 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </label>
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Type
- <input value={workflow.cleanPlaceEditDraft.wasteType} onChange={(event) => updateCleanPlaceDraft(workflow,"wasteType",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ <select value={workflow.cleanPlaceEditDraft.spotType} onChange={(event) => updateCleanPlaceDraft(workflow,"spotType",event.target.value as "spot" | "clean_place")} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none focus:border-emerald-600">
+  <option value="spot">Spot</option>
+  <option value="clean_place">Lieu propre</option>
+ </select>
  </label>
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Latitude

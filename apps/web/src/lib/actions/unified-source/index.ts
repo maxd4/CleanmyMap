@@ -54,7 +54,6 @@ export async function fetchUnifiedActionContracts(
   const {
     remoteRows,
     remoteSpots,
-    legacySpots,
     localContracts,
     failedSources,
     availableSources,
@@ -62,7 +61,6 @@ export async function fetchUnifiedActionContracts(
   const { items, isTruncated } = buildUnifiedActionContracts(
     remoteRows,
     remoteSpots,
-    legacySpots,
     filterContractsByViewport(localContracts, params.viewport),
     params.types,
     params.limit,

@@ -341,30 +341,11 @@ it("counts canonical signalements, keeps legacy history and removes mirrored dup
       status: "cleaned",
     },
   ];
-  const legacyRows = [
-    {
-      id: "shared-signalement",
-      created_at: "2026-05-08T12:00:00Z",
-      created_by_clerk_id: "user-1",
-      latitude: 48.85,
-      longitude: 2.35,
-      status: "validated",
-    },
-    {
-      id: "legacy-only",
-      created_at: "2026-05-07T12:00:00Z",
-      created_by_clerk_id: "user-1",
-      latitude: 48.87,
-      longitude: 2.37,
-      status: "validated",
-    },
-  ];
-  const spots = mergeSignalementSpotRows(canonicalRows, legacyRows);
+  const spots = mergeSignalementSpotRows(canonicalRows);
 
   expect(spots.map((row) => [row.id, row.source])).toEqual([
     ["shared-signalement", "trash_spotter_spots"],
     ["canonical-only", "trash_spotter_spots"],
-    ["legacy-only", "spots_legacy"],
   ]);
 
   const signals = buildEnvironmentalImpactProjectSignals(
@@ -384,8 +365,8 @@ it("counts canonical signalements, keeps legacy history and removes mirrored dup
     { generatedAt: "2026-05-20T12:00:00.000Z", userId: null },
   );
 
-  expect(signals.siteInput.apiRequests).toBe(3);
-  expect(signals.siteInput.maps).toBe(3);
+  expect(signals.siteInput.apiRequests).toBe(2);
+  expect(signals.siteInput.maps).toBe(2);
 });
 
 it("uses GitHub Actions runs as a direct monthly deployment source when available", () => {

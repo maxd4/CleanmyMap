@@ -31,7 +31,6 @@ import {
 import { invalidatePublicSurfaceSnapshotsByRoute } from"@/lib/public-surface-snapshots";
 import {
  moderateSignalement,
- type SignalementModerationSource,
 } from"@/lib/admin/signalement-moderation";
 
 export const runtime ="nodejs";
@@ -51,7 +50,7 @@ const cleanPlacePayloadSchema = z.object({
  entityType: z.literal("clean_place"),
  id: z.string().trim().min(1),
  status: z.enum(["new","validated","cleaned"]),
- sourceTable: z.enum(["trash_spotter_spots","spots"]).optional(),
+ sourceTable: z.literal("trash_spotter_spots").optional(),
  confirmPhrase: z.string().trim().max(120).optional(),
  reason: z.string().trim().max(500).optional(),
  edits: cleanPlaceEditsSchema,
@@ -570,7 +569,6 @@ let copied = false;
   id: parsed.data.id,
   status: parsed.data.status,
   edits: parsed.data.edits,
-  preferredSource: parsed.data.sourceTable as SignalementModerationSource | undefined,
  });
  if (!signalementUpdate.found || !signalementUpdate.signalement) {
  await appendAdminOperationAudit({
@@ -601,7 +599,6 @@ let copied = false;
       supabase,
       parsed.data.id,
       access.userId,
-      signalementUpdate.sourceTable ?? undefined,
     );
 
     emitSpotValidated({

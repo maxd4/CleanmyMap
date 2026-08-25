@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   collectEligibleCleanZoneSources,
   type CleanZoneCanonicalRow,
-  type CleanZoneLegacyRow,
   type CleanZoneProgressionEvent,
 } from "@/lib/gamification/clean-zones";
 import { auditXpAttribution } from "@/lib/gamification/notifications";
@@ -143,7 +142,7 @@ async function loadCleanZoneSourcesForUser(
     const now = new Date();
     const cooldownCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [cleanPlacesResult, spotsResult, progressionEventsResult] = await Promise.all([
+    const [cleanPlacesResult, progressionEventsResult] = await Promise.all([
       supabase
         .from("trash_spotter_spots")
         .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
@@ -155,18 +154,6 @@ async function loadCleanZoneSourcesForUser(
         .not("notes", "is", null)
         .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
         .limit(CLEAN_ZONE_SOURCE_LIMIT),
-      // public.spots has no validated_at/cleaned_at columns. Do not infer a
-      // validation timestamp from created_at; legacy XP is retained only via
-      // an already recorded progression event below.
-      supabase
-        .from("spots")
-        .select("id, status, latitude, longitude, notes")
-        .eq("created_by_clerk_id", userId)
-        .in("status", ["validated", "cleaned"])
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .not("notes", "is", null)
-        .limit(CLEAN_ZONE_SOURCE_LIMIT),
       supabase
         .from("progression_events")
         .select("source_table, source_id")
@@ -177,7 +164,6 @@ async function loadCleanZoneSourcesForUser(
 
     return collectEligibleCleanZoneSources({
       cleanPlaces: toCanonicalCleanZoneRows(cleanPlacesResult.data),
-      otherSpots: toLegacyCleanZoneRows(spotsResult.data),
       progressionEvents: toCleanZoneProgressionEvents(progressionEventsResult.data),
       now,
     });
@@ -186,10 +172,6 @@ async function loadCleanZoneSourcesForUser(
 
 function toCanonicalCleanZoneRows(rows: unknown): CleanZoneCanonicalRow[] {
   return Array.isArray(rows) ? (rows as CleanZoneCanonicalRow[]) : [];
-}
-
-function toLegacyCleanZoneRows(rows: unknown): CleanZoneLegacyRow[] {
-  return Array.isArray(rows) ? (rows as CleanZoneLegacyRow[]) : [];
 }
 
 function toCleanZoneProgressionEvents(rows: unknown): CleanZoneProgressionEvent[] {
@@ -236,7 +218,7 @@ async function awardCleanZoneSourceProgressionEvents(
       statusPhase: "validated",
       xp: 1,
       metadata: {
-        origin: source.sourceTable === "trash_spotter_spots" ? "canonical" : "legacy",
+        origin: "canonical",
         canonical_place_key: source.canonicalPlaceKey,
         spot_id: source.sourceId,
         provenance: source.provenance,

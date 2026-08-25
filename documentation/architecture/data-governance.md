@@ -44,7 +44,7 @@ apps/web/src/lib/domain-language.ts
 |---|---|---|
 | Action | `public.actions` | `ActionStatus`, `ActionListItem` et contrats actions |
 | Signalement `spot` / `clean_place` | `public.trash_spotter_spots` | `SignalementModerationSource`, contrats unifiés |
-| Spot legacy | `public.spots` | compatibilité de lecture/modération en extinction |
+| Spot legacy | `public.spots` | archive historique en extinction, sans lecture/écriture runtime |
 | Profil | `public.profiles` | modèle Profile |
 | Mission GPS | `public.missions` | types de `companion-app/types/mission.ts` |
 | Point GPS | `public.gps_points` | types mission/location |
@@ -82,26 +82,29 @@ signalements `spot` et `clean_place`. Les créations applicatives et la file de
 modération passent par cette table et utilisent ses colonnes `spot_type`,
 `validated_at` et `cleaned_at`.
 
-`public.spots` est conservée temporairement comme source legacy explicite pour
-les anciens enregistrements encore à traiter. Elle ne doit plus recevoir de
-nouvelles écritures applicatives. Son champ `waste_type` reste propre au
-chemin legacy et ne doit pas être converti en `spot_type`.
+`public.spots` est maintenant conservée comme archive historique uniquement :
+aucune création, modération, carte, historique, indicateur ou gamification ne
+la traite comme une source runtime équivalente. Son champ `waste_type` reste
+propre au chemin legacy et n'est pas converti silencieusement en `spot_type`.
 
-La capacité `apps/web/src/lib/admin/signalement-moderation.ts` porte la
-provenance de chaque entrée (`trash_spotter_spots` ou `spots`), la fusion et le
-tri de la file, les changements de statut et la lecture utilisée par la copie
-locale validée. Aucune suppression de table n'est incluse dans cette phase.
+La migration
+`apps/web/supabase/migrations/20260825000000_migrate_legacy_spots_to_trash_spotter.sql`
+copie les lignes historiques vers `trash_spotter_spots` sans suppression,
+conserve les champs utiles et écrit une correspondance idempotente dans
+`public.legacy_spot_migrations`. Elle réutilise l'UUID legacy lorsqu'il est
+libre et génère un nouvel UUID en cas de collision ; `legacy_waste_type` et
+`legacy_notes` préservent la provenance.
 
-La gamification des Clean Zones applique la même priorité :
-`trash_spotter_spots` est la source primaire et `spots` n'est qu'une
-compatibilité de lecture. L'identité de comptage est déterminée par les
-coordonnées normalisées du lieu, la provenance des lignes fusionnées est
-conservée et un lieu ne peut produire qu'un seul événement XP. Le schéma
-reconstructible de `public.spots` ne contient pas `validated_at` ni
-`cleaned_at` ; `created_at` n'est donc jamais utilisé comme preuve de
-validation. Une attribution legacy déjà enregistrée est reconnue pour
-préserver l'historique, mais aucune nouvelle attribution legacy n'est créée
-sans preuve persistée.
+La capacité `apps/web/src/lib/admin/signalement-moderation.ts` et les flux
+unifiés utilisent désormais uniquement `trash_spotter_spots`. Les anciennes
+clés d'événement XP (`spots` + `spot-id:*`) restent reconnues comme historique
+dans la progression afin de ne pas réattribuer un XP après migration, sans
+relire la table legacy.
+
+La suppression physique de `public.spots` reste un lot ultérieur : elle exige
+la preuve que la migration a été appliquée sur tous les environnements
+historiques, que la correspondance de provenance est conservée et qu'aucun
+outil d'import ou opération externe ne dépend encore de la table.
 
 ## Validation des entrées
 

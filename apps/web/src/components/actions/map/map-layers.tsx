@@ -76,7 +76,6 @@ export function isTrashSpotterItem(item: ActionMapItem): boolean {
   return (
     type === "spot" ||
     item.source === "trash_spotter_spots" ||
-    item.source === "spots" ||
     item.record_type === "other"
   );
 }

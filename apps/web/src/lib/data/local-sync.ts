@@ -14,7 +14,6 @@ import {
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
   readSignalementForModeration,
-  type SignalementModerationSource,
 } from "@/lib/admin/signalement-moderation";
 
 type ActionRow = {
@@ -178,7 +177,7 @@ function fromModeratedSignalement(
       originTable: row.sourceTable,
       validatedBy,
       validatedAt: row.validated_at ?? new Date().toISOString(),
-      notes: row.sourceTable === "spots" ? row.waste_type : row.spot_type,
+      notes: row.spot_type,
     },
   };
 }
@@ -230,13 +229,8 @@ export async function copyValidatedSpotToLocalStore(
   supabase: SupabaseClient,
   spotId: string,
   validatedBy: string,
-  preferredSource?: SignalementModerationSource,
 ): Promise<boolean> {
-  const row = await readSignalementForModeration(
-    supabase,
-    spotId,
-    preferredSource,
-  );
+  const row = await readSignalementForModeration(supabase, spotId);
   if (!row) {
     return false;
   }

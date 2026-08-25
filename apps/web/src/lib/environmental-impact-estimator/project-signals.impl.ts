@@ -594,7 +594,6 @@ export async function loadEnvironmentalImpactProjectSignals(
     accountCreatedAt,
     actions,
     canonicalSpots,
-    legacySpots,
     funnelEvents,
     progressionEvents,
     reports,
@@ -622,20 +621,6 @@ export async function loadEnvironmentalImpactProjectSignals(
         .select("id, created_at, created_by_clerk_id, latitude, longitude, status, spot_type")
         .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [["created_at", false], ["id", false]],
-    ),
-    orderProjectSignalRows<SpotRow>(
-      supabase
-        .from("spots")
-        .select("id, created_at, created_by_clerk_id, latitude, longitude, status, waste_type")
-        .limit(PROJECT_SIGNAL_ROW_LIMIT),
-      [
-        ["created_at", false],
-        ["id", false],
-        ["created_by_clerk_id", false],
-        ["latitude", false],
-        ["longitude", false],
-        ["status", false],
-      ],
     ),
     orderProjectSignalRows<FunnelRow>(
       supabase
@@ -735,7 +720,7 @@ export async function loadEnvironmentalImpactProjectSignals(
     ),
   ]);
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
-  const error = [actions.error, canonicalSpots.error, legacySpots.error, funnelEvents.error,
+  const error = [actions.error, canonicalSpots.error, funnelEvents.error,
     progressionEvents.error, reports.error, trainingExamples.error, serviceEmails.error,
     communityEvents.error, eventRsvps.error, appNotifications.error].find(Boolean);
   if (error) {
@@ -745,10 +730,7 @@ export async function loadEnvironmentalImpactProjectSignals(
     {
       profiles: [],
       actions: (actions.data ?? []) as ActionRow[],
-      spots: mergeSignalementSpotRows(
-        (canonicalSpots.data ?? []) as SpotRow[],
-        (legacySpots.data ?? []) as SpotRow[],
-      ),
+      spots: mergeSignalementSpotRows((canonicalSpots.data ?? []) as SpotRow[]),
       funnelEvents: (funnelEvents.data ?? []) as FunnelRow[],
       progressionEvents: (progressionEvents.data ?? []) as ProgressionRow[],
       reports: (reports.data ?? []) as ReportRow[],
