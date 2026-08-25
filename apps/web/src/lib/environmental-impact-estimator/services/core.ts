@@ -2,6 +2,7 @@ import {
   ENVIRONMENTAL_IMPACT_ESTIMATOR_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_ESTIMATOR_LIMITATIONS,
   ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
+  ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS,
@@ -13,6 +14,7 @@ import type {
   EnvironmentalImpactUsageProfileEstimate,
 } from "../types";
 import { buildElectricityEstimate } from "./electricity";
+import { buildWaterEstimate } from "./water";
 import { normalizeEnvironmentalImpactEstimateInput } from "../validation";
 import { buildInfrastructureEstimate, buildInfrastructureMissingDataNotes } from "./infrastructure";
 import { buildLifecycleEstimate } from "./lifecycle";
@@ -20,9 +22,20 @@ import { buildScopeCurveEstimate, buildScopeEstimate, buildScopeMissingDataNotes
 
 export function buildEnvironmentalImpactEstimatorMethodology(
   generatedAt: string,
-  usageProfile?: Pick<EnvironmentalImpactUsageProfileEstimate, "monthlyElectricityKwh">,
+  usageProfile?: Pick<
+    EnvironmentalImpactUsageProfileEstimate,
+    | "monthlyElectricityKwh"
+    | "monthlyDirectWaterConsumptionLiters"
+    | "monthlyEvaporatedWaterLiters"
+  >,
 ): EnvironmentalImpactEstimatorMethodology {
-  const electricity = buildElectricityEstimate(usageProfile ?? { monthlyElectricityKwh: null }, null);
+  const safeUsageProfile = usageProfile ?? {
+    monthlyElectricityKwh: null,
+    monthlyDirectWaterConsumptionLiters: null,
+    monthlyEvaporatedWaterLiters: null,
+  };
+  const electricity = buildElectricityEstimate(safeUsageProfile, null);
+  const water = buildWaterEstimate(safeUsageProfile);
   return {
     version: ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
     generatedAt,
@@ -41,12 +54,17 @@ export function buildEnvironmentalImpactEstimatorMethodology(
       "GPT-5.4 mini — développement du site est distingué des sessions Codex et peut être ancré à 2h hebdomadaires tant qu'aucun journal plus fin n'est branché.",
       "Le poste Codex — développement du site repose sur un journal hebdomadaire spécifique au projet; sans semaine enregistrée, il reste explicitement à zéro et signalé comme non branché.",
       "Le deuxième ordre détaille la composition interne de l'impact en familles environnementales lisibles.",
+      ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE,
+      "L'eau estimée distingue la consommation directe du site et l'eau indirecte liée à l'électricité. Ces valeurs restent des ordres de grandeur.",
+      "L'eau directe et l'évaporation ne sont affichées que lorsqu'un signal est fourni; le total reste à compléter si une composante nécessaire manque.",
+      "L'eau reste dans le cycle hydrologique global, mais l'eau évaporée est consommée localement car elle n'est plus immédiatement disponible dans le même bassin. Retrait et consommation ne sont pas interchangeables; l'eau retournée dépend du lieu, du moment, de la température et de la qualité. La pression dépend aussi du stress et des conflits locaux, pas seulement des litres.",
       "Les ordres de grandeur fournis par le projet servent d'ancrage spécifique à CleanMyMap pour l'assistance IA, le développement de la première moitié du site et l'usage annuel bénévole.",
       `Le facteur électrique configuré est de ${electricity.factorKgCo2ePerKwh} kgCO2e/kWh pour ${electricity.source === "input" ? "un calcul kWh × facteur" : "un équivalent électrique proxy tant qu'aucun kWh réel n'est branché"}.`,
       "Le refroidissement varie fortement selon les data centers: environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces; aucune part fixe n'est attribuée à CleanMyMap.",
       "Les serveurs accélérés, principalement associés à l'adoption de l'IA, constituent un moteur important de la croissance prévue de la consommation des data centers; aucune part du trafic de CleanMyMap n'est attribuée à l'IA.",
     ],
     electricity,
+    water,
   };
 }
 

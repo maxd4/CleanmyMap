@@ -4,6 +4,7 @@ import type {
   EnvironmentalImpactEstimateModel,
   EnvironmentalImpactSnapshotRecord,
 } from "@/lib/environmental-impact-estimator/types";
+import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
 import { cn } from "@/lib/utils";
 import {
   formatLifecycleQuantity,
@@ -64,8 +65,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
             </h4>
           </div>
           <p className="text-xs leading-relaxed text-red-100/40">
-            Le total est réparti entre CO2 brut, équivalent électrique, autres GES,
-            produits chimiques et eau.
+            Les familles CO₂e sont des proxys de lecture, pas un inventaire physique séparé.
           </p>
         </div>
 
@@ -129,6 +129,67 @@ export function EnvironmentalImpactEstimatorPanelDetails({
             {model.infrastructure.secondOrder.notes.join(" ")}
           </p>
         </div>
+      </section>
+
+      <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+        {(() => {
+          const water = model.infrastructure.water ?? buildWaterEstimate(model.infrastructure.usage);
+          const formatLiters = (value: number | null) =>
+            value === null
+              ? "À compléter"
+              : `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value)} L`;
+          const availabilityLabel =
+            water.availability === "available"
+              ? "disponible"
+              : water.availability === "partial"
+                ? "partiel"
+                : "à compléter";
+
+          return (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
+                    Eau estimée
+                  </p>
+                  <h4 className="mt-1 text-lg font-black tracking-tight text-white">
+                    Eau directe et eau indirecte
+                  </h4>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
+                  {availabilityLabel}
+                </span>
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                L’eau estimée distingue la consommation directe du site et l’eau indirecte liée à l’électricité. Ces valeurs restent des ordres de grandeur.
+              </p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <p className="text-sm font-black text-white">Eau directe consommée sur site</p>
+                  <p className="mt-3 text-lg font-black text-white">{formatLiters(water.directWaterConsumptionLiters)}</p>
+                </article>
+                <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <p className="text-sm font-black text-white">Eau indirecte liée à l’électricité</p>
+                  <p className="mt-3 text-lg font-black text-white">{formatLiters(water.indirectElectricityWaterLiters)}</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">Proxy configuré : {water.factorLitersPerKwh} L/kWh — {water.factorSourceLabel}.</p>
+                </article>
+                {water.evaporatedWaterLiters !== null ? (
+                  <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                    <p className="text-sm font-black text-white">dont évaporation</p>
+                    <p className="mt-3 text-lg font-black text-white">{formatLiters(water.evaporatedWaterLiters)}</p>
+                  </article>
+                ) : null}
+                <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <p className="text-sm font-black text-white">Eau totale estimée</p>
+                  <p className="mt-3 text-lg font-black text-white">{formatLiters(water.totalWaterConsumptionLiters)}</p>
+                </article>
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-red-100/40">
+                {water.provenance.join(" ")}
+              </p>
+            </>
+          );
+        })()}
       </section>
 
       <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">

@@ -128,6 +128,10 @@ export type EnvironmentalImpactInfrastructureMetricsInput = Partial<
 export type EnvironmentalImpactUsageProfileInput = {
   /** Optional measured electricity consumption. Never inferred from CO2e. */
   monthlyElectricityKwh?: number | null;
+  /** Optional direct site water consumption. Never inferred from CO2e. */
+  monthlyDirectWaterConsumptionLiters?: number | null;
+  /** Optional measured evaporation component of direct site water use. */
+  monthlyEvaporatedWaterLiters?: number | null;
   monthlyPageViews?: number | null;
   monthlyActiveUsers?: number | null;
   monthlySessions?: number | null;
@@ -243,6 +247,21 @@ export type EnvironmentalImpactElectricityEstimate = {
   note: string;
 };
 
+export type EnvironmentalImpactWaterAvailability = "available" | "partial" | "missing";
+
+export type EnvironmentalImpactWaterEstimate = {
+  directWaterConsumptionLiters: number | null;
+  evaporatedWaterLiters: number | null;
+  indirectElectricityWaterLiters: number | null;
+  totalWaterConsumptionLiters: number | null;
+  factorLitersPerKwh: number;
+  factorSourceLabel: string;
+  factorSourceUrl: string;
+  availability: EnvironmentalImpactWaterAvailability;
+  source: "input" | "derived" | "mixed" | "missing";
+  provenance: string[];
+};
+
 export type EnvironmentalImpactSecondOrderEstimate = {
   totalKgCo2eProxy: number | null;
   factorEstimates: EnvironmentalImpactSecondOrderFactorEstimate[];
@@ -325,6 +344,8 @@ export type EnvironmentalImpactProjectAnchor = {
 
 export type EnvironmentalImpactUsageProfileEstimate = {
   monthlyElectricityKwh?: number | null;
+  monthlyDirectWaterConsumptionLiters: number | null;
+  monthlyEvaporatedWaterLiters: number | null;
   monthlyPageViews: number;
   monthlyActiveUsers: number;
   monthlySessions: number;
@@ -419,6 +440,7 @@ export type EnvironmentalImpactInfrastructureEstimate = {
   confidencePercent: number;
   uncertaintyPercent: number;
   usage: EnvironmentalImpactUsageProfileEstimate;
+  water: EnvironmentalImpactWaterEstimate;
   services: EnvironmentalImpactInfrastructureServiceEstimate[];
   curve: EnvironmentalImpactInfrastructureCurvePoint[];
   graph: EnvironmentalImpactGraphEstimate;
@@ -529,6 +551,7 @@ export type EnvironmentalImpactEstimatorMethodology = {
   projectAnchors: EnvironmentalImpactProjectAnchor[];
   notes: string[];
   electricity: EnvironmentalImpactElectricityEstimate;
+  water: EnvironmentalImpactWaterEstimate;
 };
 
 export type EnvironmentalImpactEstimateModel = {

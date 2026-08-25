@@ -148,8 +148,7 @@ export function formatSecondOrderQuantity(value: number | null, unitLabel: strin
     return unitLabel === "kWh" ? "À compléter — kWh réel non branché" : "—";
   }
 
-  const maximumFractionDigits =
-    unitLabel === "kWh" ? 1 : unitLabel === "L" ? 0 : unitLabel === "kg CO2 brut" ? 3 : 2;
+  const maximumFractionDigits = unitLabel === "kWh" ? 1 : 2;
 
   return `${new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits,

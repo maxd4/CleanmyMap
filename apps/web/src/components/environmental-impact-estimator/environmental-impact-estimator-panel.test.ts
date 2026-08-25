@@ -26,7 +26,11 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Prochaines actions à plus fort impact");
     expect(markup).toContain("Réduire la charge Vercel");
     expect(markup).toContain("Deuxième ordre");
-    expect(markup).toContain("CO2 brut");
+    expect(markup).toContain("Proxy de carbone CO₂e");
+    expect(markup).toContain("Eau estimée");
+    expect(markup).toContain("Eau totale estimée");
+    expect(markup).toContain("À compléter");
+    expect(markup).not.toContain("CO2 brut");
     expect(markup).toContain("Empreinte matérielle et cycle de vie");
     expect(markup).toContain("Équivalent électrique estimé");
     expect(markup).toContain("À compléter — kWh réel non branché");

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
-import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator";
+import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
+import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
 import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-client";
 import type {
@@ -45,6 +46,11 @@ export default async function MethodologiePage() {
   let impactGeneratedAt: string | null = null;
   let impactLaunchedAt: string | null = null;
   let impactElectricity = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
+  let impactWater = buildWaterEstimate({
+    monthlyElectricityKwh: null,
+    monthlyDirectWaterConsumptionLiters: null,
+    monthlyEvaporatedWaterLiters: null,
+  });
 
   const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap").catch((error) => {
     console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
@@ -63,6 +69,7 @@ export default async function MethodologiePage() {
         generatedAt: dashboard.model.infrastructure.generatedAt ?? null,
       };
       impactElectricity = dashboard.model.methodology?.electricity ?? impactElectricity;
+      impactWater = dashboard.model.methodology?.water ?? dashboard.model.infrastructure?.water ?? impactWater;
       impactSnapshots = dashboard.snapshots;
       impactGeneratedAt = dashboard.model.infrastructure.generatedAt ?? dashboard.signals.generatedAt;
       impactLaunchedAt = dashboard.model.infrastructure.launchedAt ?? dashboard.signals.launchedAt;
@@ -81,6 +88,7 @@ export default async function MethodologiePage() {
       impactGeneratedAt={impactGeneratedAt}
       impactLaunchedAt={impactLaunchedAt}
       impactElectricity={impactElectricity}
+      impactWater={impactWater}
       githubStats={githubStats}
     />
   );

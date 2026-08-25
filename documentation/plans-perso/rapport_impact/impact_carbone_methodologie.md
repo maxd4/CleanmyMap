@@ -71,3 +71,20 @@ Le facteur par défaut du moteur est centralisé à `0,35 kgCO₂e/kWh` pour des
 Les data centers ne reçoivent pas une part de refroidissement universelle: l'IEA indique des situations pouvant aller d'environ 7 % dans certains hyperscalers efficaces à plus de 30 % dans des installations moins efficaces. Les serveurs accélérés, principalement associés à l'adoption de l'IA, sont un moteur important de la croissance prévue de la consommation des data centers; aucune part du trafic ou de l'impact de CleanMyMap n'est attribuée à l'IA sans signal spécifique. Voir [IEA, Energy and AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai).
 
 Le repère d'interface `10 kgCO₂e ≈ 70 km en voiture thermique moyenne` est une comparaison pédagogique indépendante du calcul CleanMyMap. Il est dérivé de l'ordre de grandeur `1,42 kgCO₂e/100 km` de [Impact CO₂ / Base Empreinte ADEME](https://impactco2.fr/outils/transport/itineraire?iframe=1), et ne transforme pas un proxy numérique en distance réellement parcourue.
+
+## CO₂e et eau: contrats séparés
+
+Le CO₂e est l'unité commune qui agrège plusieurs gaz à effet de serre selon leur potentiel de réchauffement global. Le facteur eGRID peut couvrir le CO₂, le CH₄ et le N₂O; ces composantes sont donc déjà incluses dans le total CO₂e et ne sont pas ajoutées une seconde fois. Les cartes « proxy de carbone CO₂e » et « proxy de GES inclus dans le CO₂e » sont des allocations de lecture, pas des inventaires de CO₂ brut, de CH₄ ou de N₂O mesurés.
+
+Le moteur expose l'eau dans un contrat distinct:
+
+- `Eau directe consommée sur site`: signal direct fourni pour le site; il peut inclure des usages de refroidissement ou d'autres usages documentés;
+- `dont évaporation`: composante séparée uniquement lorsqu'elle est disponible. Toute l'eau directe n'est pas assimilée à de l'évaporation;
+- `Eau indirecte liée à l'électricité`: `kWh × facteur hydrique`. Elle n'est calculée que lorsqu'un kWh est disponible, jamais en divisant un CO₂e par un coefficient;
+- `Eau totale estimée`: affichée seulement lorsque les composantes nécessaires sont disponibles; sinon chaque donnée reste `à compléter`.
+
+Le facteur par défaut de `4,52 L/kWh` est un proxy configurable d'eau indirecte pour l'électricité associée à des data centers américains, issu de [LBNL — 2024 United States Data Center Energy Usage Report](https://doi.org/10.71468/P1WC7Q). Il varie fortement selon le mix électrique, le lieu et le temps, et doit être remplacé par une donnée localisée lorsqu'elle est connue. [DOE/FEMP](https://www.energy.gov/cmei/femp/cooling-water-efficiency-opportunities-federal-data-centers) rappelle que la consommation directe des tours de refroidissement dépend notamment de la charge thermique, de l'efficacité et de l'évaporation.
+
+L'eau reste dans le cycle hydrologique global, mais l'eau évaporée est consommée localement car elle n'est plus immédiatement disponible dans le même bassin. Le retrait et la consommation sont différents; l'eau retournée varie selon le lieu, le moment, la température et la qualité. L'impact dépend aussi du stress hydrique et des conflits locaux, pas seulement du volume en litres. Cette lecture ne doit pas être confondue avec les KPI d'impact terrain.
+
+Référence complémentaire sur la limite planétaire Freshwater Change: [Stockholm Resilience Centre](https://www.stockholmresilience.org/research/planetary-boundaries/the-nine-planetary-boundaries/freshwater-change.html), qui distingue blue water et green water et décrit une transgression de la limite.

@@ -305,6 +305,14 @@ export function buildUsageProfileEstimate(
   return {
     monthlyElectricityKwh: resolveNumber(usageInput?.monthlyElectricityKwh, 0) ||
       (usageInput?.monthlyElectricityKwh === 0 ? 0 : null),
+    monthlyDirectWaterConsumptionLiters:
+      usageInput?.monthlyDirectWaterConsumptionLiters == null
+        ? null
+        : resolveNumber(usageInput.monthlyDirectWaterConsumptionLiters, 0),
+    monthlyEvaporatedWaterLiters:
+      usageInput?.monthlyEvaporatedWaterLiters == null
+        ? null
+        : resolveNumber(usageInput.monthlyEvaporatedWaterLiters, 0),
     ...trafficMetrics,
     ...codexMetrics,
     ...operationsMetrics,
@@ -332,6 +340,14 @@ export function projectUsageProfileAtWeek(
       usage.monthlyElectricityKwh === null || usage.monthlyElectricityKwh === undefined
         ? usage.monthlyElectricityKwh
         : round6(usage.monthlyElectricityKwh * weeklyScale * multiplier),
+    monthlyDirectWaterConsumptionLiters:
+      usage.monthlyDirectWaterConsumptionLiters == null
+        ? null
+        : round6(usage.monthlyDirectWaterConsumptionLiters * weeklyScale * multiplier),
+    monthlyEvaporatedWaterLiters:
+      usage.monthlyEvaporatedWaterLiters == null
+        ? null
+        : round6(usage.monthlyEvaporatedWaterLiters * weeklyScale * multiplier),
     monthlyPageViews: round6(usage.monthlyPageViews * weeklyScale * multiplier),
     monthlyActiveUsers: round6(usage.monthlyActiveUsers * weeklyScale * multiplier),
     monthlySessions: round6(usage.monthlySessions * weeklyScale * multiplier),

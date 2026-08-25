@@ -80,9 +80,9 @@ const PLANETARY_BOUNDARIES: PlanetaryBoundary[] = [
     name: "Eau douce",
     icon: Droplets,
     status: "increasing-risk",
-    currentValue: "Déficit",
-    safeLimit: "Équilibre",
-    description: "Cycle perturbé par la surexploitation et le climat.",
+    currentValue: "Limite dépassée — bleu et vert",
+    safeLimit: "Dans la zone sûre",
+    description: "Le Stockholm Resilience Centre indique une transgression des composantes blue water et green water de la limite Freshwater Change.",
     impacts: ["Stress hydrique", "Conflits d'accès"],
     solutions: ["Gestion intégrée", "Baisse gaspillages"]
   },
