@@ -14,6 +14,17 @@ const HISTORICAL_TEMPORARY_EXTENSION_MIGRATIONS = new Set([
   "20260825130153_disable_temporary_http_extension.sql",
 ]);
 
+// These migrations are the only historical definitions of the legacy spots
+// runtime surface. New migrations must not recreate the RPC or public write
+// access after the archive-retirement migration.
+const LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST = new Set([
+  "20260402000001_initial_modern_schema.sql",
+  "20260420000005_hardened_rls.sql",
+  "20260501000023_atomic_operations.sql",
+  "20260520200207_apply_remaining_supabase_advisory_hardening.sql",
+  "20260605000006_optimize_rls_auth_initplan_and_sql_functions.sql",
+]);
+
 // Keep this allowlist empty unless a migration and its documented exception
 // have been reviewed together. Temporary benchmark/debug extension actions do
 // not belong in the canonical replayable schema history.
@@ -97,6 +108,7 @@ const migrationGuardViolations = [];
 
 for (const [name, migration] of canonical) {
   const executableSql = stripSqlComments(migration.content);
+  const normalizedSql = executableSql.replace(/\s+/g, " ");
   const hasExtensionOperation = /\b(?:create|drop)\s+extension\b/i.test(executableSql);
   const hasCascadeDrop = /\bdrop\s+extension\b[^;]*\bcascade\b/i.test(executableSql);
   const hasTemporaryMarker = /(?:temp(?:orary)?|benchmark|debug)/i.test(
@@ -124,6 +136,50 @@ for (const [name, migration] of canonical) {
       migrationGuardViolations.push(
         `${name}: historical no-op must document migration-history alignment`,
       );
+    }
+  }
+
+  if (!LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST.has(name)) {
+    if (
+      /\b(?:create|alter)\s+(?:or\s+replace\s+)?function\s+public\.create_spot_with_progression\b/i.test(
+        normalizedSql,
+      )
+    ) {
+      migrationGuardViolations.push(
+        `${name}: create_spot_with_progression must not be reintroduced after legacy spots retirement`,
+      );
+    }
+
+    if (
+      /\bcreate\s+policy\b.*?\bon\s+public\.spots\b.*?\bfor\s+(?:insert|update|all)\b/i.test(
+        normalizedSql,
+      ) || /\balter\s+policy\b.*?\bon\s+public\.spots\b/i.test(normalizedSql)
+    ) {
+      migrationGuardViolations.push(
+        `${name}: public.spots INSERT/UPDATE policies must not be reintroduced after legacy spots retirement`,
+      );
+    }
+
+    const writeGrantMatch = normalizedSql.match(
+      /\bgrant\s+([^;]+?)\s+on\s+(?:table\s+)?public\.spots\s+to\s+([^;]+)/i,
+    );
+    if (writeGrantMatch) {
+      const privileges = writeGrantMatch[1]
+        .replace(/\s+privileges?/gi, "")
+        .split(",")
+        .map((privilege) => privilege.trim().toLowerCase());
+      const roles = writeGrantMatch[2].toLowerCase();
+      const hasWritePrivilege = privileges.some((privilege) =>
+        ["all", "insert", "update", "delete", "truncate", "references", "trigger"].includes(
+          privilege,
+        ),
+      );
+
+      if (hasWritePrivilege && /\banon\b|\bauthenticated\b/.test(roles)) {
+        migrationGuardViolations.push(
+          `${name}: public.spots write grants to anon/authenticated are not allowed after legacy spots retirement`,
+        );
+      }
     }
   }
 }
