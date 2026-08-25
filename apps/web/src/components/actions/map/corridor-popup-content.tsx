@@ -3,6 +3,10 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Calendar, Clock, Route, Sparkles, Users } from "lucide-react";
 import type { ActionMapItem } from "@/lib/actions/types";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+} from "@/lib/actions/current-place-state";
 import type { CorridorHistory } from "@/lib/actions/corridor-history";
 import { summarizeCorridorHistory } from "@/lib/actions/corridor-history";
 import { mapItemObservedAt } from "@/lib/actions/data-contract";
@@ -19,6 +23,8 @@ type CorridorPopupContentProps = {
   corridorHistory: CorridorHistory;
   color: string;
   renderAction: (item: ActionMapItem) => ReactNode;
+  displayMode?: CurrentPlaceStateMode;
+  resolveCurrentPlaceStateForItem?: (item: ActionMapItem) => CurrentPlaceState | null;
 };
 
 export function CorridorPopupContent({
@@ -26,6 +32,8 @@ export function CorridorPopupContent({
   corridorHistory,
   color,
   renderAction,
+  displayMode,
+  resolveCurrentPlaceStateForItem,
 }: CorridorPopupContentProps) {
   const [activeTab, setActiveTab] = useState(0);
   const { references } = useActionPollutionScoreReferences();
@@ -34,6 +42,15 @@ export function CorridorPopupContent({
     [corridorHistory, references],
   );
   const activeItem = corridorItems[activeTab] ?? corridorItems[0];
+  const latestItem = corridorItems.reduce((latest, item) =>
+    new Date(mapItemObservedAt(item)).getTime() >
+    new Date(mapItemObservedAt(latest)).getTime()
+      ? item
+      : latest,
+  corridorItems[0]);
+  const latestState = latestItem
+    ? resolveCurrentPlaceStateForItem?.(latestItem) ?? null
+    : null;
 
   if (!activeItem) {
     return null;
@@ -161,16 +178,24 @@ export function CorridorPopupContent({
                 État / projection courant
               </p>
               <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                Pollution projetée : {formatScorePercent(Math.round(summary.latestProjection.projectedScore))}
+                {latestState?.source === "projected"
+                  ? `Pollution projetée : ${formatScorePercent(Math.round(latestState.score ?? summary.latestProjection.projectedScore))}`
+                  : latestState?.scoreKind === "unavailable"
+                    ? latestState.stateLabel
+                    : `Pollution observée : ${formatScorePercent(Math.round(latestState?.score ?? summary.latestProjection.projectedScore))}`}
               </p>
               <p className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
-                {summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel
+                {latestState?.source === "projected"
+                  ? `${summary.latestProjection.elapsedDays} j depuis la dernière action · estimation, pas une mesure en temps réel`
+                  : `Observé le ${formatObservedDate(latestState?.date ?? summary.lastActionAt)}`}
               </p>
-              <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                {formatProjectionConfidenceLabel(
-                  summary.latestProjection.projectionConfidence.level,
-                )}
-              </p>
+              {latestState?.source === "projected" || !displayMode ? (
+                <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {formatProjectionConfidenceLabel(
+                    summary.latestProjection.projectionConfidence.level,
+                  )}
+                </p>
+              ) : null}
             </div>
           )}
         </div>

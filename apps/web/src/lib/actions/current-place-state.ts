@@ -23,6 +23,8 @@ export type CurrentPlaceStateSource =
   | "projected"
   | "historical";
 
+export type CurrentPlaceStateMode = "observed" | "projected_today";
+
 export type CurrentPlaceStateScoreKind =
   | "measured"
   | "projected"
@@ -52,6 +54,12 @@ export type CurrentPlaceState = {
   label: string;
   stateLabel: string;
   isExplicitlyClean: boolean;
+};
+
+export type CurrentPlaceStateViews = {
+  derivedPlaceKey: string;
+  observed: CurrentPlaceState | null;
+  projectedToday: CurrentPlaceState | null;
 };
 
 export type ResolveCurrentPlaceStatesOptions = {
@@ -274,6 +282,172 @@ function stateFromObservedRecord(
   };
 }
 
+function stateFromObservedAction(
+  latestAction: DerivedPlaceObservation,
+  bucket: PlaceBucket,
+  score: number,
+): CurrentPlaceState {
+  return {
+    derivedPlaceKey: bucket.derivedPlaceKey,
+    source: "observed",
+    date: latestAction.observedAt,
+    lastActionDate: latestAction.observedAt,
+    recordId: latestAction.actionId,
+    recordSource: latestAction.action.source,
+    record: latestAction.action,
+    historicalActions:
+      bucket.history?.observations.map((observation) => observation.action) ?? [],
+    historicalAction: latestAction.action,
+    score: clampScore(score),
+    scoreKind: "measured",
+    provenance: "observed_action",
+    label: latestAction.action.location.label,
+    stateLabel: "Pollution observée",
+    isExplicitlyClean: false,
+  };
+}
+
+function resolveLatestObservedState(
+  bucket: PlaceBucket,
+  latestAction: DerivedPlaceObservation | null,
+  laterRecords: ActionDataContract[],
+  options: ResolveCurrentPlaceStatesOptions,
+): CurrentPlaceState | null {
+  if (laterRecords.length > 0) {
+    return stateFromObservedRecord(
+      laterRecords.at(-1) as ActionDataContract,
+      bucket,
+      latestAction,
+      options,
+    );
+  }
+
+  if (latestAction) {
+    const score =
+      latestAction.postActionScoreSource === "measured"
+        ? latestAction.postActionScore
+        : latestAction.historicalScore;
+    return stateFromObservedAction(latestAction, bucket, score);
+  }
+
+  const latestRecord = bucket.records.at(-1);
+  return latestRecord
+    ? stateFromObservedRecord(latestRecord, bucket, null, options)
+    : null;
+}
+
+function resolveProjectedTodayState(
+  bucket: PlaceBucket,
+  asOfMs: number,
+  latestAction: DerivedPlaceObservation | null,
+  laterRecords: ActionDataContract[],
+  options: ResolveCurrentPlaceStatesOptions,
+): CurrentPlaceState | null {
+  if (laterRecords.length > 0) {
+    return stateFromObservedRecord(
+      laterRecords.at(-1) as ActionDataContract,
+      bucket,
+      latestAction,
+      options,
+    );
+  }
+
+  if (!latestAction) {
+    const latestRecord = bucket.records.at(-1);
+    return latestRecord
+      ? stateFromObservedRecord(latestRecord, bucket, null, options)
+      : null;
+  }
+
+  const projection = presentActionPollutionProjectionWithLocalHistory(
+    latestAction.historicalScore,
+    latestAction.observedAt,
+    asOfMs,
+    {
+      sourceCompleteness: options.sourceCompleteness,
+      postActionScore:
+        latestAction.postActionScoreSource === "measured"
+          ? latestAction.postActionScore
+          : undefined,
+      localCalibration: bucket.history?.calibration,
+    },
+  );
+
+  if (!Number.isFinite(projection.projectedPollutionScore)) {
+    return stateFromObservedAction(
+      latestAction,
+      bucket,
+      latestAction.historicalScore,
+    );
+  }
+
+  return {
+    derivedPlaceKey: bucket.derivedPlaceKey,
+    source: "projected",
+    date: latestAction.observedAt,
+    lastActionDate: latestAction.observedAt,
+    recordId: latestAction.actionId,
+    recordSource: latestAction.action.source,
+    record: latestAction.action,
+    historicalActions: bucket.history?.observations.map((observation) => observation.action) ?? [],
+    historicalAction: latestAction.action,
+    score: projection.projectedPollutionScore,
+    scoreKind: "projected",
+    provenance:
+      projection.provenance === "local_history"
+        ? "projected_local_history"
+        : "projected_generic",
+    label: latestAction.action.location.label,
+    stateLabel: "Pollution projetée",
+    isExplicitlyClean: false,
+  };
+}
+
+function buildPlaceBucketsForRecords(
+  records: readonly ActionDataContract[],
+  asOfMs: number,
+  options: ResolveCurrentPlaceStatesOptions,
+): PlaceBucket[] {
+  const visibleRecords = records.filter((record) => {
+    const timestamp = resolveRecordDate(record);
+    return timestamp !== null && timestamp <= asOfMs;
+  });
+  const historyOptions = {
+    sourceCompleteness: options.sourceCompleteness,
+    pollutionScoreReferences: options.pollutionScoreReferences,
+    historicalScoreResolver: options.historicalScoreResolver,
+  };
+  const histories = deriveLocalRepollutionHistories(
+    visibleRecords.filter((record) => record.type === "action"),
+    historyOptions,
+  ).places;
+  const candidates = visibleRecords
+    .filter((record) => record.type !== "action")
+    .map(toPlaceCandidate)
+    .flatMap((candidate) => (candidate ? [candidate] : []));
+
+  return buildPlaceBuckets(histories, candidates);
+}
+
+function resolveLaterRecords(
+  bucket: PlaceBucket,
+  asOfMs: number,
+  latestAction: DerivedPlaceObservation | null,
+): ActionDataContract[] {
+  const actionDateMs = latestAction?.observedAtMs ?? null;
+  return bucket.records
+    .filter((record) => record.type !== "action")
+    .filter((record) => {
+      const timestamp = resolveRecordDate(record);
+      return (
+        timestamp !== null &&
+        timestamp <= asOfMs &&
+        (actionDateMs === null || timestamp > actionDateMs)
+      );
+    })
+    .sort(compareRecords);
+}
+
 function resolveBucketState(
   bucket: PlaceBucket,
   asOfMs: number,
@@ -395,27 +569,66 @@ export function resolveCurrentPlaceStates(
   options: ResolveCurrentPlaceStatesOptions,
 ): CurrentPlaceState[] {
   const asOfMs = resolveAsOfMs(options.asOf);
-  const visibleRecords = records.filter((record) => {
-    const timestamp = resolveRecordDate(record);
-    return timestamp !== null && timestamp <= asOfMs;
-  });
-  const historyOptions = {
-    sourceCompleteness: options.sourceCompleteness,
-    pollutionScoreReferences: options.pollutionScoreReferences,
-    historicalScoreResolver: options.historicalScoreResolver,
-  };
-  const histories = deriveLocalRepollutionHistories(
-    visibleRecords.filter((record) => record.type === "action"),
-    historyOptions,
-  ).places;
-  const candidates = visibleRecords
-    .filter((record) => record.type !== "action")
-    .map(toPlaceCandidate)
-    .flatMap((candidate) => (candidate ? [candidate] : []));
-
-  return buildPlaceBuckets(histories, candidates)
+  return buildPlaceBucketsForRecords(records, asOfMs, options)
     .map((bucket) => resolveBucketState(bucket, asOfMs, options))
     .flatMap((state) => (state ? [state] : []));
+}
+
+/**
+ * Resolves the two map readings from the same source contracts. The observed
+ * view never falls back to the model baseline; the projected view keeps field
+ * observations newer than a projection authoritative.
+ */
+export function resolveCurrentPlaceStateViews(
+  records: readonly ActionDataContract[],
+  options: ResolveCurrentPlaceStatesOptions,
+): CurrentPlaceStateViews[] {
+  const asOfMs = resolveAsOfMs(options.asOf);
+
+  return buildPlaceBucketsForRecords(records, asOfMs, options)
+    .map((bucket) => {
+      const latestAction = bucket.history?.observations.at(-1) ?? null;
+      const laterRecords = resolveLaterRecords(bucket, asOfMs, latestAction);
+      return {
+        derivedPlaceKey: bucket.derivedPlaceKey,
+        observed: resolveLatestObservedState(
+          bucket,
+          latestAction,
+          laterRecords,
+          options,
+        ),
+        projectedToday: resolveProjectedTodayState(
+          bucket,
+          asOfMs,
+          latestAction,
+          laterRecords,
+          options,
+        ),
+      };
+    })
+    .sort((left, right) => left.derivedPlaceKey.localeCompare(right.derivedPlaceKey));
+}
+
+export function resolveCurrentPlaceStateForRecord(
+  views: readonly CurrentPlaceStateViews[],
+  recordId: string,
+  mode: CurrentPlaceStateMode,
+): CurrentPlaceState | null {
+  for (const view of views) {
+    const state = view[mode === "observed" ? "observed" : "projectedToday"];
+    if (!state) {
+      continue;
+    }
+
+    if (
+      state.recordId === recordId ||
+      state.historicalActions.some((record) => record.id === recordId)
+    ) {
+      return state;
+    }
+  }
+
+  return null;
 }
 
 /** Alias naming the domain capability explicitly as a place-level resolver. */

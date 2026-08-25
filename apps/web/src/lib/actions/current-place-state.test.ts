@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "./data-contract";
 import {
   resolveCurrentPlaceStates,
+  resolveCurrentPlaceStateForRecord,
+  resolveCurrentPlaceStateViews,
   type CurrentPlaceState,
 } from "./current-place-state";
 import type { ActionDrawing } from "./types";
@@ -27,6 +29,7 @@ function buildRecord(params: {
   label?: string;
   geometryKind?: "point" | "polygon" | "polyline";
   observedPollutionScore?: number | null;
+  postActionPollutionScore?: number | null;
 }): ReturnType<typeof buildActionDataContract> {
   const type = params.type ?? "action";
   const latitude = params.latitude ?? 48.8566;
@@ -67,6 +70,7 @@ function buildRecord(params: {
     actionPhase: "post_action_complete",
     manualDrawing,
     observedPollutionScore: params.observedPollutionScore,
+    postActionPollutionScore: params.postActionPollutionScore,
   });
 }
 
@@ -83,7 +87,114 @@ function onlyState(states: readonly CurrentPlaceState[]): CurrentPlaceState {
   return states[0];
 }
 
+function resolveViews(
+  records: readonly ReturnType<typeof buildRecord>[],
+  scores: Record<string, number>,
+) {
+  return resolveCurrentPlaceStateViews(records, {
+    asOf: dateAt(90),
+    sourceCompleteness: "complete",
+    historicalScoreResolver: (record) => scores[record.id] ?? 0,
+  });
+}
+
 describe("current place state resolver", () => {
+  it("resolves observed and projected-today views from the same action", () => {
+    const action = buildRecord({ id: "action-history", day: 0 });
+    const views = resolveViews([action], { "action-history": 70 });
+
+    expect(views).toHaveLength(1);
+    expect(views[0].observed?.source).toBe("observed");
+    expect(views[0].observed?.score).toBe(70);
+    expect(views[0].observed?.scoreKind).toBe("measured");
+    expect(views[0].projectedToday?.source).toBe("projected");
+    expect(views[0].projectedToday?.score).toBeGreaterThan(0);
+    expect(views[0].projectedToday?.score).toBeLessThan(70);
+  });
+
+  it("uses a measured S_post for Observed without presenting the model baseline", () => {
+    const action = buildRecord({
+      id: "action-measured-post",
+      day: 0,
+      postActionPollutionScore: 18,
+    });
+    const views = resolveViews([action], { "action-measured-post": 70 });
+
+    expect(views[0].observed?.score).toBe(18);
+    expect(views[0].observed?.scoreKind).toBe("measured");
+    expect(views[0].observed?.provenance).toBe("observed_action");
+    expect(views[0].projectedToday?.score).toBeGreaterThan(18);
+  });
+
+  it("keeps the historical observation in Observed when S_post is absent", () => {
+    const action = buildRecord({ id: "action-no-post", day: 0 });
+    const views = resolveViews([action], { "action-no-post": 70 });
+
+    expect(views[0].observed?.score).toBe(70);
+    expect(views[0].observed?.score).not.toBe(0);
+    expect(views[0].observed?.provenance).toBe("observed_action");
+  });
+
+  it("keeps qualitative Trash Spotter and clean_place explicit in both views", () => {
+    const qualitative = buildRecord({
+      id: "spot-qualitative",
+      type: "spot",
+      day: 40,
+    });
+    const cleanPlace = buildRecord({
+      id: "clean-place",
+      type: "clean_place",
+      day: 40,
+      label: "Place propre",
+      latitude: 48.8576,
+    });
+
+    const views = resolveViews([qualitative, cleanPlace], {});
+    const qualitativeView = views.find((view) =>
+      view.observed?.recordId === "spot-qualitative",
+    );
+    const cleanView = views.find((view) => view.observed?.recordId === "clean-place");
+
+    expect(qualitativeView?.observed?.score).toBeNull();
+    expect(qualitativeView?.projectedToday?.score).toBeNull();
+    expect(qualitativeView?.observed?.stateLabel).toBe(
+      "Pollution observée · niveau non quantifié",
+    );
+    expect(cleanView?.observed?.isExplicitlyClean).toBe(true);
+    expect(cleanView?.projectedToday?.isExplicitlyClean).toBe(true);
+  });
+
+  it("lets a more recent field observation win over the projected view", () => {
+    const action = buildRecord({ id: "action-history", day: 0 });
+    const spot = buildRecord({
+      id: "spot-recent",
+      type: "spot",
+      day: 40,
+      observedPollutionScore: 61,
+    });
+    const views = resolveViews([action, spot], { "action-history": 70 });
+
+    expect(views[0].projectedToday?.source).toBe("observed");
+    expect(views[0].projectedToday?.recordId).toBe("spot-recent");
+    expect(views[0].projectedToday?.score).toBe(61);
+  });
+
+  it("does not match a point observation onto a polyline", () => {
+    const route = buildRecord({
+      id: "route-history",
+      day: 0,
+      geometryKind: "polyline",
+    });
+    const spot = buildRecord({ id: "spot-on-route", type: "spot", day: 40 });
+    const views = resolveViews([route, spot], {});
+
+    expect(resolveCurrentPlaceStateForRecord(views, "route-history", "observed")).toBeNull();
+    expect(resolveCurrentPlaceStateForRecord(views, "route-history", "projected_today")).toBeNull();
+    expect(resolveCurrentPlaceStateForRecord(views, "spot-on-route", "observed")?.recordId).toBe(
+      "spot-on-route",
+    );
+  });
+
   it.each([
     ["higher", 20, 80],
     ["lower", 80, 20],

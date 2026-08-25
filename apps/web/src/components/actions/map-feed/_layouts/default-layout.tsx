@@ -4,6 +4,7 @@ import type { ActionsMapCanvasComponent } from "../map-feed.types";
 import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
 
 type DefaultLayoutProps = {
   items: ActionMapItem[];
@@ -27,6 +28,7 @@ type DefaultLayoutProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  sourceCompleteness?: RepollutionDatasetCompleteness;
 };
 
 export function DefaultLayout({
@@ -51,6 +53,7 @@ export function DefaultLayout({
   viewportRequest,
   viewportRequestKey,
   recenterViewport,
+  sourceCompleteness = "partial",
 }: DefaultLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -114,6 +117,8 @@ export function DefaultLayout({
         ) : (
           <MapCanvas
             items={items}
+            sourceItems={allItems}
+            sourceCompleteness={sourceCompleteness}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
             onViewportChange={onViewportChange}

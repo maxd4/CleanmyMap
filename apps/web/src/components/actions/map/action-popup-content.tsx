@@ -12,6 +12,10 @@ import {
 } from "@/lib/actions/data-contract";
 import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import { ActionMapItem } from "@/lib/actions/types";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+} from "@/lib/actions/current-place-state";
 import type { CorridorHistory } from "@/lib/actions/corridor-history";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
@@ -42,6 +46,11 @@ type ActionPopupContentProps = {
   corridorHistory?: CorridorHistory;
   onViewGeometryForItem?: (item: ActionMapItem) => void;
   resolveColorForItem?: (item: ActionMapItem) => string;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceState?: CurrentPlaceState | null;
+  resolveCurrentPlaceStateForItem?: (
+    item: ActionMapItem,
+  ) => CurrentPlaceState | null;
 };
 
 export function ActionPopupContent(props: ActionPopupContentProps) {
@@ -52,6 +61,8 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
         corridorItems={corridorItems}
         corridorHistory={props.corridorHistory}
         color={props.color}
+        displayMode={props.displayMode}
+        resolveCurrentPlaceStateForItem={props.resolveCurrentPlaceStateForItem}
         renderAction={(item) => (
           <SingleActionPopupContent
             item={item}
@@ -59,6 +70,10 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
             coords={mapItemCoordinates(item)}
             onViewGeometry={
               props.onViewGeometryForItem?.bind(null, item) ?? props.onViewGeometry
+            }
+            displayMode={props.displayMode}
+            currentPlaceState={
+              props.resolveCurrentPlaceStateForItem?.(item) ?? null
             }
             wrap={false}
           />
@@ -75,12 +90,16 @@ function SingleActionPopupContent({
   color,
   coords,
   onViewGeometry,
+  displayMode,
+  currentPlaceState = null,
   wrap = true,
 }: {
   item: ActionMapItem;
   color: string;
   coords: { latitude: number | null; longitude: number | null };
   onViewGeometry?: () => void;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceState?: CurrentPlaceState | null;
   wrap?: boolean;
 }) {
   const contract = item.contract;
@@ -181,6 +200,8 @@ function SingleActionPopupContent({
         wasteKg={wasteKg}
         butts={butts}
         actionProjection={actionProjection}
+        displayMode={displayMode}
+        currentPlaceState={currentPlaceState}
       />
 
       <ActionPopupContentBody
