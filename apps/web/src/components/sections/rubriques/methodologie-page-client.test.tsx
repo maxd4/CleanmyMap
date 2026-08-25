@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ACTION_PRIORITY_COLOR_STOPS } from "@/components/actions/map-marker-categories";
+import {
+  LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
+} from "@/lib/actions/local-repollution-calibration";
 import { buildActionPollutionProjectionMethodology } from "@/lib/actions/revisit-priority";
 import { ActionMapMethodologySection } from "./methodologie-page-client";
 
@@ -21,6 +24,16 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain(projection.projectionFormula);
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).toContain("Heuristique versionnée");
+    expect(markup).toContain("Calibration locale");
+    expect(markup).toContain("derivedPlaceKey");
+    expect(markup).toContain("Aucune place_id");
+    expect(markup).toContain("Une source partielle");
+    expect(markup).toContain(
+      `≤ ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} m`,
+    );
+    expect(markup).toContain(
+      `à partir de ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride}`,
+    );
     expect(markup).toContain('href="/docs/product/methodologie-carte-actions.md"');
     expect(markup).toContain('href="#methodologie-carte-actions"');
   });

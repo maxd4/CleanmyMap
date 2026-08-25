@@ -22,6 +22,9 @@ import {
   buildActionPollutionProjectionMethodology,
 } from "@/lib/actions/revisit-priority";
 import {
+  LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
+} from "@/lib/actions/local-repollution-calibration";
+import {
   ACTION_PRIORITY_COLOR_STOPS,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
@@ -488,6 +491,39 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-2xl border border-violet-300/20 bg-violet-400/[0.06] p-5">
+          <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
+            {isFrench ? "Calibration locale" : "Local calibration"}
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-300/75">
+            {isFrench
+              ? "Le runtime peut regrouper conservativement des actions en une identité dérivée de lieu (derivedPlaceKey), remplaçable plus tard par un véritable identifiant canonique. Aucune place_id n'est persistée par ce lot."
+              : "The runtime can conservatively group actions under a derived place identity (derivedPlaceKey), replaceable later by a true canonical identifier. This lot persists no place_id."}
+          </p>
+          <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-300/75">
+            <li>
+              {isFrench
+                ? `≤ ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} m : distance suffisante ; entre ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} et ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.labelRequiredDistanceMeters} m : libellés normalisés compatibles requis ; au-delà : aucun rapprochement.`
+                : `≤ ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} m: distance is sufficient; between ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} and ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.labelRequiredDistanceMeters} m: compatible normalized labels are required; beyond that: no merge.`}
+            </li>
+            <li>
+              {isFrench
+                ? `Points et zones uniquement ; les longues polylines/parcours sont exclues. Les intervalles de re-pollution nécessitent au moins ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalDays} jours et un T80 local borné entre ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumT80Days} et ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.maximumT80Days} jours.`
+                : `Points and areas only; long polylines/routes are excluded. Repollution intervals require at least ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalDays} days and a local T80 bounded between ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumT80Days} and ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.maximumT80Days} days.`}
+            </li>
+            <li>
+              {isFrench
+                ? `La médiane des intervalles valides est informative dès ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride - 1} intervalle, mais ne remplace le fallback générique qu'à partir de ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride}. Confiance medium à ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.mediumConfidenceIntervals}, high à ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.highConfidenceIntervals}.`
+                : `The median of valid intervals is informative from ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride - 1} interval, but replaces the generic fallback only from ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.minimumIntervalsForOverride}. Medium confidence starts at ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.mediumConfidenceIntervals}; high at ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.highConfidenceIntervals}.`}
+            </li>
+          </ul>
+          <p className="mt-3 text-xs leading-relaxed text-violet-100/70">
+            {isFrench
+              ? "Une source partielle (fenêtre, limite ou viewport non exhaustif) ne déclenche jamais cet apprentissage : le modèle générique reste utilisé."
+              : "A partial source (window, limit, or non-exhaustive viewport) never activates this learning: the generic model remains in use."}
+          </p>
+        </div>
+
         <div>
           <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
             {isFrench ? "Couleurs des actions" : "Action colors"}
