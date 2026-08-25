@@ -12,6 +12,12 @@ export type ActionPollutionProjectionCalibration = {
   t80Days?: number | null;
 };
 
+export function resolveActionProjectionDecayRate(): number {
+  return -Math.log(
+    1 - ACTION_POLLUTION_PROJECTION_CONSTANTS.targetFraction,
+  );
+}
+
 export type ProjectedPollutionScoreOptions = {
   /** Explicit residual pollution measurement; null/undefined means model baseline 0. */
   postActionScore?: number | null;
@@ -131,9 +137,7 @@ export function projectedPollutionScore(
   const postAction = clampScore(options.postActionScore ?? 0);
   const elapsed = Math.max(0, Number.isFinite(elapsedDays) ? elapsedDays : 0);
   const t80Days = resolveActionT80Days(historical, options.calibration);
-  const decayRate = -Math.log(
-    1 - ACTION_POLLUTION_PROJECTION_CONSTANTS.targetFraction,
-  );
+  const decayRate = resolveActionProjectionDecayRate();
   const recovery = 1 - Math.exp((-decayRate * elapsed) / t80Days);
 
   return Math.max(

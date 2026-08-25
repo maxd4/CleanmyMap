@@ -139,20 +139,39 @@ Le modèle non linéaire encode au contraire l'hypothèse suivante :
 
 Cette relation est une heuristique produit versionnée. Elle devra être recalibrée lorsque CleanMyMap disposera de suffisamment d'observations répétées.
 
-## 6. Calibration locale future
+## 6. Calibration locale de la vitesse de re-pollution
 
-Lorsqu'un même lieu disposera de plusieurs observations fiables séparées dans le temps, CleanMyMap pourra estimer une vitesse locale de re-pollution.
+Le runtime possède une capacité domaine pure qui peut apprendre un `T80` local à partir de plusieurs actions terminées. Elle ne crée pas encore d'identifiant canonique de lieu, de `place_id` persistant, de table Supabase ou de migration. Chaque groupe expose une identité explicitement dérivée : `derivedPlaceKey`. Cette clé est remplaçable par un futur identifiant canonique sans changer l'API publique de projection.
 
-Une calibration locale pourra alors remplacer le `T80` générique pour ce lieu. Le runtime prévoit déjà l'option `calibration.t80Days` sur la fonction de projection ; cette extension ne change ni le score historique ni le sens des champs affichés.
+### Rapprochement conservateur
 
-L'architecture doit permettre cette évolution sans changer le sens public des champs :
+Seules les actions `approved` dont `actionPhase` vaut `post_action_complete`, dont la qualité n'est pas bloquante, et qui disposent de coordonnées, d'une date observée et d'un libellé exploitable sont candidates. Les points et polygones sont traités ; les polylines/parcours sont exclus de ce premier apprentissage afin de ne pas transformer un long itinéraire en un seul lieu.
 
-- pollution constatée avant l'action ;
-- pollution projetée ;
-- temps depuis la dernière action ;
-- origine de la projection (`mesurée` ou `model_baseline`).
+La distance spatiale est le critère principal. Les seuils sont centralisés dans `apps/web/src/lib/actions/local-repollution-calibration.ts` :
 
-Le modèle générique décrit dans ce document reste le fallback des lieux sans historique suffisant ou sans calibration locale validée.
+- à au plus `nearDistanceMeters` (valeur runtime actuelle : 20 m), le rapprochement ne dépend pas du libellé ;
+- au-delà et jusqu'à `labelRequiredDistanceMeters` (60 m actuellement), les libellés normalisés doivent être compatibles ;
+- au-delà, les observations ne sont jamais fusionnées, même si leurs noms sont identiques.
+
+Le regroupement et sa clé sont déterministes indépendamment de l'ordre d'entrée. Les observations d'un lieu dérivé sont ensuite triées par `observedAt` pour former des intervalles consécutifs.
+
+### Estimation inverse
+
+Pour un intervalle valide, le runtime reprend le même modèle canonique que la projection générique. Avec `S` le score historique de l'action précédente, `S_post` sa mesure post-action réelle ou le baseline documenté `0`, `S_next` le score historique observé ensuite et `deltaDays` le temps écoulé :
+
+`f = (S_next - S_post) / (S - S_post)`
+
+`T80_local = -ln(5) × deltaDays / ln(1 - f)`
+
+Une estimation numérique n'est conservée que si `deltaDays` atteint le minimum runtime de 7 jours, que le dénominateur est exploitable et que `0 < f < 1`. Les observations suivantes au moins aussi élevées que la précédente sont conservées séparément comme preuve de re-pollution rapide, sans leur fabriquer un `T80` exact. Les valeurs locales sont bornées par les constantes runtime actuelles de 7 à 365 jours.
+
+Pour plusieurs intervalles valides, le runtime utilise leur médiane plutôt que leur moyenne. Une seule estimation est exposée comme confiance `low` informative mais ne remplace pas le fallback. L'override `local_history` est activé uniquement à partir de 2 intervalles valides (`medium`) ; la confiance devient `high` à partir de 4. Sinon, la provenance exposée reste `generic` et la formule `T80(S)` générique est utilisée. Le temps écoulé n'est jamais appliqué deux fois.
+
+### Complétude de la source
+
+La carte lit actuellement un flux borné par une fenêtre temporelle, une limite et éventuellement un viewport. Cette lecture ne garantit donc pas un historique complet. La capacité accepte explicitement `sourceCompleteness: "complete" | "partial"` et refuse toute calibration locale lorsque la source est `partial` ; une vue partielle ne peut pas activer silencieusement un apprentissage. Le seam est prêt pour un futur read path qui pourra prouver la complétude de l'historique avant de passer `complete`.
+
+Le modèle générique reste donc le fallback des lieux sans historique complet, avec moins de 2 intervalles valides ou avec une calibration hors bornes. Cette calibration locale est une heuristique versionnée, pas une mesure en temps réel.
 
 ## 7. Couleurs de la carte d'actions
 
@@ -252,6 +271,7 @@ Sources de vérité techniques principales :
 
 - `apps/web/src/lib/actions/pollution-score.ts` ;
 - `apps/web/src/lib/actions/revisit-priority.ts` — projection, constantes et hook de calibration ;
+- `apps/web/src/lib/actions/local-repollution-calibration.ts` — rapprochement dérivé, intervalles, médiane, confiance et garde de complétude ;
 - `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champ post-action optionnel ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;
