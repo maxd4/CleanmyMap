@@ -82,13 +82,14 @@ signalements `spot` et `clean_place`. Les créations applicatives et la file de
 modération passent par cette table et utilisent ses colonnes `spot_type`,
 `validated_at` et `cleaned_at`.
 
-`public.spots` est maintenant conservée comme archive historique uniquement
-pour le runtime applicatif : aucune création, modération, carte, historique,
-indicateur ou gamification ne la traite comme une source runtime équivalente.
-Une commande de maintenance ou de migration peut encore la lire explicitement
-pour une compatibilité offline bornée, sans que cette lecture devienne une voie
-runtime. Son champ `waste_type` reste propre au chemin legacy et n'est pas
-converti silencieusement en `spot_type`.
+`public.spots` est maintenant conservée comme archive historique
+`service_role` read-only : aucune création, modération, carte, historique,
+indicateur ou gamification ne la traite comme une source runtime équivalente,
+et aucune RPC ni écriture runtime ne doit la cibler. Une commande de
+maintenance ou de migration peut encore la lire explicitement avec
+`service_role` pour une compatibilité offline bornée, sans que cette lecture
+devienne une voie runtime. Son champ `waste_type` reste propre au chemin
+legacy et n'est pas converti silencieusement en `spot_type`.
 
 La migration
 `apps/web/supabase/migrations/20260825000000_migrate_legacy_spots_to_trash_spotter.sql`

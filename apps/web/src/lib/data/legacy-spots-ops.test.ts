@@ -152,4 +152,31 @@ describe("legacy spots maintenance boundaries", () => {
     );
     expect(() => assertDestructiveTableAllowed("trash_spotter_spots")).not.toThrow();
   });
+
+  it("retires the legacy spots runtime surface without dropping the archive", () => {
+    const migration = readFileSync(
+      new URL(
+        "../../../supabase/migrations/20260825151421_retire_legacy_spots_runtime_surface.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    expect(migration).toMatch(
+      /drop function if exists public\.create_spot_with_progression\(/i,
+    );
+    expect(migration).toMatch(/drop policy if exists spots_insert_authenticated/i);
+    expect(migration).toMatch(/drop policy if exists spots_update_owner/i);
+    expect(migration).toMatch(/drop policy if exists spots_select_all/i);
+    expect(migration).toMatch(
+      /revoke all privileges on table public\.spots from anon, authenticated/i,
+    );
+    expect(migration).toMatch(
+      /revoke insert, update, delete, truncate, references, trigger[\s\S]*from service_role/i,
+    );
+    expect(migration).toMatch(/grant select on table public\.spots to service_role/i);
+    expect(migration).toMatch(/alter table public\.spots enable row level security/i);
+    expect(migration).not.toMatch(/drop table public\.spots/i);
+    expect(migration).not.toMatch(/cascade/i);
+  });
 });
