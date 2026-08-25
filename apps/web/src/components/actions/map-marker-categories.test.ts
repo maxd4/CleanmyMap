@@ -1,18 +1,20 @@
 import { describe, expect, it } from"vitest";
 import type { ActionMapItem } from"../../lib/actions/types";
 import {
+ ACTION_PRIORITY_COLOR_THRESHOLDS,
  DEFAULT_VISIBLE_CATEGORIES,
  classifyPollutionColor,
  deriveMarkerCategories,
  isVisibleWithCategoryFilter,
  resolveInfrastructureEmoji,
  resolveInfrastructureNeed,
+ resolveDynamicColor,
 } from"./map-marker-categories";
 
 function buildItem(partial: Partial<ActionMapItem>): ActionMapItem {
  return {
  id:"action-1",
- action_date:"2026-04-03",
+    action_date: new Date().toISOString(),
  location_label:"Lieu test",
  latitude: 48.85,
  longitude: 2.35,
@@ -25,8 +27,10 @@ function buildItem(partial: Partial<ActionMapItem>): ActionMapItem {
 
 describe("map marker categories", () => {
  it("shows all categories by default for exhaustive map", () => {
- expect(DEFAULT_VISIBLE_CATEGORIES.yellow).toBe(true);
+ expect(DEFAULT_VISIBLE_CATEGORIES.orange).toBe(true);
+ expect(DEFAULT_VISIBLE_CATEGORIES.red).toBe(true);
  expect(DEFAULT_VISIBLE_CATEGORIES.violet).toBe(true);
+ expect(DEFAULT_VISIBLE_CATEGORIES.black).toBe(true);
  expect(DEFAULT_VISIBLE_CATEGORIES.green).toBe(true);
  expect(DEFAULT_VISIBLE_CATEGORIES.blue).toBe(true);
  expect(DEFAULT_VISIBLE_CATEGORIES.ashtray).toBe(true);
@@ -39,13 +43,13 @@ describe("map marker categories", () => {
       classifyPollutionColor(
         buildItem({ waste_kg: 40, cigarette_butts: 3000 }),
       ),
- ).toBe("violet");
+ ).toBe("black");
     expect(
       classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 })),
-    ).toBe("violet");
+    ).toBe("black");
  expect(
  classifyPollutionColor(buildItem({ waste_kg: 1, cigarette_butts: 0 })),
- ).toBe("green");
+ ).toBe("blue");
  expect(
  classifyPollutionColor(buildItem({ waste_kg: 0, cigarette_butts: 0 })),
  ).toBe("blue");
@@ -73,19 +77,19 @@ describe("map marker categories", () => {
  });
 
  it("applies visibility filter from toggles", () => {
- const greenItem = buildItem({ waste_kg: 1, cigarette_butts: 0 });
+ const lowPriorityItem = buildItem({ waste_kg: 1, cigarette_butts: 0 });
  const visibleByDefault = isVisibleWithCategoryFilter(
- greenItem,
+ lowPriorityItem,
  DEFAULT_VISIBLE_CATEGORIES,
  );
  expect(visibleByDefault).toBe(true);
 
  const withGreenEnabled = {
  ...DEFAULT_VISIBLE_CATEGORIES,
- green: false,
+ blue: false,
  bin: false,
  };
- expect(isVisibleWithCategoryFilter(greenItem, withGreenEnabled)).toBe(
+ expect(isVisibleWithCategoryFilter(lowPriorityItem, withGreenEnabled)).toBe(
  false,
  );
  });
@@ -97,11 +101,11 @@ describe("map marker categories", () => {
  };
 
  expect(classifyPollutionColor(buildItem({ waste_kg: 2, cigarette_butts: 0 }), references)).toBe(
- "green",
+ "blue",
  );
  expect(
  classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 }), references),
- ).toBe("violet");
+ ).toBe("black");
  expect(
  resolveInfrastructureNeed(buildItem({ waste_kg: 8, cigarette_butts: 900 }), references),
  ).toBe("combo");
@@ -112,6 +116,42 @@ describe("map marker categories", () => {
  references,
  ),
  ).toBe(true);
+ });
+
+  it("keeps green exclusively for explicit clean places and interpolates without score opacity", () => {
+ expect(
+ classifyPollutionColor(buildItem({ waste_kg: 1, cigarette_butts: 0 })),
+ ).toBe("blue");
+ expect(
+ classifyPollutionColor(
+ buildItem({ record_type: "clean_place", waste_kg: 1 }),
+ ),
+ ).toBe("green");
+
+ const midpoint = resolveDynamicColor(
+ ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE - 1,
+ );
+ expect(midpoint.startsWith("hsl(")).toBe(true);
+ expect(midpoint).not.toContain("hsla");
+ expect(resolveDynamicColor(ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK)).toContain(
+ "0%, 8%",
+ );
+  });
+
+  it("maps revisit priority thresholds to blue, orange, red, violet and black", () => {
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    const itemAt = (score: number) =>
+      buildItem({
+        action_date: "2026-08-25T00:00:00.000Z",
+        waste_pollution_score: score,
+        cigarette_butts_pollution_score: 0,
+      });
+
+    expect(classifyPollutionColor(itemAt(0), undefined, now)).toBe("blue");
+    expect(classifyPollutionColor(itemAt(30), undefined, now)).toBe("orange");
+    expect(classifyPollutionColor(itemAt(60), undefined, now)).toBe("red");
+    expect(classifyPollutionColor(itemAt(80), undefined, now)).toBe("violet");
+    expect(classifyPollutionColor(itemAt(100), undefined, now)).toBe("black");
   });
 
  it("lets each infrastructure category be hidden independently", () => {

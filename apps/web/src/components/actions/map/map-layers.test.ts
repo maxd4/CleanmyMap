@@ -3,6 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
+import {
+  CLEAN_PLACE_COLOR,
+  resolveDynamicColor,
+} from "@/components/actions/map-marker-categories";
+import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -83,7 +88,6 @@ vi.mock("./map-geometry-tooltip-content", () => ({
 }));
 
 import {
-  ACTION_MAP_COLOR,
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
   isTrashSpotterItem,
@@ -184,14 +188,34 @@ describe("ShapeLayers", () => {
     );
   }
 
-  it("keeps pollution colors for spots but uses sky for action traces", () => {
+  it("uses revisit priority colors for actions and reserves green for clean places", () => {
     const action = buildShapeItem("action", 80);
     const lowPollutionAction = buildShapeItem("action", 0);
     const spot = buildShapeItem("spot", 80);
+    const cleanPlace = toActionMapItem(
+      buildActionDataContract({
+        id: "clean-place-shape",
+        type: "clean_place",
+        status: "approved",
+        source: "spots",
+        observedAt: "2026-06-01",
+        locationLabel: "Quai propre",
+        latitude: 48.8566,
+        longitude: 2.3522,
+      }),
+    );
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    const expectedActionColor = resolveDynamicColor(
+      presentActionRevisitPriority(100, "2026-06-01", now).revisitPriority,
+    );
 
-    expect(resolvePointColor(action, null)).toBe(ACTION_MAP_COLOR);
-    expect(resolvePointColor(lowPollutionAction, null)).toBe(ACTION_MAP_COLOR);
-    expect(resolvePointColor(spot, null)).not.toBe(ACTION_MAP_COLOR);
+    expect(resolvePointColor(action, null, now)).toBe(expectedActionColor);
+    expect(resolvePointColor(lowPollutionAction, null, now)).not.toBe(
+      resolvePointColor(action, null, now),
+    );
+    expect(resolvePointColor(action, null, now)).not.toBe(CLEAN_PLACE_COLOR);
+    expect(resolvePointColor(spot, null, now)).not.toBe(CLEAN_PLACE_COLOR);
+    expect(resolvePointColor(cleanPlace, null, now)).toBe(CLEAN_PLACE_COLOR);
   });
 
   it("uses the action tooltip title for polyline shapes", () => {
@@ -203,7 +227,7 @@ describe("ShapeLayers", () => {
 
     expect(markup).toContain("Action · Longueur ~");
     expect(markup).toContain("Trace ");
-    expect(markup).toContain(`data-color="${ACTION_MAP_COLOR}"`);
+    expect(markup).toContain('data-color="hsl(');
   });
 
   it("adds an invisible wider hit-area without changing the visible stroke", () => {

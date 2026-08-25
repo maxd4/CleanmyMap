@@ -69,9 +69,11 @@ export function MapControlTower({
         },
         {
           blue: 0,
+          orange: 0,
+          red: 0,
           green: 0,
-          yellow: 0,
           violet: 0,
+          black: 0,
           bin: 0,
           ashtray: 0,
           combo: 0,

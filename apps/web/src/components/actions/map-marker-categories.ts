@@ -1,18 +1,23 @@
 import type { ActionMapItem } from"@/lib/actions/types";
 import {
  mapItemCigaretteButts,
+ mapItemObservedAt,
+ mapItemType,
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
 import {
   computePollutionScoresRelativeToReferences,
   computeButtsContributionScore,
   computeWasteContributionScore,
-  type PollutionScoreReferences,
+ type PollutionScoreReferences,
 } from"@/lib/actions/pollution-score";
+import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
 
 export type MarkerCategory =
- |"yellow"
+ |"orange"
+ |"red"
  |"violet"
+ |"black"
  |"green"
  |"blue"
  |"ashtray"
@@ -28,16 +33,28 @@ export const SCORE_THRESHOLDS = {
  MEDIUM: 30,
 };
 
+export const ACTION_PRIORITY_COLOR_THRESHOLDS = {
+ BLUE: 0,
+ ORANGE: SCORE_THRESHOLDS.MEDIUM,
+ RED: SCORE_THRESHOLDS.STRONG,
+ VIOLET: SCORE_THRESHOLDS.CRITICAL,
+ BLACK: 100,
+} as const;
+
 export const COLOR_TOKENS = {
+ BLUE: { h: 199, s: 89, l: 48 }, // Faible
  VIOLET: { h: 262, s: 80, l: 50 }, // Critique
  RED: { h: 2, s: 82, l: 62 }, // Fort (rouge clair)
  ORANGE: { h: 35, s: 90, l: 50 }, // Moyen
- GREEN: { h: 142, s: 70, l: 45 }, // Faible (Standard)
+ GREEN: { h: 142, s: 70, l: 45 }, // Lieu propre explicite
+ BLACK: { h: 0, s: 0, l: 8 }, // Priorité extrême
 };
 
 export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
- yellow: true,
+ orange: true,
+ red: true,
  violet: true,
+ black: true,
  green: true,
  blue: true,
  ashtray: true,
@@ -82,56 +99,57 @@ export function resolveItemPollutionScores(
  };
 }
 
-export function resolveDynamicOpacity(score: number): number {
- if (score >= SCORE_THRESHOLDS.CRITICAL) return 1.0;
- if (score >= SCORE_THRESHOLDS.STRONG) return 0.8;
- if (score >= SCORE_THRESHOLDS.MEDIUM) return 0.6;
- return Math.max(0.3, Math.min(0.5, (score / SCORE_THRESHOLDS.MEDIUM) * 0.5));
-}
-
 export function resolveDynamicColor(score: number): string {
  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
- const opacity = resolveDynamicOpacity(score);
+ const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
+ const stops = [
+  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
+  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
+  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
+  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },
+  { threshold: ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK, token: COLOR_TOKENS.BLACK },
+ ] as const;
+ const upperIndex = stops.findIndex((stop) => normalizedScore <= stop.threshold);
+ const index = upperIndex <= 0 ? 1 : upperIndex;
+ const lower = stops[index - 1];
+ const upper = stops[index];
+ const span = upper.threshold - lower.threshold;
+ const t = span === 0 ? 1 : (normalizedScore - lower.threshold) / span;
+ const h = lerp(lower.token.h, upper.token.h, t);
+ const s = lerp(lower.token.s, upper.token.s, t);
+ const l = lerp(lower.token.l, upper.token.l, t);
+ return `hsl(${h}, ${s}%, ${l}%)`;
+}
 
- if (score >= SCORE_THRESHOLDS.CRITICAL) {
- return `hsla(${COLOR_TOKENS.VIOLET.h}, ${COLOR_TOKENS.VIOLET.s}%, ${COLOR_TOKENS.VIOLET.l}%, ${opacity})`;
- }
- 
- if (score >= SCORE_THRESHOLDS.STRONG) {
- const t = (score - SCORE_THRESHOLDS.STRONG) / (SCORE_THRESHOLDS.CRITICAL - SCORE_THRESHOLDS.STRONG);
- const h = lerp(COLOR_TOKENS.RED.h, COLOR_TOKENS.VIOLET.h, t);
- const s = lerp(COLOR_TOKENS.RED.s, COLOR_TOKENS.VIOLET.s, t);
- const l = lerp(COLOR_TOKENS.RED.l, COLOR_TOKENS.VIOLET.l, t);
- return `hsla(${h}, ${s}%, ${l}%, ${opacity})`;
- }
+export const CLEAN_PLACE_COLOR = `hsl(${COLOR_TOKENS.GREEN.h}, ${COLOR_TOKENS.GREEN.s}%, ${COLOR_TOKENS.GREEN.l}%)`;
 
- if (score >= SCORE_THRESHOLDS.MEDIUM) {
- const t = (score - SCORE_THRESHOLDS.MEDIUM) / (SCORE_THRESHOLDS.STRONG - SCORE_THRESHOLDS.MEDIUM);
- const h = lerp(COLOR_TOKENS.ORANGE.h, COLOR_TOKENS.RED.h, t);
- const s = lerp(COLOR_TOKENS.ORANGE.s, COLOR_TOKENS.RED.s, t);
- const l = lerp(COLOR_TOKENS.ORANGE.l, COLOR_TOKENS.RED.l, t);
- return `hsla(${h}, ${s}%, ${l}%, ${opacity})`;
- }
-
- const t = Math.min(1, Math.max(0, score / SCORE_THRESHOLDS.MEDIUM));
- const h = lerp(COLOR_TOKENS.GREEN.h, COLOR_TOKENS.ORANGE.h, t);
- const s = lerp(COLOR_TOKENS.GREEN.s, COLOR_TOKENS.ORANGE.s, t);
- const l = lerp(COLOR_TOKENS.GREEN.l, COLOR_TOKENS.ORANGE.l, t);
- return `hsla(${h}, ${s}%, ${l}%, ${opacity})`;
+function resolveCategoryScore(
+ item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
+ now: string | Date | number = new Date(),
+): number {
+ const observedScore = resolveItemPollutionScores(item, references).severityScore;
+ return mapItemType(item) === "action"
+  ? presentActionRevisitPriority(observedScore, mapItemObservedAt(item), now).revisitPriority
+  : observedScore;
 }
 
 export function classifyPollutionColor(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
+ now: string | Date | number = new Date(),
 ): Exclude<MarkerCategory,"ashtray" |"bin"> {
  const wasteKg = mapItemWasteKg(item);
  const butts = mapItemCigaretteButts(item);
- const score = resolveItemPollutionScores(item, references).severityScore;
+ const score = resolveCategoryScore(item, references, now);
 
- if (score >= SCORE_THRESHOLDS.CRITICAL) return"violet";
- if (score >= SCORE_THRESHOLDS.MEDIUM) return"yellow";
+ if (mapItemType(item) === "clean_place") return"green";
+ if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK) return"black";
+ if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET) return"violet";
+ if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.RED) return"red";
+ if (score >= ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE) return"orange";
  if ((wasteKg ?? 0) <= 0 && (butts ?? 0) <= 0) return"blue";
- return"green";
+ return"blue";
 }
 
 export function deriveMarkerCategories(
