@@ -125,11 +125,15 @@ La progression entre les repères de couleur est continue. Les seuils exacts son
 Une action doit distinguer explicitement :
 
 ```txt
-Pollution constatée avant l'action : S/100
-Pollution projetée : P/100
+Pollution constatée avant l'action : S %
+Pollution projetée : P %
 Temps depuis la dernière action : t jours
 Estimation modélisée, pas une mesure en temps réel
 ```
+
+Les valeurs `S` et `P` restent calculées sur l'échelle interne `0–100`. Leur
+format d'affichage est défini par la règle commune
+[`ui-score-formatting.md`](../../../../development/ui-score-formatting.md).
 
 Les résultats collectés restent présentés comme des résultats de l'action, et non comme une pollution résiduelle mesurée.
 

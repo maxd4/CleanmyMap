@@ -8,7 +8,7 @@ Date de génération: 2026-04-28
 
 ## Résumé global
 
-Le site n'est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54/100**. Les écrans centraux les plus défendables se situent plus près de **63/100** que de 74/100.
+Le site n'est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54 %**. Les écrans centraux les plus défendables se situent plus près de **63 %** que de 74 %.
 
 Les surfaces réellement proches d'une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, point de départ (Apprendre), rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
 
@@ -139,7 +139,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 ## Points bloquants ou incertitudes
 
-- En lecture publique stricte, le score global est plutôt autour de **54/100**. La valeur **63/100** reste une lecture optimiste des écrans les plus centraux.
+- En lecture publique stricte, le score global est plutôt autour de **54 %**. La valeur **63 %** reste une lecture optimiste des écrans les plus centraux.
 - Les routes API sous `/api` ne sont pas notées individuellement, car elles ne correspondent pas à des pages ou rubriques affichées.
 - `/sections/route` existe comme route dédiée et cohabite avec la route dynamique `/sections/[sectionId]`; l'exposition exacte dans les menus doit être vérifiée visuellement.
 - Les pages `sign-in/[[...sign-in]]` et `sign-up/[[...sign-up]]` dépendent fortement de Clerk; l'expérience finale n'est pas entièrement évaluable depuis le code seul.

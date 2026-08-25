@@ -24,8 +24,12 @@ La carte distingue :
 Les libellés publics attendus dans les popup/tooltips sont :
 
 ```txt
-Pollution constatée avant l'action : S/100
-Pollution projetée : P/100
+Pollution constatée avant l'action : S %
+Pollution projetée : P %
 Temps depuis la dernière action : t jours
 Estimation modélisée, pas une mesure en temps réel
 ```
+
+`S` et `P` conservent l'échelle interne `0–100`, mais tout rendu utilisateur
+utilise le format en pourcentage défini dans
+[`ui-score-formatting.md`](../../../../development/ui-score-formatting.md).
