@@ -18,7 +18,6 @@ type ActionRow = {
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
   notes: string | null;
-  manual_drawing: null;
 };
 
 function buildAction(
@@ -43,7 +42,6 @@ function buildAction(
     notes: appendActionMetadataToNotes("Action de terrain", {
       associationName: "Action spontanée",
     }),
-    manual_drawing: null,
   };
 }
 

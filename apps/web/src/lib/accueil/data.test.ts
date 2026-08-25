@@ -10,10 +10,11 @@ function makeContract(
   id: string,
   status: "pending" | "approved" | "rejected",
   wasteKg: number,
+  type: "action" | "spot" | "clean_place" = "action",
 ) {
   return buildActionDataContract({
     id,
-    type: "action",
+    type,
     status,
     source: "web_form",
     observedAt: "2026-04-10",
@@ -69,6 +70,21 @@ describe("accueil data", () => {
     expect(counters.euroSaved).toBe(2);
   });
 
+  it("ignores approved spots and clean places even when they contain metrics", () => {
+    const counters = computeLandingCounters(
+      [
+        makeContract("approved-action", "approved", 10),
+        makeContract("approved-spot", "approved", 999, "spot"),
+        makeContract("approved-clean-place", "approved", 888, "clean_place"),
+      ],
+      "2026-01-01",
+    );
+
+    expect(counters.wasteKg).toBe(10);
+    expect(counters.butts).toBe(100);
+    expect(counters.volunteers).toBe(10);
+  });
+
   it("builds community activity only from approved actions", () => {
     const activity = buildHomeCommunityActivity(
       [
@@ -106,6 +122,20 @@ describe("accueil data", () => {
     expect(activity.items[0]?.actor).toBe(
       "Mairie du 20e arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris",
     );
+  });
+
+  it("excludes approved spots and clean places from recent community activity", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        makeContract("approved-action", "approved", 10),
+        makeContract("approved-spot", "approved", 999, "spot"),
+        makeContract("approved-clean-place", "approved", 888, "clean_place"),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.visibleActions).toBe(1);
+    expect(activity.items.map((item) => item.id)).toEqual(["approved-action"]);
   });
 
   it("formats a clear landing overview error message", () => {

@@ -1,5 +1,7 @@
+import { parseDrawingFromNotes } from "@/lib/actions/drawing";
+import { parseDrawingFromGeoJson } from "@/lib/actions/derived-geometry";
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality";
-import type { ActionListItem } from "@/lib/actions/types";
+import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
 import type { ActionRow, ProgressionEventType } from "./progression-types";
 
 const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
@@ -62,6 +64,15 @@ export function actionRowToListItem(row: ActionRow): ActionListItem {
     notes: row.notes,
     status: row.status,
   };
+}
+
+export function actionRowToDrawing(row: ActionRow): ActionDrawing | null {
+  return (
+    parseDrawingFromGeoJson(
+      row.derived_geometry_geojson,
+      row.derived_geometry_kind ?? null,
+    ) ?? parseDrawingFromNotes(row.notes).manualDrawing
+  );
 }
 
 export function inferActionWeight(row: ActionRow): number {

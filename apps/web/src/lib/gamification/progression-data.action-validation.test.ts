@@ -23,7 +23,6 @@ const VALIDATION_ACTIONS = [
     duration_minutes: 45,
     status: "approved" as const,
     notes: SPONTANEOUS_NOTES,
-    manual_drawing: null,
   },
   {
     id: "action-2",
@@ -40,7 +39,6 @@ const VALIDATION_ACTIONS = [
     duration_minutes: 30,
     status: "approved" as const,
     notes: SPONTANEOUS_NOTES,
-    manual_drawing: null,
   },
   {
     id: "action-3",
@@ -57,7 +55,6 @@ const VALIDATION_ACTIONS = [
     duration_minutes: 20,
     status: "pending" as const,
     notes: SPONTANEOUS_NOTES,
-    manual_drawing: null,
   },
 ] as const;
 

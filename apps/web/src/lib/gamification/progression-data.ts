@@ -34,9 +34,9 @@ import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 const ACTION_FULL_COLUMNS =
-  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing";
+  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
 const ACTION_APPROVED_COLUMNS =
-  "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing";
+  "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
 const ACTION_LABEL_COLUMNS = "created_by_clerk_id, actor_name, notes, action_date";
 const USER_LABEL_SUMMARY_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LABEL_SUMMARY_CACHE_TAG = "gamification-user-label-summary";

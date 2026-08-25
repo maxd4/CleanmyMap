@@ -20,7 +20,6 @@ function createRow(
     duration_minutes: overrides.duration_minutes ?? 60,
     status: overrides.status ?? "approved",
     notes: overrides.notes ?? null,
-    manual_drawing: overrides.manual_drawing ?? null,
   };
 }
 
