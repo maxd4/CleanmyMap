@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { listCodexUsageWeeklySnapshots } from "./codex-usage-store";
 import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
 import {
-  mergeSignalementSpotRows,
+  normalizeCanonicalSpotRows,
   orderProjectSignalRows,
   type ActionRow,
   type AppNotificationRow,
@@ -99,7 +99,7 @@ export async function loadProjectSignalData(
     orderProjectSignalRows<SpotRow>(
       supabase
         .from("trash_spotter_spots")
-        .select("id, created_at, created_by_clerk_id, latitude, longitude, status, spot_type")
+        .select("id, created_at, created_by_clerk_id, latitude, longitude, status")
         .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [["created_at", false], ["id", false]],
     ),
@@ -211,7 +211,7 @@ export async function loadProjectSignalData(
   const rows: ProjectSignalRowsInput = {
     profiles: [],
     actions: (actions.data ?? []) as ActionRow[],
-    spots: mergeSignalementSpotRows((canonicalSpots.data ?? []) as SpotRow[]),
+    spots: normalizeCanonicalSpotRows((canonicalSpots.data ?? []) as SpotRow[]),
     funnelEvents: (funnelEvents.data ?? []) as FunnelRow[],
     progressionEvents: (progressionEvents.data ?? []) as ProgressionRow[],
     reports: (reports.data ?? []) as ReportRow[],

@@ -41,22 +41,6 @@ export type ActionParticipantRow = {
     | "import";
 };
 
-export type SpotRow = {
-  id: string;
-  created_at: string;
-  created_by_clerk_id: string;
-  label: string;
-  waste_type: "clean_place" | "spot";
-  latitude: number | null;
-  longitude: number | null;
-  derived_geometry_kind: "point" | "polyline" | "polygon" | null;
-  derived_geometry_geojson: string | null;
-  geometry_confidence: number | null;
-  geometry_source?: ActionGeometrySource | null;
-  status: "new" | "validated" | "cleaned";
-  notes: string | null;
-};
-
 export type ActionRow = {
   id: string;
   created_at: string;

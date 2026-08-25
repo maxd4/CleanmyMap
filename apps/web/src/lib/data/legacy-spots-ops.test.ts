@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -17,6 +18,23 @@ import {
 } from "../../../scripts/db-cleanup-suspect-runtime-records.mjs";
 
 describe("legacy spots maintenance boundaries", () => {
+  it("does not read removed geometry columns from the legacy spots schema", () => {
+    const migration = readFileSync(
+      new URL(
+        "../../../supabase/migrations/20260825000000_migrate_legacy_spots_to_trash_spotter.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    expect(migration).toContain(
+      "  legacy.latitude,\n  legacy.longitude,\n  null,\n  null,\n  null,\n  null,\n  legacy.status,",
+    );
+    expect(migration).not.toMatch(
+      /legacy\.(derived_geometry_kind|derived_geometry_geojson|geometry_confidence|geometry_source)/,
+    );
+  });
+
   it("archives canonical signalements, provenance and the legacy table without dropping other tables", () => {
     const names = getArchiveTableNames();
 
