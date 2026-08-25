@@ -4,9 +4,17 @@ interface RouteListProps {
   hasRoute: boolean;
   picks: RouteStop[];
   fr: boolean;
+  selectedStopId?: string | null;
+  onSelectStop?: (stopId: string) => void;
 }
 
-export function RouteList({ hasRoute, picks, fr }: RouteListProps) {
+export function RouteList({
+  hasRoute,
+  picks,
+  fr,
+  selectedStopId = null,
+  onSelectStop,
+}: RouteListProps) {
   return (
     <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-1 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
       <ol className="divide-y divide-emerald-200/10">
@@ -14,7 +22,17 @@ export function RouteList({ hasRoute, picks, fr }: RouteListProps) {
           picks.map((item, index) => (
             <li
               key={item.id}
-              className="group flex flex-col justify-between gap-4 p-4 transition hover:bg-[rgba(17,56,41,0.62)] sm:flex-row sm:items-start"
+              className={`group flex cursor-pointer flex-col justify-between gap-4 p-4 transition hover:bg-[rgba(17,56,41,0.62)] sm:flex-row sm:items-start ${selectedStopId === item.id ? "bg-emerald-400/10 ring-1 ring-inset ring-emerald-300/30" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-current={selectedStopId === item.id ? "true" : undefined}
+              onClick={() => onSelectStop?.(item.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectStop?.(item.id);
+                }
+              }}
             >
               <div className="space-y-2">
                 <p className="flex items-center gap-2 font-bold text-white">

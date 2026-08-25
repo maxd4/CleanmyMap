@@ -1,3 +1,10 @@
+import type {
+  RouteGeometry,
+  RouteStop,
+} from "@/lib/route/route-contract";
+
+export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
+
 export type RouteConstraints = {
   availableMinutes: number;
   volunteers: number;
@@ -8,19 +15,9 @@ export type RouteConstraints = {
   maxStops: number;
 };
 
-export type RouteStop = {
-  id: string;
-  label: string;
-  latitude: number;
-  longitude: number;
-  segmentKm: number;
-  estimatedMinutes: number;
-  priorityReason: string;
-  score: number;
-};
-
 export type RouteResponse = {
   stops: RouteStop[];
+  routeGeometry: RouteGeometry;
   scoreBreakdown: {
     impact: number;
     distance: number;

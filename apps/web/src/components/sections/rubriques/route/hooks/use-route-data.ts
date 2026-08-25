@@ -37,15 +37,25 @@ export function useRouteData() {
   );
 
   const picks = useMemo(() => data?.stops ?? [], [data?.stops]);
+  const routeGeometry = data?.routeGeometry;
   
   const totalKm = useMemo(
-    () => picks.reduce((acc, item) => acc + Number(item.segmentKm || 0), 0),
-    [picks],
+    () =>
+      routeGeometry?.mode === "network"
+        ? routeGeometry.distanceKm
+        : picks.reduce((acc, item) => acc + Number(item.segmentKm || 0), 0),
+    [routeGeometry, picks],
   );
   
   const totalMinutes = useMemo(
-    () => picks.reduce((acc, item) => acc + Number(item.estimatedMinutes || 0), 0),
-    [picks],
+    () =>
+      routeGeometry?.mode === "network"
+        ? routeGeometry.durationMinutes
+        : picks.reduce(
+            (acc, item) => acc + Number(item.estimatedMinutes || 0),
+            0,
+          ),
+    [routeGeometry, picks],
   );
 
   const hasData = !isLoading && !error && Boolean(data);

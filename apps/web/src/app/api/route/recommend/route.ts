@@ -6,11 +6,19 @@ import { buildTrashSpotterActionableCandidates } from"@/lib/actions/trash-spotte
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
 import {
- buildTrashSpotterRouteCandidates,
+  buildTrashSpotterRouteCandidates,
  distanceKm,
  selectNextTrashSpotterStop,
  type TrashSpotterRouteCandidate,
 } from"@/lib/route/trash-spotter-recommendation";
+import {
+  applyRouteGeometryLegs,
+  type RouteStop,
+} from "@/lib/route/route-contract";
+import {
+  createFallbackRouteGeometry,
+  routePolylineThroughStreetNetwork,
+} from "@/lib/geo/osrm-routing";
 import {
   buildHotspots,
   buildProactiveAssistant,
@@ -90,6 +98,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: "ok",
       stops: [],
+      routeGeometry: createFallbackRouteGeometry([]),
       scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
       constraintsApplied: constraints,
       tradeoffs: [
@@ -124,7 +133,7 @@ export async function POST(request: Request) {
   }
  }
 
- const stops = route.map((item, index) => {
+ const estimatedStops: RouteStop[] = route.map((item, index) => {
  const prev = index > 0 ? route[index - 1] : null;
  const segmentKm = prev ? distanceKm(prev, item) : 0;
  return {
@@ -145,7 +154,20 @@ export async function POST(request: Request) {
  };
  });
 
- const totalDistance = stops.reduce((acc, stop) => acc + stop.segmentKm, 0);
+ const routeGeometry = await routePolylineThroughStreetNetwork(
+   route.map((item) => [item.latitude, item.longitude] as [number, number]),
+   {
+     fallbackDurationMinutes: estimatedStops.reduce(
+       (total, stop) => total + stop.estimatedMinutes,
+       0,
+     ),
+   },
+ );
+ const stops = applyRouteGeometryLegs(estimatedStops, routeGeometry);
+ const totalDistance =
+   routeGeometry.mode === "network"
+     ? routeGeometry.distanceKm
+     : stops.reduce((acc, stop) => acc + stop.segmentKm, 0);
  const averageImpact =
  route.reduce((acc, item) => acc + item.score, 0) / route.length;
  const distanceScore = Math.max(0, 100 - totalDistance * 5);
@@ -185,6 +207,7 @@ export async function POST(request: Request) {
  return NextResponse.json({
  status:"ok",
  stops,
+ routeGeometry,
  scoreBreakdown: {
  impact: Number(averageImpact.toFixed(1)),
  distance: Number(distanceScore.toFixed(1)),
