@@ -6,13 +6,14 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateCommunityEventForm } from "@/components/sections/rubriques/community/types";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { cn } from "@/lib/utils";
+import { getWasteCategory } from "@/lib/waste";
 
 const CLEANUP_WASTE_TYPE_OPTIONS = [
-  { value: "megots", label: "Mégots" },
-  { value: "plastique", label: "Plastique" },
-  { value: "verre", label: "Verre" },
-  { value: "metal", label: "Métal" },
-  { value: "mixte", label: "Mixte" },
+  { value: "megots", label: getWasteCategory("cigarette_butt").labels.fr },
+  { value: "plastique", label: getWasteCategory("plastic").labels.fr },
+  { value: "verre", label: getWasteCategory("glass").labels.fr },
+  { value: "metal", label: getWasteCategory("metal").labels.fr },
+  { value: "mixte", label: getWasteCategory("mixed_residual").labels.fr },
 ] as const;
 
 const CLEANUP_SUPPORT_LEVEL_OPTIONS = [

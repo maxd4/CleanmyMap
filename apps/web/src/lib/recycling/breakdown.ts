@@ -1,6 +1,16 @@
 import type { ActionDataContract } from "@/lib/actions/contract-model";
+import {
+  LEGACY_RECYCLING_CATEGORY_ORDER,
+  canonicalWasteSlugFromLegacy,
+  getCanonicalWasteQuantities,
+} from "@/lib/waste";
+import type { LegacyWasteCategory } from "@/lib/waste";
 
-export type WasteCategory = "megots" | "plastique" | "verre" | "metal" | "mixte";
+/**
+ * Public output values are kept for API/UI compatibility. Their meaning is
+ * provided by the global waste registry through the legacy adapter.
+ */
+export type WasteCategory = LegacyWasteCategory;
 
 export type RecyclingBreakdownLine = {
   category: WasteCategory;
@@ -24,13 +34,9 @@ export type RecyclingBreakdownSnapshot = {
 export function buildRecyclingBreakdown(
   contracts: ActionDataContract[],
 ): RecyclingBreakdownSnapshot {
-  const categories: Record<WasteCategory, { kg: number; entries: number }> = {
-    megots: { kg: 0, entries: 0 },
-    plastique: { kg: 0, entries: 0 },
-    verre: { kg: 0, entries: 0 },
-    metal: { kg: 0, entries: 0 },
-    mixte: { kg: 0, entries: 0 },
-  };
+  const categories = Object.fromEntries(
+    LEGACY_RECYCLING_CATEGORY_ORDER.map((category) => [category, { kg: 0, entries: 0 }]),
+  ) as Record<WasteCategory, { kg: number; entries: number }>;
 
   let triQualityHigh = 0;
   let triQualityMedium = 0;
@@ -53,11 +59,14 @@ export function buildRecyclingBreakdown(
       categories[category].entries += 1;
     };
 
-    add("megots", breakdown.megotsKg);
-    add("plastique", breakdown.plastiqueKg);
-    add("verre", breakdown.verreKg);
-    add("metal", breakdown.metalKg);
-    add("mixte", breakdown.mixteKg);
+    for (const quantity of getCanonicalWasteQuantities(breakdown)) {
+      const category = LEGACY_RECYCLING_CATEGORY_ORDER.find(
+        (legacyCategory) => canonicalWasteSlugFromLegacy(legacyCategory) === quantity.slug,
+      );
+      if (category) {
+        add(category, quantity.kg);
+      }
+    }
 
     if (breakdown.triQuality === "elevee") {
       triQualityHigh += 1;
@@ -72,15 +81,11 @@ export function buildRecyclingBreakdown(
     (acc, entry) => acc + entry.kg,
     0,
   );
-  const lines = (
-    Object.entries(categories) as Array<
-      [WasteCategory, { kg: number; entries: number }]
-    >
-  ).map(([category, entry]) => ({
+  const lines = LEGACY_RECYCLING_CATEGORY_ORDER.map((category) => ({
     category,
-    kg: Number(entry.kg.toFixed(2)),
-    sharePercent: totalKg > 0 ? Number(((entry.kg / totalKg) * 100).toFixed(1)) : 0,
-    entries: entry.entries,
+    kg: Number(categories[category].kg.toFixed(2)),
+    sharePercent: totalKg > 0 ? Number(((categories[category].kg / totalKg) * 100).toFixed(1)) : 0,
+    entries: categories[category].entries,
   }));
 
   return {
@@ -93,4 +98,3 @@ export function buildRecyclingBreakdown(
     },
   };
 }
-

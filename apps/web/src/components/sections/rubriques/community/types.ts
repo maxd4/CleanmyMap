@@ -7,6 +7,7 @@ import type {
   EventStaffingSummary,
 } from "@/lib/community/engagement";
 import type { CommunityEventItem } from "@/lib/community/http";
+import type { LegacyWasteCategory } from "@/lib/waste";
 
 export type CommunityTab = "upcoming" | "mine" | "past";
 
@@ -20,9 +21,7 @@ export type CreateCommunityEventForm = {
   cleanupZone: string;
   cleanupLogisticsNeeds: string;
   cleanupSupportLevel: "faible" | "moyen" | "fort";
-  cleanupWasteTypesExpected: Array<
-    "megots" | "plastique" | "verre" | "metal" | "mixte"
-  >;
+  cleanupWasteTypesExpected: Array<Exclude<LegacyWasteCategory, "encombrant">>;
 };
 
 export type OpsDraft = {

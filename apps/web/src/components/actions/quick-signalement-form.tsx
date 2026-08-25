@@ -10,12 +10,13 @@ import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { logFailure } from "@/lib/logging/failure-log";
+import { getWasteCategory } from "@/lib/waste";
 
 const WASTE_TYPES = [
-  { id: "megots", label: "Mégots", icon: "🚬", color: "amber" },
-  { id: "plastique", label: "Plastique", icon: "🥤", color: "blue" },
-  { id: "encombrant", label: "Encombrant", icon: "🛋️", color: "rose" },
-  { id: "mixte", label: "Mixte", icon: "🥡", color: "emerald" },
+  { id: "megots", label: getWasteCategory("cigarette_butt").labels.fr, icon: "🚬", color: "amber" },
+  { id: "plastique", label: getWasteCategory("plastic").labels.fr, icon: "🥤", color: "blue" },
+  { id: "encombrant", label: getWasteCategory("bulky_furniture").labels.fr, icon: "🛋️", color: "rose" },
+  { id: "mixte", label: getWasteCategory("mixed_residual").labels.fr, icon: "🥡", color: "emerald" },
 ];
 
 export function QuickSignalementForm() {
