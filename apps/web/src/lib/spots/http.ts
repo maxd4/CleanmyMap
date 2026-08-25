@@ -3,8 +3,8 @@ export type SpotType = "clean_place" | "spot";
 export type CreateSpotPayload = {
   type: SpotType;
   label: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number;
+  longitude: number;
   notes?: string;
 };
 

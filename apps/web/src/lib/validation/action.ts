@@ -5,6 +5,7 @@ import {
 } from "@/lib/actions/data-contract";
 import { isValidAssociationName } from "@/lib/actions/association-options";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import { isWasteCategorySlug } from "@/lib/waste";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -82,6 +83,9 @@ const associationNameSchema = z
   .refine((value) => isValidAssociationName(value), "Association invalide.");
 
 const accountTokensSchema = z.array(z.string().min(1).max(120)).max(50).optional();
+const wasteCategorySlugSchema = z
+  .string()
+  .refine(isWasteCategorySlug, "Catégorie de déchet inconnue.");
 
 const preparationDataSchema = z
   .object({
@@ -109,6 +113,7 @@ const preparationDataSchema = z
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),
     groupJoinEnabled: z.boolean().optional(),
+    expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
   })
   .strict();
 

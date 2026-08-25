@@ -11,6 +11,7 @@ import {
 import { createAction, resolveActionCreationStatus } from "@/lib/actions/store";
 import {
   createSignalement,
+  SignalementCreationValidationError,
   type CreatedSignalement,
 } from "@/lib/actions/create-signalement";
 import type { ActionStatus } from "@/lib/actions/types";
@@ -71,16 +72,28 @@ export async function createActionSubmission(
       );
     }
 
-    const signalement = await createSignalement(params.supabase, {
-      userId: params.userId,
-      type: payload.recordType,
-      label: payload.locationLabel,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      notes: payload.notes,
-      actorName: payload.actorName ?? params.creator.displayName,
-      consentGranted: params.consentGranted,
-    });
+    let signalement: CreatedSignalement;
+    try {
+      signalement = await createSignalement(params.supabase, {
+        userId: params.userId,
+        type: payload.recordType,
+        label: payload.locationLabel,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        notes: payload.notes,
+        wasteCategories:
+          payload.recordType === "spot"
+            ? payload.preparationData?.expectedWasteCategories
+            : undefined,
+        actorName: payload.actorName ?? params.creator.displayName,
+        consentGranted: params.consentGranted,
+      });
+    } catch (error) {
+      if (error instanceof SignalementCreationValidationError) {
+        throw new ActionCreationValidationError(error.fieldErrors);
+      }
+      throw error;
+    }
 
     return {
       kind: "signalement",
