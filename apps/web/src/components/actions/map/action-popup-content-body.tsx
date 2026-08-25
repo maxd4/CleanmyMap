@@ -28,6 +28,7 @@ type ActionPopupContentBodyProps = {
   joinHref?: string | null;
   joinStatusLabel?: string | null;
   hasPollution: boolean;
+  isAction: boolean;
 };
 
 export function ActionPopupContentBody({
@@ -46,14 +47,23 @@ export function ActionPopupContentBody({
   joinHref,
   joinStatusLabel,
   hasPollution,
+  isAction,
 }: ActionPopupContentBodyProps) {
+  const wasteLabel = isAction ? "Déchets collectés" : "Déchets";
+  const buttsLabel = isAction ? "Mégots collectés" : "Mégots";
+  const actionLabel = isAction
+    ? "Nouvelle action ici"
+    : hasPollution
+      ? "Déclarer une action"
+      : "Mettre à jour la zone";
+
   return (
     <div className="space-y-4 p-5">
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800">
         <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
           <div className="flex items-center gap-2 text-slate-600">
             <Trash2 size={12} />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">Déchets</span>
+            <span className="cmm-text-caption font-bold uppercase tracking-wider">{wasteLabel}</span>
           </div>
           <p className="text-xl font-bold tracking-tight text-slate-950">
             {formatNumber(wasteKg)}{" "}
@@ -63,7 +73,7 @@ export function ActionPopupContentBody({
         <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
           <div className="flex items-center gap-2 text-slate-600">
             <Sparkles size={12} className="text-amber-500" />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">Mégots</span>
+            <span className="cmm-text-caption font-bold uppercase tracking-wider">{buttsLabel}</span>
           </div>
           <p className="text-xl font-bold tracking-tight text-slate-950">{formatNumber(butts)}</p>
         </div>
@@ -165,7 +175,7 @@ export function ActionPopupContentBody({
         >
           <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
           <span className="cmm-text-small font-bold text-slate-950">
-            {hasPollution ? "Déclarer une action" : "Mettre à jour la zone"}
+            {actionLabel}
           </span>
           <ArrowRight size={16} className="text-slate-700 transition-transform group-hover:translate-x-1" />
         </a>

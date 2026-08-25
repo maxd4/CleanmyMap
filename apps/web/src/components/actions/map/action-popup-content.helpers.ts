@@ -1,5 +1,6 @@
 import { SCORE_THRESHOLDS } from "@/components/actions/map-marker-categories";
-import type { ActionMapItem } from "@/lib/actions/types";
+import { mapItemLocationLabel } from "@/lib/actions/data-contract";
+import type { ActionMapItem, ActionPreparationData } from "@/lib/actions/types";
 
 export type ScoreReading = {
   label: string;
@@ -12,6 +13,24 @@ export type GeometryTone = {
   accent: string;
   glow: string;
 };
+
+type ActionMetadataWithPreparation = {
+  preparationData?: ActionPreparationData | null;
+};
+
+export function isActionMapItem(item: ActionMapItem): boolean {
+  return item.contract?.type === "action";
+}
+
+export function resolveActionTitle(item: ActionMapItem): string {
+  const metadata = item.contract?.metadata as
+    | (NonNullable<ActionMapItem["contract"]>["metadata"] &
+        ActionMetadataWithPreparation)
+    | undefined;
+  const actionTitle = metadata?.preparationData?.actionTitle?.trim();
+
+  return actionTitle || mapItemLocationLabel(item);
+}
 
 export function formatObservedDate(value: string | null | undefined): string {
   if (!value) {
@@ -97,7 +116,19 @@ export function getScoreReading(score: number): ScoreReading {
   };
 }
 
-export function getGeometryTone(reality: string | null | undefined): GeometryTone {
+export function getGeometryTone(
+  reality: string | null | undefined,
+  isAction = false,
+): GeometryTone {
+  if (isAction) {
+    return {
+      shell:
+        "border-sky-200/70 bg-sky-50/80 text-sky-800 dark:border-sky-800/40 dark:bg-sky-950/25 dark:text-sky-300",
+      accent: "bg-sky-500",
+      glow: "from-sky-400/20 via-sky-500/10 to-transparent",
+    };
+  }
+
   if (reality === "real") {
     return {
       shell:

@@ -14,14 +14,16 @@ import {
   formatObservedDate,
   formatRecordType,
   formatStatusLabel,
+  isActionMapItem,
+  resolveActionTitle,
 } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { useActionPopupScores } from "./use-action-popup-scores";
 import {
-  formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
+  resolveGeometryConfidenceLabel,
   resolveActionMapGeometryViewModel,
 } from "./actions-map-geometry.utils";
 
@@ -49,15 +51,18 @@ export function ActionPopupContent({
   const operational = getActionOperationalContext(contract);
   const quality = item.quality_grade ? `Qualité ${item.quality_grade}` : null;
   const locationLabel = mapItemLocationLabel(item);
+  const isAction = isActionMapItem(item);
+  const actionTitle = isAction ? resolveActionTitle(item) : locationLabel;
   const observedAt = formatObservedDate(
     contract?.dates.observedAt ?? mapItemObservedAt(item),
   );
   const statusLabel = formatStatusLabel(contract?.status ?? item.status);
   const recordTypeLabel = formatRecordType(item);
   const hasPollution = wasteKg > 0 || butts > 0;
-  const updateHref = buildActionUpdateHref(hasPollution, coords);
+  const updateHref = buildActionUpdateHref(hasPollution, coords, isAction);
   const geometryView = resolveActionMapGeometryViewModel(item);
-  const geometryConfidenceLabel = formatGeometryConfidenceLabel(
+  const geometryConfidenceLabel = resolveGeometryConfidenceLabel(
+    geometryView.presentation,
     geometryView.confidence,
   );
   const geometryModeLabel = formatGeometryModeLabel(geometryView.presentation);
@@ -95,6 +100,8 @@ export function ActionPopupContent({
       <ActionPopupContentHeader
         recordTypeLabel={recordTypeLabel}
         locationLabel={locationLabel}
+        actionTitle={actionTitle}
+        isAction={isAction}
         color={color}
         score={score}
         scoreLoading={scoreLoading}
@@ -111,6 +118,9 @@ export function ActionPopupContent({
         geometryConfidenceLabel={geometryConfidenceLabel}
         geometryMetricLabel={geometryMetricLabel}
         geometryReality={geometry.reality}
+        observedAt={observedAt}
+        wasteKg={wasteKg}
+        butts={butts}
       />
 
       <ActionPopupContentBody
@@ -129,6 +139,7 @@ export function ActionPopupContent({
         joinHref={joinHref}
         joinStatusLabel={joinStatusLabel}
         hasPollution={hasPollution}
+        isAction={isAction}
       />
     </div>
   );

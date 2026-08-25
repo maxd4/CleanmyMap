@@ -8,11 +8,12 @@ export function hasValidCoordinates(coords: {
 export function buildActionUpdateHref(
   hasPollution: boolean,
   coords: { latitude: number | null; longitude: number | null },
+  isAction = false,
 ): string | null {
   if (!hasValidCoordinates(coords)) {
     return null;
   }
 
   const baseUrl = `/actions/new?lat=${coords.latitude}&lng=${coords.longitude}`;
-  return hasPollution ? baseUrl : `${baseUrl}&mode=propre`;
+  return hasPollution || isAction ? baseUrl : `${baseUrl}&mode=propre`;
 }
