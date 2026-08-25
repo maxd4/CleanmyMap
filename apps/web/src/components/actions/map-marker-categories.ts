@@ -2,6 +2,7 @@ import type { ActionMapItem } from"@/lib/actions/types";
 import {
  mapItemCigaretteButts,
  mapItemObservedAt,
+ mapItemPostActionPollutionScore,
  mapItemType,
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
@@ -11,7 +12,7 @@ import {
   computeWasteContributionScore,
  type PollutionScoreReferences,
 } from"@/lib/actions/pollution-score";
-import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
+import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
 
 export type MarkerCategory =
  |"orange"
@@ -130,7 +131,12 @@ function resolveCategoryScore(
 ): number {
  const observedScore = resolveItemPollutionScores(item, references).severityScore;
  return mapItemType(item) === "action"
-  ? presentActionRevisitPriority(observedScore, mapItemObservedAt(item), now).revisitPriority
+  ? presentActionPollutionProjection(
+      observedScore,
+      mapItemObservedAt(item),
+      now,
+      { postActionScore: mapItemPostActionPollutionScore(item) },
+    ).projectedPollutionScore
   : observedScore;
 }
 

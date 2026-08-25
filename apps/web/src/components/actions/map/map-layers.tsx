@@ -17,6 +17,7 @@ import { ActionMapItem } from "@/lib/actions/types";
 import {
   mapItemCoordinates,
   mapItemObservedAt,
+  mapItemPostActionPollutionScore,
   mapItemType,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
@@ -28,7 +29,7 @@ import {
   resolveDynamicColor,
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
-import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
+import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import { ActionPopupContent } from "./action-popup-content";
 import {
@@ -93,8 +94,12 @@ export function resolvePointColor(
 
   const observedScore = resolveItemPollutionScores(item, references).severityScore;
   const score = isActionMapItem(item)
-    ? presentActionRevisitPriority(observedScore, mapItemObservedAt(item), now)
-        .revisitPriority
+    ? presentActionPollutionProjection(
+        observedScore,
+        mapItemObservedAt(item),
+        now,
+        { postActionScore: mapItemPostActionPollutionScore(item) },
+      ).projectedPollutionScore
     : observedScore;
 
   return resolveDynamicColor(score);
@@ -268,18 +273,20 @@ export function ShapeLayers({
         const pollutionScores = resolveItemPollutionScores(item, references);
         const color = resolvePointColor(item, references, now);
         const score = pollutionScores.severityScore;
-        const actionPriority = isActionMapItem(item)
-          ? presentActionRevisitPriority(
+        const actionProjection = isActionMapItem(item)
+          ? presentActionPollutionProjection(
               score,
               mapItemObservedAt(item),
               now,
+              { postActionScore: mapItemPostActionPollutionScore(item) },
             )
           : null;
-        const actionTooltipReading = actionPriority
+        const actionTooltipReading = actionProjection
           ? {
-              observedScore: actionPriority.observedScore,
-              lastAction: mapItemObservedAt(item),
-              revisitPriority: actionPriority.revisitPriority,
+              historicalScore: actionProjection.historicalScore,
+              projectedScore: actionProjection.projectedPollutionScore,
+              elapsedDays: actionProjection.elapsedDays,
+              isEstimate: actionProjection.isEstimate,
             }
           : undefined;
         const coords = mapItemCoordinates(item);

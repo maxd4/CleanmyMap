@@ -7,7 +7,7 @@ import {
   CLEAN_PLACE_COLOR,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
-import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
+import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -206,7 +206,8 @@ describe("ShapeLayers", () => {
     );
     const now = new Date("2026-08-25T00:00:00.000Z");
     const expectedActionColor = resolveDynamicColor(
-      presentActionRevisitPriority(100, "2026-06-01", now).revisitPriority,
+      presentActionPollutionProjection(100, "2026-06-01", now)
+        .projectedPollutionScore,
     );
 
     expect(resolvePointColor(action, null, now)).toBe(expectedActionColor);
@@ -216,6 +217,26 @@ describe("ShapeLayers", () => {
     expect(resolvePointColor(action, null, now)).not.toBe(CLEAN_PLACE_COLOR);
     expect(resolvePointColor(spot, null, now)).not.toBe(CLEAN_PLACE_COLOR);
     expect(resolvePointColor(cleanPlace, null, now)).toBe(CLEAN_PLACE_COLOR);
+  });
+
+  it("uses an explicit post-action measurement instead of the zero baseline", () => {
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    const action = toActionMapItem(
+      buildActionDataContract({
+        id: "measured-post-action",
+        type: "action",
+        status: "approved",
+        source: "actions",
+        observedAt: "2026-08-25",
+        locationLabel: "Quai mesuré",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        wasteKg: 20,
+        postActionPollutionScore: 18,
+      }),
+    );
+
+    expect(resolvePointColor(action, null, now)).toBe(resolveDynamicColor(18));
   });
 
   it("uses the action tooltip title for polyline shapes", () => {

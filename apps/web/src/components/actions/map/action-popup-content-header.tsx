@@ -4,6 +4,7 @@ import {
   getGeometryTone,
   type ScoreReading,
 } from "./action-popup-content.helpers";
+import type { ActionPollutionProjectionPresentation } from "@/lib/actions/revisit-priority";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -29,7 +30,7 @@ type ActionPopupContentHeaderProps = {
   observedAt: string;
   wasteKg: number;
   butts: number;
-  revisitPriority: number | null;
+  actionProjection: ActionPollutionProjectionPresentation | null;
 };
 
 function ScoreRing({
@@ -104,7 +105,7 @@ export function ActionPopupContentHeader({
   observedAt,
   wasteKg,
   butts,
-  revisitPriority,
+  actionProjection,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
 
@@ -143,7 +144,7 @@ export function ActionPopupContentHeader({
           <div className="grid gap-2 sm:grid-cols-3">
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                Pollution constatée
+                Pollution constatée avant l&apos;action
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
                 {Math.round(score)}/100
@@ -151,28 +152,34 @@ export function ActionPopupContentHeader({
             </div>
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                Dernière action
+                Temps depuis la dernière action
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {observedAt}
+                {actionProjection?.elapsedDays ?? 0} j
               </p>
             </div>
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                Priorité de revisite
+                Pollution projetée
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {Math.round(revisitPriority ?? score)}/100
+                {Math.round(actionProjection?.projectedPollutionScore ?? score)}/100
               </p>
             </div>
           </div>
           <ScoreRing
             color={color}
-            score={revisitPriority ?? score}
+            score={actionProjection?.projectedPollutionScore ?? score}
             scoreLoading={scoreLoading}
-            label="Revisite"
+            label="Projection"
           />
         </div>
+
+        <p className="cmm-text-caption font-semibold text-amber-700 dark:text-amber-300">
+          {actionProjection?.isEstimate
+            ? "Projection modélisée · pas une mesure en temps réel"
+            : "Projection basée sur une mesure post-action"}
+        </p>
 
         <div className="rounded-2xl border border-sky-100/80 bg-gradient-to-br from-sky-50 to-white p-3 shadow-sm dark:border-sky-900/60 dark:from-sky-950/30 dark:to-slate-900/40">
           <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">

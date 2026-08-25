@@ -99,13 +99,23 @@ describe("action popup presentation", () => {
         observedAt: "08/04/2026",
         wasteKg: 5,
         butts: 42,
-        revisitPriority: 47.2,
+        actionProjection: {
+          historicalScore: 42,
+          postActionScore: 0,
+          postActionScoreSource: "model_baseline",
+          elapsedDays: 47,
+          t80Days: 100,
+          projectedPollutionScore: 47.2,
+          isEstimate: true,
+        },
       }),
     );
 
-    expect(markup).toContain("Pollution constatée");
-    expect(markup).toContain("Dernière action");
-    expect(markup).toContain("Priorité de revisite");
+    expect(markup).toContain("Pollution constatée avant l&#x27;action");
+    expect(markup).toContain("Temps depuis la dernière action");
+    expect(markup).toContain("Pollution projetée");
+    expect(markup).toContain("pas une mesure en temps réel");
+    expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");
   });
 

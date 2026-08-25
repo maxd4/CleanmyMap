@@ -1,5 +1,3 @@
-import { formatObservedDate } from "./action-popup-content.helpers";
-
 type GeometryTooltipContentProps = {
   title: string;
   geometryModeLabel: string;
@@ -8,9 +6,10 @@ type GeometryTooltipContentProps = {
   geometryConfidenceLabel: string | null;
   color: string;
   actionReading?: {
-    observedScore: number;
-    lastAction: string;
-    revisitPriority: number;
+    historicalScore: number;
+    projectedScore: number;
+    elapsedDays: number;
+    isEstimate: boolean;
   };
 };
 
@@ -54,9 +53,16 @@ export function GeometryTooltipContent({
 
       {actionReading ? (
         <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
-          <p>Pollution constatée : {Math.round(actionReading.observedScore)}/100</p>
-          <p>Dernière action : {formatObservedDate(actionReading.lastAction)}</p>
-          <p>Priorité de revisite : {Math.round(actionReading.revisitPriority)}/100</p>
+          <p>
+            Pollution constatée avant l&apos;action : {Math.round(actionReading.historicalScore)}/100
+          </p>
+          <p>Pollution projetée : {Math.round(actionReading.projectedScore)}/100</p>
+          <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+          {actionReading.isEstimate && (
+            <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+              Estimation · pas une mesure en temps réel
+            </p>
+          )}
         </div>
       ) : null}
     </div>

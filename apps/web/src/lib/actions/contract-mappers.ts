@@ -94,6 +94,7 @@ export function toActionMapItem(
     cigarette_butts: contract.metadata.cigaretteButts,
     waste_pollution_score: pollutionScores?.wasteScore,
     cigarette_butts_pollution_score: pollutionScores?.buttsScore,
+    post_action_pollution_score: contract.metadata.postActionPollutionScore ?? null,
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
@@ -145,6 +146,7 @@ export function toActionListItem(
     cigarette_butts: contract.metadata.cigaretteButts,
     waste_pollution_score: pollutionScores?.wasteScore,
     cigarette_butts_pollution_score: pollutionScores?.buttsScore,
+    post_action_pollution_score: contract.metadata.postActionPollutionScore ?? null,
     volunteers_count: contract.metadata.volunteersCount,
     duration_minutes: contract.metadata.durationMinutes,
     notes: contract.metadata.notes,
@@ -236,6 +238,22 @@ export function mapItemCoordinates(item: ActionMapItem): {
 
 export function mapItemObservedAt(item: ActionMapItem): string {
   return item.contract?.dates.observedAt ?? item.action_date;
+}
+
+export function mapItemPostActionPollutionScore(
+  item: ActionMapItem,
+): number | null {
+  const candidates = [
+    item.post_action_pollution_score,
+    item.contract?.metadata.postActionPollutionScore,
+  ];
+
+  const measured = candidates.find(
+    (value): value is number =>
+      typeof value === "number" && Number.isFinite(value),
+  );
+
+  return measured ?? null;
 }
 
 export function mapItemDrawing(item: ActionMapItem): ActionDrawing | null {
