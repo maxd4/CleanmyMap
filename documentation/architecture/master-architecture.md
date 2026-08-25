@@ -142,8 +142,8 @@ Supabase ne doit pas devenir un second fournisseur d'identité implicite pour le
 Voir :
 
 ```txt
-architecture/adr/ADR-001-clerk-auth.md
-architecture/adr/ADR-004-companion-identity.md
+documentation/architecture/adr/ADR-001-clerk-auth.md
+documentation/architecture/adr/ADR-004-companion-identity.md
 ```
 
 ## Données
@@ -201,12 +201,14 @@ apps/web/supabase/config.toml
 apps/web/supabase/migrations/
 ```
 
-Un second arbre historique existe à la racine.
+L'ancien arbre historique `supabase/migrations/` a été supprimé après
+comparaison contrôlée et ne doit pas être recréé. Le garde-fou
+`npm run audit:supabase-migration-trees` bloque sa réapparition.
 
 Voir :
 
 ```txt
-architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
+documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 ```
 
 ## Sécurité

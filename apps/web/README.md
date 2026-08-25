@@ -18,7 +18,7 @@ Repères :
 
 - Next.js 16 App Router ;
 - React 19 ;
-- TypeScript 6 ;
+- TypeScript 7 ;
 - Clerk ;
 - Supabase ;
 - Vercel.
@@ -89,13 +89,15 @@ Commande :
 npm run backend:supabase:push -w apps/web
 ```
 
-Un second arbre de migrations existe encore à la racine. Avant suppression ou déplacement, suivre :
+L'arbre de migrations canonique est unique et se trouve dans `apps/web/supabase/migrations/`.
+Le miroir historique racine a été supprimé et ne doit pas être recréé. Voir :
 
 ```txt
 documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 ```
 
-Ne jamais modifier un seul arbre de migration sans vérifier la stratégie courante.
+Ne jamais créer ou modifier un second arbre de migration ; le garde-fou
+`npm run audit:supabase-migration-trees` doit rester vert.
 
 ## Bootstrap backend
 
