@@ -227,7 +227,7 @@ Points à résoudre :
 Voir :
 
 ```txt
-architecture/adr/ADR-004-companion-identity.md
+documentation/architecture/adr/ADR-004-companion-identity.md
 ```
 
 ## Évolution d'un contrat

@@ -171,7 +171,7 @@ Repères actuels :
 
 - Next.js 16 avec App Router ;
 - React 19 ;
-- TypeScript 6 ;
+- TypeScript 7 ;
 - Tailwind CSS 4 ;
 - Clerk pour l'identité principale ;
 - Supabase/PostgreSQL pour les données ;

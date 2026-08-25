@@ -56,7 +56,6 @@ notamment :
 ```txt
 apps/web/supabase/config.toml
 apps/web/supabase/migrations/
-apps/web/supabase/seed.sql
 ```
 
 Le dossier racine historique :
