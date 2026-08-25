@@ -1,5 +1,4 @@
 import { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
-export { PROJECT_SIGNAL_ROW_LIMIT } from "./project-signals.constants";
 import type {
   EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactProjectSignal,
@@ -50,7 +49,7 @@ export type SpotRow = {
   status: string;
 };
 
-export function mergeSignalementSpotRows(
+export function normalizeCanonicalSpotRows(
   canonicalRows: SpotRow[],
 ): SpotRow[] {
   const seenIds = new Set<string>();

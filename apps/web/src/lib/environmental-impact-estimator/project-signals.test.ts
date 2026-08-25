@@ -5,7 +5,7 @@ import {
   loadEnvironmentalImpactProjectSignals,
   PROJECT_SIGNAL_ROW_LIMIT,
 } from "./project-signals";
-import { mergeSignalementSpotRows } from "./project-signals.calculations";
+import { normalizeCanonicalSpotRows } from "./project-signals.calculations";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {
@@ -325,7 +325,7 @@ it("loads project signals with deterministic ordering under the cap", async () =
     ]);
 });
 
-it("counts canonical signalements, keeps legacy history and removes mirrored duplicates", () => {
+it("counts canonical signalements and removes duplicate canonical IDs", () => {
   const canonicalRows = [
     {
       id: "shared-signalement",
@@ -344,7 +344,7 @@ it("counts canonical signalements, keeps legacy history and removes mirrored dup
       status: "cleaned",
     },
   ];
-  const spots = mergeSignalementSpotRows(canonicalRows);
+  const spots = normalizeCanonicalSpotRows(canonicalRows);
 
   expect(spots.map((row) => [row.id, row.source])).toEqual([
     ["shared-signalement", "trash_spotter_spots"],
@@ -511,17 +511,6 @@ function createProjectSignalsLoadSupabaseMock(orderingsByTable: Map<string, Arra
                 id: "canonical-load",
                 created_at: "2026-05-06T12:00:00Z",
                 created_by_clerk_id: "user-1",
-                latitude: 48.85,
-                longitude: 2.35,
-                status: "validated",
-              },
-            ]);
-          case "spots":
-            return createProjectSignalsQueryChain(orderingsByTable, table, [
-              {
-                id: "legacy-load",
-                created_at: "2026-05-04T12:00:00Z",
-                created_by_clerk_id: "user-2",
                 latitude: 48.85,
                 longitude: 2.35,
                 status: "validated",
