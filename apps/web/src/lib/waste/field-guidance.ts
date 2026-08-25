@@ -85,6 +85,7 @@ export function getWasteCategorySearchText(slug: WasteCategorySlug): string {
     category.labels.fr,
     category.labels.en,
     ...category.examples.flatMap((example) => [example.fr, example.en]),
+    ...(category.aliases ?? []).flatMap((alias) => [alias.fr, alias.en]),
     ...category.pedagogicalTags,
   ]
     .join(" ")

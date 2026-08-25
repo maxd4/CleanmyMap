@@ -40,3 +40,11 @@ export {
   stripWasteCategoryMarkersFromNotes,
 } from "./field-guidance";
 export type { WasteFieldGuidance } from "./field-guidance";
+export {
+  findWasteCategorySlug,
+  getWastePedagogicalProjection,
+} from "./pedagogy";
+export type {
+  WastePedagogicalLocale,
+  WastePedagogicalProjection,
+} from "./pedagogy";

@@ -57,6 +57,7 @@ export type WasteCategoryDefinition = {
   family: WasteFamily;
   labels: WasteLocalizedText;
   examples: WasteLocalizedText[];
+  aliases?: WasteLocalizedText[];
   hazardLevel: WasteHazardLevel;
   pickupPolicy: WastePickupPolicy;
   disposalRoute: WasteDisposalRoute;
