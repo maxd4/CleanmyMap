@@ -386,14 +386,14 @@ export function ActionsMapCanvas({
             width: 100%;
             height: 100%;
             border-radius: 999px;
-            border: 1px solid rgba(34, 197, 94, 0.28);
-            background: linear-gradient(180deg, rgba(236, 253, 245, 0.96), rgba(209, 250, 229, 0.86));
-            color: #14532d;
+            border: 1px solid rgba(100, 116, 139, 0.35);
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(226, 232, 240, 0.9));
+            color: #334155;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            box-shadow: 0 20px 30px -16px rgba(34, 197, 94, 0.28);
+            box-shadow: 0 20px 30px -16px rgba(71, 85, 105, 0.3);
           }
           .cmm-trash-spotter-cluster__count {
             font-size: 0.95rem;

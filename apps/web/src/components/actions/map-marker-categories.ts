@@ -125,6 +125,7 @@ export function resolveDynamicColor(score: number): string {
 }
 
 export const CLEAN_PLACE_COLOR = `hsl(${COLOR_TOKENS.GREEN.h}, ${COLOR_TOKENS.GREEN.s}%, ${COLOR_TOKENS.GREEN.l}%)`;
+export const TRASH_SPOTTER_NEUTRAL_COLOR = "#64748b";
 
 function resolveCategoryScore(
  item: ActionMapItem,

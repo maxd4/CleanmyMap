@@ -3,6 +3,7 @@ import { Cigarette, Info, Trash2 } from "lucide-react";
 import {
   ACTION_POLLUTION_COLOR_THRESHOLDS,
   INFRASTRUCTURE_ALERT_THRESHOLD,
+  TRASH_SPOTTER_NEUTRAL_COLOR,
 } from "@/components/actions/map-marker-categories";
 
 type LegendItem = {
@@ -48,6 +49,12 @@ const colorItems: LegendItem[] = [
     threshold: "clean_place",
     note: "Lieu explicitement propre",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />,
+  },
+  {
+    label: "Trash Spotter",
+    threshold: "niveau non quantifié",
+    note: "Signalement neutre, sans score de pollution",
+    icon: <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: TRASH_SPOTTER_NEUTRAL_COLOR }} />,
   },
 ];
 
@@ -99,7 +106,7 @@ export function MapLegend() {
             Légende
           </p>
           <p className="text-sm font-medium leading-relaxed text-slate-600">
-            Les actions combinent la pollution constatée avant l&apos;intervention et une projection de re-pollution qui dépend du temps écoulé. Le vert est réservé aux lieux explicitement propres.
+            Les actions combinent la pollution constatée avant l&apos;intervention et une projection de re-pollution qui dépend du temps écoulé. Les Trash Spotter quantifiés suivent cette palette ; les signalements qualitatifs restent neutres. Le vert est réservé aux lieux explicitement propres.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

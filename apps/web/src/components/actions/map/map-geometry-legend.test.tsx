@@ -23,7 +23,10 @@ describe("MapGeometryLegend", () => {
     expect(markup).toContain(
       "Actions : la couleur représente la pollution projetée depuis la dernière action.",
     );
-    expect(markup).toContain("Trash Spotter : signalements actuellement observés et actionnables.");
+    expect(markup).toContain(
+      "Trash Spotter : signalements actuellement observés ; la palette pollution s&#x27;applique seulement à un score quantifié, sinon le style reste neutre.",
+    );
+    expect(markup).toContain("Trash Spotter qualitatif : signalement neutre, sans score");
     expect(markup).toContain("Vert · lieu explicitement propre");
     expect(markup).not.toContain("Vert · faible");
 

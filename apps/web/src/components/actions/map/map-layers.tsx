@@ -32,6 +32,7 @@ import type {
 import {
   resolveInfrastructureEmoji,
   CLEAN_PLACE_COLOR,
+  TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
@@ -102,8 +103,27 @@ export function resolvePointColor(
   displayMode: CurrentPlaceStateMode = "projected_today",
   currentPlaceState: CurrentPlaceState | null = null,
 ): string {
-  if (mapItemType(item) === "clean_place") {
+  const itemType = mapItemType(item);
+  if (itemType === "clean_place") {
     return CLEAN_PLACE_COLOR;
+  }
+
+  if (itemType === "spot") {
+    const contractScore = (
+      item.contract as unknown as ActionDataContract | undefined
+    )?.metadata.observedPollutionScore;
+    const measuredScore =
+      typeof contractScore === "number" && Number.isFinite(contractScore)
+        ? contractScore
+        : currentPlaceState?.scoreKind === "measured" &&
+            typeof currentPlaceState.score === "number" &&
+            Number.isFinite(currentPlaceState.score)
+          ? currentPlaceState.score
+          : null;
+
+    return measuredScore === null
+      ? TRASH_SPOTTER_NEUTRAL_COLOR
+      : resolveDynamicColor(measuredScore);
   }
 
   const observedScore = resolveItemPollutionScores(item, references).severityScore;
@@ -634,6 +654,7 @@ export function TrashSpotterMarkers({
 }) {
   const spotItems = items.filter(isTrashSpotterItem);
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+  const now = new Date();
 
   useEffect(() => {
     if (!selectedActionId) {
@@ -701,6 +722,13 @@ export function TrashSpotterMarkers({
           item,
           displayMode,
         );
+        const color = resolvePointColor(
+          item,
+          null,
+          now,
+          displayMode,
+          currentPlaceState,
+        );
 
         return (
           <CircleMarker
@@ -720,8 +748,8 @@ export function TrashSpotterMarkers({
               },
             }}
             pathOptions={{
-              color: "#16a34a",
-              fillColor: "#22c55e",
+              color,
+              fillColor: color,
               fillOpacity: isSelected ? 0.9 : 0.82,
               weight: 2 + (isSelected ? 1 : 0),
               opacity: 1,
@@ -731,7 +759,7 @@ export function TrashSpotterMarkers({
               <ActionPopupContent
                 key={item.id}
                 item={item}
-                color="#22c55e"
+                color={color}
                 coords={coords}
                 displayMode={displayMode}
                 currentPlaceState={currentPlaceState}

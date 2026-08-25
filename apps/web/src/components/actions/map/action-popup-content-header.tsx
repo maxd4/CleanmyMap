@@ -40,6 +40,7 @@ type ActionPopupContentHeaderProps = {
   actionProjection: ActionPollutionProjectionPresentation | null;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;
+  hasQuantifiedPollutionScore?: boolean;
 };
 
 function ScoreRing({
@@ -117,6 +118,7 @@ export function ActionPopupContentHeader({
   actionProjection,
   displayMode,
   currentPlaceState = null,
+  hasQuantifiedPollutionScore = true,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
 
@@ -295,11 +297,13 @@ export function ActionPopupContentHeader({
             {locationLabel}
           </h3>
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            {displayMode && currentPlaceState?.scoreKind === "unavailable" ? (
+            {displayMode &&
+            currentPlaceState?.scoreKind === "unavailable" &&
+            !hasQuantifiedPollutionScore ? (
               <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
                 {currentPlaceState.stateLabel}
               </span>
-            ) : (
+            ) : hasQuantifiedPollutionScore ? (
               <span
                 className={[
                 "rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
@@ -316,25 +320,29 @@ export function ActionPopupContentHeader({
                   ? `Pollution observée ${formatScorePercent(Math.round(currentPlaceState.score ?? score))}`
                   : `Score global ${formatScorePercent(Math.round(score))}`}
               </span>
-            )}
-            <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              {scoreReading.label}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              Déchets {formatScorePercent(Math.round(wasteScore))}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              Mégots {formatScorePercent(Math.round(buttsScore))}
-            </span>
+            ) : null}
+            {hasQuantifiedPollutionScore ? (
+              <>
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  {scoreReading.label}
+                </span>
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  Déchets {formatScorePercent(Math.round(wasteScore))}
+                </span>
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  Mégots {formatScorePercent(Math.round(buttsScore))}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
-        {displayMode && currentPlaceState?.scoreKind === "unavailable" ? null : (
+        {hasQuantifiedPollutionScore ? (
           <ScoreRing
             color={color}
             score={currentPlaceState?.score ?? score}
             scoreLoading={scoreLoading}
           />
-        )}
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-slate-50/90 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/55">
@@ -343,10 +351,20 @@ export function ActionPopupContentHeader({
             <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
               Lecture terrain
             </p>
-            <p className="text-sm font-semibold text-slate-900">{scoreReading.guidance}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-              {scoreSourceLabel}
-            </p>
+            {hasQuantifiedPollutionScore ? (
+              <>
+                <p className="text-sm font-semibold text-slate-900">
+                  {scoreReading.guidance}
+                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {scoreSourceLabel}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm font-semibold text-slate-900">
+                Signalement qualitatif · niveau non quantifié
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import {
   ACTION_POLLUTION_COLOR_STOPS,
   CLEAN_PLACE_COLOR,
+  TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
 } from "../map-marker-categories";
 
@@ -39,7 +40,15 @@ export function MapGeometryLegend() {
           </p>
         </div>
         <p className="text-slate-600">
-          Trash Spotter : signalements actuellement observés et actionnables.
+          Trash Spotter : signalements actuellement observés ; la palette pollution s&apos;applique seulement à un score quantifié, sinon le style reste neutre.
+        </p>
+        <p className="flex min-w-0 items-center gap-1.5 text-slate-600">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-600/30"
+            style={{ backgroundColor: TRASH_SPOTTER_NEUTRAL_COLOR }}
+            aria-hidden="true"
+          />
+          Trash Spotter qualitatif : signalement neutre, sans score
         </p>
       </div>
 
