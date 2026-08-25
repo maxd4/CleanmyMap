@@ -1,7 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import {
+  getCurrentUserIdentity,
+  requireAuthenticatedAccess,
+} from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -54,8 +56,8 @@ const searchSchema = z.object({
 
 async function resolveGroupJoinUserId(operation: string): Promise<string | null> {
   try {
-    const session = await auth();
-    return session.userId ?? null;
+    const identity = await getCurrentUserIdentity();
+    return identity?.userId ?? null;
   } catch (error) {
     console.warn(`[group-join] Clerk auth unavailable during ${operation}`, {
       error: error instanceof Error ? error.message : String(error),
@@ -107,10 +109,11 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const userId = await resolveGroupJoinUserId("PATCH /api/actions/:actionId/group-join");
-  if (!userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   let payload: unknown;
   try {
@@ -331,10 +334,11 @@ export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const userId = await resolveGroupJoinUserId("POST /api/actions/:actionId/group-join");
-  if (!userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   let payload: unknown;
   try {
@@ -501,10 +505,11 @@ export async function DELETE(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const userId = await resolveGroupJoinUserId("DELETE /api/actions/:actionId/group-join");
-  if (!userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   const { actionId } = await ctx.params;
   const trimmedActionId = actionId.trim();

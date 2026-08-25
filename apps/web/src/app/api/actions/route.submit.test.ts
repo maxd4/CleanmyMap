@@ -5,7 +5,7 @@ import {
   createInitialFormState,
 } from "@/components/actions/action-declaration/payload";
 
-const authMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
 const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
@@ -25,13 +25,10 @@ const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
-
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
   pickTraceableActorName: pickTraceableActorNameMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/gamification/progression", () => ({
@@ -104,7 +101,10 @@ describe("POST /api/actions", () => {
       unresolvedTokens: [],
     });
     resolveDefaultActionOrganizerIdsMock.mockReturnValue(["user-admin-default"]);
-    authMock.mockResolvedValue({ userId: "user-test-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "user-test-1",
+    });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "user-test-1",
       displayName: "Test User",
@@ -240,6 +240,51 @@ describe("POST /api/actions", () => {
       expect.objectContaining({
         status: "approved",
       }),
+    );
+  }, 15000);
+
+  it("accepts a localhost max bypass through the central auth helper", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "dev-max",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "dev-max",
+      displayName: "Max local",
+      firstName: null,
+      username: "max-local",
+      currentLevel: 1,
+      actorNameOptions: ["Max local"],
+      role: "max",
+      badges: [],
+    });
+    pickTraceableActorNameMock.mockReturnValueOnce("Max local");
+
+    const { POST } = await import("./route");
+    const payload = toContractCreatePayload({
+      actorName: "Max local",
+      associationName: "Action spontanée",
+      actionDate: "2026-04-22",
+      locationLabel: "Lieu max local",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 2,
+      durationMinutes: 30,
+      notes: "Bypass localhost explicite.",
+      submissionMode: "complete",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: "approved" }),
     );
   }, 15000);
 
@@ -687,7 +732,11 @@ describe("POST /api/actions", () => {
   }, 15000);
 
   it("rejects unauthenticated submissions", async () => {
-    authMock.mockResolvedValueOnce({ userId: null });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
 
     const { POST } = await import("./route");
     const response = await POST(

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -9,6 +8,10 @@ import {
   loadJoinableActions,
   loadUserParticipationHistory,
 } from "@/lib/actions/group-participation";
+import {
+  getCurrentUserIdentity,
+  requireAuthenticatedAccess,
+} from "@/lib/authz";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 export const runtime = "nodejs";
@@ -27,8 +30,8 @@ const joinSchema = z.object({
 
 async function resolveUserIdForGroupJoin(): Promise<string | null> {
   try {
-    const { userId } = await auth();
-    return userId ?? null;
+    const identity = await getCurrentUserIdentity();
+    return identity?.userId ?? null;
   } catch (error) {
     console.warn("[group-join] Clerk auth unavailable, continuing without user context", {
       error: error instanceof Error ? error.message : String(error),
@@ -76,10 +79,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const userId = await resolveUserIdForGroupJoin();
-  if (!userId) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
     return unauthorizedJsonResponse();
   }
+  const { userId } = access;
 
   let payload: unknown;
   try {

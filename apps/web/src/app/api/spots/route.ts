@@ -1,9 +1,12 @@
-import { auth } from "@clerk/nextjs/server";
 import { unstable_cache } from "next/cache";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { getCurrentUserIdentity, pickTraceableActorName } from"@/lib/authz";
+import {
+ getCurrentUserIdentity,
+ pickTraceableActorName,
+ requireAuthenticatedAccess,
+} from"@/lib/authz";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
@@ -87,8 +90,8 @@ async function loadCachedSpots(limit: number, status: SpotStatus | null) {
 }
 
 export async function GET(request: Request) {
- const { userId } = await auth();
- if (!userId) {
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) {
  return unauthorizedJsonResponse();
  }
 
@@ -114,10 +117,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const { userId } = await auth();
- if (!userId) {
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) {
  return unauthorizedJsonResponse();
  }
+ const { userId } = access;
 
  let payload: unknown;
  try {

@@ -1,4 +1,3 @@
-import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { unstable_cache } from"next/cache";
 import {
@@ -6,7 +5,10 @@ import {
  normalizeAssociationSelectionForPrefill,
 } from"@/lib/actions/association-options";
 import { extractActionMetadataFromNotes } from"@/lib/actions/metadata";
-import { getCurrentUserIdentity } from"@/lib/authz";
+import {
+ getCurrentUserIdentity,
+ requireAuthenticatedAccess,
+} from"@/lib/authz";
 import { fetchRecentActionsByUser } from"@/lib/actions/store";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -74,10 +76,11 @@ async function loadCachedRecentActionsForPrefill(userId: string) {
 }
 
 export async function GET() {
- const { userId } = await auth();
- if (!userId) {
+ const access = await requireAuthenticatedAccess();
+ if (!access.ok) {
  return unauthorizedJsonResponse();
  }
+ const { userId } = access;
 
  try {
  const identity = await getCurrentUserIdentity();
