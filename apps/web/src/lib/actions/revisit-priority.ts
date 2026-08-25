@@ -1,3 +1,10 @@
+import {
+  resolveProjectionConfidence,
+  type ProjectionConfidence,
+  type ProjectionConfidenceInput,
+  type ProjectionConfidenceLocalCalibration,
+} from "./projection-confidence";
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export const ACTION_POLLUTION_PROJECTION_CONSTANTS = {
@@ -23,6 +30,10 @@ export type ProjectedPollutionScoreOptions = {
   postActionScore?: number | null;
   /** Future local calibration hook; absent means the generic score-based T80 curve. */
   calibration?: ActionPollutionProjectionCalibration | null;
+  /** Evidence used only to describe projection robustness; it never changes the score. */
+  geometryConfidence?: ProjectionConfidenceInput["geometryConfidence"];
+  localCalibration?: ProjectionConfidenceLocalCalibration | null;
+  sourceCompleteness?: ProjectionConfidenceInput["sourceCompleteness"];
 };
 
 export type ActionPollutionProjectionPresentation = {
@@ -33,6 +44,7 @@ export type ActionPollutionProjectionPresentation = {
   t80Days: number;
   projectedPollutionScore: number;
   isEstimate: boolean;
+  projectionConfidence: ProjectionConfidence;
 };
 
 export type ActionPollutionProjectionMethodology = {
@@ -168,6 +180,14 @@ export function presentActionPollutionProjection(
     ...options,
     postActionScore,
   };
+  const projectionConfidence = resolveProjectionConfidence({
+    geometryConfidence: options.geometryConfidence,
+    postActionScoreSource: hasMeasuredPostActionScore
+      ? "measured"
+      : "model_baseline",
+    localCalibration: options.localCalibration,
+    sourceCompleteness: options.sourceCompleteness ?? "partial",
+  });
 
   return {
     historicalScore: normalizedHistoricalScore,
@@ -186,5 +206,6 @@ export function presentActionPollutionProjection(
       projectionOptions,
     ),
     isEstimate: !hasMeasuredPostActionScore,
+    projectionConfidence,
   };
 }

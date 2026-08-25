@@ -139,7 +139,24 @@ Le modèle non linéaire encode au contraire l'hypothèse suivante :
 
 Cette relation est une heuristique produit versionnée. Elle devra être recalibrée lorsque CleanMyMap disposera de suffisamment d'observations répétées.
 
-## 6. Calibration locale de la vitesse de re-pollution
+## 6. Confiance des projections
+
+Le runtime expose un resolver pur `resolveProjectionConfidence`. Il qualifie la robustesse des données d'entrée disponibles pour une projection ; il ne donne ni une probabilité de justesse, ni une validation empirique du modèle. La validation statistique reste le rôle futur du ledger d'erreur.
+
+Les facteurs exposés sont :
+
+- `geometry.confidence`, classée selon les seuils runtime de géométrie fiable et documentée ;
+- la source de `S_post` (`measured` ou `model_baseline`) ;
+- la calibration locale et son nombre d'intervalles valides ;
+- la complétude déclarée de l'historique (`complete` ou `partial`).
+
+Le niveau `high` exige simultanément une géométrie fiable, un `S_post` mesuré, une calibration locale avec au moins le nombre runtime d'intervalles requis pour une preuve forte, et un historique complet. Le niveau `medium` est attribué lorsque plusieurs preuves solides sont réunies sans satisfaire toutes ces conditions. Le niveau `low` est le défaut pour une projection générique, une géométrie approximative ou inconnue, une calibration insuffisante ou une source partielle.
+
+Les constantes de ce resolver sont centralisées dans `PROJECTION_CONFIDENCE_CONSTANTS` : seuil de géométrie fiable, seuil de géométrie documentée, minimum d'intervalles locaux pour une preuve forte et minimum de preuves solides pour `medium`. Le minimum local est partagé avec le seuil d'override de la calibration existante ; la carte ne duplique donc pas cette règle.
+
+La carte affiche cette information de manière neutre sous la forme « Confiance faible », « Confiance moyenne » ou « Confiance élevée ». Elle ne modifie jamais la couleur, l'opacité, l'épaisseur ou le style des tracés selon ce niveau : la palette reste exclusivement pilotée par le score de pollution projetée. Le read path cartographique actuellement partiel ne peut pas produire une confiance élevée par déduction.
+
+## 7. Calibration locale de la vitesse de re-pollution
 
 Le runtime possède une capacité domaine pure qui peut apprendre un `T80` local à partir de plusieurs actions terminées. Elle ne crée pas encore d'identifiant canonique de lieu, de `place_id` persistant, de table Supabase ou de migration. Chaque groupe expose une identité explicitement dérivée : `derivedPlaceKey`. Cette clé est remplaçable par un futur identifiant canonique sans changer l'API publique de projection.
 
@@ -173,7 +190,7 @@ La carte lit actuellement un flux borné par une fenêtre temporelle, une limite
 
 Le modèle générique reste donc le fallback des lieux sans historique complet, avec moins de 2 intervalles valides ou avec une calibration hors bornes. Cette calibration locale est une heuristique versionnée, pas une mesure en temps réel.
 
-## 7. Résolution de l'état courant par lieu
+## 8. Résolution de l'état courant par lieu
 
 Le runtime expose un resolver pur `resolveCurrentPlaceStates` qui produit un
 `CurrentPlaceState` déterministe pour chaque identité de lieu dérivée. Il
@@ -208,7 +225,7 @@ Le contrat prévoit dès maintenant le champ optionnel
 réellement mesurée. Le read path actuel ne le renseigne pas et aucune donnée de
 persistance n'est inventée.
 
-## 8. Couleurs de la carte d'actions
+## 9. Couleurs de la carte d'actions
 
 La couleur d'une action représente la pollution projetée, pas l'identité du type `action`.
 
@@ -229,7 +246,7 @@ Les seuils et interpolations exacts doivent être centralisés dans le runtime e
 
 Le choix des couleurs vise à rendre la progression immédiatement lisible tout en réservant le vert à une sémantique positive non ambiguë.
 
-## 9. Grammaire géométrique
+## 10. Grammaire géométrique
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.
 
@@ -258,7 +275,7 @@ L'épaisseur du trait peut augmenter pour indiquer la sélection de l'objet.
 
 L'épaisseur ne doit pas être utilisée pour encoder la pollution.
 
-## 10. Lecture recommandée dans les tooltips et popups
+## 11. Lecture recommandée dans les tooltips et popups
 
 Une action doit distinguer explicitement les informations historiques et projetées.
 
@@ -271,7 +288,7 @@ Exemple :
 
 Le score projeté ne doit jamais être présenté comme une observation actuelle.
 
-## 11. Limites du modèle
+## 12. Limites du modèle
 
 La projection actuelle ne connaît pas nécessairement :
 
@@ -288,7 +305,7 @@ Elle doit donc être comprise comme une aide à la priorisation et à la revisit
 
 Trash Spotter reste la source opérationnelle des signalements de pollution actuellement observée.
 
-## 12. Évaluation du modèle
+## 13. Évaluation du modèle
 
 Le dataset réel actuel contient 5 actions réparties sur 5 lieux différents. Il n'existe donc pas encore de répétition temporelle suffisante pour mesurer sérieusement une erreur globale, valider empiriquement la projection ou recalibrer ses constantes.
 
@@ -318,7 +335,7 @@ Le ledger append-only conserve la version du modèle et le snapshot des paramèt
 
 Aucune recalibration automatique ni optimisation des constantes globales n'est active. Les métriques produisent de l'évidence pour une décision future ; elles ne modifient jamais `T80(S)`, ses constantes ou la calibration locale existante.
 
-## 13. Transparence et versionnement
+## 14. Transparence et versionnement
 
 Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
@@ -330,7 +347,7 @@ Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
 Les constantes de projection doivent être centralisées dans le code afin d'éviter toute divergence entre runtime, tests et documentation.
 
-## 14. Sources internes
+## 15. Sources internes
 
 Sources de vérité techniques principales :
 

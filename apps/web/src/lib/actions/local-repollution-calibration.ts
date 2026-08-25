@@ -12,6 +12,7 @@ import {
   type ActionPollutionProjectionPresentation,
   type ProjectedPollutionScoreOptions,
 } from "./revisit-priority";
+import { PROJECTION_CONFIDENCE_CONSTANTS } from "./projection-confidence";
 import { auditActionContract } from "./data-quality";
 import type { ActionDataContract } from "./contract-model";
 
@@ -24,7 +25,8 @@ export const LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS = {
   minimumIntervalDays: 7,
   minimumT80Days: 7,
   maximumT80Days: 365,
-  minimumIntervalsForOverride: 2,
+  minimumIntervalsForOverride:
+    PROJECTION_CONFIDENCE_CONSTANTS.minimumLocalIntervalsForStrongEvidence,
   mediumConfidenceIntervals: 2,
   highConfidenceIntervals: 4,
 } as const;

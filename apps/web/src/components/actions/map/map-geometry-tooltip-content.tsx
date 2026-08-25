@@ -10,6 +10,7 @@ type GeometryTooltipContentProps = {
     projectedScore: number;
     elapsedDays: number;
     isEstimate: boolean;
+    projectionConfidenceLabel: string;
   };
 };
 
@@ -58,6 +59,7 @@ export function GeometryTooltipContent({
           </p>
           <p>Pollution projetée : {Math.round(actionReading.projectedScore)}/100</p>
           <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+          <p>{actionReading.projectionConfidenceLabel}</p>
           {actionReading.isEstimate && (
             <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
               Estimation · pas une mesure en temps réel

@@ -18,6 +18,7 @@ describe("geometry tooltip action reading", () => {
           projectedScore: 47,
           elapsedDays: 47,
           isEstimate: true,
+          projectionConfidenceLabel: "Confiance faible",
         },
       }),
     );
@@ -25,6 +26,7 @@ describe("geometry tooltip action reading", () => {
     expect(markup).toContain("Pollution constatée avant l&#x27;action : 42/100");
     expect(markup).toContain("Pollution projetée : 47/100");
     expect(markup).toContain("Temps depuis la dernière action : 47 j");
+    expect(markup).toContain("Confiance faible");
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");

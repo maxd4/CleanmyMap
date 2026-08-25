@@ -30,6 +30,10 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).toContain("Heuristique versionnée");
     expect(markup).toContain("Calibration locale");
+    expect(markup).toContain("Confiance de la projection");
+    expect(markup).toContain("robustesse des données");
+    expect(markup).toContain("ledger d&#x27;erreur futur");
+    expect(markup).toContain("historique complet");
     expect(markup).toContain("derivedPlaceKey");
     expect(markup).toContain("Aucune place_id");
     expect(markup).toContain("Une source partielle");

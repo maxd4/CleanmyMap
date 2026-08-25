@@ -134,7 +134,11 @@ function SingleActionPopupContent({
         score,
         mapItemObservedAt(item),
         new Date(),
-        { postActionScore: mapItemPostActionPollutionScore(item) },
+        {
+          postActionScore: mapItemPostActionPollutionScore(item),
+          geometryConfidence: geometryView.confidence,
+          sourceCompleteness: "partial",
+        },
       )
     : null;
   const isJoinableAction =

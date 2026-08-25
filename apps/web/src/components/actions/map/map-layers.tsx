@@ -31,6 +31,7 @@ import {
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
 import {
   findCorridorHistoryForAction,
   groupActionsByCorridor,
@@ -296,7 +297,11 @@ export function ShapeLayers({
               score,
               mapItemObservedAt(item),
               now,
-              { postActionScore: mapItemPostActionPollutionScore(item) },
+              {
+                postActionScore: mapItemPostActionPollutionScore(item),
+                geometryConfidence: geometry.confidence,
+                sourceCompleteness: "partial",
+              },
             )
           : null;
         const actionTooltipReading = actionProjection
@@ -305,6 +310,9 @@ export function ShapeLayers({
               projectedScore: actionProjection.projectedPollutionScore,
               elapsedDays: actionProjection.elapsedDays,
               isEstimate: actionProjection.isEstimate,
+              projectionConfidenceLabel: formatProjectionConfidenceLabel(
+                actionProjection.projectionConfidence.level,
+              ),
             }
           : undefined;
         const coords = mapItemCoordinates(item);

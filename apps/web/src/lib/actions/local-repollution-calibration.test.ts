@@ -339,14 +339,20 @@ describe("local repollution calibration", () => {
       {
         sourceCompleteness: "complete",
         localCalibration: calibration,
+        postActionScore: 12,
+        geometryConfidence: 1,
       },
     );
 
     expect(projected.provenance).toBe("local_history");
     expect(projected.t80Days).toBeCloseTo(40, 5);
     expect(projected.elapsedDays).toBe(40);
+    expect(projected.projectionConfidence.level).toBe("high");
     expect(projected.projectedPollutionScore).toBeCloseTo(
-      projectedPollutionScore(80, 40, { calibration: { t80Days: 40 } }),
+      projectedPollutionScore(80, 40, {
+        postActionScore: 12,
+        calibration: { t80Days: 40 },
+      }),
       8,
     );
   });

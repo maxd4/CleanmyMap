@@ -247,6 +247,7 @@ describe("corridor history", () => {
     ]);
     expect(summary.scoreEvolution?.latest).toBe(summary.observedScores[0]?.score);
     expect(summary.latestProjection?.elapsedDays).toBe(30);
+    expect(summary.latestProjection?.projectionConfidence.level).toBe("low");
   });
 
   it("is deterministic regardless of source input order", () => {
