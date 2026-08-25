@@ -228,7 +228,7 @@ export function ActionsMapCanvas({
         })}
       </div>
       <div
-        className="pointer-events-none absolute right-3 top-3 z-[1000]"
+        className="pointer-events-none absolute right-3 top-16 z-[1000] sm:top-3"
         role="group"
         aria-label="Mode d’affichage des états"
       >
