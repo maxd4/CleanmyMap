@@ -58,8 +58,8 @@ export const WASTE_DISPOSAL_LABELS = {
   wood_collection: "Filière bois locale",
   e_waste_collection: "Filière équipements électriques",
   battery_dropoff: "Point de collecte piles/batteries",
-  pharmacy_takeback: "Retour en pharmacie ou filière autorisée",
-  sharps_collection: "Service autorisé pour objets piquants/coupants",
+  pharmacy_takeback: "Médicament non utilisé : pharmacie / Cyclamed ; emballage vide : tri local selon le matériau",
+  sharps_collection: "Ne pas ramasser ; signaler au service local ou habilité approprié",
   local_authority_route: "Consigne de la collectivité à vérifier",
 } as const;
 

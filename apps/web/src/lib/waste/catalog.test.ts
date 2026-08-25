@@ -53,6 +53,31 @@ describe("global waste category contract", () => {
     expect(getWasteCategory("sharps").disposalRoute).toBe("sharps_collection");
   });
 
+  it("reserves medicine for unused medicine or packaging that still contains medicine", () => {
+    const medicine = getWasteCategory("medicine");
+    const examples = medicine.examples.map((example) => `${example.fr} ${example.en}`).join(" ");
+    const guidance = medicine.fieldInstructions.map((item) => item.fr).join(" ");
+
+    expect(medicine.labels.fr).toMatch(/non utilisé|contenant encore/i);
+    expect(examples).toMatch(/non utilisé|contenant encore/i);
+    expect(examples).not.toMatch(/emballage vide|empty packaging/i);
+    expect(guidance).toMatch(/pharmacie.*Cyclamed/i);
+    expect(guidance).toMatch(/totalement vide.*tri.*matière/i);
+  });
+
+  it("keeps found syringes and needles separate from generic blades and sharps", () => {
+    const sharps = getWasteCategory("sharps");
+    const sharpsExamples = sharps.examples.map((example) => `${example.fr} ${example.en}`).join(" ");
+    const otherExamples = getWasteCategory("other").examples.map((example) => `${example.fr} ${example.en}`).join(" ");
+    const instructions = sharps.fieldInstructions.map((item) => item.fr).join(" ");
+
+    expect(sharpsExamples).toMatch(/seringue|aiguille/i);
+    expect(sharpsExamples).not.toMatch(/lame|cutter|objet coupant|blade|sharp object/i);
+    expect(otherExamples).toMatch(/lame|cutter|objet coupant/i);
+    expect(sharps.pickupPolicy).toBe("no_pickup");
+    expect(instructions).toMatch(/ne pas ramasser.*signaler.*service local.*habilité/i);
+  });
+
   it("maps historical action and recycling slugs without changing their payload values", () => {
     expect(LEGACY_WASTE_CATEGORY_TO_SLUG).toMatchObject({
       megots: "cigarette_butt",
