@@ -9,6 +9,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
 
@@ -51,13 +52,14 @@ export function ActionPopupContentBody({
   isAction,
   onViewGeometry,
 }: ActionPopupContentBodyProps) {
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
   const wasteLabel = isAction ? "Déchets collectés" : "Déchets";
   const buttsLabel = isAction ? "Mégots collectés" : "Mégots";
   const actionLabel = isAction
     ? "Nouvelle action ici"
     : hasPollution
       ? "Déclarer une action"
-      : "Mettre à jour la zone";
+      : "Mettre à jour l’état du lieu";
 
   return (
     <div className="space-y-4 p-5">
@@ -148,14 +150,28 @@ export function ActionPopupContentBody({
       )}
 
       {notes && (
-        <div className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700" />
           <p className="mb-2 cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">
             Bilan terrain
           </p>
-          <p className="cmm-text-small line-clamp-3 text-slate-800 transition-all group-hover:line-clamp-none group-hover:leading-relaxed italic">
+          <p
+            id="action-popup-notes"
+            className={`cmm-text-small text-slate-800 italic ${
+              isNotesExpanded ? "leading-relaxed" : "line-clamp-3"
+            }`}
+          >
             &quot;{notes}&quot;
           </p>
+          <button
+            type="button"
+            className="mt-2 min-h-9 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-sky-700 underline decoration-sky-300 underline-offset-2 transition hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50 dark:text-sky-300 dark:hover:text-sky-100"
+            aria-expanded={isNotesExpanded}
+            aria-controls="action-popup-notes"
+            onClick={() => setIsNotesExpanded((expanded) => !expanded)}
+          >
+            {isNotesExpanded ? "Réduire" : "Voir plus"}
+          </button>
         </div>
       )}
 
@@ -191,35 +207,41 @@ export function ActionPopupContentBody({
           </span>
         </div>
       )}
-      {joinHref ? (
-        <CmmButton
-          href={joinHref}
-          tone="primary"
-          variant="pill"
-          className="h-11 w-full px-4 text-[11px] font-black uppercase tracking-[0.16em]"
-        >
-          Rejoindre un formulaire
-        </CmmButton>
-      ) : joinStatusLabel ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
-          <span className="cmm-text-small font-bold text-slate-600 dark:text-slate-200">
-            {joinStatusLabel}
-          </span>
-          <span className="mt-1 block cmm-text-caption text-slate-400 dark:text-slate-400">
-            Le partage de ce formulaire est désactivé côté organisateur.
-          </span>
+      {joinHref || joinStatusLabel || onViewGeometry ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {joinHref ? (
+            <CmmButton
+              href={joinHref}
+              tone="secondary"
+              variant="ghost"
+              size="sm"
+              className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+            >
+              Rejoindre un formulaire
+            </CmmButton>
+          ) : joinStatusLabel ? (
+            <div className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center dark:border-slate-700 dark:bg-slate-800/60">
+              <span className="cmm-text-small font-bold text-slate-600 dark:text-slate-200">
+                {joinStatusLabel}
+              </span>
+              <span className="mt-1 block cmm-text-caption text-slate-400 dark:text-slate-400">
+                Le partage de ce formulaire est désactivé côté organisateur.
+              </span>
+            </div>
+          ) : null}
+          {onViewGeometry ? (
+            <CmmButton
+              type="button"
+              onClick={onViewGeometry}
+              tone="tertiary"
+              variant="ghost"
+              size="sm"
+              className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+            >
+              Voir tout le tracé
+            </CmmButton>
+          ) : null}
         </div>
-      ) : null}
-      {onViewGeometry ? (
-        <CmmButton
-          type="button"
-          onClick={onViewGeometry}
-          tone="tertiary"
-          variant="pill"
-          className="h-11 w-full px-4 text-[11px] font-black uppercase tracking-[0.16em]"
-        >
-          Voir tout le tracé
-        </CmmButton>
       ) : null}
     </div>
   );

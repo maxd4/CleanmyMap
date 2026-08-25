@@ -103,6 +103,61 @@ describe("action popup presentation", () => {
     expect(markup).not.toContain("pollution");
   });
 
+  it("uses an explicit accessible control for long notes on touch and keyboard", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentBody, {
+        wasteKg: 5,
+        butts: 42,
+        volunteers: 3,
+        durationMinutes: 90,
+        operationalEngagementHours: 4.5,
+        associationName: null,
+        departure: null,
+        arrival: null,
+        notes: "Note longue de test",
+        observedAt: "08/04/2026",
+        sourceLabel: "Source: actions",
+        updateHref: "/actions/new?lat=48.8566&lng=2.3522",
+        hasPollution: true,
+        isAction: true,
+      }),
+    );
+
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain('aria-controls="action-popup-notes"');
+    expect(markup).toContain(">Voir plus</button>");
+    expect(markup).not.toContain("group-hover:line-clamp-none");
+  });
+
+  it("keeps secondary popup actions compact instead of presenting several full-width CTAs", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentBody, {
+        wasteKg: 5,
+        butts: 42,
+        volunteers: 3,
+        durationMinutes: 90,
+        operationalEngagementHours: 4.5,
+        associationName: null,
+        departure: null,
+        arrival: null,
+        notes: null,
+        observedAt: "08/04/2026",
+        sourceLabel: "Source: actions",
+        updateHref: "/actions/new?lat=48.8566&lng=2.3522",
+        joinHref: "/sections/rejoindre-un-formulaire?actionId=action-1",
+        hasPollution: true,
+        isAction: true,
+        onViewGeometry: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Nouvelle action ici");
+    expect(markup).toContain("Rejoindre un formulaire");
+    expect(markup).toContain("Voir tout le tracé");
+    expect(markup).toContain("max-w-full px-3");
+    expect(markup).not.toContain("h-11 w-full");
+  });
+
   it("labels observed pollution and revisit priority separately", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionPopupContentHeader, {
@@ -191,9 +246,9 @@ describe("buildActionUpdateHref", () => {
     );
   });
 
-  it("adds clean-place mode for non-positive scores", () => {
+  it("opens the canonical observation form for a clean-place context", () => {
     expect(buildActionUpdateHref(false, { latitude: 48.8566, longitude: 2.3522 })).toBe(
-      "/actions/new?lat=48.8566&lng=2.3522&mode=propre",
+      "/signalement?lat=48.8566&lng=2.3522",
     );
   });
 
