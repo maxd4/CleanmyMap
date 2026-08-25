@@ -50,7 +50,7 @@ type ActionBeforeDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
-  initialRecordType?: "action" | "clean_place";
+  initialRecordType?: "action";
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
 };
@@ -271,7 +271,7 @@ function sanitizePreActionForm(form: FormState): FormState {
 function buildPrefillForm(
   actorNameOptions: string[],
   defaultActorName: string,
-  initialRecordType: "action" | "clean_place",
+  initialRecordType: "action",
 ): FormState {
   const fallback = createInitialFormState(
     actorNameOptions.includes(defaultActorName)

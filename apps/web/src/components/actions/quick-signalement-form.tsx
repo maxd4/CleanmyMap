@@ -20,11 +20,19 @@ import {
   type QuickSignalementRecordType,
 } from "@/lib/actions/quick-signalement";
 
-export function QuickSignalementForm() {
+export type TrashSpotterObservationFormProps = {
+  initialLocation?: { lat: number; lng: number } | null;
+};
+
+export function TrashSpotterObservationForm({
+  initialLocation = null,
+}: TrashSpotterObservationFormProps) {
   const [recordType, setRecordType] = useState<QuickSignalementRecordType>("spot");
   const [selectedCategories, setSelectedCategories] = useState<WasteCategorySlug[]>([]);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locStatus, setLocStatus] = useState<"idle" | "locating" | "success" | "error">("idle");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(initialLocation);
+  const [locStatus, setLocStatus] = useState<"idle" | "locating" | "success" | "error">(
+    initialLocation ? "success" : "idle",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreparingPhotos, setIsPreparingPhotos] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -38,6 +46,12 @@ export function QuickSignalementForm() {
   const isCleanPlace = recordType === "clean_place";
 
   useEffect(() => {
+    if (initialLocation) {
+      setLocation(initialLocation);
+      setLocStatus("success");
+      return;
+    }
+
     if (canRequestGeolocation()) {
       setLocStatus("locating");
       navigator.geolocation.getCurrentPosition(
@@ -51,7 +65,7 @@ export function QuickSignalementForm() {
     } else {
       setLocStatus("error");
     }
-  }, []);
+  }, [initialLocation]);
 
   const handleSubmit = async () => {
     if ((!isCleanPlace && selectedCategories.length === 0) || !location) return;
@@ -333,3 +347,6 @@ export function QuickSignalementForm() {
     </div>
   );
 }
+
+/** Compatibility export for callers that still use the former quick-report name. */
+export const QuickSignalementForm = TrashSpotterObservationForm;

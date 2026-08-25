@@ -43,7 +43,7 @@ type ActionDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
-  initialRecordType?: "action" | "clean_place";
+  initialRecordType?: "action";
   initialActionId?: string | null;
   onReturnToChoice?: () => void;
 };

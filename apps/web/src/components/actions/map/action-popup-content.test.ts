@@ -237,6 +237,30 @@ describe("action popup presentation", () => {
 
     expect(markup).toContain("Voir tout le tracé");
   });
+
+  it("routes a clean-place context to the observation entry", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentBody, {
+        wasteKg: 0,
+        butts: 0,
+        volunteers: 0,
+        durationMinutes: 0,
+        operationalEngagementHours: 0,
+        associationName: null,
+        departure: null,
+        arrival: null,
+        notes: null,
+        observedAt: "08/04/2026",
+        sourceLabel: "Source: trash spotter",
+        updateHref: "/signalement?lat=48.8566&lng=2.3522",
+        hasPollution: false,
+        isAction: false,
+      }),
+    );
+
+    expect(markup).toContain("Mettre à jour l’état du lieu");
+    expect(markup).not.toContain("mode=propre");
+  });
 });
 
 describe("buildActionUpdateHref", () => {
