@@ -29,6 +29,7 @@ import { verifyRateLimit, createServerRateLimitResponse } from "@/lib/rate-limit
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
@@ -261,6 +262,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const botIdResponse = await requireBotIdHuman();
+  if (botIdResponse) return botIdResponse;
+
   const access = await requireAuthenticatedAccess();
   if (!access.ok) {
     return unauthorizedJsonResponse();

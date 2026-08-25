@@ -59,6 +59,36 @@ Les limites par défaut sont :
 La réponse de dépassement des wrappers contient HTTP `429`, le code
 `RATE_LIMIT_EXCEEDED` et un header `Retry-After` en secondes.
 
+## Couche BotID anti-automation
+
+Vercel BotID Basic protège les POST effectivement déclenchés par les appels
+navigateur CleanMyMap. `initBotId()` est initialisé dans
+`apps/web/instrumentation-client.ts`, et `checkBotId()` est appelé au début de
+chaque handler serveur concerné, avant `request.json()`, Clerk, Supabase,
+Resend, l'IA ou les autres traitements métier.
+
+Les routes protégées sont :
+
+- `/api/chat` ;
+- `/api/contact` ;
+- `/api/newsletter/subscribe` ;
+- `/api/community/bug-reports` ;
+- `/api/community/promotion-requests` ;
+- `/api/partners/onboarding-requests` ;
+- `/api/gamification/quiz/pedagogical-metrics` ;
+- `/api/actions` ;
+- `/api/community/events`.
+
+Un bot détecté reçoit la réponse stable HTTP `403` avec le code
+`BOT_DETECTED`. Le contrôle BotID est indépendant du rate-limit mémoire et ne
+constitue pas un quota distribué.
+
+L'audit des appelants du dépôt ne trouve pas de webhook, script de
+maintenance ou client machine pour ces neuf POST. Les chemins voisins
+`/api/community/events/ops` et `/api/actions/map` ne sont pas déclarés dans la
+configuration BotID : ils restent hors de cette protection navigateur et ne
+sont pas concernés par ce lot.
+
 ## Routes réellement protégées par `verifyRateLimit()`
 
 Ces appels sont présents dans les handlers suivants. Les limites indiquées
@@ -106,8 +136,9 @@ Ces contrôles complètent le rate-limit local et ne le rendent pas distribué.
 
 ## Limites de production et prochain lot
 
-Ce lot ne clôt pas la protection anti-bot ou quota production. Le prochain lot
-doit placer une défense adaptée avant les fonctions coûteuses et les appels
-Supabase, par exemple Vercel BotID/edge et/ou un limiteur distribué approprié
-aux routes concernées. Aucune de ces protections futures n'est considérée
-comme active dans le présent document.
+BotID Basic fournit désormais une protection anti-automation des flux
+navigateur, mais ne clôt pas la protection quota production : le `Map` reste
+local à chaque instance et best-effort. Aucune protection distribuée Redis,
+Upstash, Supabase ou équivalente n'est active dans ce lot. Le lot suivant peut
+ajouter un limiteur distribué adapté aux routes coûteuses sans présenter le
+compteur mémoire comme une garantie globale.

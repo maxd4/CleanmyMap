@@ -28,6 +28,7 @@ import {
   hasRecentSubmission,
   is24HourTimeString,
 } from"@/lib/security/validation";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 export const runtime ="nodejs";
 
@@ -127,6 +128,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+ const botIdResponse = await requireBotIdHuman();
+ if (botIdResponse) return botIdResponse;
+
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();

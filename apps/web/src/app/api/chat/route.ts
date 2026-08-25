@@ -28,6 +28,7 @@ import {
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { requireBotIdHuman } from "@/lib/botid/server";
 
 const CHANNEL_TYPES = [
   "community",
@@ -174,6 +175,9 @@ function buildZoneContext(
 }
 
 export async function POST(request: Request) {
+  const botIdResponse = await requireBotIdHuman();
+  if (botIdResponse) return botIdResponse;
+
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
 
