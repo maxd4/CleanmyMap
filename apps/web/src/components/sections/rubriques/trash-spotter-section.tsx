@@ -54,6 +54,8 @@ export function TrashSpotterSection() {
     setSpotLongitude,
     spotNotes,
     setSpotNotes,
+    wasteCategories,
+    setWasteCategories,
     spotState,
     spotMessage,
     onCreateSpot,
@@ -189,6 +191,8 @@ export function TrashSpotterSection() {
                 setSpotLongitude={setSpotLongitude}
                 spotNotes={spotNotes}
                 setSpotNotes={setSpotNotes}
+                wasteCategories={wasteCategories}
+                setWasteCategories={setWasteCategories}
                 spotState={spotState}
                 spotMessage={spotMessage}
                 onCreateSpot={onCreateSpot}

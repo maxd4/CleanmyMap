@@ -15,6 +15,7 @@ import type {
 import { computeButtsCount } from"../../../lib/actions/impact-calculators";
 import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
+import { formatWasteGuidanceLines } from "@/lib/waste";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
@@ -55,6 +56,7 @@ const BASE_FORM_STATE: FormState = {
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,
+ wasteCategories: [],
  actionTitle:"",
  shortDescription:"",
  communeZoneLabel:"",
@@ -109,6 +111,14 @@ export function createInitialFormState(
 export function buildPreparationDataFromForm(
  form: FormState,
 ): ActionPreparationData {
+ const wasteCategories = form.wasteCategories ?? [];
+ const guidance = formatWasteGuidanceLines(wasteCategories);
+ const supplement = (manual: string, derived: string, title: string) => {
+  const value = manual.trim();
+  if (!derived) return value || undefined;
+  const block = `${title}:\n${derived}`;
+  return value ? `${value}\n\n${block}` : block;
+ };
  return {
   actionTitle: form.actionTitle.trim() || undefined,
   shortDescription: form.shortDescription.trim() || undefined,
@@ -123,8 +133,8 @@ export function buildPreparationDataFromForm(
   placeType: form.placeType || undefined,
   estimatedDifficulty: form.estimatedDifficulty,
   accessibility: form.accessibility.trim() || undefined,
-  safetyInstructions: form.safetyInstructions.trim() || undefined,
-  recommendedMaterials: form.recommendedMaterials.trim() || undefined,
+  safetyInstructions: supplement(form.safetyInstructions, [guidance.toAvoid, guidance.toReport].filter(Boolean).join("\n"), "Consignes dérivées du référentiel"),
+  recommendedMaterials: supplement(form.recommendedMaterials, guidance.toPrepare, "Matériel dérivé du référentiel"),
   participantMessage: form.participantMessage.trim() || undefined,
   creatorRole: form.creatorRole,
   preparationState: form.preparationState,
@@ -132,6 +142,7 @@ export function buildPreparationDataFromForm(
   checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
   volunteersExpected: toOptionalNumber(form.volunteersCount),
   groupJoinEnabled: form.groupJoinEnabled,
+  expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
  };
 }
 
@@ -182,6 +193,7 @@ export function applyPreparationDataToForm(
    typeof preparationData.groupJoinEnabled === "boolean"
     ? preparationData.groupJoinEnabled
     : form.groupJoinEnabled,
+  wasteCategories: preparationData.expectedWasteCategories ?? form.wasteCategories,
  };
 }
 

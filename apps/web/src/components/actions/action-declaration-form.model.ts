@@ -4,6 +4,7 @@ import {
 } from"@/lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
 import { normalizeActionDrawing } from"./map/actions-map-geometry.utils";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 export type FormState = {
  actorName: string;
@@ -12,6 +13,7 @@ export type FormState = {
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
+ wasteCategories?: WasteCategorySlug[];
  actionTitle: string;
  shortDescription: string;
  communeZoneLabel: string;
@@ -63,6 +65,7 @@ export const initialState: FormState = {
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,
+ wasteCategories: [],
  actionTitle:"",
  shortDescription:"",
  communeZoneLabel:"",

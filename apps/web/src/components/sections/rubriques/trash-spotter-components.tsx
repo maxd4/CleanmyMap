@@ -15,6 +15,8 @@ import {
   Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { WasteCategorySlug } from "@/lib/waste";
+import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { SpotFormStatus, SpotType } from "./trash-spotter-types";
 
@@ -30,6 +32,8 @@ type SpotterFormProps = {
   setSpotLongitude: Dispatch<SetStateAction<string>>;
   spotNotes: string;
   setSpotNotes: Dispatch<SetStateAction<string>>;
+  wasteCategories: WasteCategorySlug[];
+  setWasteCategories: Dispatch<SetStateAction<WasteCategorySlug[]>>;
   spotState: SpotFormStatus;
   spotMessage: string | null;
   onCreateSpot: () => void;
@@ -112,6 +116,8 @@ export const SpotterForm = memo(function SpotterForm({
   setSpotLongitude,
   spotNotes,
   setSpotNotes,
+  wasteCategories,
+  setWasteCategories,
   spotState,
   spotMessage,
   onCreateSpot,
@@ -251,6 +257,16 @@ export const SpotterForm = memo(function SpotterForm({
             maxLength={2000}
             className="w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
           />
+        </div>
+
+        <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/60 p-4">
+          <WasteCategorySelector
+            value={wasteCategories}
+            onChange={setWasteCategories}
+            fr={fr}
+            idPrefix="trash-spotter-waste"
+          />
+          <WasteFieldSummary value={wasteCategories} fr={fr} className="mt-4" />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">

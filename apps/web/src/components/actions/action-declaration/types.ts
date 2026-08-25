@@ -1,4 +1,5 @@
 import type { ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 export type FormState = {
  actorName: string;
@@ -7,6 +8,7 @@ export type FormState = {
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
+ wasteCategories?: WasteCategorySlug[];
  actionTitle: string;
  shortDescription: string;
  communeZoneLabel: string;
