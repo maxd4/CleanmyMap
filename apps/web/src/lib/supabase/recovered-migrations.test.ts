@@ -66,4 +66,14 @@ describe("recovered Supabase migrations", () => {
       expect(migration).not.toMatch(/\bdrop\s+extension\b[^;]*\bcascade\b/i);
     }
   });
+
+  it("retires the temporary benchmark image bridge without cascading", () => {
+    const migration = readMigration("20260825190523_drop_benchmark_tmp_image_bridge.sql");
+    const executableSql = stripSqlComments(migration);
+
+    expect(executableSql).toMatch(
+      /drop\s+table\s+if\s+exists\s+public\.benchmark_tmp_image_bridge\s*;/i,
+    );
+    expect(executableSql).not.toMatch(/\bcascade\b/i);
+  });
 });
