@@ -159,7 +159,7 @@ function ActionsMapPageContent() {
           waterSavedLiters: stats.waterSavedLiters,
           euroSaved: stats.euroSaved,
         },
-        visibleCount > 0,
+        stats.visibleActions > 0,
       ),
     [
       stats.butts,
@@ -168,7 +168,7 @@ function ActionsMapPageContent() {
       stats.volunteers,
       stats.wasteKg,
       stats.waterSavedLiters,
-      visibleCount,
+      stats.visibleActions,
     ],
   );
 

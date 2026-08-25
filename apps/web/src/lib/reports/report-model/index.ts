@@ -1,11 +1,14 @@
 import {
-  mapItemCigaretteButts,
   mapItemLocationLabel,
   mapItemType,
-  mapItemWasteKg,
 } from "@/lib/actions/data-contract";
 import { evaluateActionQuality } from "@/lib/actions/quality";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
+import {
+  computeActionImpactKpis,
+  sumActionImpactKpis,
+  type ActionImpactInput,
+} from "@/lib/actions/impact-calculators";
 import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import type {
   ReportModel,
@@ -30,15 +33,49 @@ export * from "./helpers";
 export * from "./builders";
 export * from "./metrics";
 
+function toActionImpactInput(item: ActionListItem): ActionImpactInput {
+  return item.contract ?? {
+    metadata: {
+      wasteKg: item.waste_kg,
+      cigaretteButts: item.cigarette_butts,
+      volunteersCount: item.volunteers_count,
+      wasteBreakdown: item.waste_breakdown,
+    },
+  };
+}
+
+function toMapImpactInput(item: ActionMapItem): ActionImpactInput {
+  return item.contract ?? {
+    metadata: {
+      wasteKg: item.waste_kg,
+      cigaretteButts: item.cigarette_butts,
+      volunteersCount: item.volunteers_count,
+      wasteBreakdown: item.waste_breakdown,
+    },
+  };
+}
+
 function computeTotals(approvedActions: ActionListItem[]) {
-  const totalKg = approvedActions.reduce((sum, item) => sum + Number(item.waste_kg || 0), 0);
-  const totalButts = approvedActions.reduce((sum, item) => sum + Number(item.cigarette_butts || 0), 0);
-  const totalVolunteers = approvedActions.reduce((sum, item) => sum + Number(item.volunteers_count || 0), 0);
+  const impact = sumActionImpactKpis(approvedActions.map(toActionImpactInput));
   const totalHours = approvedActions.reduce(
-    (sum, item) => sum + (Number(item.duration_minutes || 0) * Number(item.volunteers_count || 0)) / 60,
+    (sum, item) => {
+      const impact = computeActionImpactKpis(toActionImpactInput(item));
+      const durationMinutes = Number(
+        item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
+      );
+      return sum + (durationMinutes * Math.max(1, impact.volunteers)) / 60;
+    },
     0,
   );
-  return { totalKg, totalButts, totalVolunteers, totalHours };
+  return {
+    totalKg: impact.wasteKg,
+    totalButts: impact.butts,
+    totalVolunteers: impact.volunteers,
+    totalHours,
+    co2AvoidedKg: impact.co2AvoidedKg,
+    waterSavedLiters: impact.waterSavedLiters,
+    euroSaved: impact.euroSaved,
+  };
 }
 
 function computeModerationStats(
@@ -213,8 +250,9 @@ function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
       labels: new Set<string>(),
     };
     previous.actions += 1;
-    previous.kg += (mapItemWasteKg(item) ?? 0);
-    previous.butts += (mapItemCigaretteButts(item) ?? 0);
+    const impact = computeActionImpactKpis(toMapImpactInput(item));
+    previous.kg += impact.wasteKg;
+    previous.butts += impact.butts;
     previous.labels.add(mapItemLocationLabel(item).trim().toLowerCase());
     byAreaMap.set(area, previous);
   }
@@ -295,13 +333,17 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
 
   const climate6 = {
     actions: sixMonthsItems.length,
-    kg: sixMonthsItems.reduce((sum, item) => sum + Number(item.waste_kg || 0), 0),
-    butts: sixMonthsItems.reduce((sum, item) => sum + Number(item.cigarette_butts || 0), 0),
+    ...(() => {
+      const impact = sumActionImpactKpis(sixMonthsItems.map(toActionImpactInput));
+      return { kg: impact.wasteKg, butts: impact.butts };
+    })(),
   };
   const climate12 = {
     actions: twelveMonthsItems.length,
-    kg: twelveMonthsItems.reduce((sum, item) => sum + Number(item.waste_kg || 0), 0),
-    butts: twelveMonthsItems.reduce((sum, item) => sum + Number(item.cigarette_butts || 0), 0),
+    ...(() => {
+      const impact = sumActionImpactKpis(twelveMonthsItems.map(toActionImpactInput));
+      return { kg: impact.wasteKg, butts: impact.butts };
+    })(),
   };
 
 
@@ -319,8 +361,8 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
     .map((item) => ({
       id: item.id,
       label: item.location_label,
-      kg: Number(item.waste_kg || 0),
-      butts: Number(item.cigarette_butts || 0),
+      kg: computeActionImpactKpis(toActionImpactInput(item)).wasteKg,
+      butts: computeActionImpactKpis(toActionImpactInput(item)).butts,
       photos: item.contract?.metadata.photos?.map((p) => p.dataUrl) ?? [],
     }));
 
@@ -387,8 +429,9 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
     climate: {
       six: climate6,
       twelve: climate12,
-      waterProtectedLiters: environmental.waterProtectedLiters,
-      co2AvoidedKg: environmental.co2AvoidedKg,
+      waterProtectedLiters: totals.waterSavedLiters,
+      co2AvoidedKg: totals.co2AvoidedKg,
+      streetCleaningSavingsEuros: totals.euroSaved,
     },
     community: communityStats,
     impactMethodology: buildPersonalImpactMethodology(qualityMetrics.pollutionScoreAverage),

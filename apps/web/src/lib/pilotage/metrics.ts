@@ -163,19 +163,20 @@ function computeWindowMetrics(
   moderationAvailability: PilotageModerationAvailability,
 ): PilotageWindowMetrics {
   const approved = records.filter((record) => record.status === "approved");
+  const approvedActionsRecords = approved.filter((record) => record.type === "action");
   const pending = records.filter((record) => record.status === "pending");
 
-  const approvedActions = approved.length;
-  const impactVolumeKg = approved.reduce(
+  const approvedActions = approvedActionsRecords.length;
+  const impactVolumeKg = approvedActionsRecords.reduce(
     (acc, record) => acc + computeActionImpactKpis(record).wasteKg,
     0,
   );
-  const mobilizationCount = approved.reduce(
+  const mobilizationCount = approvedActionsRecords.reduce(
     (acc, record) => acc + computeActionImpactKpis(record).volunteers,
     0,
   );
 
-  const qualityResults = approved.map((record) =>
+  const qualityResults = approvedActionsRecords.map((record) =>
     evaluateActionQuality(toActionListItem(record), new Date(windowEndMs)),
   );
   const qualitySamples = qualityResults.map((result) => result.score);
@@ -190,7 +191,7 @@ function computeWindowMetrics(
     qualityResults.map((result) => result.breakdown.freshness),
   );
 
-  const geolocatedCount = approved.filter((record) =>
+  const geolocatedCount = approvedActionsRecords.filter((record) =>
     isGeolocated(record),
   ).length;
   const coverageRate =
@@ -220,7 +221,7 @@ function computeWindowMetrics(
       moderationAvailability === "available" ? round1(median(pendingAges)) : null,
     pendingCount: moderationAvailability === "available" ? pending.length : null,
     iurIndex: round1(impactVolumeKg / ((DIGITAL_IMPACT_CONSTANTS.ANNUAL_COST_KG_CO2E / DIGITAL_IMPACT_CONSTANTS.DAYS_PER_YEAR) * periodDays)),
-    anomaliesCount: approved.filter(
+    anomaliesCount: approvedActionsRecords.filter(
       (record) =>
         (record.dataQuality ?? auditActionContract(record)).anomalies.length > 0,
     ).length,

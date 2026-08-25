@@ -1,4 +1,5 @@
 import type { ActionDataContract } from "../actions/data-contract";
+import { computeActionImpactKpis } from "../actions/impact-calculators";
 
 export type MonthlyAnalyticsPoint = {
   month: string;
@@ -15,6 +16,9 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
   );
 
   sorted.forEach(c => {
+    if (c.status !== "approved") {
+      return;
+    }
     const date = new Date(c.dates.observedAt);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     
@@ -22,8 +26,9 @@ export function aggregateMonthlyAnalytics(contracts: ActionDataContract[]): Mont
       months[key] = { kg: 0, volunteers: 0 };
     }
     
-    months[key].kg += c.metadata.wasteKg || 0;
-    months[key].volunteers += c.metadata.volunteersCount || 0;
+    const impact = computeActionImpactKpis(c);
+    months[key].kg += impact.wasteKg;
+    months[key].volunteers += impact.volunteers;
   });
 
   return Object.entries(months).map(([key, val]) => ({

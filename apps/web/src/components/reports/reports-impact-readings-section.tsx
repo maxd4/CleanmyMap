@@ -51,7 +51,8 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
         { label: "Pollution de l’air évitée", value: `${toFrNumber(report.quality.coherenceScore)}%`, icon: Eye },
         { label: "Pollution de l’eau évitée", value: `${toFrInt(report.climate.waterProtectedLiters)} L`, icon: Sparkles },
         { label: "Pollution des sols évitée", value: `${toFrNumber(report.recycling.triIndex)}%`, icon: ShieldCheck },
-        { label: "Ressources économisées", value: `${toFrNumber(report.totals.hours)} h`, icon: CalendarDays },
+        { label: "Charge bénévole", value: `${toFrNumber(report.totals.hours)} h`, icon: CalendarDays },
+        { label: "Économie de voirie (proxy)", value: `${toFrNumber(report.climate.streetCleaningSavingsEuros ?? 0)} €`, icon: ArrowRight },
       ],
     },
     {

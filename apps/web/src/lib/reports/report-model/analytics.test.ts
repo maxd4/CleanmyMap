@@ -9,6 +9,7 @@ import {
  computeCommunityEngagementMetrics,
  getWeatherAdvice,
 } from "@/lib/reports/report-model";
+import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 function makeListItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
  return {
@@ -141,6 +142,51 @@ function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventI
 }
 
 describe("reports web analytics", () => {
+ it("keeps report totals and climate proxies aligned with the canonical contract corpus", () => {
+ const baseContract = makeListItem().contract!;
+ const declared = makeListItem({
+   id: "declared",
+   waste_kg: 2,
+   cigarette_butts: 100,
+   volunteers_count: 2,
+   contract: {
+     ...baseContract,
+     id: "declared",
+     metadata: { ...baseContract.metadata, wasteKg: 2, cigaretteButts: 100, volunteersCount: 2 },
+   },
+ });
+ const buttsOnly = makeListItem({
+   id: "butts-only",
+   waste_kg: null,
+   cigarette_butts: 13_875,
+   volunteers_count: 3,
+   contract: {
+     ...baseContract,
+     id: "butts-only",
+     metadata: { ...baseContract.metadata, wasteKg: null, cigaretteButts: 13_875, volunteersCount: 3 },
+   },
+ });
+ const expected = sumActionImpactKpis([declared.contract!, buttsOnly.contract!]);
+ const report = computeReportModel({
+   allItems: [declared, buttsOnly],
+   approvedItems: [declared, buttsOnly],
+   mapItems: [
+     makeMapItem({ id: "declared-map", contract: declared.contract }),
+     makeMapItem({ id: "butts-map", waste_kg: null, cigarette_butts: 13_875, contract: buttsOnly.contract }),
+   ],
+   events: [],
+   now: new Date("2026-03-25T12:00:00.000Z"),
+ });
+
+ expect(report.totals.kg).toBe(expected.wasteKg);
+ expect(report.totals.butts).toBe(expected.butts);
+ expect(report.totals.volunteers).toBe(expected.volunteers);
+ expect(report.climate.co2AvoidedKg).toBe(expected.co2AvoidedKg);
+ expect(report.climate.waterProtectedLiters).toBe(expected.waterSavedLiters);
+ expect(report.climate.streetCleaningSavingsEuros).toBe(expected.euroSaved);
+ expect(report.monthRows6.reduce((sum, row) => sum + row.kg, 0)).toBe(expected.wasteKg);
+ });
+
  it("groups monthly rows by month key", () => {
  const rows = buildMonthRows([
  makeListItem({ id:"a-1", action_date:"2026-01-05", waste_kg: 2 }),
@@ -148,8 +194,8 @@ describe("reports web analytics", () => {
  makeListItem({ id:"a-3", action_date:"2026-02-02", waste_kg: 4 }),
  ]);
  expect(rows).toHaveLength(2);
- expect(rows[0]?.kg).toBe(5);
- expect(rows[1]?.kg).toBe(4);
+ expect(rows[0]?.kg).toBe(20);
+ expect(rows[1]?.kg).toBe(10);
  });
 
  it("builds route steps with positive segment distances", () => {

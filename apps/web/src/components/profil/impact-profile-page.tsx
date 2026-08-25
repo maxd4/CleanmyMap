@@ -16,6 +16,7 @@ import {
 } from "@/lib/account/current-account-identity";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { logFailure } from "@/lib/logging/failure-log";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -252,7 +253,7 @@ export default function ImpactProfilePage() {
                 Méthodologie
               </p>
               <p className="text-sm leading-relaxed text-red-100/40">
-                Les données d&apos;impact sont consolidées à partir de vos actions validées. Le volume d&apos;eau préservé repose sur un ratio de 500L par mégot extrait de l&apos;environnement.
+                Les données d&apos;impact sont consolidées à partir de vos actions validées. L&apos;eau préservée est un proxy calculé avec {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait ; elle ne constitue pas une mesure directe de la qualité de l&apos;eau.
               </p>
             </div>
 

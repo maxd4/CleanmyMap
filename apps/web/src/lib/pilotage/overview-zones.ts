@@ -1,5 +1,6 @@
 import { buildTerritorialBenchmark } from "../analytics/territorial-benchmark";
 import type { ActionDataContract } from "../actions/data-contract";
+import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { ZoneComparisonRow } from "./prioritization";
 import {
   DAY_MS,
@@ -52,7 +53,8 @@ export function buildZones(
     const pendingAgeDays =
       contract.status === "pending" && createdMs !== null
         ? Math.max(0, (nowMs - createdMs) / DAY_MS)
-        : null;
+      : null;
+    const impact = computeActionImpactKpis(contract);
 
     if (observedMs >= currentFloorMs && observedMs <= nowMs) {
       const row = currentByArea.get(area) ?? {
@@ -63,7 +65,7 @@ export function buildZones(
       };
       if (contract.status === "approved") {
         row.actions += 1;
-        row.kg += Number(contract.metadata.wasteKg || 0);
+        row.kg += impact.wasteKg;
         row.geolocated += isGeolocated ? 1 : 0;
       }
       if (pendingAgeDays !== null) {
@@ -82,7 +84,7 @@ export function buildZones(
       };
       if (contract.status === "approved") {
         row.actions += 1;
-        row.kg += Number(contract.metadata.wasteKg || 0);
+        row.kg += impact.wasteKg;
         row.geolocated += isGeolocated ? 1 : 0;
       }
       if (pendingAgeDays !== null) {
@@ -97,8 +99,8 @@ export function buildZones(
       .filter((contract) => contract.status === "approved")
       .map((contract) => ({
         locationLabel: contract.location.label,
-        wasteKg: contract.metadata.wasteKg,
-        volunteersCount: contract.metadata.volunteersCount,
+        wasteKg: computeActionImpactKpis(contract).wasteKg,
+        volunteersCount: computeActionImpactKpis(contract).volunteers,
       })),
   );
   const benchmarkByArea = new Map(benchmark.map((row) => [row.area, row]));

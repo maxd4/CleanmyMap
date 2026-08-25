@@ -57,35 +57,45 @@
     "header_title": "Calcul de l'impact",
     "header_desc": "Des métriques courtes, lisibles et fondées sur des sources documentées.",
     "cards": {
+      "waste": {
+        "title": "Déchets kg : valeur retenue",
+        "desc": "Le KPI terrain conserve la valeur déclarée quand elle existe. À défaut, il retient le détail mégots, puis une conversion des mégots en kg. Les actions sans métrique restent à zéro.",
+        "source": "SOURCE: contrat ActionDataContract et calcul runtime"
+      },
+      "butts": {
+        "title": "Mégots retirés",
+        "desc": "Le nombre affiché reprend cigaretteButts. Il sert aussi de base à la conversion de secours du poids et au proxy eau.",
+        "source": "SOURCE: déclaration terrain (ActionDataContract)"
+      },
+      "volunteers": {
+        "title": "Bénévoles mobilisés",
+        "desc": "Le KPI reprend volunteersCount après application du périmètre et des filtres de la surface qui l'affiche.",
+        "source": "SOURCE: déclaration terrain (ActionDataContract)"
+      },
       "water": {
         "title": "Eau préservée",
-        "formula": "Impact = [Mégots collectés] × {val} L",
-        "desc": "Un mégot peut contaminer 500 à 1000 litres d'eau. Nous retenons la borne basse pour rester prudents.",
+        "desc": "Proxy d'ordre de grandeur calculé à partir des mégots retirés. Ce n'est pas une mesure directe de la qualité de l'eau.",
         "source": "SOURCE: {src}"
       },
       "co2": {
         "title": "Émissions évitées",
-        "formula": "Impact = [Masse déchets (kg)] × {val} kg CO2eq",
-        "desc": "Le calcul s'appuie sur le facteur ADEME pour estimer les émissions évitées par la collecte et le traitement contrôlé.",
+        "desc": "Proxy calculé à partir de la masse terrain retenue. Il ne remplace pas un bilan carbone complet.",
         "source": "SOURCE: {src}"
       },
       "surface": {
         "title": "Surface d'action",
-        "formula": "Surface (m²) = [Masse(kg)] × {valkg} + [Minutes] × {valmin}",
-        "desc": "Cet indice combine la quantité collectée et le temps passé pour lire l'intensité d'une action.",
+        "desc": "Proxy utilisé pour la lecture opérationnelle du profil et de certains rapports ; il ne fait pas partie des six KPI terrain canoniques.",
         "source": "SOURCE: {src}"
       },
       "map": {
         "title": "Indice pollution carte",
-        "formula": "Scores séparés: déchets = [Poids/bénévole] ÷ [Réf déchets] × 100; mégots = [Mégots/bénévole] ÷ [Réf mégots] × 100.",
-        "desc": "Références dynamiques par bénévole. La carte prend le score le plus élevé. Une nouvelle action plus forte devient la nouvelle référence. Le détail se charge à l'ouverture d'une action.",
+        "desc": "Indice cartographique distinct des six KPI d'impact. Les points géolocalisés ne sont pas des actions de collecte.",
         "source": "SOURCE: Algorithme de calibration terrain CleanMyMap v1."
       },
       "roi": {
         "title": "Économies de voirie",
-        "formula": "Économies (€) = [Poids collecté (kg)] × 1.5€",
-        "desc": "Ce proxy estime le coût évité pour les services municipaux à partir du poids collecté.",
-        "source": "SOURCE: Estimation basée sur les coûts de propreté urbaine moyens (Moyenne observée : 1500€ / tonne)."
+        "desc": "Proxy de coût évité calculé à partir de la masse terrain retenue. Il ne constitue pas une dépense ou une économie comptable constatée.",
+        "source": "SOURCE: {src}"
       }
     },
     "audit": {

@@ -92,4 +92,15 @@ describe("computePersonalImpactMetrics", () => {
     expect(methodology.approximations.length).toBeGreaterThan(0);
     expect(methodology.errorMargins.waterSavedLitersPct).toBeGreaterThan(0);
   });
+
+  it("derives waste and proxies from butts when the declared weight is absent", () => {
+    const metrics = computePersonalImpactMetrics([
+      actionRow({ waste_kg: 0, cigarette_butts: 13_875 }),
+    ]);
+
+    expect(metrics.wasteKg).toBe(5.6);
+    expect(metrics.cigaretteButts).toBe(13_875);
+    expect(metrics.co2AvoidedKg).toBeCloseTo(6.7, 1);
+    expect(metrics.waterSavedLiters).toBe(6_937_500);
+  });
 });

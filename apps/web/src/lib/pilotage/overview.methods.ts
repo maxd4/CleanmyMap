@@ -1,19 +1,21 @@
 import type { MethodDefinition } from "./overview.types";
+import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 
 export function buildMethods(): MethodDefinition[] {
+  const impact = buildActionImpactMethodology();
   return [
     {
       id: "impact-volume",
       kpi: "Impact terrain (kg)",
-      formula: "Somme des wasteKg sur actions approuvées (validées QC).",
-      source: "Proxys scientifiques CleanMyMap-v1 basés sur ADEME/Ocean Conservancy. Voir page Méthodologie.",
+      formula: `Somme de ${impact.formulas.wasteKg} sur les actions approuvees du perimetre de la fenetre.`,
+      source: `Calcul canonique ${impact.version}. Valeur declaree puis estimation de secours; sources proxy: ${impact.sources.co2}`,
       recalc: "Temps réel.",
-      limits: "Incertitude liée à l'estimation déclarative (marge +/- 30%).",
+      limits: "Valeur declarative ou estimee selon les donnees disponibles; ce n'est pas une mesure instrumentale.",
     },
     {
       id: "mobilization",
       kpi: "Mobilisation",
-      formula: "Somme des volunteersCount sur actions approuvees.",
+      formula: `Somme de ${impact.formulas.volunteers} sur les actions approuvees du perimetre de la fenetre.`,
       source: "Champs volunteersCount des declarations valides.",
       recalc: "A chaque chargement de page / API.",
       limits: "Mesure declarative, sensible aux oublis de saisie.",

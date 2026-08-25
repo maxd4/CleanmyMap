@@ -34,6 +34,7 @@ export type ActionRow = {
   latitude: number | null;
   longitude: number | null;
   waste_kg: number;
+  waste_breakdown?: import("@/lib/actions/types").ActionWasteBreakdown | null;
   cigarette_butts: number;
   volunteers_count: number;
   duration_minutes: number;

@@ -1,4 +1,6 @@
 import { evaluateActionQuality } from "../actions/quality";
+import { mapItemType } from "../actions/data-contract";
+import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { ActionMapItem, ActionListItem } from "../actions/types";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
@@ -176,10 +178,23 @@ export function computeBusinessAlerts(params: {
 
   const byArea = new Map<string, { actions: number; kg: number }>();
   for (const item of params.mapItems) {
+    if (item.status !== "approved" || mapItemType(item) !== "action") {
+      continue;
+    }
     const area = extractArea(item.location_label || "");
     const row = byArea.get(area) ?? { actions: 0, kg: 0 };
+    const impact = computeActionImpactKpis(
+      item.contract ?? {
+        metadata: {
+          wasteKg: item.waste_kg,
+          cigaretteButts: item.cigarette_butts,
+          volunteersCount: item.volunteers_count,
+          wasteBreakdown: item.waste_breakdown,
+        },
+      },
+    );
     row.actions += 1;
-    row.kg += Number(item.waste_kg || 0);
+    row.kg += impact.wasteKg;
     byArea.set(area, row);
   }
 
@@ -238,9 +253,19 @@ export function computeCampaignGoalsByZone(params: {
     }
     const area = extractArea(item.location_label || "");
     const row = grouped.get(area) ?? { actions: 0, kg: 0, volunteers: 0 };
+    const impact = computeActionImpactKpis(
+      item.contract ?? {
+        metadata: {
+          wasteKg: item.waste_kg,
+          cigaretteButts: item.cigarette_butts,
+          volunteersCount: item.volunteers_count,
+          wasteBreakdown: item.waste_breakdown,
+        },
+      },
+    );
     row.actions += 1;
-    row.kg += Number(item.waste_kg || 0);
-    row.volunteers += Number(item.volunteers_count || 0);
+    row.kg += impact.wasteKg;
+    row.volunteers += impact.volunteers;
     grouped.set(area, row);
   }
 

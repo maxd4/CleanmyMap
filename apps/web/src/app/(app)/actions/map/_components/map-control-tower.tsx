@@ -92,9 +92,9 @@ export function MapControlTower({
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
           <span
             className="rounded-lg border border-sky-200 bg-sky-100 px-3 py-1.5 text-center"
-            aria-label={`${visibleCount} points visibles sur ${loadedCount} chargés`}
+            aria-label={`${visibleCount} objets cartographiques visibles sur ${loadedCount} chargés`}
           >
-            {visibleCount} / {loadedCount} points
+            {visibleCount} / {loadedCount} objets cartographiques
           </span>
           <ActionsMapExportButton
             items={filteredMapItems}

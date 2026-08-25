@@ -1,7 +1,9 @@
 import {
   mapItemCoordinates,
 } from "@/lib/actions/data-contract";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 export type MapCoverageMetrics = {
   geolocatedCount: number;
@@ -83,10 +85,20 @@ export function computeCommunityEngagementMetrics(params: {
     .reduce((map, item) => {
       const actor = item.actor_name?.trim() || "Anonyme";
       const previous = map.get(actor) ?? { actions: 0, kg: 0, butts: 0 };
+      const impact = computeActionImpactKpis(
+        item.contract ?? {
+          metadata: {
+            wasteKg: item.waste_kg,
+            cigaretteButts: item.cigarette_butts,
+            volunteersCount: item.volunteers_count,
+            wasteBreakdown: item.waste_breakdown,
+          },
+        },
+      );
       map.set(actor, {
         actions: previous.actions + 1,
-        kg: previous.kg + Number(item.waste_kg || 0),
-        butts: previous.butts + Number(item.cigarette_butts || 0),
+        kg: previous.kg + impact.wasteKg,
+        butts: previous.butts + impact.butts,
       });
       return map;
     }, new Map<string, Omit<CommunityLeaderboardEntry, "name">>())
@@ -131,8 +143,10 @@ export function computeEnvironmentalProxyMetrics(
   totalKg: number,
 ): EnvironmentalProxyMetrics {
   return {
-    waterProtectedLiters: Math.round(totalButts * 500),
-    co2AvoidedKg: totalButts * 0.0014,
+    waterProtectedLiters: Math.round(
+      totalButts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
+    ),
+    co2AvoidedKg: totalKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
     recyclableKg: totalKg * 0.55,
     triIndex:
       totalKg > 0

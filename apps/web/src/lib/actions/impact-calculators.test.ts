@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "./data-contract";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
+  buildActionImpactMethodology,
   computeActionImpactKpis,
   sumActionImpactKpis,
 } from "./impact-calculators";
@@ -105,5 +107,25 @@ describe("canonical action impact calculation", () => {
       waterSavedLiters: 1_300_000,
       euroSaved: 5,
     });
+  });
+
+  it("exposes formulas from the same runtime constants as the calculator", () => {
+    const methodology = buildActionImpactMethodology();
+
+    expect(methodology.version).toBe(IMPACT_PROXY_CONFIG.version);
+    expect(methodology.buttsPerKg).toBe(BUTTS_PER_KG_REFERENCE);
+    expect(methodology.formulas.wasteKg).toContain(String(BUTTS_PER_KG_REFERENCE));
+    expect(methodology.formulas.co2e).toContain(
+      String(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg),
+    );
+    expect(methodology.formulas.water).toContain(
+      String(IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt),
+    );
+    expect(methodology.formulas.euro).toContain(
+      String(IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg),
+    );
+    expect(methodology.formulas.surface).toContain(
+      String(IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg),
+    );
   });
 });
