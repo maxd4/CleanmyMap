@@ -431,6 +431,39 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
         ))}
       </div>
 
+      <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.06] p-5">
+        <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
+          {isFrench ? "État courant par lieu" : "Current state by place"}
+        </h3>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300/75">
+          {isFrench
+            ? "Le resolver canonique réutilise les règles spatiales de la calibration et conserve les enregistrements sources. Sa priorité est : observation terrain récente, puis projection, puis historique si aucune projection exploitable n'est disponible."
+            : "The canonical resolver reuses the calibration spatial rules and keeps source records intact. Its priority is: recent field observation, then projection, then history when no usable projection is available."}
+        </p>
+        <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-300/75 md:grid-cols-3">
+          <li>
+            {isFrench
+              ? "Trash Spotter quantitatif : observed · measured."
+              : "Quantified Trash Spotter: observed · measured."}
+          </li>
+          <li>
+            {isFrench
+              ? "Trash Spotter qualitatif : Pollution observée · niveau non quantifié."
+              : "Qualitative Trash Spotter: observed pollution · level not quantified."}
+          </li>
+          <li>
+            {isFrench
+              ? "clean_place : lieu explicitement propre, sans score fabriqué."
+              : "clean_place: explicitly clean place, without an invented score."}
+          </li>
+        </ul>
+        <p className="mt-3 text-xs leading-relaxed text-emerald-100/70">
+          {isFrench
+            ? "Chaque état expose source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date et action historique. Un spot ponctuel ne recolore jamais une polyline. Le champ observé quantifié Trash Spotter reste un contrat futur : le read path actuel ne fabrique aucune donnée."
+            : "Each state exposes source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date, and action history. A point spot never recolors a polyline. The quantified Trash Spotter field remains a future contract: the current read path invents no data."}
+        </p>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <div className="space-y-5">
           <div className="rounded-2xl border border-sky-300/20 bg-sky-400/[0.08] p-5">

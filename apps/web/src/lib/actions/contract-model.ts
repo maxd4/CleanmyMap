@@ -65,6 +65,8 @@ export type ActionDataMetadata = {
   cigaretteButts: number;
   /** Explicit residual pollution measured after the action, when available. */
   postActionPollutionScore?: number | null;
+  /** Future canonical quantitative Trash Spotter observation, when available. */
+  observedPollutionScore?: number | null;
   volunteersCount: number;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
@@ -101,6 +103,8 @@ export type BuildActionContractParams = {
   wasteKg?: number | null;
   cigaretteButts?: number | null;
   postActionPollutionScore?: number | null;
+  /** Optional future measured score for a quantified Trash Spotter observation. */
+  observedPollutionScore?: number | null;
   volunteersCount?: number | null;
   durationMinutes?: number | null;
   actorName?: string | null;
@@ -257,8 +261,15 @@ function buildActionMeasureMetadata(
   | "postActionPollutionScore"
   | "volunteersCount"
   | "durationMinutes"
-> {
-  return {
+> & { observedPollutionScore?: number | null } {
+  const metadata: Pick<
+    ActionDataMetadata,
+    | "wasteKg"
+    | "cigaretteButts"
+    | "postActionPollutionScore"
+    | "volunteersCount"
+    | "durationMinutes"
+  > & { observedPollutionScore?: number | null } = {
     wasteKg: normalizeOptionalNumber(params.wasteKg),
     cigaretteButts: normalizeCount(params.cigaretteButts),
     postActionPollutionScore:
@@ -269,6 +280,15 @@ function buildActionMeasureMetadata(
     volunteersCount: normalizeCount(params.volunteersCount),
     durationMinutes: normalizeCount(params.durationMinutes),
   };
+
+  if (params.observedPollutionScore !== undefined) {
+    metadata.observedPollutionScore =
+      params.observedPollutionScore === null
+        ? null
+        : toFiniteNumber(params.observedPollutionScore, 0);
+  }
+
+  return metadata;
 }
 
 function normalizeOptionalNumber(value: number | null | undefined): number {

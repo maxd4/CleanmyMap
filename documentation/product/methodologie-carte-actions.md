@@ -173,7 +173,42 @@ La carte lit actuellement un flux borné par une fenêtre temporelle, une limite
 
 Le modèle générique reste donc le fallback des lieux sans historique complet, avec moins de 2 intervalles valides ou avec une calibration hors bornes. Cette calibration locale est une heuristique versionnée, pas une mesure en temps réel.
 
-## 7. Couleurs de la carte d'actions
+## 7. Résolution de l'état courant par lieu
+
+Le runtime expose un resolver pur `resolveCurrentPlaceStates` qui produit un
+`CurrentPlaceState` déterministe pour chaque identité de lieu dérivée. Il
+réutilise les mêmes prédicats de validité et les mêmes règles spatiales que la
+calibration locale ; il ne crée pas de `place_id`, ne fusionne pas les lignes
+sources et ne supprime aucun enregistrement.
+
+La priorité de résolution est :
+
+1. observation terrain récente ;
+2. projection issue de la dernière action ;
+3. observation historique lorsqu'aucune projection exploitable n'est disponible.
+
+Une action quantitative plus récente peut donc remplacer l'état projeté issu
+d'une action précédente. Un Trash Spotter qualitatif produit un état
+`observed` avec `scoreKind: unavailable` et le libellé
+`Pollution observée · niveau non quantifié` ; le resolver ne fabrique jamais un
+score à partir du seul type ou d'une catégorie de déchets. Un `clean_place`
+récent produit un état explicitement propre, également sans score de pollution.
+Une observation antérieure à la dernière action ne peut pas remplacer sa
+projection.
+
+Chaque état conserve son `record`, son `recordSource`, sa date, sa provenance,
+sa date de dernière action et la liste des `historicalActions` du lieu dérivé.
+Pour un état projeté, `scoreKind` vaut `projected`; pour une mesure quantitative,
+`measured`; pour un Trash Spotter qualitatif ou un lieu propre, `unavailable`.
+Les polylines ne sont pas des ancres de lieu : un spot ponctuel proche d'un
+parcours reste un état séparé et ne recolore pas toute la route.
+
+Le contrat prévoit dès maintenant le champ optionnel
+`metadata.observedPollutionScore` pour une future observation Trash Spotter
+réellement mesurée. Le read path actuel ne le renseigne pas et aucune donnée de
+persistance n'est inventée.
+
+## 8. Couleurs de la carte d'actions
 
 La couleur d'une action représente la pollution projetée, pas l'identité du type `action`.
 
@@ -194,7 +229,7 @@ Les seuils et interpolations exacts doivent être centralisés dans le runtime e
 
 Le choix des couleurs vise à rendre la progression immédiatement lisible tout en réservant le vert à une sémantique positive non ambiguë.
 
-## 8. Grammaire géométrique
+## 9. Grammaire géométrique
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.
 
@@ -223,7 +258,7 @@ L'épaisseur du trait peut augmenter pour indiquer la sélection de l'objet.
 
 L'épaisseur ne doit pas être utilisée pour encoder la pollution.
 
-## 9. Lecture recommandée dans les tooltips et popups
+## 10. Lecture recommandée dans les tooltips et popups
 
 Une action doit distinguer explicitement les informations historiques et projetées.
 
@@ -236,7 +271,7 @@ Exemple :
 
 Le score projeté ne doit jamais être présenté comme une observation actuelle.
 
-## 10. Limites du modèle
+## 11. Limites du modèle
 
 La projection actuelle ne connaît pas nécessairement :
 
@@ -253,7 +288,7 @@ Elle doit donc être comprise comme une aide à la priorisation et à la revisit
 
 Trash Spotter reste la source opérationnelle des signalements de pollution actuellement observée.
 
-## 11. Évaluation du modèle
+## 12. Évaluation du modèle
 
 Le dataset réel actuel contient 5 actions réparties sur 5 lieux différents. Il n'existe donc pas encore de répétition temporelle suffisante pour mesurer sérieusement une erreur globale, valider empiriquement la projection ou recalibrer ses constantes.
 
@@ -283,7 +318,7 @@ Le ledger append-only conserve la version du modèle et le snapshot des paramèt
 
 Aucune recalibration automatique ni optimisation des constantes globales n'est active. Les métriques produisent de l'évidence pour une décision future ; elles ne modifient jamais `T80(S)`, ses constantes ou la calibration locale existante.
 
-## 12. Transparence et versionnement
+## 13. Transparence et versionnement
 
 Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
@@ -295,16 +330,17 @@ Toute modification durable de la méthodologie doit mettre à jour ensemble :
 
 Les constantes de projection doivent être centralisées dans le code afin d'éviter toute divergence entre runtime, tests et documentation.
 
-## 13. Sources internes
+## 14. Sources internes
 
 Sources de vérité techniques principales :
 
 - `apps/web/src/lib/actions/pollution-score.ts` ;
 - `apps/web/src/lib/actions/revisit-priority.ts` — projection, constantes et hook de calibration ;
 - `apps/web/src/lib/actions/local-repollution-calibration.ts` — rapprochement dérivé, intervalles, médiane, confiance et garde de complétude ;
+- `apps/web/src/lib/actions/current-place-state.ts` — état courant déterministe par lieu, priorité observation/projection/historique et seam Trash Spotter quantifié ;
 - `apps/web/src/lib/actions/repollution-prediction-evaluation.ts` — évaluation prospective sans fuite temporelle et agrégat descriptif ;
 - `apps/web/src/lib/actions/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
-- `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champ post-action optionnel ;
+- `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champs post-action et futur score Trash Spotter optionnels ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;
 - `apps/web/src/components/actions/map/map-layers.tsx` ;
