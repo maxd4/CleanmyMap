@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
@@ -11,6 +11,21 @@ const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
 const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 const META_PREFIX = "[cmm-meta]";
 const BATCH_SIZE = 200;
+
+export const BACKFILL_TARGETS = [
+  {
+    table: "actions",
+    select:
+      "id, location_label, latitude, longitude, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
+    kind: "action",
+  },
+  {
+    table: "trash_spotter_spots",
+    select:
+      "id, label, latitude, longitude, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
+    kind: "signalement",
+  },
+];
 
 function parseArgs(argv) {
   const args = new Set(argv.slice(2));
@@ -220,7 +235,7 @@ function deriveGeometryForAction(row) {
   };
 }
 
-function deriveGeometryForSpot(row) {
+export function deriveGeometryForSignalement(row) {
   const resolved = resolveBestGeometry({
     latitude: row.latitude,
     longitude: row.longitude,
@@ -235,6 +250,17 @@ function deriveGeometryForSpot(row) {
     geometry_confidence: resolved.confidence,
     geometry_source: resolved.geometrySource,
   };
+}
+
+export function buildBackfillPlan({ actions, signalements, recomputeAll }) {
+  const actionUpdates = actions
+    .filter((row) => needsBackfill(row, recomputeAll))
+    .map((row) => ({ id: row.id, ...deriveGeometryForAction(row) }));
+  const signalementUpdates = signalements
+    .filter((row) => needsBackfill(row, recomputeAll))
+    .map((row) => ({ id: row.id, ...deriveGeometryForSignalement(row) }));
+
+  return { actionUpdates, signalementUpdates };
 }
 
 function needsBackfill(row, recomputeAll) {
@@ -317,28 +343,20 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  await assertDerivedGeometryColumnsExist(supabase, "actions");
-  await assertDerivedGeometryColumnsExist(supabase, "spots");
+  for (const target of BACKFILL_TARGETS) {
+    await assertDerivedGeometryColumnsExist(supabase, target.table);
+  }
 
-  const [actions, spots] = await Promise.all([
-    fetchAllRows(
-      supabase,
-      "actions",
-      "id, location_label, latitude, longitude, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
+  const [actions, signalements] = await Promise.all(
+    BACKFILL_TARGETS.map((target) =>
+      fetchAllRows(supabase, target.table, target.select),
     ),
-    fetchAllRows(
-      supabase,
-      "spots",
-      "id, label, latitude, longitude, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source",
-    ),
-  ]);
-
-  const actionUpdates = actions
-    .filter((row) => needsBackfill(row, args.recomputeAll))
-    .map((row) => ({ id: row.id, ...deriveGeometryForAction(row) }));
-  const spotUpdates = spots
-    .filter((row) => needsBackfill(row, args.recomputeAll))
-    .map((row) => ({ id: row.id, ...deriveGeometryForSpot(row) }));
+  );
+  const { actionUpdates, signalementUpdates } = buildBackfillPlan({
+    actions,
+    signalements,
+    recomputeAll: args.recomputeAll,
+  });
 
   if (!args.apply) {
     console.log(
@@ -347,9 +365,9 @@ async function main() {
           dryRun: true,
           recomputeAll: args.recomputeAll,
           actionsToUpdate: actionUpdates.length,
-          spotsToUpdate: spotUpdates.length,
+          signalementsToUpdate: signalementUpdates.length,
           sampleActions: actionUpdates.slice(0, 5),
-          sampleSpots: spotUpdates.slice(0, 5),
+          sampleSignalements: signalementUpdates.slice(0, 5),
         },
         null,
         2,
@@ -359,7 +377,7 @@ async function main() {
   }
 
   await applyUpdates(supabase, "actions", actionUpdates);
-  await applyUpdates(supabase, "spots", spotUpdates);
+  await applyUpdates(supabase, "trash_spotter_spots", signalementUpdates);
 
   console.log(
     JSON.stringify(
@@ -367,7 +385,7 @@ async function main() {
         dryRun: false,
         recomputeAll: args.recomputeAll,
         actionsUpdated: actionUpdates.length,
-        spotsUpdated: spotUpdates.length,
+        signalementsUpdated: signalementUpdates.length,
       },
       null,
       2,
@@ -375,10 +393,13 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(
-    "backfill-derived-geometry failed:",
-    error instanceof Error ? error.message : error,
-  );
-  process.exitCode = 1;
-});
+const currentModuleUrl = pathToFileURL(process.argv[1] ?? "").href;
+if (currentModuleUrl === import.meta.url) {
+  main().catch((error) => {
+    console.error(
+      "backfill-derived-geometry failed:",
+      error instanceof Error ? error.message : error,
+    );
+    process.exitCode = 1;
+  });
+}

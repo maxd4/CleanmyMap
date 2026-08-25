@@ -1,14 +1,16 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
 const PAGE_SIZE = 1000;
+export const LEGACY_ARCHIVE_TABLE = "spots";
+export const CLEANUP_TARGETS = ["actions", "trash_spotter_spots"];
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   return {
     apply: argv.includes("--apply"),
   };
@@ -104,7 +106,7 @@ function toDateMs(value) {
   return Number.isFinite(ms) ? ms : Number.NaN;
 }
 
-function evaluateActionRow(row) {
+export function evaluateActionRow(row) {
   const reasons = [];
 
   const wasteKg = toNumber(row.waste_kg);
@@ -182,7 +184,7 @@ function evaluateActionRow(row) {
   };
 }
 
-function evaluateSpotRow(row) {
+export function evaluateSignalementRow(row) {
   const reasons = [];
   const lat = row.latitude === null ? null : toNumber(row.latitude);
   const lon = row.longitude === null ? null : toNumber(row.longitude);
@@ -226,7 +228,14 @@ function evaluateSpotRow(row) {
   };
 }
 
+export function assertDestructiveTableAllowed(table) {
+  if (table === LEGACY_ARCHIVE_TABLE) {
+    throw new Error(`${LEGACY_ARCHIVE_TABLE} is archive-only and cannot be deleted by this tool.`);
+  }
+}
+
 async function deleteByIds(supabase, table, ids) {
+  assertDestructiveTableAllowed(table);
   if (ids.length === 0) {
     return 0;
   }
@@ -241,6 +250,33 @@ async function deleteByIds(supabase, table, ids) {
     deleted += chunk.length;
   }
   return deleted;
+}
+
+export function buildCleanupReport({ actions, signalements, legacySpots, mode }) {
+  const actionEvaluations = actions.map(evaluateActionRow);
+  const signalementEvaluations = signalements.map(evaluateSignalementRow);
+  const legacyAuditEvaluations = legacySpots.map(evaluateSignalementRow);
+  const actionCandidates = actionEvaluations.filter((item) => item.shouldDelete);
+  const signalementCandidates = signalementEvaluations.filter((item) => item.shouldDelete);
+  const legacyAuditCandidates = legacyAuditEvaluations.filter((item) => item.shouldDelete);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    mode,
+    scanned: {
+      actions: actions.length,
+      trash_spotter_spots: signalements.length,
+      spots_legacy: legacySpots.length,
+    },
+    candidates: {
+      actions: actionCandidates.length,
+      trash_spotter_spots: signalementCandidates.length,
+      spots_legacy: legacyAuditCandidates.length,
+    },
+    actionCandidates,
+    signalementCandidates,
+    legacyAuditCandidates,
+  };
 }
 
 async function main() {
@@ -259,7 +295,7 @@ async function main() {
     auth: { persistSession: false },
   });
 
-  const [actions, spots] = await Promise.all([
+  const [actions, signalements, legacySpots] = await Promise.all([
     fetchAllRows(
       supabase,
       "actions",
@@ -268,17 +304,24 @@ async function main() {
     ),
     fetchAllRows(
       supabase,
-      "spots",
+      "trash_spotter_spots",
+      "id, created_at, status, label, latitude, longitude, created_by_clerk_id",
+      "created_at",
+    ),
+    fetchAllRows(
+      supabase,
+      LEGACY_ARCHIVE_TABLE,
       "id, created_at, status, label, latitude, longitude, created_by_clerk_id",
       "created_at",
     ),
   ]);
 
-  const actionEvaluations = actions.map(evaluateActionRow);
-  const spotEvaluations = spots.map(evaluateSpotRow);
-
-  const actionCandidates = actionEvaluations.filter((item) => item.shouldDelete);
-  const spotCandidates = spotEvaluations.filter((item) => item.shouldDelete);
+  const report = buildCleanupReport({
+    actions,
+    signalements,
+    legacySpots,
+    mode: args.apply ? "apply" : "dry-run",
+  });
 
   const backupDir = join(APP_DIR, "backups");
   await mkdir(backupDir, { recursive: true });
@@ -291,20 +334,7 @@ async function main() {
   await writeFile(
     reportPath,
     `${JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        mode: args.apply ? "apply" : "dry-run",
-        scanned: {
-          actions: actions.length,
-          spots: spots.length,
-        },
-        candidates: {
-          actions: actionCandidates.length,
-          spots: spotCandidates.length,
-        },
-        actionCandidates,
-        spotCandidates,
-      },
+      report,
       null,
       2,
     )}\n`,
@@ -312,18 +342,18 @@ async function main() {
   );
 
   let deletedActions = 0;
-  let deletedSpots = 0;
+  let deletedSignalements = 0;
 
   if (args.apply) {
     deletedActions = await deleteByIds(
       supabase,
       "actions",
-      actionCandidates.map((item) => item.id),
+      report.actionCandidates.map((item) => item.id),
     );
-    deletedSpots = await deleteByIds(
+    deletedSignalements = await deleteByIds(
       supabase,
-      "spots",
-      spotCandidates.map((item) => item.id),
+      "trash_spotter_spots",
+      report.signalementCandidates.map((item) => item.id),
     );
   }
 
@@ -332,12 +362,13 @@ async function main() {
       {
         ok: true,
         mode: args.apply ? "apply" : "dry-run",
-        scanned: { actions: actions.length, spots: spots.length },
-        candidates: {
-          actions: actionCandidates.length,
-          spots: spotCandidates.length,
+        scanned: report.scanned,
+        candidates: report.candidates,
+        deleted: {
+          actions: deletedActions,
+          trash_spotter_spots: deletedSignalements,
+          spots_legacy: 0,
         },
-        deleted: { actions: deletedActions, spots: deletedSpots },
         reportPath,
       },
       null,
@@ -346,10 +377,13 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(
-    "db-cleanup-suspect-runtime-records failed:",
-    error instanceof Error ? error.message : String(error),
-  );
-  process.exit(1);
-});
+const currentModuleUrl = pathToFileURL(process.argv[1] ?? "").href;
+if (currentModuleUrl === import.meta.url) {
+  main().catch((error) => {
+    console.error(
+      "db-cleanup-suspect-runtime-records failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+    process.exit(1);
+  });
+}
