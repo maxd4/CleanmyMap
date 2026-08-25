@@ -145,6 +145,7 @@ export type ActionListItem = {
   to_fix_priority?: boolean;
   impact_level?: ActionImpactLevel;
   waste_breakdown?: ActionWasteBreakdown | null;
+  waste_categories?: WasteCategorySlug[] | null;
   data_quality?: ActionDataQualitySummary;
   contract?: {
     id: string;
@@ -287,6 +288,7 @@ export type ActionMapItem = Pick<
   to_fix_priority?: boolean;
   impact_level?: ActionImpactLevel;
   waste_breakdown?: ActionWasteBreakdown | null;
+  waste_categories?: WasteCategorySlug[] | null;
   data_quality?: ActionDataQualitySummary;
   contract?: {
     id: string;
@@ -322,6 +324,7 @@ export type ActionMapItem = Pick<
       groupJoinEnabled: boolean | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
+      wasteCategories?: WasteCategorySlug[] | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;

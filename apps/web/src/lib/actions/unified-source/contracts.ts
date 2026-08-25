@@ -6,6 +6,10 @@ import {
 import {
   auditActionData,
 } from "@/lib/actions/data-quality";
+import {
+  parseWasteCategoriesFromNotes,
+  stripWasteCategoryMarkersFromNotes,
+} from "@/lib/waste";
 import type { ActionContractCreatePayload } from "@/lib/actions/contract-builders";
 import { normalizeCreatePayload } from "@/lib/actions/contract-builders";
 import type {
@@ -182,6 +186,9 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
 }
 
 function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
+  const type = mapCanonicalSpotTypeToEntityType(row.spot_type);
+  const wasteCategories =
+    type === "spot" ? parseWasteCategoriesFromNotes(row.notes) : [];
   const geometry = {
     kind: row.derived_geometry_kind,
     geojson: row.derived_geometry_geojson,
@@ -190,7 +197,7 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
   };
   const contract = buildActionDataContract({
     id: row.id,
-    type: mapCanonicalSpotTypeToEntityType(row.spot_type),
+    type,
     status: mapSpotStatusToActionStatus(row.status),
     source: "trash_spotter_spots",
     sourceStatus: row.status,
@@ -204,7 +211,8 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
     derivedGeometryGeoJson: geometry.geojson ?? null,
     geometryConfidence: geometry.confidence ?? null,
     geometrySource: geometry.source ?? null,
-    notes: row.notes,
+    notes: stripWasteCategoryMarkersFromNotes(row.notes) ?? null,
+    wasteCategories,
   });
 
   return {

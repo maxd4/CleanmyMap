@@ -7,6 +7,7 @@ import { createSpot } from "@/lib/spots/http";
 import { mapItemType } from "@/lib/actions/data-contract";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import type { SpotType, SpotFormStatus } from "./trash-spotter-types";
+import { resolveTrashSpotterWasteCategories } from "./trash-spotter-types";
 import type { WasteCategorySlug } from "@/lib/waste";
 import { appendWasteCategoriesToNotes } from "@/lib/waste";
 
@@ -26,6 +27,13 @@ export function useTrashSpotter(fr: boolean) {
   const [wasteCategories, setWasteCategories] = useState<WasteCategorySlug[]>([]);
   const [spotState, setSpotState] = useState<SpotFormStatus>("idle");
   const [spotMessage, setSpotMessage] = useState<string | null>(null);
+
+  const updateSpotType = (nextType: SpotType) => {
+    setSpotType(nextType);
+    if (nextType === "clean_place") {
+      setWasteCategories(resolveTrashSpotterWasteCategories(nextType, wasteCategories));
+    }
+  };
 
   const { data, isLoading, error, mutate } = useSWR(
     ["section-trash-spotter"],
@@ -74,7 +82,10 @@ export function useTrashSpotter(fr: boolean) {
         label,
         latitude,
         longitude,
-        notes: appendWasteCategoriesToNotes(spotNotes, wasteCategories),
+        notes: appendWasteCategoriesToNotes(
+          spotNotes,
+          resolveTrashSpotterWasteCategories(spotType, wasteCategories),
+        ),
       });
       setSpotState("success");
       setSpotMessage(fr ? `Spot créé (${result.id}). En attente de modération.` : `Spot created (${result.id}). Awaiting moderation.`);
@@ -108,7 +119,7 @@ export function useTrashSpotter(fr: boolean) {
   }, [data?.items]);
 
   return {
-    spotType, setSpotType,
+    spotType, setSpotType: updateSpotType,
     spotLabel, setSpotLabel,
     spotLatitude, setSpotLatitude,
     spotLongitude, setSpotLongitude,

@@ -93,4 +93,43 @@ describe("createSignalement", () => {
     });
     expect(trackServerEventMock).toHaveBeenCalled();
   });
+
+  it("never persists a waste marker for a clean place", async () => {
+    const created = {
+      id: "clean-place-1",
+      created_at: "2026-08-24T10:00:00Z",
+      created_by_clerk_id: "user-1",
+      user_id: "user-1",
+      label: "Place propre",
+      spot_type: "clean_place",
+      latitude: null,
+      longitude: null,
+      status: "new",
+      notes: "[spot-by:Test User] Note manuelle",
+    };
+    const singleMock = vi.fn().mockResolvedValue({ data: created, error: null });
+    const selectMock = vi.fn().mockReturnValue({ single: singleMock });
+    const insertMock = vi.fn().mockReturnValue({ select: selectMock });
+    const supabase = {
+      from: vi.fn(() => ({ insert: insertMock })),
+    };
+
+    const { createSignalement } = await import("./create-signalement");
+    await createSignalement(supabase as never, {
+      userId: "user-1",
+      type: "clean_place",
+      label: "Place propre",
+      notes: "Note manuelle\n[cmm-waste:plastic,broken_glass]",
+      actorName: "Test User",
+      consentGranted: false,
+    });
+
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spot_type: "clean_place",
+        notes: "[spot-by:Test User] Note manuelle",
+      }),
+    );
+    expect(insertMock.mock.calls[0]?.[0]?.notes).not.toContain("cmm-waste");
+  });
 });

@@ -5,6 +5,7 @@ import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-sn
 import { trackServerEvent } from "@/lib/analytics.server";
 import { trackSpotCreated } from "@/lib/gamification/progression";
 import { logFailure } from "@/lib/logging/failure-log";
+import { stripWasteCategoryMarkersFromNotes } from "@/lib/waste";
 
 export type SignalementType = "clean_place" | "spot";
 
@@ -48,8 +49,12 @@ export async function createSignalement(
 ): Promise<CreatedSignalement> {
   const label = params.label.trim();
   const notePrefix = `[spot-by:${params.actorName}]`;
-  const composedNotes = params.notes?.trim()
-    ? `${notePrefix} ${params.notes.trim()}`
+  const normalizedNotes =
+    params.type === "spot"
+      ? params.notes?.trim()
+      : stripWasteCategoryMarkersFromNotes(params.notes);
+  const composedNotes = normalizedNotes
+    ? `${notePrefix} ${normalizedNotes}`
     : notePrefix;
 
   const inserted = await supabase

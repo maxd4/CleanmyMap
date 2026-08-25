@@ -25,6 +25,7 @@ import {
 } from "./pollution-score";
 import type { ActionDataContract, ActionEntityType } from "./contract-model";
 import { buildActionDataContract } from "./data-contract";
+import { parseWasteCategoriesFromNotes } from "@/lib/waste";
 import { mapItemCoordinates, toActionMapItem } from "./contract-mappers";
 import {
   clampInteger,
@@ -184,10 +185,11 @@ function toActionStatusFromMapFeedRow(
 function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContract {
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
+  const type = toActionEntityType(row.entity_type);
 
   return buildActionDataContract({
     id: row.id,
-    type: toActionEntityType(row.entity_type),
+    type,
     status: toActionStatusFromMapFeedRow(row.entity_type, row.status),
     source: row.source,
     sourceStatus: row.status,
@@ -212,6 +214,8 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     routeAdjustmentMessage: parsedMetadata.routeAdjustmentMessage,
     notes: parsedMetadata.cleanNotes,
     notesPlain: parsedMetadata.cleanNotes,
+    wasteCategories:
+      type === "spot" ? parseWasteCategoriesFromNotes(row.notes) : [],
     submissionMode: parsedMetadata.submissionMode,
     wasteBreakdown: parsedMetadata.wasteBreakdown,
     manualDrawing: parsedDrawing.manualDrawing,

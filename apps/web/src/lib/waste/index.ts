@@ -36,5 +36,7 @@ export {
   formatWasteGuidanceLines,
   getWasteCategorySearchText,
   normalizeWasteCategorySlugs,
+  parseWasteCategoriesFromNotes,
+  stripWasteCategoryMarkersFromNotes,
 } from "./field-guidance";
 export type { WasteFieldGuidance } from "./field-guidance";
