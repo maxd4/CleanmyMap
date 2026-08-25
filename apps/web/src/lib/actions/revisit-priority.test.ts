@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACTION_POLLUTION_PROJECTION_CONSTANTS,
+  buildActionPollutionProjectionMethodology,
   presentActionPollutionProjection,
   projectedPollutionScore,
   resolveActionT80Days,
@@ -78,5 +79,23 @@ describe("action pollution projection", () => {
     expect(result).toBeCloseTo(40, 6);
     expect(result).toBeLessThan(50);
     expect(ACTION_POLLUTION_PROJECTION_CONSTANTS.targetFraction).toBe(0.8);
+  });
+
+  it("derives methodology values from the runtime constants and resolver", () => {
+    const methodology = buildActionPollutionProjectionMethodology();
+
+    expect(methodology.constants).toBe(ACTION_POLLUTION_PROJECTION_CONSTANTS);
+    expect(methodology.t80Formula).toContain(
+      `${ACTION_POLLUTION_PROJECTION_CONSTANTS.t80BaseDays}`,
+    );
+    expect(methodology.t80Formula).toContain(
+      `${ACTION_POLLUTION_PROJECTION_CONSTANTS.t80ScoreRangeDays}`,
+    );
+    expect(methodology.orderOfMagnitude).toEqual([
+      { historicalScore: 20, t80Days: resolveActionT80Days(20) },
+      { historicalScore: 50, t80Days: resolveActionT80Days(50) },
+      { historicalScore: 80, t80Days: resolveActionT80Days(80) },
+      { historicalScore: 100, t80Days: resolveActionT80Days(100) },
+    ]);
   });
 });

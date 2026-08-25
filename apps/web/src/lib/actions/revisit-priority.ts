@@ -29,6 +29,46 @@ export type ActionPollutionProjectionPresentation = {
   isEstimate: boolean;
 };
 
+export type ActionPollutionProjectionMethodology = {
+  constants: typeof ACTION_POLLUTION_PROJECTION_CONSTANTS;
+  t80Formula: string;
+  projectionFormula: string;
+  decayConstantFormula: string;
+  orderOfMagnitude: Array<{
+    historicalScore: number;
+    t80Days: number;
+  }>;
+  modelBaselinePostActionScore: number;
+};
+
+/**
+ * Builds the public-facing explanation from the same projection constants
+ * and resolver used by the action map. Keep presentation derived here so the
+ * methodology page cannot silently drift from the runtime model.
+ */
+export function buildActionPollutionProjectionMethodology(): ActionPollutionProjectionMethodology {
+  const { t80BaseDays, t80ScoreRangeDays, targetFraction, maxScore } =
+    ACTION_POLLUTION_PROJECTION_CONSTANTS;
+  const decayConstant = -Math.log(1 - targetFraction);
+  const decayConstantLabel =
+    Math.abs(decayConstant - Math.log(5)) < Number.EPSILON
+      ? "ln(5)"
+      : decayConstant.toPrecision(6);
+
+  return {
+    constants: ACTION_POLLUTION_PROJECTION_CONSTANTS,
+    t80Formula: `T80(S) = ${t80BaseDays} + ${t80ScoreRangeDays} × (1 - S / ${maxScore})²`,
+    projectionFormula:
+      `P(t) = S_post + (S - S_post) × (1 - exp(-${decayConstantLabel} × t / T80(S)))`,
+    decayConstantFormula: `λ = -ln(1 - ${targetFraction}) = ${decayConstantLabel}`,
+    orderOfMagnitude: [20, 50, 80, 100].map((historicalScore) => ({
+      historicalScore,
+      t80Days: resolveActionT80Days(historicalScore),
+    })),
+    modelBaselinePostActionScore: 0,
+  };
+}
+
 function clampScore(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;

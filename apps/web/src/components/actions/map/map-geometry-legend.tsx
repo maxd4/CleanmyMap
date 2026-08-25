@@ -1,14 +1,49 @@
+import {
+  ACTION_PRIORITY_COLOR_STOPS,
+  CLEAN_PLACE_COLOR,
+  resolveDynamicColor,
+} from "../map-marker-categories";
+
 export function MapGeometryLegend() {
   return (
     <div
       role="note"
-      aria-label="Légende des tracés"
-      className="pointer-events-auto w-[min(19rem,calc(100vw-1.5rem))] rounded-2xl border border-sky-200/80 bg-white/95 px-3 py-2.5 text-slate-800 shadow-[0_18px_42px_-28px_rgba(14,165,233,0.45)] backdrop-blur-xl"
+      aria-label="Légende de la carte"
+      className="pointer-events-auto w-[min(21rem,calc(100vw-1.5rem))] max-h-[min(24rem,calc(100dvh-11rem))] overflow-y-auto rounded-2xl border border-sky-200/80 bg-white/95 px-3 py-2.5 text-slate-800 shadow-[0_18px_42px_-28px_rgba(14,165,233,0.45)] backdrop-blur-xl"
     >
       <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">
-        Tracés
+        Lecture de la carte
       </p>
-      <div className="mt-2 grid gap-1.5 text-[10px] font-semibold leading-snug">
+      <div className="mt-2 space-y-2 text-[10px] font-semibold leading-snug">
+        <p className="text-slate-600">
+          Actions : la couleur représente la pollution projetée depuis la dernière action.
+        </p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          {ACTION_PRIORITY_COLOR_STOPS.map((stop) => (
+            <p key={stop.key} className="flex min-w-0 items-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-900/15"
+                style={{ backgroundColor: resolveDynamicColor(stop.threshold) }}
+                aria-hidden="true"
+              />
+              <span className="truncate">{stop.label}</span>
+            </p>
+          ))}
+          <p className="flex min-w-0 items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full border border-emerald-700/30"
+              style={{ backgroundColor: CLEAN_PLACE_COLOR }}
+              aria-hidden="true"
+            />
+            <span className="truncate">Vert · lieu explicitement propre</span>
+          </p>
+        </div>
+        <p className="text-slate-600">
+          Trash Spotter : signalements actuellement observés et actionnables.
+        </p>
+      </div>
+
+      <div className="mt-2 grid gap-1.5 border-t border-slate-200 pt-2 text-[10px] font-semibold leading-snug">
         <p className="flex items-center gap-2">
           <span className="h-0.5 w-6 shrink-0 bg-sky-600" aria-hidden="true" />
           Trait plein : parcours déclaré/connu
@@ -38,6 +73,12 @@ export function MapGeometryLegend() {
       <p className="mt-2 text-[10px] font-medium leading-snug text-slate-500">
         Zone indicative : opacité réduite et libellé explicite.
       </p>
+      <a
+        href="/methodologie#methodologie-carte-actions"
+        className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-sky-800 transition hover:border-sky-300 hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      >
+        Voir la méthodologie détaillée
+      </a>
     </div>
   );
 }

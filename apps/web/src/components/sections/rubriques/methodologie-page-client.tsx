@@ -18,6 +18,13 @@ import {
   Zap,
 } from "lucide-react";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
+import {
+  buildActionPollutionProjectionMethodology,
+} from "@/lib/actions/revisit-priority";
+import {
+  ACTION_PRIORITY_COLOR_STOPS,
+  resolveDynamicColor,
+} from "@/components/actions/map-marker-categories";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
@@ -186,11 +193,15 @@ function ReferenceDocCard({
         {isFrench ? "Consulter le fichier" : "Open file"}
       </a>
       <a
-        href={schemaHref}
+        href={doc.secondaryAction?.href ?? schemaHref}
         className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
       >
         <ExternalLink size={14} />
-        {isFrench ? "Voir le schéma" : "View schema"}
+        {doc.secondaryAction
+          ? doc.secondaryAction.label[isFrench ? "fr" : "en"]
+          : isFrench
+            ? "Voir le schéma"
+            : "View schema"}
       </a>
     </div>
   );
@@ -330,7 +341,191 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
     icon: <ShieldCheck className="h-6 w-6" />,
     isPdf: false,
   },
+  {
+    id: "action-map-methodology",
+    title: {
+      fr: "Méthodologie de la carte d'actions",
+      en: "Action Map Methodology",
+    },
+    desc: {
+      fr: "Comprenez la distinction entre mémoire des actions, pollution constatée, pollution projetée et signalements Trash Spotter actuellement observés.",
+      en: "Understand the distinction between action history, observed pollution, projected pollution, and currently observed Trash Spotter reports.",
+    },
+    href: "/docs/product/methodologie-carte-actions.md",
+    icon: <MapPin className="h-6 w-6" />,
+    isPdf: false,
+    secondaryAction: {
+      href: "#methodologie-carte-actions",
+      label: {
+        fr: "Voir la section sur cette page",
+        en: "View this page section",
+      },
+    },
+  },
 ];
+
+export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean }) {
+  const projection = buildActionPollutionProjectionMethodology();
+  const actionMapDoc = OPEN_SOURCE_DOCS.find(
+    (doc) => doc.id === "action-map-methodology",
+  );
+
+  if (!actionMapDoc) {
+    return null;
+  }
+
+  return (
+    <section
+      id="methodologie-carte-actions"
+      className="scroll-mt-8 space-y-8 rounded-[3rem] border border-sky-300/20 bg-slate-950/95 p-6 shadow-[0_28px_70px_-40px_rgba(14,165,233,0.55)] md:p-10"
+    >
+      <div className="space-y-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.35em] text-sky-300/70">
+          {isFrench ? "Référence cartographique" : "Cartographic reference"}
+        </p>
+        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+          {isFrench
+            ? "Méthodologie de la carte d'actions"
+            : "Action map methodology"}
+        </h2>
+        <p className="max-w-4xl text-base font-medium leading-relaxed text-slate-200/70">
+          {isFrench
+            ? "Le calque Actions conserve la mémoire des interventions et projette une remontée de pollution à partir de la dernière action. Trash Spotter reste la lecture opérationnelle des pollutions actuellement signalées et actionnables."
+            : "The Actions layer keeps intervention history and projects pollution recovery from the last action. Trash Spotter remains the operational view of currently reported and actionable pollution."}
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          {
+            title: isFrench ? "Pollution constatée" : "Observed pollution",
+            text: isFrench
+              ? "Score historique S/100 constaté avant l'action. Il n'est jamais réécrit par le temps."
+              : "Historical score S/100 observed before the action. Time never rewrites it.",
+          },
+          {
+            title: isFrench ? "Pollution projetée" : "Projected pollution",
+            text: isFrench
+              ? "Estimation P/100 calculée depuis le score historique et le temps écoulé."
+              : "Estimate P/100 calculated from the historical score and elapsed time.",
+          },
+          {
+            title: isFrench ? "Dernière action" : "Last action",
+            text: isFrench
+              ? "Date de référence pour calculer le nombre de jours écoulés t."
+              : "Reference date used to calculate elapsed days t.",
+          },
+        ].map((item) => (
+          <div
+            key={item.title}
+            className="rounded-2xl border border-white/10 bg-white/[0.06] p-5"
+          >
+            <h3 className="text-sm font-black text-white">{item.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300/70">
+              {item.text}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-sky-300/20 bg-sky-400/[0.08] p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-200/70">
+              {isFrench ? "Projection runtime" : "Runtime projection"}
+            </p>
+            <p className="mt-3 overflow-x-auto font-mono text-sm leading-relaxed text-sky-100">
+              {projection.t80Formula}
+              <br />
+              {projection.projectionFormula}
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-300/70">
+              {projection.decayConstantFormula}. {isFrench
+                ? "Sans mesure post-action explicite, S_post = 0 est un baseline de modèle, pas une mesure de propreté. Une mesure réelle post-action est prioritaire."
+                : "Without an explicit post-action measurement, S_post = 0 is a model baseline, not a cleanliness measurement. A real post-action measurement takes priority."}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {projection.orderOfMagnitude.map((item) => (
+              <div
+                key={item.historicalScore}
+                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm"
+              >
+                <span className="text-slate-300/70">
+                  S = {item.historicalScore}
+                </span>
+                <strong className="text-white">
+                  T80 ≈ {Math.round(item.t80Days)} j
+                </strong>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-amber-300/30 bg-amber-300/[0.08] p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/80">
+              {isFrench ? "Limite d'interprétation" : "Interpretation limit"}
+            </p>
+            <p className="mt-3 text-sm font-semibold leading-relaxed text-amber-50">
+              {isFrench
+                ? "Heuristique versionnée · pas une mesure en temps réel."
+                : "Versioned heuristic · not a real-time measurement."}
+            </p>
+          </div>
+
+          <ReferenceDocCard
+            doc={actionMapDoc}
+            schemaLabel={{
+              fr: "Documentation produit",
+              en: "Product documentation",
+            }}
+            schemaHref="#methodologie-carte-actions"
+            isFrench={isFrench}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
+            {isFrench ? "Couleurs des actions" : "Action colors"}
+          </h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {ACTION_PRIORITY_COLOR_STOPS.map((stop) => (
+              <p key={stop.key} className="flex items-center gap-2 text-sm text-slate-300/75">
+                <span
+                  className="h-3 w-3 rounded-full border border-white/20"
+                  style={{ backgroundColor: resolveDynamicColor(stop.threshold) }}
+                  aria-hidden="true"
+                />
+                {stop.label} · repère {stop.threshold}
+              </p>
+            ))}
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-400">
+            {isFrench
+              ? "Le vert est réservé aux lieux explicitement propres ; il n'est jamais un niveau de faible pollution pour une action."
+              : "Green is reserved for explicitly clean places; it is never a low-pollution level for an action."}
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-[0.16em] text-white">
+            {isFrench ? "Grammaire géométrique" : "Geometry grammar"}
+          </h3>
+          <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-300/75">
+            <li>Ligne pleine : parcours déclaré/connu.</li>
+            <li>Ligne pointillée : parcours reconstruit/indicatif.</li>
+            <li>Polygon rempli : zone réelle ou indicative, selon l&apos;opacité.</li>
+            <li>Point : localisation seule.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function MethodologiePageClient({
   freePlanServices,
@@ -390,6 +585,8 @@ export function MethodologiePageClient({
           tone="rose"
           note="Ici, la double carte sert d'outil d'explication. La version brute montre la donnée; la version Terraink montre la mise en scène possible pour un rapport ou une page de présentation."
         />
+
+        <ActionMapMethodologySection isFrench={isFrench} />
 
         <div
           className={cn(
