@@ -9,7 +9,7 @@ export function MapGeometryLegend() {
     <div
       role="note"
       aria-label="Légende de la carte"
-      className="pointer-events-auto w-[min(21rem,calc(100vw-1.5rem))] max-h-[min(24rem,calc(100dvh-11rem))] overflow-y-auto rounded-2xl border border-sky-200/80 bg-white/95 px-3 py-2.5 text-slate-800 shadow-[0_18px_42px_-28px_rgba(14,165,233,0.45)] backdrop-blur-xl"
+      className="pointer-events-auto w-[min(21rem,calc(100vw-1.5rem))] max-h-[min(24rem,calc(100dvh-11rem))] min-w-0 overflow-x-hidden overflow-y-auto rounded-2xl border border-sky-200/80 bg-white/95 px-3 py-2.5 text-slate-800 shadow-[0_18px_42px_-28px_rgba(14,165,233,0.45)] backdrop-blur-xl"
     >
       <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">
         Lecture de la carte
@@ -18,7 +18,7 @@ export function MapGeometryLegend() {
         <p className="text-slate-600">
           Actions : la couleur représente la pollution projetée depuis la dernière action.
         </p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+        <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
           {ACTION_PRIORITY_COLOR_STOPS.map((stop) => (
             <p key={stop.key} className="flex min-w-0 items-center gap-1.5">
               <span
@@ -26,7 +26,7 @@ export function MapGeometryLegend() {
                 style={{ backgroundColor: resolveDynamicColor(stop.threshold) }}
                 aria-hidden="true"
               />
-              <span className="truncate">{stop.label}</span>
+              <span className="min-w-0 break-words">{stop.label}</span>
             </p>
           ))}
           <p className="flex min-w-0 items-center gap-1.5">
@@ -35,7 +35,7 @@ export function MapGeometryLegend() {
               style={{ backgroundColor: CLEAN_PLACE_COLOR }}
               aria-hidden="true"
             />
-            <span className="truncate">Vert · lieu explicitement propre</span>
+            <span className="min-w-0 break-words">Vert · lieu explicitement propre</span>
           </p>
         </div>
         <p className="text-slate-600">
@@ -75,7 +75,7 @@ export function MapGeometryLegend() {
       </p>
       <a
         href="/methodologie#methodologie-carte-actions"
-        className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-sky-800 transition hover:border-sky-300 hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+        className="mt-2 inline-flex min-h-9 w-full min-w-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-center text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-sky-800 transition hover:border-sky-300 hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
       >
         Voir la méthodologie détaillée
       </a>
