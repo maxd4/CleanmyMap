@@ -10,7 +10,6 @@ export function buildQuickSignalementPayload(params: {
   recordType: QuickSignalementRecordType;
   categories: readonly WasteCategorySlug[];
   location: { lat: number; lng: number };
-  photos: CreateActionPayload["photos"];
   actionDate: string;
 }): CreateActionPayload {
   const isSpot = params.recordType === "spot";
@@ -37,6 +36,5 @@ export function buildQuickSignalementPayload(params: {
     preparationData: isSpot
       ? { expectedWasteCategories: [...params.categories] }
       : null,
-    photos: params.photos,
   };
 }

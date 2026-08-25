@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-06-12T23:55:00.000Z",
-  "apiRouteCount": 74,
+  "apiRouteCount": 77,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
@@ -69,6 +69,9 @@
     "apps/web/src/app/api/sandbox/runbook-checks/route.ts",
     "apps/web/src/app/api/send/route.ts",
     "apps/web/src/app/api/services/route.ts",
+    "apps/web/src/app/api/signalements/[signalementId]/media/[mediaId]/finalize/route.ts",
+    "apps/web/src/app/api/signalements/[signalementId]/media/intents/route.ts",
+    "apps/web/src/app/api/signalements/[signalementId]/media/route.ts",
     "apps/web/src/app/api/spots/route.ts",
     "apps/web/src/app/api/stripe/webhook/route.ts",
     "apps/web/src/app/api/uptime/route.ts",
