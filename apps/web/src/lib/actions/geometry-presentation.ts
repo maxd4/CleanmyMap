@@ -58,7 +58,7 @@ export function getGeometryPresentation(
         origin,
         reality: "estimated",
         label: "Zone indicative · emprise estimée",
-        strokeStyle: "dashed",
+        strokeStyle: "solid",
       };
     case "fallback_point":
     default:
