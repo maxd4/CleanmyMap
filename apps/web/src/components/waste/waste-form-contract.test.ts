@@ -20,6 +20,14 @@ describe("waste UX registry wiring", () => {
     expect(quickForm).not.toContain('id: "mixte"');
   });
 
+  it("keeps Quick Signalement state selection and clean-place category isolation explicit", () => {
+    const quickForm = read("components/actions/quick-signalement-form.tsx");
+    expect(quickForm).toContain("État observé du lieu");
+    expect(quickForm).toContain('setRecordType("clean_place")');
+    expect(quickForm).toContain("Les catégories déchets sont désactivées");
+    expect(quickForm).toContain("buildQuickSignalementPayload");
+  });
+
   it("keeps the storage boundary explicit", () => {
     expect(read("components/actions/action-declaration/payload.ts")).toContain("expectedWasteCategories");
     expect(read("components/sections/rubriques/use-trash-spotter.ts")).toContain("appendWasteCategoriesToNotes");
