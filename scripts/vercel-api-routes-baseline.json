@@ -9,6 +9,7 @@
     "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
+    "apps/web/src/app/api/actions/map/initial-nearest/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/route.ts",

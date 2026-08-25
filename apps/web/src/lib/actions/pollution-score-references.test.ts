@@ -30,4 +30,16 @@ describe("fetchActionPollutionScoreReferences", () => {
 
     expect(references).toEqual(DEFAULT_POLLUTION_SCORE_REFERENCES);
   });
+
+  it("does not mix one runtime reference with one default reference", async () => {
+    const rpc = vi.fn(async () => ({
+      data: { waste_per_volunteer: 100, butts_per_volunteer: null },
+      error: null,
+    }));
+    const supabase = { rpc } as never;
+
+    await expect(fetchActionPollutionScoreReferences(supabase)).resolves.toEqual(
+      DEFAULT_POLLUTION_SCORE_REFERENCES,
+    );
+  });
 });
