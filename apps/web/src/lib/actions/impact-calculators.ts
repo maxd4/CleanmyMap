@@ -37,6 +37,23 @@ export type ActionImpactKpis = {
 
 export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource">;
 
+export type ActionImpactMethodology = {
+  version: string;
+  scope: string;
+  sources: typeof IMPACT_PROXY_CONFIG.sources;
+  factors: typeof IMPACT_PROXY_CONFIG.factors;
+  buttsPerKg: number;
+  formulas: {
+    wasteKg: string;
+    butts: string;
+    volunteers: string;
+    co2e: string;
+    water: string;
+    euro: string;
+    surface: string;
+  };
+};
+
 /**
  * Calcule le nombre estimé de mégots en fonction du poids et de l'état (propreté/humidité).
  */
@@ -173,4 +190,29 @@ export function sumActionImpactKpis(
   );
 
   return totals;
+}
+
+/**
+ * Descripteur public de la méthode affichée par /methodologie.
+ * Les facteurs et la version viennent du même runtime que les KPI.
+ */
+export function buildActionImpactMethodology(): ActionImpactMethodology {
+  const { factors, sources, version } = IMPACT_PROXY_CONFIG;
+
+  return {
+    version,
+    scope: "Actions approuvees et filtrees par la surface concernee.",
+    sources,
+    factors,
+    buttsPerKg: BUTTS_PER_KG_REFERENCE,
+    formulas: {
+      wasteKg: `wasteKg = max(0, wasteKg_declare, wasteBreakdown.megotsKg, cigaretteButts / ${BUTTS_PER_KG_REFERENCE})`,
+      butts: "butts = max(0, cigaretteButts)",
+      volunteers: "volunteers = max(0, volunteersCount)",
+      co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,
+      water: `eau_L = butts * ${factors.waterLitersPerCigaretteButt}`,
+      euro: `economie_voirie_EUR = wasteKg * ${factors.euroSavedPerWasteKg}`,
+      surface: `surface_m2 = wasteKg * ${factors.surfaceM2PerWasteKg} + volunteerMinutes * ${factors.surfaceM2PerVolunteerMinute}`,
+    },
+  };
 }

@@ -46,10 +46,10 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
         <div className="space-y-1">
           <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
             <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-            Impact terrain
+            Impact terrain · vue actuelle
           </p>
           <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-            Données certifiées, méthodologie disponible.
+            KPI calculés sur les actions de collecte visibles après les filtres courants. Les points géolocalisés sont des coordonnées, pas un décompte d&apos;actions.
           </p>
         </div>
       </div>

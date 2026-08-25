@@ -253,13 +253,13 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             hint="Base de proxy"
           />
           <MetricCard
-            label="Émissions évitées"
-            value={`${toFrNumber(report.climate.twelve.kg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg)} kg`}
+            label="Émissions évitées (proxy)"
+            value={`${toFrNumber(report.climate.co2AvoidedKg)} kg`}
             tone="accent"
             hint="Proxy CO2"
           />
           <MetricCard
-            label="Eau préservée"
+            label="Eau préservée (proxy)"
             value={`${toFrInt(report.climate.waterProtectedLiters)} L`}
             hint="Proxy mégots"
           />
@@ -268,6 +268,11 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             value={`${toFrNumber(surfaceProxy)} m²`}
             tone="accent"
             hint="Poids + temps bénévoles"
+          />
+          <MetricCard
+            label="Économie de voirie (proxy)"
+            value={`${toFrNumber(report.climate.streetCleaningSavingsEuros ?? 0)} €`}
+            hint="Masse × proxy runtime"
           />
         </div>
         <div className="grid gap-3 md:grid-cols-2">

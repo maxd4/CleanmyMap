@@ -7,6 +7,9 @@ import type {
   PersonalImpactMethodology,
   PersonalImpactMetrics,
 } from "./progression-types";
+import {
+  computeActionImpactKpis,
+} from "@/lib/actions/impact-calculators";
 import { IMPACT_PROXY_CONFIG } from "./impact-proxy-config";
 import { toFloat, toInt } from "./progression-utils";
 
@@ -26,8 +29,16 @@ export function computePersonalImpactMetrics(
     if (row.status !== "approved") {
       continue;
     }
-    totalButts += toInt(row.cigarette_butts, 0);
-    totalWasteKg += toFloat(row.waste_kg, 0);
+    const impact = computeActionImpactKpis({
+      metadata: {
+        wasteKg: toFloat(row.waste_kg, 0),
+        cigaretteButts: toInt(row.cigarette_butts, 0),
+        volunteersCount: toInt(row.volunteers_count, 0),
+        wasteBreakdown: row.waste_breakdown,
+      },
+    });
+    totalButts += impact.butts;
+    totalWasteKg += impact.wasteKg;
     totalVolunteerMinutes +=
       Math.max(0, toInt(row.duration_minutes, 0)) *
       Math.max(1, toInt(row.volunteers_count, 1));

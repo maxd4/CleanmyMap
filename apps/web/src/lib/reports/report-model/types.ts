@@ -91,6 +91,7 @@ export type ReportModel = {
     twelve: { actions: number; kg: number; butts: number };
     waterProtectedLiters: number;
     co2AvoidedKg: number;
+    streetCleaningSavingsEuros?: number;
   };
   community: {
     totalEvents: number;

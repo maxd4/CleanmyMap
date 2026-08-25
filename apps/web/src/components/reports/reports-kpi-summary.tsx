@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Activity, CheckCircle2, MapPin, Route, Trash2, Users } from "lucide-react";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
+import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 const containerVariant = {
   hidden: { opacity: 0 },
@@ -29,20 +30,22 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
     const actions = contracts.map((contract) => toActionListItem(contract));
     const mapItems = contracts.map((contract) => toActionMapItem(contract));
 
-    const totalKg = actions.reduce((acc, item) => acc + Number(item.waste_kg || 0), 0);
-    const totalButts = actions.reduce((acc, item) => acc + Number(item.cigarette_butts || 0), 0);
-    const totalMinutes = actions.reduce((acc, item) => acc + Number(item.duration_minutes || 0), 0);
-    const totalVolunteers = actions.reduce((acc, item) => acc + Number(item.volunteers_count || 0), 0);
+    const impact = sumActionImpactKpis(contracts);
+    const totalMinutes = actions.reduce(
+      (acc, item) =>
+        acc + Number(item.duration_minutes || 0) * Math.max(1, Number(item.volunteers_count || 0)),
+      0,
+    );
     const geolocated = mapItems.filter((item) => item.latitude !== null && item.longitude !== null).length;
     const traced = mapItems.filter(
       (item) => (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
     ).length;
 
     return {
-      totalKg,
-      totalButts,
+      totalKg: impact.wasteKg,
+      totalButts: impact.butts,
       totalMinutes,
-      totalVolunteers,
+      totalVolunteers: impact.volunteers,
       geolocated,
       traced,
       count: actions.length,
@@ -141,7 +144,7 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
               <MapPin size={20} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Points GPS
+              Points géolocalisés (coordonnées)
             </span>
           </div>
           <div className="text-3xl font-black text-slate-800">{metrics.geolocated}</div>

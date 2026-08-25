@@ -14,9 +14,10 @@ import {
   Scaling,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Zap,
 } from "lucide-react";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
@@ -197,8 +198,8 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
       en: "Impact Audit & Calculation Model",
     },
     desc: {
-      fr: "Découvrez en détail chaque étape de notre audit d’impact : des formules précises, les facteurs d’émission reconnus d’ADEME et du GIEC, ainsi qu’une explication claire de notre algorithme proxy linéaire, afin que vous compreniez comment chaque score est calculé et puissiez l’interpréter vous‑même.",
-      en: "Explore the complete impact‑audit process, including precise equations, reputable ADEME and IPCC emission factors, and a clear breakdown of our linear proxy algorithm, empowering you to understand exactly how each impact score is derived and interpret the results confidently.",
+      fr: "Découvrez le calcul runtime des KPI d’impact, la distinction entre valeurs déclarées et estimées, les sources configurées et les limites de chaque proxy.",
+      en: "Explore the runtime impact KPI calculation, the distinction between declared and estimated values, configured sources, and the limits of each proxy.",
     },
     href: "/docs/plans/rapport_impact/impact_IA.md",
     icon: <Scaling className="h-6 w-6" />,
@@ -225,8 +226,8 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
       en: "Scientific Protocol",
     },
     desc: {
-      fr: "Accédez au protocole scientifique complet : hypothèses clairement définies, méthodes de calcul rigoureuses, formules détaillées, critères de validation stricts et processus de révision transparent, garantissant la fiabilité de nos indicateurs d’impact environnemental.",
-      en: "Access the full scientific protocol: clearly defined hypotheses, rigorous calculation methods, detailed formulas, strict validation criteria, and a transparent review process, ensuring the reliability of our environmental impact indicators.",
+      fr: "Accédez au protocole de calcul : hypothèses, formules effectivement exécutées, critères de validation et limites d’interprétation.",
+      en: "Access the calculation protocol: assumptions, formulas actually executed, validation criteria, and interpretation limits.",
     },
     href: "/docs/product/SCIENTIFIC_PROTOCOL.md",
     icon: <Beaker className="h-6 w-6" />,
@@ -335,7 +336,8 @@ export function MethodologiePageClient({
 }: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
-  const { factors, sources, version } = IMPACT_PROXY_CONFIG;
+  const methodology = buildActionImpactMethodology();
+  const { sources, version } = methodology;
   const { t } = useTranslation("methodologie");
   const classes = getBlockClasses("impact");
 
@@ -390,24 +392,24 @@ export function MethodologiePageClient({
                 <span>Transparence Algorithmique</span>
               </h2>
               <p className="max-w-md text-lg font-medium leading-relaxed text-red-100/40">
-                Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
+                Les KPI terrain suivent le calcul runtime versionné. Les valeurs déclarées et les estimations sont distinguées, puis les proxys sont appliqués à la masse ou aux mégots retenus. Périmètre : {methodology.scope}
               </p>
               <div className="flex gap-4">
                 <div className="rounded-xl bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400/60">
                   Version {version}
                 </div>
                 <div className="rounded-xl bg-red-500 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-500/20">
-                  Audit Scientifique OK
+                  Proxy versionné
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Données Sources", val: "ADEME / GIEC", icon: <BookOpen size={16} /> },
-                { label: "Audit", val: "Semestriel", icon: <Zap size={16} /> },
-                { label: "Marge Erreur", val: "< 2%", icon: <Scaling size={16} /> },
-                { label: "Algorithme", val: "Linéaire Proxy", icon: <Sparkles size={16} /> },
+                { label: isFrench ? "Version" : "Version", val: version, icon: <BookOpen size={16} /> },
+                { label: isFrench ? "Sources" : "Sources", val: "Configuration runtime", icon: <Zap size={16} /> },
+                { label: isFrench ? "Périmètre" : "Scope", val: isFrench ? "Approuvé + filtres" : "Approved + filters", icon: <Scaling size={16} /> },
+                { label: isFrench ? "Nature" : "Nature", val: isFrench ? "Proxys, pas mesures" : "Proxies, not measurements", icon: <Sparkles size={16} /> },
               ].map((item, index) => (
                 <div
                   key={index}
@@ -431,8 +433,8 @@ export function MethodologiePageClient({
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {[
             { icon: <MapPin className="text-red-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
-            { icon: <Zap className="text-red-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
-            { icon: <ShieldCheck className="text-red-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
+            { icon: <Zap className="text-red-400" />, title: "Calcul Instantané", desc: "Application des proxys versionnés" },
+            { icon: <ShieldCheck className="text-red-400" />, title: isFrench ? "Impact documenté" : "Documented impact", desc: isFrench ? "Lecture des KPI et de leurs limites" : "Reading KPIs and their limits" },
           ].map((step, index) => (
             <div
               key={index}
@@ -489,9 +491,36 @@ export function MethodologiePageClient({
 
         <section className="grid gap-10 xl:grid-cols-2">
           <MethodologyCard
+            title={t("cards.waste.title")}
+            formula={methodology.formulas.wasteKg}
+            description={t("cards.waste.desc")}
+            source={t("cards.waste.source")}
+            color="red"
+            icon={<Trash2 size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.butts.title")}
+            formula={methodology.formulas.butts}
+            description={t("cards.butts.desc")}
+            source={t("cards.butts.source")}
+            color="red"
+            icon={<BookOpen size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.volunteers.title")}
+            formula={methodology.formulas.volunteers}
+            description={t("cards.volunteers.desc")}
+            source={t("cards.volunteers.source")}
+            color="slate"
+            icon={<Heart size={24} />}
+          />
+
+          <MethodologyCard
             title={t("cards.water.title")}
-            formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
-            description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
+            formula={methodology.formulas.water}
+            description={t("cards.water.desc")}
             source={t("cards.water.source", { src: sources.water })}
             color="red"
             icon={<BookOpen size={24} />}
@@ -499,7 +528,7 @@ export function MethodologiePageClient({
 
           <MethodologyCard
             title={t("cards.co2.title")}
-            formula={t("cards.co2.formula", { val: factors.co2KgPerWasteKg })}
+            formula={methodology.formulas.co2e}
             description={t("cards.co2.desc")}
             source={t("cards.co2.source", { src: sources.co2 })}
             color="red"
@@ -508,10 +537,7 @@ export function MethodologiePageClient({
 
           <MethodologyCard
             title={t("cards.surface.title")}
-            formula={t("cards.surface.formula", {
-              valkg: factors.surfaceM2PerWasteKg,
-              valmin: factors.surfaceM2PerVolunteerMinute,
-            })}
+            formula={methodology.formulas.surface}
             description={t("cards.surface.desc")}
             source={t("cards.surface.source", { src: sources.surface })}
             color="slate"
@@ -520,11 +546,20 @@ export function MethodologiePageClient({
 
           <MethodologyCard
             title={t("cards.map.title")}
-            formula={t("cards.map.formula")}
+            formula={isFrench ? "Indice cartographique = calibration terrain (hors KPI impact canonique)" : "Map index = field calibration (outside canonical impact KPIs)"}
             description={t("cards.map.desc")}
             source={t("cards.map.source")}
             color="red"
             icon={<Scaling size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.roi.title")}
+            formula={methodology.formulas.euro}
+            description={t("cards.roi.desc")}
+            source={t("cards.roi.source", { src: sources.roi })}
+            color="slate"
+            icon={<Zap size={24} />}
           />
         </section>
 
@@ -546,8 +581,8 @@ export function MethodologiePageClient({
             </p>
             <p>
               {isFrench
-                ? "C'est pourquoi nous utilisons des proxies linéaires (comme estimer la surface d'action d'après le temps passé ou le poids moyen des déchets collectés). Ce compromis pragmatique permet de collecter des données à grande échelle tout en garantissant des ordres de grandeur fiables validés scientifiquement."
-                : "This is why we use linear proxies (such as estimating the action area based on time spent or average weight of collected waste). This pragmatic compromise allows large-scale data collection while ensuring reliable, scientifically validated orders of magnitude."}
+                ? "C'est pourquoi certains indicateurs sont des proxys versionnés : ils donnent un ordre de grandeur reproductible, mais ne constituent ni une mesure instrumentale ni une certification scientifique."
+                : "This is why some indicators are versioned proxies: they provide a reproducible order of magnitude, but are neither instrument measurements nor scientific certification."}
             </p>
           </div>
         </div>
@@ -579,12 +614,12 @@ export function MethodologiePageClient({
               {isFrench ? "Rapport d'impact" : "Impact report"}
             </p>
             <h2 className="text-4xl font-black tracking-tight text-white">
-              {isFrench ? "Impact carbone des services suivis" : "Carbon impact of tracked services"}
+              {isFrench ? "Empreinte technique des services suivis" : "Technical footprint of tracked services"}
             </h2>
             <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
               {isFrench
-                ? "Le rapport d’impact est branché sur le texte canonique d’ACV et sur le schéma de l’onglet impact, avec l’historique mensuel en dessous."
-                : "The impact report is tied to the canonical LCA text and the impact tab schema, with the monthly history displayed below."}
+                ? "Ce bloc mesure l'empreinte technique et infrastructurelle des services suivis. Il est séparé des KPI d'impact terrain calculés à partir des actions approuvées."
+                : "This block measures the technical and infrastructure footprint of tracked services. It is separate from terrain impact KPIs calculated from approved actions."}
             </p>
           </div>
 

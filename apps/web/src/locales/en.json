@@ -4,35 +4,45 @@
     "header_title": "Impact calculation",
     "header_desc": "Short, readable metrics based on documented sources.",
     "cards": {
+      "waste": {
+        "title": "Waste kg: retained value",
+        "desc": "The terrain KPI keeps the declared value when present. Otherwise it uses the cigarette-butt breakdown, then a butt-to-kg fallback. Actions without a metric remain at zero.",
+        "source": "SOURCE: ActionDataContract and runtime calculation"
+      },
+      "butts": {
+        "title": "Cigarette butts removed",
+        "desc": "The displayed count comes from cigaretteButts. It also feeds the fallback weight conversion and the water proxy.",
+        "source": "SOURCE: terrain declaration (ActionDataContract)"
+      },
+      "volunteers": {
+        "title": "Volunteers mobilised",
+        "desc": "The KPI uses volunteersCount after the scope and filters applied by the surface that displays it.",
+        "source": "SOURCE: terrain declaration (ActionDataContract)"
+      },
       "water": {
         "title": "Water preserved",
-        "formula": "Impact = [Cigarette butts collected] × {val} L",
-        "desc": "A cigarette butt can contaminate 500 to 1000 liters of water. We keep the lower bound to stay conservative.",
+        "desc": "An order-of-magnitude proxy based on removed cigarette butts. It is not a direct measurement of water quality.",
         "source": "SOURCE: {src}"
       },
       "co2": {
         "title": "Emissions avoided",
-        "formula": "Impact = [Waste mass (kg)] × {val} kg CO2eq",
-        "desc": "The calculation uses the ADEME factor to estimate emissions avoided through collection and controlled treatment.",
+        "desc": "A proxy based on retained terrain waste mass. It does not replace a full carbon assessment.",
         "source": "SOURCE: {src}"
       },
       "surface": {
         "title": "Action area",
-        "formula": "Area (m²) = [Mass(kg)] × {valkg} + [Minutes] × {valmin}",
-        "desc": "This index combines collected weight and time spent to read how intense an action is.",
+        "desc": "A proxy used for operational reading of the profile and some reports; it is not part of the six canonical terrain KPIs.",
         "source": "SOURCE: {src}"
       },
       "map": {
         "title": "Map pollution index",
-        "formula": "Separate scores: waste = [Weight/volunteer] ÷ [Waste ref] × 100; butts = [Butts/volunteer] ÷ [Butts ref] × 100.",
-        "desc": "Dynamic per-volunteer references. The map uses the highest score for color. A stronger new action becomes the new reference. The detailed score loads when an action is opened.",
+        "desc": "A cartographic index separate from the six impact KPIs. Geolocated points are not collection actions.",
         "source": "SOURCE: CleanMyMap v1 field calibration algorithm."
       },
       "roi": {
         "title": "Street-cleaning savings",
-        "formula": "Savings (€) = [Collected weight (kg)] × 1.5€",
-        "desc": "This proxy estimates the cost avoided for municipal services from the weight collected.",
-        "source": "SOURCE: Estimate based on average urban cleanliness costs (Observed average: €1500 / ton)."
+        "desc": "A cost-avoided proxy based on retained terrain waste mass. It is not a recorded accounting saving or expense.",
+        "source": "SOURCE: {src}"
       }
     },
     "footer": {

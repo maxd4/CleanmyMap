@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { swrRecentViewOptions } from "@/lib/swr-config";
@@ -259,18 +260,36 @@ export function useReportsWebDocumentModel({
 
   const exportRows = useMemo(
     () =>
-      scopedActionsApproved.map((item) => ({
-        Date: item.action_date,
-        Lieu: item.location_label,
-        Compte: item.created_by_clerk_id ?? item.actor_name ?? "Inconnu",
-        Association: item.association_name ?? "Sans association",
-        Masse_Kg: Number(item.waste_kg ?? 0),
-        Megots: Number(item.cigarette_butts ?? 0),
-        Bénévoles: Number(item.volunteers_count ?? 0),
-        Durée_Min: Number(item.duration_minutes ?? 0),
-        Type: item.record_type ?? item.contract?.type ?? "action",
-        Source: item.source ?? item.contract?.source ?? "web_form",
-      })),
+      scopedActionsApproved.map((item) => {
+        const impact = computeActionImpactKpis(
+          item.contract ?? {
+            metadata: {
+              wasteKg: item.waste_kg,
+              cigaretteButts: item.cigarette_butts,
+              volunteersCount: item.volunteers_count,
+              wasteBreakdown: item.waste_breakdown,
+            },
+          },
+        );
+        return {
+          Date: item.action_date,
+          Lieu: item.location_label,
+          Compte: item.created_by_clerk_id ?? item.actor_name ?? "Inconnu",
+          Association: item.association_name ?? "Sans association",
+          Masse_Kg: Number(item.waste_kg ?? 0),
+          Masse_Kg_Declaree: Number(item.waste_kg ?? 0),
+          Masse_Kg_Impact: impact.wasteKg,
+          Origine_Masse: impact.wasteKgSource,
+          Megots: impact.butts,
+          Bénévoles: impact.volunteers,
+          CO2e_Proxy_Kg: impact.co2AvoidedKg,
+          Eau_Proxy_L: impact.waterSavedLiters,
+          Economie_Voirie_Proxy_EUR: impact.euroSaved,
+          Durée_Min: Number(item.duration_minutes ?? 0),
+          Type: item.record_type ?? item.contract?.type ?? "action",
+          Source: item.source ?? item.contract?.source ?? "web_form",
+        };
+      }),
     [scopedActionsApproved],
   );
 

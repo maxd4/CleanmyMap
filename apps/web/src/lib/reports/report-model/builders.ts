@@ -1,14 +1,24 @@
 import {
-  mapItemCigaretteButts,
   mapItemCoordinates,
   mapItemLocationLabel,
-  mapItemWasteKg,
 } from "@/lib/actions/data-contract";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import type { MonthRow, ReportModel, RouteStep } from "./types";
 import { distanceKm, scoreAction } from "./math";
 import { toFrInt, toFrNumber, toFrOptionalNumber } from "./formatters";
 import { average } from "./math";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
+
+function toImpactInput(item: ActionListItem | ActionMapItem) {
+  return item.contract ?? {
+    metadata: {
+      wasteKg: item.waste_kg,
+      cigaretteButts: item.cigarette_butts,
+      volunteersCount: item.volunteers_count,
+      wasteBreakdown: item.waste_breakdown,
+    },
+  };
+}
 
 function monthKey(value: string): string {
   const date = new Date(value);
@@ -25,8 +35,8 @@ export function buildRouteSteps(items: ActionMapItem[], maxStops: number): Route
       return {
         item,
         label: mapItemLocationLabel(item),
-        kg: mapItemWasteKg(item) ?? 0,
-        butts: mapItemCigaretteButts(item) ?? 0,
+        kg: computeActionImpactKpis(toImpactInput(item)).wasteKg,
+        butts: computeActionImpactKpis(toImpactInput(item)).butts,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
       };
@@ -84,10 +94,13 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       minutes: 0,
     };
     previous.actions += 1;
-    previous.kg += Number(item.waste_kg || 0);
-    previous.butts += Number(item.cigarette_butts || 0);
-    previous.volunteers += Number(item.volunteers_count || 0);
-    previous.minutes += Number(item.duration_minutes || 0);
+    const impact = computeActionImpactKpis(toImpactInput(item));
+    previous.kg += impact.wasteKg;
+    previous.butts += impact.butts;
+    previous.volunteers += impact.volunteers;
+    previous.minutes += Number(
+      item.contract?.metadata.durationMinutes ?? item.duration_minutes ?? 0,
+    );
     grouped.set(key, previous);
   }
   return [...grouped.values()].sort((a, b) => a.month.localeCompare(b.month));

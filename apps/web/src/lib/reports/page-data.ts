@@ -4,6 +4,7 @@ import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { REPORT_DATA_BUDGET } from "@/lib/reports/budget";
 import { computeReportModel } from "@/lib/reports/report-model";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 export type ReportsSummaryKpi = {
   label: string;
@@ -95,12 +96,19 @@ export async function loadReportsGenerationData() {
 
 export function toReportsExportRow(contract: ActionDataContract) {
   const operational = getActionOperationalContext(contract);
+  const impact = computeActionImpactKpis(contract);
   return {
     Date: contract.dates.observedAt,
     Lieu: contract.location.label,
     Masse_Kg: contract.metadata.wasteKg || 0,
+    Masse_Kg_Declaree: contract.metadata.wasteKg || 0,
+    Masse_Kg_Impact: impact.wasteKg,
+    Origine_Masse: impact.wasteKgSource,
     Megots: contract.metadata.cigaretteButts || 0,
-    Bénévoles: operational.volunteersCount,
+    Bénévoles: impact.volunteers,
+    CO2e_Proxy_Kg: impact.co2AvoidedKg,
+    Eau_Proxy_L: impact.waterSavedLiters,
+    Economie_Voirie_Proxy_EUR: impact.euroSaved,
     Durée_Min: operational.durationMinutes,
     Charge_Terrain_Min: operational.engagementMinutes,
     Type_Lieu: operational.placeTypeLabel,

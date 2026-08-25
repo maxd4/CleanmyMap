@@ -147,8 +147,8 @@ describe("reports web analytics", () => {
  makeListItem({ id:"a-3", action_date:"2026-02-02", waste_kg: 4 }),
  ]);
  expect(rows).toHaveLength(2);
- expect(rows[0]?.kg).toBe(5);
- expect(rows[1]?.kg).toBe(4);
+ expect(rows[0]?.kg).toBe(20);
+ expect(rows[1]?.kg).toBe(10);
  });
 
  it("builds route steps with positive segment distances", () => {
