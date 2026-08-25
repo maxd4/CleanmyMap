@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Cigarette, Info, Trash2 } from "lucide-react";
 import {
+  ACTION_PRIORITY_COLOR_THRESHOLDS,
   INFRASTRUCTURE_ALERT_THRESHOLD,
-  SCORE_THRESHOLDS,
 } from "@/components/actions/map-marker-categories";
 
 type LegendItem = {
@@ -12,30 +12,42 @@ type LegendItem = {
   icon: ReactNode;
 };
 
-const pollutionItems: LegendItem[] = [
+const colorItems: LegendItem[] = [
   {
     label: "Bleu",
-    threshold: "0 kg / 0 mégot",
-    note: "Lieu propre",
+    threshold: `priorité < ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}`,
+    note: "Faible priorité de revisite",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />,
   },
   {
-    label: "Vert",
-    threshold: `score < ${SCORE_THRESHOLDS.MEDIUM}`,
-    note: "Faible",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />,
+    label: "Orange",
+    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.ORANGE}-${ACTION_PRIORITY_COLOR_THRESHOLDS.RED - 1}`,
+    note: "Priorité moyenne",
+    icon: <span className="h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]" />,
   },
   {
-    label: "Jaune",
-    threshold: `score ${SCORE_THRESHOLDS.MEDIUM}-${SCORE_THRESHOLDS.CRITICAL - 1}`,
-    note: "Moyen/Fort",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.45)]" />,
+    label: "Rouge",
+    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.RED}-${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET - 1}`,
+    note: "Priorité forte",
+    icon: <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]" />,
   },
   {
     label: "Violet",
-    threshold: `score ≥ ${SCORE_THRESHOLDS.CRITICAL}`,
+    threshold: `priorité ${ACTION_PRIORITY_COLOR_THRESHOLDS.VIOLET}-${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK - 1}`,
     note: "Critique",
     icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />,
+  },
+  {
+    label: "Noir",
+    threshold: `priorité ≥ ${ACTION_PRIORITY_COLOR_THRESHOLDS.BLACK}`,
+    note: "Priorité extrême",
+    icon: <span className="h-2.5 w-2.5 rounded-full bg-slate-950 shadow-[0_0_12px_rgba(15,23,42,0.45)]" />,
+  },
+  {
+    label: "Vert",
+    threshold: "clean_place",
+    note: "Lieu explicitement propre",
+    icon: <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />,
   },
 ];
 
@@ -87,7 +99,7 @@ export function MapLegend() {
             Légende
           </p>
           <p className="text-sm font-medium leading-relaxed text-slate-600">
-            Deux scores séparés. Référence dynamique = plus grosse action par bénévole sur actions approuvées. Une nouvelle action plus forte devient le nouveau max.
+            Les actions combinent la pollution constatée lors de la dernière intervention et une priorité de revisite qui augmente avec l&apos;ancienneté. Le vert est réservé aux lieux explicitement propres.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -98,7 +110,7 @@ export function MapLegend() {
             Mégots: max mégots / bénévole = 100
           </span>
           <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Couleur = max des 2 scores
+            Couleur action = priorité de revisite
           </span>
         </div>
       </div>
@@ -106,10 +118,10 @@ export function MapLegend() {
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
         <div className="space-y-3">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-            Pollution
+            Couleurs
           </p>
           <div className="grid gap-3">
-            {pollutionItems.map((item) => (
+            {colorItems.map((item) => (
               <LegendChip key={item.label} item={item} />
             ))}
           </div>

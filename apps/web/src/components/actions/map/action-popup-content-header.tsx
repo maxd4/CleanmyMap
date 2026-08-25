@@ -29,16 +29,19 @@ type ActionPopupContentHeaderProps = {
   observedAt: string;
   wasteKg: number;
   butts: number;
+  revisitPriority: number | null;
 };
 
 function ScoreRing({
   color,
   score,
   scoreLoading,
+  label = "Score",
 }: {
   color: string;
   score: number;
   scoreLoading: boolean;
+  label?: string;
 }) {
   return (
     <div className="relative flex-shrink-0 h-14 w-14">
@@ -70,7 +73,7 @@ function ScoreRing({
           {scoreLoading ? "…" : Math.round(score)}
         </span>
         <span className="text-[6px] font-bold uppercase tracking-tighter opacity-50">
-          Score
+          {label}
         </span>
       </div>
     </div>
@@ -101,6 +104,7 @@ export function ActionPopupContentHeader({
   observedAt,
   wasteKg,
   butts,
+  revisitPriority,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
 
@@ -133,6 +137,41 @@ export function ActionPopupContentHeader({
               {observedAt}
             </span>
           </div>
+        </div>
+
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/85 p-3 dark:border-slate-800 dark:bg-slate-900/45">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
+                Pollution constatée
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
+                {Math.round(score)}/100
+              </p>
+            </div>
+            <div>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
+                Dernière action
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
+                {observedAt}
+              </p>
+            </div>
+            <div>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
+                Priorité de revisite
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
+                {Math.round(revisitPriority ?? score)}/100
+              </p>
+            </div>
+          </div>
+          <ScoreRing
+            color={color}
+            score={revisitPriority ?? score}
+            scoreLoading={scoreLoading}
+            label="Revisite"
+          />
         </div>
 
         <div className="rounded-2xl border border-sky-100/80 bg-gradient-to-br from-sky-50 to-white p-3 shadow-sm dark:border-sky-900/60 dark:from-sky-950/30 dark:to-slate-900/40">

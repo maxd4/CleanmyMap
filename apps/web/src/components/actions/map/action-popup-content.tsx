@@ -21,6 +21,7 @@ import {
 import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { useActionPopupScores } from "./use-action-popup-scores";
+import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
 import {
   formatGeometryModeLabel,
   formatGeometryPointCount,
@@ -85,6 +86,10 @@ export function ActionPopupContent({
     cigaretteButts: butts,
     volunteersCount: volunteers,
   });
+  const revisitPriority = isAction
+    ? presentActionRevisitPriority(score, mapItemObservedAt(item))
+        .revisitPriority
+    : null;
   const isJoinableAction =
     item.status === "approved" &&
     (item.record_type === "action" || contract?.type === "action");
@@ -124,6 +129,7 @@ export function ActionPopupContent({
         observedAt={observedAt}
         wasteKg={wasteKg}
         butts={butts}
+        revisitPriority={revisitPriority}
       />
 
       <ActionPopupContentBody

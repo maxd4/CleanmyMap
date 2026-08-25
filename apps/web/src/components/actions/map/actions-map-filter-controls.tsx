@@ -14,10 +14,12 @@ const STATUS_OPTIONS: Array<{ value: ActionsMapStatusFilter; label: string }> = 
 ];
 
 const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
-  { value: "blue", label: "Lieux propres" },
-  { value: "green", label: "Faible" },
-  { value: "yellow", label: "Moyen/Fort" },
+  { value: "blue", label: "Faible" },
+  { value: "orange", label: "Moyen" },
+  { value: "red", label: "Fort" },
   { value: "violet", label: "Critique" },
+  { value: "black", label: "Extrême" },
+  { value: "green", label: "Lieux propres" },
   { value: "bin", label: "Bacs" },
   { value: "ashtray", label: "Cendriers" },
   { value: "combo", label: "Combinés" },

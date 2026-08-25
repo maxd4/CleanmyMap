@@ -37,7 +37,7 @@ export function MapSidebarAid() {
           <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-700">
             <li className="flex items-start gap-2">
               <Compass size={14} className="mt-0.5 shrink-0 text-sky-700" />
-              <span>Couleur = niveau pollution. Bleu, vert, jaune, violet.</span>
+              <span>Action = pollution constatée et priorité de revisite : bleu, orange, rouge, violet, noir. Vert = lieu propre.</span>
             </li>
             <li className="flex items-start gap-2">
               <Compass size={14} className="mt-0.5 shrink-0 text-sky-700" />

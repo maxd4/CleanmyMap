@@ -1,3 +1,5 @@
+import { formatObservedDate } from "./action-popup-content.helpers";
+
 type GeometryTooltipContentProps = {
   title: string;
   geometryModeLabel: string;
@@ -5,6 +7,11 @@ type GeometryTooltipContentProps = {
   geometryMetricLabel: string | null;
   geometryConfidenceLabel: string | null;
   color: string;
+  actionReading?: {
+    observedScore: number;
+    lastAction: string;
+    revisitPriority: number;
+  };
 };
 
 export function GeometryTooltipContent({
@@ -14,6 +21,7 @@ export function GeometryTooltipContent({
   geometryMetricLabel,
   geometryConfidenceLabel,
   color,
+  actionReading,
 }: GeometryTooltipContentProps) {
   return (
     <div className="min-w-[150px] rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.5)] backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-950/95">
@@ -43,6 +51,14 @@ export function GeometryTooltipContent({
           </span>
         )}
       </div>
+
+      {actionReading ? (
+        <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
+          <p>Pollution constatée : {Math.round(actionReading.observedScore)}/100</p>
+          <p>Dernière action : {formatObservedDate(actionReading.lastAction)}</p>
+          <p>Priorité de revisite : {Math.round(actionReading.revisitPriority)}/100</p>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -15,18 +15,20 @@ import { divIcon, type Map as LeafletMap } from "leaflet";
 import { Info } from "lucide-react";
 import { ActionMapItem } from "@/lib/actions/types";
 import {
-  mapItemCigaretteButts,
   mapItemCoordinates,
-  mapItemWasteKg,
+  mapItemObservedAt,
+  mapItemType,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
 import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
 import {
   resolveInfrastructureEmoji,
+  CLEAN_PLACE_COLOR,
   resolveDynamicColor,
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
+import { presentActionRevisitPriority } from "@/lib/actions/revisit-priority";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import { ActionPopupContent } from "./action-popup-content";
 import {
@@ -43,7 +45,6 @@ import {
 } from "./map-cluster.utils";
 import { GeometryTooltipContent } from "./map-geometry-tooltip-content";
 import {
-  formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
   formatGeometryPointCount,
   formatActionGeometryTooltipTitle,
@@ -62,7 +63,6 @@ type LeafletClusterLike = {
   getChildCount: () => number;
 };
 
-export const ACTION_MAP_COLOR = "#0284c7";
 export const ACTION_TRACE_HIT_AREA_WEIGHT = 18;
 export const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
 
@@ -85,18 +85,18 @@ export function fitActionGeometryBounds(
 export function resolvePointColor(
   item: ActionMapItem,
   references?: PollutionScoreReferences | null,
+  now: string | Date | number = new Date(),
 ): string {
-  if (isActionMapItem(item)) {
-    return ACTION_MAP_COLOR;
+  if (mapItemType(item) === "clean_place") {
+    return CLEAN_PLACE_COLOR;
   }
 
-  const score = resolveItemPollutionScores(item, references).severityScore;
-  if (
-    (mapItemWasteKg(item) ?? 0) <= 0 &&
-    (mapItemCigaretteButts(item) ?? 0) <= 0
-  ) {
-    return "#0284c7"; // Bleu propre
-  }
+  const observedScore = resolveItemPollutionScores(item, references).severityScore;
+  const score = isActionMapItem(item)
+    ? presentActionRevisitPriority(observedScore, mapItemObservedAt(item), now)
+        .revisitPriority
+    : observedScore;
+
   return resolveDynamicColor(score);
 }
 
@@ -116,6 +116,7 @@ export function SignalementMarkers({
   onSelectAction?: (actionId: string) => void;
 }) {
   const { references } = useActionPollutionScoreReferences();
+  const now = new Date();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -178,7 +179,7 @@ export function SignalementMarkers({
           return null;
         }
 
-        const color = resolvePointColor(item, references);
+        const color = resolvePointColor(item, references, now);
         const geometry = resolveActionMapGeometryViewModel(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const isFallbackPoint = geometry.presentation.strokeStyle === "point";
@@ -240,6 +241,7 @@ export function ShapeLayers({
 }) {
   const { references } = useActionPollutionScoreReferences();
   const map = useMap();
+  const now = new Date();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -264,8 +266,22 @@ export function ShapeLayers({
         }
 
         const pollutionScores = resolveItemPollutionScores(item, references);
-        const color = resolvePointColor(item, references);
+        const color = resolvePointColor(item, references, now);
         const score = pollutionScores.severityScore;
+        const actionPriority = isActionMapItem(item)
+          ? presentActionRevisitPriority(
+              score,
+              mapItemObservedAt(item),
+              now,
+            )
+          : null;
+        const actionTooltipReading = actionPriority
+          ? {
+              observedScore: actionPriority.observedScore,
+              lastAction: mapItemObservedAt(item),
+              revisitPriority: actionPriority.revisitPriority,
+            }
+          : undefined;
         const coords = mapItemCoordinates(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const geometryModeLabel = formatGeometryModeLabel(geometry.presentation);
@@ -324,6 +340,7 @@ export function ShapeLayers({
                   geometryMetricLabel={geometryMetricLabel}
                   geometryConfidenceLabel={geometryConfidenceLabel}
                   color={color}
+                  actionReading={actionTooltipReading}
                 />
               </Tooltip>
               <Popup className="glass-popup custom-popup">
@@ -378,6 +395,7 @@ export function ShapeLayers({
                   geometryMetricLabel={geometryMetricLabel}
                   geometryConfidenceLabel={geometryConfidenceLabel}
                   color={color}
+                  actionReading={actionTooltipReading}
                 />
               </Tooltip>
               <Popup className="glass-popup custom-popup">

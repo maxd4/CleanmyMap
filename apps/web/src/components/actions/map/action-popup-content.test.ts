@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { resolveActionTitle } from "./action-popup-content.helpers";
 import { ActionPopupContentBody } from "./action-popup-content-body";
+import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 
 function buildActionItem(
@@ -66,6 +67,46 @@ describe("action popup presentation", () => {
     expect(markup).not.toContain("Priorité d'intervention");
     expect(markup).not.toContain("Déclarer une action");
     expect(markup).not.toContain("pollution");
+  });
+
+  it("labels observed pollution and revisit priority separately", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentHeader, {
+        recordTypeLabel: "Action terrain",
+        locationLabel: "Quai de test",
+        actionTitle: "Nettoyage du quai",
+        isAction: true,
+        color: "hsl(35, 90%, 50%)",
+        score: 42,
+        scoreLoading: false,
+        scoreReading: {
+          label: "Moyen/Fort",
+          guidance: "Passage à planifier",
+          tone: "amber",
+        },
+        scoreSourceLabel: "Score observé",
+        wasteScore: 42,
+        buttsScore: 20,
+        statusLabel: "Validée",
+        placeType: null,
+        quality: null,
+        geometryLabel: "Parcours déclaré",
+        geometryModeLabel: "Parcours connu",
+        geometryPointLabel: "2 points",
+        geometryConfidenceLabel: null,
+        geometryMetricLabel: "Longueur ~ 1 km",
+        geometryReality: "real",
+        observedAt: "08/04/2026",
+        wasteKg: 5,
+        butts: 42,
+        revisitPriority: 47.2,
+      }),
+    );
+
+    expect(markup).toContain("Pollution constatée");
+    expect(markup).toContain("Dernière action");
+    expect(markup).toContain("Priorité de revisite");
+    expect(markup).not.toContain("pollution actuelle");
   });
 
   it("offers explicit trace framing when the map provides the action", () => {
