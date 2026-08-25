@@ -8,6 +8,7 @@ import {
   mapItemObservedAt,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import { ActionMapItem } from "@/lib/actions/types";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
@@ -134,7 +135,10 @@ export function ActionPopupContent({
         arrival={arrival ?? null}
         notes={notes ?? null}
         observedAt={observedAt}
-        sourceLabel={`Source: ${contract?.source ?? item.source ?? "n/a"}`}
+        sourceLabel={`Source: ${formatActionSourceLabel(
+          contract?.source ?? item.source ?? "n/a",
+          "fr",
+        )}`}
         updateHref={updateHref}
         joinHref={joinHref}
         joinStatusLabel={joinStatusLabel}
