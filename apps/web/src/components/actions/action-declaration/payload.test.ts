@@ -116,6 +116,28 @@ describe("action declaration payload helpers", () => {
     expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
   });
 
+  it("stores canonical waste expectations and supplements manual preparation notes", () => {
+    const form = buildBaseForm();
+    form.wasteCategories = ["broken_glass", "sharps"];
+    form.safetyInstructions = "Consigne organisateur";
+    form.recommendedMaterials = "Sacs renforcés";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.preparationData?.expectedWasteCategories).toEqual(["broken_glass", "sharps"]);
+    expect(payload.preparationData?.safetyInstructions).toContain("Consigne organisateur");
+    expect(payload.preparationData?.safetyInstructions).toContain("Balisser");
+    expect(payload.preparationData?.recommendedMaterials).toContain("Gants anti-coupure");
+  });
+
   it("keeps the record type in the payload", () => {
     const form = buildBaseForm();
     form.recordType = "clean_place";

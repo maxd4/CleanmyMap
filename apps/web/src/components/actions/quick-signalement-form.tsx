@@ -5,22 +5,15 @@ import { Camera, MapPin, CheckCircle, AlertTriangle, Loader2, ArrowRight } from 
 import { createAction } from "@/lib/actions/http";
 import { normalizeActionPhotos } from "@/lib/actions/vision";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import { logFailure } from "@/lib/logging/failure-log";
-import { getWasteCategory } from "@/lib/waste";
-
-const WASTE_TYPES = [
-  { id: "megots", label: getWasteCategory("cigarette_butt").labels.fr, icon: "🚬", color: "amber" },
-  { id: "plastique", label: getWasteCategory("plastic").labels.fr, icon: "🥤", color: "blue" },
-  { id: "encombrant", label: getWasteCategory("bulky_furniture").labels.fr, icon: "🛋️", color: "rose" },
-  { id: "mixte", label: getWasteCategory("mixed_residual").labels.fr, icon: "🥡", color: "emerald" },
-];
+import type { WasteCategorySlug } from "@/lib/waste";
+import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 
 export function QuickSignalementForm() {
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<WasteCategorySlug[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locStatus, setLocStatus] = useState<"idle" | "locating" | "success" | "error">("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +40,7 @@ export function QuickSignalementForm() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!selectedType || !location) return;
+    if (selectedCategories.length === 0 || !location) return;
     if (!acquire()) {
       setError("Un signalement est déjà en cours. Réessayez dans un instant.");
       return;
@@ -60,7 +53,7 @@ export function QuickSignalementForm() {
       const photoAssets = photos.length > 0 ? await normalizeActionPhotos(photos.slice(0, 3)) : [];
       await createAction({
         actionDate: new Date().toISOString().split("T")[0],
-        locationLabel: `Signalement Rapide (${selectedType})`,
+        locationLabel: `Signalement Rapide (${selectedCategories.join(", ")})`,
         latitude: location.lat,
         longitude: location.lng,
         wasteKg: 0,
@@ -69,13 +62,14 @@ export function QuickSignalementForm() {
         durationMinutes: 0,
         submissionMode: "quick",
         recordType: "spot",
-        notes: `Signalement mobile express pour type: ${selectedType}`,
+        notes: `Signalement mobile express pour catégories: ${selectedCategories.join(", ")}`,
+        preparationData: { expectedWasteCategories: selectedCategories },
         photos: photoAssets,
       });
       setIsSuccess(true);
     } catch (err) {
       logFailure("QuickSignalement", "Submission failed", err, {
-        selectedType,
+        selectedCategories,
         hasLocation: Boolean(location),
       });
       setError("Transmission échouée. Vérifiez votre GPS et réessayez.");
@@ -98,7 +92,7 @@ export function QuickSignalementForm() {
         </div>
         <div className="pt-6 flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
           <button 
-            onClick={() => { setIsSuccess(false); setSelectedType(null); }}
+            onClick={() => { setIsSuccess(false); setSelectedCategories([]); }}
             className="flex-1 py-6 rounded-[2rem] bg-white text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-400 transition-all active:scale-95"
           >
             Nouveau Signalement
@@ -125,28 +119,13 @@ export function QuickSignalementForm() {
             {locStatus === "error" && <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-400/10 border border-rose-400/20 text-[9px] font-black text-rose-400 uppercase tracking-widest"><AlertTriangle size={10} /> GPS Error</div>}
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {WASTE_TYPES.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => setSelectedType(type.id)}
-              className={cn(
-                "group flex flex-col items-center justify-center gap-4 p-8 rounded-[2.5rem] border transition-all duration-500",
-                selectedType === type.id 
-                  ? "bg-white border-white scale-95 shadow-2xl" 
-                  : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
-              )}
-            >
-              <span className="text-4xl transition-transform group-hover:scale-110 duration-500">{type.icon}</span>
-              <span className={cn(
-                "text-[10px] font-black uppercase tracking-widest transition-colors",
-                selectedType === type.id ? "text-black" : "text-white/40"
-              )}>
-                {type.label}
-              </span>
-            </button>
-          ))}
-        </div>
+        <WasteCategorySelector
+          value={selectedCategories}
+          onChange={setSelectedCategories}
+          idPrefix="quick-signalement-waste"
+          className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4"
+        />
+        <WasteFieldSummary value={selectedCategories} className="border-white/10 bg-white/[0.06] text-white" />
       </div>
 
       <div className="space-y-6">
@@ -186,7 +165,7 @@ export function QuickSignalementForm() {
         
         <button
           onClick={handleSubmit}
-          disabled={!selectedType || !location || isSubmitting || isPreparingPhotos}
+          disabled={selectedCategories.length === 0 || !location || isSubmitting || isPreparingPhotos}
           className="group relative w-full overflow-hidden rounded-[2.5rem] bg-emerald-500 p-8 text-black transition-all hover:bg-emerald-400 disabled:opacity-20 disabled:grayscale active:scale-[0.98] shadow-2xl shadow-emerald-500/20"
         >
           <div className="relative z-10 flex items-center justify-center gap-4">

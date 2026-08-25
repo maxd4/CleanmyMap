@@ -7,6 +7,8 @@ import { TrashBinGauge } from "../ui/harvest-gauges";
 import { formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../../action-declaration-form.model";
+import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -25,7 +27,8 @@ type HarvestWasteSectionProps = {
   wasteMixteKg: string;
   triQuality: FormState["triQuality"];
   notes: string;
-  onTriChange: <K extends "wastePlastiqueKg" | "wasteVerreKg" | "wasteMetalKg" | "wasteMixteKg" | "triQuality" | "notes">(
+  wasteCategories: WasteCategorySlug[];
+  onTriChange: <K extends "wastePlastiqueKg" | "wasteVerreKg" | "wasteMetalKg" | "wasteMixteKg" | "triQuality" | "notes" | "wasteCategories">(
     key: K, value: FormState[K]
   ) => void;
 };
@@ -48,6 +51,7 @@ export function HarvestWasteSection({
   wasteMixteKg,
   triQuality,
   notes,
+  wasteCategories,
   onTriChange,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
@@ -122,6 +126,15 @@ export function HarvestWasteSection({
       <p className="text-[10px] text-slate-400 text-right">
         {sourceLabel}{confidenceLabel ? ` · ${confidenceLabel}` : ""}
       </p>
+
+      <div className="border-t border-slate-100 pt-4">
+        <WasteCategorySelector
+          value={wasteCategories}
+          onChange={(value) => onTriChange("wasteCategories", value)}
+          idPrefix="harvest-waste"
+        />
+        <WasteFieldSummary value={wasteCategories} className="mt-4" />
+      </div>
 
       {/* ── Tri détaillé (dépliable) ──────────────────────────────────── */}
       <div className="border-t border-slate-100 pt-4">

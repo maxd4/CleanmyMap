@@ -93,6 +93,7 @@ export function ActionStepHarvest({
             wasteMixteKg={form.wasteMixteKg}
             triQuality={form.triQuality}
             notes={form.notes}
+            wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}
           />
           <HarvestMegotsSection
@@ -126,5 +127,3 @@ export function ActionStepHarvest({
     </div>
   );
 }
-
-

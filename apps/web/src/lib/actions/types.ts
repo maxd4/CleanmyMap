@@ -14,6 +14,7 @@ export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
 export type ActionSourceName = "actions" | "spots" | "local";
 
 import type { ActionDataQualitySummary } from "./data-quality";
+import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -58,6 +59,7 @@ export type ActionPreparationData = {
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;
   groupJoinEnabled?: boolean;
+  expectedWasteCategories?: WasteCategorySlug[];
 };
 
 export type ActionPhotoAsset = {
