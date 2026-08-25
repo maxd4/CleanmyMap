@@ -183,7 +183,12 @@ export function buildLifecycleEstimate(
       totalKgCo2eProxy: totalKgCo2eProxy ?? 0,
       axisEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => ({
         ...definition,
-        quantity: definition.key === "energy" ? usageProfile.monthlyElectricityKwh ?? null : 0,
+        quantity:
+          definition.key === "energy"
+            ? usageProfile.monthlyElectricityKwh ?? null
+            : definition.key === "water"
+              ? null
+              : 0,
         estimatedKgCo2eProxy: 0,
         sharePercent: 0,
         source,
@@ -251,9 +256,10 @@ export function buildLifecycleEstimate(
               ? score / nonEnergyScoreTotal
               : definition.referenceWeight / Math.max(1, nonEnergyWeightTotal)),
         );
-    const quantity =
-      isEnergy
-        ? usageProfile.monthlyElectricityKwh ?? null
+    const quantity = isEnergy
+      ? usageProfile.monthlyElectricityKwh ?? null
+      : definition.key === "water"
+        ? null
         : round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
 
     return {

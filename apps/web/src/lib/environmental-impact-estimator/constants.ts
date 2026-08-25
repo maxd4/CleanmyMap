@@ -23,6 +23,22 @@ export const ENVIRONMENTAL_IMPACT_ELECTRICITY_FACTOR = {
   ],
 } as const;
 
+/**
+ * Configurable U.S. average proxy for indirect water consumption associated
+ * with electricity used by data centers. Replace it with a location-specific
+ * factor when the provider/grid location is known.
+ */
+export const ENVIRONMENTAL_IMPACT_WATER_FACTOR = {
+  litersPerKwh: 4.52,
+  region: "Électricité associée à des data centers américains",
+  sourceLabel: "LBNL — 2024 United States Data Center Energy Usage Report",
+  sourceUrl: "https://doi.org/10.71468/P1WC7Q",
+  isProxy: true,
+} as const;
+
+export const ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE =
+  "Le CO₂e agrège plusieurs gaz à effet de serre en équivalent CO₂. Pour l’électricité, le CO₂ domine généralement les émissions de combustion ; CH₄ et N₂O sont inclus lorsque le facteur utilisé les couvre.";
+
 export const ENVIRONMENTAL_IMPACT_ESTIMATOR_HYPOTHESES = [
   "Les mesures sont des proxys d'usage et non un bilan carbone certifié.",
   "Une donnée absente signifie 'non branchée' et non zéro.",
@@ -70,7 +86,7 @@ export const ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS = [
 
 export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES = [
   "Le deuxième ordre décompose l'impact total en familles lisibles plutôt qu'en une moyenne globale.",
-  "Le CO2 brut, l'équivalent électrique, les autres GES, les produits chimiques et l'eau sont exprimés comme proxys auditables; l'équivalent électrique n'est pas un kWh mesuré.",
+  "Le deuxième ordre exprime des familles CO₂e comme proxys auditables; l'équivalent électrique n'est pas un kWh mesuré et l'eau est traitée dans un contrat séparé.",
   "Les parts sont normalisées à partir des signaux réels du projet pour rester spécifiques à CleanMyMap.",
   "Les quantités affichées sont des équivalents de travail, pas des mesures physiques certifiées.",
   "Le deuxième ordre doit permettre la priorisation, pas prétendre à une ACV complète.",
@@ -107,12 +123,12 @@ export const ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS = [
   },
   {
     key: "water",
-    label: "Eau",
-    unitLabel: "L",
-    proxyKgCo2ePerUnit: 0.00012,
+    label: "Proxy hydrique CO₂e",
+    unitLabel: "kg CO₂e proxy",
+    proxyKgCo2ePerUnit: 1,
     referenceWeight: 0.14,
     rationale:
-      "Proxy hydrique associé à l'infrastructure, au stockage et aux services énergivores.",
+      "Allocation de lecture carbone; ne représente pas des litres d'eau mesurés. La lecture en litres est fournie séparément par le contrat eau.",
   },
   {
     key: "materials",
@@ -225,9 +241,9 @@ export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
       "Ancrage donné pour le développement assisté et l'usage numérique associé à la première moitié du site CleanMyMap.",
     kWhEquivalent: 100,
     kgCo2eProxy: 20,
-    waterLitersEquivalent: 100,
+    waterLitersEquivalent: null,
     comparisonNote:
-      "Ordre de grandeur comparable à 200 km de voiture, une semaine de vie d'un français moyen en énergie et une dizaine de douches en eau.",
+      "Ordre de grandeur comparable à 200 km de voiture et une semaine de vie d'un français moyen en énergie; aucune eau n'est estimée sans signal dédié.",
   },
   {
     key: "annual-volunteer-usage-paris",
@@ -256,11 +272,11 @@ export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
 export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
   {
     key: "grossCo2",
-    label: "CO2 brut",
-    unitLabel: "kg CO2 brut",
+    label: "Proxy de carbone CO₂e",
+    unitLabel: "kg CO₂e proxy",
     proxyKgCo2ePerUnit: 1,
     referenceWeight: 0.28,
-    rationale: "Part directe du carbone fossile ou opérationnel exprimée sans conversion supplémentaire.",
+    rationale: "Allocation heuristique de lecture; ne constitue pas un inventaire de CO₂ brut mesuré.",
   },
   {
     key: "electricity",
@@ -272,11 +288,11 @@ export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
   },
   {
     key: "otherGhgs",
-    label: "Autres gaz à effet de serre",
-    unitLabel: "kg CO2e",
+    label: "Proxy de GES inclus dans le CO₂e",
+    unitLabel: "kg CO₂e proxy",
     proxyKgCo2ePerUnit: 1,
     referenceWeight: 0.16,
-    rationale: "Part des gaz autres que le CO2 déjà exprimée en équivalent CO2e.",
+    rationale: "Allocation heuristique; ne constitue pas une mesure séparée de CH₄ ou N₂O et ne s'ajoute pas au total CO₂e.",
   },
   {
     key: "chemicals",
@@ -288,11 +304,11 @@ export const ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS = [
   },
   {
     key: "water",
-    label: "Consommation en eau",
-    unitLabel: "L",
-    proxyKgCo2ePerUnit: 0.00012,
+    label: "Proxy hydrique CO₂e",
+    unitLabel: "kg CO₂e proxy",
+    proxyKgCo2ePerUnit: 1,
     referenceWeight: 0.10,
-    rationale: "Proxy hydrique ramené à un équivalent CO2e pour la lecture comparative.",
+    rationale: "Allocation de lecture carbone; elle ne représente pas des litres d'eau et ne remplace pas le contrat eau séparé.",
   },
 ] as const satisfies readonly import("./types").EnvironmentalImpactSecondOrderFactorDefinition[];
 

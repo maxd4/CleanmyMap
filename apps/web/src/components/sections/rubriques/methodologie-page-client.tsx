@@ -26,9 +26,11 @@ import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type {
   EnvironmentalImpactElectricityEstimate,
+  EnvironmentalImpactWaterEstimate,
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactSnapshotRecord,
 } from "@/lib/environmental-impact-estimator/types";
+import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
 import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
@@ -71,6 +73,7 @@ type MethodologiePageClientProps = {
   impactLaunchedAt: string | null;
   githubStats: GitHubRepositoryStats | null;
   impactElectricity?: EnvironmentalImpactElectricityEstimate | null;
+  impactWater?: EnvironmentalImpactWaterEstimate | null;
 };
 
 function MethodologyCard({
@@ -337,6 +340,7 @@ export function MethodologiePageClient({
   impactLaunchedAt,
   githubStats,
   impactElectricity,
+  impactWater,
 }: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
@@ -346,6 +350,13 @@ export function MethodologiePageClient({
   const classes = getBlockClasses("impact");
   const electricity =
     impactElectricity ?? buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
+  const water =
+    impactWater ??
+    buildWaterEstimate({
+      monthlyElectricityKwh: null,
+      monthlyDirectWaterConsumptionLiters: null,
+      monthlyEvaporatedWaterLiters: null,
+    });
 
   return (
     <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-10">
@@ -658,6 +669,23 @@ export function MethodologiePageClient({
                 </p>
                 <p className="mt-3 text-xs leading-relaxed text-red-100/45">
                   Le facteur sera remplacé lorsqu’une localisation électrique réelle du fournisseur sera connue.
+                </p>
+              </section>
+              <section className="rounded-[2.5rem] border border-red-400/20 bg-red-400/5 p-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/60">
+                  Méthode eau
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
+                  Eau estimée : composantes et limites
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-red-100/65">
+                  Eau directe consommée sur site : {water.directWaterConsumptionLiters === null ? "à compléter" : "signal fourni"}. Eau indirecte liée à l’électricité : {water.indirectElectricityWaterLiters === null ? "à compléter" : "kWh × facteur configuré"}. Le facteur actuel est {water.factorLitersPerKwh} L/kWh ({water.factorSourceLabel}) et reste un proxy remplaçable lorsqu’une localisation électrique réelle est connue.
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-red-100/55">
+                  L’eau reste dans le cycle hydrologique global, mais l’eau évaporée est consommée localement car elle n’est plus immédiatement disponible dans le même bassin. Retrait et consommation ne sont pas interchangeables : l’eau retournée dépend du lieu, du moment, de la température et de la qualité. La pression dépend aussi du stress hydrique et des conflits locaux, pas seulement des litres.
+                </p>
+                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                  {water.provenance.join(" ")}
                 </p>
               </section>
               <FreePlanServicesMethodologyVisual

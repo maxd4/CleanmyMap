@@ -17,7 +17,7 @@ Il sert à rendre la contribution de chaque service, poste et journal projet vis
 - Quand une donnée manque, elle est signalée comme non branchée plutôt que remplacée par zéro.
 - Les bornes basses et hautes matérialisent l'incertitude des proxys.
 - Le détail par point affiche la répartition en pourcentage des postes sur la semaine sélectionnée.
-- Un deuxième ordre de lecture décompose le total en CO2 brut, équivalent électrique estimé, autres GES, produits chimiques et eau. La carte électrique indique si un kWh réel a été converti ou si la valeur reste un proxy.
+- Un deuxième ordre de lecture répartit le total en proxys de lecture (carbone, équivalent électrique, GES inclus, chimie et proxy hydrique). Ces familles ne constituent pas un inventaire physique séparé. La carte électrique indique si un kWh réel a été converti ou si la valeur reste un proxy; l'eau est documentée dans un contrat séparé et n'est jamais reconstruite depuis le CO₂e.
 
 ## Composition du calcul
 

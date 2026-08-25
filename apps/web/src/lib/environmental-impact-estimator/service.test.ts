@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildElectricityEstimate,
+  buildWaterEstimate,
   calculateElectricityCo2e,
+  calculateIndirectElectricityWater,
   computeEnvironmentalImpactEstimate,
   normalizeEnvironmentalImpactEstimateInput,
 } from "./index";
@@ -269,6 +271,46 @@ describe("environmental impact estimator", () => {
     expect(model.methodology.notes.join(" ")).toContain("plus de 30 %");
     expect(model.methodology.notes.join(" ")).not.toContain("un tiers du trafic");
     expect(model.methodology.notes.join(" ")).not.toContain("la moitié");
+  });
+
+  it("keeps water separate, directional and incomplete when a component is missing", () => {
+    expect(calculateIndirectElectricityWater(10, 4.52)).toBe(45.2);
+    expect(calculateIndirectElectricityWater(null, 4.52)).toBeNull();
+    expect(buildWaterEstimate({
+      monthlyElectricityKwh: 10,
+      monthlyDirectWaterConsumptionLiters: 12,
+      monthlyEvaporatedWaterLiters: 4,
+    })).toMatchObject({
+      directWaterConsumptionLiters: 12,
+      evaporatedWaterLiters: 4,
+      indirectElectricityWaterLiters: 45.2,
+      totalWaterConsumptionLiters: 57.2,
+      factorLitersPerKwh: 4.52,
+      availability: "available",
+      source: "mixed",
+    });
+
+    const partial = computeEnvironmentalImpactEstimate({
+      infrastructure: {
+        usage: {
+          monthlyDirectWaterConsumptionLiters: 12,
+          monthlyPageViews: 1,
+        },
+      },
+    });
+    expect(partial.infrastructure.water.directWaterConsumptionLiters).toBe(12);
+    expect(partial.infrastructure.water.indirectElectricityWaterLiters).toBeNull();
+    expect(partial.infrastructure.water.totalWaterConsumptionLiters).toBeNull();
+    expect(partial.infrastructure.water.provenance.join(" ")).toContain("à compléter");
+
+    const empty = computeEnvironmentalImpactEstimate();
+    expect(empty.infrastructure.water.directWaterConsumptionLiters).toBeNull();
+    expect(empty.infrastructure.water.indirectElectricityWaterLiters).toBeNull();
+    expect(empty.infrastructure.water.totalWaterConsumptionLiters).toBeNull();
+    expect(empty.infrastructure.secondOrder.factorEstimates.find((item) => item.key === "water")?.quantity).toBeNull();
+    expect(empty.lifecycle.axisEstimates.find((item) => item.key === "water")?.quantity).toBeNull();
+    expect(empty.methodology.water).toEqual(empty.infrastructure.water);
+    expect(empty.methodology.notes.join(" ")).toContain("L'eau reste dans le cycle hydrologique global");
   });
 
   it("includes Codex weekly journal metrics as a separate infrastructure service", () => {

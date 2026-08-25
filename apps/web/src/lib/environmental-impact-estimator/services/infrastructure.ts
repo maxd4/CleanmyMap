@@ -1,6 +1,7 @@
 import { addMonths, addWeeks, differenceInCalendarMonths } from "date-fns";
 import {
   ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS,
+  ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES,
@@ -24,6 +25,7 @@ import type {
 } from "../types";
 import { buildUsageProfileEstimate, projectUsageProfileAtWeek } from "./usage-profile";
 import { buildElectricityEstimate } from "./electricity";
+import { buildWaterEstimate } from "./water";
 import {
   WEEKS_PER_MONTH,
   clamp,
@@ -380,7 +382,7 @@ export function buildInfrastructureSecondOrderEstimate(
       totalKgCo2eProxy: 0,
       factorEstimates: definitionEntries.map(({ definition }) => ({
         ...definition,
-        quantity: definition.key === "electricity" ? electricity.kWh : 0,
+        quantity: definition.key === "electricity" ? electricity.kWh : null,
         estimatedKgCo2eProxy:
           definition.key === "electricity" ? electricity.kgCo2e : 0,
         sharePercent: 0,
@@ -442,11 +444,7 @@ export function buildInfrastructureSecondOrderEstimate(
               ? score / nonElectricityScoreTotal
               : definition.referenceWeight / Math.max(1, nonElectricityWeightTotal)),
         );
-    const quantity = isElectricity
-      ? electricity.kWh
-      : estimatedKgCo2eProxy === null
-        ? null
-        : round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+    const quantity = isElectricity ? electricity.kWh : null;
 
     return {
       ...definition,
@@ -468,7 +466,8 @@ export function buildInfrastructureSecondOrderEstimate(
     factorEstimates,
     notes: [
       "Le deuxième ordre est une décomposition du total premier ordre, pas une couche additionnelle de double comptage.",
-      "Les quantités affichées sont des proxys de lecture calculés à partir des signaux CleanMyMap.",
+      "Cette lecture répartit le CO₂e en proxys de lecture; elle ne constitue pas un inventaire physique séparé.",
+      ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE,
       electricity.note,
     ],
     hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
@@ -643,6 +642,7 @@ export function buildInfrastructureEstimate(
     servicesWithShare,
     monthlyKgCo2eProxy,
   );
+  const water = buildWaterEstimate(usageProfile);
   return {
     mode,
     generatedAt: generatedAt.toISOString(),
@@ -654,6 +654,7 @@ export function buildInfrastructureEstimate(
     confidencePercent,
     uncertaintyPercent,
     usage: usageProfile,
+    water,
     services: servicesWithShare,
     curve,
     graph: {
@@ -672,8 +673,8 @@ export function buildInfrastructureEstimate(
       ...ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES,
       `Période de référence: ${referencePeriodMonths} mois.`,
       `Découpage du graphe: ${referencePeriodWeeks} semaines pour un point cliquable par semaine.`,
-      "Le deuxième ordre décompose le total en CO2 brut, équivalent électrique, autres GES, produits chimiques et eau.",
-      "La couche lifecycle complète le CO2e opérationnel avec une lecture de cycle de vie matérielle, eau et e-waste.",
+      "Le deuxième ordre fournit des proxys de lecture du CO₂e; il ne sépare pas physiquement le CO₂, les autres GES ou l'eau.",
+      "L'eau est exposée dans un contrat séparé qui distingue les composantes directes et indirectes; elle n'est jamais reconstruite depuis le CO₂e.",
       mode === "measured"
         ? "Les métriques évoluent à partir des signaux d'usage du site et des éventuels inputs explicites."
         : "Aucun signal d'usage n'est branché; les charges de référence sont utilisées.",

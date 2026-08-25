@@ -57,6 +57,10 @@ describe("/methodologie public page", () => {
       factorKgCo2ePerKwh: 0.35,
       calculation: "missing",
     });
+    expect(props.impactWater).toMatchObject({
+      factorLitersPerKwh: 4.52,
+      availability: "missing",
+    });
     expect(liveDashboardMock).not.toHaveBeenCalled();
   });
 
@@ -106,6 +110,10 @@ describe("/methodologie public page", () => {
     expect(props.impactElectricity).toMatchObject({
       factorKgCo2ePerKwh: 0.35,
       calculation: "missing",
+    });
+    expect(props.impactWater).toMatchObject({
+      factorLitersPerKwh: 4.52,
+      availability: "missing",
     });
     expect(liveDashboardMock).not.toHaveBeenCalled();
   });
