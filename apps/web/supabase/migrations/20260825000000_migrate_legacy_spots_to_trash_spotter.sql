@@ -71,10 +71,10 @@ select
   'spot',
   legacy.latitude,
   legacy.longitude,
-  legacy.derived_geometry_kind,
-  legacy.derived_geometry_geojson,
-  legacy.geometry_confidence,
-  legacy.geometry_source,
+  null,
+  null,
+  null,
+  null,
   legacy.status,
   legacy.notes
 from public.legacy_spot_migrations migration
