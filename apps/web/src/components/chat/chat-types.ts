@@ -13,6 +13,8 @@ export type ChatMessage = {
   related_event_id: string | null;
   related_event: ChatRelatedEvent | null;
   poll_options: ChatPollOption[];
+  totalVotes?: number;
+  selectedOptionId?: string | null;
   attachment_url?: string;
   attachment_type?: string | null;
   attachment_expires_at?: string | null;

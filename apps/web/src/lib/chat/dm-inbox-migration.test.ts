@@ -36,6 +36,13 @@ const pollsMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const pollVotesMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260826030000_chat_poll_votes.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
 
 it("creates an isolated per-user, per-peer read cursor with RLS", () => {
   expect(migration).toContain("create table if not exists public.chat_dm_read_states");
@@ -138,4 +145,24 @@ it("adds poll options with atomic RPC, ordering, cascade and RLS boundaries", ()
   expect(pollsMigration).toContain("message_kind <> 'poll'");
   expect(pollsMigration).toContain("related_event_id is null");
   expect(pollsMigration).toContain("attachment_url is null");
+});
+
+it("adds private one-vote-per-user rows and aggregate-only poll reads", () => {
+  expect(pollVotesMigration).toContain("create table if not exists public.chat_poll_votes");
+  expect(pollVotesMigration).toContain("unique (message_id, user_id)");
+  expect(pollVotesMigration).toContain("foreign key (message_id, option_id)");
+  expect(pollVotesMigration).toContain("references public.chat_poll_options(message_id, id)");
+  expect(pollVotesMigration).toContain("on delete cascade");
+  expect(pollVotesMigration).toContain("alter table public.chat_poll_votes enable row level security");
+  expect(pollVotesMigration).toContain("chat_poll_votes_select_own");
+  expect(pollVotesMigration).toContain("chat_poll_votes_insert_own");
+  expect(pollVotesMigration).toContain("chat_poll_votes_update_own");
+  expect(pollVotesMigration).toContain("chat_poll_votes_delete_own");
+  expect(pollVotesMigration).toContain("validate_chat_poll_vote_parent");
+  expect(pollVotesMigration).toContain("get_my_chat_poll_vote_summaries(uuid[])");
+  expect(pollVotesMigration).toContain("security definer");
+  expect(pollVotesMigration).toContain("message_kind = 'poll'");
+  expect(pollVotesMigration).toContain("channel_type = 'community'");
+  expect(pollVotesMigration).toContain("selected_option_id");
+  expect(pollVotesMigration).toContain("user_id = coalesce((select auth.jwt()) ->> 'sub', '')");
 });

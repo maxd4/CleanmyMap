@@ -46,6 +46,11 @@ import {
   createInitialChatPollOptionDraft,
   getChatPollOptionsValidationError,
 } from "@/lib/chat/polls";
+import {
+  applyChatPollVoteSummary,
+  applyOptimisticChatPollVote,
+  normalizeChatPollVoteResponse,
+} from "@/lib/chat/poll-votes";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageItem } from "./ui/chat-message-item";
 import {
@@ -219,6 +224,7 @@ export function ChatShell({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
+    mutateMessages,
     isLive,
   } = useChatData({
     activeChannelType,
@@ -257,6 +263,9 @@ export function ChatShell({
   const [pollOptions, setPollOptions] = useState<string[]>(
     createInitialChatPollOptionDraft,
   );
+  const [pollVoteStates, setPollVoteStates] = useState<
+    Record<string, { pending: boolean; error: string | null }>
+  >({});
   const announcementMode = composerMode === "announcement";
 
   useEffect(() => {
@@ -313,6 +322,91 @@ export function ChatShell({
       }
     },
     [refreshInbox, sendChatMessage],
+  );
+
+  const handlePollVote = useCallback(
+    async (messageId: string, optionId: string | null) => {
+      const currentMessage = messages.find((candidate) => candidate.id === messageId);
+      if (!currentMessage || currentMessage.message_kind !== "poll") {
+        return;
+      }
+
+      const currentState = pollVoteStates[messageId];
+      if (currentState?.pending || currentMessage.selectedOptionId === optionId) {
+        return;
+      }
+
+      setPollVoteStates((states) => ({
+        ...states,
+        [messageId]: { pending: true, error: null },
+      }));
+      await mutateMessages(
+        (data) => ({
+          messages: (data?.messages ?? []).map((message) =>
+            message.id === messageId
+              ? applyOptimisticChatPollVote(message, optionId)
+              : message,
+          ),
+        }),
+        { revalidate: false },
+      );
+
+      try {
+        const response = await fetch(`/api/chat/polls/${encodeURIComponent(messageId)}/vote`, {
+          method: optionId ? "PUT" : "DELETE",
+          headers: optionId ? { "Content-Type": "application/json" } : undefined,
+          body: optionId ? JSON.stringify({ optionId }) : undefined,
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          const errorPayload = payload as { hint?: unknown; error?: unknown } | null;
+          throw new Error(
+            typeof errorPayload?.hint === "string"
+              ? errorPayload.hint
+              : typeof errorPayload?.error === "string"
+                ? errorPayload.error
+                : "Votre vote n'a pas pu être enregistré.",
+          );
+        }
+
+        const summary = normalizeChatPollVoteResponse(payload);
+        if (!summary) {
+          throw new Error("La réponse du sondage est invalide.");
+        }
+
+        await mutateMessages(
+          (data) => ({
+            messages: (data?.messages ?? []).map((message) =>
+              message.id === messageId
+                ? applyChatPollVoteSummary(message, summary)
+                : message,
+            ),
+          }),
+          { revalidate: false },
+        );
+        setPollVoteStates((states) => ({
+          ...states,
+          [messageId]: { pending: false, error: null },
+        }));
+      } catch (error) {
+        await mutateMessages(
+          (data) => ({
+            messages: (data?.messages ?? []).map((message) =>
+              message.id === messageId ? currentMessage : message,
+            ),
+          }),
+          { revalidate: false },
+        );
+        setPollVoteStates((states) => ({
+          ...states,
+          [messageId]: {
+            pending: false,
+            error: error instanceof Error ? error.message : "Vote indisponible.",
+          },
+        }));
+      }
+    },
+    [messages, mutateMessages, pollVoteStates],
   );
 
   const { handleSend } = useChatSubmit({
@@ -847,7 +941,15 @@ export function ChatShell({
                   />
                 )}
                 {messages.map((msg) => (
-                  <ChatMessageItem key={msg.id} message={msg} userId={userId} tone={isLight ? "light" : "dark"} />
+                  <ChatMessageItem
+                    key={msg.id}
+                    message={msg}
+                    userId={userId}
+                    tone={isLight ? "light" : "dark"}
+                    onPollVote={handlePollVote}
+                    pollVotePending={pollVoteStates[msg.id]?.pending}
+                    pollVoteError={pollVoteStates[msg.id]?.error}
+                  />
                 ))}
               </div>
 

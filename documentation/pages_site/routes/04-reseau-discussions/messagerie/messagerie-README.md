@@ -20,14 +20,14 @@
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : lots 1 à 4A livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires et création de sondages
-- **Terminée** : création et lecture des sondages oui ; votes, résultats, multi-choix et clôture restent hors périmètre.
+- **Scope** : lots 1 à 4B livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires, création et vote des sondages
+- **Terminée** : création, lecture, vote, changement et retrait d'un vote oui ; résultats agrégés oui ; multi-choix, expiration et clôture restent hors périmètre.
 - **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
 - **Annonces** : `message_kind` distingue `message` et `announcement`. Une annonce est communautaire, utilise un topic canonique (`relais_associatif`, `appel_aux_benevoles` ou `demande_diffusion`) et peut référencer un `community_events.id` réellement existant via `related_event_id`. Les détails de l'événement affichés viennent de la base, jamais de l'URL.
-- **Sondages** : `message_kind = 'poll'` est réservé à `community`. La question reste dans `app_messages.content` et les 2 à 6 options ordonnées vivent dans `chat_poll_options`, créées atomiquement avec le message. Les options sont affichées en lecture seule jusqu'au lot de vote.
+- **Sondages** : `message_kind = 'poll'` est réservé à `community`. La question reste dans `app_messages.content` et les 2 à 6 options ordonnées vivent dans `chat_poll_options`, créées atomiquement avec le message. Les votes vivent dans `chat_poll_votes`, avec une ligne par `(message_id, user_id)` ; les lectures retournent uniquement des compteurs agrégés et le choix de l'utilisateur courant, jamais une liste nominative.
 - **Topics** : `topic_id` est nullable ; `NULL` conserve les messages legacy/non classés. Les topics communauté sont `relais_associatif`, `appel_aux_benevoles`, `demande_diffusion`, `besoin_ressources` et `coordination_secteur`. Les topics territoire sont `mon_territoire` et `territoires_voisins`.
 - **Lecture publique** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés ; une vue topic ne retourne que le topic sélectionné.
-- **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`.
+- **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`. Pour un sondage, les options retournent `voteCount`, le poll retourne `totalVotes` et `selectedOptionId`.
 - **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
@@ -42,6 +42,7 @@
 - **error** : erreur de chargement explicite avec réessai réel, sans faux compteur.
 - **access refused / connexion indisponible** : l'API RLS renvoie l'état d'accès ou de disponibilité approprié.
 - **fil actif** : les messages et pièces jointes existants restent dans le composant chat ; l'ouverture marque le fil lu de façon idempotente.
+- **vote de sondage** : le choix, le changement et le retrait sont disponibles dans le fil ; l'interface applique la mise à jour localement puis réconcilie avec l'agrégat serveur. Les votes restent anonymes dans la lecture.
 
 
 

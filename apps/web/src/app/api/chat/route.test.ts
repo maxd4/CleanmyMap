@@ -198,7 +198,19 @@ function buildSupabaseMock(options: {
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
-    rpc: vi.fn((functionName: string) => {
+  rpc: vi.fn((functionName: string) => {
+      if (functionName === "get_my_chat_poll_vote_summaries") {
+        return Promise.resolve({
+          data: (options.pollMessage?.poll_options ?? []).map((option) => ({
+            message_id: options.pollMessage?.id,
+            option_id: option.id,
+            vote_count: 0,
+            total_votes: 0,
+            selected_option_id: null,
+          })),
+          error: null,
+        });
+      }
       if (functionName !== "create_chat_poll_with_options") {
         throw new Error(`Unexpected RPC: ${functionName}`);
       }
@@ -870,15 +882,22 @@ describe("GET /api/chat and POST /api/chat", () => {
     );
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
     expect((await response.json()).message.poll_options).toEqual([
-      { id: "option-1", position: 1, label: "Samedi" },
-      { id: "option-2", position: 2, label: "Dimanche" },
+      { id: "option-1", position: 1, label: "Samedi", voteCount: 0 },
+      { id: "option-2", position: 2, label: "Dimanche", voteCount: 0 },
     ]);
 
     const readResponse = await GET(
       new Request("http://localhost/api/chat?channelType=community&topicId=coordination_secteur"),
     );
     expect(readResponse.status).toBe(200);
-    expect((await readResponse.json()).messages[0].poll_options.map((option: { position: number }) => option.position)).toEqual([1, 2]);
+    expect((await readResponse.json()).messages[0]).toMatchObject({
+      totalVotes: 0,
+      selectedOptionId: null,
+      poll_options: [
+        { position: 1, voteCount: 0 },
+        { position: 2, voteCount: 0 },
+      ],
+    });
   });
 
   it.each(["dm", "territory", "admin_elu", "bug_report"] as const)(
