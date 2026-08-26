@@ -20,6 +20,7 @@ import {
 export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
+  "/missions",
   "/actions/history",
   "/actions/new",
   "/declaration",
@@ -134,6 +135,7 @@ export const APP_SHELL_ROUTE_PREFIXES = [
   "/actions",
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
+  "/missions",
   EXPLORER_ROUTE,
   "/learn",
   "/methodologie",
@@ -200,6 +202,7 @@ export const config = {
   matcher: [
     "/admin(.*)",
     "/dashboard(.*)",
+    "/missions(.*)",
     "/actions/history(.*)",
     "/actions/new(.*)",
     "/declaration(.*)",

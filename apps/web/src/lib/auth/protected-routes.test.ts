@@ -4,6 +4,7 @@ import { PROTECTED_ROUTE_PATTERNS, isProtectedRoutePath } from "./protected-rout
 describe("protected route patterns", () => {
   it("keeps internal and sensitive surfaces behind auth", () => {
     expect(PROTECTED_ROUTE_PATTERNS).toContain("/form-comparison(.*)");
+    expect(PROTECTED_ROUTE_PATTERNS).toContain("/missions(.*)");
     expect(PROTECTED_ROUTE_PATTERNS).toContain("/api/chat(.*)");
     expect(PROTECTED_ROUTE_PATTERNS).toContain("/api/community(.*)");
     expect(PROTECTED_ROUTE_PATTERNS).toContain("/api/analytics(.*)");
@@ -20,6 +21,7 @@ describe("protected route patterns", () => {
     expect(isProtectedRoutePath("/dashboard")).toBe(true);
     expect(isProtectedRoutePath("/dashboard/rapport")).toBe(true);
     expect(isProtectedRoutePath("/api/chat")).toBe(true);
+    expect(isProtectedRoutePath("/missions/mission-1")).toBe(true);
     expect(isProtectedRoutePath("/")).toBe(false);
     expect(isProtectedRoutePath("/conditions-utilisation")).toBe(false);
     expect(isProtectedRoutePath("/mentions-legales")).toBe(false);

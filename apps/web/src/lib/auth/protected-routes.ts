@@ -8,6 +8,7 @@ export const PROTECTED_ROUTE_PATTERNS = [
   `${ADMIN_ROUTE}(.*)`,
   `${DASHBOARD_ROUTE}(.*)`,
   "/actions(.*)",
+  "/missions(.*)",
   "/form-comparison(.*)",
   "/sections(.*)",
   "/api/admin(.*)",

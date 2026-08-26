@@ -20,6 +20,7 @@ describe("proxy protected routes", () => {
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
       "/actions(.*)",
+      "/missions(.*)",
       "/prints(.*)",
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/api/community(.*)",
@@ -46,6 +47,7 @@ describe("proxy protected routes", () => {
     const required = [
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
+      "/missions(.*)",
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/actions/history(.*)",
       "/actions/new(.*)",
