@@ -18,13 +18,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/pikpik_environnement/",
     coveredArrondissements: [15, 16],
     contributionTypes: ["materiel", "communication"],
-    availability: "Lundi au samedi, 10h-18h",
     primaryChannel: {
       platform: "instagram",
       label: "Compte Instagram",
       url: "https://www.instagram.com/pikpik_environnement/",
     },
-    lastUpdatedAt: "2026-04-12",
     internalAdminContact: {
       referentName: "Kamera Vesic",
       email: "contact@pikpik.org",
@@ -46,13 +44,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/assolacloche/",
     coveredArrondissements: [1, 2, 3, 4, 10, 11],
     contributionTypes: ["accueil", "logistique", "communication"],
-    availability: "Tous les jours, 9h-20h",
     primaryChannel: {
       platform: "instagram",
       label: "Compte Instagram",
       url: "https://www.instagram.com/assolacloche/",
     },
-    lastUpdatedAt: "2026-04-13",
     internalAdminContact: {
       referentName: "Valerie Fayard",
       email: "valerie.fayard@lacloche.org",
@@ -74,13 +70,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/cartonplein_org/",
     coveredArrondissements: [11, 18, 19, 20],
     contributionTypes: ["logistique", "materiel", "accueil"],
-    availability: "Sur demande + créneaux hebdomadaires",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
       url: "https://www.cartonplein.org/",
     },
-    lastUpdatedAt: "2026-04-11",
     internalAdminContact: {
       referentName: "Equipe Carton Plein",
       email: "bonjour@cartonplein.org",
@@ -105,13 +99,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 11, 12],
     contributionTypes: ["accueil", "logistique", "communication"],
     tags: ["Climat", "Sensibilisation", "Quartier"],
-    availability: "Lundi au samedi, 9h-fin de soiree, agenda ateliers mis à jour régulièrement",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
       url: "https://www.academieduclimat.paris/",
     },
-    lastUpdatedAt: "2026-04-17",
   },
   {
     id: "asso-shakirail",
@@ -128,13 +120,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [18],
     contributionTypes: ["accueil", "logistique", "communication"],
     tags: ["Tiers-lieu", "Culture", "Jardins", "Quartier"],
-    availability: "Selon programmation, ateliers et événements réguliers",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
       url: "https://shakirail.curry-vavart.com/",
     },
-    lastUpdatedAt: "2026-05-23",
   },
   {
     id: "asso-featured-1",
@@ -152,8 +142,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [19],
     contributionTypes: ["materiel", "logistique"],
     tags: ["Propreté urbaine", "Quartier"],
-    availability: "Non précisée",
-    lastUpdatedAt: "2026-04-20",
   },
   {
     id: "asso-featured-2",
@@ -171,8 +159,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [15],
     contributionTypes: ["accueil", "logistique"],
     tags: ["Social", "Quartier"],
-    availability: "7j/7 en soirée",
-    lastUpdatedAt: "2026-04-22",
   },
   {
     id: "asso-featured-6",
@@ -190,8 +176,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [7],
     contributionTypes: ["financement", "communication"],
     tags: ["Littoral", "Climat"],
-    availability: "9h-18h",
-    lastUpdatedAt: "2026-04-10",
   },
   {
     id: "asso-zd-greenminded",
@@ -207,8 +191,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     contributionTypes: ["communication", "accueil", "materiel"],
     tags: ["Zéro déchet", "Sensibilisation", "Plastique", "Éducation"],
-    availability: "Selon planning",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-gestes-propres",
@@ -227,8 +209,6 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [],
     contributionTypes: ["communication", "logistique", "accueil"],
     tags: ["National", "Relais", "France"],
-    availability: "Couverture nationale avec relais locaux",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-pepite",
@@ -248,13 +228,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [5],
     contributionTypes: ["communication", "accueil"],
     tags: ["Entrepreneuriat étudiant", "Réseau national", "Sorbonne Université"],
-    availability: "Selon les dispositifs et les accompagnements du réseau",
     primaryChannel: {
       platform: "site web",
       label: "Page Pépite de Sorbonne Université",
       url: "https://pepite.sorbonne-universite.fr/",
     },
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "du-1",
@@ -270,13 +248,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     websiteUrl: "https://www.sorbonne-universite.fr/formation/",
     coveredArrondissements: [5],
     contributionTypes: ["communication", "accueil"],
-    availability: "Semaines universitaires, 9h-18h. Dossier et inscriptions à consulter en ligne selon sessions annuelles.",
     primaryChannel: {
       platform: "site web",
       label: "Page Sorbonne Université",
       url: "https://www.sorbonne-universite.fr/formation/",
     },
-    lastUpdatedAt: "2026-04-24",
   },
   {
     id: "asso-surfrider-paris",
@@ -295,13 +271,11 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
     contributionTypes: ["materiel", "logistique", "communication"],
     tags: ["Océan", "Plastic", "Collecte", "Sensibilisation"],
-    availability: "Collectes régulières + événements ponctuels",
     primaryChannel: {
       platform: "site web",
       label: "Site Paris",
       url: "https://surfrider-paris.fr",
     },
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-zerowaste-paris",
@@ -320,12 +294,10 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     contributionTypes: ["communication", "accueil", "materiel"],
     tags: ["Zéro déchet", "Réduction", "Sensibilisation", "Mode"],
-    availability: "Ateliers mensuels + événements ponctuels",
     primaryChannel: {
       platform: "site web",
       label: "Site local",
       url: "https://www.zerowasteparis.fr",
     },
-    lastUpdatedAt: "2026-05-01",
   },
 ];

@@ -9,7 +9,7 @@ const seedFiles = [
 ];
 
 const forbiddenSeedKeys =
-  /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus)\s*:/;
+  /\b(?:verificationStatus|qualificationStatus|recentActivityAt|impactHistory|structureStatus|availability|lastUpdatedAt)\s*:/;
 
 describe("annuaire editorial seed contract", () => {
   it("keeps validation, activity and measured-impact keys out of seed sources", () => {

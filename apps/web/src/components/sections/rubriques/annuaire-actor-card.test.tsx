@@ -52,5 +52,46 @@ describe("AnnuaireActorCard provenance", () => {
     expect(markup).not.toContain("Structure validée");
     expect(markup).not.toContain("Partenaire actif");
     expect(markup).not.toContain("Dernière action");
+    expect(markup).not.toContain("Disponibilité");
+    expect(markup).not.toContain("Mise à jour");
+    expect(markup).not.toContain("Impact");
+    expect(markup).toContain("Zones associées");
+    expect(markup).toContain("Contributions repérées");
+    expect(markup).toContain("Consulter");
+  });
+
+  it("keeps published availability, freshness and contact labels distinct", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
+    expect(seed).toBeDefined();
+
+    const markup = renderToStaticMarkup(
+      <AnnuaireActorCard
+        entry={{
+          ...seed,
+          provenance: "published_partner" as const,
+          verificationStatus: "verifie" as const,
+          qualificationStatus: "partenaire_actif" as const,
+          recentActivityAt: "2026-08-26T10:00:00.000Z",
+          availability: "Sur rendez-vous",
+          lastUpdatedAt: "2026-08-26T10:00:00.000Z",
+          primaryChannel: {
+            platform: "site web" as const,
+            label: "Contact direct",
+            url: "https://published.example.test",
+          },
+          distanceKm: null,
+        }}
+        onFocusMap={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("FICHE CONFIRMÉE");
+    expect(markup).toContain("MISE À JOUR RÉCENTE");
+    expect(markup).toContain("Périmètre déclaré");
+    expect(markup).toContain("Disponibilité déclarée");
+    expect(markup).toContain("Contributions déclarées");
+    expect(markup).toContain("Contacter");
+    expect(markup).not.toContain("ACTIF");
+    expect(markup).not.toContain("CERTIFIÉ");
   });
 });

@@ -82,7 +82,7 @@ type AnnuaireEntryShared = {
   facebookUrl?: string;
   coveredArrondissements: number[];
   contributionTypes: ContributionType[];
-  availability: string;
+  availability?: string;
   primaryChannel?: {
     platform: "site web" | "instagram" | "facebook";
     label: string;
@@ -91,7 +91,6 @@ type AnnuaireEntryShared = {
   isFeatured?: boolean;
   featuredReason?: string;
   tags?: string[];
-  lastUpdatedAt: string;
   internalAdminContact?: {
     referentName: string;
     email: string;
@@ -99,7 +98,7 @@ type AnnuaireEntryShared = {
   };
 };
 
-export type AnnuaireEntrySeedInput = AnnuaireEntryShared & {
+export type AnnuaireEntrySeedInput = Omit<AnnuaireEntryShared, "availability"> & {
   associationProfile?: EditorialAssociationProfile;
 };
 
@@ -107,6 +106,8 @@ export type EditorialAnnuaireEntry = AnnuaireEntryShared & {
   provenance: "editorial_seed";
   verificationStatus: "en_cours";
   qualificationStatus: "contact_non_qualifie";
+  availability?: never;
+  lastUpdatedAt?: never;
   recentActivityAt?: never;
   associationProfile?: EditorialAssociationProfile;
 };
@@ -115,6 +116,8 @@ export type PublishedAnnuaireEntry = AnnuaireEntryShared & {
   provenance: "published_partner";
   verificationStatus: VerificationStatus;
   qualificationStatus: QualificationStatus;
+  availability: string;
+  lastUpdatedAt: string;
   recentActivityAt: string;
   associationProfile?: AssociationProfile;
 };

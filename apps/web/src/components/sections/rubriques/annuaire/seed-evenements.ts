@@ -16,13 +16,11 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/larecyclerie/",
     coveredArrondissements: [17, 18],
     contributionTypes: ["accueil", "communication", "materiel"],
-    availability: "Tous les week-ends + calendrier mensuel",
     primaryChannel: {
       platform: "site web",
       label: "Agenda site web",
       url: "https://www.larecyclerie.com/",
     },
-    lastUpdatedAt: "2026-04-10",
   },
   {
     id: "evt-paris-nettoyages",
@@ -40,8 +38,6 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     contributionTypes: ["logistique", "materiel", "communication"],
     tags: ["Nettoyage", "Paris", "Participation citoyenne"],
-    availability: "Événements réguliers toute l'année",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "evt-j-agis-nature",
@@ -59,8 +55,6 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     contributionTypes: ["materiel", "logistique", "communication"],
     tags: ["Bénévolat", "Nature", "France", "Événements"],
-    availability: "Tout au long de l'année",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "evt-je-veux-aider",
@@ -78,7 +72,5 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     contributionTypes: ["logistique", "accueil", "communication"],
     tags: ["Bénévolat", "National", "Multi-thématiques", "France"],
-    availability: "Missions toute l'année",
-    lastUpdatedAt: "2026-05-01",
   },
 ];

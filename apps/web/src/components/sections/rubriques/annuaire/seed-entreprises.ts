@@ -16,13 +16,11 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/latextilerieparis/",
     coveredArrondissements: [9, 10, 11],
     contributionTypes: ["accueil", "materiel", "communication"],
-    availability: "Mardi au dimanche, 11h-19h",
     primaryChannel: {
       platform: "instagram",
       label: "Compte Instagram",
       url: "https://www.instagram.com/latextilerieparis/",
     },
-    lastUpdatedAt: "2026-04-15",
     internalAdminContact: {
       referentName: "Elsa Monsegur",
       email: "contact@latextilerie.fr",
@@ -46,8 +44,6 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [],
     contributionTypes: ["financement", "materiel", "communication"],
     tags: ["Mégots", "Eco-organisme", "Collectivités", "Sensibilisation"],
-    availability: "Bureaux 9h-18h",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-megots-ecomegot",
@@ -63,8 +59,6 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     contributionTypes: ["materiel", "logistique"],
     tags: ["Mégots", "Recyclage", "Événements", "Collecte spécialisée"],
-    availability: "Sur rendez-vous",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-megots-cyclope",
@@ -80,8 +74,6 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [],
     contributionTypes: ["materiel", "logistique"],
     tags: ["Mégots", "Entreprise", "Cendriers connectés", "Propreté urbaine"],
-    availability: "9h-18h",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "asso-megots-tchaomegot",
@@ -97,8 +89,6 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [],
     contributionTypes: ["materiel", "logistique"],
     tags: ["Mégots", "B2B", "Collectivités", "Innovation"],
-    availability: "9h-18h",
-    lastUpdatedAt: "2026-05-01",
   },
   {
     id: "com-2",
@@ -115,13 +105,11 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     instagramUrl: "https://www.instagram.com/lacollecterie/",
     coveredArrondissements: [19, 20],
     contributionTypes: ["materiel", "logistique", "financement"],
-    availability: "Mercredi au dimanche, 10h-18h",
     primaryChannel: {
       platform: "instagram",
       label: "Compte Instagram",
       url: "https://www.instagram.com/lacollecterie/",
     },
-    lastUpdatedAt: "2026-04-08",
   },
   {
     id: "com-3",
@@ -137,13 +125,11 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     websiteUrl: "https://klindoeil.com",
     coveredArrondissements: [11, 19, 20],
     contributionTypes: ["accueil", "communication"],
-    availability: "Selon programmation des ateliers et temps boutique",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
       url: "https://klindoeil.com",
     },
-    lastUpdatedAt: "2026-04-23",
   },
   {
     id: "ent-1",
@@ -158,12 +144,10 @@ export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
     lng: 2.333,
     coveredArrondissements: [8, 9, 10],
     contributionTypes: ["financement", "logistique", "communication"],
-    availability: "Du lundi au vendredi, 9h-18h",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
       url: "https://www.greenflex.com/",
     },
-    lastUpdatedAt: "2026-04-23",
   },
 ];

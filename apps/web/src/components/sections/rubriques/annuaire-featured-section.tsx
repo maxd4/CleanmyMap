@@ -44,7 +44,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                   <div className="flex items-center gap-3">
                     <div className="h-1 w-6 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />
                     <p className="text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">
-                      {entry.tags?.[0] || "IMPACT"}
+                      {entry.tags?.[0] || (entry.provenance === "editorial_seed" ? "RESSOURCE" : "THÉMATIQUE")}
                     </p>
                   </div>
                   <h3 className="text-3xl font-black text-white tracking-tight leading-tight group-hover:text-violet-300 transition-colors">
