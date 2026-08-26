@@ -56,6 +56,20 @@ Current major baselines:
 - Do not create worktrees, sibling copies or parallel repositories without explicit user approval.
 - Do not modify `documentation/pepite/` without explicit user approval.
 
+### Safe cleanup of untracked artifacts
+
+Never mass-delete `untracked`, non-canonical, or generated files only because
+Git does not track them or no runtime import is visible. Before deleting a
+significant set, establish its provenance, creating command/tool, role
+(runtime, development, documentation, or configuration), regenerability, and
+expected location.
+
+Be especially cautious with `.agents`, `.codex`, `skills-lock.json`, Vercel
+integrations, and development-tool artifacts. When uncertain, keep the files
+and record a proof-backed verdict `KEEP / MOVE / REINSTALL_ELSEWHERE / DELETE`.
+Never perform destructive cleanup on a parallel chantier. The detailed rule is
+canonical in `AGENTS.md`.
+
 ## Supabase
 
 The active workspace CLI configuration is under:

@@ -255,6 +255,24 @@ suppression. Ne conserver aucun doublon lorsque son contenu est déjà porté pa
 une source canonique ; préserver en revanche les compatibilités et artefacts
 historiques dont l'usage est encore démontré.
 
+### Suppression d'artefacts non suivis
+
+Ne jamais supprimer en masse des fichiers `untracked`, non canoniques ou
+générés sur ce seul critère. Avant toute suppression d'un ensemble significatif
+de fichiers non suivis, identifier et documenter :
+
+- leur provenance et l'outil ou la commande qui les a créés ;
+- leur rôle runtime, développement, documentation ou configuration ;
+- leur caractère régénérable et leur emplacement attendu.
+
+Appliquer une vigilance renforcée aux dossiers `.agents`, `.codex`, aux fichiers
+`skills-lock.json`, aux intégrations Vercel et aux artefacts produits par les
+outils de développement. En cas de doute, conserver les fichiers et produire
+d'abord un verdict explicite `KEEP / MOVE / REINSTALL_ELSEWHERE / DELETE`, avec
+les preuves qui le justifient. Une absence d'import ou de suivi Git ne constitue
+jamais, seule, une preuve suffisante de suppression. Aucun nettoyage destructif
+ne doit viser un chantier parallèle.
+
 ## Prévention des monolithes
 
 Ces règles doivent être appliquées spontanément par Codex pendant tout
