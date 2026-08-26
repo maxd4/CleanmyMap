@@ -1,19 +1,21 @@
 import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
-import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, Trophy } from "lucide-react";
 import { unstable_cache } from "next/cache";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { notFound } from "next/navigation";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { resolveMissionActionImageUrl } from "@/lib/missions/mission-images";
+import {
+  formatMissionDistance,
+  formatMissionDuration,
+  formatMissionTimestamp,
+  getMissionStatusLabel,
+  type MissionStatus,
+} from "@/components/missions/mission-page-contract";
 
-const MISSION_ASSETS_BUCKET = "mission-assets";
 const MISSION_GPS_POINT_LIMIT = 1000;
-const MISSION_ACTION_LIMIT = 200;
 const MISSION_PAGE_CACHE_REVALIDATE_SECONDS = 60;
-
-const FALLBACK_STARTED_AT = new Date(Date.now() - 3600000).toISOString();
 
 type MissionPageParams = {
   params: {
@@ -24,7 +26,7 @@ type MissionPageParams = {
 type MissionSummary = {
   id: string;
   label: string | null;
-  status: string | null;
+  status: MissionStatus | null;
   started_at: string | null;
   ended_at: string | null;
   distance_m: number | null;
@@ -37,30 +39,9 @@ type MissionGpsPoint = {
   recorded_at: string;
 };
 
-type MissionActionRow = {
-  id: string;
-  type: string;
-  content: string | null;
-  image_url: string | null;
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
-};
-
 type MissionPageData = {
   mission: MissionSummary | null;
   points: MissionGpsPoint[];
-  actions: MissionActionRow[];
-};
-
-type MissionMapAction = {
-  id: string;
-  type: string;
-  content?: string;
-  image_url?: string;
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
 };
 
 function buildMissionPageCacheKey(id: string): string {
@@ -71,7 +52,7 @@ async function loadCachedMissionPageData(id: string): Promise<MissionPageData> {
   const cached = unstable_cache(
     async () => {
       const supabase = getSupabaseServerClient();
-      const [missionResult, pointsResult, actionsResult] = await Promise.all([
+      const [missionResult, pointsResult] = await Promise.all([
         supabase
           .from("missions")
           .select("id, label, status, started_at, ended_at, distance_m, duration_s")
@@ -83,54 +64,22 @@ async function loadCachedMissionPageData(id: string): Promise<MissionPageData> {
           .eq("mission_id", id)
           .order("recorded_at")
           .limit(MISSION_GPS_POINT_LIMIT),
-        supabase
-          .from("mission_actions")
-          .select("id, type, content, image_url, latitude, longitude, recorded_at")
-          .eq("mission_id", id)
-          .order("recorded_at", { ascending: true })
-          .limit(MISSION_ACTION_LIMIT),
       ]);
+
+      if (missionResult.error) {
+        throw missionResult.error;
+      }
+
+      if (pointsResult.error) {
+        throw pointsResult.error;
+      }
 
       const mission = (missionResult.data as MissionSummary | null) ?? null;
       const points = (pointsResult.data ?? []) as MissionGpsPoint[];
-      const actions = (actionsResult.data ?? []) as MissionActionRow[];
-
-      const signedUrlCache = new Map<string, Promise<string | null>>();
-      const actionsWithResolvedImages = await Promise.all(
-        actions.map(async (action) => {
-          const imageUrl = await resolveMissionActionImageUrl(action.image_url, async (path) => {
-            const cachedSignedUrl = signedUrlCache.get(path);
-            if (cachedSignedUrl) {
-              return cachedSignedUrl;
-            }
-
-            const request = (async () => {
-              const { data, error } = await supabase.storage
-                .from(MISSION_ASSETS_BUCKET)
-                .createSignedUrl(path, 60 * 60 * 24);
-
-              if (error || !data?.signedUrl) {
-                return null;
-              }
-
-              return data.signedUrl;
-            })();
-
-            signedUrlCache.set(path, request);
-            return request;
-          });
-
-          return {
-            ...action,
-            image_url: imageUrl,
-          };
-        }),
-      );
 
       return {
         mission,
         points,
-        actions: actionsWithResolvedImages,
       };
     },
     ["mission-page", buildMissionPageCacheKey(id)],
@@ -146,38 +95,15 @@ async function loadCachedMissionPageData(id: string): Promise<MissionPageData> {
 export default async function MissionPage({ params }: MissionPageParams) {
   const { id } = params;
   const classes = getBlockClasses("act");
-  const { mission, points, actions } = await loadCachedMissionPageData(id);
+  const { mission, points } = await loadCachedMissionPageData(id);
 
-  const m = mission || {
-    id,
-    label: "Nettoyage Canal Saint-Martin",
-    status: "completed",
-    started_at: FALLBACK_STARTED_AT,
-    ended_at: new Date().toISOString(),
-    distance_m: 2450,
-    duration_s: 3600,
-  };
+  if (!mission) {
+    notFound();
+  }
 
-  const mockPoints = [
-    { latitude: 48.8738, longitude: 2.3667, recorded_at: new Date().toISOString() },
-    { latitude: 48.875, longitude: 2.368, recorded_at: new Date().toISOString() },
-    { latitude: 48.8765, longitude: 2.3695, recorded_at: new Date().toISOString() },
-  ];
-
-  const gpsPoints = points.length > 0 ? points : mockPoints;
-  const missionMapActions: MissionMapAction[] = actions.map((action) => ({
-    ...action,
-    content: action.content ?? undefined,
-    image_url: action.image_url ?? undefined,
-  }));
-  const isTracking = m.status === "tracking";
+  const m = mission;
   const isPending = m.status === "pending";
-  const statusLabel =
-    m.status === "completed"
-      ? "Mission terminée"
-      : isTracking
-        ? "Action en cours"
-        : "Mission planifiée";
+  const statusLabel = getMissionStatusLabel(m.status);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-12 pb-20">
@@ -186,7 +112,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
         contrast="inverse"
         eyebrow="Bloc Agir"
         title={m.label ?? "Mission terrain"}
-        subtitle="Tracé terrain, preuves d’impact et indicateurs de mission."
+        subtitle="Données de mission et tracé GPS enregistrés par l’application compagnon lorsqu’ils sont disponibles."
         badges={
           <div className="flex flex-wrap gap-2">
             <PageHeaderBadge tone="emerald" contrast="inverse">{statusLabel}</PageHeaderBadge>
@@ -194,21 +120,6 @@ export default async function MissionPage({ params }: MissionPageParams) {
               Identifiant #{id.split("-")[0]}
             </PageHeaderBadge>
           </div>
-        }
-        action={
-          <CmmButton
-            tone="secondary"
-            className={cn(
-              "flex items-center gap-2 rounded-2xl border px-6 py-4 transition-all duration-300 hover:scale-[1.02]",
-              classes.surface,
-              classes.border,
-            )}
-          >
-            <Share2 size={16} className="text-emerald-400" />
-            <span className="text-xs font-black uppercase tracking-widest">
-              Partager l&apos;impact
-            </span>
-          </CmmButton>
         }
       />
 
@@ -220,7 +131,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
             <div className={cn("space-y-8 rounded-[2.5rem] border p-8 transition-all duration-700", classes.surface, classes.shadow)}>
               <h3 className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-white/40">
                 <Trophy size={14} className="text-amber-400" />
-                Impact Certifié
+                Données terrain
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
@@ -230,8 +141,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                     <span className="text-[9px] font-black uppercase tracking-widest">Distance</span>
                   </div>
                   <p className="text-3xl font-black text-white">
-                    {m.distance_m ? (m.distance_m / 1000).toFixed(1) : 0}{" "}
-                    <span className="text-sm font-bold text-white/20">km</span>
+                    {formatMissionDistance(m.distance_m)}
                   </p>
                 </div>
 
@@ -241,35 +151,8 @@ export default async function MissionPage({ params }: MissionPageParams) {
                     <span className="text-[9px] font-black uppercase tracking-widest">Durée</span>
                   </div>
                   <p className="text-3xl font-black text-white">
-                    {m.duration_s ? Math.round(m.duration_s / 60) : 0}{" "}
-                    <span className="text-sm font-bold text-white/20">min</span>
+                    {formatMissionDuration(m.duration_s)}
                   </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 border-t border-white/5 pt-4">
-                <div className="group flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
-                      <Zap size={14} />
-                    </div>
-                    <span className="text-sm font-medium text-white/40 transition-colors group-hover:text-white/60">
-                      CO2 évité estimé
-                    </span>
-                  </div>
-                  <span className="font-black text-emerald-400">~{m.distance_m ? (m.distance_m * 0.15).toFixed(1) : 0} kg</span>
-                </div>
-
-                <div className="group flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-400/10 text-sky-400">
-                      <Droplets size={14} />
-                    </div>
-                    <span className="text-sm font-medium text-white/40 transition-colors group-hover:text-white/60">
-                      Eau préservée
-                    </span>
-                  </div>
-                  <span className="font-black text-sky-400">~{m.distance_m ? Math.round(m.distance_m * 2.5) : 0} L</span>
                 </div>
               </div>
             </div>
@@ -287,10 +170,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 <div className="space-y-0.5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Départ le</p>
                   <p className="text-sm font-bold text-white/80">
-                    {new Date(m.started_at ?? FALLBACK_STARTED_AT).toLocaleString("fr-FR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatMissionTimestamp(m.started_at)}
                   </p>
                 </div>
               </li>
@@ -300,8 +180,10 @@ export default async function MissionPage({ params }: MissionPageParams) {
                   <MapPin size={16} />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Localisation</p>
-                  <p className="text-sm font-bold text-white/80">Paris, Île-de-France</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Fin le</p>
+                  <p className="text-sm font-bold text-white/80">
+                    {formatMissionTimestamp(m.ended_at)}
+                  </p>
                 </div>
               </li>
             </ul>
@@ -310,9 +192,9 @@ export default async function MissionPage({ params }: MissionPageParams) {
 
         <div className="space-y-6 lg:col-span-2">
           <div className="group relative overflow-hidden rounded-[3rem] border border-white/10 shadow-2xl">
-            <DeferredMissionMap points={gpsPoints} actions={missionMapActions} />
+            <DeferredMissionMap points={points} />
             <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
-              Tracé GPS Certifié
+              Tracé GPS enregistré
             </div>
           </div>
 
@@ -323,13 +205,14 @@ export default async function MissionPage({ params }: MissionPageParams) {
             )}
           >
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-400">
-              <ShieldCheck size={24} />
+              <MapPin size={24} />
             </div>
             <p className="text-sm font-medium leading-relaxed text-amber-100/60">
               <strong className="mb-2 block text-xs font-black uppercase tracking-widest text-amber-400">
-                Preuve d&apos;Impact
+                Données terrain
               </strong>
-              Ce tracé a été enregistré en direct via l&apos;application Compagnon, garantissant l&apos;authenticité de l&apos;impact écologique mesuré sur le terrain.
+              Les données affichées correspondent aux informations enregistrées par
+              l&apos;application compagnon lorsqu&apos;elles sont disponibles.
             </p>
           </div>
         </div>
