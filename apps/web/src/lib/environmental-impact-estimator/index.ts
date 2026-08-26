@@ -84,6 +84,7 @@ export {
   buildCodexInfrastructureUsageInput,
   buildCodexMonthlyUsageEstimate,
   buildCodexUsageWeeklySnapshot,
+  getCodexUsageWeeklySnapshot,
   listCodexUsageWeeklySnapshots,
   upsertCodexUsageWeeklySnapshot,
 } from "./codex-usage-store";

@@ -134,11 +134,11 @@ export async function upsertEnvironmentalImpactSnapshot(
         return;
       }
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw new Error("Environmental impact snapshot persistence failed.");
       }
     } catch {
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw new Error("Environmental impact snapshot persistence failed.");
       }
     }
   }
