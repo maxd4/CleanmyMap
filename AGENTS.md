@@ -173,6 +173,27 @@ Placer les fichiers temporaires, captures, logs, exports et artefacts dans un do
 
 Ne pas créer de miroir manuel pour contourner une règle d'emplacement.
 
+### Installation des skills tiers
+
+Les skills propres à CleanMyMap et volontairement versionnés restent limités
+aux emplacements racine suivants : `.agents/skills/` est la source canonique et
+`.codex/skills/` son miroir Codex gouverné. Les skills tiers locaux, notamment
+ceux provenant de Vercel, Upstash ou d'un autre fournisseur, ne doivent jamais
+être installés dans le checkout ni dans l'un de ses sous-dossiers.
+
+La CLI `skills` réellement utilisée par le poste supporte officiellement
+`npx skills add <package> --global` pour une installation au niveau utilisateur.
+Son emplacement utilisateur global reconnu pour Codex est
+`%USERPROFILE%\.agents\skills` (par exemple
+`C:\Users\sophi\.agents\skills`), et non `apps/web/.agents/`. Avant toute
+commande Vercel ou intégration susceptible d'exécuter automatiquement
+`npx skills add`, vérifier sa destination et forcer ce mode utilisateur/global.
+
+Un skill tiers ne peut entrer dans `.agents/skills/` racine que si l'utilisateur
+décide explicitement de le versionner comme dépendance documentaire du projet.
+Ne pas ajouter ces chemins au `.gitignore` : une installation accidentelle doit
+rester visible et faire échouer `npm run check:agent-skills`.
+
 ### Dossiers protégés
 
 Ne pas modifier, déplacer, supprimer, renommer ou dupliquer sans demande explicite :
