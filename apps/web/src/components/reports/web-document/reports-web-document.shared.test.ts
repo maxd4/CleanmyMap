@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildRecentReports,
   buildPdfData,
-  buildReportTitle,
   buildScopeSelectValue,
-  detailLevelLabel,
   detailLevelToModules,
   type ModuleState,
   REPORT_MODULE_DEFINITIONS,
@@ -158,36 +155,10 @@ describe("reports web document shared helpers", () => {
     expect(pdf.summary).toContain("Modules optionnels inclus: Données & cartographie, Données brutes.");
   });
 
-  it("builds readable report labels", () => {
-    expect(detailLevelLabel("default")).toBe("Par défaut (12 à 16 pages)");
-    expect(buildReportTitle("Global", "default")).toBe("Rapport d'impact - Global - Par défaut");
-
-    const rows = buildRecentReports({
-      overviewGeneratedAt: "2026-05-04T14:30:00.000Z",
-      activeScopeLabel: "Global",
-      period: "current_year",
-      detailLevel: "default",
-    });
-
-    expect(rows).toHaveLength(3);
-    expect(rows[0]?.period).toBe("Année en cours");
-    expect(rows[2]?.detail).toBe("Exhaustif (20 à 28 pages)");
-  });
-
   it("keeps the supported periods and filter labels stable", () => {
     expect(periodLabel("six_months")).toBe("Six mois");
     expect(periodLabel("current_year")).toBe("Année en cours");
     expect(periodLabel("full_history")).toBe("Historique complet");
-    expect(buildRecentReports({
-      overviewGeneratedAt: "2026-06-01T00:00:00.000Z",
-      activeScopeLabel: "Paris",
-      period: "full_history",
-      detailLevel: "concis",
-    })[0]).toMatchObject({
-      period: "Historique complet",
-      perimeter: "Paris",
-      detail: "Concis (6 à 8 pages)",
-    });
   });
 
   it("builds PDF payloads with the selected period and detail level", () => {

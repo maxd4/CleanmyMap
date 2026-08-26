@@ -39,3 +39,12 @@
   brutes et annexes. Un module désactivé est réellement absent, sans
   placeholder. Le niveau de détail fournit les defaults et conserve les
   règles de verrouillage pour un module activé mais trop peu détaillé.
+
+  L'historique « Rapports récents » ne contient que des générations réellement
+  persistées dans `public.report_generations`, au maximum les 12 plus récentes.
+  Il expose le titre, la période, le périmètre, le niveau de détail et la date
+  réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
+  et les modules sont stockés sans binaire PDF ; une erreur de persistance est
+  non bloquante après un export réussi. Les actions Voir/télécharger sont
+  neutralisées jusqu'à l'existence d'un rejeu exact, et aucune durée de
+  conservation n'est annoncée.

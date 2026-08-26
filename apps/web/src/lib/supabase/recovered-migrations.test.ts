@@ -39,6 +39,21 @@ describe("recovered Supabase migrations", () => {
     expect(migration).not.toMatch(/auth\.role\(\)\s*=\s*'service_role'/i);
   });
 
+  it("stores Reports generation snapshots with server-only access", () => {
+    const migration = readMigration("20260827000001_report_generations_history.sql");
+
+    expect(migration).toContain("create table if not exists public.report_generations");
+    expect(migration).toContain("created_by_clerk_id text not null");
+    expect(migration).toContain("generated_at timestamptz not null");
+    expect(migration).toContain("snapshot jsonb not null");
+    expect(migration).toContain("modules jsonb not null");
+    expect(migration).toContain("alter table public.report_generations enable row level security;");
+    expect(migration).toContain("using (auth.role() = 'service_role')");
+    expect(migration).toContain("with check (auth.role() = 'service_role')");
+    expect(migration).toContain("revoke all on table public.report_generations from anon, authenticated;");
+    expect(migration).toContain("grant select, insert, update, delete on table public.report_generations to service_role;");
+  });
+
   it("keeps only the territory compatibility data backfill", () => {
     const migration = readMigration("20260625000005_territory_metadata_compatibility.sql");
 

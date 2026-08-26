@@ -19,8 +19,8 @@ const historyRows: ReportsWebDocumentHistoryRow[] = [
   {
     id: "report-1",
     report: "Rapport d'impact",
-    period: "Six mois",
-    perimeter: "Global",
+      period: "Six mois",
+      perimeter: "Global",
     detail: "Par défaut (12 à 16 pages)",
     generatedAt: "01/08/2026 12:00",
   },
@@ -99,6 +99,7 @@ describe("ReportsWebDocumentDelivery", () => {
         pendingLabel: "Génération en cours",
         isDisabled: state === "pending",
         exportStatus: createStatus(state),
+        historyWarning: null,
         onGenerate: vi.fn(),
       }),
     );
@@ -110,9 +111,8 @@ describe("ReportsWebDocumentDelivery", () => {
     }
   });
 
-  it("keeps generation and history callbacks separate", () => {
+  it("keeps the generation callback on the export action", () => {
     const onGenerate = vi.fn();
-    const onPreview = vi.fn();
     const deliveryElements = collectDomElements(
       React.createElement(ReportsWebDocumentDelivery, {
         state: "idle",
@@ -120,40 +120,39 @@ describe("ReportsWebDocumentDelivery", () => {
         pendingLabel: "Génération en cours",
         isDisabled: false,
         exportStatus: createStatus("idle"),
+        historyWarning: null,
         onGenerate,
       }),
     );
     const deliveryButton = deliveryElements.find((element) => element.type === "button");
     deliveryButton?.props.onClick?.();
 
-    const historyElements = collectDomElements(
-      React.createElement(ReportsWebDocumentDeliveryHistory, {
-        recentRows: historyRows,
-        onPreview,
-        onGenerate,
-      }),
-    );
-    const historyButtons = historyElements.filter((element) => element.type === "button");
-    historyButtons[0]?.props.onClick?.();
-    historyButtons[1]?.props.onClick?.();
-
-    expect(onGenerate).toHaveBeenCalledTimes(2);
-    expect(onPreview).toHaveBeenCalledTimes(1);
+    expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves history labels and download accessibility", () => {
+  it("renders persisted history fields without replay or download actions", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentDeliveryHistory, {
         recentRows: historyRows,
-        onPreview: vi.fn(),
-        onGenerate: vi.fn(),
       }),
     );
 
     expect(markup).toContain("Rapports récents");
     expect(markup).toContain("Rapport d&#x27;impact");
-    expect(markup).toContain("Voir tous les rapports");
-    expect(markup).toContain('aria-label="Télécharger Rapport d&#x27;impact"');
-    expect(markup).toContain("Les rapports sont conservés pendant 24 mois.");
+    expect(markup).toContain("Six mois");
+    expect(markup).toContain("Global");
+    expect(markup).toContain("Par défaut (12 à 16 pages)");
+    expect(markup).toContain("01/08/2026 12:00");
+    expect(markup).not.toContain("Actions");
+    expect(markup).not.toContain("Télécharger");
+  });
+
+  it("renders the real empty state without synthetic rows", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsWebDocumentDeliveryHistory, { recentRows: [] }),
+    );
+
+    expect(markup).toContain("Aucun rapport généré");
+    expect(markup).not.toContain("Rapport d&#x27;impact");
   });
 });
