@@ -249,6 +249,8 @@ describe("POST /api/admin/partners/published-directory", () => {
       targetId: "onboarded-1",
       details: {
         operation: "review_partner_publication",
+        stage: "partner_update",
+        partialMutation: false,
         previousValue: {
           publicationStatus: "pending_admin_review",
           verificationStatus: "en_cours",
@@ -256,6 +258,50 @@ describe("POST /api/admin/partners/published-directory", () => {
         newValue: { publicationStatus: "accepted", verificationStatus: "verifie" },
       },
     });
+  });
+
+  it("audits a source request sync failure as a partial mutation", async () => {
+    const sourceSyncError = "source sync provider detail";
+    updatePartnerOnboardingRequestStatusMock.mockRejectedValue(
+      new Error(sourceSyncError),
+    );
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      request({
+        id: "onboarded-1",
+        publicationStatus: "accepted",
+        confirmPhrase: "CONFIRMER PARTENAIRE",
+        reason: "Motif de synchronisation",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updatePublishedPartnerAnnuaireEntryPublicationStatusMock).toHaveBeenCalledTimes(1);
+    expect(updatePartnerOnboardingRequestStatusMock).toHaveBeenCalledWith({
+      requestId: "request-1",
+      status: "accepted",
+    });
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: "onboarded-1",
+      details: {
+        operation: "review_partner_publication",
+        reason: "Motif de synchronisation",
+        sourceRequestId: "request-1",
+        stage: "source_request_sync",
+        partialMutation: true,
+        previousValue: {
+          publicationStatus: "pending_admin_review",
+          verificationStatus: "en_cours",
+        },
+        newValue: { publicationStatus: "accepted", verificationStatus: "verifie" },
+      },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain(sourceSyncError);
+    expect(sendCreatorInboxEmailMock).not.toHaveBeenCalled();
   });
 
   it("keeps PII and partner content out of audit details", async () => {
