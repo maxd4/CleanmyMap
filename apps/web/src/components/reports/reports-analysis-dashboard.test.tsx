@@ -73,7 +73,8 @@ describe("ReportsAnalysisDashboard contract", () => {
     expect(markup).toContain("Couverture géolocalisée");
     expect(markup).toContain("Couverture des traces");
     expect(markup).toContain("90 jours glissants");
-    expect(markup).not.toContain("12 derniers mois");
+    expect(markup).toContain("12 derniers mois");
+    expect(markup).toContain("90 jours précédents");
   });
 
   it("keeps quality metrics distinct from environmental impact claims", () => {

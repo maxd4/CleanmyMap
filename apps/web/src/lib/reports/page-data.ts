@@ -1,6 +1,7 @@
 import { getActionOperationalContext, toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
+import { filterContractsToWindow } from "@/lib/pilotage/metrics";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { REPORT_DATA_BUDGET } from "@/lib/reports/budget";
 import { computeReportModel } from "@/lib/reports/report-model";
@@ -15,29 +16,6 @@ export type ReportsSummaryKpi = {
   interpretation: "positive" | "negative" | "neutral";
 };
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Keeps the Pilotage history intact while deriving the contracts shown as the
- * current Reports window. `observedAt` is the business date used by the
- * action/report aggregators, and both bounds are inclusive.
- */
-export function filterContractsToActivePeriod(
-  contracts: readonly ActionDataContract[],
-  params: { periodDays: number; now: Date },
-): ActionDataContract[] {
-  const nowMs = params.now.getTime();
-  if (!Number.isFinite(nowMs) || !Number.isFinite(params.periodDays) || params.periodDays < 0) {
-    return [];
-  }
-
-  const floorMs = nowMs - params.periodDays * DAY_IN_MS;
-  return contracts.filter((contract) => {
-    const observedAtMs = new Date(contract.dates.observedAt).getTime();
-    return Number.isFinite(observedAtMs) && observedAtMs >= floorMs && observedAtMs <= nowMs;
-  });
-}
-
 export async function loadReportsAnalysisData(now = new Date()) {
   const [overview, communityEventsResult] = await Promise.all([
     loadPilotageOverview({
@@ -49,10 +27,8 @@ export async function loadReportsAnalysisData(now = new Date()) {
       .catch(() => ({ items: [], availability: "unavailable" as const })),
   ]);
   const communityEvents = communityEventsResult.items;
-  const activeContracts = filterContractsToActivePeriod(overview.contracts, {
-    periodDays: overview.periodDays,
-    now,
-  });
+  const activeContracts = filterContractsToWindow(overview.contracts, overview.periodDays, now);
+  const historicalContracts = filterContractsToWindow(overview.contracts, 365, now);
 
   const actionListItems = activeContracts.map((contract) =>
     toActionListItem(contract),
@@ -73,7 +49,7 @@ export async function loadReportsAnalysisData(now = new Date()) {
       moderationAvailability: "unavailable",
       now,
     }),
-    monthlyData: aggregateMonthlyAnalytics(activeContracts),
+    monthlyData: aggregateMonthlyAnalytics(historicalContracts),
   };
 }
 

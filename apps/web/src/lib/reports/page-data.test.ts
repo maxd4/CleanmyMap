@@ -38,8 +38,8 @@ vi.mock("@/lib/reports/report-model", () => ({
 }));
 
 import type { ActionDataContract } from "@/lib/actions/data-contract";
+import { filterContractsToWindow } from "@/lib/pilotage/metrics";
 import {
-  filterContractsToActivePeriod,
   loadReportsAnalysisData,
   loadReportsGenerationData,
 } from "./page-data";
@@ -90,23 +90,28 @@ describe("/reports server data budget", () => {
   it("filters the active window with inclusive bounds and excludes invalid or future dates", () => {
     const now = new Date("2026-08-31T12:00:00.000Z");
     const contracts = [
-      contractAt("2026-06-02T11:59:59.999Z", "before-floor"),
-      contractAt("2026-06-02T12:00:00.001Z", "at-floor"),
+      contractAt("2026-06-02T11:59:59.999Z", "previous-near-upper"),
+      contractAt("2026-06-02T12:00:00.000Z", "at-floor"),
+      contractAt("2026-03-04T12:00:00.000Z", "previous-floor"),
       contractAt("2026-08-31T12:00:00.000Z", "at-now"),
       contractAt("2026-08-31T12:00:00.001Z", "future"),
       contractAt("not-a-date", "invalid"),
     ];
 
-    expect(filterContractsToActivePeriod(contracts, { periodDays: 90, now }).map((contract) => contract.id)).toEqual([
+    expect(filterContractsToWindow(contracts, 90, now).map((contract) => contract.id)).toEqual([
       "at-floor",
       "at-now",
+    ]);
+    expect(filterContractsToWindow(contracts, 90, now, { endInclusive: false }).map((contract) => contract.id)).toEqual([
+      "previous-near-upper",
+      "previous-floor",
     ]);
   });
 
   it("builds the current ReportModel and monthly series from the active window while preserving Pilotage history", async () => {
     const now = new Date("2026-08-31T12:00:00.000Z");
     const activeContract = contractAt("2026-08-01T12:00:00.000Z", "active");
-    const historicalContract = contractAt("2025-01-01T12:00:00.000Z", "historical");
+    const historicalContract = contractAt("2026-05-01T12:00:00.000Z", "historical");
     const contracts = [activeContract, historicalContract];
     mocks.loadPilotageOverview.mockResolvedValueOnce({ contracts, periodDays: 90 });
 
@@ -119,7 +124,7 @@ describe("/reports server data budget", () => {
       mapItems: [activeContract],
       now,
     }));
-    expect(mocks.aggregateMonthlyAnalytics).toHaveBeenCalledWith([activeContract]);
+    expect(mocks.aggregateMonthlyAnalytics).toHaveBeenCalledWith([activeContract, historicalContract]);
   });
 
   it("keeps an empty events array but exposes event loading failure", async () => {

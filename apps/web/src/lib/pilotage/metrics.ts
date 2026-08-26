@@ -145,6 +145,27 @@ function parseDateMs(raw: string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+export function filterContractsToWindow(
+  records: ActionDataContract[],
+  periodDays: number,
+  now: Date,
+  options: { endInclusive?: boolean } = {},
+): ActionDataContract[] {
+  const endInclusive = options.endInclusive ?? true;
+  const nowMs = now.getTime();
+  const endMs = endInclusive ? nowMs : nowMs - periodDays * DAY_MS;
+  const startMs = endMs - periodDays * DAY_MS;
+
+  return records.filter((record) => {
+    const observedMs = parseDateMs(record.dates.observedAt);
+    return (
+      observedMs !== null &&
+      observedMs >= startMs &&
+      (endInclusive ? observedMs <= endMs : observedMs < endMs)
+    );
+  });
+}
+
 function isGeolocated(contract: ActionDataContract): boolean {
   const latitude = contract.location.latitude;
   const longitude = contract.location.longitude;
@@ -283,22 +304,10 @@ export function computePilotageComparison(
     options.moderationAvailability ?? "available";
   const nowMs = now.getTime();
   const currentFloorMs = nowMs - periodDays * DAY_MS;
-  const previousFloorMs = currentFloorMs - periodDays * DAY_MS;
 
-  const currentRecords = records.filter((record) => {
-    const observedMs = parseDateMs(record.dates.observedAt);
-    return (
-      observedMs !== null && observedMs >= currentFloorMs && observedMs <= nowMs
-    );
-  });
-
-  const previousRecords = records.filter((record) => {
-    const observedMs = parseDateMs(record.dates.observedAt);
-    return (
-      observedMs !== null &&
-      observedMs >= previousFloorMs &&
-      observedMs < currentFloorMs
-    );
+  const currentRecords = filterContractsToWindow(records, periodDays, now);
+  const previousRecords = filterContractsToWindow(records, periodDays, now, {
+    endInclusive: false,
   });
 
   const current = computeWindowMetrics(

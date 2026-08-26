@@ -24,7 +24,9 @@
   lien documentaire sans destination n'est affiché. Les tendances restent
   limitées aux séries réellement produites par `aggregateMonthlyAnalytics`;
   les valeurs de comparaison proviennent de `overview.summary.kpis`. Cet
-  overview conserve l'historique Pilotage ; les totaux et la série mensuelle
-  Analyse sont dérivés séparément des contrats de la fenêtre active
-  `[now - periodDays, now]`, avec `dates.observedAt` comme date métier et un
-  même `now` pour le filtrage et le calcul.
+  overview conserve l'historique Pilotage ; les totaux et la qualité/cartographie
+  Analyse sont dérivés des contrats de la fenêtre courante `[now - periodDays,
+  now]`, avec `dates.observedAt` comme date métier et un même `now` pour le
+  filtrage et le calcul. La tendance est une série historique distincte sur
+  12 mois glissants, tandis que la comparaison oppose la fenêtre courante aux
+  90 jours précédents selon les bornes de `computePilotageComparison()`.
