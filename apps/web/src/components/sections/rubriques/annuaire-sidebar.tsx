@@ -2,7 +2,7 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { ShieldCheck, Info, Sparkles, Target, Compass } from "lucide-react";
+import { ShieldCheck, Info, Compass } from "lucide-react";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import { motion } from "framer-motion";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
@@ -74,20 +74,12 @@ export function AnnuaireSidebar({
              
              <div className="bg-slate-950/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
                 <span className="text-[9px] font-black uppercase tracking-widest text-violet-400">
-                  {entries.length} {fr ? "Acteurs" : "Actors"}
+                  {entries.length} {fr ? "Entrées" : "Entries"}
                 </span>
              </div>
           </div>
         </div>
 
-        {/* Top Info Tag */}
-        <div className="absolute top-6 left-6 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="bg-violet-500/90 backdrop-blur-xl px-4 py-1.5 rounded-lg border border-violet-400/50 shadow-2xl">
-             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white">
-               {fr ? "Données Synchronisées" : "Synced Data"}
-             </p>
-          </div>
-        </div>
       </div>
 
       {/* Info Complémentaire - Contextual Note */}
@@ -96,61 +88,47 @@ export function AnnuaireSidebar({
            <Info size={40} className="text-white" />
         </div>
         <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic relative z-10">
-          {fr 
-            ? "Les données affichées sont mises à jour régulièrement par nos services et nos partenaires stratégiques." 
-            : "The data displayed is regularly updated by our services and strategic partners."}
+          {fr
+            ? "Cette vue rassemble des ressources éditoriales et des fiches partenaires publiées. La provenance est indiquée sur chaque entrée."
+            : "This view combines editorial resources and published partner profiles. Provenance is shown on every entry."}
         </p>
       </div>
 
-      {/* Méthodologie Card - Transparency Hub */}
+      {/* Transparence du registre et du tri */}
       <div className="rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 space-y-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-           <Target size={80} className="text-white" />
-        </div>
-
         <div className="flex items-center gap-3 relative z-10">
            <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
               <ShieldCheck size={16} />
            </div>
            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
-            {fr ? "Algorithme & Transparence" : "Algorithm & Transparency"}
+            {fr ? "Transparence des données" : "Data transparency"}
           </h4>
         </div>
 
         <div className="space-y-4 relative z-10">
           <p className="text-xs font-bold text-slate-500 leading-relaxed">
-            {fr 
-              ? "Le classement et l'indice de confiance sont calculés en temps réel :" 
-              : "Ranking and trust index are calculated in real-time:"}
+            {fr
+              ? "L’ordre affiché suit les règles visibles de la liste :"
+              : "The displayed order follows the list's visible rules:"}
           </p>
-          
-          <div className="grid gap-3">
-            {[
-              { 
-                label: fr ? "Proximité" : "Proximity", 
-                value: fr ? "+18pts (même zone)" : "+18pts (same area)", 
-                icon: <Compass size={12} className="text-violet-400" /> 
-              },
-              { 
-                label: fr ? "Pertinence" : "Relevance", 
-                value: fr ? "+12-18pts (adéquation)" : "+12-18pts (match)", 
-                icon: <Sparkles size={12} className="text-violet-400" /> 
-              },
-              { 
-                label: fr ? "Fiabilité" : "Reliability", 
-                value: fr ? "MAJ < 90j" : "Update < 90d", 
-                icon: <ShieldCheck size={12} className="text-violet-400" /> 
-              }
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 border border-white/5 group/row transition-all hover:bg-white/10">
-                 <div className="flex items-center gap-3">
-                    {item.icon}
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</span>
-                 </div>
-                 <span className="text-[10px] font-black text-white">{item.value}</span>
-              </div>
-            ))}
-          </div>
+          <ol className="space-y-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <li className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3.5">
+              <span className="text-violet-400">1</span>
+              {fr ? "Mise en avant éventuelle" : "Optional featured selection"}
+            </li>
+            <li className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3.5">
+              <span className="text-violet-400">2</span>
+              {fr ? "Fiches confirmées" : "Confirmed profiles"}
+            </li>
+            <li className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3.5">
+              <span className="text-violet-400">3</span>
+              {fr ? "Proximité si disponible" : "Proximity when available"}
+            </li>
+            <li className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3.5">
+              <span className="text-violet-400">4</span>
+              {fr ? "Ordre alphabétique" : "Alphabetical order"}
+            </li>
+          </ol>
         </div>
       </div>
     </motion.div>

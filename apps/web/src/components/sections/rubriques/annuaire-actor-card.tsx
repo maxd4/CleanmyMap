@@ -13,6 +13,7 @@ import {
   formatCoverage,
   formatFreshness,
   hasRecentPartnerUpdate,
+  isPublishedPartnerAnnuaireEntry,
 } from "./annuaire-helpers";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -35,6 +36,7 @@ export function AnnuaireActorCard({
   const isTrusted = trustState === "trusted";
   const isIncomplete = trustState === "incomplete";
   const isEditorial = trustState === "editorial";
+  const isPublishedPartner = isPublishedPartnerAnnuaireEntry(entry);
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
 
@@ -82,7 +84,7 @@ export function AnnuaireActorCard({
         {isTrusted && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[9px] font-black tracking-widest text-emerald-400 shadow-2xl">
             <ShieldCheck size={10} />
-            {fr ? "CERTIFIÉ" : "CERTIFIED"}
+            {fr ? "FICHE CONFIRMÉE" : "CONFIRMED PROFILE"}
           </span>
         )}
         {hasRecentPartnerUpdate(entry) && (
@@ -91,7 +93,7 @@ export function AnnuaireActorCard({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sky-500"></span>
             </span>
-            {fr ? "ACTIF" : "ACTIVE"}
+            {fr ? "MISE À JOUR RÉCENTE" : "RECENT UPDATE"}
           </span>
         )}
       </div>
@@ -181,21 +183,39 @@ export function AnnuaireActorCard({
           <div className="flex items-center justify-between text-[10px]">
              <div className="flex items-center gap-3">
                 <MapPin size={12} className="text-slate-600" />
-                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Périmètre" : "Scope"}</span>
+                <span className="font-black text-slate-500 uppercase tracking-widest">
+                  {isEditorial
+                    ? fr
+                      ? "Zones associées"
+                      : "Associated areas"
+                    : fr
+                      ? "Périmètre déclaré"
+                      : "Declared scope"}
+                </span>
              </div>
              <span className="font-bold text-white uppercase">{formatCoverage(entry.coveredArrondissements, entry.location)}</span>
           </div>
-          <div className="flex items-center justify-between text-[10px]">
-             <div className="flex items-center gap-3">
-                <Clock size={12} className="text-slate-600" />
-                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Disponibilité" : "Availability"}</span>
-             </div>
-             <span className="font-bold text-white uppercase">{entry.availability}</span>
-          </div>
+          {isPublishedPartner && (
+            <div className="flex items-center justify-between text-[10px]">
+               <div className="flex items-center gap-3">
+                  <Clock size={12} className="text-slate-600" />
+                  <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Disponibilité déclarée" : "Declared availability"}</span>
+               </div>
+               <span className="font-bold text-white uppercase">{entry.availability}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-[10px]">
              <div className="flex items-center gap-3">
                 <Zap size={12} className="text-slate-600" />
-                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Impact" : "Impact"}</span>
+                <span className="font-black text-slate-500 uppercase tracking-widest">
+                  {isEditorial
+                    ? fr
+                      ? "Contributions repérées"
+                      : "Observed contributions"
+                    : fr
+                      ? "Contributions déclarées"
+                      : "Declared contributions"}
+                </span>
              </div>
              <span className="font-bold text-white uppercase line-clamp-1 max-w-[120px] text-right">
                 {entry.contributionTypes.map((item) => CONTRIBUTION_LABELS[item]).join(", ")}
@@ -263,7 +283,13 @@ export function AnnuaireActorCard({
           >
             <a href={entry.primaryChannel.url} target="_blank" rel="noopener noreferrer">
               <MessageSquare size={14} className="mr-2 group-hover/btn:scale-110 transition-transform" />
-              {fr ? "Contacter" : "Contact"}
+              {isEditorial
+                ? fr
+                  ? "Consulter"
+                  : "View resource"
+                : fr
+                  ? "Contacter"
+                  : "Contact"}
             </a>
           </CmmButton>
         ) : (
@@ -276,10 +302,12 @@ export function AnnuaireActorCard({
       {/* Subtle Footer Meta */}
       <div className="mt-6 flex items-center justify-between opacity-40">
          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">ID: {entry.id.split('-')[0]}</span>
-         <div className="flex items-center gap-2">
-            <Clock size={10} className="text-slate-500" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{formatFreshness(entry.lastUpdatedAt)}</span>
-         </div>
+         {isPublishedPartner && (
+           <div className="flex items-center gap-2">
+              <Clock size={10} className="text-slate-500" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{formatFreshness(entry.lastUpdatedAt)}</span>
+           </div>
+         )}
       </div>
     </CmmCard>
   );

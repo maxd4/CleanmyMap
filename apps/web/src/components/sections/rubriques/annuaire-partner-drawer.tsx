@@ -12,6 +12,7 @@ import {
   getAssociationImpactSummary,
   getAssociationProfile,
   getAssociationStructureBadge,
+  isEditorialAnnuaireEntry,
 } from "./annuaire-helpers";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
   if (!entry) return null;
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
+  const isEditorial = isEditorialAnnuaireEntry(entry);
 
   return (
     <AnimatePresence>
@@ -107,7 +109,9 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
                     <Target size={18} />
                   </div>
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Mission & Impact" : "Mission & Impact"}</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                    {isEditorial ? (fr ? "Présentation" : "Overview") : "Mission & Impact"}
+                  </h3>
                 </div>
                 <p className="text-lg font-bold leading-relaxed text-slate-300 opacity-90">
                   {entry.description}
@@ -329,7 +333,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                 variant="default"
                 className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] transition-all hover:bg-violet-500 hover:scale-[1.02]"
               >
-                <span>{fr ? "Engager le contact" : "Get in touch"}</span>
+                <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
                 <MessageSquare size={18} className="ml-3 group-hover/cta:scale-110 transition-transform" />
               </CmmButton>
             </div>

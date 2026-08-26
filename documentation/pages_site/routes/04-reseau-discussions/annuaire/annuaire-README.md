@@ -60,16 +60,29 @@ une éventuelle mise en avant reste une sélection éditoriale distincte.
 Les fiches issues du seed restent visibles dans l'annuaire comme ressources
 éditoriales. Le contrat `AnnuaireEntrySeedInput` interdit désormais dans les
 sources seed les statuts de validation, la récence, `impactHistory` et
-`structureStatus`. Le LOT 2B.2 porte uniquement sur l'audit qualitatif restant
-des descriptions, `featuredReason`, `tags`, `availability` et `pastActions`,
-ainsi que sur les doublons d'entités et les formulations à vérifier.
+`structureStatus`. Le LOT 2B.2 porte sur l'audit qualitatif des descriptions,
+`featuredReason`, `tags` et `pastActions`, ainsi que sur les doublons d'entités
+et les formulations à vérifier.
 
 Le LOT 2B.2A a supprimé les profils associatifs éditoriaux non prouvés, fusionné
 les doublons ALCOME, TchaoMegot et Cy-Clope, neutralisé les formulations
 d'officialité ou de partenariat ciblées, et retiré la ressource de groupe de
 parole sans canal public identifiable. Les champs `availability`,
-`lastUpdatedAt`, `coveredArrondissements` et `contributionTypes` restent
-volontairement inchangés et seront réévalués séparément au LOT 2B.2B.
+`lastUpdatedAt`, `coveredArrondissements` et `contributionTypes` ont ensuite
+été réévalués dans le lot final ci-dessous.
+
+Le LOT 2B.2B finalise ce contrat sémantique : une ressource `editorial_seed`
+ne transporte ni disponibilité opérationnelle ni fraîcheur partenaire. Elle
+peut exposer des `coveredArrondissements` comme zones associées au contenu
+éditorial, sans les présenter comme un périmètre opérationnel prouvé. Ses
+`contributionTypes` sont affichés comme contributions repérées et ne sont pas
+un indicateur d'impact.
+
+Une fiche `published_partner` conserve ses données déclarées de disponibilité,
+de fraîcheur et de périmètre. Les labels de confiance restent factuels
+(`Fiche confirmée`, `Mise à jour récente`) et ne valent pas certification ni
+preuve d'activité. L'ordre réel est : mise en avant éventuelle, fiches
+confirmées, proximité lorsqu'elle est disponible, puis ordre alphabétique.
 
 ## Fichiers associés
 

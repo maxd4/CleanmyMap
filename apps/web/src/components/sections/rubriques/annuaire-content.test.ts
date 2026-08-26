@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
 import {
   compareAnnuaireEntries,
-  buildAutomaticRecommendations,
   getAssociationProfile,
   getAssociationStructureBadge,
   getEntryTrustState,
@@ -36,6 +35,8 @@ describe("annuaire public data contract", () => {
       expect(entry.provenance).toBe("editorial_seed");
       expect(entry.verificationStatus).toBe("en_cours");
       expect(entry.qualificationStatus).toBe("contact_non_qualifie");
+      expect(entry.availability).toBeUndefined();
+      expect(entry.lastUpdatedAt).toBeUndefined();
       expect(entry.recentActivityAt).toBeUndefined();
       expect(entry.associationProfile?.impactHistory).toBeUndefined();
       expect(entry.associationProfile?.structureStatus).toBeUndefined();
@@ -58,6 +59,8 @@ describe("annuaire public data contract", () => {
       verificationStatus: "verifie" as const,
       qualificationStatus: "partenaire_actif" as const,
       recentActivityAt: "2026-08-26T10:00:00.000Z",
+      availability: "Sur rendez-vous",
+      lastUpdatedAt: "2026-08-26T10:00:00.000Z",
       isFeatured: false,
       coveredArrondissements: [1],
       primaryChannel: {
@@ -78,16 +81,4 @@ describe("annuaire public data contract", () => {
     expect(sorted[0]?.provenance).toBe("published_partner");
   });
 
-  it("does not recommend an editorial seed as an operational partner", () => {
-    const seed = INITIAL_ANNUAIRE_ENTRIES[0];
-    expect(seed).toBeDefined();
-
-    expect(
-      buildAutomaticRecommendations({
-        entries: [{ ...seed, distanceKm: null }],
-        profile: "benevole",
-        arrondissement: null,
-      }),
-    ).toEqual([]);
-  });
 });
