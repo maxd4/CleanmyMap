@@ -1,4 +1,4 @@
-import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
+import { TrashSpotterOwnerLoop } from "@/components/actions/trash-spotter-owner-loop";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -127,7 +127,7 @@ export default async function SignalementPage({
               }
               className="p-1 sm:p-12"
             >
-              <TrashSpotterObservationForm initialLocation={initialLocation} />
+              <TrashSpotterOwnerLoop initialLocation={initialLocation} />
             </FamilyRubriqueCard>
           </div>
         </SectionShell>
