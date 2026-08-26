@@ -27,6 +27,18 @@ const STATUS_LABELS: Record<BugReportRecord["status"], { fr: string; en: string 
   archived: { fr: "Archivé", en: "Archived" },
 };
 
+export function buildFeedbackStatusUpdatePayload(params: {
+  reportId: string;
+  status: BugReportRecord["status"];
+  reason: string;
+}) {
+  return {
+    reportId: params.reportId,
+    status: params.status,
+    reason: params.reason.trim(),
+  };
+}
+
 export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelProps) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -34,6 +46,7 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | BugReportRecord["status"]>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -72,7 +85,17 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
     });
   }, [items, query, statusFilter]);
 
-  async function updateStatus(reportId: string, status: BugReportRecord["status"]) {
+  async function updateStatus(
+    reportId: string,
+    status: BugReportRecord["status"],
+    reason: string,
+  ) {
+    const requestPayload = buildFeedbackStatusUpdatePayload({ reportId, status, reason });
+    if (requestPayload.reason.length < 5) {
+      setErrorMessage(fr ? "Le motif doit contenir au moins 5 caractères." : "The reason must contain at least 5 characters.");
+      return;
+    }
+
     setUpdatingId(reportId);
     setErrorMessage(null);
 
@@ -80,7 +103,7 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
       const response = await fetch("/api/community/bug-reports", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ reportId, status }),
+        body: JSON.stringify(requestPayload),
       });
 
       if (!response.ok) {
@@ -99,6 +122,7 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
           current.map((item) => (item.id === payload.item?.id ? payload.item! : item)),
         );
       }
+      setReasons((current) => ({ ...current, [reportId]: "" }));
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -246,6 +270,23 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
                 <span>{new Date(item.createdAt).toLocaleString(locale === "fr" ? "fr-FR" : "en-US")}</span>
               </div>
 
+              <label className="mt-3 block space-y-1">
+                <span className="cmm-text-caption font-semibold cmm-text-secondary">
+                  {fr ? "Motif de décision" : "Decision reason"}
+                </span>
+                <textarea
+                  value={reasons[item.id] ?? ""}
+                  onChange={(event) =>
+                    setReasons((current) => ({ ...current, [item.id]: event.target.value }))
+                  }
+                  minLength={5}
+                  maxLength={500}
+                  rows={2}
+                  placeholder={fr ? "Expliquez cette décision..." : "Explain this decision..."}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+
               <div className="mt-3 flex flex-wrap gap-2">
                 {item.submittedByEmail ? (
                   <a
@@ -265,8 +306,8 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
                 {item.status === "open" ? (
                   <button
                     type="button"
-                    disabled={updatingId === item.id}
-                    onClick={() => void updateStatus(item.id, "treated")}
+                    disabled={updatingId === item.id || (reasons[item.id] ?? "").trim().length < 5}
+                    onClick={() => void updateStatus(item.id, "treated", reasons[item.id] ?? "")}
                     className="rounded-lg border border-emerald-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {updatingId === item.id ? (fr ? "Traitement..." : "Updating...") : (fr ? "Marquer traité" : "Mark treated")}
@@ -275,8 +316,8 @@ export function FeedbackRequestsPanel({ initialItems }: FeedbackRequestsPanelPro
                 {item.status !== "archived" ? (
                   <button
                     type="button"
-                    disabled={updatingId === item.id}
-                    onClick={() => void updateStatus(item.id, "archived")}
+                    disabled={updatingId === item.id || (reasons[item.id] ?? "").trim().length < 5}
+                    onClick={() => void updateStatus(item.id, "archived", reasons[item.id] ?? "")}
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {updatingId === item.id ? (fr ? "Archivage..." : "Archiving...") : (fr ? "Archiver" : "Archive")}
