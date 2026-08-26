@@ -295,7 +295,7 @@ describe("PATCH /api/admin/creator-inbox", () => {
       operationType: "admin_operation",
       outcome: "error",
       details: {
-        stage: "creator_state_update",
+        stage: "update",
         partialMutation: false,
       },
     });
@@ -327,7 +327,7 @@ describe("PATCH /api/admin/creator-inbox", () => {
         operation: "creator_inbox_update",
         reason: "Archivage demandé",
         targetUserId: "user-1",
-        stage: "status_update",
+        stage: "secondary_update",
         partialMutation: true,
         previousValue: {
           source: "feedback",
@@ -345,5 +345,182 @@ describe("PATCH /api/admin/creator-inbox", () => {
     expect(JSON.stringify(auditCalls()[0])).not.toContain("Display name");
     expect(JSON.stringify(auditCalls()[0])).not.toContain("person@example.com");
     expect(JSON.stringify(auditCalls()[0])).not.toContain("Message content");
+  });
+
+  it("audits feedback delete success with a minimal before value", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "delete",
+        reason: "Suppression confirmée",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(deleteCommunityBugReportMock).toHaveBeenCalledWith("feedback-1");
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "success",
+      targetId: "feedback-1",
+      details: {
+        operation: "creator_inbox_update",
+        reason: "Suppression confirmée",
+        targetUserId: "user-1",
+        previousValue: { source: "feedback", creatorState: "new" },
+        newValue: { deleted: true },
+      },
+    });
+  });
+
+  it("audits partner delete success with a minimal before value", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "partner",
+        itemId: "partner-1",
+        action: "delete",
+        reason: "Dossier supprimé",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(deletePartnerOnboardingRequestMock).toHaveBeenCalledWith("partner-1");
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "success",
+      targetId: "partner-1",
+      details: {
+        operation: "creator_inbox_update",
+        reason: "Dossier supprimé",
+        targetUserId: "partner-user-1",
+        previousValue: { source: "partner", creatorState: "pending" },
+        newValue: { deleted: true },
+      },
+    });
+  });
+
+  it.each([
+    ["feedback", "feedback-1"],
+    ["promotion", "promotion-1"],
+    ["partner", "partner-1"],
+  ] as const)("audits an identified missing %s item as lookup error", async (source, itemId) => {
+    if (source === "feedback") {
+      getCommunityBugReportByIdMock.mockResolvedValueOnce(null);
+    } else if (source === "promotion") {
+      getPromotionRequestByIdMock.mockResolvedValueOnce(null);
+    } else {
+      getPartnerOnboardingRequestByIdMock.mockResolvedValueOnce(null);
+    }
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({ source, itemId, action: "responded", reason: "Recherche ciblée" }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: itemId,
+      details: {
+        operation: "creator_inbox_update",
+        stage: "lookup",
+        partialMutation: false,
+        previousValue: { source, status: "unknown", creatorState: "unknown" },
+        newValue: { source, status: "unknown", creatorState: "unknown" },
+      },
+    });
+  });
+
+  it("keeps accepted partner deletion forbidden and audited without mutation", async () => {
+    getPartnerOnboardingRequestByIdMock.mockResolvedValueOnce({
+      ...partnerRecord,
+      status: "accepted",
+      creatorState: "accepted",
+    });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "partner",
+        itemId: "partner-1",
+        action: "delete",
+        reason: "Suppression refusée",
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(deletePartnerOnboardingRequestMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: "partner-1",
+      details: {
+        stage: "delete",
+        partialMutation: false,
+        previousValue: {
+          source: "partner",
+          status: "accepted",
+          creatorState: "accepted",
+        },
+        newValue: {
+          source: "partner",
+          status: "accepted",
+          creatorState: "accepted",
+        },
+      },
+    });
+  });
+
+  it("keeps promotion deletion forbidden and audited without mutation", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "promotion",
+        itemId: "promotion-1",
+        action: "delete",
+        reason: "Suppression refusée",
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(getPromotionRequestByIdMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: "promotion-1",
+      details: { stage: "delete", partialMutation: false },
+    });
+  });
+
+  it.each([
+    ["feedback", "feedback-1"],
+    ["partner", "partner-1"],
+  ] as const)("audits delete persistence failure for %s", async (source, itemId) => {
+    if (source === "feedback") {
+      deleteCommunityBugReportMock.mockRejectedValueOnce(new Error("delete provider detail"));
+    } else {
+      deletePartnerOnboardingRequestMock.mockRejectedValueOnce(new Error("delete provider detail"));
+    }
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({ source, itemId, action: "delete", reason: "Suppression échouée" }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      details: { stage: "delete", partialMutation: false },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("delete provider detail");
   });
 });
