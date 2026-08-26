@@ -46,6 +46,8 @@
     "check:github-actions": "node scripts/check-github-actions-security.mjs",
     "audit:pages-site-drift": "node scripts/check-pages-site-route-drift.mjs",
     "check:pages-site-drift": "node scripts/check-pages-site-route-drift.mjs --strict",
+    "audit:repository-tree": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audit-repository-tree.ps1",
+    "audit:repository-tree:self-test": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audit-repository-tree.ps1 -SelfTestOnly",
     "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "check:root-files": "node scripts/check-root-file-hygiene.mjs",
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",
