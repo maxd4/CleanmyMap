@@ -37,9 +37,14 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     dmShellKey,
   } = useConnectData(initialTab);
 
+  const discussionChannelType = initialChannelType === "dm" ? "community" : initialChannelType;
+  const discussionTopicId = initialChannelType === "dm" ? null : initialTopicId;
+  const discussionRecipient = initialChannelType === "dm" ? null : initialRecipient;
+  const discussionMessageId = initialChannelType === "dm" ? null : initialMessageId;
+
   return (
-    <section id="connect" className="relative flex flex-col bg-rose-50/40">
-      <div className="flex flex-col items-start justify-between gap-4 border-b border-rose-100/60 bg-white/80 px-4 pb-4 pt-5 sm:flex-row sm:items-center sm:px-6 sm:pt-6">
+    <section id="connect" className="relative flex min-h-0 flex-col bg-rose-50/40">
+      <div className="flex shrink-0 flex-col items-start justify-between gap-3 border-b border-rose-100/60 bg-white/80 px-3 pb-3 pt-3 sm:flex-row sm:items-center sm:px-6 sm:py-4">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-rose-100 p-2.5 text-rose-500">
             <MessageSquare size={20} />
@@ -65,12 +70,12 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="h-[calc(100dvh-140px)] min-h-[500px]"
+              className="h-[calc(100dvh-8.5rem)] min-h-0"
             >
               <DeferredChatShell
                 key={discussionShellKey}
-                initialChannelType={initialChannelType}
-                initialTopicId={initialTopicId}
+                initialChannelType={discussionChannelType}
+                initialTopicId={discussionTopicId}
                 initialComposerMode={initialComposerMode}
                 initialAnnouncementTemplate={initialAnnouncementTemplate}
                 initialMessage={initialMessage}
@@ -80,8 +85,8 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                 announcementEventError={announcementEventError}
                 initialArrondissement={initialArrondissement}
                 initialZoneName={initialZoneName}
-                initialRecipient={initialRecipient}
-                initialMessageId={initialMessageId}
+                initialRecipient={discussionRecipient}
+                initialMessageId={discussionMessageId}
                 tone="light"
                 fullHeight
                 messagerieMode
@@ -94,7 +99,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="h-[calc(100dvh-140px)] min-h-[500px]"
+              className="h-[calc(100dvh-8.5rem)] min-h-0"
             >
               <DeferredChatShell
                 key={dmShellKey}

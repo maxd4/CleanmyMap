@@ -83,8 +83,8 @@ export const ChatHeader = memo(function ChatHeader({
   const [showMeta, setShowMeta] = useState(false);
   return (
     <>
-      <div className={`p-5 flex items-center justify-between backdrop-blur-xl relative z-30 border-b ${isLight ? "border-rose-100/60 bg-white/70" : "border-pink-100/70 dark:border-slate-800 bg-[rgba(255,248,251,0.9)] dark:bg-slate-900/50"}`}>
-        <div className="flex items-center gap-4">
+      <div className={`flex items-center justify-between gap-3 border-b px-3 py-3 backdrop-blur-xl relative z-30 sm:px-5 sm:py-4 ${isLight ? "border-rose-100/60 bg-white/70" : "border-pink-100/70 dark:border-slate-800 bg-[rgba(255,248,251,0.9)] dark:bg-slate-900/50"}`}>
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
           {onBackToDmInbox ? (
             <button
               type="button"
@@ -95,12 +95,12 @@ export const ChatHeader = memo(function ChatHeader({
               <ArrowLeft size={18} aria-hidden="true" />
             </button>
           ) : null}
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${isLight ? "bg-rose-50 text-rose-500" : `bg-pink-50 dark:bg-slate-900 ${activeChannelAccentClass}`}`}>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-inner sm:h-12 sm:w-12 ${isLight ? "bg-rose-50 text-rose-500" : `bg-pink-50 dark:bg-slate-900 ${activeChannelAccentClass}`}`}>
             <ActiveChannelIcon size={22} />
           </div>
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={`font-black text-lg uppercase tracking-tighter ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
+              <h3 className={`truncate font-black text-base uppercase tracking-tighter sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
                 {activeChannelLabel}
               </h3>
               <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse ${isLight ? "bg-rose-100 text-rose-600" : "bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300"}`}>
@@ -121,7 +121,7 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
           </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {showControls ? (
         <>
           <div className={`p-1 rounded-xl flex gap-1 ${isLight ? "bg-white/80 border border-rose-100/70" : "bg-pink-100/70 dark:bg-slate-800/80"}`}>
@@ -129,7 +129,9 @@ export const ChatHeader = memo(function ChatHeader({
               disabled={isBugReportChannel}
               onClick={() => onViewModeChange("messages")}
               aria-label="Afficher les messages"
-              className={`p-2 rounded-lg transition-all ${
+              aria-pressed={viewMode === "messages"}
+              type="button"
+              className={`rounded-lg p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
                 isBugReportChannel
                   ? "opacity-40 cursor-not-allowed"
                   : viewMode === "messages"
@@ -147,7 +149,9 @@ export const ChatHeader = memo(function ChatHeader({
               disabled={isBugReportChannel}
               onClick={() => onViewModeChange("graph")}
               aria-label="Afficher le graphe"
-              className={`p-2 rounded-lg transition-all ${
+              aria-pressed={viewMode === "graph"}
+              type="button"
+              className={`rounded-lg p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
                 isBugReportChannel
                   ? "opacity-40 cursor-not-allowed"
                   : viewMode === "graph"
@@ -164,9 +168,10 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
 
           <button
+            type="button"
             onClick={onToggleHandleEditor}
             aria-label={isEditingHandle ? "Fermer la modification du pseudo" : "Modifier le pseudo"}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isLight ? "bg-white/80 text-slate-500 hover:text-rose-500 shadow-sm" : "cmm-surface-muted cmm-text-muted hover:text-pink-500 hover:shadow-lg"}`}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-white/80 text-slate-500 shadow-sm hover:text-rose-500" : "cmm-surface-muted cmm-text-muted hover:text-pink-500 hover:shadow-lg"}`}
           >
             <User size={18} />
           </button>
@@ -174,7 +179,7 @@ export const ChatHeader = memo(function ChatHeader({
             type="button"
             onClick={() => setShowMeta((current) => !current)}
             aria-label={showMeta ? "Masquer les métadonnées" : "Afficher les métadonnées"}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isLight ? "bg-white/80 text-slate-500 hover:text-indigo-500 shadow-sm" : "cmm-surface-muted cmm-text-muted hover:text-indigo-500 hover:shadow-lg"}`}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${isLight ? "bg-white/80 text-slate-500 shadow-sm hover:text-indigo-500" : "cmm-surface-muted cmm-text-muted hover:text-indigo-500 hover:shadow-lg"}`}
           >
             <Info size={18} />
           </button>
@@ -232,6 +237,7 @@ export const ChatHeader = memo(function ChatHeader({
               Identité Numérique
             </p>
             <input
+              aria-label="Votre pseudo unique"
               value={newHandle}
               onChange={(e) => onHandleChange(e.target.value)}
               placeholder="votre_pseudo_unique"
@@ -239,8 +245,9 @@ export const ChatHeader = memo(function ChatHeader({
             />
           </div>
           <button
+            type="button"
             onClick={() => void onConfirmHandle()}
-            className={`mt-6 px-6 py-2 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+            className={`mt-6 rounded-xl px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
           >
             Confirmer
           </button>

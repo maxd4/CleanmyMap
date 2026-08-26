@@ -9,7 +9,7 @@ const DeferredChatShellComponent = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[500px] items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30">
+      <div className="flex h-full min-h-0 items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30">
         <div className="space-y-3 text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-pink-500/20 border-t-pink-500" />
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
@@ -31,7 +31,7 @@ export function DeferredChatShell(props: ChatShellProps) {
       {isInView ? (
         <DeferredChatShellComponent {...props} />
       ) : (
-        <div className={`flex items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30 ${props.fullHeight ? "h-full min-h-[500px]" : "h-[750px]"}`}>
+        <div className={`flex items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30 ${props.fullHeight ? "h-full min-h-0" : "h-[750px]"}`}>
           <div className="space-y-3 text-center">
             <div className="mx-auto h-12 w-12 animate-pulse rounded-full border-2 border-pink-500/20" />
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
