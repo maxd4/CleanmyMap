@@ -16,7 +16,7 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 | `/sections/feedback` | [Idées et problèmes](./feedback/feedback-README.md) | `public-visible` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/annuaire` | [Annuaire des acteurs](./annuaire/annuaire-README.md) | `auth-disabled-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/messagerie` | [Groupes de discussion](./messagerie/messagerie-README.md) | `auth-blur-gate` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/messagerie` | [Messagerie](./messagerie/messagerie-README.md) | `auth-blur-gate` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./open-data/open-data-README.md) | `public-visible` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir le projet](./funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/trash-spotter` | [Signaler un déchet](./trash-spotter/trash-spotter-README.md) | `auth-blur-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |

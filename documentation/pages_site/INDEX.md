@@ -103,7 +103,7 @@ npm run check:pages-site-drift
 | `/sections/feedback` | [Idées et problèmes](./routes/04-reseau-discussions/feedback/feedback-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./routes/04-reseau-discussions/actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `auth-disabled-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/messagerie` | [Groupes de discussion](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/messagerie` | [Messagerie](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir le projet](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/trash-spotter` | [Signaler un déchet](./routes/04-reseau-discussions/trash-spotter/trash-spotter-README.md) | `auth-blur-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |

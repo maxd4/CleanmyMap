@@ -1,22 +1,26 @@
 # Messagerie - Liste des propositions à traiter
 
+Les propositions ci-dessous ont été traitées par les lots Messagerie 1 à 5C
+et la finition UI. Elles sont conservées comme trace de cadrage, pas comme
+fonctionnalités restantes.
+
 ## Conversations
 
-- Clarifier la mise en avant du fil actif
-- Ajouter ou renforcer les indicateurs de non-lu
-- Réduire les éléments décoratifs autour des messages
+- [x] Clarifier la mise en avant du fil actif
+- [x] Ajouter ou renforcer les indicateurs de non-lu
+- [x] Réduire les éléments décoratifs autour des messages
 
 ## Navigation
 
-- Vérifier que la liste des conversations reste utilisable sur petit écran
-- Conserver des intitulés courts et lisibles
-- Maintenir une hiérarchie stable entre liste, contenu et panneaux secondaires
+- [x] Vérifier que la liste des conversations reste utilisable sur petit écran
+- [x] Conserver des intitulés courts et lisibles
+- [x] Maintenir une hiérarchie stable entre liste, contenu et panneaux secondaires
 
 ## Lisibilité
 
-- Tester l'espacement entre les messages
-- Harmoniser les états de chargement et de vide
-- Limiter les doublons d'information dans les cartes latérales
+- [x] Tester l'espacement entre les messages
+- [x] Harmoniser les états de chargement et de vide
+- [x] Limiter les doublons d'information dans les cartes latérales
 
 ## Alignement produit
 
