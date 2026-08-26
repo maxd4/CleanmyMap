@@ -33,6 +33,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [partnerConfirm, setPartnerConfirm] = useState("");
+  const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -170,6 +171,15 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       setErrorMessage(copy.messages.partnerConfirmMismatch);
       return;
     }
+    const reason = partnerReason[item.sourceRecordId] ?? "";
+    if (reason.trim().length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
 
     setUpdatingKey(`partner:${item.sourceRecordId}:accept`);
     setErrorMessage(null);
@@ -177,6 +187,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       await acceptPartnerRequest({
         id: item.sourceRecordId,
         confirmPhrase: partnerConfirm,
+        reason,
       });
       await refreshInbox();
     } catch (error) {
@@ -191,6 +202,15 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       setErrorMessage(copy.messages.partnerConfirmMismatch);
       return;
     }
+    const reason = partnerReason[item.sourceRecordId] ?? "";
+    if (reason.trim().length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
 
     setUpdatingKey(`partner:${item.sourceRecordId}:reject`);
     setErrorMessage(null);
@@ -198,6 +218,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       await rejectPartnerRequest({
         id: item.sourceRecordId,
         confirmPhrase: partnerConfirm,
+        reason,
       });
       await refreshInbox();
     } catch (error) {
@@ -236,6 +257,8 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     refreshInbox,
     partnerConfirm,
     setPartnerConfirm,
+    partnerReason,
+    setPartnerReason,
     promotionReasons,
     setPromotionReasons,
     filteredItems,

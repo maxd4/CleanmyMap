@@ -76,6 +76,13 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
                     [item.sourceRecordId]: reason,
                   }))
                 }
+                partnerReason={inbox.partnerReason[item.sourceRecordId] ?? ""}
+                onPartnerReasonChange={(reason) =>
+                  inbox.setPartnerReason((current) => ({
+                    ...current,
+                    [item.sourceRecordId]: reason,
+                  }))
+                }
                 actionBusy={inbox.actionBusy}
                 onCopySummary={(nextItem) => void inbox.copySummary(nextItem)}
                 onAcceptPromotion={(nextItem) => void inbox.acceptPromotion(nextItem)}

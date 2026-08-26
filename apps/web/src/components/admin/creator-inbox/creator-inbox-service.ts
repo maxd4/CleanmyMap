@@ -82,10 +82,16 @@ export async function rejectPromotionRequest(params: {
 export async function acceptPartnerRequest(params: {
   id: string;
   confirmPhrase: string;
+  reason: string;
 }): Promise<void> {
   await postJson(
     "/api/admin/partners/published-directory",
-    { id: params.id, publicationStatus: "accepted", confirmPhrase: params.confirmPhrase },
+    {
+      id: params.id,
+      publicationStatus: "accepted",
+      confirmPhrase: params.confirmPhrase,
+      reason: params.reason.trim(),
+    },
     "Approval failed.",
   );
 }
@@ -93,10 +99,16 @@ export async function acceptPartnerRequest(params: {
 export async function rejectPartnerRequest(params: {
   id: string;
   confirmPhrase: string;
+  reason: string;
 }): Promise<void> {
   await postJson(
     "/api/admin/partners/published-directory",
-    { id: params.id, publicationStatus: "rejected", confirmPhrase: params.confirmPhrase },
+    {
+      id: params.id,
+      publicationStatus: "rejected",
+      confirmPhrase: params.confirmPhrase,
+      reason: params.reason.trim(),
+    },
     "Rejection failed.",
   );
 }
