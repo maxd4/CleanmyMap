@@ -41,19 +41,18 @@ La page charge en parallèle :
 
 ```txt
 pilotage overview sur 90 j
-jusqu'à 1 000 actions approuvées
+jusqu'à 2 200 actions approuvées
 événements communautaires
 météo Open-Meteo avec revalidation 900 s
 ```
 
 ## Fonctionnalités
 
-- KPI de synthèse ;
-- snapshot des indicateurs du `ReportModel`, avec séparation explicite entre
-  collecte, qualité des données, couverture cartographique et impacts calculés
-  par proxy ;
-- tendances mensuelles ;
-- comparaisons ;
+- aperçu global des quatre indicateurs d'impact du `ReportModel` ;
+- qualité des données et couverture cartographique, présentées séparément des
+  impacts ;
+- tendances mensuelles de la collecte (masse collectée et bénévoles) ;
+- comparaisons de périodes issues de l'overview de pilotage ;
 - méthode KPI ;
 - données d'actions ;
 - événements communautaires ;
@@ -101,7 +100,8 @@ La version n'est pas inventée dans l'interface. Lorsqu'une version runtime est
 fournie par la méthodologie d'impact, elle reste visible dans la source de la
 méthode concernée; sinon aucune version n'est affichée. Les formules, sources,
 fréquences et limites restent celles du contrat `MethodDefinition` partagé avec
-Pilotage.
+Pilotage. Le référentiel affiche les huit méthodes dans un accordéon accessible
+et dense sur desktop comme sur mobile.
 
 ## Performance
 

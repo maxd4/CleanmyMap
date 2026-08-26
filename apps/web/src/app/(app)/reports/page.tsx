@@ -1,18 +1,10 @@
 import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
-import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
-import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
-import {
-  NavigationGrid,
-  type NavigationGridItem,
-} from "@/components/ui/navigation-grid";
-import { PageReadingTemplate } from "@/components/ui/page-reading-template";
+import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-dashboard";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
-import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -35,7 +27,7 @@ import {
 } from "@/lib/reports/page-data";
 import type { Locale } from "@/lib/ui/preferences";
 import type { ProfileAction } from "@/lib/profiles";
-import type { MethodDefinition } from "@/lib/pilotage/overview";
+import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 
 type ReportsPageTabId = "generation" | "analysis";
@@ -50,8 +42,7 @@ type ReportsAnalysisContentParams = {
   primaryAction: ProfileAction;
   secondaryAction?: ProfileAction | null;
   summaryKpis: readonly [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi];
-  navigationItems: NavigationGridItem[];
-  overview: { methods: MethodDefinition[] } | null;
+  overview: Pick<PilotageOverview, "methods" | "periodDays"> | null;
   report: ReportModel;
   monthlyData: Awaited<ReturnType<typeof loadReportsAnalysisData>>["monthlyData"];
   canAccessExports: boolean;
@@ -79,7 +70,6 @@ function buildReportsAnalysisContent({
   primaryAction,
   secondaryAction,
   summaryKpis,
-  navigationItems,
   overview,
   report,
   monthlyData,
@@ -87,68 +77,18 @@ function buildReportsAnalysisContent({
   exportRows,
 }: ReportsAnalysisContentParams) {
   return (
-    <div className="space-y-8">
-      <PageReadingTemplate
-        context={`Profil ${roleLabel}`}
-        title="Rapports d'impact"
-        objective="Comparer les fenêtres utiles, lire la méthode KPI et exporter les livrables."
-        summary={
-          <div className="space-y-10">
-            <AnimatedImpactMetrics kpis={summaryKpis} />
-
-            <NavigationGrid
-              items={navigationItems}
-              columns={{ default: 1, sm: 2, md: 4, xl: 4 }}
-            />
-          </div>
-        }
-        primaryAction={{
-          href: primaryAction.href,
-          label: primaryAction.label[locale],
-        }}
-        secondaryAction={
-          secondaryAction
-            ? {
-                href: secondaryAction.href,
-                label: secondaryAction.label[locale],
-              }
-            : undefined
-        }
-        analysis={<ReportsImpactReadingsSection report={report} />}
+    <div className="space-y-6">
+      <ReportsAnalysisDashboard
+        locale={locale}
+        roleLabel={roleLabel}
+        primaryAction={primaryAction}
+        secondaryAction={secondaryAction}
+        summaryKpis={summaryKpis}
+        methods={overview?.methods ?? []}
+        report={report}
+        periodDays={overview?.periodDays ?? 90}
+        monthlyData={monthlyData}
       />
-
-      <div className="space-y-8">
-        {overview ? (
-          <section
-            id="method"
-            className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md"
-          >
-            <SectionHeader
-              eyebrow="Méthode KPI"
-              title="Lire la méthode KPI"
-              subtitle="L&apos;explication détaillée reste disponible plus bas."
-              titleSize="sm"
-              eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
-              subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
-            />
-            <KpiMethodBlock methods={overview.methods} title="Méthode" />
-          </section>
-        ) : null}
-
-        <section
-          id="cockpit"
-          className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md"
-        >
-          <SectionHeader
-            eyebrow="Analyse mensuelle"
-            title="Vue mensuelle"
-            subtitle="Les comparatifs, les agrégats et les exports restent plus bas."
-            titleSize="sm"
-            eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
-            subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
-          />
-          <AnalyticsCockpit data={monthlyData} />
-        </section>
 
         <section
           id="exports"
@@ -181,7 +121,6 @@ function buildReportsAnalysisContent({
             </div>
           )}
         </section>
-      </div>
     </div>
   );
 }
@@ -312,52 +251,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const report = analysisData?.report ?? buildEmptyReportsModel();
   const monthlyData = analysisData?.monthlyData ?? [];
   const summaryKpis = buildReportsSummaryKpis(overview);
-  const navigationItems: NavigationGridItem[] = [
-    {
-      icon: "BarChart3",
-      title: "Comparaisons",
-      desc: "Comparer 30j / 90j / 12m.",
-      iconBg: "bg-red-500/20",
-      iconColor: "text-red-400",
-      accent: "from-red-600/20 to-red-950/40",
-      ring: "ring-red-500/30",
-      dot: "bg-red-400",
-      href: "#comparisons",
-    },
-    {
-      icon: "Info",
-      title: "Méthode KPI",
-      desc: "Lire la méthode et les sources.",
-      iconBg: "bg-cyan-500/20",
-      iconColor: "text-cyan-400",
-      accent: "from-cyan-600/20 to-sky-900/40",
-      ring: "ring-cyan-500/30",
-      dot: "bg-cyan-400",
-      href: "#method",
-    },
-    {
-      icon: "Layers",
-      title: "Vue mensuelle",
-      desc: "Consulter les agrégats et les tendances.",
-      iconBg: "bg-red-500/20",
-      iconColor: "text-red-400",
-      accent: "from-red-600/20 to-cyan-900/40",
-      ring: "ring-red-500/30",
-      dot: "bg-red-400",
-      href: "#cockpit",
-    },
-    {
-      icon: "DownloadCloud",
-      title: "Exports",
-      desc: "Exporter PDF, Excel et synthèse.",
-      iconBg: "bg-cyan-500/20",
-      iconColor: "text-cyan-400",
-      accent: "from-cyan-600/20 to-red-900/40",
-      ring: "ring-cyan-500/30",
-      dot: "bg-cyan-400",
-      href: "#exports",
-    },
-  ];
 
   const analysisContent = buildReportsAnalysisContent({
     locale,
@@ -365,7 +258,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     primaryAction,
     secondaryAction,
     summaryKpis,
-    navigationItems,
     overview,
     report,
     monthlyData,

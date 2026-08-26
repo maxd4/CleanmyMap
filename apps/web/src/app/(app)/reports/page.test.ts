@@ -41,9 +41,23 @@ const contract = {
   source: "test",
 };
 
-vi.mock("@/components/reports/AnimatedImpactMetrics", () => ({
-  AnimatedImpactMetrics: ({ kpis }: { kpis: unknown }) =>
-    React.createElement("div", { "data-testid": "summary-kpis" }, JSON.stringify(kpis)),
+vi.mock("@/components/reports/reports-analysis-dashboard", () => ({
+  ReportsAnalysisDashboard: ({
+    summaryKpis,
+    primaryAction,
+    secondaryAction,
+  }: {
+    summaryKpis: unknown;
+    primaryAction: { href: string };
+    secondaryAction?: { href: string } | null;
+  }) =>
+    React.createElement(
+      "div",
+      { "data-testid": "reports-analysis-dashboard" },
+      React.createElement("div", { "data-testid": "summary-kpis" }, JSON.stringify(summaryKpis)),
+      React.createElement("a", { href: primaryAction.href }),
+      secondaryAction ? React.createElement("a", { href: secondaryAction.href }) : null,
+    ),
 }));
 
 vi.mock("@/components/reports/deferred-reports-web-document", () => ({
@@ -65,42 +79,6 @@ vi.mock("@/components/reports/page-sections/reports-page-v2-layout", () => ({
       "main",
       { "data-testid": "reports-layout", "data-active-tab": activeTab },
       activeTab === "generation" ? generationContent : analysisContent,
-    ),
-}));
-
-vi.mock("@/components/reports/analytics-cockpit", () => ({
-  AnalyticsCockpit: () => React.createElement("div", { "data-testid": "analytics-cockpit" }),
-}));
-
-vi.mock("@/components/reports/reports-impact-readings-section", () => ({
-  ReportsImpactReadingsSection: () => React.createElement("div", { "data-testid": "impact-readings" }),
-}));
-
-vi.mock("@/components/ui/navigation-grid", () => ({
-  NavigationGrid: ({ items }: { items: Array<{ href: string; icon: string }> }) =>
-    React.createElement(
-      "nav",
-      { "data-testid": "reports-navigation" },
-      items.map((item) =>
-        React.createElement("a", { key: item.href, href: item.href, "data-icon": item.icon }, item.href),
-      ),
-    ),
-}));
-
-vi.mock("@/components/ui/page-reading-template", () => ({
-  PageReadingTemplate: ({ summary, primaryAction, secondaryAction, analysis }: {
-    summary?: React.ReactNode;
-    primaryAction: { href: string; label: string };
-    secondaryAction?: { href: string; label: string };
-    analysis: React.ReactNode;
-  }) =>
-    React.createElement(
-      "section",
-      { "data-testid": "reading-template" },
-      React.createElement("a", { href: primaryAction.href }, primaryAction.label),
-      secondaryAction ? React.createElement("a", { href: secondaryAction.href }, secondaryAction.label) : null,
-      summary,
-      analysis,
     ),
 }));
 
@@ -256,6 +234,7 @@ describe("/reports page contract", () => {
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
 
     expect(markup).toContain('data-active-tab="analysis"');
+    expect(markup).toContain('data-testid="reports-analysis-dashboard"');
     expect(markup).toContain('data-testid="summary-kpis"');
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 90, limit: 2200 });
     expect(markup).not.toContain("Objectifs et repères");
@@ -265,10 +244,6 @@ describe("/reports page contract", () => {
     expect(markup).not.toContain("65%");
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
-    expect(markup).toContain('data-icon="BarChart3"');
-    expect(markup).toContain('data-icon="Info"');
-    expect(markup).toContain('data-icon="Layers"');
-    expect(markup).toContain('data-icon="DownloadCloud"');
   });
 
   it("keeps the generation tab permission-gated for a non-admin profile", async () => {
