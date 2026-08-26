@@ -32,6 +32,7 @@ import { DmInbox } from "./dm-inbox";
 import { ChatContextSidebar } from "./chat-context-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
 import { useDmInbox } from "./hooks/use-dm-inbox";
+import { useChatNotificationUnreads } from "./hooks/use-chat-notification-unreads";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
 import type { ChatUser, DmConversation } from "./chat-types";
@@ -248,6 +249,15 @@ export function ChatShell({
     markConversationRead,
   } = useDmInbox({
     enabled: messagerieMode && activeChannelType === "dm",
+    currentUserId: userId,
+    supabase,
+  });
+
+  const {
+    counts: chatNotificationUnreadCounts,
+    markRead: markChatNotificationsRead,
+  } = useChatNotificationUnreads({
+    enabled: messagerieMode && isLoaded && isSignedIn,
     currentUserId: userId,
     supabase,
   });
@@ -621,6 +631,12 @@ export function ChatShell({
           label: getChannelTitle(channelType),
           description: "",
           count: messagerieMode ? undefined : isActive ? messages.length : undefined,
+          unreadCount:
+            messagerieMode && channelType === "community"
+              ? chatNotificationUnreadCounts.community || undefined
+              : messagerieMode && channelType === "territory"
+                ? chatNotificationUnreadCounts.territory || undefined
+                : undefined,
           accentClass: visual.accentClass,
           chipClass: visual.chipClass,
           isLocked: !isAvailable,
@@ -635,6 +651,8 @@ export function ChatShell({
       territoryFocus,
       messages.length,
       messagerieMode,
+      chatNotificationUnreadCounts.community,
+      chatNotificationUnreadCounts.territory,
     ],
   );
 
@@ -683,8 +701,14 @@ export function ChatShell({
       channelTopics.map((topic) => ({
         ...topic,
         active: topic.id === activeTopicId,
+        unreadCount:
+          activeChannelType === "community"
+            ? chatNotificationUnreadCounts.communityByTopic[topic.id]
+            : activeChannelType === "territory"
+              ? chatNotificationUnreadCounts.territoryByTopic[topic.id]
+              : undefined,
       })),
-    [activeTopicId, channelTopics],
+    [activeChannelType, activeTopicId, channelTopics, chatNotificationUnreadCounts],
   );
 
   const sidebarTopicSectionTitle = useMemo(() => {
@@ -803,6 +827,7 @@ export function ChatShell({
 
   const latestMessageId = messages[messages.length - 1]?.id ?? "empty";
   const lastMarkedConversationRef = useRef<string | null>(null);
+  const lastMarkedChatNotificationRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (
@@ -821,7 +846,13 @@ export function ChatShell({
     }
 
     lastMarkedConversationRef.current = markKey;
-    void markConversationRead(selectedRecipient.id).catch(() => {
+    void Promise.all([
+      markConversationRead(selectedRecipient.id),
+      markChatNotificationsRead({
+        channelType: "dm",
+        peerId: selectedRecipient.id,
+      }),
+    ]).catch(() => {
       if (lastMarkedConversationRef.current === markKey) {
         lastMarkedConversationRef.current = null;
       }
@@ -830,9 +861,42 @@ export function ChatShell({
     activeChannelType,
     feedState,
     latestMessageId,
+    markChatNotificationsRead,
     markConversationRead,
     messagerieMode,
     selectedRecipient,
+  ]);
+
+  useEffect(() => {
+    if (
+      !messagerieMode ||
+      (activeChannelType !== "community" && activeChannelType !== "territory") ||
+      feedState === "loading" ||
+      feedState === "degraded"
+    ) {
+      return;
+    }
+
+    const markKey = `${activeChannelType}:${activeTopicId ?? "global"}`;
+    if (lastMarkedChatNotificationRef.current === markKey) {
+      return;
+    }
+
+    lastMarkedChatNotificationRef.current = markKey;
+    void markChatNotificationsRead({
+      channelType: activeChannelType,
+      topicId: activeTopicId,
+    }).catch(() => {
+      if (lastMarkedChatNotificationRef.current === markKey) {
+        lastMarkedChatNotificationRef.current = null;
+      }
+    });
+  }, [
+    activeChannelType,
+    activeTopicId,
+    feedState,
+    markChatNotificationsRead,
+    messagerieMode,
   ]);
 
   const isDmSurface = messagerieMode && activeChannelType === "dm";
@@ -869,6 +933,7 @@ export function ChatShell({
             onSelectConversation={handleSelectDmConversation}
             onStartConversation={handleStartDmConversation}
             onRetry={refreshInbox}
+            notificationUnreadCount={chatNotificationUnreadCounts.dm}
             tone={isLight ? "light" : "dark"}
             className={!showDmThreadOnMobile ? "flex" : "hidden md:flex"}
           />

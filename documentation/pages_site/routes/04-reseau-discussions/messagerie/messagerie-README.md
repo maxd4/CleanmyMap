@@ -28,6 +28,7 @@
 - **Topics** : `topic_id` est nullable ; `NULL` conserve les messages legacy/non classés. Les topics communauté sont `relais_associatif`, `appel_aux_benevoles`, `demande_diffusion`, `besoin_ressources` et `coordination_secteur`. Les topics territoire sont `mon_territoire` et `territoires_voisins`.
 - **Lecture publique** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés ; une vue topic ne retourne que le topic sélectionné.
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`. Pour un sondage, les options retournent `voteCount`, le poll retourne `totalVotes` et `selectedOptionId`.
+- **Notifications** : `app_notifications.read_at` reste la source canonique des non-lus de notification. Les notifications chat portent `channelType`, `messageId`, `messageKind` et `topicId` lorsqu'il existe. Les compteurs communauté/territoire sont lus en batch par canal et salon ; l'ouverture d'un salon ou d'une conversation DM marque uniquement le périmètre effectivement consulté.
 - **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
