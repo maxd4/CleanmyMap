@@ -92,8 +92,12 @@ function toEventResponseItem(
   };
 }
 
-function buildCommunityEventsCacheKey(userId: string, limit: number): string {
- return [`user:${userId}`, `limit:${limit}`].join("|");
+function buildCommunityEventsCacheKey(
+ userId: string,
+ limit: number,
+ eventId: string | null,
+): string {
+ return [`user:${userId}`, `limit:${limit}`, `event:${eventId ?? "all"}`].join("|");
 }
 
 type CommunityEventsSuccessPayload = {
@@ -105,12 +109,13 @@ type CommunityEventsSuccessPayload = {
 async function loadCachedCommunityEvents(
  userId: string,
  limit: number,
+ eventId: string | null,
 ): Promise<CommunityEventsSuccessPayload> {
  const cached = unstable_cache(
   async () => {
    const supabase = getSupabaseServerClient();
 
-   const eventsResult = await supabase
+   let eventsQuery = supabase
     .from("community_events")
     .select(
 "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
@@ -118,6 +123,10 @@ async function loadCachedCommunityEvents(
     .order("event_date", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(limit);
+   if (eventId) {
+    eventsQuery = eventsQuery.eq("id", eventId);
+   }
+   const eventsResult = await eventsQuery;
 
    if (eventsResult.error) {
     throw new Error(eventsResult.error.message);
@@ -160,7 +169,7 @@ async function loadCachedCommunityEvents(
    });
    return { status: "ok" as const, count: items.length, items };
   },
-  ["community-events", buildCommunityEventsCacheKey(userId, limit)],
+  ["community-events", buildCommunityEventsCacheKey(userId, limit, eventId)],
   {
    revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
    tags: [`community-events:${userId}`, "community-events"],
@@ -199,9 +208,16 @@ export async function GET(request: Request) {
   300,
   120,
  );
+ const requestedEventId = url.searchParams.get("eventId")?.trim() || null;
+ if (requestedEventId && !z.string().uuid().safeParse(requestedEventId).success) {
+  return NextResponse.json(
+   { error: "Identifiant d'événement invalide" },
+   { status: 400 },
+  );
+ }
 
  try {
- const payload = await loadCachedCommunityEvents(userId, limit);
+ const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId);
  return NextResponse.json(payload, { headers: COMMUNITY_EVENTS_CACHE_HEADERS });
  } catch (error) {
  return handleApiError(error, "GET /api/community/events");

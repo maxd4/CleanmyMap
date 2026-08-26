@@ -11,6 +11,7 @@
 - `apps/web/src/app/api/chat/inbox/route.ts`
 - `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
 - `apps/web/supabase/migrations/20260826000000_chat_message_topics.sql`
+- `apps/web/supabase/migrations/20260826010000_chat_announcements.sql`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -18,9 +19,10 @@
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : lots 1 et 2 livrés — boîte privée et salons thématiques persistants
-- **Terminée** : salons thématiques oui ; Annonce/Relai et Sondage restent des lots séparés.
+- **Scope** : lots 1 à 3 livrés — boîte privée, salons thématiques persistants et annonces/relais communautaires
+- **Terminée** : annonces/relais oui ; sondages et votes restent hors périmètre.
 - **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
+- **Annonces** : `message_kind` distingue `message` et `announcement`. Une annonce est communautaire, utilise un topic canonique (`relais_associatif`, `appel_aux_benevoles` ou `demande_diffusion`) et peut référencer un `community_events.id` réellement existant via `related_event_id`. Les détails de l'événement affichés viennent de la base, jamais de l'URL.
 - **Topics** : `topic_id` est nullable ; `NULL` conserve les messages legacy/non classés. Les topics communauté sont `relais_associatif`, `appel_aux_benevoles`, `demande_diffusion`, `besoin_ressources` et `coordination_secteur`. Les topics territoire sont `mon_territoire` et `territoires_voisins`.
 - **Lecture publique** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés ; une vue topic ne retourne que le topic sélectionné.
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`.

@@ -1,5 +1,6 @@
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
+import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
 
 export type ChatMessage = {
   id: string;
@@ -7,6 +8,9 @@ export type ChatMessage = {
   content: string;
   channel_type: ChatChannelType;
   topic_id: ChatTopicId | null;
+  message_kind: ChatMessageKind;
+  related_event_id: string | null;
+  related_event: ChatRelatedEvent | null;
   attachment_url?: string;
   attachment_type?: string | null;
   attachment_expires_at?: string | null;

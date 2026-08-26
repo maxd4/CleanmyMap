@@ -1,5 +1,5 @@
 "use client";
-import { Paperclip, Search, Send, X } from "lucide-react";
+import { Calendar, MapPin, Megaphone, Paperclip, Search, Send, X } from "lucide-react";
 import { memo } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
@@ -11,6 +11,11 @@ import {
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
+import {
+  COMMUNITY_ANNOUNCEMENT_TEMPLATES,
+  type ChatRelatedEvent,
+  type CommunityAnnouncementTemplateKey,
+} from "@/lib/chat/announcements";
 
 const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -20,6 +25,12 @@ type ChatComposerProps = {
   tone?: "light" | "dark";
   composerMode?: "message" | "announcement" | "poll";
   onComposerModeChange?: (mode: "message" | "announcement" | "poll") => void;
+  announcementTemplate?: CommunityAnnouncementTemplateKey | null;
+  onAnnouncementTemplateChange?: (template: CommunityAnnouncementTemplateKey) => void;
+  relatedEvent?: ChatRelatedEvent | null;
+  announcementEventRequested?: boolean;
+  announcementEventLoading?: boolean;
+  announcementEventError?: Error | null;
   showModeTabs?: boolean;
   userId?: string;
   message: string;
@@ -73,6 +84,12 @@ export const ChatComposer = memo(function ChatComposer({
   tone = "dark",
   composerMode = "message",
   onComposerModeChange,
+  announcementTemplate = null,
+  onAnnouncementTemplateChange,
+  relatedEvent = null,
+  announcementEventRequested = false,
+  announcementEventLoading = false,
+  announcementEventError = null,
   showModeTabs = false,
 }: ChatComposerProps) {
   const isLight = tone === "light";
@@ -119,6 +136,13 @@ export const ChatComposer = memo(function ChatComposer({
     }
 
     event.currentTarget.form?.requestSubmit();
+  };
+
+  const formatEventDate = (value: string) => {
+    const parsed = new Date(`${value}T00:00:00`);
+    return Number.isNaN(parsed.getTime())
+      ? value
+      : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(parsed);
   };
 
   return (
@@ -284,7 +308,6 @@ export const ChatComposer = memo(function ChatComposer({
           {[
             { id: "message", label: "Message" },
             { id: "announcement", label: "Annonce / Relai" },
-            { id: "poll", label: "Sondage" },
           ].map((tab) => {
             const isActive = composerMode === tab.id;
             return (
@@ -298,6 +321,86 @@ export const ChatComposer = memo(function ChatComposer({
               </button>
             );
           })}
+        </div>
+      ) : null}
+
+      {showModeTabs && composerMode === "announcement" ? (
+        <div className={`mb-4 rounded-2xl border p-3 ${isLight ? "border-rose-100 bg-white/80" : "border-white/10 bg-white/5"}`}>
+          <div className="mb-3 flex items-center gap-2">
+            <Megaphone size={15} className={isLight ? "text-rose-500" : "text-rose-300"} />
+            <div>
+              <p className={`text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
+                Choisissez un modèle de relais
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Le modèle prépare un brouillon éditable et son salon canonique.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {COMMUNITY_ANNOUNCEMENT_TEMPLATES.map((template) => {
+              const isActive = announcementTemplate === template.key;
+              return (
+                <button
+                  key={template.key}
+                  type="button"
+                  onClick={() => onAnnouncementTemplateChange?.(template.key)}
+                  aria-pressed={isActive}
+                  className={`rounded-xl border px-3 py-2 text-left transition ${
+                    isActive
+                      ? isLight
+                        ? "border-rose-300 bg-rose-50 text-rose-700"
+                        : "border-rose-400/50 bg-rose-500/15 text-rose-200"
+                      : isLight
+                        ? "border-rose-100 bg-white text-slate-600 hover:bg-rose-50"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="block text-[10px] font-black uppercase tracking-wider">
+                    {template.label}
+                  </span>
+                  <span className="mt-1 block text-[10px] leading-tight text-slate-500">
+                    {template.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {announcementTemplate ? null : (
+            <p className="mt-3 text-[10px] font-bold text-amber-600">
+              Sélectionnez un modèle avant de publier l&apos;annonce.
+            </p>
+          )}
+          {announcementEventLoading ? (
+            <p className="mt-3 text-[10px] font-bold text-slate-500">
+              Chargement du cleanup associé…
+            </p>
+          ) : announcementEventError ? (
+            <p className="mt-3 text-[10px] font-bold text-rose-600">
+              Le cleanup associé n&apos;est plus disponible. L&apos;annonce ne peut pas être publiée avec ce lien.
+            </p>
+          ) : relatedEvent ? (
+            <div className={`mt-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
+              <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">
+                Cleanup associé
+              </p>
+              <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
+                {relatedEvent.title}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar size={12} /> {formatEventDate(relatedEvent.event_date)}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={12} /> {relatedEvent.location_label}
+                </span>
+              </div>
+            </div>
+          ) : announcementEventRequested ? (
+            <p className="mt-3 text-[10px] font-bold text-rose-600">
+              Le cleanup indiqué dans le lien est introuvable ou inaccessible.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -22,6 +22,13 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     setActiveTab,
     initialChannelType,
     initialTopicId,
+    initialComposerMode,
+    initialAnnouncementTemplate,
+    initialMessage,
+    initialRelatedEvent,
+    announcementEventRequested,
+    announcementEventLoading,
+    announcementEventError,
     initialRecipient,
     initialArrondissement,
     initialZoneName,
@@ -63,6 +70,13 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                 key={discussionShellKey}
                 initialChannelType={initialChannelType}
                 initialTopicId={initialTopicId}
+                initialComposerMode={initialComposerMode}
+                initialAnnouncementTemplate={initialAnnouncementTemplate}
+                initialMessage={initialMessage}
+                initialRelatedEvent={initialRelatedEvent}
+                announcementEventRequested={announcementEventRequested}
+                announcementEventLoading={announcementEventLoading}
+                announcementEventError={announcementEventError}
                 initialArrondissement={initialArrondissement}
                 initialZoneName={initialZoneName}
                 initialRecipient={initialRecipient}

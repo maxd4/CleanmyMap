@@ -2,11 +2,36 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
 import { isChatChannelType, type ChatChannelType } from "@/lib/chat/channels";
 import { parseChatTopicIdForChannel } from "@/lib/chat/topics";
 import type { ChatTopicId } from "@/lib/chat/topics";
+import {
+  buildAnnouncementDraft,
+  getAnnouncementTopicId,
+  isCommunityAnnouncementTemplateKey,
+  type ChatRelatedEvent,
+  type CommunityAnnouncementTemplateKey,
+} from "@/lib/chat/announcements";
 import type { ChatUser } from "@/components/chat/chat-types";
-import type { ConnectTab, CommunityAnnouncementTemplateKey } from "./connect-types";
+import type { ConnectTab } from "./connect-types";
+
+type CommunityEventReferenceResponse = {
+  items?: Array<{
+    id: string;
+    title: string;
+    eventDate: string;
+    locationLabel: string;
+  }>;
+};
+
+async function fetchCommunityEventReference(url: string): Promise<CommunityEventReferenceResponse> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Impossible de charger le cleanup associé.");
+  }
+  return (await response.json()) as CommunityEventReferenceResponse;
+}
 
 export function buildInitialDmRecipient({
   channelType,
@@ -38,6 +63,12 @@ export function buildInitialTopicId(
   return parseChatTopicIdForChannel(channelType, topicId);
 }
 
+export function buildInitialAnnouncementTemplate(
+  template: string | null,
+): CommunityAnnouncementTemplateKey | null {
+  return isCommunityAnnouncementTemplateKey(template) ? template : null;
+}
+
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const [activeTab, setActiveTab] = useState<ConnectTab>(defaultTab);
   const searchParams = useSearchParams();
@@ -53,7 +84,11 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedTemplate = searchParams.get("template");
   const requestedEventId = searchParams.get("eventId");
 
-  const initialChannelType: ChatChannelType = isChatChannelType(requestedChannel)
+  const requestedAnnouncementTemplate = buildInitialAnnouncementTemplate(requestedTemplate);
+
+  const initialChannelType: ChatChannelType = requestedAnnouncementTemplate
+    ? "community"
+    : isChatChannelType(requestedChannel)
     ? requestedChannel
     : defaultTab === "dm" || requestedTab === "dm"
       ? "dm"
@@ -70,15 +105,45 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     [initialChannelType, requestedRecipientId, requestedRecipientLabel, requestedRecipientHandle],
   );
 
-  const initialTopicId: ChatTopicId | null = useMemo(
-    () => buildInitialTopicId(initialChannelType, requestedTopicId),
-    [initialChannelType, requestedTopicId],
+  const initialTopicId: ChatTopicId | null = useMemo(() => {
+    if (requestedAnnouncementTemplate) {
+      return getAnnouncementTopicId(requestedAnnouncementTemplate);
+    }
+    return buildInitialTopicId(initialChannelType, requestedTopicId);
+  }, [initialChannelType, requestedAnnouncementTemplate, requestedTopicId]);
+
+  const initialAnnouncementTemplate = requestedAnnouncementTemplate;
+  const eventReferenceKey =
+    initialAnnouncementTemplate && requestedEventId
+      ? `/api/community/events?eventId=${encodeURIComponent(requestedEventId)}&limit=1`
+      : null;
+  const {
+    data: eventReferenceData,
+    error: eventReferenceError,
+    isLoading: isAnnouncementEventLoading,
+  } = useSWR<CommunityEventReferenceResponse>(
+    eventReferenceKey,
+    fetchCommunityEventReference,
   );
 
+  const initialRelatedEvent: ChatRelatedEvent | null = useMemo(() => {
+    const event = eventReferenceData?.items?.[0];
+    return event
+      ? {
+          id: event.id,
+          title: event.title,
+          event_date: event.eventDate,
+          location_label: event.locationLabel,
+        }
+      : null;
+  }, [eventReferenceData]);
+
   const initialTab: ConnectTab = useMemo(() =>
-    requestedTab === "dm" || initialChannelType === "dm" || defaultTab === "dm"
+    requestedAnnouncementTemplate
+      ? "discussions"
+      : requestedTab === "dm" || initialChannelType === "dm" || defaultTab === "dm"
       ? "dm"
-      : "discussions", [requestedTab, initialChannelType, defaultTab]);
+      : "discussions", [defaultTab, initialChannelType, requestedAnnouncementTemplate, requestedTab]);
 
   const initialArrondissement = Number.isInteger(requestedArrondissement)
     ? requestedArrondissement
@@ -86,51 +151,11 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     
   const initialZoneName = requestedZoneName?.trim().length ? requestedZoneName.trim() : null;
 
-  const initialAnnouncementTemplate = useMemo(() =>
-    requestedTemplate === "relais_associatif" ||
-    requestedTemplate === "benevoles" ||
-    requestedTemplate === "diffusion"
-      ? requestedTemplate
-      : null, [requestedTemplate]);
-
-  const [announcementTemplate, setAnnouncementTemplate] = useState<CommunityAnnouncementTemplateKey | null>(
-    initialAnnouncementTemplate,
-  );
-
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const communityInitialMessage = useMemo(() => 
-    {
-      const buildAnnouncementTemplate = (
-        template: CommunityAnnouncementTemplateKey | null,
-      ): string => {
-        if (!template) {
-          return "";
-        }
-
-        const eventSuffix = requestedEventId?.trim().length
-          ? `\nCleanup associé: ${requestedEventId.trim()}`
-          : "";
-
-        if (template === "relais_associatif") {
-          return `Besoin de relais associatif\nContexte: je cherche une association pour relayer un cleanup.${eventSuffix}\nAction attendue: diffusion et prise de contact.`;
-        }
-
-        if (template === "benevoles") {
-          return `Besoin de bénévoles\nContexte: je coordonne un cleanup et j'ai besoin de renfort sur le terrain.${eventSuffix}\nAction attendue: mobilisation de volontaires.`;
-        }
-
-        return `Besoin de diffusion\nContexte: je veux relayer un cleanup auprès d'un réseau plus large.${eventSuffix}\nAction attendue: partage du message et relais local.`;
-      };
-
-      return buildAnnouncementTemplate(announcementTemplate);
-    }, 
-    [announcementTemplate, requestedEventId]
-  );
-
-  const discussionShellKey = `discussions:${initialChannelType}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${announcementTemplate ?? "none"}`;
+  const discussionShellKey = `discussions:${initialChannelType}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}`;
   const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}`;
 
   return {
@@ -139,11 +164,17 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     initialChannelType,
     initialRecipient,
     initialTopicId,
+    initialComposerMode: initialAnnouncementTemplate ? ("announcement" as const) : ("message" as const),
+    initialAnnouncementTemplate,
+    initialMessage: initialAnnouncementTemplate
+      ? buildAnnouncementDraft(initialAnnouncementTemplate)
+      : "",
+    initialRelatedEvent,
+    announcementEventRequested: Boolean(initialAnnouncementTemplate && requestedEventId),
+    announcementEventLoading: isAnnouncementEventLoading,
+    announcementEventError: eventReferenceError ?? null,
     initialArrondissement,
     initialZoneName,
-    announcementTemplate,
-    setAnnouncementTemplate,
-    communityInitialMessage,
     discussionShellKey,
     dmShellKey,
   };

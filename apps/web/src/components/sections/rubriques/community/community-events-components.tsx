@@ -313,7 +313,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
           <div className="h-px bg-white/5 my-2" />
 
           <Link
-            href="#messagerie"
+            href={`/sections/messagerie?tab=discussions&channel=community&template=diffusion&topicId=demande_diffusion&eventId=${encodeURIComponent(event.id)}`}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-rose-400 hover:bg-rose-500/10 transition-all"
           >
             📣 {relayLabel}
