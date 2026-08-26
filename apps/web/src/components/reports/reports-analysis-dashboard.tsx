@@ -136,7 +136,7 @@ function QualityRing({ metric }: { metric: QualityMetric }) {
   );
 }
 
-function ImpactMetricCard({ metric }: { metric: ImpactMetric }) {
+function ImpactMetricCard({ metric, periodDays }: { metric: ImpactMetric; periodDays: number }) {
   const Icon = metric.icon;
   const iconClasses = {
     emerald: "bg-emerald-50 text-emerald-600",
@@ -159,20 +159,20 @@ function ImpactMetricCard({ metric }: { metric: ImpactMetric }) {
         </div>
         <CircleHelp className="ml-auto shrink-0 text-slate-400" size={15} aria-hidden="true" />
       </div>
-      <p className="mt-4 text-xs text-slate-500">Période sélectionnée • valeur calculée selon la méthode active</p>
+      <p className="mt-4 text-xs text-slate-500">Période active • {periodDays} jours glissants • valeur calculée selon la méthode active</p>
     </article>
   );
 }
 
-function ComparisonTable({ kpis }: { kpis: readonly ReportsSummaryKpi[] }) {
+function ComparisonTable({ kpis, periodDays }: { kpis: readonly ReportsSummaryKpi[]; periodDays: number }) {
   return (
     <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.25)]" aria-labelledby="reports-comparison-title">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 id="reports-comparison-title" className="text-sm font-black text-slate-900">Comparaison de périodes</h3>
-          <p className="mt-1 text-xs text-slate-500">Comparaison fournie par l&apos;overview de pilotage.</p>
+          <p className="mt-1 text-xs text-slate-500">{periodDays} jours actuels vs {periodDays} jours précédents • comparaison fournie par l&apos;overview de pilotage.</p>
         </div>
-        <span className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">Période précédente</span>
+        <span className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">{periodDays} jours précédents</span>
       </div>
 
       {kpis.length > 0 ? (
@@ -239,7 +239,7 @@ export function ReportsAnalysisDashboard({
             <span className="text-sm font-semibold text-slate-500">(période sélectionnée)</span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => <ImpactMetricCard key={metric.label} metric={metric} />)}
+            {metrics.map((metric) => <ImpactMetricCard key={metric.label} metric={metric} periodDays={periodDays} />)}
           </div>
         </section>
 
@@ -279,11 +279,11 @@ export function ReportsAnalysisDashboard({
             <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4">
               <div className="flex items-center gap-2 px-1">
                 <h3 className="text-sm font-black text-slate-900">Évolution de la collecte</h3>
-                <span className="text-xs text-slate-500">({periodDays} jours glissants)</span>
+                <span className="text-xs text-slate-500">(12 derniers mois glissants)</span>
               </div>
               <div className="mt-2"><AnalyticsCockpit data={monthlyData} /></div>
             </div>
-            <ComparisonTable kpis={summaryKpis} />
+            <ComparisonTable kpis={summaryKpis} periodDays={periodDays} />
           </div>
         </section>
       </div>

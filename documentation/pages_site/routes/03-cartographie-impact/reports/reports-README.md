@@ -51,8 +51,8 @@ météo Open-Meteo avec revalidation 900 s
 - aperçu global des quatre indicateurs d'impact du `ReportModel` ;
 - qualité des données et couverture cartographique, présentées séparément des
   impacts ;
-- tendances mensuelles de la collecte (masse collectée et bénévoles) sur la
-  fenêtre active affichée ;
+- tendances mensuelles de la collecte (masse collectée et bénévoles) sur les
+  12 derniers mois glissants ;
 - comparaisons de périodes issues de l'overview de pilotage ;
 - méthode KPI ;
 - données d'actions ;
@@ -87,16 +87,22 @@ lot.
 ## Contrat temporel de l'analyse
 
 L'`overview` de Pilotage conserve son historique nécessaire aux comparaisons
-30/90/365 jours. La couche Reports dérive ensuite une fenêtre courante avec
-`filterContractsToActivePeriod`, à partir de `dates.observedAt` et de la borne
-inclusive `[now - periodDays, now]`; les dates invalides et les dates futures
-sont exclues. Le même instant `now` est utilisé pour le filtrage et la
-construction du `ReportModel`.
+30/90/365 jours et à la tendance historique. La couche Reports dérive la
+fenêtre KPI courante avec `filterContractsToWindow`, à partir de
+`dates.observedAt` et de la borne inclusive `[now - periodDays, now]`; les
+dates invalides et les dates futures sont exclues. Le même instant `now` est
+utilisé pour le filtrage et la construction du `ReportModel`.
 
-Les totaux du snapshot et la série mensuelle sont construits uniquement sur
-cette fenêtre active. Les comparaisons restent celles de l'overview Pilotage
-et sont identifiées comme telles dans l'interface. La série affichée indique
-la durée réelle de la fenêtre, et non un nombre fixe de mois.
+Pour `periodDays = 90`, les comparaisons Pilotage utilisent les 90 jours
+précédents sur l'intervalle `[now - 2 × periodDays, now - periodDays)` : la
+borne basse est incluse et la borne haute exclue, comme dans
+`computePilotageComparison()`.
+
+Les cartes KPI, la qualité et la cartographie sont construites uniquement sur
+la fenêtre courante de 90 jours. La série Tendances est distincte : elle est
+alimentée par les contrats historiques de la fenêtre de 365 jours et reste
+libellée « 12 derniers mois glissants ». Aucun sélecteur de période n'est
+ajouté à l'onglet Analyse ; celui de Génération reste indépendant.
 
 ## Référentiel méthodologique KPI
 
