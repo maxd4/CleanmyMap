@@ -9,6 +9,7 @@
 - `apps/web/src/components/sections/rubriques/connect-section.tsx`
 - `apps/web/src/components/chat/chat-shell.tsx`
 - `apps/web/src/app/api/chat/inbox/route.ts`
+- `apps/web/src/app/api/chat/search/route.ts`
 - `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
 - `apps/web/supabase/migrations/20260826000000_chat_message_topics.sql`
 - `apps/web/supabase/migrations/20260826010000_chat_announcements.sql`
@@ -32,6 +33,7 @@
 - **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
 - **Historique** : le fil est lu par pages de 50 messages maximum avec un curseur keyset stable `created_at + id`. Le bouton « Charger les messages précédents » ajoute une page au début sans déplacement de la position de lecture ; les revalidations temps réel/polling réconcilient seulement la page récente.
 - **Ancrage notification** : une notification chat peut porter `messageId`. Le serveur vérifie que la cible appartient au scope accessible (canal, topic, territoire ou DM), charge directement la page qui la contient et le fil la centre avec une surbrillance temporaire. Une cible indisponible laisse le fil ouvert avec un état discret.
+- **Recherche** : le endpoint dédié `/api/chat/search` recherche dans `app_messages.content` du scope ouvert uniquement. La requête est comprise entre 2 et 120 caractères, les résultats sont limités à 20 par page et suivent le même curseur keyset `created_at + id`. En DM, la recherche reste strictement limitée à la conversation sélectionnée.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
 - **Captures attendues** : desktop, mobile
@@ -45,6 +47,7 @@
 - **error** : erreur de chargement explicite avec réessai réel, sans faux compteur.
 - **access refused / connexion indisponible** : l'API RLS renvoie l'état d'accès ou de disponibilité approprié.
 - **fil actif** : les messages et pièces jointes existants restent dans le composant chat ; l'ouverture marque le fil lu de façon idempotente.
+- **recherche** : le champ du header est débouncé, affiche loading/vide/erreur et permet de sélectionner un résultat pour réutiliser l'ancrage `messageId` du fil.
 - **vote de sondage** : le choix, le changement et le retrait sont disponibles dans le fil ; l'interface applique la mise à jour localement puis réconcilie avec l'agrégat serveur. Les votes restent anonymes dans la lecture.
 
 

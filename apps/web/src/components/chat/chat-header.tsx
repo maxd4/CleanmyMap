@@ -1,10 +1,12 @@
 "use client";
 
 import { memo, useState } from "react";
-import { ArrowLeft, Sparkles, type LucideIcon, MessageSquare, Share2, User, Info } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, type LucideIcon, MessageSquare, Share2, User, Info } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatUser } from "./chat-types";
+import type { ChatSearchResult } from "@/lib/chat/chat-search";
+import { ChatSearchPanel } from "./chat-search-panel";
 
 type ChatHeaderProps = {
   activeChannelType: ChatChannelType;
@@ -26,6 +28,20 @@ type ChatHeaderProps = {
   showControls?: boolean;
   isLive?: boolean;
   onBackToDmInbox?: () => void;
+  showSearch?: boolean;
+  isSearchOpen?: boolean;
+  searchQuery?: string;
+  searchResults?: ChatSearchResult[];
+  searchIsLoading?: boolean;
+  searchError?: Error | null;
+  searchHasMore?: boolean;
+  searchIsLoadingMore?: boolean;
+  searchLoadMoreError?: string | null;
+  onToggleSearch?: () => void;
+  onSearchQueryChange?: (value: string) => void;
+  onCloseSearch?: () => void;
+  onSelectSearchResult?: (result: ChatSearchResult) => void;
+  onLoadMoreSearch?: () => void;
 };
 
 export const ChatHeader = memo(function ChatHeader({
@@ -48,6 +64,20 @@ export const ChatHeader = memo(function ChatHeader({
   showControls = true,
   isLive = false,
   onBackToDmInbox,
+  showSearch = false,
+  isSearchOpen = false,
+  searchQuery = "",
+  searchResults = [],
+  searchIsLoading = false,
+  searchError = null,
+  searchHasMore = false,
+  searchIsLoadingMore = false,
+  searchLoadMoreError = null,
+  onToggleSearch,
+  onSearchQueryChange,
+  onCloseSearch,
+  onSelectSearchResult,
+  onLoadMoreSearch,
 }: ChatHeaderProps) {
   const isLight = tone === "light";
   const [showMeta, setShowMeta] = useState(false);
@@ -91,8 +121,9 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
           </div>
 
-        {showControls ? (
         <div className="flex items-center gap-2">
+        {showControls ? (
+        <>
           <div className={`p-1 rounded-xl flex gap-1 ${isLight ? "bg-white/80 border border-rose-100/70" : "bg-pink-100/70 dark:bg-slate-800/80"}`}>
             <button
               disabled={isBugReportChannel}
@@ -147,9 +178,38 @@ export const ChatHeader = memo(function ChatHeader({
           >
             <Info size={18} />
           </button>
-        </div>
+        </>
         ) : null}
+          {showSearch && onToggleSearch ? (
+            <button
+              type="button"
+              onClick={onToggleSearch}
+              aria-label={isSearchOpen ? "Fermer la recherche" : "Rechercher dans les messages"}
+              aria-expanded={isSearchOpen}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 ${isLight ? "bg-white/80 text-slate-500 shadow-sm hover:text-rose-600 focus-visible:ring-rose-400" : "cmm-surface-muted cmm-text-muted hover:text-pink-500 focus-visible:ring-pink-400"}`}
+            >
+              <Search size={18} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {showSearch && isSearchOpen && onSearchQueryChange && onCloseSearch && onSelectSearchResult && onLoadMoreSearch ? (
+        <ChatSearchPanel
+          query={searchQuery}
+          results={searchResults}
+          isLoading={searchIsLoading}
+          error={searchError}
+          hasMore={searchHasMore}
+          isLoadingMore={searchIsLoadingMore}
+          loadMoreError={searchLoadMoreError}
+          onQueryChange={onSearchQueryChange}
+          onClose={onCloseSearch}
+          onSelectResult={onSelectSearchResult}
+          onLoadMore={onLoadMoreSearch}
+          tone={tone}
+        />
+      ) : null}
 
       {showMeta && metaItems.length > 0 ? (
         <div className={`px-5 py-3 border-b flex flex-wrap gap-2 ${isLight ? "border-rose-100/60 bg-white/50" : "border-pink-100/70 dark:border-slate-800 bg-slate-950/30"}`}>
