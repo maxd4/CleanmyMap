@@ -5,9 +5,9 @@ interface TokenBucket {
   lastRefill: number;
 }
 
-// This is intentionally process-local best effort. It is not a global or
-// multi-instance production limiter; the distributed anti-bot/quota layer is
-// a separate future lot.
+// This is intentionally process-local best effort. Upstash is the primary
+// distributed limiter; this store only protects the current process when
+// Upstash is not configured or temporarily unavailable.
 const buckets = new Map<string, TokenBucket>();
 
 const LOCKED_KEYS = new Set<string>();

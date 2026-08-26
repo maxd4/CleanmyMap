@@ -22,6 +22,19 @@ export async function POST(request: Request) {
     const botIdResponse = await requireBotIdHuman();
     if (botIdResponse) return botIdResponse;
 
+    const rateLimit = await verifyRateLimit(request, {
+      limit: 5,
+      window: 60,
+    });
+    const rateLimitResponse = createServerRateLimitResponse(
+      rateLimit.allowed,
+      rateLimit.retryAfter,
+      rateLimit,
+    );
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     let rawData: unknown;
     try {
       rawData = await request.json();
@@ -47,16 +60,6 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.toLowerCase();
-    const rateLimit = await verifyRateLimit(request, {
-      limit: 5,
-      window: 60,
-    });
-
-    const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
-
     const supabase = getSupabaseServerClient(true); // Use service role for subscription
 
     const { data: existing, error: lookupError } = await supabase

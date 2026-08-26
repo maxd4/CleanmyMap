@@ -131,6 +131,16 @@ export async function POST(request: Request) {
  const botIdResponse = await requireBotIdHuman();
  if (botIdResponse) return botIdResponse;
 
+ const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
+ const writeRateLimitResponse = createServerRateLimitResponse(
+  writeRateLimit.allowed,
+  writeRateLimit.retryAfter,
+  writeRateLimit,
+ );
+ if (writeRateLimitResponse) {
+  return writeRateLimitResponse;
+ }
+
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();
@@ -161,15 +171,6 @@ export async function POST(request: Request) {
 
   if (hasRecentSubmission(parsed.data.submittedAt)) {
     return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
-
-  const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
-  const writeRateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-  );
-  if (writeRateLimitResponse) {
-    return writeRateLimitResponse;
   }
 
  const created = await appendPartnerOnboardingRequest({
