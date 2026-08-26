@@ -672,6 +672,7 @@ let copied = false;
    });
   const targetUserId = canonicalTargetUserId(
    previousActionAuditState?.createdByClerkId ??
+    previousImpactValue?.createdByClerkId ??
     newActionAuditState?.createdByClerkId,
   );
 
