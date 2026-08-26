@@ -2,7 +2,11 @@ import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
-import { isAdminRole, isMaxRole } from "@/lib/authz";
+import {
+  isAdminRole,
+  isMaxRole,
+  parseUserIds,
+} from "@/lib/auth/role-resolution";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -394,18 +398,6 @@ async function upsertSyncedProfile(
 export type SyncClerkUserOptions = {
   allowServiceRoleFallback?: boolean;
 };
-
-function parseUserIds(raw: string | undefined): Set<string> {
-  if (!raw) {
-    return new Set<string>();
-  }
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-  );
-}
 
 function normalizeHandleSegment(value: string): string {
   const normalized = value

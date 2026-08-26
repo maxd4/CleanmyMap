@@ -1,6 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
+import { parseAdminUserIds, parseMaxUserIds } from "@/lib/auth/role-resolution";
 import { resolveProfile, type AppProfile } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
@@ -18,24 +19,6 @@ export type ClerkUserIdentity = {
     icon: string;
   };
 };
-
-function parseAdminUserIds(raw: string | undefined): Set<string> {
-  if (!raw) return new Set();
-  return new Set(
-    raw.split(",").map(id => id.trim()).filter(id => id.length > 0)
-  );
-}
-
-function parseMaxUserIds(
-  raw: string | undefined,
-  fallbackRaw?: string | undefined,
-): Set<string> {
-  const parsed = parseAdminUserIds(raw);
-  if (parsed.size > 0) {
-    return parsed;
-  }
-  return parseAdminUserIds(fallbackRaw);
-}
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 

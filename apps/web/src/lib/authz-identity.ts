@@ -5,7 +5,6 @@ import {
   resolveProfile,
   type AppProfile,
   type DisplayNameMode,
-  normalizeProfileRole,
 } from "./profiles";
 import {
   getProfileBadgeId,
@@ -39,8 +38,12 @@ import {
   isLocalhostHost,
   isDevAuthBypassEnabled,
 } from "@/lib/auth/dev-auth";
-
-type ClerkMetadata = Record<string, unknown> | null | undefined;
+import {
+  extractRole,
+  parseAdminUserIds,
+  parseMaxUserIds,
+  type ClerkMetadata,
+} from "@/lib/auth/role-resolution";
 
 export type UserIdentity = {
   userId: string;
@@ -56,43 +59,6 @@ export type UserIdentity = {
   badges: AccountBadge[];
   locationPreference?: UserLocationPreference | null;
 };
-
-
-function parseUserIds(raw: string | undefined): Set<string> {
-  if (!raw) {
-    return new Set<string>();
-  }
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-  );
-}
-
-function parseAdminUserIds(raw: string | undefined): Set<string> {
-  return parseUserIds(raw);
-}
-
-function parseMaxUserIds(raw: string | undefined, fallbackRaw?: string | undefined): Set<string> {
-  const parsed = parseUserIds(raw);
-  return parsed.size > 0 ? parsed : parseUserIds(fallbackRaw);
-}
-
-function extractRole(metadata: ClerkMetadata): string | null {
-  if (!metadata) {
-    return null;
-  }
-  const roleValue = metadata["role"] ?? metadata["profile"];
-  if (typeof roleValue !== "string") {
-    return null;
-  }
-  const normalized = roleValue.trim().toLowerCase();
-  if (!normalized) {
-    return null;
-  }
-  return normalizeProfileRole(normalized) ?? normalized;
-}
 
 function extractBadgeIds(metadata: ClerkMetadata): string[] {
   if (!metadata) {
