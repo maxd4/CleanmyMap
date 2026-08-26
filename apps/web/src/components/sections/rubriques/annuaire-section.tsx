@@ -147,8 +147,10 @@ export function AnnuaireSection() {
           </div>
           <div className="relative z-10">
             <CmmButton 
+              href="/partners/onboarding"
               tone="primary"
               variant="default"
+              ariaLabel={fr ? "Référencer ma structure — ouvrir le parcours partenaire" : "Register my structure — open the partner onboarding"}
               className="px-10 py-5 rounded-[1.5rem] bg-white text-slate-950 font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all flex items-center gap-3"
             >
               {fr ? "Référencer ma structure" : "Register my structure"}

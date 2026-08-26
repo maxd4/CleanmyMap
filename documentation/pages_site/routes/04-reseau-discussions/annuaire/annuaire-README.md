@@ -10,8 +10,9 @@
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : à documenter
 - **Contexte nécessaire** : à compléter
-- **Objectif utilisateur principal** : à compléter
-- **Action principale attendue** : à compléter
+- **Objectif utilisateur principal** : Découvrir les acteurs engagés puis permettre à une structure de demander son référencement dans l’annuaire.
+- **Action principale attendue** : Référencer ma structure.
+- **Cible canonique de l’action principale** : `/partners/onboarding`
 - **Palette attendue** : à compléter
 - **Scope** : à cadrer
 - **Terminée** : non
