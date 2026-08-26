@@ -21,7 +21,7 @@
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : lots 1 à 4B livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires, création et vote des sondages
+- **Scope** : lots 1 à 5C et finition UI livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires, sondages avec vote, historique paginé et recherche scoped
 - **Terminée** : création, lecture, vote, changement et retrait d'un vote oui ; résultats agrégés oui ; multi-choix, expiration et clôture restent hors périmètre.
 - **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
 - **Annonces** : `message_kind` distingue `message` et `announcement`. Une annonce est communautaire, utilise un topic canonique (`relais_associatif`, `appel_aux_benevoles` ou `demande_diffusion`) et peut référencer un `community_events.id` réellement existant via `related_event_id`. Les détails de l'événement affichés viennent de la base, jamais de l'URL.
@@ -35,6 +35,7 @@
 - **Historique** : le fil est lu par pages de 50 messages maximum avec un curseur keyset stable `created_at + id`. Le bouton « Charger les messages précédents » ajoute une page au début sans déplacement de la position de lecture ; les revalidations temps réel/polling réconcilient seulement la page récente.
 - **Ancrage notification** : une notification chat peut porter `messageId`. Le serveur vérifie que la cible appartient au scope accessible (canal, topic, territoire ou DM), charge directement la page qui la contient et le fil la centre avec une surbrillance temporaire. Une cible indisponible laisse le fil ouvert avec un état discret.
 - **Recherche** : le endpoint dédié `/api/chat/search` recherche dans `app_messages.content` du scope ouvert uniquement. La requête est comprise entre 2 et 120 caractères, les résultats sont limités à 20 par page et suivent le même curseur keyset `created_at + id`. En DM, la recherche reste strictement limitée à la conversation sélectionnée.
+- **Finition UI** : les tabs supérieurs sont la navigation primaire. L’onglet public expose uniquement Communauté, Territoire et leurs topics ; l’onglet privé expose l’inbox DM puis le fil sélectionné. Les deep-links DM synchronisent l’onglet privé avant le rendu du shell.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Finition responsive** : le shell utilise la hauteur disponible sans hauteur minimale artificielle ; le header, les états du fil, la recherche et le composer restent contenus dans leur zone de défilement.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
