@@ -511,6 +511,30 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["auth()", "fetchCachedChatUsers", "userId"],
     },
   },
+  "chat/search": {
+    GET: {
+      expected:
+        "Authenticated chat search with channel-specific role, ownership and profile-derived territory boundaries",
+      dimensions: [
+        "authentication",
+        "admin/creator role",
+        "business permission",
+        "ownership",
+      ],
+      actual:
+        "auth() + current identity role gate; Clerk-RLS app_messages queries scope community/topics, DM participants, admin_elu roles, profile territory/neighbors and current-user bug reports",
+      evidence: [
+        "auth()",
+        "getCurrentUserIdentity",
+        "getSupabaseClerkRlsClient",
+        "loadCurrentProfile",
+        "canAccessChatChannel",
+        "getTerritoryFilter",
+        "sender_id",
+        "recipient_id",
+      ],
+    },
+  },
   "email/test": {
     POST: {
       expected: "Admin-like role for test email delivery with actor attribution and service audit event",

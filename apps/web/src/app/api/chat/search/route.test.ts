@@ -27,22 +27,30 @@ vi.mock("@/lib/supabase/clerk-rls", () => ({
 function buildSupabaseMock({
   rows,
   arrondissement = null,
+  metadata = null,
 }: {
   rows: SearchRow[];
   arrondissement?: number | null;
+  metadata?: Record<string, unknown> | null;
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
     eq: vi.fn(() => profileQuery),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: { paris_arrondissement: arrondissement, metadata: null },
+      data: { paris_arrondissement: arrondissement, metadata },
       error: null,
     }),
   };
   const table = {
     select: vi.fn(),
   };
-  const calls = { ilike: vi.fn(), or: vi.fn(), limit: vi.fn() };
+  const calls = {
+    ilike: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
+    or: vi.fn(),
+    limit: vi.fn(),
+  };
   table.select.mockImplementation(() => {
     const eqFilters: Array<[string, unknown]> = [];
     const inFilters: Array<[string, unknown[]]> = [];
@@ -57,10 +65,12 @@ function buildSupabaseMock({
       order: vi.fn(() => query),
       eq: vi.fn((field: string, value: unknown) => {
         eqFilters.push([field, value]);
+        calls.eq(field, value);
         return query;
       }),
       in: vi.fn((field: string, value: unknown[]) => {
         inFilters.push([field, value]);
+        calls.in(field, value);
         return query;
       }),
       or: vi.fn((expression: string) => {
@@ -136,6 +146,19 @@ describe("GET /api/chat/search", () => {
     identityMock.mockResolvedValue({ role: "member" });
   });
 
+  it("requires an authenticated current user before resolving a search client", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat/search?channelType=community&q=message"),
+    );
+
+    expect(response.status).toBe(401);
+    expect(identityMock).not.toHaveBeenCalled();
+    expect(rlsClientMock).not.toHaveBeenCalled();
+  });
+
   it("rejects short, overlong and malformed cursors before querying messages", async () => {
     const { GET } = await import("./route");
     const shortResponse = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=a"));
@@ -201,6 +224,102 @@ describe("GET /api/chat/search", () => {
       "11111111-1111-4111-8111-000000000002",
       "11111111-1111-4111-8111-000000000001",
     ]);
+  });
+
+  it("keeps bug report search limited to messages sent or received by the current user", async () => {
+    const supabaseMock = buildSupabaseMock({
+      rows: [
+        buildRow(1, {
+          channel_type: "bug_report",
+          sender_id: "user-1",
+          recipient_id: "admin-1",
+          content: "Mon signalement envoyé",
+        }),
+        buildRow(2, {
+          channel_type: "bug_report",
+          sender_id: "admin-1",
+          recipient_id: "user-1",
+          content: "Réponse à mon signalement",
+        }),
+        buildRow(3, {
+          channel_type: "bug_report",
+          sender_id: "user-2",
+          recipient_id: "admin-1",
+          content: "Signalement d'un autre compte",
+        }),
+      ],
+    });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat/search?channelType=bug_report&q=signalement"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
+      "11111111-1111-4111-8111-000000000002",
+      "11111111-1111-4111-8111-000000000001",
+    ]);
+  });
+
+  it("denies admin_elu search to a non-authorized role", async () => {
+    identityMock.mockResolvedValueOnce({ role: "benevole" });
+    const supabaseMock = buildSupabaseMock({ rows: [] });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat/search?channelType=admin_elu&q=secret"),
+    );
+
+    expect(response.status).toBe(403);
+    expect(supabaseMock.calls.ilike).not.toHaveBeenCalled();
+  });
+
+  it("uses only the profile territory when client coordinates request another arrondissement", async () => {
+    const supabaseMock = buildSupabaseMock({
+      arrondissement: 11,
+      rows: [
+        buildRow(1, {
+          channel_type: "territory",
+          arrondissement_id: 11,
+          content: "Besoin autorisé dans mon territoire",
+        }),
+        buildRow(2, {
+          channel_type: "territory",
+          arrondissement_id: 1,
+          content: "Besoin hors territoire",
+        }),
+      ],
+    });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request(
+        "http://localhost/api/chat/search?channelType=territory&zoneName=Paris%201er%20arrondissement&arrondissementId=1&q=Besoin",
+      ),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
+      "11111111-1111-4111-8111-000000000001",
+    ]);
+    expect(supabaseMock.calls.eq).not.toHaveBeenCalledWith(
+      "zone_name",
+      "Paris 1er arrondissement",
+    );
+    expect(supabaseMock.calls.in).toHaveBeenCalledWith(
+      "arrondissement_id",
+      expect.arrayContaining([11, 3, 4, 10, 12, 19, 20]),
+    );
+    expect(supabaseMock.calls.in).not.toHaveBeenCalledWith(
+      "arrondissement_id",
+      expect.arrayContaining([1]),
+    );
   });
 
   it("paginates search results with the same stable keyset and keeps territory scope", async () => {
