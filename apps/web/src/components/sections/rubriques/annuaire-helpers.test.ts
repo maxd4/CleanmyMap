@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ASSOCIATIONS_ENTRIES } from "./annuaire/seed-associations";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
 import {
   formatAssociationImpactDate,
   getAssociationImpactSummary,
@@ -7,67 +7,56 @@ import {
   getAssociationStructureBadge,
 } from "./annuaire-helpers";
 
-describe("association valorization helpers", () => {
-  it("includes Shakirail in the partner directory seeds", () => {
-    const entry = ASSOCIATIONS_ENTRIES.find((item) => item.id === "asso-shakirail");
-    expect(entry).toBeDefined();
-    expect(entry).toMatchObject({
-      name: "Le Shakirail",
-      location: "Paris 18e",
-      websiteUrl: "https://shakirail.curry-vavart.com/",
-      qualificationStatus: "partenaire_actif",
-    });
+describe("association profile provenance", () => {
+  it("does not derive trust or measured impact from an editorial seed", () => {
+    const entry = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-zerowaste-paris");
 
-    const profile = getAssociationProfile(entry!);
+    expect(entry).toBeDefined();
+    expect(getAssociationProfile(entry!)).toBeNull();
+    expect(getAssociationStructureBadge(entry!)).toBeNull();
+    expect(getAssociationImpactSummary(entry!)).toBe("Impact associatif non disponible");
+  });
+
+  it("preserves the existing profile behavior for a published partner entry", () => {
+    const seed = INITIAL_ANNUAIRE_ENTRIES.find((item) => item.id === "asso-shakirail");
+    if (!seed) {
+      throw new Error("Expected the editorial seed fixture to exist");
+    }
+
+    const published = {
+      ...seed,
+      provenance: "published_partner" as const,
+      verificationStatus: "verifie" as const,
+      qualificationStatus: "partenaire_actif" as const,
+      recentActivityAt: "2026-08-26T10:00:00.000Z",
+      associationProfile: {
+        ...seed.associationProfile!,
+        structureStatus: "active_validated" as const,
+        impactHistory: {
+          actionCount: 12,
+          zonesCovered: 1,
+          recurrence: "Actions récurrentes",
+          lastActionAt: "2026-08-26T10:00:00.000Z",
+        },
+      },
+    };
+
+    const profile = getAssociationProfile(published);
 
     expect(profile).toMatchObject({
       structureStatus: "active_validated",
       impactHistory: {
+        actionCount: 12,
         zonesCovered: 1,
       },
     });
-    expect(profile?.usefulResources).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          label: "Site officiel",
-          url: "https://shakirail.curry-vavart.com/",
-        }),
-      ]),
-    );
-    expect(getAssociationStructureBadge(entry!)).toMatchObject({
+    expect(getAssociationStructureBadge(published)).toMatchObject({
       label: "Structure active / validée",
       tone: "success",
     });
-  });
-
-  it("builds association insights from seed data", () => {
-    const entry = ASSOCIATIONS_ENTRIES.find((item) => item.id === "asso-zerowaste-paris");
-    expect(entry).toBeDefined();
-
-    const profile = getAssociationProfile(entry!);
-
-    expect(profile).toMatchObject({
-      mission: expect.stringContaining("réduction des déchets à la source"),
-      structureStatus: "active_validated",
-      impactHistory: {
-        actionCount: 52,
-        zonesCovered: 20,
-      },
-    });
-
-    expect(profile?.publicCalls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "materiel",
-          label: "Appel à matériel",
-        }),
-      ]),
+    expect(getAssociationImpactSummary(published)).toContain("12 actions référencées");
+    expect(formatAssociationImpactDate(profile?.impactHistory?.lastActionAt)).toContain(
+      "Dernière action",
     );
-    expect(getAssociationStructureBadge(entry!)).toMatchObject({
-      label: "Structure active / validée",
-      tone: "success",
-    });
-    expect(getAssociationImpactSummary(entry!)).toContain("52 actions référencées");
-    expect(formatAssociationImpactDate(profile?.impactHistory?.lastActionAt)).toContain("Dernière action");
   });
 });

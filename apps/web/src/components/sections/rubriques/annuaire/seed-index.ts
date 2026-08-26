@@ -1,10 +1,13 @@
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type {
+  AnnuaireEntrySeedInput,
+  EditorialAnnuaireEntry,
+} from "@/lib/partners/annuaire-types";
 import { ASSOCIATIONS_ENTRIES } from "./seed-associations";
 import { ENTREPRISES_ENTRIES } from "./seed-entreprises";
 import { EVENEMENTS_ENTRIES } from "./seed-evenements";
 import { GROUPES_PAROLE_ENTRIES } from "./seed-groupes-parole";
 
-function validateUniqueIds(entries: AnnuaireEntry[]): void {
+function validateUniqueIds(entries: AnnuaireEntrySeedInput[]): void {
   const ids = new Set<string>();
   const duplicates: string[] = [];
 
@@ -22,7 +25,7 @@ function validateUniqueIds(entries: AnnuaireEntry[]): void {
   }
 }
 
-const allEntries = [
+const allEntries: AnnuaireEntrySeedInput[] = [
   ...ASSOCIATIONS_ENTRIES,
   ...ENTREPRISES_ENTRIES,
   ...EVENEMENTS_ENTRIES,
@@ -31,4 +34,25 @@ const allEntries = [
 
 validateUniqueIds(allEntries);
 
-export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = allEntries;
+function toEditorialAnnuaireEntry(
+  entry: AnnuaireEntrySeedInput,
+): EditorialAnnuaireEntry {
+  const { recentActivityAt: _recentActivityAt, ...sharedEntry } = entry;
+
+  return {
+    ...sharedEntry,
+    provenance: "editorial_seed",
+    verificationStatus: "en_cours",
+    qualificationStatus: "contact_non_qualifie",
+    associationProfile: sharedEntry.associationProfile
+      ? {
+          ...sharedEntry.associationProfile,
+          impactHistory: undefined,
+          structureStatus: "pending",
+        }
+      : undefined,
+  };
+}
+
+export const INITIAL_ANNUAIRE_ENTRIES: EditorialAnnuaireEntry[] =
+  allEntries.map(toEditorialAnnuaireEntry);

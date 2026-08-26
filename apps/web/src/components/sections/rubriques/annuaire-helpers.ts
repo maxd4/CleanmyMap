@@ -15,6 +15,8 @@ import type {
   AssociationProfile,
   AssociationPublicCall,
   AssociationResource,
+  EditorialAnnuaireEntry,
+  PublishedAnnuaireEntry,
 } from "@/lib/partners/annuaire-types";
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
@@ -46,10 +48,23 @@ export const VERIFICATION_LABELS: Record<AnnuaireEntry["verificationStatus"], st
  };
 
 export const TRUST_LABELS: Record<PartnerTrustState, string> = {
- trusted:"Confirmée",
- pending:"Non confirmée",
- incomplete:"À compléter",
+  trusted:"Confirmée",
+  pending:"Non confirmée",
+  incomplete:"À compléter",
+  editorial:"Ressource éditoriale",
 };
+
+export function isEditorialAnnuaireEntry(
+  entry: AnnuaireEntry,
+): entry is EditorialAnnuaireEntry {
+  return entry.provenance === "editorial_seed";
+}
+
+export function isPublishedPartnerAnnuaireEntry(
+  entry: AnnuaireEntry,
+): entry is PublishedAnnuaireEntry {
+  return entry.provenance === "published_partner";
+}
 
 export function formatCoverage(
  coveredArrondissements: number[],
@@ -142,14 +157,23 @@ export function hasValidPublicChannel(entry: AnnuaireEntry): boolean {
 }
 
 export function hasRecentPartnerUpdate(entry: AnnuaireEntry): boolean {
+ if (!isPublishedPartnerAnnuaireEntry(entry)) {
+ return false;
+ }
  return hasRecentUpdate(entry.lastUpdatedAt, 90);
 }
 
 export function isCompletePublicPartner(entry: AnnuaireEntry): boolean {
+ if (!isPublishedPartnerAnnuaireEntry(entry)) {
+ return false;
+ }
  return isCompletePartnerEntry(entry);
 }
 
 export function getEntryTrustState(entry: AnnuaireEntry): PartnerTrustState {
+ if (isEditorialAnnuaireEntry(entry)) {
+ return "editorial";
+ }
  return getPartnerTrustState(entry);
 }
 
@@ -158,7 +182,31 @@ export function isPlaceholderPublicUrl(url: string): boolean {
 }
 
 export function getPartnerWhyThisStructureMatters(entry: AnnuaireEntry): string {
- return buildPartnerWhyThisStructureMatters(entry);
+ if (isEditorialAnnuaireEntry(entry)) {
+ return `Ressource éditoriale à découvrir : ${entry.name}.`;
+ }
+  return buildPartnerWhyThisStructureMatters(entry);
+}
+
+export function compareAnnuaireEntries(
+ left: EnrichedAnnuaireEntry,
+ right: EnrichedAnnuaireEntry,
+): number {
+ if (left.isFeatured && !right.isFeatured) return -1;
+ if (!left.isFeatured && right.isFeatured) return 1;
+
+ const leftTrust = getEntryTrustState(left);
+ const rightTrust = getEntryTrustState(right);
+ if (leftTrust === "trusted" && rightTrust !== "trusted") return -1;
+ if (leftTrust !== "trusted" && rightTrust === "trusted") return 1;
+
+ if (left.distanceKm !== null && right.distanceKm !== null) {
+  return left.distanceKm - right.distanceKm;
+ }
+ if (left.distanceKm !== null) return -1;
+ if (right.distanceKm !== null) return 1;
+
+ return left.name.localeCompare(right.name);
 }
 
 function cleanText(value: string | undefined): string {
@@ -322,9 +370,9 @@ function buildAssociationImpactHistory(entry: AnnuaireEntry): AssociationImpactH
 }
 
 export function getAssociationProfile(
- entry: AnnuaireEntry,
+  entry: AnnuaireEntry,
 ): AssociationProfile | null {
- if (entry.kind !== "association") {
+ if (entry.kind !== "association" || isEditorialAnnuaireEntry(entry)) {
  return null;
  }
 
@@ -480,7 +528,7 @@ function recommendationReason(
 export function buildAutomaticRecommendations(
  params: RecommendationParams,
 ): Recommendation[] {
- const scored = params.entries.map((entry) => {
+ const scored = params.entries.filter(isPublishedPartnerAnnuaireEntry).map((entry) => {
  const score =
  profileBonus(entry, params.profile) +
  locationBonus(entry, params.arrondissement);

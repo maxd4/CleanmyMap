@@ -144,7 +144,11 @@ export function AnnuaireMapCanvas({
                     </p>
                     {trustState !== "trusted" ? (
                       <p className={`text-xs font-semibold ${trustState === "incomplete" ? "text-rose-300" : "text-amber-300"}`}>
-                        {trustState === "incomplete" ? "Fiche à compléter" : "Fiche non confirmée"}
+                        {trustState === "editorial"
+                          ? "Ressource éditoriale"
+                          : trustState === "incomplete"
+                            ? "Fiche à compléter"
+                            : "Fiche non confirmée"}
                       </p>
                     ) : null}
                     <div className="mt-2 flex flex-wrap gap-2 border-t border-violet-300/12 pt-2">

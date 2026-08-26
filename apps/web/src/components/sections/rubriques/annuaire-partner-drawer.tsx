@@ -76,6 +76,11 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                     <Building2 size={12} />
                     {ENTITY_LABELS[entry.kind] || entry.kind}
                   </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">
+                    {entry.provenance === "editorial_seed"
+                      ? "Ressource éditoriale"
+                      : "Fiche partenaire publiée"}
+                  </div>
                   <h2 className="text-4xl font-black leading-tight tracking-tighter text-white">{entry.name}</h2>
                   {structureBadge && (
                     <div className={cn(

@@ -1,6 +1,6 @@
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type { AnnuaireEntrySeedInput } from "@/lib/partners/annuaire-types";
 
-export const ENTREPRISES_ENTRIES: AnnuaireEntry[] = [
+export const ENTREPRISES_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "com-1",
     name: "La Textilerie",

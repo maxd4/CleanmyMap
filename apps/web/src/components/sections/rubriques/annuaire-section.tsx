@@ -68,14 +68,14 @@ export function AnnuaireSection() {
               <div className="space-y-8 max-w-3xl">
                 <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 shadow-2xl">
                   <Building2 size={14} className="animate-pulse" />
-                  {fr ? "Partenaires Stratégiques" : "Strategic Partners"}
+                  {fr ? "Sélection éditoriale" : "Editorial selection"}
                 </div>
                 <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-[1.1]">
-                  {fr ? "Les acteurs qui font bouger les lignes" : "Actors driving systemic change"}
+                  {fr ? "Les acteurs à découvrir" : "Actors to discover"}
                 </h2>
               </div>
               <p className="max-w-md text-xl text-slate-400 font-bold leading-relaxed opacity-80">
-                {fr ? "Découvrez les structures les plus actives sur le territoire et leurs initiatives d'impact." : "Discover the most active structures in the territory and their high-impact initiatives."}
+                {fr ? "Découvrez des acteurs engagés, leurs ressources publiques et les fiches partenaires publiées." : "Discover engaged actors, their public resources and published partner profiles."}
               </p>
             </div>
             <div className="relative">

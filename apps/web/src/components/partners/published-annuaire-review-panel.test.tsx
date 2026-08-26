@@ -19,6 +19,7 @@ const pendingEntry = {
   publishedAt: "2026-08-26T10:00:00.000Z",
   publicationStatus: "pending_admin_review" as const,
   source: "partner_onboarding" as const,
+  provenance: "published_partner" as const,
   name: "Partner record",
   legalIdentity: "Partner legal identity",
   kind: "association" as const,

@@ -1,6 +1,6 @@
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type { AnnuaireEntrySeedInput } from "@/lib/partners/annuaire-types";
 
-export const GROUPES_PAROLE_ENTRIES: AnnuaireEntry[] = [
+export const GROUPES_PAROLE_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "collectif-1",
     name: "Cercle de parole - Eco-anxiété",

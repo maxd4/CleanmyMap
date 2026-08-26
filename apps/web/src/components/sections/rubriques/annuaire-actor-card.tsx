@@ -34,6 +34,7 @@ export function AnnuaireActorCard({
   const trustState = getEntryTrustState(entry);
   const isTrusted = trustState === "trusted";
   const isIncomplete = trustState === "incomplete";
+  const isEditorial = trustState === "editorial";
   const associationProfile = getAssociationProfile(entry);
   const structureBadge = getAssociationStructureBadge(entry);
 
@@ -64,6 +65,12 @@ export function AnnuaireActorCard({
           >
             <ShieldCheck size={10} />
             {structureBadge.label}
+          </span>
+        )}
+        {isEditorial && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[9px] font-black tracking-widest text-violet-300 shadow-2xl">
+            <Info size={10} />
+            {fr ? "RESSOURCE ÉDITORIALE" : "EDITORIAL RESOURCE"}
           </span>
         )}
         {isFeatured && (
@@ -217,7 +224,17 @@ export function AnnuaireActorCard({
               <div className="flex items-center gap-3">
                  <Info size={14} className="opacity-60" />
                  <p className="text-[10px] font-black uppercase tracking-widest">
-                   {isIncomplete ? (fr ? "Données partielles" : "Partial Data") : (fr ? "Vérification en cours" : "Validation Pending")}
+                   {isEditorial
+                     ? fr
+                       ? "Ressource éditoriale"
+                       : "Editorial resource"
+                     : isIncomplete
+                       ? fr
+                         ? "Données partielles"
+                         : "Partial Data"
+                       : fr
+                         ? "Vérification en cours"
+                         : "Validation Pending"}
                  </p>
               </div>
             </div>

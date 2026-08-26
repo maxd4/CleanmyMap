@@ -17,6 +17,7 @@ import type {
   AssociationProfile,
   AssociationPublicCall,
   AssociationResource,
+  PublishedAnnuaireEntry,
 } from "./annuaire-types";
 import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 
@@ -27,7 +28,7 @@ const STORE_FILE = join(
   "published_partner_annuaire_entries.json",
 );
 
-export type PublishedPartnerAnnuaireEntry = AnnuaireEntry & {
+export type PublishedPartnerAnnuaireEntry = PublishedAnnuaireEntry & {
   sourceRequestId: string;
   publishedAt: string;
   publicationStatus: "pending_admin_review" | "accepted" | "rejected";
@@ -80,6 +81,7 @@ function normalizePublishedRecord(
   );
   return {
     ...record,
+    provenance: "published_partner",
     websiteUrl: websiteUrl ?? undefined,
     instagramUrl: instagramUrl ?? undefined,
     facebookUrl: facebookUrl ?? undefined,
@@ -432,6 +434,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
       : undefined,
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",
+    provenance: "published_partner",
     lastUpdatedAt: nowIso,
     recentActivityAt: nowIso,
     associationProfile,

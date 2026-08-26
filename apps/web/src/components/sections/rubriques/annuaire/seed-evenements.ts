@@ -1,6 +1,6 @@
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type { AnnuaireEntrySeedInput } from "@/lib/partners/annuaire-types";
 
-export const EVENEMENTS_ENTRIES: AnnuaireEntry[] = [
+export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "evt-1",
     name: "La REcyclerie - Ateliers",
