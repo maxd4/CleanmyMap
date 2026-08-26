@@ -30,7 +30,11 @@ export type AdminOperationAuditEntry = {
   at: string;
   actorUserId: string;
   actorLabel?: string;
-  operationType: "moderation" | "import_dry_run" | "import_confirm";
+  operationType:
+    | "moderation"
+    | "import_dry_run"
+    | "import_confirm"
+    | "role_management";
   outcome: "success" | "error";
   targetId?: string;
   details: Record<string, unknown>;
