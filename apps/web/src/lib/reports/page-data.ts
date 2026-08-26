@@ -15,7 +15,30 @@ export type ReportsSummaryKpi = {
   interpretation: "positive" | "negative" | "neutral";
 };
 
-export async function loadReportsAnalysisData() {
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Keeps the Pilotage history intact while deriving the contracts shown as the
+ * current Reports window. `observedAt` is the business date used by the
+ * action/report aggregators, and both bounds are inclusive.
+ */
+export function filterContractsToActivePeriod(
+  contracts: readonly ActionDataContract[],
+  params: { periodDays: number; now: Date },
+): ActionDataContract[] {
+  const nowMs = params.now.getTime();
+  if (!Number.isFinite(nowMs) || !Number.isFinite(params.periodDays) || params.periodDays < 0) {
+    return [];
+  }
+
+  const floorMs = nowMs - params.periodDays * DAY_IN_MS;
+  return contracts.filter((contract) => {
+    const observedAtMs = new Date(contract.dates.observedAt).getTime();
+    return Number.isFinite(observedAtMs) && observedAtMs >= floorMs && observedAtMs <= nowMs;
+  });
+}
+
+export async function loadReportsAnalysisData(now = new Date()) {
   const [overview, communityEventsResult] = await Promise.all([
     loadPilotageOverview({
       periodDays: REPORT_DATA_BUDGET.pilotage.periodDays,
@@ -26,11 +49,15 @@ export async function loadReportsAnalysisData() {
       .catch(() => ({ items: [], availability: "unavailable" as const })),
   ]);
   const communityEvents = communityEventsResult.items;
+  const activeContracts = filterContractsToActivePeriod(overview.contracts, {
+    periodDays: overview.periodDays,
+    now,
+  });
 
-  const actionListItems = overview.contracts.map((contract) =>
+  const actionListItems = activeContracts.map((contract) =>
     toActionListItem(contract),
   );
-  const actionMapItems = overview.contracts.map((contract) =>
+  const actionMapItems = activeContracts.map((contract) =>
     toActionMapItem(contract),
   );
 
@@ -44,8 +71,9 @@ export async function loadReportsAnalysisData() {
       mapItems: actionMapItems,
       events: communityEvents,
       moderationAvailability: "unavailable",
+      now,
     }),
-    monthlyData: aggregateMonthlyAnalytics(overview.contracts),
+    monthlyData: aggregateMonthlyAnalytics(activeContracts),
   };
 }
 
