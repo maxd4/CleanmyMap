@@ -1,10 +1,12 @@
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { ChatTopicId } from "@/lib/chat/topics";
 
 export type ChatMessage = {
   id: string;
   sender_id: string;
   content: string;
   channel_type: ChatChannelType;
+  topic_id: ChatTopicId | null;
   attachment_url?: string;
   attachment_type?: string | null;
   attachment_expires_at?: string | null;

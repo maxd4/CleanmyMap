@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -12,10 +11,7 @@ import {
 } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
-import {
-  getDefaultDiscussionTopicId,
-  type ChatTopicId,
-} from "../discussion-guidance";
+import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatUser } from "../chat-types";
 
 type UseChatStateParams = {
@@ -23,6 +19,7 @@ type UseChatStateParams = {
   initialArrondissement?: number;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
+  initialTopicId?: ChatTopicId | null;
   initialMessage?: string;
 };
 
@@ -71,6 +68,7 @@ export function useChatState({
   initialArrondissement,
   initialZoneName,
   initialRecipient,
+  initialTopicId,
   initialMessage,
 }: UseChatStateParams): UseChatStateModel {
   const [activeChannelType, setActiveChannelTypeState] =
@@ -93,7 +91,7 @@ export function useChatState({
     initialChannelType === "dm",
   );
   const [activeTopicId, setActiveTopicId] = useState<ChatTopicId | null>(
-    getDefaultDiscussionTopicId(initialChannelType),
+    initialTopicId ?? null,
   );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -107,10 +105,6 @@ export function useChatState({
         ? `${initialArrondissement}e arrondissement`
         : "";
   const isBugReportChannel = activeChannelType === "bug_report";
-
-  useEffect(() => {
-    setActiveTopicId(getDefaultDiscussionTopicId(activeChannelType));
-  }, [activeChannelType]);
 
   const setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>> = useCallback(
     (nextValue) => {

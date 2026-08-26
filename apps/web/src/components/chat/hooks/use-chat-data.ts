@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { ChatTopicId } from "@/lib/chat/topics";
 import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
 import { readAppErrorResponse, toAppError } from "@/lib/errors/app-errors";
 import type {
@@ -17,6 +18,7 @@ import type {
 
 type UseChatDataParams = {
   activeChannelType: ChatChannelType;
+  activeTopicId: ChatTopicId | null;
   selectedRecipientId: string | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -32,6 +34,7 @@ export type SendChatMessageParams = {
   optimisticMessage: ChatMessage;
   body: {
     channelType: ChatChannelType;
+    topicId?: ChatTopicId;
     content: string;
     recipientId?: string;
     arrondissementId?: number;
@@ -52,6 +55,7 @@ type ChatMessageChange = {
   recipient_id?: string | null;
   zone_name?: string | null;
   arrondissement_id?: number | null;
+  topic_id?: string | null;
 };
 
 type ChatRefreshContext = {
@@ -106,15 +110,24 @@ const fetcher = async <T>(url: string): Promise<T> => {
   return payload as T;
 };
 
-function buildMessagesKey({
+export function buildMessagesKey({
   activeChannelType,
+  activeTopicId,
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
 }: Pick<
   UseChatDataParams,
-  "activeChannelType" | "selectedRecipientId" | "effectiveZone" | "territoryFocus"
+  | "activeChannelType"
+  | "activeTopicId"
+  | "selectedRecipientId"
+  | "effectiveZone"
+  | "territoryFocus"
 >): string | null {
+  const topicParam = activeTopicId
+    ? `&topicId=${encodeURIComponent(activeTopicId)}`
+    : "";
+
   if (activeChannelType === "dm") {
     return selectedRecipientId
       ? `/api/chat?channelType=dm&recipientId=${encodeURIComponent(selectedRecipientId)}`
@@ -123,19 +136,20 @@ function buildMessagesKey({
 
   if (activeChannelType === "territory") {
     if (effectiveZone) {
-      return `/api/chat?channelType=territory&zoneName=${encodeURIComponent(effectiveZone)}`;
+      return `/api/chat?channelType=territory&zoneName=${encodeURIComponent(effectiveZone)}${topicParam}`;
     }
 
     return territoryFocus
-      ? `/api/chat?channelType=territory&arrondissementId=${territoryFocus}`
+      ? `/api/chat?channelType=territory&arrondissementId=${territoryFocus}${topicParam}`
       : null;
   }
 
-  return `/api/chat?channelType=${activeChannelType}`;
+  return `/api/chat?channelType=${activeChannelType}${topicParam}`;
 }
 
 export function useChatData({
   activeChannelType,
+  activeTopicId,
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
@@ -159,6 +173,7 @@ export function useChatData({
   const messagesKey = canQueryProtectedChat
     ? buildMessagesKey({
         activeChannelType,
+        activeTopicId,
         selectedRecipientId,
         effectiveZone,
         territoryFocus,
@@ -300,11 +315,16 @@ export function useChatData({
               ) {
                 scheduleMessagesRefresh();
               }
+            } else if (activeChannelType === "community") {
+              if (!activeTopicId || newMsg.topic_id === activeTopicId) {
+                scheduleMessagesRefresh();
+              }
             } else if (activeChannelType === "territory") {
               // Match by zone or arrondissement
               if (
-                (newMsg.zone_name && newMsg.zone_name === effectiveZone) ||
-                (newMsg.arrondissement_id && newMsg.arrondissement_id === territoryFocus)
+                (!activeTopicId || newMsg.topic_id === activeTopicId) &&
+                ((newMsg.zone_name && newMsg.zone_name === effectiveZone) ||
+                  (newMsg.arrondissement_id && newMsg.arrondissement_id === territoryFocus))
               ) {
                 scheduleMessagesRefresh();
               }
@@ -325,6 +345,7 @@ export function useChatData({
     messagesKey,
     canQueryProtectedChat,
     activeChannelType,
+    activeTopicId,
     selectedRecipientId,
     currentUserId,
     effectiveZone,

@@ -18,6 +18,7 @@ type ChatMessageRow = {
   recipient_id: string | null;
   arrondissement_id: number | null;
   zone_name: string | null;
+  topic_id?: string | null;
   sender?: {
     display_name: string | null;
     handle: string | null;
@@ -81,12 +82,56 @@ function buildSupabaseMock(options: {
   };
 
   const messagesQuery = {
-    select: vi.fn(() => messagesQuery),
-    order: vi.fn(() => messagesQuery),
-    limit: vi.fn(() => messagesQuery),
-    eq: vi.fn(async () => ({ data: options.messages, error: null })),
-    in: vi.fn(async () => ({ data: options.messages, error: null })),
+    select: vi.fn(),
+    order: vi.fn(),
+    limit: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
   };
+  const createMessagesQuery = () => {
+    const filters: Array<{ kind: "eq" | "in"; field: string; value: unknown }> = [];
+    const query = {
+      select: vi.fn(() => query),
+      order: vi.fn((...args: unknown[]) => {
+        messagesQuery.order(...args);
+        return query;
+      }),
+      limit: vi.fn((...args: unknown[]) => {
+        messagesQuery.limit(...args);
+        return query;
+      }),
+      eq: vi.fn((field: string, value: unknown) => {
+        filters.push({ kind: "eq", field, value });
+        messagesQuery.eq(field, value);
+        return query;
+      }),
+      in: vi.fn((field: string, value: unknown[]) => {
+        filters.push({ kind: "in", field, value });
+        messagesQuery.in(field, value);
+        return query;
+      }),
+      then: (
+        resolve: (value: { data: ChatMessageRow[]; error: null }) => unknown,
+        reject: (reason?: unknown) => unknown,
+      ) =>
+        Promise.resolve({
+          data: options.messages.filter((message) =>
+            filters.every((filter) =>
+              filter.kind === "eq"
+                ? message[filter.field as keyof ChatMessageRow] === filter.value
+                : (filter.value as unknown[]).includes(
+                    message[filter.field as keyof ChatMessageRow],
+                  ),
+            ),
+          ),
+          error: null,
+        }).then(resolve, reject),
+    };
+    return query;
+  };
+  messagesQuery.select.mockImplementation(() => createMessagesQuery());
+  messagesQuery.order.mockImplementation(() => createMessagesQuery());
+  messagesQuery.limit.mockImplementation(() => createMessagesQuery());
 
   const insertResult = {
     single: vi.fn().mockResolvedValue({ data: options.insertedMessage, error: null }),
@@ -97,7 +142,7 @@ function buildSupabaseMock(options: {
   };
 
   const appMessagesTable = {
-    select: vi.fn(() => messagesQuery),
+    select: messagesQuery.select,
     insert: vi.fn(() => insertBuilder),
   };
 
@@ -130,7 +175,13 @@ describe("GET /api/chat and POST /api/chat", () => {
     authMock.mockResolvedValue({ userId: "user-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ role: "member" });
 
-    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 20,
+      remaining: 19,
+      reset: Date.now() + 60_000,
+      retryAfter: 0,
+    });
     createServerRateLimitResponseMock.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
     createChatNotificationsForMessageMock.mockResolvedValue(undefined);
@@ -276,7 +327,11 @@ describe("GET /api/chat and POST /api/chat", () => {
       limit: 20,
       window: 60,
     });
-    expect(createServerRateLimitResponseMock).toHaveBeenCalledWith(true, 0);
+    expect(createServerRateLimitResponseMock).toHaveBeenCalledWith(
+      true,
+      0,
+      expect.objectContaining({ limit: 20, remaining: expect.any(Number) }),
+    );
     expect(reserveDiscussionMessageSlotMock).toHaveBeenCalledWith(
       { service: true },
       {
@@ -304,6 +359,242 @@ describe("GET /api/chat and POST /api/chat", () => {
     );
   }, 15000);
 
+  it("persists a valid community topic and filters a topic feed without hiding legacy messages from the aggregate", async () => {
+    const messages: ChatMessageRow[] = [
+      {
+        id: "legacy",
+        created_at: "2026-05-01T09:00:00.000Z",
+        content: "Legacy",
+        channel_type: "community",
+        sender_id: "user-2",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+        topic_id: null,
+      },
+      {
+        id: "relay",
+        created_at: "2026-05-01T10:00:00.000Z",
+        content: "Relay",
+        channel_type: "community",
+        sender_id: "user-2",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+        topic_id: "relais_associatif",
+      },
+      {
+        id: "volunteers",
+        created_at: "2026-05-01T11:00:00.000Z",
+        content: "Volunteers",
+        channel_type: "community",
+        sender_id: "user-2",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+        topic_id: "appel_aux_benevoles",
+      },
+    ];
+    const insertedMessage: ChatMessageRow = {
+      id: "topic-message",
+      created_at: "2026-05-01T12:00:00.000Z",
+      content: "Topic message",
+      channel_type: "community",
+      sender_id: "user-1",
+      recipient_id: null,
+      arrondissement_id: null,
+      zone_name: null,
+      topic_id: "relais_associatif",
+    };
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages,
+      insertedMessage,
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue({ service: true });
+
+    const { GET, POST } = await import("./route");
+    const aggregateResponse = await GET(
+      new Request("http://localhost/api/chat?channelType=community"),
+    );
+    const aggregateBody = (await aggregateResponse.json()) as {
+      messages: ChatMessageRow[];
+    };
+    expect(aggregateResponse.status).toBe(200);
+    expect(aggregateBody.messages.map((message) => message.id)).toEqual([
+      "legacy",
+      "relay",
+      "volunteers",
+    ]);
+
+    const topicResponse = await GET(
+      new Request(
+        "http://localhost/api/chat?channelType=community&topicId=relais_associatif",
+      ),
+    );
+    const topicBody = (await topicResponse.json()) as {
+      messages: ChatMessageRow[];
+    };
+    expect(topicResponse.status).toBe(200);
+    expect(topicBody.messages.map((message) => message.id)).toEqual(["relay"]);
+    expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith(
+      "topic_id",
+      "relais_associatif",
+    );
+
+    const postResponse = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          topicId: "relais_associatif",
+          content: "Topic message",
+        }),
+      }),
+    );
+    expect(postResponse.status).toBe(201);
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel_type: "community",
+        topic_id: "relais_associatif",
+      }),
+    );
+  }, 15000);
+
+  it.each([
+    ["not-a-topic", "Salon inconnu."],
+    ["mon_territoire", "Ce salon n'est pas disponible dans ce canal."],
+  ])("rejects invalid or incompatible topic %s before writing", async (topicId, hint) => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          topicId,
+          content: "Should be rejected",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Salon invalide",
+      hint,
+    });
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps territory filtering when a topic is selected and rejects a community topic", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: 11,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [
+        {
+          id: "local-topic",
+          created_at: "2026-05-01T10:00:00.000Z",
+          content: "Local",
+          channel_type: "territory",
+          sender_id: "user-2",
+          recipient_id: null,
+          arrondissement_id: 11,
+          zone_name: null,
+          topic_id: "mon_territoire",
+        },
+        {
+          id: "neighbor-topic",
+          created_at: "2026-05-01T11:00:00.000Z",
+          content: "Neighbor",
+          channel_type: "territory",
+          sender_id: "user-2",
+          recipient_id: null,
+          arrondissement_id: 11,
+          zone_name: null,
+          topic_id: "territoires_voisins",
+        },
+        {
+          id: "legacy-other-zone",
+          created_at: "2026-05-01T12:00:00.000Z",
+          content: "Other zone",
+          channel_type: "territory",
+          sender_id: "user-2",
+          recipient_id: null,
+          arrondissement_id: 12,
+          zone_name: null,
+          topic_id: null,
+        },
+      ],
+      insertedMessage: {
+        id: "unused",
+        created_at: "2026-05-01T12:00:00.000Z",
+        content: "unused",
+        channel_type: "territory",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: 11,
+        zone_name: null,
+        topic_id: null,
+      },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request(
+        "http://localhost/api/chat?channelType=territory&topicId=mon_territoire",
+      ),
+    );
+    const body = (await response.json()) as { messages: ChatMessageRow[] };
+    expect(response.status).toBe(200);
+    expect(body.messages.map((message) => message.id)).toEqual(["local-topic"]);
+    expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith(
+      "topic_id",
+      "mon_territoire",
+    );
+
+    const invalidResponse = await GET(
+      new Request(
+        "http://localhost/api/chat?channelType=territory&topicId=relais_associatif",
+      ),
+    );
+    expect(invalidResponse.status).toBe(400);
+  });
+
+  it("rejects topics on DM, admin and bug-report channels", async () => {
+    const { POST } = await import("./route");
+    for (const channelType of ["dm", "admin_elu", "bug_report"] as const) {
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            channelType,
+            topicId: "relais_associatif",
+            content: "Should be rejected",
+            recipientId: channelType === "dm" ? "user-2" : undefined,
+          }),
+        }),
+      );
+      expect(response.status).toBe(400);
+    }
+  });
+
   it("returns 403 before auth, parsing, rate limiting, or business calls for a bot", async () => {
     requireBotIdHumanMock.mockResolvedValue(
       new Response(JSON.stringify({ error: "Access denied", code: "BOT_DETECTED" }), {
@@ -327,6 +618,34 @@ describe("GET /api/chat and POST /api/chat", () => {
     });
     expect(authMock).not.toHaveBeenCalled();
     expect(verifyRateLimitMock).not.toHaveBeenCalled();
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(reserveDiscussionMessageSlotMock).not.toHaveBeenCalled();
+    expect(createChatNotificationsForMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 before auth, parsing, or business calls when rate limited", async () => {
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: false,
+      limit: 20,
+      remaining: 0,
+      reset: Date.now() + 17_000,
+      retryAfter: 17,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        body: "not-json-and-never-parsed",
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(authMock).not.toHaveBeenCalled();
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     expect(reserveDiscussionMessageSlotMock).not.toHaveBeenCalled();

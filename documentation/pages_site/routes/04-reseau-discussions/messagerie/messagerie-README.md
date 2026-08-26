@@ -10,6 +10,7 @@
 - `apps/web/src/components/chat/chat-shell.tsx`
 - `apps/web/src/app/api/chat/inbox/route.ts`
 - `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
+- `apps/web/supabase/migrations/20260826000000_chat_message_topics.sql`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -17,11 +18,13 @@
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : lot 1 livré — boîte de conversations privées
-- **Terminée** : lot 1 oui ; salons thématiques, Annonce/Relai et Sondage restent des lots séparés.
+- **Scope** : lots 1 et 2 livrés — boîte privée et salons thématiques persistants
+- **Terminée** : salons thématiques oui ; Annonce/Relai et Sondage restent des lots séparés.
 - **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
+- **Topics** : `topic_id` est nullable ; `NULL` conserve les messages legacy/non classés. Les topics communauté sont `relais_associatif`, `appel_aux_benevoles`, `demande_diffusion`, `besoin_ressources` et `coordination_secteur`. Les topics territoire sont `mon_territoire` et `territoires_voisins`.
+- **Lecture publique** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés ; une vue topic ne retourne que le topic sélectionné.
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`.
-- **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants.
+- **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
 - **Captures attendues** : desktop, mobile

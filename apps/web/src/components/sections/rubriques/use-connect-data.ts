@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isChatChannelType, type ChatChannelType } from "@/lib/chat/channels";
+import { parseChatTopicIdForChannel } from "@/lib/chat/topics";
+import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatUser } from "@/components/chat/chat-types";
 import type { ConnectTab, CommunityAnnouncementTemplateKey } from "./connect-types";
 
@@ -29,6 +31,13 @@ export function buildInitialDmRecipient({
   };
 }
 
+export function buildInitialTopicId(
+  channelType: ChatChannelType,
+  topicId: string | null,
+) {
+  return parseChatTopicIdForChannel(channelType, topicId);
+}
+
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const [activeTab, setActiveTab] = useState<ConnectTab>(defaultTab);
   const searchParams = useSearchParams();
@@ -38,6 +47,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedRecipientId = searchParams.get("recipientId");
   const requestedRecipientLabel = searchParams.get("recipientLabel");
   const requestedRecipientHandle = searchParams.get("recipientHandle");
+  const requestedTopicId = searchParams.get("topicId");
   const requestedZoneName = searchParams.get("zoneName");
   const requestedArrondissement = Number.parseInt(searchParams.get("arrondissementId") ?? "", 10);
   const requestedTemplate = searchParams.get("template");
@@ -58,6 +68,11 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
         recipientHandle: requestedRecipientHandle,
       }),
     [initialChannelType, requestedRecipientId, requestedRecipientLabel, requestedRecipientHandle],
+  );
+
+  const initialTopicId: ChatTopicId | null = useMemo(
+    () => buildInitialTopicId(initialChannelType, requestedTopicId),
+    [initialChannelType, requestedTopicId],
   );
 
   const initialTab: ConnectTab = useMemo(() =>
@@ -115,7 +130,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     [announcementTemplate, requestedEventId]
   );
 
-  const discussionShellKey = `discussions:${initialChannelType}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${announcementTemplate ?? "none"}`;
+  const discussionShellKey = `discussions:${initialChannelType}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${announcementTemplate ?? "none"}`;
   const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}`;
 
   return {
@@ -123,6 +138,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     setActiveTab,
     initialChannelType,
     initialRecipient,
+    initialTopicId,
     initialArrondissement,
     initialZoneName,
     announcementTemplate,
