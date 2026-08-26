@@ -20,6 +20,18 @@ export type EnvironmentalImpactCaptureResult = EnvironmentalImpactDashboardRespo
   version: string;
 };
 
+export type EnvironmentalImpactCaptureStage = "capture" | "persistence";
+
+export class EnvironmentalImpactCaptureError extends Error {
+  constructor(
+    public readonly stage: EnvironmentalImpactCaptureStage,
+    public readonly targetId?: string,
+  ) {
+    super(`Environmental impact capture failed during ${stage}.`);
+    this.name = "EnvironmentalImpactCaptureError";
+  }
+}
+
 async function buildLiveEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
@@ -88,18 +100,28 @@ export async function captureEnvironmentalImpactDashboard(params: {
   historyLimit?: number;
   githubRepositoryStats?: GitHubRepositoryStats | Promise<GitHubRepositoryStats | null> | null;
 }): Promise<EnvironmentalImpactCaptureResult> {
-  const dashboard = await buildLiveEnvironmentalImpactDashboard(params);
-  const snapshot = buildEnvironmentalImpactSnapshot({
-    model: dashboard.model,
-    signals: dashboard.signals,
-  });
+  let dashboard: EnvironmentalImpactCaptureResult;
+  try {
+    dashboard = await buildLiveEnvironmentalImpactDashboard(params);
+  } catch {
+    throw new EnvironmentalImpactCaptureError("capture");
+  }
 
-  await upsertEnvironmentalImpactSnapshot(snapshot);
+  let snapshot: EnvironmentalImpactSnapshotRecord | null = null;
+  try {
+    snapshot = buildEnvironmentalImpactSnapshot({
+      model: dashboard.model,
+      signals: dashboard.signals,
+    });
+    await upsertEnvironmentalImpactSnapshot(snapshot);
 
-  return {
-    ...dashboard,
-    snapshots: await listEnvironmentalImpactSnapshots(params.historyLimit ?? 8),
-  };
+    return {
+      ...dashboard,
+      snapshots: await listEnvironmentalImpactSnapshots(params.historyLimit ?? 8),
+    };
+  } catch {
+    throw new EnvironmentalImpactCaptureError("persistence", snapshot?.id);
+  }
 }
 
 export async function loadEnvironmentalImpactDashboard(params: {

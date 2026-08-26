@@ -23,6 +23,8 @@ type CodexUsageStore = {
 const FILE_PATH = join(process.cwd(), "data", "local-db", "codex_usage_weekly_snapshots.json");
 const SNAPSHOT_KEY = "cleanmymap-codex-usage";
 const WEEKS_PER_MONTH = 52 / 12;
+const CODEX_USAGE_SELECT =
+  "id, snapshot_key, week_start, week_end, generated_at, version, source, session_count, conversation_count, turn_count, tool_call_count, shell_command_count, file_touch_count, test_run_count, changed_line_count, active_minutes, estimated_kg_co2e_proxy, confidence_percent, uncertainty_percent, notes, meta";
 
 function round6(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
@@ -226,11 +228,11 @@ export async function upsertCodexUsageWeeklySnapshot(
         return;
       }
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw new Error("Codex usage snapshot persistence failed.");
       }
     } catch {
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw new Error("Codex usage snapshot persistence failed.");
       }
     }
   }
@@ -251,6 +253,72 @@ export async function upsertCodexUsageWeeklySnapshot(
   });
 }
 
+function normalizeCodexUsageSnapshotRow(
+  row: Record<string, unknown>,
+): EnvironmentalImpactCodexUsageWeeklySnapshotRecord {
+  return {
+    id: String(row.id),
+    snapshotKey: String(row.snapshot_key),
+    weekStart: String(row.week_start),
+    weekEnd: String(row.week_end),
+    generatedAt: String(row.generated_at),
+    version: String(row.version),
+    source: row.source as EnvironmentalImpactCodexUsageSource,
+    sessionCount: Number(row.session_count ?? 0),
+    conversationCount: Number(row.conversation_count ?? 0),
+    turnCount: Number(row.turn_count ?? 0),
+    toolCallCount: Number(row.tool_call_count ?? 0),
+    shellCommandCount: Number(row.shell_command_count ?? 0),
+    fileTouchCount: Number(row.file_touch_count ?? 0),
+    testRunCount: Number(row.test_run_count ?? 0),
+    changedLineCount: Number(row.changed_line_count ?? 0),
+    activeMinutes: Number(row.active_minutes ?? 0),
+    estimatedKgCo2eProxy: Number(row.estimated_kg_co2e_proxy ?? 0),
+    confidencePercent: Number(row.confidence_percent ?? 0),
+    uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
+    notes: Array.isArray(row.notes)
+      ? row.notes.filter((item: unknown) => typeof item === "string")
+      : [],
+    meta: (row.meta ?? {}) as Record<string, unknown>,
+  };
+}
+
+export async function getCodexUsageWeeklySnapshot(
+  weekStart: string,
+): Promise<EnvironmentalImpactCodexUsageWeeklySnapshotRecord | null> {
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const supabase = getSupabaseServerClient();
+      const result = await supabase
+        .from("codex_usage_weekly_snapshots")
+        .select(CODEX_USAGE_SELECT)
+        .eq("snapshot_key", SNAPSHOT_KEY)
+        .eq("week_start", weekStart)
+        .maybeSingle();
+
+      if (!result.error) {
+        return result.data
+          ? normalizeCodexUsageSnapshotRow(result.data as Record<string, unknown>)
+          : null;
+      }
+      if (!allowLocalFileStoreFallback()) {
+        throw new Error("Codex usage snapshot lookup failed.");
+      }
+    } catch {
+      if (!allowLocalFileStoreFallback()) {
+        throw new Error("Codex usage snapshot lookup failed.");
+      }
+    }
+  }
+
+  const store = await readStore();
+  return (
+    store.records.find(
+      (entry) => entry.snapshotKey === SNAPSHOT_KEY && entry.weekStart === weekStart,
+    ) ?? null
+  );
+}
+
 export async function listCodexUsageWeeklySnapshots(
   limit = 12,
 ): Promise<EnvironmentalImpactCodexUsageWeeklySnapshotRecord[]> {
@@ -259,37 +327,15 @@ export async function listCodexUsageWeeklySnapshots(
       const supabase = getSupabaseServerClient();
       const result = await supabase
         .from("codex_usage_weekly_snapshots")
-        .select(
-          "id, snapshot_key, week_start, week_end, generated_at, version, source, session_count, conversation_count, turn_count, tool_call_count, shell_command_count, file_touch_count, test_run_count, changed_line_count, active_minutes, estimated_kg_co2e_proxy, confidence_percent, uncertainty_percent, notes, meta",
-        )
+        .select(CODEX_USAGE_SELECT)
         .eq("snapshot_key", SNAPSHOT_KEY)
         .order("week_start", { ascending: false })
         .limit(limit);
 
       if (!result.error) {
-        return (result.data ?? []).map((row) => ({
-          id: String(row.id),
-          snapshotKey: row.snapshot_key,
-          weekStart: row.week_start,
-          weekEnd: row.week_end,
-          generatedAt: row.generated_at,
-          version: row.version,
-          source: row.source,
-          sessionCount: Number(row.session_count ?? 0),
-          conversationCount: Number(row.conversation_count ?? 0),
-          turnCount: Number(row.turn_count ?? 0),
-          toolCallCount: Number(row.tool_call_count ?? 0),
-          shellCommandCount: Number(row.shell_command_count ?? 0),
-          fileTouchCount: Number(row.file_touch_count ?? 0),
-          testRunCount: Number(row.test_run_count ?? 0),
-          changedLineCount: Number(row.changed_line_count ?? 0),
-          activeMinutes: Number(row.active_minutes ?? 0),
-          estimatedKgCo2eProxy: Number(row.estimated_kg_co2e_proxy ?? 0),
-          confidencePercent: Number(row.confidence_percent ?? 0),
-          uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
-          notes: Array.isArray(row.notes) ? row.notes.filter((item: unknown) => typeof item === "string") : [],
-          meta: (row.meta ?? {}) as Record<string, unknown>,
-        }));
+        return (result.data ?? []).map((row) =>
+          normalizeCodexUsageSnapshotRow(row as Record<string, unknown>),
+        );
       }
       if (!allowLocalFileStoreFallback()) {
         return [];

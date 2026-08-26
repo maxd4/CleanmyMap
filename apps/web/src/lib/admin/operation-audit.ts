@@ -34,7 +34,8 @@ export type AdminOperationAuditEntry = {
     | "moderation"
     | "import_dry_run"
     | "import_confirm"
-    | "role_management";
+    | "role_management"
+    | "admin_operation";
   outcome: "success" | "error";
   targetId?: string;
   details: Record<string, unknown>;

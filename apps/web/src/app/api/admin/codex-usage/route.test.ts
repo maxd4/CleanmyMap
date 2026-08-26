@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+const getSnapshotMock = vi.hoisted(() => vi.fn());
 const listSnapshotsMock = vi.hoisted(() =>
   vi.fn(async () => [
     {
@@ -97,8 +99,13 @@ vi.mock("@/lib/http/auth-responses", () => ({
   adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
 }));
 
+vi.mock("@/lib/admin/operation-audit", () => ({
+  appendAdminOperationAudit: appendAdminOperationAuditMock,
+}));
+
 vi.mock("@/lib/environmental-impact-estimator", () => ({
   buildCodexUsageWeeklySnapshot: buildSnapshotMock,
+  getCodexUsageWeeklySnapshot: getSnapshotMock,
   listCodexUsageWeeklySnapshots: listSnapshotsMock,
   upsertCodexUsageWeeklySnapshot: upsertSnapshotMock,
   buildCodexMonthlyUsageEstimate: buildMonthlyMock,
@@ -107,6 +114,13 @@ vi.mock("@/lib/environmental-impact-estimator", () => ({
 import { GET, POST } from "./route";
 
 describe("admin codex usage route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getSnapshotMock.mockResolvedValue(null);
+    upsertSnapshotMock.mockResolvedValue(undefined);
+    appendAdminOperationAuditMock.mockResolvedValue(undefined);
+  });
+
   it("rejects non-admin access", async () => {
     requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
 
@@ -179,5 +193,139 @@ describe("admin codex usage route", () => {
         estimatedKgCo2eProxy: 0.51,
       }),
     );
+    expect(getSnapshotMock).toHaveBeenCalledWith("2026-05-19");
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "admin_1",
+        operationType: "admin_operation",
+        outcome: "success",
+        targetId: "codex-2026-05-19",
+        details: {
+          operation: "upsert_codex_usage_snapshot",
+          previousValue: null,
+          newValue: expect.objectContaining({
+            weekStart: "2026-05-19",
+            weekEnd: "2026-05-25",
+            source: "manual",
+            sessionCount: 5,
+            estimatedKgCo2eProxy: 0.51,
+          }),
+        },
+      }),
+    );
+    const auditDetails = appendAdminOperationAuditMock.mock.calls[0]?.[0]?.details as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(auditDetails)).toEqual([
+      "operation",
+      "previousValue",
+      "newValue",
+    ]);
+    expect(Object.keys(auditDetails.newValue as Record<string, unknown>).sort()).toEqual([
+      "activeMinutes",
+      "changedLineCount",
+      "confidencePercent",
+      "conversationCount",
+      "estimatedKgCo2eProxy",
+      "fileTouchCount",
+      "sessionCount",
+      "shellCommandCount",
+      "source",
+      "testRunCount",
+      "toolCallCount",
+      "turnCount",
+      "uncertaintyPercent",
+      "weekEnd",
+      "weekStart",
+    ]);
+    expect(JSON.stringify(auditDetails)).not.toContain("Semaine enregistrée");
+  });
+
+  it("audits the previous and new allowlisted values when updating a week", async () => {
+    getSnapshotMock.mockResolvedValueOnce({
+      ...buildSnapshotMock(),
+      sessionCount: 3,
+      activeMinutes: 100,
+      notes: ["ne doit pas être copiée"],
+      meta: { internal: "ne doit pas être copié" },
+    });
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/codex-usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0] as {
+      details: { previousValue: Record<string, unknown>; newValue: Record<string, unknown> };
+    };
+    expect(audit.details.previousValue).toEqual(
+      expect.objectContaining({ sessionCount: 3, activeMinutes: 100 }),
+    );
+    expect(audit.details.newValue).toEqual(
+      expect.objectContaining({ sessionCount: 5, activeMinutes: 240 }),
+    );
+    expect(JSON.stringify(audit.details)).not.toContain("ne doit pas");
+  });
+
+  it("audits a persistence failure without copying the external error", async () => {
+    upsertSnapshotMock.mockRejectedValueOnce(new Error("external persistence detail"));
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/codex-usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekStart: "2026-05-19", sessionCount: 5 }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        actorUserId: "admin_1",
+        targetId: "codex-2026-05-19",
+        details: expect.objectContaining({
+          operation: "upsert_codex_usage_snapshot",
+          stage: "persistence",
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "external persistence detail",
+    );
+  });
+
+  it("audits a snapshot construction failure", async () => {
+    buildSnapshotMock.mockImplementationOnce(() => {
+      throw new Error("unexpected builder detail");
+    });
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: true, userId: "admin_1" });
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/codex-usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekStart: "2026-05-19" }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: expect.objectContaining({ stage: "build_snapshot" }),
+      }),
+    );
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 });
