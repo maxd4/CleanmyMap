@@ -34,6 +34,8 @@ type PublicationSnapshot = {
  verificationStatus: string;
 };
 
+type ReviewErrorStage = "partner_update" | "source_request_sync";
+
 function expectedAfterSnapshot(
  publicationStatus: "accepted" | "rejected",
 ): PublicationSnapshot {
@@ -48,6 +50,8 @@ function auditDetails(params: {
  sourceRequestId?: string;
  previousValue: PublicationSnapshot;
  newValue: PublicationSnapshot;
+ stage?: ReviewErrorStage;
+ partialMutation?: boolean;
  }) {
  return {
  operation: AUDIT_OPERATION,
@@ -55,6 +59,10 @@ function auditDetails(params: {
  ...(params.sourceRequestId ? { sourceRequestId: params.sourceRequestId } : {}),
  previousValue: params.previousValue,
  newValue: params.newValue,
+ ...(params.stage ? { stage: params.stage } : {}),
+ ...(params.partialMutation === undefined
+ ? {}
+ : { partialMutation: params.partialMutation }),
  };
 }
 
@@ -147,6 +155,8 @@ export async function POST(request: Request) {
  targetId: parsed.data.id,
  details: auditDetails({
  reason: parsed.data.reason,
+ stage:"partner_update",
+ partialMutation:false,
  previousValue: { publicationStatus:"unknown", verificationStatus:"unknown" },
  newValue: expectedAfter,
  }),
@@ -170,6 +180,8 @@ export async function POST(request: Request) {
  targetId: parsed.data.id,
  details: auditDetails({
  reason: parsed.data.reason,
+ stage:"partner_update",
+ partialMutation:false,
  previousValue: { publicationStatus:"unknown", verificationStatus:"unknown" },
  newValue: expectedAfter,
  }),
@@ -187,13 +199,6 @@ export async function POST(request: Request) {
  publicationStatus: current.publicationStatus,
  verificationStatus: current.verificationStatus,
  };
- const details = auditDetails({
- reason: parsed.data.reason,
- sourceRequestId: current.sourceRequestId,
- previousValue,
- newValue: expectedAfter,
- });
-
  let updated;
  try {
  updated = await updatePublishedPartnerAnnuaireEntryPublicationStatus({
@@ -212,7 +217,14 @@ export async function POST(request: Request) {
  operationType:"admin_operation",
  outcome:"error",
  targetId: parsed.data.id,
- details,
+ details: auditDetails({
+ reason: parsed.data.reason,
+ sourceRequestId: current.sourceRequestId,
+ previousValue,
+ newValue: expectedAfter,
+ stage:"partner_update",
+ partialMutation:false,
+ }),
  });
  return adminErrorResponse({
  status: 500,
@@ -247,7 +259,17 @@ export async function POST(request: Request) {
  operationType:"admin_operation",
  outcome:"error",
  targetId: parsed.data.id,
- details: persistedDetails,
+ details: auditDetails({
+ reason: parsed.data.reason,
+ sourceRequestId: updated.sourceRequestId,
+ previousValue,
+ newValue: {
+ publicationStatus: updated.publicationStatus,
+ verificationStatus: updated.verificationStatus,
+ },
+ stage:"source_request_sync",
+ partialMutation:true,
+ }),
  });
  return adminErrorResponse({
  status: 500,
