@@ -255,8 +255,8 @@ export const API_AUTHORIZATION_CONTRACT = {
     PATCH: {
       expected: "Creator access with admin-operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "requireCreatorAccess + appendAdminOperationAudit",
-      evidence: ["requireCreatorAccess", "appendAdminOperationAudit"],
+      actual: "requireCreatorAccess + appendDecisionAudit (encapsulates appendAdminOperationAudit)",
+      evidence: ["requireCreatorAccess", "appendDecisionAudit"],
     },
   },
   "admin/environmental-impact": {
