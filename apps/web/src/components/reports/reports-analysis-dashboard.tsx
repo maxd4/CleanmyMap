@@ -279,7 +279,7 @@ export function ReportsAnalysisDashboard({
             <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4">
               <div className="flex items-center gap-2 px-1">
                 <h3 className="text-sm font-black text-slate-900">Évolution de la collecte</h3>
-                <span className="text-xs text-slate-500">(12 derniers mois disponibles)</span>
+                <span className="text-xs text-slate-500">({periodDays} jours glissants)</span>
               </div>
               <div className="mt-2"><AnalyticsCockpit data={monthlyData} /></div>
             </div>

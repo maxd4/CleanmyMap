@@ -51,7 +51,8 @@ météo Open-Meteo avec revalidation 900 s
 - aperçu global des quatre indicateurs d'impact du `ReportModel` ;
 - qualité des données et couverture cartographique, présentées séparément des
   impacts ;
-- tendances mensuelles de la collecte (masse collectée et bénévoles) ;
+- tendances mensuelles de la collecte (masse collectée et bénévoles) sur la
+  fenêtre active affichée ;
 - comparaisons de périodes issues de l'overview de pilotage ;
 - méthode KPI ;
 - données d'actions ;
@@ -82,6 +83,20 @@ sont pas des niveaux de pollution, et le complément à 100 de la complétude
 n'est pas affiché comme une incertitude scientifique. Aucun objectif chiffré
 statique n'est affiché : le modèle d'objectifs configurables est hors de ce
 lot.
+
+## Contrat temporel de l'analyse
+
+L'`overview` de Pilotage conserve son historique nécessaire aux comparaisons
+30/90/365 jours. La couche Reports dérive ensuite une fenêtre courante avec
+`filterContractsToActivePeriod`, à partir de `dates.observedAt` et de la borne
+inclusive `[now - periodDays, now]`; les dates invalides et les dates futures
+sont exclues. Le même instant `now` est utilisé pour le filtrage et la
+construction du `ReportModel`.
+
+Les totaux du snapshot et la série mensuelle sont construits uniquement sur
+cette fenêtre active. Les comparaisons restent celles de l'overview Pilotage
+et sont identifiées comme telles dans l'interface. La série affichée indique
+la durée réelle de la fenêtre, et non un nombre fixe de mois.
 
 ## Référentiel méthodologique KPI
 

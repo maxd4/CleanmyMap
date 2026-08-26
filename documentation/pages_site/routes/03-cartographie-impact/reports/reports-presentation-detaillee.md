@@ -23,4 +23,8 @@
   sont disponibles dans un disclosure accessible. Aucun statut live/audit ni
   lien documentaire sans destination n'est affiché. Les tendances restent
   limitées aux séries réellement produites par `aggregateMonthlyAnalytics`;
-  les valeurs de comparaison proviennent de `overview.summary.kpis`.
+  les valeurs de comparaison proviennent de `overview.summary.kpis`. Cet
+  overview conserve l'historique Pilotage ; les totaux et la série mensuelle
+  Analyse sont dérivés séparément des contrats de la fenêtre active
+  `[now - periodDays, now]`, avec `dates.observedAt` comme date métier et un
+  même `now` pour le filtrage et le calcul.
