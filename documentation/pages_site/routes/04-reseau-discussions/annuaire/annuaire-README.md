@@ -64,6 +64,13 @@ sources seed les statuts de validation, la récence, `impactHistory` et
 des descriptions, `featuredReason`, `tags`, `availability` et `pastActions`,
 ainsi que sur les doublons d'entités et les formulations à vérifier.
 
+Le LOT 2B.2A a supprimé les profils associatifs éditoriaux non prouvés, fusionné
+les doublons ALCOME, TchaoMegot et Cy-Clope, neutralisé les formulations
+d'officialité ou de partenariat ciblées, et retiré la ressource de groupe de
+parole sans canal public identifiable. Les champs `availability`,
+`lastUpdatedAt`, `coveredArrondissements` et `contributionTypes` restent
+volontairement inchangés et seront réévalués séparément au LOT 2B.2B.
+
 ## Fichiers associés
 
 - [Présentation détaillée](./annuaire-presentation-detaillee.md)
