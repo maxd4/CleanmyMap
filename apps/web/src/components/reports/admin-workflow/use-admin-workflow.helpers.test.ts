@@ -3,6 +3,9 @@ import {
  buildExportQuery,
  parseAdminApiError,
 } from"./use-admin-workflow";
+import { resolveAdminSelectedRecordType } from "./helpers";
+import { formatPreviewRecordType } from "./step-preview";
+import type { ActionListItem } from "@/lib/actions/types";
 
 describe("useAdminWorkflow helpers", () => {
  it("buildExportQuery includes optional filters only when required", () => {
@@ -59,5 +62,21 @@ describe("useAdminWorkflow helpers", () => {
  it("parseAdminApiError falls back when payload is malformed", () => {
  expect(parseAdminApiError(null,"Fallback")).toBe("Fallback");
  expect(parseAdminApiError("oops","Fallback")).toBe("Fallback");
+ });
+
+ it.each([
+  ["action", "Action"],
+  ["spot", "Spot"],
+  ["clean_place", "Lieu propre"],
+ ] as const)("keeps the selected canonical record type for %s", (type, expected) => {
+  const item = {
+   source: type === "action" ? "actions" : "trash_spotter_spots",
+   contract: { type },
+  } as unknown as ActionListItem;
+
+  expect(resolveAdminSelectedRecordType(item)).toBe(
+   type === "action" ? "action" : type,
+  );
+  expect(formatPreviewRecordType(item)).toBe(expected);
  });
 });

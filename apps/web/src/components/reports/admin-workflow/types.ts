@@ -84,12 +84,14 @@ export type ActionModerationEditDraft = {
 };
 
 export type CleanPlaceModerationEditDraft = {
- label: string;
- spotType: "spot" | "clean_place";
- latitude: string;
- longitude: string;
- notes: string;
+  label: string;
+  spotType: "spot" | "clean_place";
+  latitude: string;
+  longitude: string;
+  notes: string;
 };
+
+export type AdminSelectedRecordType = "action" | "spot" | "clean_place";
 
 export type AdminWorkflowController = {
  status: ActionStatus |"all";
@@ -137,6 +139,7 @@ export type AdminWorkflowController = {
   moderationReason: string;
   moderationVisibility: ModerationVisibility;
   selectedActionCreatorId: string | null;
+  selectedRecordType: AdminSelectedRecordType | null;
   actionEditDraft: ActionModerationEditDraft | null;
   cleanPlaceEditDraft: CleanPlaceModerationEditDraft | null;
  setModerationEntityType: Dispatch<SetStateAction<ModerationEntityType>>;

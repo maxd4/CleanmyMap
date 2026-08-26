@@ -41,6 +41,23 @@
 
 
 
+## Modération Trash Spotter
+
+La prévisualisation distingue les enregistrements `Action`, `Spot` et `Lieu
+propre`. Lorsqu’un `spot` ou `clean_place` issu de `trash_spotter_spots` est
+sélectionné, l’étape de confirmation affiche la section « Preuves terrain ».
+Les actions n’affichent pas ce bloc.
+
+- Les médias ne sont jamais chargés avec la page, la prévisualisation ou la
+  sélection d’un enregistrement.
+- La lecture démarre uniquement après « Voir les preuves photo », via la route
+  média canonique, et conserve les états vide, erreur, refus d’accès et retry.
+- L’absence d’une photo ne bloque pas la modération ; une photo ne déclenche
+  aucune validation automatique.
+- Le discriminator réseau historique `entityType="clean_place"` reste utilisé
+  pour les signalements afin de préserver la compatibilité de l’API, sans
+  imposer ce vocabulaire à l’interface.
+
 ## Références legacy
 
 - [admin.md](../../../../6-PAGES-STANDALONE/admin.md)
