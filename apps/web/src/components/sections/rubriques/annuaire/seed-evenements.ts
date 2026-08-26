@@ -22,10 +22,7 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Agenda site web",
       url: "https://www.larecyclerie.com/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-10",
-    recentActivityAt: "2026-04-07",
   },
   {
     id: "evt-paris-nettoyages",
@@ -44,10 +41,7 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["logistique", "materiel", "communication"],
     tags: ["Nettoyage", "Official", "Paris", "Participation citoyenne"],
     availability: "Événements réguliers toute l'année",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "evt-j-agis-nature",
@@ -66,10 +60,7 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["materiel", "logistique", "communication"],
     tags: ["Bénévolat", "Nature", "France", "Événements"],
     availability: "Tout au long de l'année",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "evt-je-veux-aider",
@@ -88,9 +79,6 @@ export const EVENEMENTS_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["logistique", "accueil", "communication"],
     tags: ["Bénévolat", "National", "Multi-thématiques", "France"],
     availability: "Missions toute l'année",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
 ];

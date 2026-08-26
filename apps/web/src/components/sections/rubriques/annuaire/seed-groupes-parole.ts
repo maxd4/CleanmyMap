@@ -15,9 +15,6 @@ export const GROUPES_PAROLE_ENTRIES: AnnuaireEntrySeedInput[] = [
     coveredArrondissements: [5, 6, 11, 12, 13],
     contributionTypes: ["accueil", "communication"],
     availability: "1 fois par semaine, en soirée",
-    verificationStatus: "en_cours",
-    qualificationStatus: "contact_non_qualifie",
     lastUpdatedAt: "2026-03-02",
-    recentActivityAt: "2026-02-20",
   },
 ];
