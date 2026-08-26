@@ -151,6 +151,12 @@ describe("impact card export", () => {
     expect(source).toContain("generateImpactCardPng");
     expect(source.match(/generateImpactCardPng\(displayName\)/g)).toHaveLength(2);
     expect(source).toContain('"Partager la carte"');
+    expect(source.match(/disabled=\{Boolean\(activeCardAction\)\}/g)).toHaveLength(2);
+    expect(source).toContain('role="alert"');
+    expect(source).toContain("Carte téléchargée.");
+    expect(source).toContain("Partage non disponible ici : la carte a été téléchargée.");
+    expect(source).toContain("La carte n’a pas pu être exportée.");
+    expect(source).toContain("La carte n’a pas pu être partagée.");
     expect(source).not.toContain('href="/profil/impact"');
   });
 });
