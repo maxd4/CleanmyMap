@@ -12,7 +12,7 @@ import {
  normalizeReportScope,
 } from"@/lib/reports/scope";
 import { createAdminWorkflowActions } from"./actions";
-import { buildExportQuery } from"./helpers";
+import { buildExportQuery, resolveAdminSelectedRecordType } from"./helpers";
 import {
  fetchAdminOperationAudit,
 } from"./services";
@@ -201,6 +201,7 @@ export function useAdminWorkflow(
   item.record_type ==="other";
  state.setModerationEntityType(isCleanPlace ?"clean_place" :"action");
  state.setModerationId(item.id);
+ state.setSelectedRecordType(resolveAdminSelectedRecordType(item));
  state.setSelectedActionCreatorId(isCleanPlace ? null : item.created_by_clerk_id?.trim() || null);
  state.setActionEditDraft(isCleanPlace ? null : buildActionEditDraft(item));
  state.setCleanPlaceEditDraft(isCleanPlace ? buildCleanPlaceEditDraft(item) : null);
@@ -234,15 +235,17 @@ const setModerationEntityTypeWithReset: AdminWorkflowController["setModerationEn
  (value) => {
  state.setModerationEntityType(value);
  state.setSelectedActionCreatorId(null);
+ state.setSelectedRecordType(null);
  state.setActionEditDraft(null);
  state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
 };
 const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
  value,
- ) => {
+) => {
  state.setModerationId(value);
  state.setSelectedActionCreatorId(null);
+ state.setSelectedRecordType(null);
  state.setActionEditDraft(null);
  state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
@@ -298,6 +301,7 @@ const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
  moderationReason: state.moderationReason,
  moderationVisibility: state.moderationVisibility,
  selectedActionCreatorId: state.selectedActionCreatorId,
+ selectedRecordType: state.selectedRecordType,
  actionEditDraft: state.actionEditDraft,
  cleanPlaceEditDraft: state.cleanPlaceEditDraft,
  setModerationEntityType: setModerationEntityTypeWithReset,

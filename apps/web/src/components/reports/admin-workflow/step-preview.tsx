@@ -8,6 +8,22 @@ type StepPreviewProps = {
   workflow: AdminWorkflowController;
 };
 
+export function formatPreviewRecordType(
+  item: AdminWorkflowController["previewRows"][number]["item"],
+): string {
+  const type = item.contract?.type ?? item.record_type;
+  if (type === "spot") {
+    return "Spot";
+  }
+  if (type === "clean_place") {
+    return "Lieu propre";
+  }
+  if (type === "action") {
+    return "Action";
+  }
+  return item.source === "trash_spotter_spots" ? "Signalement" : "Action";
+}
+
 function qualityTone(grade: ActionQualityGrade): string {
   if (grade ==="A") return"border-emerald-200 bg-emerald-50 text-emerald-700";
   if (grade ==="B") return"border-amber-200 bg-amber-50 text-amber-700";
@@ -46,6 +62,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     <th className="px-2 py-2">{fr ? "Date" : "Date"}</th>
     <th className="px-2 py-2">{fr ? "Lieu" : "Location"}</th>
     <th className="px-2 py-2">{fr ? "Compte" : "Account"}</th>
+    <th className="px-2 py-2">{fr ? "Type de record" : "Record type"}</th>
     <th className="px-2 py-2">{fr ? "Statut" : "Status"}</th>
     <th className="px-2 py-2">{fr ? "Qualité" : "Quality"}</th>
     <th className="px-2 py-2">{fr ? "Action" : "Action"}</th>
@@ -63,6 +80,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  <td className="px-2 py-2 font-mono text-[11px]">
  {row.item.created_by_clerk_id?.trim() || "anonymous"}
  </td>
+ <td className="px-2 py-2 font-semibold">{formatPreviewRecordType(row.item)}</td>
  <td className="px-2 py-2">{row.item.status}</td>
  <td className="px-2 py-2">
  <span
@@ -83,7 +101,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  ))}
 {workflow.previewRows.length === 0 ? (
  <tr className="border-t border-slate-100">
- <td className="px-2 py-3 cmm-text-muted" colSpan={7}>
+ <td className="px-2 py-3 cmm-text-muted" colSpan={8}>
   Aucun élément ne correspond au filtre de modération.
  </td>
  </tr>

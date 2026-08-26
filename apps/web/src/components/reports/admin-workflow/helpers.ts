@@ -1,5 +1,19 @@
-import type { ActionStatus } from"@/lib/actions/types";
+import type { ActionListItem, ActionStatus } from"@/lib/actions/types";
 import type { ReportScopeKind } from"@/lib/reports/scope";
+import type { AdminSelectedRecordType } from "./types";
+
+export function resolveAdminSelectedRecordType(
+ item: ActionListItem,
+): AdminSelectedRecordType | null {
+ const type = item.contract?.type;
+ if (
+  item.source === "trash_spotter_spots" &&
+  (type === "spot" || type === "clean_place")
+ ) {
+  return type;
+ }
+ return type === "action" ? "action" : null;
+}
 
 export function buildExportQuery(params: {
  status: ActionStatus |"all";

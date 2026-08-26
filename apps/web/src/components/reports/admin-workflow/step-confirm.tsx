@@ -11,6 +11,7 @@ import type {
   AdminWorkflowController,
   CleanPlaceModerationEditDraft,
 } from"./types";
+import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type StepConfirmProps = {
@@ -147,7 +148,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </p>
  <div className="mt-3 grid gap-3 md:grid-cols-3">
  <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Entite
+ Type de record
  <select
  value={workflow.moderationEntityType}
  onChange={(event) =>
@@ -158,11 +159,11 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
  >
  <option value="action">Action</option>
- <option value="clean_place">Lieu propre</option>
+ <option value="clean_place">Signalement Trash Spotter</option>
  </select>
  </label>
  <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary md:col-span-2">
- ID de l&apos;entite
+ ID du record
  <input
  value={workflow.moderationId}
  onChange={(event) => workflow.setModerationId(event.target.value)}
@@ -191,7 +192,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </label>
  ) : (
  <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Statut lieu propre
+ Statut du signalement
  <select
  value={workflow.cleanPlaceStatus}
  onChange={(event) =>
@@ -224,6 +225,14 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </button>
  </div>
  </div>
+ {workflow.selectedRecordType === "spot" || workflow.selectedRecordType === "clean_place" ? (
+ <div className="mt-4">
+ <SignalementMediaProofs
+  signalementId={workflow.moderationId}
+  variant="panel"
+ />
+ </div>
+ ) : null}
  {workflow.moderationEntityType ==="action" ? (
  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
  <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">

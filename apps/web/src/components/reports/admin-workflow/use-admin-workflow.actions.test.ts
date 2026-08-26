@@ -264,4 +264,41 @@ describe("admin workflow actions", () => {
  }),
  );
  });
+
+ it("keeps signalement media out of the successful moderation payload", async () => {
+  vi.mocked(postAdminModeration).mockResolvedValueOnce({
+   status:"ok",
+   entityType:"clean_place",
+   id:"spot-1",
+   sourceTable:"trash_spotter_spots",
+  });
+  const state = createState({
+   moderationEntityType:"clean_place",
+   moderationId:"spot-1",
+   cleanPlaceEditDraft: {
+    label:"Quai validé",
+    spotType:"spot",
+    latitude:"48.87",
+    longitude:"2.36",
+    notes:"Vérifié par admin",
+   },
+  });
+  const actions = createAdminWorkflowActions({
+   state,
+   csvExportUrl:"/api/reports/actions.csv",
+   jsonExportUrl:"/api/reports/actions.json",
+   mutatePreview: vi.fn(),
+  });
+
+  await actions.onModerateEntity();
+
+  const payload = vi.mocked(postAdminModeration).mock.calls[0]?.[0];
+  expect(payload).toMatchObject({
+   entityType:"clean_place",
+   id:"spot-1",
+   status:"validated",
+  });
+  expect(payload).not.toHaveProperty("media");
+  expect(payload).not.toHaveProperty("photos");
+ });
 });

@@ -11,6 +11,7 @@ import type {
 } from"@/lib/admin/moderation-client";
 import type {
  ActionModerationEditDraft,
+ AdminSelectedRecordType,
  AsyncState,
  CleanPlaceModerationEditDraft,
  ImportDryRunSummary,
@@ -90,6 +91,8 @@ export function useAdminWorkflowState() {
  useState<ModerationVisibility>("unchanged");
  const [selectedActionCreatorId, setSelectedActionCreatorId] =
  useState<string | null>(null);
+ const [selectedRecordType, setSelectedRecordType] =
+ useState<AdminSelectedRecordType | null>(null);
  const [actionEditDraft, setActionEditDraft] =
  useState<ActionModerationEditDraft | null>(null);
  const [cleanPlaceEditDraft, setCleanPlaceEditDraft] =
@@ -184,6 +187,8 @@ export function useAdminWorkflowState() {
  setModerationVisibility,
  selectedActionCreatorId,
  setSelectedActionCreatorId,
+ selectedRecordType,
+ setSelectedRecordType,
  actionEditDraft,
  setActionEditDraft,
  cleanPlaceEditDraft,
