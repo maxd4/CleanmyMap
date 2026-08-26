@@ -36,7 +36,7 @@ describe("chat notification targets", () => {
   it("keeps legacy payloads on the aggregate view and preserves DM links", () => {
     expect(
       buildChatNotificationHref({ channelType: "community", messageId: "legacy" }),
-    ).toBe("/sections/messagerie?channel=community");
+    ).toBe("/sections/messagerie?channel=community&messageId=legacy");
     expect(
       buildChatNotificationHref({
         channelType: "dm",

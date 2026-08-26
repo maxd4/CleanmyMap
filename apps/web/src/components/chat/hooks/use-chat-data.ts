@@ -16,6 +16,8 @@ import type {
   ChatUser,
   ChatUsersResponse,
 } from "../chat-types";
+import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
+import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 
 type UseChatDataParams = {
   activeChannelType: ChatChannelType;
@@ -26,6 +28,7 @@ type UseChatDataParams = {
   showMentions: boolean;
   mentionQuery: string;
   recipientQuery: string;
+  initialMessageId?: string | null;
   currentUserId?: string;
   canAccessProtectedChat?: boolean;
   supabase?: SupabaseClient | null;
@@ -120,6 +123,7 @@ export function buildMessagesKey({
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
+  initialMessageId,
 }: Pick<
   UseChatDataParams,
   | "activeChannelType"
@@ -127,28 +131,50 @@ export function buildMessagesKey({
   | "selectedRecipientId"
   | "effectiveZone"
   | "territoryFocus"
+  | "initialMessageId"
 >): string | null {
   const topicParam = activeTopicId
     ? `&topicId=${encodeURIComponent(activeTopicId)}`
     : "";
+  const messageParam = initialMessageId
+    ? `&messageId=${encodeURIComponent(initialMessageId)}`
+    : "";
 
   if (activeChannelType === "dm") {
     return selectedRecipientId
-      ? `/api/chat?channelType=dm&recipientId=${encodeURIComponent(selectedRecipientId)}`
+      ? `/api/chat?channelType=dm&recipientId=${encodeURIComponent(selectedRecipientId)}${messageParam}`
       : null;
   }
 
   if (activeChannelType === "territory") {
     if (effectiveZone) {
-      return `/api/chat?channelType=territory&zoneName=${encodeURIComponent(effectiveZone)}${topicParam}`;
+      return `/api/chat?channelType=territory&zoneName=${encodeURIComponent(effectiveZone)}${topicParam}${messageParam}`;
     }
 
     return territoryFocus
-      ? `/api/chat?channelType=territory&arrondissementId=${territoryFocus}${topicParam}`
+      ? `/api/chat?channelType=territory&arrondissementId=${territoryFocus}${topicParam}${messageParam}`
       : null;
   }
 
-  return `/api/chat?channelType=${activeChannelType}${topicParam}`;
+  return `/api/chat?channelType=${activeChannelType}${topicParam}${messageParam}`;
+}
+
+function mergeChatMessages(
+  groups: ChatMessage[][],
+): ChatMessage[] {
+  const byId = new Map<string, ChatMessage>();
+  for (const message of groups.flat()) {
+    byId.set(message.id, message);
+  }
+  return sortByCreatedAtAsc([...byId.values()]);
+}
+
+function getRecentMessagesKey(messagesKey: string): string {
+  const url = new URL(messagesKey, "http://chat.local");
+  url.searchParams.delete("messageId");
+  url.searchParams.delete("beforeCreatedAt");
+  url.searchParams.delete("beforeId");
+  return `${url.pathname}${url.search}`;
 }
 
 export function useChatData({
@@ -160,6 +186,7 @@ export function useChatData({
   showMentions,
   mentionQuery,
   recipientQuery,
+  initialMessageId = null,
   currentUserId,
   canAccessProtectedChat = Boolean(currentUserId),
   supabase,
@@ -181,6 +208,7 @@ export function useChatData({
         selectedRecipientId,
         effectiveZone,
         territoryFocus,
+        initialMessageId,
       })
     : null;
 
@@ -210,22 +238,43 @@ export function useChatData({
     isLoading,
     mutate: mutateMessages,
   } = useSWR<ChatMessagesResponse>(messagesKey, fetcher, {
-    // Polling keeps the feed fresh without relying on Supabase Realtime by default.
+    // Historical pages are merged explicitly; SWR must not replace them with the recent page.
     refreshWhenHidden: false,
     refreshWhenOffline: false,
-    refreshInterval: () =>
-      getChatRefreshIntervalMs({
-        activeChannelType,
-        realtimeEnabled,
-        isVisible: isPageVisible,
-        isOnline,
-      }),
+    refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefreshAtRef = useRef(0);
+  const [isLoadingPrevious, setIsLoadingPrevious] = useState(false);
+  const [loadPreviousError, setLoadPreviousError] = useState<string | null>(null);
+
+  const refreshRecentMessages = useCallback(async () => {
+    if (!messagesKey) {
+      return;
+    }
+
+    const recentData = await fetcher<ChatMessagesResponse>(
+      getRecentMessagesKey(messagesKey),
+    );
+    await mutateMessages(
+      (currentData) => {
+        if (!currentData) {
+          return recentData;
+        }
+
+        return {
+          ...currentData,
+          messages: mergeChatMessages([currentData.messages, recentData.messages]),
+          hasMore: currentData.hasMore || recentData.hasMore,
+          previousCursor: currentData.previousCursor ?? recentData.previousCursor,
+        };
+      },
+      { revalidate: false },
+    );
+  }, [messagesKey, mutateMessages]);
 
   const scheduleMessagesRefresh = useCallback(() => {
     if (!messagesKey) {
@@ -238,7 +287,7 @@ export function useChatData({
 
     if (elapsed >= minGapMs) {
       lastRefreshAtRef.current = now;
-      void mutateMessages();
+      void refreshRecentMessages().catch(() => undefined);
       return;
     }
 
@@ -249,9 +298,9 @@ export function useChatData({
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
       lastRefreshAtRef.current = Date.now();
-      void mutateMessages();
+      void refreshRecentMessages().catch(() => undefined);
     }, minGapMs - elapsed);
-  }, [messagesKey, mutateMessages, realtimeEnabled]);
+  }, [messagesKey, refreshRecentMessages, realtimeEnabled]);
 
   useEffect(() => {
     if (!messagesKey) {
@@ -279,16 +328,36 @@ export function useChatData({
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
+    const refreshInterval = getChatRefreshIntervalMs({
+      activeChannelType,
+      realtimeEnabled,
+      isVisible: isPageVisible,
+      isOnline,
+    });
+    const intervalId = refreshInterval
+      ? window.setInterval(scheduleMessagesRefresh, refreshInterval)
+      : null;
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+      }
       if (refreshTimerRef.current) {
         clearTimeout(refreshTimerRef.current);
         refreshTimerRef.current = null;
       }
     };
-  }, [messagesKey, scheduleMessagesRefresh]);
+  }, [
+    activeChannelType,
+    isOnline,
+    isPageVisible,
+    messagesKey,
+    realtimeEnabled,
+    scheduleMessagesRefresh,
+  ]);
 
   // Real-time subscription
   useEffect(() => {
@@ -372,6 +441,45 @@ export function useChatData({
   ]);
 
   const messages = messagesData?.messages ?? [];
+
+  const loadPreviousMessages = useCallback(async () => {
+    if (!messagesKey || !messagesData?.hasMore || !messagesData.previousCursor || isLoadingPrevious) {
+      return;
+    }
+
+    setIsLoadingPrevious(true);
+    setLoadPreviousError(null);
+    const cursor: ChatHistoryCursor = messagesData.previousCursor;
+    try {
+      const url = new URL(getRecentMessagesKey(messagesKey), "http://chat.local");
+      url.searchParams.set("beforeCreatedAt", cursor.createdAt);
+      url.searchParams.set("beforeId", cursor.id);
+      const olderData = await fetcher<ChatMessagesResponse>(
+        `${url.pathname}${url.search}`,
+      );
+      await mutateMessages(
+        (currentData) => {
+          const baseData = currentData ?? messagesData;
+          return {
+            ...baseData,
+            messages: mergeChatMessages([olderData.messages, baseData.messages]),
+            previousCursor: olderData.previousCursor,
+            hasMore: olderData.hasMore,
+          };
+        },
+        { revalidate: false },
+      );
+    } catch (error) {
+      setLoadPreviousError(
+        error instanceof Error
+          ? error.message
+          : "Les messages précédents ne peuvent pas être chargés.",
+      );
+      throw error;
+    } finally {
+      setIsLoadingPrevious(false);
+    }
+  }, [isLoadingPrevious, messagesData, messagesKey, mutateMessages]);
   const feedState: ChatFeedState = getChatFeedState({
     isLoading,
     hasMessages: messages.length > 0,
@@ -417,6 +525,7 @@ export function useChatData({
           const baseMessages = currentData?.messages ?? [];
 
           return {
+            ...(currentData ?? { previousCursor: null, hasMore: false }),
             messages: [
               ...baseMessages.filter(
                 (message) => message.id !== optimisticMessage.id,
@@ -427,6 +536,7 @@ export function useChatData({
         },
         {
           optimisticData: (currentData) => ({
+            ...(currentData ?? { previousCursor: null, hasMore: false }),
             messages: [...(currentData?.messages ?? []), optimisticMessage],
           }),
           rollbackOnError: true,
@@ -441,6 +551,12 @@ export function useChatData({
     messages,
     messagesData,
     messagesError,
+    hasMoreMessages: messagesData?.hasMore ?? false,
+    isLoadingPrevious,
+    loadPreviousError,
+    loadPreviousMessages,
+    targetMessageId: messagesData?.targetMessageId ?? null,
+    targetStatus: messagesData?.targetStatus,
     isLoading,
     mutateMessages,
     feedState,

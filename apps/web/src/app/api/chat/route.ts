@@ -49,6 +49,15 @@ import {
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { requireBotIdHuman } from "@/lib/botid/server";
+import {
+  CHAT_PAGE_SIZE,
+  buildChatHistoryCursor,
+  buildInclusiveThroughFilter,
+  buildStrictBeforeFilter,
+  isChatMessageId,
+  parseChatHistoryCursor,
+  type ChatHistoryCursor,
+} from "@/lib/chat/chat-pagination";
 
 const CHANNEL_TYPES = [
   "community",
@@ -676,6 +685,20 @@ export async function GET(request: Request) {
   const requestedTopicId = searchParams.get("topicId");
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const requestedZoneName = searchParams.get("zoneName");
+  const requestedMessageId = searchParams.get("messageId")?.trim() || null;
+  const beforeCreatedAt = searchParams.get("beforeCreatedAt");
+  const beforeId = searchParams.get("beforeId");
+  const beforeCursor = parseChatHistoryCursor(beforeCreatedAt, beforeId);
+
+  if ((beforeCreatedAt || beforeId) && !beforeCursor) {
+    return NextResponse.json(
+      {
+        error: "Curseur invalide",
+        hint: "Le curseur doit contenir une date et un identifiant de message valides.",
+      },
+      { status: 400 },
+    );
+  }
 
   if (!channelType) {
     return NextResponse.json(
@@ -738,32 +761,25 @@ export async function GET(request: Request) {
     );
   }
 
-  const createMessageQuery = () =>
-    supabase
-      .from("app_messages")
-      .select(messageSelect)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
   try {
-    if (channelType === "community") {
-      let query = createMessageQuery().eq("channel_type", "community");
-      if (topicId) {
-        query = query.eq("topic_id", topicId);
-      }
-      const { data, error } = await query;
-      if (error) {
-        throw error;
-      }
-      return NextResponse.json({
-        messages: await enrichPollVoteSummaries(
-          supabase,
-          sortChatMessages((data ?? []) as ChatMessageRow[]),
-        ),
-      });
-    }
+    const createMessageQuery = () =>
+      supabase
+        .from("app_messages")
+        .select(messageSelect)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+    type ChatScopedQuery = ReturnType<typeof createMessageQuery>;
+    const scopeQueryFactories: Array<() => ChatScopedQuery> = [];
 
-    if (channelType === "dm") {
+    if (channelType === "community") {
+      scopeQueryFactories.push(() => {
+        let query = createMessageQuery().eq("channel_type", "community");
+        if (topicId) {
+          query = query.eq("topic_id", topicId);
+        }
+        return query;
+      });
+    } else if (channelType === "dm") {
       if (!recipientId) {
         return NextResponse.json(
           {
@@ -774,37 +790,17 @@ export async function GET(request: Request) {
         );
       }
 
-      const { data, error } = await createMessageQuery()
-        .eq("channel_type", "dm")
-        .in("sender_id", [userId, recipientId])
-        .in("recipient_id", [userId, recipientId]);
-      if (error) {
-        throw error;
-      }
-
-      return NextResponse.json({
-        messages: await enrichPollVoteSummaries(
-          supabase,
-          sortChatMessages((data ?? []) as ChatMessageRow[]),
-        ),
-      });
-    }
-
-    if (channelType === "admin_elu") {
-      const { data, error } = await createMessageQuery().eq("channel_type", "admin_elu");
-      if (error) {
-        throw error;
-      }
-
-      return NextResponse.json({
-        messages: await enrichPollVoteSummaries(
-          supabase,
-          sortChatMessages((data ?? []) as ChatMessageRow[]),
-        ),
-      });
-    }
-
-    if (channelType === "territory") {
+      scopeQueryFactories.push(() =>
+        createMessageQuery()
+          .eq("channel_type", "dm")
+          .in("sender_id", [userId, recipientId])
+          .in("recipient_id", [userId, recipientId]),
+      );
+    } else if (channelType === "admin_elu") {
+      scopeQueryFactories.push(() =>
+        createMessageQuery().eq("channel_type", "admin_elu"),
+      );
+    } else if (channelType === "territory") {
       if (!zoneName && !arrondissementId) {
         return NextResponse.json(
           {
@@ -816,41 +812,42 @@ export async function GET(request: Request) {
       }
 
       const territory = getTerritoryFilter(zoneContext);
-      const territoryQueries: Promise<ChatMessageRow[]>[] = [];
 
       if (zoneName) {
-        let query = createMessageQuery()
-          .eq("channel_type", "territory")
-          .eq("zone_name", zoneName);
-        if (topicId) {
-          query = query.eq("topic_id", topicId);
-        }
-        territoryQueries.push(runMessageQuery(query));
+        scopeQueryFactories.push(() => {
+          let query = createMessageQuery()
+            .eq("channel_type", "territory")
+            .eq("zone_name", zoneName);
+          if (topicId) {
+            query = query.eq("topic_id", topicId);
+          }
+          return query;
+        });
       }
       if (territory.zoneNames && territory.zoneNames.length > 0) {
-        let query = createMessageQuery()
-          .eq("channel_type", "territory")
-          .in("zone_name", territory.zoneNames);
-        if (topicId) {
-          query = query.eq("topic_id", topicId);
-        }
-        territoryQueries.push(
-          runMessageQuery(query),
-        );
+        scopeQueryFactories.push(() => {
+          let query = createMessageQuery()
+            .eq("channel_type", "territory")
+            .in("zone_name", territory.zoneNames ?? []);
+          if (topicId) {
+            query = query.eq("topic_id", topicId);
+          }
+          return query;
+        });
       }
       if (territory.arrondissementIds && territory.arrondissementIds.length > 0) {
-        let query = createMessageQuery()
-          .eq("channel_type", "territory")
-          .in("arrondissement_id", territory.arrondissementIds);
-        if (topicId) {
-          query = query.eq("topic_id", topicId);
-        }
-        territoryQueries.push(
-          runMessageQuery(query),
-        );
+        scopeQueryFactories.push(() => {
+          let query = createMessageQuery()
+            .eq("channel_type", "territory")
+            .in("arrondissement_id", territory.arrondissementIds ?? []);
+          if (topicId) {
+            query = query.eq("topic_id", topicId);
+          }
+          return query;
+        });
       }
 
-      if (territoryQueries.length === 0) {
+      if (scopeQueryFactories.length === 0) {
         return NextResponse.json(
           {
             error: "Zone invalide",
@@ -859,35 +856,78 @@ export async function GET(request: Request) {
           { status: 400 },
         );
       }
+    } else if (channelType === "bug_report") {
+      scopeQueryFactories.push(
+        () => createMessageQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
+        () => createMessageQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
+      );
+    }
 
-      const territoryMessages = await Promise.all(territoryQueries);
+    if (scopeQueryFactories.length === 0) {
       return NextResponse.json({
-        messages: await enrichPollVoteSummaries(
-          supabase,
-          sortChatMessages(mergeRowGroupsById(territoryMessages)),
-        ),
+        messages: [],
+        previousCursor: null,
+        hasMore: false,
+        ...(requestedMessageId ? {
+          targetMessageId: requestedMessageId,
+          targetStatus: "unavailable" as const,
+        } : {}),
       });
     }
 
-    if (channelType === "bug_report") {
-      const [sentMessages, receivedMessages] = await Promise.all([
-        runMessageQuery(
-          createMessageQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
+    let targetCursor: ChatHistoryCursor | null = null;
+    let targetFound = false;
+    if (requestedMessageId && isChatMessageId(requestedMessageId)) {
+      const targetGroups = await Promise.all(
+        scopeQueryFactories.map((factory) =>
+          runMessageQuery(factory().eq("id", requestedMessageId).limit(1)),
         ),
-        runMessageQuery(
-          createMessageQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
-        ),
-      ]);
-
-      return NextResponse.json({
-        messages: await enrichPollVoteSummaries(
-          supabase,
-          sortChatMessages(mergeRowGroupsById([sentMessages, receivedMessages])),
-        ),
-      });
+      );
+      const targetRows = mergeRowGroupsById(targetGroups);
+      const target = sortChatMessages(targetRows)[0];
+      if (target) {
+        targetFound = true;
+        targetCursor = buildChatHistoryCursor(target);
+      }
     }
 
-    return NextResponse.json({ messages: [] });
+    const pageGroups = await Promise.all(
+      scopeQueryFactories.map((factory) => {
+        let query = factory();
+        if (targetCursor) {
+          query = query.or(buildInclusiveThroughFilter(targetCursor));
+        } else if (beforeCursor) {
+          query = query.or(buildStrictBeforeFilter(beforeCursor));
+        }
+        return runMessageQuery(query.limit(CHAT_PAGE_SIZE + 1));
+      }),
+    );
+
+    const mergedRows = mergeRowGroupsById(pageGroups);
+    const newestFirst = sortChatMessages(mergedRows).reverse();
+    const pageRows = newestFirst.slice(0, CHAT_PAGE_SIZE);
+    const hasMore =
+      newestFirst.length > CHAT_PAGE_SIZE ||
+      pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
+    const messages = await enrichPollVoteSummaries(
+      supabase,
+      sortChatMessages(pageRows),
+    );
+    const previousCursor = messages[0]
+      ? buildChatHistoryCursor(messages[0])
+      : null;
+
+    return NextResponse.json({
+      messages,
+      previousCursor,
+      hasMore,
+      ...(requestedMessageId
+        ? {
+            targetMessageId: requestedMessageId,
+            targetStatus: targetFound ? ("found" as const) : ("unavailable" as const),
+          }
+        : {}),
+    });
   } catch (error) {
     console.error("[GET /api/chat] Database Error:", error);
     const dbError = error as {

@@ -99,4 +99,19 @@ describe("chat topic feed keys", () => {
       "/api/chat?channelType=territory&zoneName=Paris%2011e&topicId=territoires_voisins",
     );
   });
+
+  it("carries a notification message target without changing the active scope", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "dm",
+        activeTopicId: null,
+        selectedRecipientId: "user-2",
+        effectiveZone: "",
+        territoryFocus: null,
+        initialMessageId: "11111111-1111-4111-8111-111111111111",
+      }),
+    ).toBe(
+      "/api/chat?channelType=dm&recipientId=user-2&messageId=11111111-1111-4111-8111-111111111111",
+    );
+  });
 });

@@ -30,6 +30,8 @@
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`. Pour un sondage, les options retournent `voteCount`, le poll retourne `totalVotes` et `selectedOptionId`.
 - **Notifications** : `app_notifications.read_at` reste la source canonique des non-lus de notification. Les notifications chat portent `channelType`, `messageId`, `messageKind` et `topicId` lorsqu'il existe. Les compteurs communauté/territoire sont lus en batch par canal et salon ; l'ouverture d'un salon ou d'une conversation DM marque uniquement le périmètre effectivement consulté.
 - **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
+- **Historique** : le fil est lu par pages de 50 messages maximum avec un curseur keyset stable `created_at + id`. Le bouton « Charger les messages précédents » ajoute une page au début sans déplacement de la position de lecture ; les revalidations temps réel/polling réconcilient seulement la page récente.
+- **Ancrage notification** : une notification chat peut porter `messageId`. Le serveur vérifie que la cible appartient au scope accessible (canal, topic, territoire ou DM), charge directement la page qui la contient et le fil la centre avec une surbrillance temporaire. Une cible indisponible laisse le fil ouvert avec un état discret.
 - **Responsive** : inbox puis fil avec retour sur mobile ; inbox et fil simultanés sur desktop lorsque l'espace le permet.
 - **Composants UI concernés** : inbox DM, fil actif, sélection de destinataire et états loading/empty/error.
 - **Captures attendues** : desktop, mobile

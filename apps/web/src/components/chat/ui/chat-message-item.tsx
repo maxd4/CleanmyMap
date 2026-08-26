@@ -28,6 +28,7 @@ type ChatMessageItemProps = {
   onPollVote?: (messageId: string, optionId: string | null) => void;
   pollVotePending?: boolean;
   pollVoteError?: string | null;
+  isHighlighted?: boolean;
 };
 
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"]);
@@ -58,6 +59,7 @@ export function ChatMessageItem({
   onPollVote,
   pollVotePending = false,
   pollVoteError = null,
+  isHighlighted = false,
 }: ChatMessageItemProps) {
   const isLight = tone === "light";
   const isMe = message.sender_id === userId;
@@ -84,6 +86,9 @@ export function ChatMessageItem({
 
   return (
     <motion.div
+      id={`chat-message-${message.id}`}
+      tabIndex={isHighlighted ? -1 : undefined}
+      data-chat-message-id={message.id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex w-full group mb-4"
@@ -91,6 +96,7 @@ export function ChatMessageItem({
       <div 
         className={cn(
           "w-full rounded-[1.5rem] border p-4 transition-all duration-300",
+          isHighlighted ? "ring-2 ring-pink-400 ring-offset-2 ring-offset-rose-50" : "",
           isAnnouncement || isPoll
             ? isLight
               ? isPoll
