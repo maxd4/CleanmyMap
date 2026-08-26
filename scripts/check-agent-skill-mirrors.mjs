@@ -5,6 +5,10 @@ const repoRoot = process.cwd();
 const canonicalRoot = path.join(repoRoot, ".agents", "skills");
 const mirrorRoot = path.join(repoRoot, ".codex", "skills");
 const syncRequested = process.argv.includes("--sync");
+const skippedDirectories = new Set([
+  ".git",
+  "node_modules",
+]);
 
 function listDirectories(root) {
   if (!fs.existsSync(root)) {
@@ -65,6 +69,42 @@ function filesDiffer(canonicalSkillRoot, mirrorSkillRoot) {
   return differences;
 }
 
+function findForbiddenCheckoutSkillArtifacts() {
+  const allowedAgentRoots = new Set([
+    path.resolve(repoRoot, ".agents"),
+    path.resolve(repoRoot, ".codex"),
+  ]);
+  const violations = [];
+
+  const visit = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      const relativePath = path.relative(repoRoot, fullPath).split(path.sep).join("/");
+
+      if (entry.name === "skills-lock.json") {
+        violations.push(`${relativePath}: skills-lock.json inside the checkout`);
+      }
+
+      if (
+        (entry.name === ".agents" || entry.name === ".codex") &&
+        !allowedAgentRoots.has(path.resolve(fullPath))
+      ) {
+        violations.push(`${relativePath}: nested agent skill directory`);
+      }
+
+      if (
+        entry.isDirectory() &&
+        !skippedDirectories.has(entry.name)
+      ) {
+        visit(fullPath);
+      }
+    }
+  };
+
+  visit(repoRoot);
+  return [...new Set(violations)].sort();
+}
+
 function syncSkill(skillName) {
   const canonicalSkillRoot = path.join(canonicalRoot, skillName);
   const mirrorSkillRoot = path.join(mirrorRoot, skillName);
@@ -73,7 +113,7 @@ function syncSkill(skillName) {
 }
 
 const mirrorSkills = listDirectories(mirrorRoot);
-const failures = [];
+const failures = findForbiddenCheckoutSkillArtifacts();
 
 if (mirrorSkills.length === 0) {
   failures.push("No Codex skill mirror directories found.");
@@ -115,6 +155,11 @@ if (failures.length > 0) {
   console.error(
     "Canonical source: .agents/skills; governed Codex mirrors: .codex/skills.",
   );
+  if (failures.some((failure) => failure.includes("agent skill directory") || failure.includes("skills-lock.json"))) {
+    console.error("Third-party/local skill installation detected inside the checkout.");
+    console.error("Remove it and reinstall with `npx skills add <package> --global` outside the repository.");
+    console.error("Supported user-level target: %USERPROFILE%\\.agents\\skills (the `skills` CLI global scope).");
+  }
   for (const failure of failures) {
     console.error(`- ${failure}`);
   }

@@ -146,3 +146,22 @@ node scripts/check-agent-skill-mirrors.mjs --sync
 
 Use `--sync` only after reviewing the canonical `.agents/skills/` tree. Do not
 maintain a second hand-edited copy in `.codex/skills/`.
+
+### Third-party skill installations
+
+CleanMyMap-owned, intentionally versioned skills stay only in the repository
+roots `.agents/skills/` (canonical source) and `.codex/skills/` (governed Codex
+mirror). Never install a third-party skill from Vercel, Upstash, or another
+provider with the repository or one of its subdirectories as the destination.
+
+The installed `skills` CLI officially supports
+`npx skills add <package> --global`; on this machine its global listing places
+third-party skills under `%USERPROFILE%\.agents\skills` and marks them
+`scope: global` for Codex. Use that user-level location after checking the
+destination of any Vercel or integration command that could invoke
+`npx skills add` automatically.
+
+Only an explicit user decision to version a third-party skill as project
+documentation may place it in the repository's root `.agents/skills/`. Never
+hide accidental nested installations with `.gitignore`; the repository guard
+must detect them, including untracked paths.
