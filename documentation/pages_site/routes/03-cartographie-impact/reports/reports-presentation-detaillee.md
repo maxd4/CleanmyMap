@@ -17,4 +17,8 @@
 - **Notes d'audit** : le snapshot sépare les indicateurs d'impact calculés par
   proxy des indicateurs de qualité et de couverture. `ReportModel`, les
   calculateurs d'impact et `IMPACT_PROXY_CONFIG` restent les sources de vérité;
-  aucune formule parallèle ni cible statique n'est ajoutée.
+  aucune formule parallèle ni cible statique n'est ajoutée. Le référentiel KPI
+  conserve les 8 `MethodDefinition` runtime : le KPI et sa formule sont visibles
+  dans une grille compacte, tandis que la source, le recalcul et les limites
+  sont disponibles dans un disclosure accessible. Aucun statut live/audit ni
+  lien documentaire sans destination n'est affiché.
