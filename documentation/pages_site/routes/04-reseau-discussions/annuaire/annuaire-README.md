@@ -58,9 +58,11 @@ d'impact mesuré. Le tri ne leur attribue aucun avantage lié à la confiance ;
 une éventuelle mise en avant reste une sélection éditoriale distincte.
 
 Les fiches issues du seed restent visibles dans l'annuaire comme ressources
-éditoriales. Le nettoyage des affirmations présentes dans les fichiers seed
-eux-mêmes (statuts historiques, récence, historiques d'impact, formulations
-d'activité et raisons de mise en avant) est reporté au LOT 2B.
+éditoriales. Le contrat `AnnuaireEntrySeedInput` interdit désormais dans les
+sources seed les statuts de validation, la récence, `impactHistory` et
+`structureStatus`. Le LOT 2B.2 porte uniquement sur l'audit qualitatif restant
+des descriptions, `featuredReason`, `tags`, `availability` et `pastActions`,
+ainsi que sur les doublons d'entités et les formulations à vérifier.
 
 ## Fichiers associés
 

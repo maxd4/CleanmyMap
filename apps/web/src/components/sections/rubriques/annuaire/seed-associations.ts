@@ -1,9 +1,9 @@
 import type {
-  AnnuaireEntry,
   AnnuaireEntrySeedInput,
+  EditorialAssociationProfile,
 } from "@/lib/partners/annuaire-types";
 
-const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> = {
+const ASSOCIATION_PROFILES: Record<string, EditorialAssociationProfile> = {
   "asso-1": {
     mission: "Accompagner les Francilien·ne·s dans la transition écologique avec des ateliers terrain et des relais de quartier.",
     recurringNeeds: ["Matériel", "Relais de communication", "Bénévoles logistiques"],
@@ -14,14 +14,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 18,
-      zonesCovered: 2,
-      recurrence: "Ateliers réguliers",
-      lastActionAt: "2026-04-10",
-      note: "Ateliers et relais de terrain documentés sur les 15e et 16e arrondissements.",
-    },
-    structureStatus: "validated",
   },
   "asso-2": {
     mission: "Réseau solidaire de proximité pour soutenir les personnes sans domicile et animer les commerces partenaires.",
@@ -33,14 +25,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 42,
-      zonesCovered: 6,
-      recurrence: "Actions quotidiennes",
-      lastActionAt: "2026-04-11",
-      note: "Réseau actif avec de nombreux points de contact de quartier.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-3": {
     mission: "Inclusion sociale et réemploi via des déménagements à vélo et une logistique locale utile.",
@@ -52,14 +36,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 24,
-      zonesCovered: 4,
-      recurrence: "Actions hebdomadaires",
-      lastActionAt: "2026-04-09",
-      note: "Activité régulière sur le 11e, le 18e, le 19e et le 20e.",
-    },
-    structureStatus: "validated",
   },
   "asso-4": {
     mission: "Lieu d'engagement climat ouvert au public, centré sur les ateliers, les débats et la programmation citoyenne.",
@@ -71,14 +47,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 60,
-      zonesCovered: 6,
-      recurrence: "Programmation régulière",
-      lastActionAt: "2026-04-16",
-      note: "Hub reconnu pour la mobilisation citoyenne et le climat.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-featured-1": {
     mission: "Action terrain exemplaire sur la propreté urbaine, le recyclage et la mobilisation citoyenne dans le 19e.",
@@ -90,14 +58,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 31,
-      zonesCovered: 1,
-      recurrence: "Sorties hebdomadaires",
-      lastActionAt: "2026-04-20",
-      note: "Focus très local sur le 19e arrondissement.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-featured-2": {
     mission: "Soutien aux plus démunis via des distributions alimentaires et un accompagnement social sans conditions.",
@@ -109,14 +69,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 54,
-      zonesCovered: 1,
-      recurrence: "Actions quotidiennes",
-      lastActionAt: "2026-04-22",
-      note: "Historique concentré sur le 15e et les besoins de proximité.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-featured-6": {
     mission: "Protection des océans, du littoral et de la biodiversité marine avec un appui aux relais locaux.",
@@ -128,14 +80,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 38,
-      zonesCovered: 1,
-      recurrence: "Campagnes régulières",
-      lastActionAt: "2026-04-10",
-      note: "Action surtout nationale avec appuis locaux ponctuels.",
-    },
-    structureStatus: "validated",
   },
   "asso-zd-greenminded": {
     mission: "Sensibilisation zéro-déchet, zéro-mégot et pollution plastique avec ateliers et interventions scolaires.",
@@ -147,14 +91,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 29,
-      zonesCovered: 12,
-      recurrence: "Interventions régulières",
-      lastActionAt: "2026-05-01",
-      note: "Réseau très mobilisé sur plusieurs arrondissements parisiens.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-gestes-propres": {
     mission: "Association nationale dédiée à la sensibilisation, aux relais de terrain et à l'appui des collectifs locaux partout en France.",
@@ -166,14 +102,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 120,
-      zonesCovered: 20,
-      recurrence: "Réseau national continu",
-      lastActionAt: "2026-05-01",
-      note: "Structure nationale utile pour la diffusion et l'essaimage local.",
-    },
-    structureStatus: "validated",
   },
   "du-1": {
     mission: "Formation des acteurs engagés et structuration du lien entre mobilisation citoyenne et territoires.",
@@ -185,14 +113,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 12,
-      zonesCovered: 1,
-      recurrence: "Sessions universitaires",
-      lastActionAt: "2026-04-24",
-      note: "Impact surtout pédagogique et structurant.",
-    },
-    structureStatus: "validated",
   },
   "asso-surfrider-paris": {
     mission: "Protection de l'océan et du littoral, avec des collectes urbaines et des initiatives océanes locales.",
@@ -204,14 +124,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 46,
-      zonesCovered: 16,
-      recurrence: "Collectes régulières",
-      lastActionAt: "2026-05-01",
-      note: "Fort maillage parisien pour des actions environnementales récurrentes.",
-    },
-    structureStatus: "active_validated",
   },
   "asso-zerowaste-paris": {
     mission: "Groupe local militant pour la réduction des déchets à la source, la sensibilisation et le plaidoyer zero waste.",
@@ -223,14 +135,6 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
     ],
     usefulResources: [],
     publicCalls: [],
-    impactHistory: {
-      actionCount: 52,
-      zonesCovered: 20,
-      recurrence: "Ateliers mensuels",
-      lastActionAt: "2026-05-01",
-      note: "Couverture parisienne très large et cadence régulière.",
-    },
-    structureStatus: "active_validated",
   },
 };
 
@@ -256,10 +160,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Compte Instagram",
       url: "https://www.instagram.com/pikpik_environnement/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-12",
-    recentActivityAt: "2026-04-10",
     internalAdminContact: {
       referentName: "Kamera Vesic",
       email: "contact@pikpik.org",
@@ -287,10 +188,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Compte Instagram",
       url: "https://www.instagram.com/assolacloche/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-13",
-    recentActivityAt: "2026-04-11",
     internalAdminContact: {
       referentName: "Valerie Fayard",
       email: "valerie.fayard@lacloche.org",
@@ -318,10 +216,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Site officiel",
       url: "https://www.cartonplein.org/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-11",
-    recentActivityAt: "2026-04-09",
     internalAdminContact: {
       referentName: "Equipe Carton Plein",
       email: "bonjour@cartonplein.org",
@@ -352,10 +247,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Site officiel",
       url: "https://www.academieduclimat.paris/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-17",
-    recentActivityAt: "2026-04-16",
   },
   {
     id: "asso-shakirail",
@@ -378,8 +270,6 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Site officiel",
       url: "https://shakirail.curry-vavart.com/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     associationProfile: {
       mission:
         "Tiers-lieu culturel et solidaire géré collectivement, avec ateliers partagés, jardins, résidences et actions de quartier.",
@@ -408,17 +298,8 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
           detail: "Appui aux événements, aux chantiers participatifs et à la vie du lieu.",
         },
       ],
-      impactHistory: {
-        actionCount: 24,
-        zonesCovered: 1,
-        recurrence: "Programmation régulière",
-        lastActionAt: "2026-05-20",
-        note: "Lieu culturel et solidaire implanté dans le 18e arrondissement.",
-      },
-      structureStatus: "active_validated",
     },
     lastUpdatedAt: "2026-05-23",
-    recentActivityAt: "2026-05-20",
   },
   {
     id: "asso-featured-1",
@@ -437,10 +318,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["materiel", "logistique"],
     tags: ["Action terrain", "Propreté urbaine", "Quartier"],
     availability: "Sorties hebdomadaires",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-20",
-    recentActivityAt: "2026-04-20",
   },
   {
     id: "asso-featured-2",
@@ -459,10 +337,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["accueil", "logistique"],
     tags: ["Social", "Action terrain", "Quartier"],
     availability: "7j/7 en soirée",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-22",
-    recentActivityAt: "2026-04-22",
   },
   {
     id: "asso-featured-6",
@@ -481,10 +356,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["financement", "communication"],
     tags: ["Littoral", "Climat", "Partenaire clé"],
     availability: "9h-18h",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-10",
-    recentActivityAt: "2026-04-10",
   },
   {
     id: "asso-zd-greenminded",
@@ -501,10 +373,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["communication", "accueil", "materiel"],
     tags: ["Zéro déchet", "Sensibilisation", "Plastique", "Éducation"],
     availability: "Selon planning",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "asso-gestes-propres",
@@ -524,10 +393,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
     contributionTypes: ["communication", "logistique", "accueil"],
     tags: ["National", "Relais", "France"],
     availability: "Couverture nationale avec relais locaux",
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "asso-pepite",
@@ -553,8 +419,6 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Fiche partenaire",
       url: "/sections/community?tab=partners",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     associationProfile: {
       mission:
         "Accompagner les étudiantes, étudiants et jeunes diplômés qui veulent transformer une idée en projet concret dans un cadre reconnu.",
@@ -572,17 +436,8 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
         },
       ],
       publicCalls: [],
-      impactHistory: {
-        actionCount: 18,
-        zonesCovered: 1,
-        recurrence: "Réseau national continu",
-        lastActionAt: "2026-05-01",
-        note: "Structure nationale utile pour l'orientation des projets étudiants et le lien avec Sorbonne Université.",
-      },
-      structureStatus: "validated",
     },
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "du-1",
@@ -604,10 +459,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Page Sorbonne Université",
       url: "https://www.sorbonne-universite.fr/formation/",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-04-24",
-    recentActivityAt: "2026-04-24",
   },
   {
     id: "asso-surfrider-paris",
@@ -632,10 +484,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Site Paris",
       url: "https://surfrider-paris.fr",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
   {
     id: "asso-zerowaste-paris",
@@ -660,10 +509,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
       label: "Site local",
       url: "https://www.zerowasteparis.fr",
     },
-    verificationStatus: "verifie",
-    qualificationStatus: "partenaire_actif",
     lastUpdatedAt: "2026-05-01",
-    recentActivityAt: "2026-05-01",
   },
 ];
 

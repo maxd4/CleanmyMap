@@ -63,7 +63,7 @@ export type EditorialAssociationProfile = Omit<
   "impactHistory" | "structureStatus"
 > & {
   impactHistory?: never;
-  structureStatus?: "pending";
+  structureStatus?: never;
 };
 
 type AnnuaireEntryShared = {
@@ -100,10 +100,7 @@ type AnnuaireEntryShared = {
 };
 
 export type AnnuaireEntrySeedInput = AnnuaireEntryShared & {
-  verificationStatus: VerificationStatus;
-  qualificationStatus: QualificationStatus;
-  recentActivityAt: string;
-  associationProfile?: AssociationProfile;
+  associationProfile?: EditorialAssociationProfile;
 };
 
 export type EditorialAnnuaireEntry = AnnuaireEntryShared & {

@@ -37,6 +37,8 @@ describe("annuaire public data contract", () => {
       expect(entry.verificationStatus).toBe("en_cours");
       expect(entry.qualificationStatus).toBe("contact_non_qualifie");
       expect(entry.recentActivityAt).toBeUndefined();
+      expect(entry.associationProfile?.impactHistory).toBeUndefined();
+      expect(entry.associationProfile?.structureStatus).toBeUndefined();
       expect(getEntryTrustState(entry)).toBe("editorial");
       expect(getAssociationProfile(entry)).toBeNull();
       expect(getAssociationStructureBadge(entry)).toBeNull();

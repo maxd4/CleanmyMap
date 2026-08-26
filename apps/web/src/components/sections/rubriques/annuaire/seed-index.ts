@@ -37,20 +37,11 @@ validateUniqueIds(allEntries);
 function toEditorialAnnuaireEntry(
   entry: AnnuaireEntrySeedInput,
 ): EditorialAnnuaireEntry {
-  const { recentActivityAt: _recentActivityAt, ...sharedEntry } = entry;
-
   return {
-    ...sharedEntry,
+    ...entry,
     provenance: "editorial_seed",
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",
-    associationProfile: sharedEntry.associationProfile
-      ? {
-          ...sharedEntry.associationProfile,
-          impactHistory: undefined,
-          structureStatus: "pending",
-        }
-      : undefined,
   };
 }
 
