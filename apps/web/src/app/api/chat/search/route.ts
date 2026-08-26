@@ -62,12 +62,6 @@ type SearchQueryResult = PromiseLike<{
 const searchSelect =
   "id, created_at, content, channel_type, topic_id, message_kind, sender:profiles!sender_id(display_name, handle, avatar_url)";
 
-function parseArrondissement(raw: string | null): number | null {
-  if (!raw) return null;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20 ? parsed : null;
-}
-
 function buildZoneContext(
   zoneName: string | null,
   arrondissementId: number | null,
@@ -131,8 +125,6 @@ export async function GET(request: Request) {
   const queryError = getChatSearchQueryError(query);
   const requestedTopicId = searchParams.get("topicId");
   const recipientId = searchParams.get("recipientId")?.trim() || null;
-  const requestedZoneName = searchParams.get("zoneName");
-  const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const beforeCursor = parseChatHistoryCursor(
     searchParams.get("beforeCreatedAt"),
     searchParams.get("beforeId"),
@@ -184,8 +176,10 @@ export async function GET(request: Request) {
   try {
     const profile = await loadCurrentProfile(supabase, userId);
     const profileZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-    const zoneName = requestedZoneName || profileZone.zoneName;
-    const arrondissementId = requestedArrondissement ?? profile?.paris_arrondissement ?? null;
+    // The query parameters are navigation hints only. Never let them replace
+    // the profile territory used by the authorization and RLS boundary.
+    const zoneName = profileZone.zoneName;
+    const arrondissementId = profile?.paris_arrondissement ?? profileZone.arrondissementId;
     const zoneContext = buildZoneContext(zoneName, arrondissementId);
     const hasGreaterParisZone = Boolean(zoneName && findZoneWithNeighbors(zoneName));
     const hasArrondissement =
