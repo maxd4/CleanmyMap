@@ -373,6 +373,16 @@ describe("PATCH /api/admin/creator-inbox", () => {
         newValue: { deleted: true },
       },
     });
+    expect(Object.keys(auditCalls()[0].details)).toEqual([
+      "operation",
+      "reason",
+      "targetUserId",
+      "previousValue",
+      "newValue",
+    ]);
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("Display name");
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("person@example.com");
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("Message content");
   });
 
   it("audits partner delete success with a minimal before value", async () => {
@@ -401,6 +411,51 @@ describe("PATCH /api/admin/creator-inbox", () => {
         newValue: { deleted: true },
       },
     });
+    expect(Object.keys(auditCalls()[0].details)).toEqual([
+      "operation",
+      "reason",
+      "targetUserId",
+      "previousValue",
+      "newValue",
+    ]);
+  });
+
+  it.each([
+    ["feedback", "feedback-1"],
+    ["partner", "partner-1"],
+  ] as const)("audits an identified %s delete returning false as a 404", async (source, itemId) => {
+    if (source === "feedback") {
+      deleteCommunityBugReportMock.mockResolvedValueOnce(false);
+    } else {
+      deletePartnerOnboardingRequestMock.mockResolvedValueOnce(false);
+    }
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({ source, itemId, action: "delete", reason: "Suppression introuvable" }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: itemId,
+      details: {
+        operation: "creator_inbox_update",
+        reason: "Suppression introuvable",
+        stage: "delete",
+        partialMutation: false,
+        previousValue: {
+          source,
+          creatorState: source === "feedback" ? "new" : "pending",
+        },
+        newValue: { source },
+      },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("Display name");
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("person@example.com");
+    expect(JSON.stringify(auditCalls()[0])).not.toContain("Message content");
   });
 
   it.each([
@@ -522,5 +577,70 @@ describe("PATCH /api/admin/creator-inbox", () => {
       details: { stage: "delete", partialMutation: false },
     });
     expect(JSON.stringify(auditCalls()[0])).not.toContain("delete provider detail");
+  });
+
+  it.each([
+    ["feedback", "feedback-1"],
+    ["partner", "partner-1"],
+  ] as const)("audits lookup failure for %s without raw error data", async (source, itemId) => {
+    const lookupError = "private lookup provider detail";
+    if (source === "feedback") {
+      getCommunityBugReportByIdMock.mockRejectedValueOnce(new Error(lookupError));
+    } else {
+      getPartnerOnboardingRequestByIdMock.mockRejectedValueOnce(new Error(lookupError));
+    }
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({ source, itemId, action: "delete", reason: "Lookup en erreur" }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: itemId,
+      details: {
+        stage: "lookup",
+        partialMutation: false,
+        previousValue: { source, status: "unknown", creatorState: "unknown" },
+        newValue: { source, status: "unknown", creatorState: "unknown" },
+      },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain(lookupError);
+  });
+
+  it.each([
+    ["feedback", "feedback-1"],
+    ["promotion", "promotion-1"],
+    ["partner", "partner-1"],
+  ] as const)("audits creator-state update failure for %s", async (source, itemId) => {
+    const updateError = "private update provider detail";
+    if (source === "feedback") {
+      updateCommunityBugReportCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
+    } else if (source === "promotion") {
+      updatePromotionRequestCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
+    } else {
+      updatePartnerOnboardingRequestCreatorStateMock.mockRejectedValueOnce(new Error(updateError));
+    }
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({ source, itemId, action: "responded", reason: "Mise à jour en erreur" }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(auditCalls()[0]).toMatchObject({
+      operationType: "admin_operation",
+      outcome: "error",
+      targetId: itemId,
+      details: {
+        stage: "update",
+        partialMutation: false,
+      },
+    });
+    expect(JSON.stringify(auditCalls()[0])).not.toContain(updateError);
   });
 });
