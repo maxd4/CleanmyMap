@@ -13,6 +13,8 @@ type InboxItemCardProps = {
   onPromotionReasonChange: (reason: string) => void;
   partnerReason: string;
   onPartnerReasonChange: (reason: string) => void;
+  actionReason: string;
+  onActionReasonChange: (reason: string) => void;
   actionBusy: (source: CreatorInboxSource, id: string, action: string) => boolean;
   onCopySummary: (item: CreatorInboxItem) => void;
   onAcceptPromotion: (item: CreatorInboxItem) => void;
@@ -23,6 +25,7 @@ type InboxItemCardProps = {
     source: CreatorInboxSource;
     itemId: string;
     action: "mark_treated" | "responded" | "archive" | "delete";
+    reason: string;
   }) => void;
 };
 
@@ -35,6 +38,8 @@ export function InboxItemCard({
   onPromotionReasonChange,
   partnerReason,
   onPartnerReasonChange,
+  actionReason,
+  onActionReasonChange,
   actionBusy,
   onCopySummary,
   onAcceptPromotion,
@@ -106,6 +111,30 @@ export function InboxItemCard({
         >
           {copiedKey === item.id ? copy.states.copied : copy.states.copySummary}
         </button>
+
+        {item.source !== "event" ? (
+          <label className="mt-2 basis-full space-y-1">
+            <span className="cmm-text-caption font-semibold cmm-text-secondary">
+              {locale === "fr" ? "Motif de traitement" : "Processing reason"}
+            </span>
+            <textarea
+              value={actionReason}
+              onChange={(event) => onActionReasonChange(event.target.value)}
+              minLength={5}
+              maxLength={500}
+              rows={2}
+              placeholder={
+                locale === "fr"
+                  ? "Expliquez le traitement (5 à 500 caractères)..."
+                  : "Explain the processing (5 to 500 characters)..."
+              }
+              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            />
+            <span className="cmm-text-caption cmm-text-muted">
+              {actionReason.trim().length}/500
+            </span>
+          </label>
+        ) : null}
 
         {item.source === "promotion" && item.sourceStatus === "pending_owner_review" ? (
           <>
@@ -215,12 +244,16 @@ export function InboxItemCard({
           <>
             <button
               type="button"
-              disabled={actionBusy(item.source, item.sourceRecordId, "mark_treated")}
+              disabled={
+                actionBusy(item.source, item.sourceRecordId, "mark_treated") ||
+                actionReason.trim().length < 5
+              }
               onClick={() =>
                 onApplyInboxAction({
                   source: item.source,
                   itemId: item.sourceRecordId,
                   action: "mark_treated",
+                  reason: actionReason,
                 })
               }
               className="rounded-lg border border-emerald-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -231,12 +264,16 @@ export function InboxItemCard({
             </button>
             <button
               type="button"
-              disabled={actionBusy(item.source, item.sourceRecordId, "responded")}
+              disabled={
+                actionBusy(item.source, item.sourceRecordId, "responded") ||
+                actionReason.trim().length < 5
+              }
               onClick={() =>
                 onApplyInboxAction({
                   source: item.source,
                   itemId: item.sourceRecordId,
                   action: "responded",
+                  reason: actionReason,
                 })
               }
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -245,15 +282,39 @@ export function InboxItemCard({
                 ? copy.states.processing
                 : copy.states.markResponded}
             </button>
+            <button
+              type="button"
+              disabled={
+                actionBusy(item.source, item.sourceRecordId, "archive") ||
+                actionReason.trim().length < 5
+              }
+              onClick={() =>
+                onApplyInboxAction({
+                  source: item.source,
+                  itemId: item.sourceRecordId,
+                  action: "archive",
+                  reason: actionReason,
+                })
+              }
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actionBusy(item.source, item.sourceRecordId, "archive")
+                ? copy.states.archiving
+                : copy.states.archive}
+            </button>
             {item.canDelete ? (
               <button
                 type="button"
-                disabled={actionBusy(item.source, item.sourceRecordId, "delete")}
+                disabled={
+                  actionBusy(item.source, item.sourceRecordId, "delete") ||
+                  actionReason.trim().length < 5
+                }
                 onClick={() =>
                   onApplyInboxAction({
                     source: item.source,
                     itemId: item.sourceRecordId,
                     action: "delete",
+                    reason: actionReason,
                   })
                 }
                 className="rounded-lg border border-rose-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"

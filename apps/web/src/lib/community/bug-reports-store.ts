@@ -248,6 +248,14 @@ export async function listCommunityBugReports(
   return store.records.slice(0, normalizedLimit);
 }
 
+export async function getCommunityBugReportById(
+  reportId: string,
+): Promise<BugReportRecord | null> {
+  assertPersistenceAvailable("community_bug_reports");
+  const store = await readStore();
+  return store.records.find((record) => record.id === reportId) ?? null;
+}
+
 export async function updateCommunityBugReportStatus(params: {
   reportId: string;
   status: "open" | "treated" | "archived";

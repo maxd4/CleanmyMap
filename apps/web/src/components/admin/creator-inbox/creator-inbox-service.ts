@@ -44,11 +44,15 @@ export async function applyCreatorInboxAction(params: {
   source: CreatorInboxSource;
   itemId: string;
   action: "mark_treated" | "responded" | "archive" | "delete";
+  reason: string;
 }): Promise<{ item?: CreatorInboxItem; deletedId?: string }> {
   const response = await fetch("/api/admin/creator-inbox", {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...params,
+      ...(params.reason === undefined ? {} : { reason: params.reason.trim() }),
+    }),
   });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Action failed."));

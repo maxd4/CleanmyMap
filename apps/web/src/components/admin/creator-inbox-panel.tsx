@@ -83,13 +83,25 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
                     [item.sourceRecordId]: reason,
                   }))
                 }
+                actionReason={inbox.actionReasons[item.sourceRecordId] ?? ""}
+                onActionReasonChange={(reason) =>
+                  inbox.setActionReasons((current) => ({
+                    ...current,
+                    [item.sourceRecordId]: reason,
+                  }))
+                }
                 actionBusy={inbox.actionBusy}
                 onCopySummary={(nextItem) => void inbox.copySummary(nextItem)}
                 onAcceptPromotion={(nextItem) => void inbox.acceptPromotion(nextItem)}
                 onRejectPromotion={(nextItem) => void inbox.rejectPromotion(nextItem)}
                 onAcceptPartner={(nextItem) => void inbox.acceptPartner(nextItem)}
                 onRejectPartner={(nextItem) => void inbox.rejectPartner(nextItem)}
-                onApplyInboxAction={(params) => void inbox.applyInboxAction(params)}
+                onApplyInboxAction={(params) =>
+                  void inbox.applyInboxAction({
+                    ...params,
+                    reason: inbox.actionReasons[item.sourceRecordId] ?? "",
+                  })
+                }
               />
             ))
           ) : (

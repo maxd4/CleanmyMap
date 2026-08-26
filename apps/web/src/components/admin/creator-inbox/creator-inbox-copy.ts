@@ -41,6 +41,8 @@ type CreatorInboxCopy = {
     approving: string;
     reject: string;
     processing: string;
+    archive: string;
+    archiving: string;
     markTreated: string;
     markResponded: string;
     deleting: string;
@@ -98,6 +100,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       approving: "Validation...",
       reject: "Refuser",
       processing: "Traitement...",
+      archive: "Archiver",
+      archiving: "Archivage...",
       markTreated: "Marquer traité",
       markResponded: "Marquer répondu",
       deleting: "Suppression...",
@@ -154,6 +158,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       approving: "Approving...",
       reject: "Reject",
       processing: "Processing...",
+      archive: "Archive",
+      archiving: "Archiving...",
       markTreated: "Mark treated",
       markResponded: "Mark responded",
       deleting: "Deleting...",

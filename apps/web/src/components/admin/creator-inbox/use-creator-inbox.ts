@@ -34,6 +34,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [refreshing, setRefreshing] = useState(false);
   const [partnerConfirm, setPartnerConfirm] = useState("");
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
+  const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -107,11 +108,21 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     source: CreatorInboxSource;
     itemId: string;
     action: "mark_treated" | "responded" | "archive" | "delete";
+    reason: string;
   }) {
+    const reason = params.reason.trim();
+    if (reason.length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
     setUpdatingKey(`${params.source}:${params.itemId}:${params.action}`);
     setErrorMessage(null);
     try {
-      const payload = await applyCreatorInboxAction(params);
+      const payload = await applyCreatorInboxAction({ ...params, reason });
       setItems((current) => refreshList(current, payload.item ?? null, payload.deletedId));
       setSuccessMessage(copy.messages.actionSuccess);
       window.setTimeout(() => setSuccessMessage(null), 1800);
@@ -259,6 +270,8 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     setPartnerConfirm,
     partnerReason,
     setPartnerReason,
+    actionReasons,
+    setActionReasons,
     promotionReasons,
     setPromotionReasons,
     filteredItems,
