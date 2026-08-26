@@ -4,7 +4,7 @@ export type {
   EventReminder,
   EventStaffingRow,
   EventStaffingSummary,
-  PartnerCard,
+  ActorActivityCard,
   QualityLeaderboardRow,
 } from "./engagement.types";
 
@@ -14,4 +14,4 @@ export {
   computeEventStaffingPlan,
 } from "./engagement.events";
 
-export { buildPartnerCards, computeQualityLeaderboard } from "./engagement.quality";
+export { buildActorActivityCards, computeQualityLeaderboard } from "./engagement.quality";

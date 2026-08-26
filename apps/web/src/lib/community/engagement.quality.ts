@@ -2,14 +2,11 @@ import { evaluateActionQuality } from "../actions/quality";
 import type { ActionListItem } from "../actions/types";
 import {
   badgeFromQuality,
-  capacityLabel,
   extractArea,
-  nextActionFromPartner,
-  roleFromPartner,
   round1,
   toFinite,
 } from "./engagement.helpers";
-import type { PartnerCard, QualityLeaderboardRow } from "./engagement.types";
+import type { ActorActivityCard, QualityLeaderboardRow } from "./engagement.types";
 
 export function computeQualityLeaderboard(
   actions: ActionListItem[],
@@ -83,7 +80,7 @@ export function computeQualityLeaderboard(
     );
 }
 
-export function buildPartnerCards(actions: ActionListItem[]): PartnerCard[] {
+export function buildActorActivityCards(actions: ActionListItem[]): ActorActivityCard[] {
   const grouped = new Map<
     string,
     {
@@ -94,10 +91,10 @@ export function buildPartnerCards(actions: ActionListItem[]): PartnerCard[] {
   >();
 
   for (const item of actions) {
-    const actor =
-      item.actor_name?.trim() ||
-      item.contract?.metadata.actorName?.trim() ||
-      "Anonyme";
+    const actor = item.actor_name?.trim();
+    if (!actor) {
+      continue;
+    }
     const quality = evaluateActionQuality(item);
     const zone = extractArea(
       item.location_label || item.contract?.location.label || "",
@@ -119,20 +116,13 @@ export function buildPartnerCards(actions: ActionListItem[]): PartnerCard[] {
       const zone =
         [...row.zoneCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
         "Hors arrondissement";
-      const contact = actor.includes("@")
-        ? actor
-        : `Canal communaute: ${actor}`;
       return {
         actor,
-        role: roleFromPartner(row.actions, avgQuality),
         zone,
-        contact,
-        capacity: capacityLabel(row.actions),
         actions: row.actions,
-        avgQuality: round1(avgQuality),
-        nextAction: nextActionFromPartner(zone, avgQuality),
+        avgActionQuality: round1(avgQuality),
       };
     })
-    .sort((a, b) => b.actions - a.actions || b.avgQuality - a.avgQuality)
+    .sort((a, b) => b.actions - a.actions || b.avgActionQuality - a.avgActionQuality)
     .slice(0, 12);
 }

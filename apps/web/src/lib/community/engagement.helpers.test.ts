@@ -4,7 +4,6 @@ import {
   badgeFromQuality,
   extractArea,
   extractEventRefFromAction,
-  nextActionFromPartner,
   percent,
 } from "./engagement.helpers";
 
@@ -48,10 +47,7 @@ describe("engagement helpers", () => {
     expect(extractEventRefFromAction(action)).toBe("event-42");
   });
 
-  it("assigns quality badges and partner next action", () => {
+  it("assigns quality badges without prescribing an actor action", () => {
     expect(badgeFromQuality(86, 8, 0.5)).toBe("Ambassadeur qualite");
-    expect(nextActionFromPartner("Hors arrondissement", 80)).toContain(
-      "Preciser la zone",
-    );
   });
 });

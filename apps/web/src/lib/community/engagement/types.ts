@@ -77,14 +77,3 @@ export type QualityLeaderboardRow = {
   weightedScore: number;
   badge: string;
 };
-
-export type PartnerCard = {
-  actor: string;
-  role: string;
-  zone: string;
-  contact: string;
-  capacity: string;
-  actions: number;
-  avgQuality: number;
-  nextAction: string;
-};
