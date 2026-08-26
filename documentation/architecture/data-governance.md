@@ -266,6 +266,16 @@ Le grant UPDATE mobile est limité à `status`, `started_at` et `ended_at`.
 surface d'écriture `authenticated`. Le `service_role` conserve ses privilèges
 serveur sans devenir une identité mobile.
 
+La migration
+`apps/web/supabase/migrations/20260826080000_clerk_compute_mission_distance.sql`
+finalise aussi la lecture/calcul propriétaire de distance :
+`compute_mission_distance` vérifie le `sub` Clerk, l'existence de la mission et
+son ownership avant de lire les points GPS. Elle calcule uniquement les points
+de la mission autorisée et écrit `distance_m`/`duration_s` côté fonction
+serveur. `authenticated` reçoit uniquement EXECUTE sur cette fonction ; les
+grants UPDATE directs des colonnes dérivées restent fermés, et `anon`/`public`
+n'ont aucun EXECUTE.
+
 `missions.created_by` est conservé comme provenance potentielle, pas comme
 permission. Le `service_role` reste un moyen technique serveur uniquement ; il
 ne remplace ni l'identité Clerk ni la décision d'ownership et ne doit jamais
@@ -287,10 +297,10 @@ UPDATE mobiles.
 Restent explicitement hors production :
 
 - RLS et contrat de synchronisation de `mission_actions` ;
-- appel client à `compute_mission_distance` et finalisation de distance ;
 - renouvellement fiable du token Clerk lors d'un réveil background headless ;
-- gel du companion jusqu'à la finalisation et à l'utilisation réelle de
-  l'application web.
+- usage opérationnel réel de l'application web et du companion ;
+- le companion-app est gelé à long terme jusqu'à une décision explicite de
+  dégel.
 
 Voir :
 

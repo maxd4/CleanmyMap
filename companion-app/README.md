@@ -4,11 +4,13 @@ Application mobile Expo/React Native dédiée au suivi GPS des missions terrain.
 
 ## Statut
 
-**Expérimentale — ne pas considérer comme prête pour la production tant que les contrats suivants ne sont pas stabilisés :**
+**GELÉE — expérimentation long terme, non prête pour la production.**
 
-1. contrat RLS Clerk des missions et des points GPS ;
-2. synchronisation fiable du GPS en background headless ;
-3. finalisation serveur du calcul de distance.
+Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
+`missions`/`gps_points` et la finalisation propriétaire de distance. Le
+companion est désormais gelé jusqu'à la finalisation et à l'utilisation réelle
+de l'application web. Aucune nouvelle capacité mobile ni publication store ne
+doit être engagée dans l'état actuel.
 
 Références :
 
@@ -76,33 +78,27 @@ n'est persistée ou observée.
 Le chemin d'identité anonyme a été supprimé. Aucun JWT template legacy n'est
 copié dans l'app et aucune clé `service_role` n'est embarquée.
 
-Le contrat RLS qui doit lire le `sub` Clerk et le rapprocher des colonnes
-d'ownership n'est pas traité dans ce lot. Tant qu'il n'est pas validé, l'app ne
-doit pas être qualifiée de prête pour la production.
+Le contrat RLS lit le `sub` Clerk et le rapproche de `missions.volunteer_id`.
+Il est porté par la migration additive du LOT 2A. Le companion ne doit toujours
+pas être qualifié de prêt pour la production : les capacités `mission_actions`,
+le renouvellement headless et l'usage opérationnel réel restent non validés.
 
 Voir `ADR-004`.
 
-## Finalisation de mission : limite actuelle
+## Finalisation de mission : contrat finalisé puis gelé
 
-Le code mobile appelle actuellement :
+Le code mobile appelle après le passage de la mission à `completed` :
 
-```txt
-compute_mission_distance
-```
+`compute_mission_distance` est désormais exécutable par `authenticated` avec un
+contrôle interne strict : `sub` Clerk non vide, mission existante et
+`volunteer_id` correspondant. La fonction est `SECURITY DEFINER` avec
+`search_path = pg_catalog`, écrit les colonnes dérivées côté serveur et ne
+réouvre pas les grants UPDATE mobiles sur `distance_m` ou `duration_s`.
 
-Or les migrations courantes restreignent cette RPC au rôle `service_role`.
-
-Un client mobile authentifié comme utilisateur ne doit pas recevoir `service_role`.
-
-La correction ne consiste donc pas à ouvrir aveuglément la fonction au public.
-
-Architectures sûres possibles :
-
-1. endpoint serveur authentifié qui vérifie la mission puis appelle la RPC ;
-2. RPC accessible aux utilisateurs authentifiés avec contrôle d'ownership interne strict ;
-3. trigger serveur lors du passage à `completed`.
-
-La décision doit être cohérente avec l'identité mobile retenue.
+`service_role` conserve son accès opérationnel ; `anon` et `public` n'ont aucun
+EXECUTE. `stopTracking` vérifie explicitement l'erreur RPC et ne retourne pas
+un succès complet lorsque le calcul serveur échoue. Le mobile ne calcule ni la
+distance ni la durée lui-même.
 
 ## Variables d'environnement
 
@@ -164,10 +160,11 @@ Lorsqu'un réveil headless ne dispose pas d'un token Clerk valide, il ne tente
 aucune authentification alternative : les points sont conservés dans le buffer
 local sécurisé et la synchronisation est différée.
 
-Ce lot ne prétend pas résoudre le renouvellement d'un token Clerk lorsque le
-TaskManager est réveillé sans contexte JavaScript Clerk complet. Le contrat de
-réhydratation, de synchronisation background et les RLS correspondantes sont
-explicitement réservés au LOT 2 de l'ADR-004.
+Le LOT 2B ne prétend pas résoudre le renouvellement d'un token Clerk lorsque le
+TaskManager est réveillé sans contexte JavaScript Clerk complet. Sans token
+valide, les données restent dans le buffer local et aucune authentification
+alternative n'est tentée. Cette limite, ainsi que `mission_actions`, demeure
+hors production et motive le gel long terme.
 
 ## Structure
 
@@ -206,19 +203,19 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 
 ```txt
 ☑ Identité mobile alignée avec Clerk côté SDK et token provider (LOT 1)
-□ Intégration Clerk Third-Party Auth configurée et RLS missions validées
-□ Ownership des missions testé
-□ RLS missions testée
-□ RLS gps_points testée
+☑ Intégration Clerk Third-Party Auth configurée et RLS missions validées (LOTS 2A/2B)
+☑ Ownership des missions testé
+☑ RLS missions testée
+☑ RLS gps_points testée
 □ RLS mission_actions testée
-□ Finalisation distance côté serveur ou RPC sûre
-□ Erreur de calcul de distance traitée
-□ Buffer offline testé
+☑ Finalisation distance côté serveur ou RPC sûre (LOT 2B)
+☑ Erreur de calcul de distance traitée
+☑ Buffer offline conservé sans token Clerk
 □ Restauration mission active testée
 □ Refus de permissions testé
 ☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
 □ Renouvellement du token Clerk en background headless
-□ Typecheck en CI
+□ Usage opérationnel web et validation production
 ```
 
 ## Validation actuelle
