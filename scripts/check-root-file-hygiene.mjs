@@ -27,36 +27,69 @@ const allowedRootFiles = new Set([
   "UBIQUITOUS_LANGUAGE.md",
 ]);
 
-const temporaryLegacyRootFiles = new Map([
-  [
-    "backlog-codex-permissions-admin-moderation-actions.md",
-    "Backlog clôturé : déplacer vers documentation/plans/history/ après vérification de l'absorption des règles durables.",
-  ],
-  [
-    "resize_homepage.js",
-    "Script ponctuel : déplacer vers scripts/media/ ou supprimer après recherche des usages.",
-  ],
-  [
-    "resize_image.ps1",
-    "Script ponctuel : déplacer vers scripts/media/ ou supprimer après recherche des usages.",
-  ],
-  [
-    "split.js",
-    "Script ponctuel : déplacer vers scripts/maintenance/ ou supprimer après recherche des usages.",
-  ],
-]);
-
-export const localOnlyTrackedPrefixes = [
-  "backups/",
-  "scratch/",
-  ".codex-remote-attachments/",
+export const trackedCanonicalRootDirectories = [
+  ".agents",
+  ".artifacts",
+  ".codex",
+  ".devcontainer",
+  ".githooks",
+  ".github",
+  ".kiro",
+  ".vscode",
+  "apps",
+  "documentation",
+  "e2e",
+  "maintenance",
+  "scripts",
+  "supabase",
 ];
+
+export const trackedTransitionalRootDirectories = ["companion-app"];
+
+export const localOnlyRootDirectories = [
+  "artifacts",
+  "backups",
+  "scratch",
+  ".gitnexus",
+  ".playwright-mcp",
+  ".vercel",
+  ".codex-remote-attachments",
+  "node_modules",
+];
+
+const repositoryInternalRootDirectories = [".git"];
+
+export const allowedRootDirectories = [
+  ...trackedCanonicalRootDirectories,
+  ...trackedTransitionalRootDirectories,
+  ...localOnlyRootDirectories,
+  ...repositoryInternalRootDirectories,
+];
+
+export const localOnlyTrackedPrefixes = localOnlyRootDirectories.map(
+  (directory) => `${directory}/`,
+);
 
 function listRootFiles(directory) {
   return fs
     .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
+    .sort();
+}
+
+function listRootDirectories(directory) {
+  return fs
+    .readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
+export function findForbiddenRootDirectories(rootDirectories) {
+  const allowed = new Set(allowedRootDirectories);
+  return rootDirectories
+    .filter((directory) => !allowed.has(directory))
     .sort();
 }
 
@@ -78,30 +111,24 @@ function listTrackedFiles(directory) {
 
 function main() {
   const rootFiles = listRootFiles(repoRoot);
+  const rootDirectories = listRootDirectories(repoRoot);
   const forbidden = allowRootFileGeneration
     ? []
     : rootFiles.filter(
         (file) =>
-          !allowedRootFiles.has(file) &&
-          !temporaryLegacyRootFiles.has(file),
+          !allowedRootFiles.has(file),
       );
+  const forbiddenRootDirectories = findForbiddenRootDirectories(rootDirectories);
   const forbiddenTrackedPaths = findForbiddenTrackedPaths(
     listTrackedFiles(repoRoot),
   );
 
-  const legacyPresent = rootFiles.filter((file) =>
-    temporaryLegacyRootFiles.has(file),
-  );
-
-  if (legacyPresent.length > 0) {
-    console.warn("Root file hygiene warning: temporary legacy files remain:");
-    for (const file of legacyPresent) {
-      console.warn(`- ${file}: ${temporaryLegacyRootFiles.get(file)}`);
-    }
-  }
-
-  if (forbidden.length > 0 || forbiddenTrackedPaths.length > 0) {
-    const messages = ["Root file hygiene failed."];
+  if (
+    forbidden.length > 0 ||
+    forbiddenRootDirectories.length > 0 ||
+    forbiddenTrackedPaths.length > 0
+  ) {
+    const messages = ["Root file and directory hygiene failed."];
     if (forbidden.length > 0) {
       messages.push(
         "The following files are not allowed at the repository root:",
@@ -111,12 +138,20 @@ function main() {
         "Set ALLOW_ROOT_FILE_GENERATION=1 only for an explicit one-off request.",
       );
     }
+    if (forbiddenRootDirectories.length > 0) {
+      messages.push(
+        "The following directories are not allowed at the repository root:",
+        ...forbiddenRootDirectories.map((directory) => `- ${directory}`),
+        "",
+        "Use one of the declared canonical, transitional or local-only root directories.",
+      );
+    }
     if (forbiddenTrackedPaths.length > 0) {
       messages.push(
-        "The following local-only files must not be tracked by Git:",
+        "The following local-only paths must not be tracked by Git:",
         ...forbiddenTrackedPaths.map((file) => `- ${file}`),
         "",
-        "Keep backups/, scratch/ and .codex-remote-attachments/ local and ignored.",
+        "Keep local-only root directories local and ignored; .artifacts/ is reserved for versioned evidence.",
         "Any exception must be explicitly documented before it is added to the allowlist.",
       );
     }
@@ -125,9 +160,9 @@ function main() {
   }
 
   console.log(
-    `Root file hygiene OK (${rootFiles.length} files scanned${
-      allowRootFileGeneration ? ", override enabled" : ""
-    }; no local-only tracked files).`,
+    `Root file and directory hygiene OK (${rootFiles.length} files and ${rootDirectories.length} directories scanned${
+      allowRootFileGeneration ? ", file override enabled" : ""
+    }; no unknown directories or local-only tracked paths).`,
   );
 }
 
