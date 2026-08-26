@@ -8,10 +8,9 @@ Les données statiques de l'annuaire ont été modularisées pour améliorer la 
 
 ```
 annuaire/
-├── seed-associations.ts      # Entrées de type "association" (12.7 KB)
+├── seed-associations.ts      # Entrées de type "association"
 ├── seed-entreprises.ts        # Entrées de type "entreprise" et "commerce" (10 KB)
 ├── seed-evenements.ts         # Entrées de type "evenement" (4.5 KB)
-├── seed-groupes-parole.ts     # Entrées de type "groupe_parole" (0.8 KB)
 └── seed-index.ts              # Point d'entrée combinant tous les seeds (0.9 KB)
 ```
 
