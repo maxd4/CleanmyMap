@@ -69,6 +69,25 @@ export function buildInitialAnnouncementTemplate(
   return isCommunityAnnouncementTemplateKey(template) ? template : null;
 }
 
+export function resolveInitialConnectTab({
+  defaultTab,
+  requestedTab,
+  initialChannelType,
+  hasAnnouncementTemplate,
+}: {
+  defaultTab: ConnectTab;
+  requestedTab: string | null;
+  initialChannelType: ChatChannelType;
+  hasAnnouncementTemplate: boolean;
+}): ConnectTab {
+  if (hasAnnouncementTemplate) {
+    return "discussions";
+  }
+  return requestedTab === "dm" || initialChannelType === "dm" || defaultTab === "dm"
+    ? "dm"
+    : "discussions";
+}
+
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const [activeTab, setActiveTab] = useState<ConnectTab>(defaultTab);
   const searchParams = useSearchParams();
@@ -139,12 +158,16 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
       : null;
   }, [eventReferenceData]);
 
-  const initialTab: ConnectTab = useMemo(() =>
-    requestedAnnouncementTemplate
-      ? "discussions"
-      : requestedTab === "dm" || initialChannelType === "dm" || defaultTab === "dm"
-      ? "dm"
-      : "discussions", [defaultTab, initialChannelType, requestedAnnouncementTemplate, requestedTab]);
+  const initialTab: ConnectTab = useMemo(
+    () =>
+      resolveInitialConnectTab({
+        defaultTab,
+        requestedTab,
+        initialChannelType,
+        hasAnnouncementTemplate: Boolean(requestedAnnouncementTemplate),
+      }),
+    [defaultTab, initialChannelType, requestedAnnouncementTemplate, requestedTab],
+  );
 
   const initialArrondissement = Number.isInteger(requestedArrondissement)
     ? requestedArrondissement

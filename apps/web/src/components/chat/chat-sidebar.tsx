@@ -51,7 +51,6 @@ export const ChatSidebar = memo(function ChatSidebar({
   const isLight = tone === "light";
   const isMessagerie = presentation === "messagerie";
   const communityChannel = channels.find((channel) => channel.channelType === "community");
-  const dmChannel = channels.find((channel) => channel.channelType === "dm");
   const territoryChannel = channels.find((channel) => channel.channelType === "territory");
 
   const renderTopics = () =>
@@ -129,7 +128,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       {/* CANAUX PUBLICS */}
       <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
         <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-          {isMessagerie ? "Discussions" : "Canaux Publics"}
+          Canaux Publics
         </p>
         <div className="space-y-1">
           {renderButton(communityChannel, {
@@ -148,19 +147,20 @@ export const ChatSidebar = memo(function ChatSidebar({
         </div>
       </section>
 
-      {/* DISCUSSIONS PRIVEES */}
-      <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
-        <div className="flex items-center justify-between px-2">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-            {isMessagerie ? "Messages privés" : "Discussions Privées"}
-          </p>
-          {!isMessagerie ? <span className="text-lg leading-none text-slate-400">+</span> : null}
-        </div>
-        {renderButton(dmChannel, {
-          label: "Discussions privées",
-          description: "Échanges confidentiels en tête-à-tête",
-        })}
-      </section>
+      {!isMessagerie ? (
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-2">
+            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+              Discussions Privées
+            </p>
+            <span className="text-lg leading-none text-slate-400">+</span>
+          </div>
+          {renderButton(channels.find((channel) => channel.channelType === "dm"), {
+            label: "Discussions privées",
+            description: "Échanges confidentiels en tête-à-tête",
+          })}
+        </section>
+      ) : null}
 
       {/* IMPACT ENSEMBLE */}
       {!isMessagerie ? <div className={`mt-auto mx-2 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden border ${isLight ? "bg-emerald-50 border-emerald-100" : "bg-emerald-500/10 border-emerald-500/20"}`}>

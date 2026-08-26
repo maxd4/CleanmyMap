@@ -4,13 +4,6 @@ export type ConnectTab = "discussions" | "dm";
 
 export type { CommunityAnnouncementTemplateKey } from "@/lib/chat/announcements";
 
-export interface ChannelStat {
-  label: { fr: string; en: string };
-  icon: LucideIcon;
-  count: string;
-  color: string;
-}
-
 export interface ConnectTabItem {
   id: ConnectTab;
   label: { fr: string; en: string };

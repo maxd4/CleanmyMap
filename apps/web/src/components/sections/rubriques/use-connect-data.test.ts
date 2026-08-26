@@ -3,6 +3,7 @@ import {
   buildInitialAnnouncementTemplate,
   buildInitialDmRecipient,
   buildInitialTopicId,
+  resolveInitialConnectTab,
 } from "./use-connect-data";
 import { getAnnouncementTopicId } from "@/lib/chat/announcements";
 
@@ -59,5 +60,29 @@ describe("announcement deep-link contract", () => {
 
   it("ignores an unknown template instead of preparing a draft", () => {
     expect(buildInitialAnnouncementTemplate("fake")).toBeNull();
+  });
+});
+
+describe("connect tab routing", () => {
+  it("opens a DM deep-link on the private tab even without an explicit tab parameter", () => {
+    expect(
+      resolveInitialConnectTab({
+        defaultTab: "discussions",
+        requestedTab: null,
+        initialChannelType: "dm",
+        hasAnnouncementTemplate: false,
+      }),
+    ).toBe("dm");
+  });
+
+  it("keeps an announcement deep-link on the public tab", () => {
+    expect(
+      resolveInitialConnectTab({
+        defaultTab: "dm",
+        requestedTab: "dm",
+        initialChannelType: "community",
+        hasAnnouncementTemplate: true,
+      }),
+    ).toBe("discussions");
   });
 });
