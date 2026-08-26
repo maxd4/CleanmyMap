@@ -18,6 +18,7 @@ describe("buildOptimisticChatMessage", () => {
         channelType: "community",
         topicId: "demande_diffusion",
         messageKind: "announcement",
+        pollOptions: [],
         relatedEvent,
         createdAt: "2026-08-26T12:00:00.000Z",
         sender: {
@@ -42,6 +43,7 @@ describe("buildOptimisticChatMessage", () => {
       channelType: "community",
       topicId: null,
       messageKind: "message",
+      pollOptions: [],
       relatedEvent: null,
       createdAt: "2026-08-26T12:00:00.000Z",
       sender: {

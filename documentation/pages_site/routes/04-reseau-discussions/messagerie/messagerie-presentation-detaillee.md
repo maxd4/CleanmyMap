@@ -10,6 +10,7 @@ La page `Messagerie` sert aux échanges directs entre membres du réseau. Elle d
 - des messages à lire et à répondre
 - une vue publique agrégée ou un salon thématique explicitement sélectionné
 - une composition `Message` ou `Annonce / Relai` ; les trois modèles de relais préparent un brouillon éditable et sélectionnent leur topic canonique
+- une composition `Sondage` dans `community`, avec une question et 2 à 6 options éditables ; la publication conserve le topic courant et réinitialise uniquement le formulaire
 - un contexte d'événement minimal lorsqu'une annonce est liée à un cleanup existant
 - des états de chargement, d'accès et de participation
 - un contexte minimal intégré au fil actif, sans panneau secondaire concurrent
@@ -30,6 +31,7 @@ La page `Messagerie` sert aux échanges directs entre membres du réseau. Elle d
 - afficher sobrement le topic porté par un message dans une vue agrégée
 - conserver les annonces dans `app_messages` avec leur `message_kind` et ne publier un contexte événementiel qu'après résolution d'un `community_events.id` canonique
 - préserver les deep-links de relais `template`, `topicId` et `eventId` sans faire de l'URL une source de vérité pour le titre, la date ou le lieu
+- ne pas présenter d'interface de vote, de résultat ou de clôture tant que le lot dédié n'est pas livré
 
 ## Référence canonique
 

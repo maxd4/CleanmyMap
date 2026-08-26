@@ -1,6 +1,6 @@
 import type { ChatTopicId } from "./topics";
 
-export const CHAT_MESSAGE_KINDS = ["message", "announcement"] as const;
+export const CHAT_MESSAGE_KINDS = ["message", "announcement", "poll"] as const;
 export type ChatMessageKind = (typeof CHAT_MESSAGE_KINDS)[number];
 
 export const COMMUNITY_ANNOUNCEMENT_TEMPLATES = [

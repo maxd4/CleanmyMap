@@ -27,6 +27,11 @@ import {
   type ChatRelatedEvent,
 } from "@/lib/chat/announcements";
 import {
+  getChatPollOptionsValidationError,
+  normalizeChatPollOptionLabels,
+  type ChatPollOption,
+} from "@/lib/chat/polls";
+import {
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
@@ -53,6 +58,7 @@ const sendMessageSchema = z.object({
   channelType: z.enum(CHANNEL_TYPES),
   content: z.string().min(1).max(2000),
   messageKind: z.enum(CHAT_MESSAGE_KINDS).optional().default("message"),
+  pollOptions: z.array(z.string()).optional(),
   relatedEventId: z.string().uuid().optional(),
   topicId: z.string().optional(),
   recipientId: z.string().optional(),
@@ -108,20 +114,43 @@ function validateMessageKind(
   messageKind: ChatMessageKind,
   topicId: ChatTopicId | null,
   relatedEventId: string | undefined,
+  attachmentUrl: string | undefined,
+  pollOptions: string[] | undefined,
 ): { error?: string } {
   if (messageKind === "message") {
-    if (relatedEventId) {
-      return { error: "Un message standard ne peut pas être lié à un événement." };
+    if (relatedEventId || pollOptions !== undefined) {
+      return { error: "Un message standard ne peut pas contenir de contexte de sondage ou d'événement." };
     }
     return {};
   }
 
-  if (channelType !== "community") {
-    return { error: "Les annonces sont disponibles uniquement dans la communauté." };
+  if (messageKind === "announcement") {
+    if (pollOptions !== undefined) {
+      return { error: "Une annonce ne peut pas contenir d'options de sondage." };
+    }
+
+    if (channelType !== "community") {
+      return { error: "Les annonces sont disponibles uniquement dans la communauté." };
+    }
+
+    if (!topicId || !isCommunityAnnouncementTopicId(topicId)) {
+      return { error: "Choisissez un modèle d'annonce compatible avec la communauté." };
+    }
+
+    return {};
   }
 
-  if (!topicId || !isCommunityAnnouncementTopicId(topicId)) {
-    return { error: "Choisissez un modèle d'annonce compatible avec la communauté." };
+  if (channelType !== "community") {
+    return { error: "Les sondages sont disponibles uniquement dans la communauté." };
+  }
+
+  if (relatedEventId || attachmentUrl) {
+    return { error: "Un sondage ne peut pas contenir de pièce jointe ou d'événement." };
+  }
+
+  const pollOptionsError = getChatPollOptionsValidationError(pollOptions ?? []);
+  if (pollOptionsError) {
+    return { error: pollOptionsError };
   }
 
   return {};
@@ -137,9 +166,26 @@ type ChatQueryResult<T> = PromiseLike<{
 }>;
 
 const messageSelect =
-  "*, sender:profiles!sender_id(display_name, handle, avatar_url), related_event:community_events!related_event_id(id, title, event_date, location_label)";
+  "*, sender:profiles!sender_id(display_name, handle, avatar_url), related_event:community_events!related_event_id(id, title, event_date, location_label), poll_options:chat_poll_options(id, position, label)";
 
 type RelatedCommunityEventRow = ChatRelatedEvent;
+
+function normalizeChatMessageRow(row: ChatMessageRow): ChatMessageRow {
+  const pollOptions = Array.isArray(row.poll_options)
+    ? [...(row.poll_options as ChatPollOption[])].sort(
+        (left, right) => left.position - right.position,
+      )
+    : [];
+
+  return {
+    ...row,
+    poll_options: pollOptions,
+  };
+}
+
+function sortChatMessages(rows: ChatMessageRow[]): ChatMessageRow[] {
+  return sortByCreatedAtAsc(rows.map(normalizeChatMessageRow));
+}
 
 async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<ChatMessageRow[]> {
   const { data, error } = await query;
@@ -194,6 +240,23 @@ async function loadRelatedCommunityEvent(
   }
 
   return (data ?? null) as RelatedCommunityEventRow | null;
+}
+
+async function loadMessageById(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  messageId: string,
+): Promise<ChatMessageRow | null> {
+  const { data, error } = await supabase
+    .from("app_messages")
+    .select(messageSelect)
+    .eq("id", messageId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? normalizeChatMessageRow(data as ChatMessageRow) : null;
 }
 
 async function resolveBugReportRecipientId(
@@ -300,6 +363,8 @@ export async function POST(request: Request) {
     messageKind,
     topicValidation.topicId,
     parsed.data.relatedEventId,
+    parsed.data.attachmentUrl,
+    parsed.data.pollOptions,
   );
   if (messageKindValidation.error) {
     return NextResponse.json(
@@ -464,28 +529,57 @@ export async function POST(request: Request) {
         break;
     }
 
-    const { data: message, error } = await supabase
-      .from("app_messages")
-      .insert({
-        sender_id: userId,
-        recipient_id: recipientId,
-        channel_type: parsed.data.channelType,
-        topic_id: topicValidation.topicId,
-        message_kind: messageKind,
-        related_event_id: relatedEvent?.id ?? null,
-        arrondissement_id: targetArrondissementId,
-        zone_name: targetZoneName,
-        content: parsed.data.content,
-        attachment_url: parsed.data.attachmentUrl,
-        attachment_type: parsed.data.attachmentType,
-        attachment_expires_at: parsed.data.attachmentUrl
-          ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
-          : null,
-      })
-      .select(messageSelect)
-      .single();
+    let message: ChatMessageRow | null = null;
+    if (messageKind === "poll") {
+      const { data: pollMessageId, error: pollError } = await supabase.rpc(
+        "create_chat_poll_with_options",
+        {
+          p_content: parsed.data.content,
+          p_topic_id: topicValidation.topicId,
+          p_option_labels: normalizeChatPollOptionLabels(parsed.data.pollOptions ?? []),
+        },
+      );
 
-    if (error) return handleApiError(error, "POST /api/chat (insert)");
+      if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
+      if (typeof pollMessageId !== "string") {
+        return handleApiError(
+          new Error("La création du sondage n'a pas renvoyé son message."),
+          "POST /api/chat (poll result)",
+        );
+      }
+
+      message = await loadMessageById(supabase, pollMessageId);
+      if (!message) {
+        return handleApiError(
+          new Error("Le sondage créé est introuvable."),
+          "POST /api/chat (poll readback)",
+        );
+      }
+    } else {
+      const { data: insertedMessage, error } = await supabase
+        .from("app_messages")
+        .insert({
+          sender_id: userId,
+          recipient_id: recipientId,
+          channel_type: parsed.data.channelType,
+          topic_id: topicValidation.topicId,
+          message_kind: messageKind,
+          related_event_id: relatedEvent?.id ?? null,
+          arrondissement_id: targetArrondissementId,
+          zone_name: targetZoneName,
+          content: parsed.data.content,
+          attachment_url: parsed.data.attachmentUrl,
+          attachment_type: parsed.data.attachmentType,
+          attachment_expires_at: parsed.data.attachmentUrl
+            ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
+            : null,
+        })
+        .select(messageSelect)
+        .single();
+
+      if (error) return handleApiError(error, "POST /api/chat (insert)");
+      message = normalizeChatMessageRow(insertedMessage as ChatMessageRow);
+    }
 
     try {
       await createChatNotificationsForMessage(serviceSupabase, message.id);
@@ -593,7 +687,7 @@ export async function GET(request: Request) {
         throw error;
       }
       return NextResponse.json({
-        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
       });
     }
 
@@ -617,7 +711,7 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
       });
     }
 
@@ -628,7 +722,7 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
       });
     }
 
@@ -690,7 +784,7 @@ export async function GET(request: Request) {
 
       const territoryMessages = await Promise.all(territoryQueries);
       return NextResponse.json({
-        messages: sortByCreatedAtAsc(mergeRowGroupsById(territoryMessages)),
+        messages: sortChatMessages(mergeRowGroupsById(territoryMessages)),
       });
     }
 
@@ -705,7 +799,7 @@ export async function GET(request: Request) {
       ]);
 
       return NextResponse.json({
-        messages: sortByCreatedAtAsc(
+        messages: sortChatMessages(
           mergeRowGroupsById([sentMessages, receivedMessages]),
         ),
       });

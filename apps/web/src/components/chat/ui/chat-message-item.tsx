@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
+  BarChart3,
   Calendar,
   Download,
   FileText,
@@ -68,6 +69,8 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
 
   const topic = getDiscussionTopic(message.channel_type, message.topic_id);
   const isAnnouncement = message.message_kind === "announcement";
+  const isPoll = message.message_kind === "poll";
+  const pollOptions = message.poll_options ?? [];
 
   return (
     <motion.div
@@ -78,10 +81,14 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
       <div 
         className={cn(
           "w-full rounded-[1.5rem] border p-4 transition-all duration-300",
-          isAnnouncement
+          isAnnouncement || isPoll
             ? isLight
-              ? "border-rose-200 bg-rose-50/30 shadow-sm"
-              : "border-rose-400/20 bg-rose-500/5 shadow-sm"
+              ? isPoll
+                ? "border-pink-200 bg-pink-50/30 shadow-sm"
+                : "border-rose-200 bg-rose-50/30 shadow-sm"
+              : isPoll
+                ? "border-pink-400/20 bg-pink-500/5 shadow-sm"
+                : "border-rose-400/20 bg-rose-500/5 shadow-sm"
             : isLight
               ? "bg-white border-indigo-100 shadow-sm"
               : "bg-slate-800/80 border-slate-700 shadow-sm",
@@ -128,6 +135,11 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
                 <Megaphone size={10} /> Annonce / Relai
               </span>
             )}
+            {isPoll && (
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
+                <BarChart3 size={10} /> Sondage
+              </span>
+            )}
             {topic && (
               <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
                 {topic.label}
@@ -161,6 +173,25 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
                   <MapPin size={12} /> {message.related_event.location_label}
                 </span>
               </div>
+            </div>
+          ) : null}
+
+          {isPoll && pollOptions.length > 0 ? (
+            <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
+              <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-pink-500">
+                Options
+              </p>
+              <ol className="space-y-2">
+                {pollOptions.map((option) => (
+                  <li key={option.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold ${isLight ? "border-pink-100 bg-white text-slate-700" : "border-white/10 bg-white/5 text-slate-200"}`}>
+                    <span className="text-pink-500">{option.position}.</span>
+                    <span>{option.label}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-[10px] font-bold text-slate-400">
+                Le vote sera disponible dans un prochain lot.
+              </p>
             </div>
           ) : null}
 

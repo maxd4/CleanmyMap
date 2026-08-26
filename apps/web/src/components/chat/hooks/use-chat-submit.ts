@@ -12,6 +12,7 @@ import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
+import type { ChatPollOption } from "@/lib/chat/polls";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 import type { SendChatMessageParams } from "./use-chat-data";
 
@@ -28,6 +29,7 @@ type UseChatSubmitParams = {
   activeChannelType: ChatChannelType;
   activeTopicId: ChatTopicId | null;
   messageKind: ChatMessageKind;
+  pollOptions: string[];
   relatedEvent: ChatRelatedEvent | null;
   selectedRecipient: ChatUser | null;
   effectiveZone: string;
@@ -40,6 +42,7 @@ type UseChatSubmitParams = {
   setMessage: React.Dispatch<React.SetStateAction<string>>;
   setFile: React.Dispatch<React.SetStateAction<File | null>>;
   setShowMentions: React.Dispatch<React.SetStateAction<boolean>>;
+  setPollOptions: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 export function buildOptimisticChatMessage({
@@ -49,6 +52,7 @@ export function buildOptimisticChatMessage({
   channelType,
   topicId,
   messageKind,
+  pollOptions,
   relatedEvent,
   attachmentUrl,
   createdAt,
@@ -60,6 +64,7 @@ export function buildOptimisticChatMessage({
   channelType: ChatChannelType;
   topicId: ChatTopicId | null;
   messageKind: ChatMessageKind;
+  pollOptions: string[];
   relatedEvent: ChatRelatedEvent | null;
   attachmentUrl?: string;
   createdAt: string;
@@ -74,6 +79,11 @@ export function buildOptimisticChatMessage({
     message_kind: messageKind,
     related_event_id: relatedEvent?.id ?? null,
     related_event: relatedEvent,
+    poll_options: pollOptions.map((label, index) => ({
+      id: `opt-${id}-${index + 1}`,
+      position: index + 1,
+      label,
+    })) as ChatPollOption[],
     attachment_url: attachmentUrl,
     created_at: createdAt,
     sender,
@@ -93,6 +103,7 @@ export function useChatSubmit({
   activeChannelType,
   activeTopicId,
   messageKind,
+  pollOptions,
   relatedEvent,
   selectedRecipient,
   effectiveZone,
@@ -105,6 +116,7 @@ export function useChatSubmit({
   setMessage,
   setFile,
   setShowMentions,
+  setPollOptions,
 }: UseChatSubmitParams) {
   const submitChatMessage = useCallback(async () => {
     if (submitLockRef.current) {
@@ -226,6 +238,7 @@ export function useChatSubmit({
         channelType: activeChannelType,
         topicId: activeTopicId,
         messageKind,
+        pollOptions,
         relatedEvent,
         attachmentUrl,
         createdAt: new Date().toISOString(),
@@ -241,6 +254,7 @@ export function useChatSubmit({
         body: {
           channelType: activeChannelType,
           messageKind,
+          pollOptions: messageKind === "poll" ? pollOptions : undefined,
           relatedEventId: relatedEvent?.id,
           topicId: activeTopicId ?? undefined,
           content: currentMessage,
@@ -261,6 +275,9 @@ export function useChatSubmit({
 
       setMessage("");
       setFile(null);
+      if (messageKind === "poll") {
+        setPollOptions(["", ""]);
+      }
       setShowMentions(false);
       setSendError(null);
     } catch (err) {
@@ -292,6 +309,7 @@ export function useChatSubmit({
     activeChannelType,
     activeTopicId,
     messageKind,
+    pollOptions,
     relatedEvent,
     effectiveZone,
     file,
@@ -304,6 +322,7 @@ export function useChatSubmit({
     setIsSending,
     setIsUploading,
     setMessage,
+    setPollOptions,
     setSendError,
     setShowMentions,
     submitLockRef,

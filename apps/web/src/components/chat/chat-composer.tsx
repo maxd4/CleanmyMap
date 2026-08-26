@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, MapPin, Megaphone, Paperclip, Search, Send, X } from "lucide-react";
+import { BarChart3, Calendar, MapPin, Megaphone, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { memo } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
@@ -16,6 +16,10 @@ import {
   type ChatRelatedEvent,
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
+import {
+  CHAT_POLL_MAX_OPTIONS,
+  getChatPollOptionsValidationError,
+} from "@/lib/chat/polls";
 
 const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -31,6 +35,8 @@ type ChatComposerProps = {
   announcementEventRequested?: boolean;
   announcementEventLoading?: boolean;
   announcementEventError?: Error | null;
+  pollOptions?: string[];
+  onPollOptionsChange?: (options: string[]) => void;
   showModeTabs?: boolean;
   userId?: string;
   message: string;
@@ -90,6 +96,8 @@ export const ChatComposer = memo(function ChatComposer({
   announcementEventRequested = false,
   announcementEventLoading = false,
   announcementEventError = null,
+  pollOptions = ["", ""],
+  onPollOptionsChange,
   showModeTabs = false,
 }: ChatComposerProps) {
   const isLight = tone === "light";
@@ -99,6 +107,7 @@ export const ChatComposer = memo(function ChatComposer({
       : composerMode === "poll"
         ? "Formulez votre sondage ou votre question..."
         : composerPlaceholder;
+  const pollOptionsError = getChatPollOptionsValidationError(pollOptions);
   const handleFileSelection = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && !isSupportedChatAttachmentFile(selectedFile)) {
@@ -282,7 +291,7 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      {file ? (
+      {composerMode !== "poll" && file ? (
         <div className={`mb-3 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-xs ${isLight ? "border-rose-100 bg-white" : "border-violet-500/20 bg-violet-500/10"}`}>
           <div className="min-w-0">
             <p className={`font-black uppercase tracking-widest ${isLight ? "text-rose-600" : "text-violet-400"}`}>
@@ -305,9 +314,10 @@ export const ChatComposer = memo(function ChatComposer({
 
       {showModeTabs ? (
         <div className={`mb-3 inline-flex rounded-2xl border p-1 ${isLight ? "border-rose-100 bg-white/85" : "border-white/5 bg-white/5"}`}>
-          {[
-            { id: "message", label: "Message" },
-            { id: "announcement", label: "Annonce / Relai" },
+            {[
+              { id: "message", label: "Message" },
+              { id: "announcement", label: "Annonce / Relai" },
+              { id: "poll", label: "Sondage" },
           ].map((tab) => {
             const isActive = composerMode === tab.id;
             return (
@@ -321,6 +331,64 @@ export const ChatComposer = memo(function ChatComposer({
               </button>
             );
           })}
+        </div>
+      ) : null}
+
+      {showModeTabs && composerMode === "poll" ? (
+        <div className={`mb-4 rounded-2xl border p-3 ${isLight ? "border-rose-100 bg-white/80" : "border-white/10 bg-white/5"}`}>
+          <div className="mb-3 flex items-center gap-2">
+            <BarChart3 size={15} className={isLight ? "text-rose-500" : "text-rose-300"} />
+            <div>
+              <p className={`text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
+                Question du sondage
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Les votes seront ajoutés dans un lot ultérieur.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {pollOptions.map((option, index) => (
+              <div key={`poll-option-${index}`} className="flex items-center gap-2">
+                <span className="w-5 text-center text-xs font-black text-slate-400">{index + 1}</span>
+                <input
+                  value={option}
+                  onChange={(event) => {
+                    const nextOptions = [...pollOptions];
+                    nextOptions[index] = event.target.value;
+                    onPollOptionsChange?.(nextOptions);
+                  }}
+                  maxLength={200}
+                  aria-label={`Option ${index + 1}`}
+                  placeholder={`Option ${index + 1}`}
+                  className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-xs outline-none ${isLight ? "border-rose-100 bg-white text-slate-900 focus:border-rose-300" : "border-white/10 bg-white/5 text-white focus:border-pink-400/50"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => onPollOptionsChange?.(pollOptions.filter((_, optionIndex) => optionIndex !== index))}
+                  disabled={pollOptions.length <= 2}
+                  aria-label={`Supprimer l'option ${index + 1}`}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => onPollOptionsChange?.([...pollOptions, ""])}
+              disabled={pollOptions.length >= CHAT_POLL_MAX_OPTIONS}
+              className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "border-rose-100 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
+            >
+              <Plus size={13} /> Ajouter une option
+            </button>
+            <span className="text-[10px] font-bold text-slate-400">{pollOptions.length}/{CHAT_POLL_MAX_OPTIONS}</span>
+          </div>
+          {pollOptionsError ? (
+            <p className="mt-3 text-[10px] font-bold text-amber-600">{pollOptionsError}</p>
+          ) : null}
         </div>
       ) : null}
 
@@ -414,7 +482,7 @@ export const ChatComposer = memo(function ChatComposer({
         />
         <button
           type="button"
-          disabled={!userId || isSending || isUploading}
+          disabled={composerMode === "poll" || !userId || isSending || isUploading}
           onClick={() => fileInputRef.current?.click()}
           aria-label="Joindre un fichier"
           className={`p-3 rounded-2xl transition-all disabled:opacity-30 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
@@ -433,7 +501,7 @@ export const ChatComposer = memo(function ChatComposer({
         <button
           disabled={!canSubmit}
           type="submit"
-          aria-label="Envoyer le message"
+          aria-label={composerMode === "poll" ? "Publier le sondage" : "Envoyer le message"}
           className={`w-12 h-12 text-white rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}
         >
           <Send size={20} />

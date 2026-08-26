@@ -36,6 +36,7 @@ export type SendChatMessageParams = {
   body: {
     channelType: ChatChannelType;
     messageKind: ChatMessageKind;
+    pollOptions?: string[];
     relatedEventId?: string;
     topicId?: ChatTopicId;
     content: string;

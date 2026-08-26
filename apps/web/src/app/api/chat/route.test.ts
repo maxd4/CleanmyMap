@@ -19,7 +19,7 @@ type ChatMessageRow = {
   arrondissement_id: number | null;
   zone_name: string | null;
   topic_id?: string | null;
-  message_kind?: "message" | "announcement";
+  message_kind?: "message" | "announcement" | "poll";
   related_event_id?: string | null;
   related_event?: {
     id: string;
@@ -27,6 +27,7 @@ type ChatMessageRow = {
     event_date: string;
     location_label: string;
   } | null;
+  poll_options?: Array<{ id: string; position: number; label: string }>;
   sender?: {
     display_name: string | null;
     handle: string | null;
@@ -88,6 +89,7 @@ function buildSupabaseMock(options: {
     event_date: string;
     location_label: string;
   } | null;
+  pollMessage?: ChatMessageRow;
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
@@ -110,9 +112,21 @@ function buildSupabaseMock(options: {
     limit: vi.fn(),
     eq: vi.fn(),
     in: vi.fn(),
+    maybeSingle: vi.fn(),
+    single: vi.fn(),
   };
   const createMessagesQuery = () => {
     const filters: Array<{ kind: "eq" | "in"; field: string; value: unknown }> = [];
+    const filterMessages = () =>
+      options.messages.filter((message) =>
+        filters.every((filter) =>
+          filter.kind === "eq"
+            ? message[filter.field as keyof ChatMessageRow] === filter.value
+            : (filter.value as unknown[]).includes(
+                message[filter.field as keyof ChatMessageRow],
+              ),
+        ),
+      );
     const query = {
       select: vi.fn(() => query),
       order: vi.fn((...args: unknown[]) => {
@@ -133,20 +147,22 @@ function buildSupabaseMock(options: {
         messagesQuery.in(field, value);
         return query;
       }),
+      maybeSingle: vi.fn().mockImplementation(async () => {
+        const data = filterMessages()[0] ?? null;
+        return { data, error: null };
+      }),
+      single: vi.fn().mockImplementation(async () => {
+        const data = filterMessages()[0] ?? null;
+        return data
+          ? { data, error: null }
+          : { data: null, error: { message: "not found" } };
+      }),
       then: (
         resolve: (value: { data: ChatMessageRow[]; error: null }) => unknown,
         reject: (reason?: unknown) => unknown,
       ) =>
         Promise.resolve({
-          data: options.messages.filter((message) =>
-            filters.every((filter) =>
-              filter.kind === "eq"
-                ? message[filter.field as keyof ChatMessageRow] === filter.value
-                : (filter.value as unknown[]).includes(
-                    message[filter.field as keyof ChatMessageRow],
-                  ),
-            ),
-          ),
+          data: filterMessages(),
           error: null,
         }).then(resolve, reject),
     };
@@ -181,6 +197,15 @@ function buildSupabaseMock(options: {
         return relatedEventQuery;
       }
       throw new Error(`Unexpected table: ${table}`);
+    }),
+    rpc: vi.fn((functionName: string) => {
+      if (functionName !== "create_chat_poll_with_options") {
+        throw new Error(`Unexpected RPC: ${functionName}`);
+      }
+      return Promise.resolve({
+        data: options.pollMessage?.id ?? null,
+        error: null,
+      });
     }),
   };
 
@@ -305,6 +330,7 @@ describe("GET /api/chat and POST /api/chat", () => {
       recipient_id: null,
       arrondissement_id: null,
       zone_name: null,
+      poll_options: [],
       sender: {
         display_name: "Alex",
         handle: "alex",
@@ -521,6 +547,27 @@ describe("GET /api/chat and POST /api/chat", () => {
       error: "Salon invalide",
       hint,
     });
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { attachmentUrl: "https://cdn.example.test/poll.pdf", attachmentType: "application/pdf" },
+    { relatedEventId: "11111111-1111-4111-8111-111111111111" },
+  ])("rejects poll-only forbidden context %#", async (forbiddenContext) => {
+    const response = await (await import("./route")).POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          messageKind: "poll",
+          pollOptions: ["Oui", "Non"],
+          content: "Sondage sans contexte externe",
+          ...forbiddenContext,
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
@@ -761,6 +808,121 @@ describe("GET /api/chat and POST /api/chat", () => {
 
     expect(response.status).toBe(400);
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+  });
+
+  it("creates a community poll atomically and returns ordered options", async () => {
+    const pollMessage: ChatMessageRow = {
+      id: "poll-1",
+      created_at: "2026-05-01T13:00:00.000Z",
+      content: "Quel créneau préférez-vous ?",
+      channel_type: "community",
+      sender_id: "user-1",
+      recipient_id: null,
+      arrondissement_id: null,
+      zone_name: null,
+      topic_id: "coordination_secteur",
+      message_kind: "poll",
+      related_event_id: null,
+      poll_options: [
+        { id: "option-2", position: 2, label: "Dimanche" },
+        { id: "option-1", position: 1, label: "Samedi" },
+      ],
+    };
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [pollMessage],
+      insertedMessage: pollMessage,
+      pollMessage,
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue({ service: true });
+
+    const { GET, POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          topicId: "coordination_secteur",
+          messageKind: "poll",
+          pollOptions: ["Samedi", "Dimanche"],
+          content: "Quel créneau préférez-vous ?",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
+      "create_chat_poll_with_options",
+      {
+        p_content: "Quel créneau préférez-vous ?",
+        p_topic_id: "coordination_secteur",
+        p_option_labels: ["Samedi", "Dimanche"],
+      },
+    );
+    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+    expect((await response.json()).message.poll_options).toEqual([
+      { id: "option-1", position: 1, label: "Samedi" },
+      { id: "option-2", position: 2, label: "Dimanche" },
+    ]);
+
+    const readResponse = await GET(
+      new Request("http://localhost/api/chat?channelType=community&topicId=coordination_secteur"),
+    );
+    expect(readResponse.status).toBe(200);
+    expect((await readResponse.json()).messages[0].poll_options.map((option: { position: number }) => option.position)).toEqual([1, 2]);
+  });
+
+  it.each(["dm", "territory", "admin_elu", "bug_report"] as const)(
+    "rejects polls on %s",
+    async (channelType) => {
+      const response = await (await import("./route")).POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            channelType,
+            messageKind: "poll",
+            pollOptions: ["Oui", "Non"],
+            content: "Sondage interdit",
+            recipientId: channelType === "dm" ? "user-2" : undefined,
+          }),
+        }),
+      );
+      expect(response.status).toBe(400);
+      expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    undefined,
+    ["Oui"],
+    ["Oui", "Non", "A", "B", "C", "D", "E"],
+    ["Oui", " oui "],
+    ["Oui", "   "],
+  ])("rejects invalid poll options", async (pollOptions) => {
+    const response = await (await import("./route")).POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          messageKind: "poll",
+          pollOptions,
+          content: "Sondage invalide",
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
   it("returns 403 before auth, parsing, rate limiting, or business calls for a bot", async () => {

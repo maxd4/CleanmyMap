@@ -1,6 +1,7 @@
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
+import type { ChatPollOption } from "@/lib/chat/polls";
 
 export type ChatMessage = {
   id: string;
@@ -11,6 +12,7 @@ export type ChatMessage = {
   message_kind: ChatMessageKind;
   related_event_id: string | null;
   related_event: ChatRelatedEvent | null;
+  poll_options: ChatPollOption[];
   attachment_url?: string;
   attachment_type?: string | null;
   attachment_expires_at?: string | null;

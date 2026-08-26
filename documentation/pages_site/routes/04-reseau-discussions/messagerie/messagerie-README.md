@@ -12,6 +12,7 @@
 - `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
 - `apps/web/supabase/migrations/20260826000000_chat_message_topics.sql`
 - `apps/web/supabase/migrations/20260826010000_chat_announcements.sql`
+- `apps/web/supabase/migrations/20260826020000_chat_polls.sql`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -19,10 +20,11 @@
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink
-- **Scope** : lots 1 à 3 livrés — boîte privée, salons thématiques persistants et annonces/relais communautaires
-- **Terminée** : annonces/relais oui ; sondages et votes restent hors périmètre.
+- **Scope** : lots 1 à 4A livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires et création de sondages
+- **Terminée** : création et lecture des sondages oui ; votes, résultats, multi-choix et clôture restent hors périmètre.
 - **Données** : `app_messages` reste la source canonique ; aucune table de conversations n'est créée.
 - **Annonces** : `message_kind` distingue `message` et `announcement`. Une annonce est communautaire, utilise un topic canonique (`relais_associatif`, `appel_aux_benevoles` ou `demande_diffusion`) et peut référencer un `community_events.id` réellement existant via `related_event_id`. Les détails de l'événement affichés viennent de la base, jamais de l'URL.
+- **Sondages** : `message_kind = 'poll'` est réservé à `community`. La question reste dans `app_messages.content` et les 2 à 6 options ordonnées vivent dans `chat_poll_options`, créées atomiquement avec le message. Les options sont affichées en lecture seule jusqu'au lot de vote.
 - **Topics** : `topic_id` est nullable ; `NULL` conserve les messages legacy/non classés. Les topics communauté sont `relais_associatif`, `appel_aux_benevoles`, `demande_diffusion`, `besoin_ressources` et `coordination_secteur`. Les topics territoire sont `mon_territoire` et `territoires_voisins`.
 - **Lecture publique** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés ; une vue topic ne retourne que le topic sélectionné.
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`.

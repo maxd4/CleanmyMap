@@ -29,6 +29,13 @@ const announcementsMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const pollsMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260826020000_chat_polls.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
 
 it("creates an isolated per-user, per-peer read cursor with RLS", () => {
   expect(migration).toContain("create table if not exists public.chat_dm_read_states");
@@ -112,4 +119,23 @@ it("adds announcement kinds with a canonical event FK and channel constraints", 
     "references public.community_events(id)",
   );
   expect(announcementsMigration).toContain("on delete set null");
+});
+
+it("adds poll options with atomic RPC, ordering, cascade and RLS boundaries", () => {
+  expect(pollsMigration).toContain("create table if not exists public.chat_poll_options");
+  expect(pollsMigration).toContain("references public.app_messages(id) on delete cascade");
+  expect(pollsMigration).toContain("chat_poll_options_position_check");
+  expect(pollsMigration).toContain("chat_poll_options_label_check");
+  expect(pollsMigration).toContain("unique (message_id, position)");
+  expect(pollsMigration).toContain("idx_chat_poll_options_message_label_unique");
+  expect(pollsMigration).toContain("enable row level security");
+  expect(pollsMigration).toContain("chat_poll_options_insert_own_poll");
+  expect(pollsMigration).toContain("validate_chat_poll_option_parent");
+  expect(pollsMigration).toContain("create_chat_poll_with_options(text, text, jsonb)");
+  expect(pollsMigration).toContain("grant execute on function public.create_chat_poll_with_options");
+  expect(pollsMigration).toContain("message_kind in ('message', 'announcement', 'poll')");
+  expect(pollsMigration).toContain("message_kind = 'poll'");
+  expect(pollsMigration).toContain("message_kind <> 'poll'");
+  expect(pollsMigration).toContain("related_event_id is null");
+  expect(pollsMigration).toContain("attachment_url is null");
 });

@@ -42,6 +42,10 @@ import {
   type ChatRelatedEvent,
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
+import {
+  createInitialChatPollOptionDraft,
+  getChatPollOptionsValidationError,
+} from "@/lib/chat/polls";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageItem } from "./ui/chat-message-item";
 import {
@@ -250,6 +254,9 @@ export function ChatShell({
   const [relatedEvent, setRelatedEvent] = useState<ChatRelatedEvent | null>(
     initialRelatedEvent,
   );
+  const [pollOptions, setPollOptions] = useState<string[]>(
+    createInitialChatPollOptionDraft,
+  );
   const announcementMode = composerMode === "announcement";
 
   useEffect(() => {
@@ -259,11 +266,21 @@ export function ChatShell({
   const handleComposerModeChange = useCallback(
     (mode: "message" | "announcement" | "poll") => {
       setComposerMode(mode);
-      if (mode === "announcement" && !announcementTemplate) {
+      if (mode === "poll") {
+        setAnnouncementTemplate(null);
+        setRelatedEvent(null);
+        setFile(null);
+        setPollOptions((current) =>
+          current.length >= 2 ? current : createInitialChatPollOptionDraft(),
+        );
+      } else if (mode === "message") {
+        setAnnouncementTemplate(null);
+        setRelatedEvent(null);
+      } else if (mode === "announcement" && !announcementTemplate) {
         setActiveTopicId(null);
       }
     },
-    [announcementTemplate, setActiveTopicId],
+    [announcementTemplate, setActiveTopicId, setFile, setPollOptions],
   );
 
   const handleAnnouncementTemplateChange = useCallback(
@@ -310,7 +327,8 @@ export function ChatShell({
     isUploading,
     activeChannelType,
     activeTopicId,
-    messageKind: composerMode === "announcement" ? "announcement" : "message",
+    messageKind: composerMode,
+    pollOptions,
     relatedEvent,
     selectedRecipient,
     effectiveZone,
@@ -323,6 +341,7 @@ export function ChatShell({
     setMessage,
     setFile,
     setShowMentions,
+    setPollOptions,
   });
 
   const territoryLabel = useMemo(
@@ -450,11 +469,11 @@ export function ChatShell({
         (message.trim().length > 0 || file) &&
         !isSending &&
         !isUploading &&
-        composerMode !== "poll" &&
+        (composerMode !== "poll" || !getChatPollOptionsValidationError(pollOptions)) &&
         (!announcementMode || Boolean(announcementTemplate)) &&
-        (!announcementEventRequested || Boolean(relatedEvent)) &&
-        !announcementEventLoading &&
-        !announcementEventError &&
+        (!announcementMode || !announcementEventRequested || Boolean(relatedEvent)) &&
+        (!announcementMode || !announcementEventLoading) &&
+        (!announcementMode || !announcementEventError) &&
         !(activeChannelType === "dm" && !selectedRecipient) &&
         !(
           activeChannelType === "territory" &&
@@ -471,6 +490,7 @@ export function ChatShell({
       isSending,
       isUploading,
       composerMode,
+      pollOptions,
       announcementMode,
       announcementTemplate,
       announcementEventRequested,
@@ -541,6 +561,7 @@ export function ChatShell({
       setComposerMode("message");
       setAnnouncementTemplate(null);
       setRelatedEvent(null);
+      setPollOptions(createInitialChatPollOptionDraft());
       setActiveTopicId(null);
       setActiveChannelType(channelType);
       if (channelType !== "dm") {
@@ -556,6 +577,7 @@ export function ChatShell({
       setComposerMode,
       setAnnouncementTemplate,
       setRelatedEvent,
+      setPollOptions,
       setActiveTopicId,
       setActiveChannelType,
       setIsDmThreadOpen,
@@ -841,6 +863,8 @@ export function ChatShell({
                 announcementEventRequested={announcementEventRequested}
                 announcementEventLoading={announcementEventLoading}
                 announcementEventError={announcementEventError}
+                pollOptions={pollOptions}
+                onPollOptionsChange={setPollOptions}
                 showModeTabs={activeChannelType === "community"}
                 userId={userId}
                 message={message}
