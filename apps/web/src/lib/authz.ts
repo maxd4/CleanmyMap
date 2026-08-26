@@ -4,7 +4,6 @@ import {
   resolveProfile,
   type AppRoleLabel,
   normalizeDisplayNameMode,
-  normalizeProfileRole,
   resolveAccountDisplayName,
 } from "./profiles";
 import {
@@ -20,6 +19,15 @@ import {
   normalizeLegacyOwnerMetadata,
   resolveActorNameFromClerk,
 } from "./authz-identity";
+import {
+  extractRole,
+  isAdminRole,
+  isMaxRole,
+  parseAdminUserIds,
+  parseMaxUserIds,
+  type ClerkMetadata,
+} from "./auth/role-resolution";
+export { isAdminRole, isMaxRole } from "./auth/role-resolution";
 export type { AccountBadge } from "./authz-badges";
 export type { UserIdentity } from "./authz-identity";
 export { getCurrentUserIdentity, pickTraceableActorName } from "./authz-identity";
@@ -29,8 +37,6 @@ export {
   getRoleBadge,
   getRoleBadgeId,
 } from "./authz-badges";
-
-type ClerkMetadata = Record<string, unknown> | null | undefined;
 
 export type AdminAccessResult =
   | { ok: true; userId: string }
@@ -44,49 +50,6 @@ export type AuthenticatedAccessResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401; error: string };
 
-function parseAdminUserIds(raw: string | undefined): Set<string> {
-  return parseUserIds(raw);
-}
-
-function parseMaxUserIds(
-  raw: string | undefined,
-  fallbackRaw?: string | undefined,
-): Set<string> {
-  const parsed = parseUserIds(raw);
-  if (parsed.size > 0) {
-    return parsed;
-  }
-  return parseUserIds(fallbackRaw);
-}
-
-function parseUserIds(raw: string | undefined): Set<string> {
-  if (!raw) {
-    return new Set<string>();
-  }
-  const ids = raw
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-  return new Set(ids);
-}
-
-function extractRole(metadata: ClerkMetadata): string | null {
-  if (!metadata) {
-    return null;
-  }
-  const roleValue = metadata["role"] ?? metadata["profile"];
-  if (typeof roleValue !== "string") {
-    return null;
-  }
-
-  const normalized = roleValue.trim().toLowerCase();
-  if (!normalized) {
-    return null;
-  }
-
-  return normalizeProfileRole(normalized) ?? normalized;
-}
-
 function extractBadgeIds(metadata: ClerkMetadata): string[] {
   if (!metadata) {
     return [];
@@ -98,30 +61,6 @@ function extractBadgeIds(metadata: ClerkMetadata): string[] {
   return badges
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim().toLowerCase());
-}
-
-export function isAdminRole(metadata: {
-  publicMetadata?: ClerkMetadata;
-  privateMetadata?: ClerkMetadata;
-}): boolean {
-  const publicRole = extractRole(metadata.publicMetadata);
-  if (publicRole === "admin" || publicRole === "max") {
-    return true;
-  }
-  const privateRole = extractRole(metadata.privateMetadata);
-  return privateRole === "admin" || privateRole === "max";
-}
-
-export function isMaxRole(metadata: {
-  publicMetadata?: ClerkMetadata;
-  privateMetadata?: ClerkMetadata;
-}): boolean {
-  const publicRole = extractRole(metadata.publicMetadata);
-  if (publicRole === "max") {
-    return true;
-  }
-  const privateRole = extractRole(metadata.privateMetadata);
-  return privateRole === "max";
 }
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {

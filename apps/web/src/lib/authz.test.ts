@@ -2,25 +2,6 @@ import { describe, expect, it } from "vitest";
 import { __authz_testables, isAdminRole } from "./authz";
 
 describe("authz helpers", () => {
-  it("parses admin user ids from csv", () => {
-    const ids = __authz_testables.parseAdminUserIds(
-      " user_1, user_2 ,,user_3 ",
-    );
-    expect(ids.has("user_1")).toBe(true);
-    expect(ids.has("user_2")).toBe(true);
-    expect(ids.has("user_3")).toBe(true);
-    expect(ids.size).toBe(3);
-  });
-
-  it("extracts normalized role from metadata", () => {
-    expect(__authz_testables.extractRole({ role: " Admin " })).toBe("admin");
-    expect(__authz_testables.extractRole({ profile: " Admin " })).toBe("admin");
-    expect(__authz_testables.extractRole({ role: " Max " })).toBe("max");
-    expect(__authz_testables.extractRole({ role: "super_admin" })).toBe("max");
-    expect(__authz_testables.extractRole({ role: 123 })).toBeNull();
-    expect(__authz_testables.extractRole(undefined)).toBeNull();
-  });
-
   it("accepts admin role from public metadata", () => {
     expect(
       isAdminRole({ publicMetadata: { role: "admin" }, privateMetadata: {} }),
