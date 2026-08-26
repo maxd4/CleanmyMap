@@ -58,6 +58,20 @@ Les actions n’affichent pas ce bloc.
   pour les signalements afin de préserver la compatibilité de l’API, sans
   imposer ce vocabulaire à l’interface.
 
+### Accès depuis Cartographie & Impact
+
+Le bloc « Cartographie & Impact » ouvre directement la file de modération via
+`/admin?moderation=signalements#workflow-administration`, avec le filtre
+« Signalements Trash Spotter » et le statut `pending` initialisés une seule
+fois. Cette vue correspond aux signalements `spot` et `clean_place` en attente
+(`new` côté `trash_spotter_spots`). Après une modification manuelle, les
+filtres choisis par l’administrateur ne sont pas réimposés.
+
+Le filtre de type permet ensuite de choisir « Tous », « Actions »,
+« Signalements Trash Spotter », « Spot » ou « Lieu propre ». `/actions/map`
+reste la surface publique de consultation et n’est pas une file de
+modération.
+
 ## Références legacy
 
 - [admin.md](../../../../6-PAGES-STANDALONE/admin.md)

@@ -1,6 +1,35 @@
-import type { ActionListItem, ActionStatus } from"@/lib/actions/types";
+import type {
+ ActionListItem,
+ ActionRecordType,
+ ActionStatus,
+} from"@/lib/actions/types";
 import type { ReportScopeKind } from"@/lib/reports/scope";
-import type { AdminSelectedRecordType } from "./types";
+import type { AdminRecordTypeFilter, AdminSelectedRecordType } from "./types";
+
+export const ADMIN_SIGNALEMENTS_MODERATION_HREF =
+ "/admin?moderation=signalements#workflow-administration";
+
+export function parseAdminModerationParam(value: unknown): "signalements" | null {
+ const candidate = Array.isArray(value) ? value[0] : value;
+ return candidate === "signalements" ? "signalements" : null;
+}
+
+export function adminRecordTypeFilterToActionTypes(
+ filter: AdminRecordTypeFilter,
+): "all" | ActionRecordType | ActionRecordType[] {
+ switch (filter) {
+  case "actions":
+   return "action";
+  case "signalements":
+   return ["spot", "clean_place"];
+  case "spot":
+   return "spot";
+  case "clean_place":
+   return "clean_place";
+  default:
+   return "all";
+ }
+}
 
 export function resolveAdminSelectedRecordType(
  item: ActionListItem,
@@ -22,11 +51,13 @@ export function buildExportQuery(params: {
  scopeKind: ReportScopeKind;
  scopeValue: string;
  association: string |"all";
+ recordTypeFilter?: AdminRecordTypeFilter;
 }): string {
  const query = new URLSearchParams();
  query.set("days", String(params.days));
  query.set("limit", String(params.limit));
- query.set("types","all");
+ const types = adminRecordTypeFilterToActionTypes(params.recordTypeFilter ?? "all");
+ query.set("types", Array.isArray(types) ? types.join(",") : types);
  if (params.status !=="all") {
  query.set("status", params.status);
  }

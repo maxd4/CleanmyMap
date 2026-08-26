@@ -45,6 +45,10 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { loadPilotageOverview, type DecisionSummaryKpi } from "@/lib/pilotage/overview";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import {
+  ADMIN_SIGNALEMENTS_MODERATION_HREF,
+  parseAdminModerationParam,
+} from "@/components/reports/admin-workflow/helpers";
 
 export const metadata: Metadata = {
   title: "Administration - CleanMyMap",
@@ -214,8 +218,8 @@ function buildModerationBlockSummaries(params: {
       count: params.pendingSpotsCount,
       description:
         "Les éléments cartographiques en attente restent visibles depuis ce bloc avant d’alimenter les vues publiques.",
-      href: "/actions/map",
-      ctaLabel: "Voir la carte",
+      href: ADMIN_SIGNALEMENTS_MODERATION_HREF,
+      ctaLabel: "Modérer les signalements",
       accent: "sky",
       details: [
         `${params.pendingSpotsCount} lieux ou spots à valider.`,
@@ -294,7 +298,13 @@ function buildModerationBlockSummaries(params: {
   ];
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const resolvedSearchParams = await searchParams;
+  const moderationPreset = parseAdminModerationParam(resolvedSearchParams?.moderation);
   const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
@@ -668,7 +678,12 @@ export default async function AdminPage() {
               description="Filtrer, prévisualiser, confirmer et journaliser les opérations d'export et de modération."
             />
             <div className="mt-4">
-              <ActionsReportPanel />
+              <ActionsReportPanel
+                initialRecordTypeFilter={
+                  moderationPreset === "signalements" ? "signalements" : undefined
+                }
+                initialStatus={moderationPreset === "signalements" ? "pending" : undefined}
+              />
             </div>
           </section>
 

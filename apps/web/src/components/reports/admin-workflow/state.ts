@@ -11,6 +11,7 @@ import type {
 } from"@/lib/admin/moderation-client";
 import type {
  ActionModerationEditDraft,
+ AdminRecordTypeFilter,
  AdminSelectedRecordType,
  AsyncState,
  CleanPlaceModerationEditDraft,
@@ -19,6 +20,19 @@ import type {
 } from"./types";
 
 export const DEFAULT_IMPORT_PAYLOAD = '{\n"items": []\n}';
+
+export function resolveAdminWorkflowInitialValues(params: {
+ initialStatus?: ActionStatus | "all";
+ initialRecordTypeFilter?: AdminRecordTypeFilter;
+} = {}): {
+ status: ActionStatus | "all";
+ recordTypeFilter: AdminRecordTypeFilter;
+} {
+ return {
+  status: params.initialStatus ?? "all",
+  recordTypeFilter: params.initialRecordTypeFilter ?? "all",
+ };
+}
 
 export function deriveCanConfirmImport(params: {
  importPreview: ImportDryRunSummary | null;
@@ -41,13 +55,19 @@ export function appendModerationJournal(
  return [entry, ...previous].slice(0, 12);
 }
 
-export function useAdminWorkflowState() {
- const [status, setStatus] = useState<ActionStatus |"all">("all");
+export function useAdminWorkflowState(params: {
+ initialStatus?: ActionStatus | "all";
+ initialRecordTypeFilter?: AdminRecordTypeFilter;
+} = {}) {
+ const initialValues = resolveAdminWorkflowInitialValues(params);
+ const [status, setStatus] = useState<ActionStatus |"all">(initialValues.status);
  const [days, setDays] = useState<number>(90);
  const [limit, setLimit] = useState<number>(250);
  const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
  const [scopeValue, setScopeValue] = useState<string>("");
  const [association, setAssociation] = useState<string |"all">("all");
+ const [recordTypeFilter, setRecordTypeFilter] =
+ useState<AdminRecordTypeFilter>(initialValues.recordTypeFilter);
 
  const [csvState, setCsvState] = useState<AsyncState>("idle");
  const [jsonState, setJsonState] = useState<AsyncState>("idle");
@@ -143,6 +163,8 @@ export function useAdminWorkflowState() {
  setScopeValue,
  association,
  setAssociation,
+ recordTypeFilter,
+ setRecordTypeFilter,
  csvState,
  setCsvState,
  jsonState,

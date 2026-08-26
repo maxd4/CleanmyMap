@@ -4,7 +4,13 @@ import {
  parseAdminApiError,
 } from"./use-admin-workflow";
 import { resolveAdminSelectedRecordType } from "./helpers";
+import {
+ ADMIN_SIGNALEMENTS_MODERATION_HREF,
+ adminRecordTypeFilterToActionTypes,
+ parseAdminModerationParam,
+} from "./helpers";
 import { formatPreviewRecordType } from "./step-preview";
+import { resolveAdminWorkflowInitialValues } from "./state";
 import type { ActionListItem } from "@/lib/actions/types";
 
 describe("useAdminWorkflow helpers", () => {
@@ -62,6 +68,54 @@ describe("useAdminWorkflow helpers", () => {
  it("parseAdminApiError falls back when payload is malformed", () => {
  expect(parseAdminApiError(null,"Fallback")).toBe("Fallback");
  expect(parseAdminApiError("oops","Fallback")).toBe("Fallback");
+ });
+
+ it("parses only the supported moderation deep-link and preserves the default otherwise", () => {
+  expect(parseAdminModerationParam("signalements")).toBe("signalements");
+  expect(parseAdminModerationParam(["signalements"])).toBe("signalements");
+  expect(parseAdminModerationParam("actions")).toBeNull();
+  expect(parseAdminModerationParam(undefined)).toBeNull();
+  expect(ADMIN_SIGNALEMENTS_MODERATION_HREF).toBe(
+   "/admin?moderation=signalements#workflow-administration",
+  );
+ });
+
+ it("maps the UI record filters to the existing fetchActions type contract", () => {
+  expect(adminRecordTypeFilterToActionTypes("all")).toBe("all");
+  expect(adminRecordTypeFilterToActionTypes("actions")).toBe("action");
+  expect(adminRecordTypeFilterToActionTypes("signalements")).toEqual([
+   "spot",
+   "clean_place",
+  ]);
+  expect(adminRecordTypeFilterToActionTypes("spot")).toBe("spot");
+  expect(adminRecordTypeFilterToActionTypes("clean_place")).toBe("clean_place");
+ });
+
+ it("initializes the signalement deep-link once without changing later defaults", () => {
+  const initial = resolveAdminWorkflowInitialValues({
+   initialStatus: "pending",
+   initialRecordTypeFilter: "signalements",
+  });
+  expect(initial).toEqual({ status: "pending", recordTypeFilter: "signalements" });
+
+  const manuallyChanged = { ...initial, status: "approved" as const, recordTypeFilter: "spot" as const };
+  expect(manuallyChanged).toEqual({ status: "approved", recordTypeFilter: "spot" });
+ });
+
+ it("serializes the deep-link filter in export queries without adding a new API contract", () => {
+  const query = new URLSearchParams(
+   buildExportQuery({
+    status: "pending",
+    days: 90,
+    limit: 250,
+    scopeKind: "global",
+    scopeValue: "",
+    association: "all",
+    recordTypeFilter: "signalements",
+   }),
+  );
+  expect(query.get("types")).toBe("spot,clean_place");
+  expect(query.get("status")).toBe("pending");
  });
 
  it.each([

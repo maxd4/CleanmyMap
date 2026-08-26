@@ -15,6 +15,7 @@ vi.mock("./pollution-score-references", () => ({
 }));
 
 import {
+  buildActionsQueryString,
   buildMapActionsQueryString,
   createAction,
   fetchMapActions,
@@ -161,6 +162,20 @@ describe("buildMapActionsQueryString", () => {
 
     expect(params.get("floorDate")).toBe("all");
     expect(params.has("days")).toBe(false);
+  });
+});
+
+describe("buildActionsQueryString", () => {
+  it("serializes the existing action type array contract without duplicate requests", () => {
+    const query = new URLSearchParams(
+      buildActionsQueryString({
+        status: "pending",
+        types: ["spot", "clean_place"],
+      }),
+    );
+
+    expect(query.get("types")).toBe("spot,clean_place");
+    expect(query.get("status")).toBe("pending");
   });
 });
 
