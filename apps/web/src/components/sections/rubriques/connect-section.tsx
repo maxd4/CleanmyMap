@@ -32,6 +32,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     initialRecipient,
     initialArrondissement,
     initialZoneName,
+    initialMessageId,
     discussionShellKey,
     dmShellKey,
   } = useConnectData(initialTab);
@@ -80,6 +81,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                 initialArrondissement={initialArrondissement}
                 initialZoneName={initialZoneName}
                 initialRecipient={initialRecipient}
+                initialMessageId={initialMessageId}
                 tone="light"
                 fullHeight
                 messagerieMode
@@ -98,6 +100,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                 key={dmShellKey}
                 initialChannelType="dm"
                 initialRecipient={initialRecipient}
+                initialMessageId={initialMessageId}
                 tone="light"
                 fullHeight
                 messagerieMode

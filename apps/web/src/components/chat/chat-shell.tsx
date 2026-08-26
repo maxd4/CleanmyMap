@@ -70,12 +70,14 @@ import {
   toMetadataRecord,
 } from "./chat-shell.utils";
 import { logFailure } from "@/lib/logging/failure-log";
+import { getChatScrollTopAfterPrepend } from "@/lib/chat/chat-pagination";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
   initialArrondissement?: number;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
+  initialMessageId?: string | null;
   initialTopicId?: ChatTopicId | null;
   initialComposerMode?: "message" | "announcement" | "poll";
   initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
@@ -94,6 +96,7 @@ export function ChatShell({
   initialArrondissement,
   initialZoneName,
   initialRecipient,
+  initialMessageId = null,
   initialTopicId,
   initialComposerMode = "message",
   initialAnnouncementTemplate = null,
@@ -217,10 +220,23 @@ export function ChatShell({
     "Moi";
   const senderHandle =
     currentAccountIdentity?.handle || user?.username || "moi";
+  const targetMessageIdForScope =
+    initialMessageId &&
+    activeChannelType === initialChannelType &&
+    activeTopicId === (initialTopicId ?? null) &&
+    (selectedRecipient?.id ?? null) === (initialRecipient?.id ?? null)
+      ? initialMessageId
+      : null;
 
   const {
     messages,
     messagesError,
+    hasMoreMessages,
+    isLoadingPrevious,
+    loadPreviousError,
+    loadPreviousMessages,
+    targetMessageId,
+    targetStatus,
     feedState,
     mentionSuggestions,
     dmSuggestions,
@@ -236,6 +252,7 @@ export function ChatShell({
     showMentions,
     mentionQuery,
     recipientQuery,
+    initialMessageId: targetMessageIdForScope,
     currentUserId: userId,
     canAccessProtectedChat: isLoaded && isSignedIn,
     supabase,
@@ -352,6 +369,7 @@ export function ChatShell({
       }));
       await mutateMessages(
         (data) => ({
+          ...(data ?? { previousCursor: null, hasMore: false }),
           messages: (data?.messages ?? []).map((message) =>
             message.id === messageId
               ? applyOptimisticChatPollVote(message, optionId)
@@ -386,6 +404,7 @@ export function ChatShell({
 
         await mutateMessages(
           (data) => ({
+            ...(data ?? { previousCursor: null, hasMore: false }),
             messages: (data?.messages ?? []).map((message) =>
               message.id === messageId
                 ? applyChatPollVoteSummary(message, summary)
@@ -401,6 +420,7 @@ export function ChatShell({
       } catch (error) {
         await mutateMessages(
           (data) => ({
+            ...(data ?? { previousCursor: null, hasMore: false }),
             messages: (data?.messages ?? []).map((message) =>
               message.id === messageId ? currentMessage : message,
             ),
@@ -520,11 +540,83 @@ export function ChatShell({
     ],
   );
 
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const initialScrollScopeRef = useRef<string | null>(null);
+  const latestMessageIdRef = useRef<string | null>(null);
+  const scrollScopeKey = `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipient?.id ?? "none"}:${effectiveZone}:${territoryFocus ?? "none"}`;
+
   useEffect(() => {
-    if (scrollRef.current && viewMode === "messages") {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (initialScrollScopeRef.current !== scrollScopeKey) {
+      initialScrollScopeRef.current = null;
+      latestMessageIdRef.current = null;
+      setHighlightedMessageId(null);
     }
-  }, [messages, scrollRef, viewMode]);
+  }, [scrollScopeKey]);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element || viewMode !== "messages" || feedState === "loading" || messages.length === 0) {
+      return;
+    }
+
+    const latestMessageId = messages[messages.length - 1]?.id ?? null;
+    if (initialScrollScopeRef.current === null) {
+      element.scrollTop = element.scrollHeight;
+      initialScrollScopeRef.current = scrollScopeKey;
+    } else if (
+      latestMessageId &&
+      latestMessageId !== latestMessageIdRef.current &&
+      element.scrollHeight - (element.scrollTop + element.clientHeight) < 120
+    ) {
+      element.scrollTop = element.scrollHeight;
+    }
+    latestMessageIdRef.current = latestMessageId;
+  }, [feedState, messages, scrollRef, scrollScopeKey, viewMode]);
+
+  useEffect(() => {
+    if (
+      viewMode !== "messages" ||
+      !targetMessageId ||
+      targetStatus !== "found" ||
+      !messages.some((message) => message.id === targetMessageId)
+    ) {
+      return;
+    }
+
+    setHighlightedMessageId(targetMessageId);
+    const frameId = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`chat-message-${targetMessageId}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    const timeoutId = window.setTimeout(() => setHighlightedMessageId(null), 4_000);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [messages, targetMessageId, targetStatus, viewMode]);
+
+  const handleLoadPreviousMessages = useCallback(async () => {
+    const element = scrollRef.current;
+    const previousHeight = element?.scrollHeight ?? 0;
+    const previousTop = element?.scrollTop ?? 0;
+    try {
+      await loadPreviousMessages();
+      if (element) {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            element.scrollTop = getChatScrollTopAfterPrepend(
+              previousTop,
+              previousHeight,
+              element.scrollHeight,
+            );
+          });
+        });
+      }
+    } catch {
+      // The hook exposes the real error and the same control remains available for retry.
+    }
+  }, [loadPreviousMessages, scrollRef]);
 
   const handleUpdateHandle = useCallback(async () => {
     if (!newHandle.trim()) return;
@@ -990,6 +1082,32 @@ export function ChatShell({
                 ref={scrollRef}
                 className={`min-h-0 flex-1 overflow-y-auto space-y-4 p-4 custom-scrollbar sm:p-6 ${isLight ? "bg-transparent" : ""}`}
               >
+                {hasMoreMessages ? (
+                  <div className="flex flex-col items-center gap-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => void handleLoadPreviousMessages()}
+                      disabled={isLoadingPrevious}
+                      className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {isLoadingPrevious
+                        ? "Chargement…"
+                        : loadPreviousError
+                          ? "Réessayer les messages précédents"
+                          : "Charger les messages précédents"}
+                    </button>
+                    {loadPreviousError ? (
+                      <p className="text-center text-xs text-rose-700" role="alert">
+                        {loadPreviousError}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {targetStatus === "unavailable" && targetMessageId ? (
+                  <p className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-center text-xs text-slate-500" role="status">
+                    Le message demandé n’est plus disponible dans ce fil.
+                  </p>
+                ) : null}
                 {feedState === "loading" && <ChatLoadingState tone={isLight ? "light" : "dark"} />}
                 {feedState === "degraded" && (
                   <ChatDegradedState error={messagesError} tone={isLight ? "light" : "dark"} />
@@ -1014,6 +1132,7 @@ export function ChatShell({
                     onPollVote={handlePollVote}
                     pollVotePending={pollVoteStates[msg.id]?.pending}
                     pollVoteError={pollVoteStates[msg.id]?.error}
+                    isHighlighted={highlightedMessageId === msg.id}
                   />
                 ))}
               </div>

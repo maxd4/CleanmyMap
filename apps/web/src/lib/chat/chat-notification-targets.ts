@@ -143,6 +143,10 @@ export function buildChatNotificationHref(payload: unknown): string | null {
   const params = new URLSearchParams();
   params.set("channel", normalized.channelType);
 
+  if (normalized.messageId) {
+    params.set("messageId", normalized.messageId);
+  }
+
   if (normalized.channelType === "dm") {
     appendDmNotificationParams(params, normalized);
   }

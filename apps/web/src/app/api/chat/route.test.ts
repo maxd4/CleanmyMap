@@ -112,15 +112,35 @@ function buildSupabaseMock(options: {
     limit: vi.fn(),
     eq: vi.fn(),
     in: vi.fn(),
+    or: vi.fn(),
     maybeSingle: vi.fn(),
     single: vi.fn(),
   };
   const createMessagesQuery = () => {
-    const filters: Array<{ kind: "eq" | "in"; field: string; value: unknown }> = [];
+    const filters: Array<
+      | { kind: "eq" | "in"; field: string; value: unknown }
+      | { kind: "keyset"; expression: string }
+    > = [];
     const filterMessages = () =>
       options.messages.filter((message) =>
         filters.every((filter) =>
-          filter.kind === "eq"
+          filter.kind === "keyset"
+            ? (() => {
+                const match = filter.expression.match(
+                  /^created_at\.(lt|lte)\.([^,]+),and\(created_at\.eq\.([^,]+),id\.(lt|lte)\.([^\)]+)\)$/,
+                );
+                if (!match) return false;
+                const messageTime = Date.parse(message.created_at);
+                const cursorTime = Date.parse(match[3]);
+                if (messageTime !== cursorTime) {
+                  return match[1] === "lt"
+                    ? messageTime < cursorTime
+                    : messageTime <= cursorTime;
+                }
+                const idIsBefore = message.id.localeCompare(match[5]) < 0;
+                return match[4] === "lt" ? idIsBefore : idIsBefore || message.id === match[5];
+              })()
+            : filter.kind === "eq"
             ? message[filter.field as keyof ChatMessageRow] === filter.value
             : (filter.value as unknown[]).includes(
                 message[filter.field as keyof ChatMessageRow],
@@ -145,6 +165,11 @@ function buildSupabaseMock(options: {
       in: vi.fn((field: string, value: unknown[]) => {
         filters.push({ kind: "in", field, value });
         messagesQuery.in(field, value);
+        return query;
+      }),
+      or: vi.fn((expression: string) => {
+        messagesQuery.or(expression);
+        filters.push({ kind: "keyset", expression });
         return query;
       }),
       maybeSingle: vi.fn().mockImplementation(async () => {
@@ -329,7 +354,124 @@ describe("GET /api/chat and POST /api/chat", () => {
       "created_at",
       { ascending: false },
     );
-    expect(supabaseMock.messagesQuery.limit).toHaveBeenCalledWith(50);
+    expect(supabaseMock.messagesQuery.limit).toHaveBeenCalledWith(51);
+  }, 15000);
+
+  it("resolves an old message in one targeted page and continues with a stable cursor", async () => {
+    const messageId = (index: number) =>
+      `00000000-0000-4000-8000-${index.toString(16).padStart(12, "0")}`;
+    const messages: ChatMessageRow[] = Array.from({ length: 51 }, (_, index) => ({
+      id: messageId(index),
+      created_at: `2026-05-01T${String(9 + Math.floor(index / 60)).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}:00.000Z`,
+      content: `Message ${index}`,
+      channel_type: "community",
+      sender_id: "user-2",
+      recipient_id: null,
+      arrondissement_id: null,
+      zone_name: null,
+    }));
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages,
+      insertedMessage: messages[0],
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const targetedResponse = await GET(
+      new Request(
+        `http://localhost/api/chat?channelType=community&messageId=${messageId(50)}`,
+      ),
+    );
+    const targetedBody = (await targetedResponse.json()) as {
+      messages: ChatMessageRow[];
+      previousCursor: { createdAt: string; id: string } | null;
+      hasMore: boolean;
+      targetStatus: string;
+    };
+
+    expect(targetedResponse.status).toBe(200);
+    expect(targetedBody.targetStatus).toBe("found");
+    expect(targetedBody.messages).toHaveLength(50);
+    expect(targetedBody.messages.at(-1)?.id).toBe(messageId(50));
+    expect(targetedBody.hasMore).toBe(true);
+    expect(targetedBody.previousCursor?.id).toBe(messageId(1));
+
+    const olderResponse = await GET(
+      new Request(
+        `http://localhost/api/chat?channelType=community&beforeCreatedAt=${encodeURIComponent(targetedBody.previousCursor!.createdAt)}&beforeId=${targetedBody.previousCursor!.id}`,
+      ),
+    );
+    const olderBody = (await olderResponse.json()) as {
+      messages: ChatMessageRow[];
+      hasMore: boolean;
+    };
+    expect(olderResponse.status).toBe(200);
+    expect(olderBody.messages.map((message) => message.id)).toEqual([messageId(0)]);
+    expect(olderBody.hasMore).toBe(false);
+    expect(supabaseMock.messagesQuery.or).toHaveBeenCalledWith(
+      expect.stringContaining("created_at.lt."),
+    );
+  }, 15000);
+
+  it("applies the same keyset contract to a private conversation", async () => {
+    const firstId = "11111111-1111-4111-8111-111111111111";
+    const secondId = "22222222-2222-4222-8222-222222222222";
+    const messages: ChatMessageRow[] = [
+      {
+        id: firstId,
+        created_at: "2026-05-01T09:00:00.000Z",
+        content: "Premier",
+        channel_type: "dm",
+        sender_id: "user-1",
+        recipient_id: "user-2",
+        arrondissement_id: null,
+        zone_name: null,
+      },
+      {
+        id: secondId,
+        created_at: "2026-05-01T10:00:00.000Z",
+        content: "Réponse",
+        channel_type: "dm",
+        sender_id: "user-2",
+        recipient_id: "user-1",
+        arrondissement_id: null,
+        zone_name: null,
+      },
+    ];
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages,
+      insertedMessage: messages[0],
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request(
+        `http://localhost/api/chat?channelType=dm&recipientId=user-2&beforeCreatedAt=${encodeURIComponent("2026-05-01T10:00:00.000Z")}&beforeId=${secondId}`,
+      ),
+    );
+    const body = (await response.json()) as { messages: ChatMessageRow[] };
+
+    expect(response.status).toBe(200);
+    expect(body.messages.map((message) => message.id)).toEqual([firstId]);
+    expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("sender_id", ["user-1", "user-2"]);
+    expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("recipient_id", ["user-1", "user-2"]);
   }, 15000);
 
   it("creates a chat message and fan-outs notifications for POST /api/chat", async () => {

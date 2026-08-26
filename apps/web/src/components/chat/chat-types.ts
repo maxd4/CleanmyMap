@@ -2,6 +2,8 @@ import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
 import type { ChatPollOption } from "@/lib/chat/polls";
+import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
+export type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 
 export type ChatMessage = {
   id: string;
@@ -35,6 +37,10 @@ export type ChatUser = {
 
 export type ChatMessagesResponse = {
   messages: ChatMessage[];
+  previousCursor: ChatHistoryCursor | null;
+  hasMore: boolean;
+  targetMessageId?: string | null;
+  targetStatus?: "found" | "unavailable";
 };
 
 export type ChatUsersResponse = {
