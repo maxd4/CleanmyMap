@@ -731,14 +731,20 @@ export function buildPdfData(params: {
       `Chapitres cœur inclus: Synthèse exécutive, Périmètre du rapport, Résultats terrain.`,
       `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
       `Actions consolidées: ${report.totals.actions}`,
-      `Qualité de données: ${report.quality.completenessScore.toFixed(0)}% de complétude, ${report.quality.coherenceScore.toFixed(0)}% de cohérence.`,
+      ...(modules.transparencyAndMethods
+        ? [
+            `Qualité de données: ${report.quality.completenessScore.toFixed(0)}% de complétude, ${report.quality.coherenceScore.toFixed(0)}% de cohérence.`,
+          ]
+        : []),
     ],
     stats: [
       { label: "Actions", value: report.totals.actions },
       { label: "Masse collectée", value: `${report.totals.kg.toFixed(1)} kg` },
       { label: "Mégots", value: report.totals.butts },
       { label: "Bénévoles", value: report.totals.volunteers },
-      { label: "Couverture géographique", value: `${report.map.geoCoverage.toFixed(1)}%` },
+      ...(modules.dataAndCartography
+        ? [{ label: "Couverture géographique", value: `${report.map.geoCoverage.toFixed(1)}%` }]
+        : []),
       { label: "Événements communauté", value: report.community.totalEvents },
     ],
     chapters,
