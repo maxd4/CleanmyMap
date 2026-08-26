@@ -9,8 +9,11 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : dynamique
 - **Contexte nécessaire** : Paramètre de route requis (profil, id, section, mission...)
-- **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
-- **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
+- **Objectif utilisateur principal** : Consulter les données réellement enregistrées pour une mission terrain existante.
+- **Action principale attendue** : Lire le statut, les horaires de début et de fin, la durée, la distance et le tracé GPS lorsqu'il est disponible.
+- **Comportement réel du lot 1** : Une mission inexistante n'affiche aucun contenu de démonstration et une erreur de lecture n'est pas remplacée par des données fictives. Une mission sans points GPS affiche `Aucun tracé enregistré`.
+- **Mesures environnementales** : La page n'affiche aucune mesure de CO₂ évité ou d'eau préservée déduite de la distance GPS. Elle conserve uniquement le statut, le début, la fin, la durée, la distance et les points GPS portés par le contrat mission.
+- **Données compagnon** : Le tracé et les horaires sont décrits comme des données enregistrées par l'application compagnon lorsqu'elles sont disponibles ; aucune garantie d'authenticité n'est déduite de leur présence.
 - **Palette attendue** : emerald
 - **Scope** : à corriger
 - **Terminée** : non

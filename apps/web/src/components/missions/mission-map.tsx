@@ -67,7 +67,7 @@ export function MissionMap({ points, actions = [] }: MissionMapProps) {
   if (!points || points.length === 0) {
     return (
       <div className="flex h-[500px] w-full items-center justify-center rounded-[3rem] border border-slate-100 bg-slate-50">
-        <p className="font-medium text-slate-400">Aucun tracé GPS disponible pour cette mission.</p>
+        <p className="font-medium text-slate-400">Aucun tracé enregistré</p>
       </div>
     );
   }
