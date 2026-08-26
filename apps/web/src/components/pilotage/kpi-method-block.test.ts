@@ -24,7 +24,7 @@ describe("KpiMethodBlock", () => {
       expect(markup).toContain(method.kpi);
       expect(markup).toContain(method.formula);
       expect(markup).toContain(method.source);
-      expect(markup).toContain(method.recalc);
+      expect(renderedText).toContain(method.recalc);
       expect(renderedText).toContain(method.limits);
     }
   });
