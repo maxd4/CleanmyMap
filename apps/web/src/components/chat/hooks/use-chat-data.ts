@@ -339,6 +339,19 @@ export function useChatData({
           }
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_poll_votes",
+        },
+        () => {
+          if (activeChannelType === "community") {
+            scheduleMessagesRefresh();
+          }
+        },
+      )
       .subscribe();
 
     return () => {

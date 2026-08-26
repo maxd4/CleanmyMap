@@ -25,6 +25,9 @@ type ChatMessageItemProps = {
   message: ChatMessage;
   userId?: string;
   tone?: "light" | "dark";
+  onPollVote?: (messageId: string, optionId: string | null) => void;
+  pollVotePending?: boolean;
+  pollVoteError?: string | null;
 };
 
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"]);
@@ -48,7 +51,14 @@ function isVisualAttachment(message: ChatMessage): boolean {
   }
 }
 
-export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageItemProps) {
+export function ChatMessageItem({
+  message,
+  userId,
+  tone = "dark",
+  onPollVote,
+  pollVotePending = false,
+  pollVoteError = null,
+}: ChatMessageItemProps) {
   const isLight = tone === "light";
   const isMe = message.sender_id === userId;
   const isActionRelated = /collecte|nettoyage|ramassage|déchets|pollution|bravo/i.test(message.content);
@@ -178,20 +188,92 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
 
           {isPoll && pollOptions.length > 0 ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
-              <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-pink-500">
-                Options
-              </p>
-              <ol className="space-y-2">
-                {pollOptions.map((option) => (
-                  <li key={option.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold ${isLight ? "border-pink-100 bg-white text-slate-700" : "border-white/10 bg-white/5 text-slate-200"}`}>
-                    <span className="text-pink-500">{option.position}.</span>
-                    <span>{option.label}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-3 text-[10px] font-bold text-slate-400">
-                Le vote sera disponible dans un prochain lot.
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-pink-500">
+                  {message.totalVotes ?? 0} vote{(message.totalVotes ?? 0) > 1 ? "s" : ""}
+                </p>
+                {pollVotePending ? (
+                  <span className="text-[10px] font-bold text-slate-400" role="status">
+                    Enregistrement…
+                  </span>
+                ) : null}
+              </div>
+              <div className="space-y-2" role="group" aria-label="Options du sondage">
+                {pollOptions.map((option) => {
+                  const voteCount = option.voteCount ?? 0;
+                  const totalVotes = message.totalVotes ?? 0;
+                  const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                  const isSelected = message.selectedOptionId === option.id;
+                  const optionContent = (
+                    <>
+                      <span
+                        className={cn(
+                          "absolute inset-y-0 left-0 rounded-lg transition-[width]",
+                          isLight ? "bg-pink-100/80" : "bg-pink-500/15",
+                        )}
+                        style={{ width: `${percentage}%` }}
+                        aria-hidden="true"
+                      />
+                      <span className="relative flex min-w-0 flex-1 items-center gap-2 text-left">
+                        <span className="text-pink-500">{option.position}.</span>
+                        <span className="truncate">{option.label}</span>
+                        {isSelected ? (
+                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-pink-600">
+                            Votre choix
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="relative shrink-0 text-[10px] font-black text-slate-500">
+                        {voteCount} · {percentage} %
+                      </span>
+                    </>
+                  );
+
+                  return onPollVote ? (
+                    <button
+                      key={option.id}
+                      type="button"
+                      disabled={pollVotePending || isSelected}
+                      aria-pressed={isSelected}
+                      onClick={() => onPollVote(message.id, option.id)}
+                      className={cn(
+                        "relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400",
+                        isLight
+                          ? "border-pink-100 bg-white text-slate-700 hover:border-pink-300 disabled:cursor-default disabled:opacity-100"
+                          : "border-white/10 bg-white/5 text-slate-200 hover:border-pink-300/50 disabled:cursor-default disabled:opacity-100",
+                        pollVotePending && !isSelected ? "cursor-wait" : "",
+                      )}
+                    >
+                      {optionContent}
+                    </button>
+                  ) : (
+                    <div
+                      key={option.id}
+                      className={cn(
+                        "relative flex w-full overflow-hidden rounded-lg border px-3 py-2 text-xs font-bold",
+                        isLight ? "border-pink-100 bg-white text-slate-700" : "border-white/10 bg-white/5 text-slate-200",
+                      )}
+                    >
+                      {optionContent}
+                    </div>
+                  );
+                })}
+              </div>
+              {onPollVote && message.selectedOptionId ? (
+                <button
+                  type="button"
+                  disabled={pollVotePending}
+                  onClick={() => onPollVote(message.id, null)}
+                  className="mt-3 text-[10px] font-black uppercase tracking-wider text-pink-600 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+                >
+                  Retirer mon vote
+                </button>
+              ) : null}
+              {pollVoteError ? (
+                <p className="mt-2 text-[10px] font-bold text-rose-600" role="alert">
+                  {pollVoteError}
+                </p>
+              ) : null}
             </div>
           ) : null}
 

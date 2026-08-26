@@ -32,6 +32,10 @@ import {
   type ChatPollOption,
 } from "@/lib/chat/polls";
 import {
+  normalizeChatPollVoteSummaryRows,
+  type ChatPollVoteSummary,
+} from "@/lib/chat/poll-votes";
+import {
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
@@ -172,14 +176,30 @@ type RelatedCommunityEventRow = ChatRelatedEvent;
 
 function normalizeChatMessageRow(row: ChatMessageRow): ChatMessageRow {
   const pollOptions = Array.isArray(row.poll_options)
-    ? [...(row.poll_options as ChatPollOption[])].sort(
-        (left, right) => left.position - right.position,
-      )
+    ? [...(row.poll_options as ChatPollOption[])]
+        .map((option) => ({
+          ...option,
+          voteCount:
+            typeof option.voteCount === "number" && Number.isFinite(option.voteCount)
+              ? Math.max(0, Math.trunc(option.voteCount))
+              : 0,
+        }))
+        .sort((left, right) => left.position - right.position)
     : [];
 
   return {
     ...row,
     poll_options: pollOptions,
+    ...(row.message_kind === "poll"
+      ? {
+          totalVotes:
+            typeof row.totalVotes === "number" && Number.isFinite(row.totalVotes)
+              ? Math.max(0, Math.trunc(row.totalVotes))
+              : 0,
+          selectedOptionId:
+            typeof row.selectedOptionId === "string" ? row.selectedOptionId : null,
+        }
+      : {}),
   };
 }
 
@@ -193,6 +213,50 @@ async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<
     throw error;
   }
   return (data ?? []) as ChatMessageRow[];
+}
+
+async function enrichPollVoteSummaries(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  rows: ChatMessageRow[],
+): Promise<ChatMessageRow[]> {
+  const normalizedRows = rows.map(normalizeChatMessageRow);
+  const pollIds = normalizedRows
+    .filter((row) => row.message_kind === "poll")
+    .map((row) => row.id);
+
+  if (pollIds.length === 0) {
+    return normalizedRows;
+  }
+
+  const { data, error } = await supabase.rpc("get_my_chat_poll_vote_summaries", {
+    p_message_ids: pollIds,
+  });
+  if (error) {
+    throw error;
+  }
+
+  const summaries = normalizeChatPollVoteSummaryRows(data);
+  const summaryByMessageId = new Map<string, ChatPollVoteSummary>(
+    summaries.map((summary) => [summary.messageId, summary]),
+  );
+
+  return normalizedRows.map((row) => {
+    const summary = summaryByMessageId.get(row.id);
+    if (row.message_kind !== "poll" || !summary) {
+      return row;
+    }
+
+    const counts = new Map(summary.options.map((option) => [option.optionId, option.voteCount]));
+    return {
+      ...row,
+      poll_options: (row.poll_options as ChatPollOption[]).map((option) => ({
+        ...option,
+        voteCount: counts.get(option.id) ?? 0,
+      })),
+      totalVotes: summary.totalVotes,
+      selectedOptionId: summary.selectedOptionId,
+    };
+  });
 }
 
 function parseArrondissement(raw: string | null): number | null {
@@ -256,7 +320,12 @@ async function loadMessageById(
     throw error;
   }
 
-  return data ? normalizeChatMessageRow(data as ChatMessageRow) : null;
+  if (!data) {
+    return null;
+  }
+
+  const [message] = await enrichPollVoteSummaries(supabase, [data as ChatMessageRow]);
+  return message ?? null;
 }
 
 async function resolveBugReportRecipientId(
@@ -687,7 +756,10 @@ export async function GET(request: Request) {
         throw error;
       }
       return NextResponse.json({
-        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
+        messages: await enrichPollVoteSummaries(
+          supabase,
+          sortChatMessages((data ?? []) as ChatMessageRow[]),
+        ),
       });
     }
 
@@ -711,7 +783,10 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
+        messages: await enrichPollVoteSummaries(
+          supabase,
+          sortChatMessages((data ?? []) as ChatMessageRow[]),
+        ),
       });
     }
 
@@ -722,7 +797,10 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        messages: sortChatMessages((data ?? []) as ChatMessageRow[]),
+        messages: await enrichPollVoteSummaries(
+          supabase,
+          sortChatMessages((data ?? []) as ChatMessageRow[]),
+        ),
       });
     }
 
@@ -784,7 +862,10 @@ export async function GET(request: Request) {
 
       const territoryMessages = await Promise.all(territoryQueries);
       return NextResponse.json({
-        messages: sortChatMessages(mergeRowGroupsById(territoryMessages)),
+        messages: await enrichPollVoteSummaries(
+          supabase,
+          sortChatMessages(mergeRowGroupsById(territoryMessages)),
+        ),
       });
     }
 
@@ -799,8 +880,9 @@ export async function GET(request: Request) {
       ]);
 
       return NextResponse.json({
-        messages: sortChatMessages(
-          mergeRowGroupsById([sentMessages, receivedMessages]),
+        messages: await enrichPollVoteSummaries(
+          supabase,
+          sortChatMessages(mergeRowGroupsById([sentMessages, receivedMessages])),
         ),
       });
     }

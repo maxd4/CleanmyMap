@@ -6,6 +6,7 @@ export type ChatPollOption = {
   id: string;
   position: number;
   label: string;
+  voteCount?: number;
 };
 
 export function createInitialChatPollOptionDraft(): string[] {
