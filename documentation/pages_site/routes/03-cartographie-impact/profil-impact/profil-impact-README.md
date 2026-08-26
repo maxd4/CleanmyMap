@@ -10,7 +10,8 @@
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact partageable.
-- **Action principale attendue** : Exporter ou partager sa carte personnelle.
+- **Action principale attendue** : Exporter ou partager l'image de sa carte personnelle.
+- **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
 - **Palette attendue** : amber / orange
 - **Scope** : à corriger
 - **Terminée** : non

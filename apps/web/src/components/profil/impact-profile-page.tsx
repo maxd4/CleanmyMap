@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +16,12 @@ import {
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { logFailure } from "@/lib/logging/failure-log";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import {
+  downloadImpactCardPng,
+  generateImpactCardPng,
+  isImpactShareAbortError,
+  shareOrDownloadImpactCardPng,
+} from "@/components/profil/impact-card-export";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -43,8 +48,9 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export default function ImpactProfilePage() {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [activeCardAction, setActiveCardAction] = useState<"export" | "share" | null>(null);
+  const [cardActionMessage, setCardActionMessage] = useState<string | null>(null);
+  const [cardActionError, setCardActionError] = useState<string | null>(null);
   const [currentAccountIdentity, setCurrentAccountIdentity] =
     useState<CurrentAccountIdentity | null>(null);
   const classes = getBlockClasses("impact");
@@ -74,32 +80,80 @@ export default function ImpactProfilePage() {
     };
   }, []);
 
+  const displayName =
+    currentAccountIdentity?.displayName ||
+    currentAccountIdentity?.firstName ||
+    "Contributeur";
+
+  const showCardActionError = (
+    message: string,
+    userMessage: string,
+    error: unknown,
+  ) => {
+    logFailure("ImpactProfile", message, error);
+    setCardActionError(userMessage);
+  };
+
   const handleDownload = async () => {
-    if (!cardRef.current) return;
-    setIsExporting(true);
+    if (activeCardAction) return;
+    setActiveCardAction("export");
+    setCardActionMessage(null);
+    setCardActionError(null);
+
     try {
-      const dataUrl = await toPng(document.getElementById("impact-card")!, {
-        cacheBust: true,
-        backgroundColor: "#450a0a",
-      });
-      const link = document.createElement("a");
-      link.download = `CleanMyMap-Impact-${
-        currentAccountIdentity?.displayName ||
-        currentAccountIdentity?.firstName ||
-        "Contributeur"
-      }.png`;
-      link.href = dataUrl;
-      link.click();
+      const png = await generateImpactCardPng(displayName);
+      downloadImpactCardPng(png);
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#ef4444", "#f87171", "#ffffff"],
       });
-    } catch (err) {
-      logFailure("ImpactProfile", "Export failed", err);
+      setCardActionMessage("Carte téléchargée.");
+    } catch (error) {
+      showCardActionError(
+        "Export failed",
+        "La carte n’a pas pu être exportée. Réessayez avec l’un des boutons ci-dessus.",
+        error,
+      );
     } finally {
-      setIsExporting(false);
+      setActiveCardAction(null);
+    }
+  };
+
+  const handleShare = async () => {
+    if (activeCardAction) return;
+    setActiveCardAction("share");
+    setCardActionMessage(null);
+    setCardActionError(null);
+
+    try {
+      const png = await generateImpactCardPng(displayName);
+      const result = await shareOrDownloadImpactCardPng(png);
+
+      if (result === "downloaded") {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#ef4444", "#f87171", "#ffffff"],
+        });
+        setCardActionMessage(
+          "Partage non disponible ici : la carte a été téléchargée.",
+        );
+      } else {
+        setCardActionMessage("Carte partagée.");
+      }
+    } catch (error) {
+      if (!isImpactShareAbortError(error)) {
+        showCardActionError(
+          "Share failed",
+          "La carte n’a pas pu être partagée. Réessayez avec l’un des boutons ci-dessus.",
+          error,
+        );
+      }
+    } finally {
+      setActiveCardAction(null);
     }
   };
 
@@ -143,7 +197,7 @@ export default function ImpactProfilePage() {
               <div className="mt-4 space-y-3">
                 {[
                   "Télécharger le certificat",
-                  "Copier le lien du profil",
+                  "Partager l’image de la carte",
                   "Consulter la méthodologie",
                 ].map((act) => (
                   <div
@@ -224,20 +278,43 @@ export default function ImpactProfilePage() {
 
           <div className="flex flex-col gap-4 sm:flex-row">
             <button
+              type="button"
               onClick={handleDownload}
-              disabled={isExporting}
+              disabled={Boolean(activeCardAction)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 transition-all hover:scale-[1.02] hover:bg-red-500 active:scale-[0.98] disabled:opacity-50",
                 classes.shadow,
               )}
             >
               <Download size={18} />
-              {isExporting ? "Génération..." : "Exporter la carte"}
+              {activeCardAction === "export"
+                ? "Génération de la carte..."
+                : "Exporter la carte"}
             </button>
-            <button className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-all hover:bg-white/10 hover:text-red-100">
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={Boolean(activeCardAction)}
+              className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-all hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <Share2 size={18} />
-              Partager le profil
+              {activeCardAction === "share"
+                ? "Préparation du partage..."
+                : "Partager la carte"}
             </button>
+          </div>
+
+          <div className="min-h-6" aria-live="polite" aria-atomic="true">
+            {cardActionMessage ? (
+              <p className="text-center text-xs font-bold text-red-100/80">
+                {cardActionMessage}
+              </p>
+            ) : null}
+            {cardActionError ? (
+              <p role="alert" className="text-center text-xs font-bold text-rose-200">
+                {cardActionError}
+              </p>
+            ) : null}
           </div>
 
           <div
