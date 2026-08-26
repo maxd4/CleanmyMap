@@ -134,7 +134,7 @@ export function ReportsWebDocumentDeliveryHistory({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-base font-black text-red-600">Rapports récents</p>
-          <p className="mt-1 text-sm text-slate-500">Les rapports générés sur ce périmètre.</p>
+          <p className="mt-1 text-sm text-slate-500">Derniers rapports générés.</p>
         </div>
       </div>
 

@@ -154,6 +154,12 @@ périmètre, le niveau de détail et la date de génération. Aucun rapport
 synthétique n'est créé lorsque la base est vide, auquel cas l'interface affiche
 « Aucun rapport généré ».
 
+La lecture de cette liste ne sélectionne que les métadonnées nécessaires à ces
+colonnes (`id`, `generated_at`, `title`, `period_id`, `scope_label` et
+`detail_level`). Le `snapshot` et les `modules` restent hors de cette requête
+et seront chargés par identifiant uniquement dans le lot 2B pour un éventuel
+rejeu exact.
+
 Après un export PDF réussi, le payload JSON final, les modules et les
 métadonnées de configuration sont persistés ; le binaire PDF ne l'est pas.
 L'échec de cette persistance conserve le succès du PDF et affiche un

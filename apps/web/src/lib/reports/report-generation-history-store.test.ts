@@ -61,6 +61,10 @@ describe("report generation history store", () => {
         detail: "Par défaut (12 à 16 pages)",
       },
     ]);
+    expect(select).toHaveBeenCalledWith(
+      "id, generated_at, title, period_id, scope_label, detail_level",
+    );
+    expect(order).toHaveBeenCalledWith("generated_at", { ascending: false });
     expect(limit).toHaveBeenCalledWith(12);
   });
 
@@ -91,6 +95,9 @@ describe("report generation history store", () => {
       }),
     ).resolves.toMatchObject({ id: "generation-1", report: payload.title });
 
+    expect(select).toHaveBeenCalledWith(
+      "id, generated_at, title, period_id, scope_label, detail_level",
+    );
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         created_by_clerk_id: "user-admin",

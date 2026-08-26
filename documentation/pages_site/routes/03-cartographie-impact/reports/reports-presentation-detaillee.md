@@ -48,3 +48,8 @@
   non bloquante après un export réussi. Les actions Voir/télécharger sont
   neutralisées jusqu'à l'existence d'un rejeu exact, et aucune durée de
   conservation n'est annoncée.
+
+  La requête de liste ne charge que les métadonnées nécessaires à l'affichage :
+  `id`, `generated_at`, `title`, `period_id`, `scope_label` et `detail_level`.
+  Le snapshot et les modules ne sont pas lus dans cette liste ; leur lecture
+  par identifiant relève du lot 2B.

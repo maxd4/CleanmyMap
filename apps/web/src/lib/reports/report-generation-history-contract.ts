@@ -27,12 +27,13 @@ export type ReportGenerationHistoryInput = {
   modules: ModuleState;
 };
 
-export type ReportGenerationHistoryRecord = ReportGenerationHistoryInput & {
+export type ReportGenerationHistoryMetadata = {
   id: string;
-  createdAt: string;
+  title: string;
+  periodId: PeriodId;
+  scopeLabel: string;
+  detailLevel: DetailLevelId;
   generatedAt: string;
-  createdByClerkId: string;
-  filename: string;
 };
 
 export function isReportGenerationHistoryRow(
@@ -60,19 +61,19 @@ export function formatReportGenerationDate(value: string): string | null {
 }
 
 export function toReportGenerationHistoryRow(
-  record: Pick<ReportGenerationHistoryRecord, "id" | "payload" | "scopeLabel" | "detailLevel" | "generatedAt">,
+  metadata: ReportGenerationHistoryMetadata,
 ): ReportGenerationHistoryRow | null {
-  const generatedAt = formatReportGenerationDate(record.generatedAt);
+  const generatedAt = formatReportGenerationDate(metadata.generatedAt);
   if (!generatedAt) {
     return null;
   }
 
   return {
-    id: record.id,
-    report: record.payload.title,
-    period: periodLabel(record.payload.periode as PeriodId),
-    perimeter: record.scopeLabel,
-    detail: detailLevelLabel(record.detailLevel),
+    id: metadata.id,
+    report: metadata.title,
+    period: periodLabel(metadata.periodId),
+    perimeter: metadata.scopeLabel,
+    detail: detailLevelLabel(metadata.detailLevel),
     generatedAt,
   };
 }

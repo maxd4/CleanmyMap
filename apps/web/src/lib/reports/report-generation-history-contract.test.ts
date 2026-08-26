@@ -10,13 +10,8 @@ describe("report generation history contract", () => {
     expect(
       toReportGenerationHistoryRow({
         id: "generation-1",
-        payload: {
-          title: "Rapport d'impact - Paris - Par défaut",
-          rubrique: "reporting",
-          periode: "six_months",
-          organizationType: "Global",
-          data: { generatedAt: "2026-08-27T10:30:00.000Z" },
-        },
+        title: "Rapport d'impact - Paris - Par défaut",
+        periodId: "six_months",
         scopeLabel: "Paris",
         detailLevel: "default",
         generatedAt: "2026-08-27T10:30:00.000Z",
