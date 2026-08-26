@@ -126,6 +126,8 @@ describe("reports web document shared helpers", () => {
     expect(noModulesPdf.rows).toEqual([]);
     expect(noModulesPdf.columns).toEqual([]);
     expect(noModulesPdf.summary).toContain("Modules optionnels inclus: aucun module optionnel.");
+    expect(noModulesPdf.summary.join(" ")).not.toContain("Qualité de données:");
+    expect(noModulesPdf.stats.map((stat) => stat.label)).not.toContain("Couverture géographique");
   });
 
   it("supports a custom combination with the same selection contract used by the PDF summary", () => {
