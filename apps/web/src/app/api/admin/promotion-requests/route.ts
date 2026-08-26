@@ -1,11 +1,14 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { extractRole } from "@/lib/auth/role-resolution";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { normalizeProfileRole, type AppProfile } from "@/lib/profiles";
 import {
   getPromotionRequestById,
   listPromotionRequests,
@@ -17,7 +20,19 @@ export const runtime = "nodejs";
 const reviewSchema = z.object({
   requestId: z.string().trim().min(1),
   action: z.enum(["accept", "reject"]),
+  reason: z.string().trim().min(5).max(500),
 });
+
+function resolveCanonicalTargetRole(user: {
+  publicMetadata?: Record<string, unknown> | null;
+  privateMetadata?: Record<string, unknown> | null;
+}): AppProfile {
+  return (
+    normalizeProfileRole(extractRole(user.publicMetadata)) ??
+    normalizeProfileRole(extractRole(user.privateMetadata)) ??
+    "benevole"
+  );
+}
 
 export async function GET() {
   const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
@@ -74,25 +89,67 @@ export async function POST(request: Request) {
   }
 
   if (parsed.data.action === "reject") {
-    const updated = await updatePromotionRequestStatus({
-      requestId: requestRecord.id,
-      status: "rejected",
-      reviewedByUserId: identity.userId,
-      reviewedByRole: identity.role,
+    const operationId = randomUUID();
+    const buildRejectAuditDetails = (stage?: "request_status_update") => ({
+      operation: "reject_promotion_request",
+      reason: parsed.data.reason,
+      targetUserId: requestRecord.submittedByUserId,
+      requestedRole: requestRecord.requestedRole,
+      previousValue: { requestStatus: "pending_owner_review" },
+      newValue: { requestStatus: "rejected" },
+      ...(stage ? { stage } : {}),
     });
-    await appendAdminOperationAudit({
-      operationId: `promotion-${requestRecord.id}-${Date.now()}`,
-      at: new Date().toISOString(),
-      actorUserId: identity.userId,
-      operationType: "moderation",
-      outcome: "success",
-      targetId: requestRecord.id,
-      details: {
-        entityType: "promotion_request",
-        action: "reject",
-        requestedRole: requestRecord.requestedRole,
-      },
-    }).catch(() => undefined);
+
+    let updated: Awaited<ReturnType<typeof updatePromotionRequestStatus>> = null;
+    try {
+      updated = await updatePromotionRequestStatus({
+        requestId: requestRecord.id,
+        status: "rejected",
+        reviewedByUserId: identity.userId,
+        reviewedByRole: identity.role,
+      });
+      if (!updated) {
+        throw new Error("Promotion request status was not persisted.");
+      }
+    } catch {
+      try {
+        await appendAdminOperationAudit({
+          operationId,
+          at: new Date().toISOString(),
+          actorUserId: identity.userId,
+          operationType: "admin_operation",
+          outcome: "error",
+          targetId: requestRecord.id,
+          details: buildRejectAuditDetails("request_status_update"),
+        });
+      } catch {
+        return NextResponse.json(
+          { error: "Impossible d'enregistrer la décision et son journal." },
+          { status: 500 },
+        );
+      }
+      return NextResponse.json(
+        { error: "Impossible d'enregistrer la décision." },
+        { status: 500 },
+      );
+    }
+
+    try {
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: identity.userId,
+        operationType: "admin_operation",
+        outcome: "success",
+        targetId: requestRecord.id,
+        details: buildRejectAuditDetails(),
+      });
+    } catch {
+      return NextResponse.json(
+        { error: "La décision a été enregistrée, mais son journal est indisponible." },
+        { status: 500 },
+      );
+    }
     await sendCreatorInboxEmail({
       actorUserId: identity.userId,
       subject: `[CleanMyMap] Promotion refusée - ${requestRecord.submittedByDisplayName}`,
@@ -106,8 +163,8 @@ export async function POST(request: Request) {
         { label: "Statut", value: "rejected" },
       ],
       footer: "La décision est synchronisée dans la file de promotion.",
-    }).catch((error) => {
-      console.warn("Promotion rejection creator notification failed", error);
+  }).catch(() => {
+    console.warn("Promotion rejection creator notification failed");
     });
     return NextResponse.json({
       status: "rejected",
@@ -115,42 +172,103 @@ export async function POST(request: Request) {
     });
   }
 
-  const client = await clerkClient();
-  const targetUser = await client.users.getUser(requestRecord.submittedByUserId);
-  const updatedUser = await client.users.updateUser(requestRecord.submittedByUserId, {
-    publicMetadata: {
-      ...(targetUser.publicMetadata as Record<string, unknown>),
-      role: requestRecord.requestedRole,
-      profile: requestRecord.requestedRole,
+  const operationId = randomUUID();
+  const expectedRole = requestRecord.requestedRole;
+  let previousRole: AppProfile | "unknown" = "unknown";
+  let stage: "clerk_lookup" | "clerk_update" | "supabase_sync" | "request_status_update" =
+    "clerk_lookup";
+  const buildAcceptAuditDetails = (includeStage = false) => ({
+    operation: "accept_promotion_request",
+    reason: parsed.data.reason,
+    targetUserId: requestRecord.submittedByUserId,
+    requestedRole: requestRecord.requestedRole,
+    previousValue: {
+      role: previousRole,
+      requestStatus: "pending_owner_review",
     },
-    privateMetadata: {
-      ...(targetUser.privateMetadata as Record<string, unknown>),
-      role: requestRecord.requestedRole,
-      profile: requestRecord.requestedRole,
+    newValue: {
+      role: expectedRole,
+      requestStatus: "accepted",
     },
+    ...(includeStage ? { stage } : {}),
   });
 
-  await syncClerkUserToSupabase(updatedUser);
+  let updated: Awaited<ReturnType<typeof updatePromotionRequestStatus>> = null;
+  try {
+    stage = "clerk_lookup";
+    const client = await clerkClient();
+    const targetUser = await client.users.getUser(requestRecord.submittedByUserId);
+    previousRole = resolveCanonicalTargetRole(targetUser);
 
-  const updated = await updatePromotionRequestStatus({
-    requestId: requestRecord.id,
-    status: "accepted",
-    reviewedByUserId: identity.userId,
-    reviewedByRole: identity.role,
-  });
-  await appendAdminOperationAudit({
-    operationId: `promotion-${requestRecord.id}-${Date.now()}`,
-    at: new Date().toISOString(),
-    actorUserId: identity.userId,
-    operationType: "moderation",
-    outcome: "success",
-    targetId: requestRecord.id,
-    details: {
-      entityType: "promotion_request",
-      action: "accept",
-      requestedRole: requestRecord.requestedRole,
-    },
-  }).catch(() => undefined);
+    stage = "clerk_update";
+    const updatedUser = await client.users.updateUser(requestRecord.submittedByUserId, {
+      publicMetadata: {
+        ...(targetUser.publicMetadata as Record<string, unknown>),
+        role: expectedRole,
+        profile: expectedRole,
+      },
+      privateMetadata: {
+        ...(targetUser.privateMetadata as Record<string, unknown>),
+        role: expectedRole,
+        profile: expectedRole,
+      },
+    });
+
+    stage = "supabase_sync";
+    const syncedProfile = await syncClerkUserToSupabase(updatedUser);
+    if (!syncedProfile) {
+      throw new Error("Supabase role synchronization did not persist a profile.");
+    }
+
+    stage = "request_status_update";
+    updated = await updatePromotionRequestStatus({
+      requestId: requestRecord.id,
+      status: "accepted",
+      reviewedByUserId: identity.userId,
+      reviewedByRole: identity.role,
+    });
+    if (!updated) {
+      throw new Error("Promotion request status was not persisted.");
+    }
+  } catch {
+    try {
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: identity.userId,
+        operationType: "role_management",
+        outcome: "error",
+        targetId: requestRecord.id,
+        details: buildAcceptAuditDetails(true),
+      });
+    } catch {
+      return NextResponse.json(
+        { error: "Impossible d'appliquer la décision et son journal." },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Impossible d'appliquer la décision de promotion." },
+      { status: 500 },
+    );
+  }
+
+  try {
+    await appendAdminOperationAudit({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId: identity.userId,
+      operationType: "role_management",
+      outcome: "success",
+      targetId: requestRecord.id,
+      details: buildAcceptAuditDetails(),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "La décision a été appliquée, mais son journal est indisponible." },
+      { status: 500 },
+    );
+  }
 
   await sendCreatorInboxEmail({
     actorUserId: identity.userId,
@@ -165,8 +283,8 @@ export async function POST(request: Request) {
       { label: "Statut", value: "accepted" },
     ],
     footer: "Le profil Clerk et Supabase a été mis à jour.",
-  }).catch((error) => {
-    console.warn("Promotion acceptance creator notification failed", error);
+  }).catch(() => {
+    console.warn("Promotion acceptance creator notification failed");
   });
 
   return NextResponse.json({

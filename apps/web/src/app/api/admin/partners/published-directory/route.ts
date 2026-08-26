@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       entityType:"partner_publication",
       targetStatus: parsed.data.publicationStatus,
     },
-  }).catch(() => undefined);
+  });
 
   await sendCreatorInboxEmail({
     actorUserId: access.userId,

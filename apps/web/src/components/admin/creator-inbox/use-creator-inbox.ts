@@ -33,6 +33,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [partnerConfirm, setPartnerConfirm] = useState("");
+  const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setItems(initialItems);
@@ -121,10 +122,19 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   }
 
   async function acceptPromotion(item: CreatorInboxItem) {
+    const reason = promotionReasons[item.sourceRecordId] ?? "";
+    if (reason.trim().length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
     setUpdatingKey(`promotion:${item.sourceRecordId}:accept`);
     setErrorMessage(null);
     try {
-      await acceptPromotionRequest(item.sourceRecordId);
+      await acceptPromotionRequest({ requestId: item.sourceRecordId, reason });
       await refreshInbox();
     } catch (error) {
       setErrorMessage(resolveMessage(error, copy.messages.approvalError));
@@ -134,10 +144,19 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   }
 
   async function rejectPromotion(item: CreatorInboxItem) {
+    const reason = promotionReasons[item.sourceRecordId] ?? "";
+    if (reason.trim().length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
     setUpdatingKey(`promotion:${item.sourceRecordId}:reject`);
     setErrorMessage(null);
     try {
-      await rejectPromotionRequest(item.sourceRecordId);
+      await rejectPromotionRequest({ requestId: item.sourceRecordId, reason });
       await refreshInbox();
     } catch (error) {
       setErrorMessage(resolveMessage(error, copy.messages.rejectionError));
@@ -217,6 +236,8 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     refreshInbox,
     partnerConfirm,
     setPartnerConfirm,
+    promotionReasons,
+    setPromotionReasons,
     filteredItems,
     errorMessage,
     successMessage,

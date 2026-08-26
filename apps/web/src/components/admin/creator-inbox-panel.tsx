@@ -69,6 +69,13 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
                 locale={inbox.locale}
                 copy={inbox.copy}
                 copiedKey={inbox.copiedKey}
+                promotionReason={inbox.promotionReasons[item.sourceRecordId] ?? ""}
+                onPromotionReasonChange={(reason) =>
+                  inbox.setPromotionReasons((current) => ({
+                    ...current,
+                    [item.sourceRecordId]: reason,
+                  }))
+                }
                 actionBusy={inbox.actionBusy}
                 onCopySummary={(nextItem) => void inbox.copySummary(nextItem)}
                 onAcceptPromotion={(nextItem) => void inbox.acceptPromotion(nextItem)}
