@@ -44,6 +44,12 @@ function createProps(
     onTogglePreview: vi.fn(),
     periodDisplayLabel: "Six mois",
     detailDisplayLabel: "Par défaut (12 à 16 pages)",
+    modules: {
+      dataAndCartography: true,
+      transparencyAndMethods: true,
+      rawData: false,
+      detailedFiles: true,
+    },
     historyCoverageLabel: "Historique: 4 actions",
     historyGuaranteeLabel: "Historique: couverture conforme à la fenêtre sélectionnée.",
     coverageRangeLabel: "01/01/2026 → 23/08/2026",
@@ -117,5 +123,29 @@ describe("ReportsWebDocumentPreview", () => {
 
     expect(markup).toContain("Export à vérifier");
     expect(markup).toContain("border-red-200 bg-red-50 text-red-900");
+  });
+
+  it("shows only enabled optional modules and keeps the core chapters visible", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        ReportsWebDocumentPreview,
+        createProps({
+          modules: {
+            dataAndCartography: false,
+            transparencyAndMethods: true,
+            rawData: false,
+            detailedFiles: false,
+          },
+        }),
+      ),
+    );
+
+    expect(markup).toContain("Synthèse exécutive");
+    expect(markup).toContain("Périmètre du rapport");
+    expect(markup).toContain("Résultats terrain");
+    expect(markup).toContain("Transparence &amp; méthodes");
+    expect(markup).not.toContain("Données &amp; cartographie");
+    expect(markup).not.toContain("Données brutes");
+    expect(markup).not.toContain("Fichiers détaillés");
   });
 });

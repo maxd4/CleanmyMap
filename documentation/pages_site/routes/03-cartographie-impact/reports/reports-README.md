@@ -124,6 +124,27 @@ fréquences et limites restent celles du contrat `MethodDefinition` partagé ave
 Pilotage. Le référentiel affiche les huit méthodes dans un accordéon accessible
 et dense sur desktop comme sur mobile.
 
+## Génération et modules optionnels
+
+La génération conserve toujours les chapitres cœur « Synthèse exécutive »,
+« Périmètre du rapport » et « Résultats terrain ». Le niveau de détail fournit
+les sélections par défaut, puis les cases peuvent être modifiées
+individuellement. Le même `ModuleState` est transmis au résumé du preview, à
+`buildPdfData()` et au PDF.
+
+| Module interne | Libellé | Chapitres / contenu contrôlés |
+|---|---|---|
+| `dataAndCartography` | Données & cartographie | Cartographie d’impact, contexte local et données géographiques |
+| `transparencyAndMethods` | Transparence & méthodes | Impacts/proxies, qualité, méthodologie, hypothèses et limites |
+| `rawData` | Données brutes | Listes détaillées, mobilisation, calendrier et lignes brutes exportées |
+| `detailedFiles` | Fichiers détaillés | Glossaire, annexes et pièces techniques |
+
+Un module désactivé est absent du preview et du PDF, sans chapitre de
+remplacement ni faux placeholder. Lorsqu'un module est activé mais que le
+niveau de détail est insuffisant, les règles existantes de contenu verrouillé
+restent applicables. Le sélecteur de période de Génération est indépendant de
+la fenêtre fixe de l'onglet Analyse.
+
 ## Performance
 
 Cette page peut être lourde.

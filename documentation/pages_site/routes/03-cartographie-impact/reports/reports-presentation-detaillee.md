@@ -30,3 +30,12 @@
   filtrage et le calcul. La tendance est une série historique distincte sur
   12 mois glissants, tandis que la comparaison oppose la fenêtre courante aux
   90 jours précédents selon les bornes de `computePilotageComparison()`.
+
+  La Génération utilise un `ModuleState` unique pour le preview, le résumé
+  « ce que l'utilisateur verra », `buildPdfData()` et le PDF. Les trois
+  chapitres cœur restent présents ; `dataAndCartography`,
+  `transparencyAndMethods`, `rawData` et `detailedFiles` contrôlent
+  respectivement leur contenu cartographique, transparence/méthodes, données
+  brutes et annexes. Un module désactivé est réellement absent, sans
+  placeholder. Le niveau de détail fournit les defaults et conserve les
+  règles de verrouillage pour un module activé mais trop peu détaillé.

@@ -8,9 +8,13 @@ import {
   ShieldCheck,
   ShoppingBag,
 } from "lucide-react";
-import { REPORT_SECTIONS } from "./constants";
 import { ReportCover } from "./report-cover";
-import { GenerationStageCard } from "./reports-web-document.shared";
+import {
+  GenerationStageCard,
+  getEnabledReportModules,
+  getVisibleReportChapterIds,
+  type ModuleState,
+} from "./reports-web-document.shared";
 import type { ReportsWebDocumentExportStatus } from "./reports-web-document-delivery";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 
@@ -23,6 +27,7 @@ export type ReportsWebDocumentPreviewProps = {
   onTogglePreview: () => void;
   periodDisplayLabel: string;
   detailDisplayLabel: string;
+  modules: ModuleState;
   historyCoverageLabel: string;
   historyGuaranteeLabel: string;
   coverageRangeLabel: string;
@@ -39,6 +44,7 @@ export function ReportsWebDocumentPreview({
   onTogglePreview,
   periodDisplayLabel,
   detailDisplayLabel,
+  modules,
   historyCoverageLabel,
   historyGuaranteeLabel,
   coverageRangeLabel,
@@ -55,25 +61,34 @@ export function ReportsWebDocumentPreview({
     }, 0);
   }, [previewRef, showPreview]);
 
-  const sectionCards = REPORT_SECTIONS.slice(0, 4).map((section, index) => ({
-    id: section.id,
-    title:
-      index === 0
-        ? "Collecte des données"
-        : index === 1
-          ? "Impact environnemental"
-          : index === 2
-            ? "Données & cartographie"
-            : "Transparence & méthodes",
-    subtitle:
-      index === 0
-        ? "Sources, volumes collectés et maillage territorial."
-        : index === 1
-          ? "Impacts évités et bénéfices environnementaux."
-          : index === 2
-            ? "Cartes, visualisations et données clés du territoire."
-            : "Méthodologie, hypothèses et contrôle qualité.",
-  }));
+  const sectionCards = [
+    {
+      id: "synthese-executive",
+      title: "Synthèse exécutive",
+      subtitle: "Lecture globale, chiffres clés et conclusions.",
+    },
+    {
+      id: "perimetre-rapport",
+      title: "Périmètre du rapport",
+      subtitle: "Période, territoire couvert et sources.",
+    },
+    {
+      id: "resultats-terrain",
+      title: "Résultats terrain",
+      subtitle: "Actions, déchets, bénévoles et zones traitées.",
+    },
+    {
+      id: "recommandations-operationnelles",
+      title: "Recommandations opérationnelles",
+      subtitle: "Priorités et suites proposées à partir des résultats.",
+    },
+    ...getEnabledReportModules(modules).map((module) => ({
+      id: module.id,
+      title: module.label,
+      subtitle: module.description,
+    })),
+  ];
+  const visibleChapterCount = getVisibleReportChapterIds(modules).size;
 
   return (
     <GenerationStageCard
@@ -112,7 +127,7 @@ export function ReportsWebDocumentPreview({
                 Sommaire cliquable
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                {REPORT_SECTIONS.length} sections
+                {visibleChapterCount} chapitres
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
                 {detailDisplayLabel}

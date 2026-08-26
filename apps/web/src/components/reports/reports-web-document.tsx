@@ -19,6 +19,7 @@ import {
   REPORT_HISTORY_SERVER_LIMIT,
   buildCoverageRangeLabel,
   buildDetailCoverageLabel,
+  buildModuleSelectionLabel,
   buildPdfData,
   buildRecentReports,
   buildReportTitle,
@@ -117,8 +118,8 @@ export function ReportsWebDocument({
     [filteredContracts],
   );
   const detailCoverageLabel = useMemo(
-    () => buildDetailCoverageLabel(detailLevel),
-    [detailLevel],
+    () => `${buildDetailCoverageLabel(detailLevel)} Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
+    [detailLevel, modules],
   );
 
   const model = useReportsWebDocumentModel({
@@ -159,10 +160,11 @@ export function ReportsWebDocument({
         scopeLabel: activeScopeLabel,
         period: effectivePeriod,
         detailLevel,
+        modules,
         model,
         surfaceProxy,
       }),
-    [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, surfaceProxy],
+    [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, modules, surfaceProxy],
   );
 
   const {
@@ -307,6 +309,7 @@ export function ReportsWebDocument({
             onTogglePreview={handlePreview}
             periodDisplayLabel={periodLabel(effectivePeriod)}
             detailDisplayLabel={detailLevelLabel(detailLevel)}
+            modules={modules}
             historyCoverageLabel={
               historyCompletenessWarning
                 ? `Historique borné à ${REPORT_HISTORY_SERVER_LIMIT}`
@@ -344,4 +347,3 @@ export function ReportsWebDocument({
     </CmmGrid>
   );
 }
-
