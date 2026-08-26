@@ -12,7 +12,6 @@ import type {
   ActionQualityBreakdown,
   ActionQualityGrade,
 } from "@/lib/actions/types";
-import { ACTION_STATUSES } from "@/lib/actions/types";
 import { buildDateFloor, parsePositiveInteger, resolveReportScopeFromQuery } from "@/lib/reports/csv";
 import type { ReportScope } from "@/lib/reports/scope";
 
@@ -77,16 +76,11 @@ export type MapActionsRouteResult = {
 
 const IMPACT_LEVELS: ActionImpactLevel[] = ["faible", "moyen", "fort", "critique"];
 
-function parseStatusParam(raw: string | null): ActionStatus | null {
-  if (!raw || raw.trim() === "") {
-    return "approved";
-  }
-  if (raw === "all") {
-    return null;
-  }
-  return ACTION_STATUSES.includes(raw as ActionStatus)
-    ? (raw as ActionStatus)
-    : "approved";
+function parseStatusParam(raw: string | null): ActionStatus {
+  // This endpoint is a public map projection. Keep the legacy query parameter
+  // for compatibility, but never let it select a non-public status.
+  void raw;
+  return "approved";
 }
 
 function parseQualityMin(raw: string | null): number | null {
@@ -170,6 +164,15 @@ export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapAction
   };
 }
 
+export function filterPublicMapResponse(response: ActionMapResponse): ActionMapResponse {
+  const items = response.items.filter((item) => item.status === "approved");
+  return {
+    ...response,
+    count: items.length,
+    items,
+  };
+}
+
 export async function buildMapActionsRouteResult(
   url: URL,
   deps: MapActionsRouteDependencies,
@@ -193,7 +196,10 @@ export async function buildMapActionsRouteResult(
     warnings: [],
   };
   const items = deps
-    .filterActionContractsByScope(result.items, params.scope)
+    .filterActionContractsByScope(
+      result.items.filter((contract) => contract.status === "approved"),
+      params.scope,
+    )
     .map((contract) => {
       const insights = deps.buildActionInsights(contract, now);
       return deps.toActionMapItem(contract, insights);
@@ -210,14 +216,14 @@ export async function buildMapActionsRouteResult(
     .slice(0, params.limit);
 
   return {
-    body: {
+    body: filterPublicMapResponse({
       status: "ok",
       count: items.length,
       daysWindow: params.floorDate === null ? null : params.days,
       items,
       sourceHealth,
       partialSource: sourceHealth.partial,
-    },
+    }),
     headers: sourceHealth.partial
       ? {
           "X-Data-Warning": "Partial source data",

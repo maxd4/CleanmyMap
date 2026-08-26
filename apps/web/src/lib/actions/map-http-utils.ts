@@ -72,15 +72,17 @@ export function normalizeQualityMin(value: number | undefined): number | null {
 
 export function resolveMapStatus(
   status: ActionStatus | "all" | undefined,
-): ActionStatus | null {
-  if (!status || status === "all") {
-    return null;
-  }
-  return status;
+): ActionStatus {
+  // Public map reads are intentionally approved-only. Keep the input type so
+  // existing callers remain source-compatible, but do not forward a caller's
+  // pending/rejected/all selection to a data source.
+  void status;
+  return "approved";
 }
 
 export function resolveMapQueryStatus(
   status: ActionStatus | "all" | undefined,
-): ActionStatus | "all" {
-  return status ?? "approved";
+): ActionStatus {
+  void status;
+  return "approved";
 }

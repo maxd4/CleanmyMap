@@ -209,6 +209,26 @@ par la source unifiée.
 
 Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transforme pas une pré-action en collecte finalisée.
 
+### Frontière de lecture de la carte publique
+
+`GET /api/actions/map` est une projection public-safe distincte des lectures de
+modération. Quel que soit le paramètre `status` fourni (`approved`, `pending`,
+`rejected` ou `all`), le handler conserve la compatibilité de l'URL mais
+normalise la lecture vers les actions `approved` et `moderation_visibility =
+visible`. Cette règle est appliquée à la fois avec et sans viewport, y compris
+lorsqu'un snapshot existant est servi.
+
+Le fallback navigateur appelle `actions_map_feed` avec le statut public
+`approved` et filtre défensivement ses lignes. La RPC ne restitue elle-même que
+les actions approuvées et visibles et les lignes
+`trash_spotter_spots.status IN ('validated', 'cleaned')`. La RLS de cette table
+interdit également la lecture directe des lignes `new` aux rôles anon et
+authenticated.
+
+La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utilise
+la session du compte courant et peut restituer ses propres observations `new`,
+sans les exposer à la carte publique.
+
 ### Lecture propriétaire Trash Spotter
 
 La capacité `GET /api/signalements/me` est une surface propriétaire dédiée au

@@ -111,10 +111,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "actions/map": {
     GET: {
-      expected: "Public approved/validated/cleaned map read",
+      expected: "Public approved and visible actions plus validated/cleaned spots map read",
       dimensions: ["public-safe"],
-      actual: "No session gate; public surface/safe map source projection",
-      evidence: ["loadOrRefreshPublicSurfaceSnapshot", "buildMapActionsPayload"],
+      actual:
+        "No session gate; status is normalized to approved and both snapshot/API and RPC projections enforce the public map boundary",
+      evidence: [
+        "parseMapActionsParams",
+        "filterPublicMapResponse",
+        "loadOrRefreshPublicSurfaceSnapshot",
+        "actions_map_feed",
+      ],
       evidenceScope: "module",
     },
   },

@@ -46,25 +46,29 @@ function expectMapActionsFallbackResult(
   result: Awaited<ReturnType<typeof fetchMapActions>>,
 ): void {
   expect(result.status).toBe("ok");
-  expect(result.count).toBe(1);
+  expect(result.count).toBe(2);
   expect(result.daysWindow).toBe(15);
   expect(result.partialSource).toBe(false);
   expect(result.sourceHealth?.availableSources).toEqual([
     "actions",
     "spots",
   ]);
-  expect(result.items[0]?.id).toBe("map-1");
-  expect(result.items[0]?.waste_pollution_score).toBe(40);
-  expect(result.items[0]?.cigarette_butts_pollution_score).toBe(100);
-  expect(result.items[0]?.impact_level).toBe("fort");
-  expect(result.items[0]?.contract?.metadata.associationName).toBe("Collectif Demo");
-  expect(result.items[0]?.contract?.type).toBe("action");
-  expect(result.items[0]?.contract?.dates.observedAt).toBe("2026-06-01");
-  expect(result.items[0]?.contract?.location.latitude).toBe(48.8566);
-  expect(result.items[0]?.contract?.metadata.wasteKg).toBe(10);
-  expect(result.items[0]?.contract?.metadata.cigaretteButts).toBe(300);
-  expect(result.items[0]?.contract?.metadata.volunteersCount).toBe(5);
-  expect(result.items[0]?.contract?.metadata.manualDrawing).toEqual({
+  expect(result.items.every((item) => item.status === "approved")).toBe(true);
+  expect(result.items.map((item) => item.id)).toEqual(
+    expect.arrayContaining(["map-1", "validated-spot"]),
+  );
+  const action = result.items.find((item) => item.id === "map-1");
+  expect(action?.waste_pollution_score).toBe(40);
+  expect(action?.cigarette_butts_pollution_score).toBe(100);
+  expect(action?.impact_level).toBe("fort");
+  expect(action?.contract?.metadata.associationName).toBe("Collectif Demo");
+  expect(action?.contract?.type).toBe("action");
+  expect(action?.contract?.dates.observedAt).toBe("2026-06-01");
+  expect(action?.contract?.location.latitude).toBe(48.8566);
+  expect(action?.contract?.metadata.wasteKg).toBe(10);
+  expect(action?.contract?.metadata.cigaretteButts).toBe(300);
+  expect(action?.contract?.metadata.volunteersCount).toBe(5);
+  expect(action?.contract?.metadata.manualDrawing).toEqual({
     kind: "polyline",
     coordinates: [
       [48.8566, 2.3522],
@@ -117,11 +121,16 @@ describe("buildMapActionsQueryString", () => {
     expect(params.get("status")).toBe("approved");
   });
 
-  it("allows explicit all status", () => {
-    const query = buildMapActionsQueryString({ status: "all" });
-    const params = new URLSearchParams(query);
-    expect(params.has("status")).toBe(false);
-  });
+  it.each(["pending", "rejected", "all"])(
+    "normalizes explicit %s status to approved",
+    (status) => {
+      const query = buildMapActionsQueryString({
+        status: status as "pending" | "rejected" | "all",
+      });
+      const params = new URLSearchParams(query);
+      expect(params.get("status")).toBe("approved");
+    },
+  );
 
   it("serializes impact and minimum quality filters", () => {
     const query = buildMapActionsQueryString({
@@ -196,13 +205,18 @@ describe("fetchMapActions", () => {
       latitude: 49.2,
       longitude: 2.3522,
     };
+    const pendingItem = {
+      ...apiItem,
+      id: "api-map-pending",
+      status: "pending",
+    };
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
           status: "ok",
-          count: 2,
+          count: 3,
           daysWindow: 30,
-          items: [apiItem, outsideViewportItem],
+          items: [apiItem, pendingItem, outsideViewportItem],
           partialSource: false,
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -262,7 +276,25 @@ describe("fetchMapActions", () => {
 
     const supabaseClient = {
       rpc: mocks.rpcMock.mockResolvedValue({
-        data: [rpcRow],
+        data: [
+          rpcRow,
+          { ...rpcRow, id: "pending-action", status: "pending" },
+          { ...rpcRow, id: "rejected-action", status: "rejected" },
+          {
+            ...rpcRow,
+            id: "new-spot",
+            source: "trash_spotter_spots",
+            entity_type: "spot",
+            status: "new",
+          },
+          {
+            ...rpcRow,
+            id: "validated-spot",
+            source: "trash_spotter_spots",
+            entity_type: "spot",
+            status: "validated",
+          },
+        ],
         error: null,
       }),
     };
@@ -282,7 +314,7 @@ describe("fetchMapActions", () => {
     );
 
     const result = await fetchMapActions({
-      status: "approved",
+      status: "all",
       days: 15,
       impact: "fort",
       limit: 200,
