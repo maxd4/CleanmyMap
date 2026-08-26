@@ -252,6 +252,20 @@ propriétaire porté par `missions.volunteer_id` et aux profils `admin`/`max`,
 après AuthN puis décision d'AuthZ côté serveur. Les profils `elu` et les autres
 profils ordinaires ne sont pas autorisés par analogie avec les actions.
 
+Pour le companion, la migration
+`apps/web/supabase/migrations/20260826070000_clerk_missions_gps_rls.sql`
+réalise le contrat Clerk Third-Party Auth : `missions` est lisible et
+modifiable par `authenticated` uniquement lorsque `volunteer_id` correspond au
+claim Clerk `sub` non vide. Les points `gps_points` sont lisibles et insérables
+uniquement lorsque la mission référencée appartient au même `sub`. Aucun accès
+ne découle de la seule connaissance d'un `mission_id`, et un token sans `sub`
+est refusé.
+
+Le grant UPDATE mobile est limité à `status`, `started_at` et `ended_at`.
+`volunteer_id`, `created_by`, `distance_m` et `duration_s` restent hors de la
+surface d'écriture `authenticated`. Le `service_role` conserve ses privilèges
+serveur sans devenir une identité mobile.
+
 `missions.created_by` est conservé comme provenance potentielle, pas comme
 permission. Le `service_role` reste un moyen technique serveur uniquement ; il
 ne remplace ni l'identité Clerk ni la décision d'ownership et ne doit jamais
@@ -265,15 +279,18 @@ contrat distinct.
 
 ## Application compagnon
 
-L'app mobile ne doit pas introduire une deuxième identité canonique indépendante sans décision explicite.
+Le LOT 1 de l'ADR-004 a supprimé l'identité Supabase Auth anonyme et établi
+Clerk comme identité canonique du companion. Le LOT 2A a aligné les RLS de
+`missions` et `gps_points` sur le claim Clerk `sub` et a borné les grants
+UPDATE mobiles.
 
-Points à résoudre :
+Restent explicitement hors production :
 
-- mapping entre session mobile et profil Clerk ;
-- ownership des missions ;
-- RLS de `missions`, `gps_points`, `mission_actions` ;
-- finalisation de distance ;
-- stockage sécurisé des sessions.
+- RLS et contrat de synchronisation de `mission_actions` ;
+- appel client à `compute_mission_distance` et finalisation de distance ;
+- renouvellement fiable du token Clerk lors d'un réveil background headless ;
+- gel du companion jusqu'à la finalisation et à l'utilisation réelle de
+  l'application web.
 
 Voir :
 

@@ -1,6 +1,6 @@
 # ADR-004 — Identité de l'application compagnon
 
-**Statut : accepté pour le LOT 1 — LOT 2 requis avant production mobile**
+**Statut : accepté pour les LOTS 1 et 2A — LOT 2B requis avant production mobile**
 **Date : 26 août 2026**
 
 ## Contexte
@@ -78,7 +78,32 @@ Les invariants suivants sont désormais portés par le code :
   les points GPS dans le buffer offline.
 
 Cette implémentation ne constitue pas encore une validation de production des
-RLS : les migrations `missions`/`gps_points` ne sont pas modifiées dans ce lot.
+RLS : le contrat mobile Clerk est traité au LOT 2A, mais la finalisation et le
+comportement background restent ouverts.
+
+## Contrat RLS Clerk — LOT 2A réalisé
+
+La migration
+`apps/web/supabase/migrations/20260826070000_clerk_missions_gps_rls.sql`
+remplace les policies runtime historiques de `missions` et `gps_points` sans
+modifier la migration historique `20260506000024_companion_gps_schema.sql`.
+
+Le contrat effectif est le suivant :
+
+- `missions` est lisible et modifiable par le client `authenticated` seulement
+  lorsque `volunteer_id` correspond au claim Clerk `sub` non vide ;
+- l'UPDATE mobile est limité par grant aux colonnes `status`, `started_at` et
+  `ended_at` ; `volunteer_id`, `created_by`, `distance_m` et `duration_s` ne
+  sont pas modifiables par le client mobile ;
+- `gps_points` est lisible et insérable seulement si la mission référencée
+  appartient au même `sub` Clerk ; connaître un `mission_id` ne suffit pas ;
+- l'absence de `sub` refuse l'accès et aucun grant client `anon` n'est conservé ;
+- `service_role` reste réservé aux opérations serveur et conserve ses
+  privilèges opérationnels ; il ne constitue pas l'identité du companion.
+
+Le companion n'est toujours pas prêt pour la production : l'appel client à
+`compute_mission_distance` et la finalisation de la synchronisation background
+font l'objet du LOT 2B.
 
 ## Options
 
@@ -133,30 +158,28 @@ Inconvénients :
 - coût Vercel ;
 - gestion des tokens.
 
-## Suite recommandée — LOT 2
+## Suite recommandée — LOT 2B
 
-Le LOT 2 doit définir et tester le contrat RLS Clerk des missions et
-`gps_points`, notamment l'utilisation du `sub` Clerk pour l'ownership, puis le
-comportement de synchronisation lorsque le TaskManager est réveillé headless.
-Il doit aussi traiter la cohérence de finalisation et l'accès background sans
-réintroduire d'identité Supabase Auth.
+Le LOT 2B doit traiter l'appel client actuellement impossible à
+`compute_mission_distance`, puis geler le companion-app jusqu'à la finalisation
+et à l'utilisation réelle de l'application web.
 
-Le LOT 2 ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
+Le LOT 2B ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
 hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
 offline reste l'état attendu.
 
-## Migration
+## Migration et validation
 
-Avant bascule :
+Le LOT 2A a réalisé la bascule RLS additive :
 
-1. inventorier les missions existantes ;
-2. identifier les UIDs anonymes ;
-3. définir et tester le contrat RLS fondé sur le `sub` Clerk ;
-4. écrire la migration ;
-5. tester propriétaire/non-propriétaire avec tokens Clerk ;
-6. tester expiration et refresh ;
-7. tester offline et le réveil headless sans token ;
-8. supprimer le chemin anonyme seulement après migration.
+1. conserver la migration historique inchangée ;
+2. remplacer les policies runtime par le contrat fondé sur le `sub` Clerk ;
+3. borner les grants UPDATE mobiles ;
+4. vérifier propriétaire, tiers, `sub` absent et service role ;
+5. conserver le buffer offline lorsque le token n'est pas disponible.
+
+Le LOT 2B doit encore traiter l'appel client à `compute_mission_distance` et
+la décision de gel du companion-app avant finalisation et usage web réel.
 
 ## Tests requis
 
@@ -164,8 +187,8 @@ Avant bascule :
 utilisateur A ne lit pas mission B
 utilisateur A ne modifie pas mission B
 app et web résolvent le même profil
-token expiré refusé
-session restaurée correctement
+sub Clerk absent refusé
+champs sensibles mission non modifiables par authenticated
 service_role absente du bundle
 ```
 
