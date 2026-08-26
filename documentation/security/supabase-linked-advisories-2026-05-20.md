@@ -43,12 +43,25 @@ npm -C apps/web run backend:supabase:advisors:linked
 
 ## Vérification courante
 
-Le résultat ci-dessus est historique et ne constitue pas une preuve de l'état
-actuel de l'alerte affichée dans le Dashboard. Une nouvelle vérification doit
-être lancée avec une session CLI authentifiée sur le compte `drm` et le projet
-`supabase-vercel-codex`.
+Le résultat du 20 mai 2026 reste historique. La vérification courante doit
+être exécutée avec une session CLI authentifiée sur le compte `drm` et le
+projet `supabase-vercel-codex`.
 
-Le 27 août 2026, la commande a été tentée depuis le checkout mais a été
-bloquée avant l'appel aux advisors par `LegacyPlatformAuthRequiredError` :
-aucun `SUPABASE_ACCESS_TOKEN` n'était disponible dans la session. L'alerte ne
-peut donc pas être déclarée corrigée sur la base de cette tentative.
+Le 27 août 2026, depuis `apps/web` :
+
+- `npx supabase db push --dry-run --linked` a confirmé que la base distante est
+  à jour (`upToDate: true`, aucune migration en attente) ;
+- `npx supabase db lint --linked --fail-on warning` a terminé sans erreur de
+  schéma ;
+- `npm run backend:supabase:advisors:linked` a retourné trois warnings non
+  critiques, mais aucun finding `rls_disabled_in_public`.
+
+L'alerte « Table publiquement accessible » visible dans la capture fournie
+correspond donc à un finding qui n'est plus retourné par le contrôle lié
+actuel. Les warnings restants concernent `pg_trgm` installé dans `public` et
+les fonctions `public.compute_mission_distance` et
+`public.get_my_chat_poll_vote_summaries` exécutables par le rôle
+`authenticated` en `SECURITY DEFINER` ; ils sont distincts de cette alerte.
+
+Le lint local reste non exécuté faute d'instance Postgres locale disponible
+sur `127.0.0.1:54322` ; il nécessite Docker et `supabase start`.
