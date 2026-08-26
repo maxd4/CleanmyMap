@@ -19,20 +19,20 @@ const TAB_DEFINITIONS: Array<{
     label: "Génération",
     description: "Choix, aperçu et export du rapport.",
     icon: FileText,
-    accent: "text-red-600",
+    accent: "text-slate-500",
   },
   {
     id: "analysis",
     label: "Analyse",
     description: "KPI, comparaisons, résultats et méthodes.",
     icon: BarChart3,
-    accent: "text-cyan-700",
+    accent: "text-red-600",
   },
 ];
 
 export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+    <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-rose-100/80 bg-white/95 p-2 shadow-[0_14px_30px_-22px_rgba(190,24,93,0.3)]">
       {TAB_DEFINITIONS.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
@@ -45,13 +45,13 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
             aria-current={active ? "page" : undefined}
             className={`flex min-w-[220px] flex-1 items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left transition ${
               active
-                ? "bg-slate-950 text-white shadow-[0_18px_36px_-24px_rgba(15,23,42,0.5)]"
-                : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                ? "border border-red-200 bg-red-50/70 text-slate-950 shadow-[0_12px_26px_-20px_rgba(220,38,38,0.3)]"
+                : "border border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50"
             }`}
           >
             <span
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                active ? "bg-white/10" : "bg-white text-slate-500"
+                active ? "bg-white text-red-600" : "bg-slate-50 text-slate-500"
               } ${tab.accent}`}
             >
               <Icon size={18} />
@@ -59,7 +59,7 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
             <span className="min-w-0">
               <span className="block text-sm font-black">{tab.label}</span>
               <span
-                className={`block text-xs leading-5 ${active ? "text-white/72" : "text-slate-500"}`}
+                className="block text-xs leading-5 text-slate-500"
               >
                 {tab.description}
               </span>
