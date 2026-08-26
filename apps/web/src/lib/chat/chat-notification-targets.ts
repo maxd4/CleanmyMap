@@ -1,9 +1,16 @@
-import type { ChatChannelType } from "@/lib/chat/channels";
+import {
+  isChatChannelType,
+  type ChatChannelType,
+} from "@/lib/chat/channels";
+import { isChatMessageKind, type ChatMessageKind } from "@/lib/chat/announcements";
+import { parseChatTopicIdForChannel, type ChatTopicId } from "@/lib/chat/topics";
 
 export type ChatNotificationPayload = {
   href?: string;
   channelType?: ChatChannelType;
   messageId?: string;
+  topicId?: ChatTopicId;
+  messageKind?: ChatMessageKind;
   zoneName?: string | null;
   arrondissementId?: number | null;
   conversationPartnerId?: string;
@@ -56,10 +63,21 @@ export function normalizeChatNotificationPayload(
   const raw = payload as Record<string, unknown>;
   const aliases = readNotificationAliases(raw);
 
+  const channelTypeValue = readString(raw["channelType"]);
+  const channelType = isChatChannelType(channelTypeValue)
+    ? channelTypeValue
+    : undefined;
+  const messageKindValue = readString(raw["messageKind"]);
+  const topicId = channelType
+    ? parseChatTopicIdForChannel(channelType, readString(raw["topicId"]))
+    : null;
+
   return {
     href: readString(raw["href"]) ?? undefined,
-    channelType: readString(raw["channelType"]) as ChatChannelType | undefined,
+    channelType,
     messageId: readString(raw["messageId"]) ?? undefined,
+    topicId: topicId ?? undefined,
+    messageKind: isChatMessageKind(messageKindValue) ? messageKindValue : undefined,
     zoneName: readString(raw["zoneName"]),
     arrondissementId: readNumber(raw["arrondissementId"]),
     conversationPartnerId: aliases.conversationPartnerId,
@@ -131,6 +149,13 @@ export function buildChatNotificationHref(payload: unknown): string | null {
 
   if (normalized.channelType === "territory") {
     appendTerritoryNotificationParams(params, normalized);
+  }
+
+  if (
+    (normalized.channelType === "community" || normalized.channelType === "territory") &&
+    normalized.topicId
+  ) {
+    params.set("topicId", normalized.topicId);
   }
 
   const query = params.toString();

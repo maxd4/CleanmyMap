@@ -16,6 +16,7 @@ export type ChatSidebarChannel = {
   label: string;
   description: string;
   count?: number;
+  unreadCount?: number;
   accentClass: string;
   chipClass: string;
   isLocked: boolean;
@@ -23,6 +24,7 @@ export type ChatSidebarChannel = {
 
 export type ChatSidebarTopic = ChatTopicDefinition & {
   active: boolean;
+  unreadCount?: number;
 };
 
 type ChatSidebarProps = {
@@ -86,6 +88,14 @@ export const ChatSidebar = memo(function ChatSidebar({
               {topic.description}
             </span>
           </div>
+          {topic.unreadCount && topic.unreadCount > 0 ? (
+            <span
+              className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white"
+              aria-label={`${topic.unreadCount} notification${topic.unreadCount > 1 ? "s" : ""} non lue${topic.unreadCount > 1 ? "s" : ""}`}
+            >
+              {topic.unreadCount > 99 ? "99+" : topic.unreadCount}
+            </span>
+          ) : null}
         </button>
       );
     });
@@ -104,7 +114,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         icon={channel.icon}
         label={overrides.label ?? channel.label}
         description={overrides.description ?? channel.description}
-        count={isMessagerie ? undefined : overrides.count ?? channel.count}
+        count={isMessagerie ? channel.unreadCount : overrides.count ?? channel.count}
         accentClass={channel.accentClass.replace(/rose|pink/g, "indigo")}
         chipClass={channel.chipClass.replace(/rose|pink/g, "indigo")}
         isLocked={channel.isLocked}

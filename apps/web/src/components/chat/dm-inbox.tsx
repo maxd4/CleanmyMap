@@ -15,6 +15,7 @@ type DmInboxProps = {
   onSelectConversation: (conversation: DmConversation) => void;
   onStartConversation: () => void;
   onRetry: () => void;
+  notificationUnreadCount?: number;
   tone?: "light" | "dark";
   className?: string;
 };
@@ -35,6 +36,7 @@ export const DmInbox = memo(function DmInbox({
   onSelectConversation,
   onStartConversation,
   onRetry,
+  notificationUnreadCount = 0,
   tone = "light",
   className = "",
 }: DmInboxProps) {
@@ -50,9 +52,19 @@ export const DmInbox = memo(function DmInbox({
           <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
             Messages privés
           </p>
-          <h2 className={`mt-1 truncate text-base font-black ${isLight ? "text-slate-900" : "text-white"}`}>
-            Conversations
-          </h2>
+          <div className="mt-1 flex items-center gap-2">
+            <h2 className={`truncate text-base font-black ${isLight ? "text-slate-900" : "text-white"}`}>
+              Conversations
+            </h2>
+            {notificationUnreadCount > 0 ? (
+              <span
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-black text-white"
+                aria-label={`${notificationUnreadCount} notification${notificationUnreadCount > 1 ? "s" : ""} privée${notificationUnreadCount > 1 ? "s" : ""} non lue${notificationUnreadCount > 1 ? "s" : ""}`}
+              >
+                {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+              </span>
+            ) : null}
+          </div>
         </div>
         <button
           type="button"
