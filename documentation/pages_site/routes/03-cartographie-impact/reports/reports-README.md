@@ -92,6 +92,11 @@ formule principale; un disclosure accessible expose la source, la fréquence de
 recalcul et les limites. La présentation utilise une grille dense sur desktop
 et une colonne sur mobile.
 
+Le recalcul est déclenché lors du rafraîchissement de l'`overview`; la vue
+`reports/pilotage` peut servir le résultat depuis le cache serveur pendant
+10 minutes. Cette fraîcheur/cache est distincte de la formule de calcul et ne
+signifie pas qu'un recalcul a lieu à chaque affichage.
+
 La version n'est pas inventée dans l'interface. Lorsqu'une version runtime est
 fournie par la méthodologie d'impact, elle reste visible dans la source de la
 méthode concernée; sinon aucune version n'est affichée. Les formules, sources,

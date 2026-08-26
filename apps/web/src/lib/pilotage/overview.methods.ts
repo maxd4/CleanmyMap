@@ -1,6 +1,9 @@
 import type { MethodDefinition } from "./overview.types";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 
+const OVERVIEW_RECALC_DESCRIPTION =
+  "Déclenché lors du rafraîchissement de l'overview. Fraîcheur/cache : cache serveur jusqu'à 10 min pour la vue reports/pilotage.";
+
 export function buildMethods(): MethodDefinition[] {
   const impact = buildActionImpactMethodology();
   return [
@@ -9,7 +12,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Impact terrain (kg)",
       formula: `Somme de ${impact.formulas.wasteKg} sur les actions approuvees du perimetre de la fenetre.`,
       source: `Calcul canonique ${impact.version}. Valeur declaree puis estimation de secours; sources proxy: ${impact.sources.co2}`,
-      recalc: "Temps réel.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Valeur declarative ou estimee selon les donnees disponibles; ce n'est pas une mesure instrumentale.",
     },
     {
@@ -17,7 +20,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Mobilisation",
       formula: `Somme de ${impact.formulas.volunteers} sur les actions approuvees du perimetre de la fenetre.`,
       source: "Champs volunteersCount des declarations valides.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Mesure declarative, sensible aux oublis de saisie.",
     },
     {
@@ -25,7 +28,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Charge terrain",
       formula: "Somme de volunteersCount x durationMinutes sur actions approuvees.",
       source: "Champs volunteersCount et durationMinutes des declarations valides.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Mesure d'intensite utile, mais pas une duree d'intervention reelle.",
     },
     {
@@ -33,7 +36,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Contexte lieu",
       formula: "Taux de placeType renseigne et repartition des formats declares par type de lieu.",
       source: "Champ placeType des actions valides.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Depend du niveau de precision de la saisie terrain.",
     },
     {
@@ -41,7 +44,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Profil trajet",
       formula: "Part des actions avec routeStyle et routeAdjustmentMessage renseignes.",
       source: "Champs routeStyle et routeAdjustmentMessage des actions valides.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Le profil décrit l'intention declarative, pas le parcours GPS final.",
     },
     {
@@ -50,7 +53,7 @@ export function buildMethods(): MethodDefinition[] {
       formula:
         "Moyenne des scores de qualité exprimés en % (completude, coherence, geoloc, trace, fraicheur).",
       source: "Moteur evaluateActionQuality centralise.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Score d'aide a la decision, pas un audit exhaustif.",
     },
     {
@@ -58,7 +61,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Geo-couverture",
       formula: "(actions geolocalisees valides / actions approuvees) x 100.",
       source: "Latitude/longitude dans la source unifiee.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits:
         "Coordonnees valides sans trace detaillee peuvent surestimer la couverture.",
     },
@@ -67,7 +70,7 @@ export function buildMethods(): MethodDefinition[] {
       kpi: "Delai moderation",
       formula: "Mediane age (jours) des actions pending.",
       source: "createdAt/importedAt des enregistrements pending.",
-      recalc: "A chaque chargement de page / API.",
+      recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Sensibles aux reprises batch et imports historiques.",
     },
   ];
