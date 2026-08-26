@@ -38,6 +38,12 @@
     "typescript": "~7.0.2"
   },
   "overrides": {
+    "metro@0.84.4": {
+      "image-size": "file:../../../../../vendor/image-size"
+    },
+    "metro@0.87.0": {
+      "image-size": "file:../../vendor/image-size"
+    },
     "@xmldom/xmldom": "0.8.13",
     "brace-expansion": "5.0.9",
     "@babel/core": "7.29.6",
