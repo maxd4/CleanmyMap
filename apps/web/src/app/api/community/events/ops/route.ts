@@ -1,6 +1,8 @@
 import { auth } from"@clerk/nextjs/server";
+import { randomUUID } from"node:crypto";
 import { NextResponse } from"next/server";
 import { z } from"zod";
+import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
 import { requireAdminAccess } from"@/lib/authz";
 import { trackCommunityOpsUpdate } from"@/lib/gamification/progression";
 import {
@@ -21,6 +23,7 @@ const updateEventOpsSchema = z
  capacityTarget: z.number().int().min(1).max(200000).nullable().optional(),
  attendanceCount: z.number().int().min(0).max(200000).nullable().optional(),
  postMortem: z.string().trim().max(6000).nullable().optional(),
+ reason: z.string().trim().max(500).optional(),
  })
  .strict();
 
@@ -33,6 +36,27 @@ type CommunityEventRow = {
  location_label: string;
  description: string | null;
 };
+
+type CommunityEventOpsAuditValue = {
+ capacityTarget: number | null;
+ attendanceCount: number | null;
+ postMortemPresent: boolean;
+ postMortemLength: number;
+};
+
+const ADMIN_OVERRIDE_OPERATION = "update_community_event_ops_admin_override";
+
+function toCommunityEventOpsAuditValue(
+ ops: ReturnType<typeof defaultCommunityEventOps>,
+): CommunityEventOpsAuditValue {
+ const postMortem = (ops.postMortem ?? "").trim();
+ return {
+ capacityTarget: ops.capacityTarget,
+ attendanceCount: ops.attendanceCount,
+ postMortemPresent: postMortem.length > 0,
+ postMortemLength: postMortem.length,
+ };
+}
 
 function toEventResponseItem(
  event: CommunityEventRow,
@@ -122,6 +146,15 @@ export async function POST(request: Request) {
  return adminAccessErrorJsonResponse(adminAccess);
  }
 
+ const isAdminOverride = !isOrganizer && adminAccess.ok;
+ const reason = parsed.data.reason?.trim() ?? "";
+ if (isAdminOverride && reason.length < 5) {
+ return NextResponse.json(
+ { error:"A reason of at least 5 characters is required for an admin override" },
+ { status: 400 },
+ );
+ }
+
  const parsedDescription = parseCommunityEventDescription(
  eventResult.data.description,
  );
@@ -135,7 +168,24 @@ export async function POST(request: Request) {
  mergedOps,
  );
 
- const updated = await supabase
+ const previousValue = toCommunityEventOpsAuditValue(parsedDescription.ops);
+ const newValue = toCommunityEventOpsAuditValue(mergedOps);
+ const operationId = isAdminOverride
+ ? `community-event-ops-${randomUUID()}`
+ : null;
+ const auditDetails = isAdminOverride
+ ? {
+ operation: ADMIN_OVERRIDE_OPERATION,
+ targetUserId: eventResult.data.organizer_clerk_id,
+ reason,
+ previousValue,
+ newValue,
+ }
+ : null;
+
+ let updated;
+ try {
+ updated = await supabase
  .from("community_events")
  .update({ description })
  .eq("id", parsed.data.eventId)
@@ -143,9 +193,46 @@ export async function POST(request: Request) {
 "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
  )
  .single();
+ } catch (error) {
+ if (isAdminOverride && operationId && auditDetails) {
+ await appendAdminOperationAudit({
+ operationId,
+ at: new Date().toISOString(),
+ actorUserId: adminAccess.userId,
+ operationType: "admin_operation",
+ outcome: "error",
+ targetId: parsed.data.eventId,
+ details: { ...auditDetails, stage: "event_update" },
+ });
+ }
+ return handleApiError(error, "POST /api/community/events/ops (update)");
+ }
 
  if (updated.error) {
+ if (isAdminOverride && operationId && auditDetails) {
+ await appendAdminOperationAudit({
+ operationId,
+ at: new Date().toISOString(),
+ actorUserId: adminAccess.userId,
+ operationType: "admin_operation",
+ outcome: "error",
+ targetId: parsed.data.eventId,
+ details: { ...auditDetails, stage: "event_update" },
+ });
+ }
  return handleApiError(updated.error, "POST /api/community/events/ops (update)");
+ }
+
+ if (isAdminOverride && operationId && auditDetails) {
+ await appendAdminOperationAudit({
+ operationId,
+ at: new Date().toISOString(),
+ actorUserId: adminAccess.userId,
+ operationType: "admin_operation",
+ outcome: "success",
+ targetId: parsed.data.eventId,
+ details: auditDetails,
+ });
  }
 
  const summaries = await loadCommunityEventRsvpSummaries(supabase, {
