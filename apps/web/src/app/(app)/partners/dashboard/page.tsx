@@ -1,4 +1,3 @@
-import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -22,7 +21,14 @@ export default async function PartnersDashboardPage() {
   const accountCompletion = userId
     ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
     : null;
-  const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
+  let publishedEntries: Awaited<ReturnType<typeof listPublishedPartnerAnnuaireEntries>> = [];
+  let publishedLoadError: string | null = null;
+  try {
+    publishedEntries = await listPublishedPartnerAnnuaireEntries();
+  } catch (error) {
+    console.error("Published partner annuaire load failed", error);
+    publishedLoadError = "Fiches partenaires indisponibles (configuration persistance).";
+  }
   const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
   
   const acceptedPublishedEntries = publishedEntries.filter(
@@ -31,28 +37,15 @@ export default async function PartnersDashboardPage() {
   const reviewPublishedEntries = publishedEntries.filter(
     (entry) => entry.publicationStatus !== "accepted",
   );
-  const allEntries = (() => {
-    const seen = new Set<string>();
-    const output = [...INITIAL_ANNUAIRE_ENTRIES.slice(0, 0)];
-    for (const entry of [...INITIAL_ANNUAIRE_ENTRIES, ...acceptedPublishedEntries]) {
-      const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      output.push(entry);
-    }
-    return output;
-  })();
 
-  const totalEntries = allEntries.length;
-  const activeEntries = allEntries.filter(
+  const totalEntries = acceptedPublishedEntries.length;
+  const activeEntries = acceptedPublishedEntries.filter(
     (entry) =>
       entry.qualificationStatus === "partenaire_actif" &&
       entry.verificationStatus === "verifie" &&
       hasRecentActivity(entry.recentActivityAt),
   );
-  const staleEntries = allEntries.filter(
+  const staleEntries = publishedEntries.filter(
     (entry) =>
       entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
   );
@@ -69,7 +62,9 @@ export default async function PartnersDashboardPage() {
       onboardingLoadError = "Demandes onboarding indisponibles (configuration persistance).";
     }
   }
-  const coveredZones = new Set(allEntries.flatMap((entry) => entry.coveredArrondissements));
+  const coveredZones = new Set(
+    acceptedPublishedEntries.flatMap((entry) => entry.coveredArrondissements),
+  );
 
   const page = (
     <div className="w-full max-w-7xl mx-auto space-y-10 pb-20">
@@ -95,11 +90,11 @@ export default async function PartnersDashboardPage() {
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
         {[
-          { label: "Fiches publiées", val: totalEntries, icon: <ClipboardCheck size={20} />, color: "slate" },
-          { label: "Partenaires actifs", val: activeEntries.length, icon: <Users size={20} />, color: "emerald" },
-          { label: "Zones couvertes", val: coveredZones.size, icon: <MapPin size={20} />, color: "sky" },
+          { label: "Fiches publiées", val: publishedLoadError ? "n/a" : totalEntries, icon: <ClipboardCheck size={20} />, color: "slate" },
+          { label: "Partenaires actifs", val: publishedLoadError ? "n/a" : activeEntries.length, icon: <Users size={20} />, color: "emerald" },
+          { label: "Zones couvertes", val: publishedLoadError ? "n/a" : coveredZones.size, icon: <MapPin size={20} />, color: "sky" },
           { label: "À valider", val: onboardingRequestCount ?? "n/a", icon: <ShieldCheck size={20} />, color: "amber", sub: "Décision requise" },
-          { label: "Fiches à revoir", val: reviewPublishedEntries.length, icon: <AlertCircle size={20} />, color: "rose" },
+          { label: "Fiches à revoir", val: publishedLoadError ? "n/a" : reviewPublishedEntries.length, icon: <AlertCircle size={20} />, color: "rose" },
         ].map((card, i) => (
           <div key={i} className={cn(
             "p-8 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-700 group relative overflow-hidden",
@@ -119,6 +114,18 @@ export default async function PartnersDashboardPage() {
         ))}
       </section>
 
+      {publishedLoadError ? (
+        <section className="rounded-[2rem] border border-rose-400/20 bg-rose-400/5 p-6 flex items-center gap-4 text-rose-200/70 text-sm font-medium">
+          <AlertCircle size={20} className="text-rose-400 shrink-0" />
+          {publishedLoadError}
+        </section>
+      ) : publishedEntries.length === 0 ? (
+        <section className="rounded-[2rem] border border-slate-400/20 bg-slate-400/5 p-6 flex items-center gap-4 text-slate-200/60 text-sm font-medium">
+          <ClipboardCheck size={20} className="text-slate-400 shrink-0" />
+          Aucune fiche partenaire persistée n’est disponible pour le moment.
+        </section>
+      ) : null}
+
       {onboardingLoadError && (
         <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6 flex items-center gap-4 text-amber-200/60 text-sm font-medium">
           <AlertCircle size={20} className="text-amber-400 shrink-0" />
@@ -130,14 +137,14 @@ export default async function PartnersDashboardPage() {
         <section className={cn("lg:col-span-2 p-10 rounded-[3rem] border space-y-8", classes.surface, classes.shadow)}>
           <div className="flex items-center gap-3 text-slate-400">
             <ClipboardCheck size={16} />
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Feuille de route Prioritaire</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Checklist de gouvernance</h3>
           </div>
           <ul className="grid gap-4">
             {[
-              "Traiter les demandes de partenariat en attente sous 72h",
-              "Revoir les fiches publiées en attente de validation",
-              "Renforcer les contributions en zones sous-couvertes",
-              "Publier les mises à jour de fiches partenaires cette semaine"
+              "Examiner les demandes selon leur statut persistant",
+              "Vérifier les fiches dont la modération nécessite une revue",
+              "Comparer la couverture déclarée des fiches acceptées",
+              "Documenter chaque décision et sa date dans les données de modération",
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/[0.07] transition-all">
                 <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i+1}</span>
