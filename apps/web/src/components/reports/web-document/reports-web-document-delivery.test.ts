@@ -138,6 +138,7 @@ describe("ReportsWebDocumentDelivery", () => {
     );
 
     expect(markup).toContain("Rapports récents");
+    expect(markup).toContain("Derniers rapports générés.");
     expect(markup).toContain("Rapport d&#x27;impact");
     expect(markup).toContain("Six mois");
     expect(markup).toContain("Global");

@@ -1,27 +1,23 @@
-import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   REPORT_GENERATION_HISTORY_LIMIT,
   toReportGenerationHistoryRow,
   type ReportGenerationHistoryInput,
-  type ReportGenerationHistoryRecord,
+  type ReportGenerationHistoryMetadata,
   type ReportGenerationHistoryRow,
 } from "./report-generation-history-contract";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
-type ReportGenerationDbRow = {
+const REPORT_GENERATION_HISTORY_METADATA_SELECT =
+  "id, generated_at, title, period_id, scope_label, detail_level";
+
+type ReportGenerationDbMetadataRow = {
   id: string;
-  created_at: string;
   generated_at: string;
-  created_by_clerk_id: string;
   title: string;
-  filename: string;
-  period_id: ReportGenerationHistoryInput["payload"]["periode"];
-  scope_kind: ReportGenerationHistoryInput["scopeKind"];
-  scope_value: string;
+  period_id: ReportGenerationHistoryMetadata["periodId"];
   scope_label: string;
   detail_level: ReportGenerationHistoryInput["detailLevel"];
-  modules: ReportGenerationHistoryInput["modules"];
-  snapshot: PdfReportPayload;
 };
 
 function normalizeLimit(limit: number): number {
@@ -31,25 +27,23 @@ function normalizeLimit(limit: number): number {
   return Math.min(Math.max(Math.trunc(limit), 1), REPORT_GENERATION_HISTORY_LIMIT);
 }
 
-function toRecord(row: ReportGenerationDbRow): ReportGenerationHistoryRecord {
+function toHistoryMetadata(
+  row: ReportGenerationDbMetadataRow,
+): ReportGenerationHistoryMetadata {
   return {
     id: row.id,
-    createdAt: row.created_at,
-    generatedAt: row.generated_at,
-    createdByClerkId: row.created_by_clerk_id,
-    filename: row.filename,
-    payload: row.snapshot,
-    scopeKind: row.scope_kind,
-    scopeValue: row.scope_value,
+    title: row.title,
+    periodId: row.period_id,
     scopeLabel: row.scope_label,
     detailLevel: row.detail_level,
-    modules: row.modules,
+    generatedAt: row.generated_at,
   };
 }
 
-function toHistoryRow(row: ReportGenerationDbRow): ReportGenerationHistoryRow | null {
-  const record = toRecord(row);
-  return toReportGenerationHistoryRow(record);
+function toHistoryRow(
+  row: ReportGenerationDbMetadataRow,
+): ReportGenerationHistoryRow | null {
+  return toReportGenerationHistoryRow(toHistoryMetadata(row));
 }
 
 export async function listReportGenerationHistory(
@@ -57,9 +51,7 @@ export async function listReportGenerationHistory(
 ): Promise<ReportGenerationHistoryRow[]> {
   const { data, error } = await getSupabaseAdminClient()
     .from("report_generations")
-    .select(
-      "id, created_at, generated_at, created_by_clerk_id, title, filename, period_id, scope_kind, scope_value, scope_label, detail_level, modules, snapshot",
-    )
+    .select(REPORT_GENERATION_HISTORY_METADATA_SELECT)
     .order("generated_at", { ascending: false })
     .limit(normalizeLimit(limit));
 
@@ -67,7 +59,7 @@ export async function listReportGenerationHistory(
     throw error;
   }
 
-  return ((data ?? []) as ReportGenerationDbRow[])
+  return ((data ?? []) as ReportGenerationDbMetadataRow[])
     .map(toHistoryRow)
     .filter((row): row is ReportGenerationHistoryRow => Boolean(row));
 }
@@ -102,16 +94,14 @@ export async function persistReportGeneration(params: {
   const { data, error } = await getSupabaseAdminClient()
     .from("report_generations")
     .insert(row)
-    .select(
-      "id, created_at, generated_at, created_by_clerk_id, title, filename, period_id, scope_kind, scope_value, scope_label, detail_level, modules, snapshot",
-    )
+    .select(REPORT_GENERATION_HISTORY_METADATA_SELECT)
     .single();
 
   if (error || !data) {
     throw error ?? new Error("Report generation history row was not returned.");
   }
 
-  const historyRow = toHistoryRow(data as ReportGenerationDbRow);
+  const historyRow = toHistoryRow(data as ReportGenerationDbMetadataRow);
   if (!historyRow) {
     throw new Error("Report generation history row has an invalid generated_at.");
   }

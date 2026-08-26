@@ -118,6 +118,21 @@ type ActionImpactValues = {
  wasteBreakdown: unknown;
 };
 
+type ActionAuditState = ActionImpactValues & {
+ status: "pending" | "approved" | "rejected" | "unknown";
+ moderationVisibility: "visible" | "hidden" | "unknown";
+};
+
+type ActionAuditSnapshot = {
+ status: ActionAuditState["status"];
+ moderationVisibility: ActionAuditState["moderationVisibility"];
+ wasteKg: number | null;
+ cigaretteButts: number | null;
+ volunteersCount: number | null;
+ durationMinutes: number | null;
+ wasteBreakdownPresent: boolean;
+};
+
 function toNullableNumber(value: unknown): number | null {
  if (typeof value ==="number" && Number.isFinite(value)) {
   return value;
@@ -146,6 +161,123 @@ function normalizeImpactValues(row: {
   durationMinutes: toNullableNumber(row.duration_minutes),
   wasteBreakdown: metadata.wasteBreakdown,
  };
+}
+
+function normalizeActionAuditState(row: {
+ status?: unknown;
+ moderation_visibility?: unknown;
+ created_by_clerk_id?: string | null;
+ waste_kg?: unknown;
+ cigarette_butts?: unknown;
+ volunteers_count?: unknown;
+ duration_minutes?: unknown;
+ notes?: string | null;
+}): ActionAuditState {
+ const metadata = extractActionMetadataFromNotes(row.notes ?? null);
+ const status =
+  row.status === "pending" || row.status === "approved" || row.status === "rejected"
+   ? row.status
+   : "unknown";
+ const moderationVisibility =
+  row.moderation_visibility === "hidden" || row.moderation_visibility === "visible"
+   ? row.moderation_visibility
+   : "unknown";
+ const wasteBreakdown = metadata.wasteBreakdown;
+
+ return {
+  status,
+  moderationVisibility,
+  createdByClerkId: row.created_by_clerk_id ?? null,
+  wasteKg: toNullableNumber(row.waste_kg),
+  cigaretteButts: toNullableNumber(row.cigarette_butts),
+  volunteersCount: toNullableNumber(row.volunteers_count),
+  durationMinutes: toNullableNumber(row.duration_minutes),
+  wasteBreakdown,
+ };
+}
+
+async function tryLoadActionAuditState(
+ supabase: ReturnType<typeof getSupabaseServerClient>,
+ id: string,
+): Promise<ActionAuditState | null> {
+ try {
+  const row = await runSingleActionQuery<{
+   status: string | null;
+   moderation_visibility: string | null;
+   created_by_clerk_id: string | null;
+   waste_kg: unknown;
+   cigarette_butts: unknown;
+   volunteers_count: unknown;
+   duration_minutes: unknown;
+   notes: string | null;
+  }>(supabase, (query) =>
+   query
+    .select(
+     "status, moderation_visibility, created_by_clerk_id, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes",
+    )
+    .eq("id", id)
+    .maybeSingle(),
+  );
+
+  return row ? normalizeActionAuditState(row) : null;
+ } catch {
+  return null;
+ }
+}
+
+function toActionAuditSnapshot(state: ActionAuditState | null): ActionAuditSnapshot {
+ return {
+  status: state?.status ?? "unknown",
+  moderationVisibility: state?.moderationVisibility ?? "unknown",
+  wasteKg: state?.wasteKg ?? null,
+  cigaretteButts: state?.cigaretteButts ?? null,
+  volunteersCount: state?.volunteersCount ?? null,
+  durationMinutes: state?.durationMinutes ?? null,
+  wasteBreakdownPresent: Boolean(
+   state?.wasteBreakdown &&
+    typeof state.wasteBreakdown === "object" &&
+    Object.values(state.wasteBreakdown as Record<string, unknown>).some(
+     (value) => value !== undefined && value !== null,
+    ),
+  ),
+ };
+}
+
+function applyExpectedActionAuditChanges(
+ state: ActionAuditState | null,
+ params: {
+  status: "pending" | "approved" | "rejected";
+  moderationVisibility?: "visible" | "hidden";
+  edits?: z.infer<typeof actionEditsSchema>;
+ },
+): ActionAuditState | null {
+ if (!state) {
+  return null;
+ }
+
+ const edits = params.edits;
+ return {
+  ...state,
+  status: params.status,
+  moderationVisibility:
+   params.moderationVisibility ?? state.moderationVisibility,
+  wasteKg: edits?.wasteKg ?? state.wasteKg,
+  cigaretteButts: edits?.cigaretteButts ?? state.cigaretteButts,
+  volunteersCount: edits?.volunteersCount ?? state.volunteersCount,
+  durationMinutes: edits?.durationMinutes ?? state.durationMinutes,
+  wasteBreakdown:
+   edits?.wasteBreakdown !== undefined
+    ? edits.wasteBreakdown
+    : state.wasteBreakdown,
+ };
+}
+
+function canonicalTargetUserId(value: unknown): string | undefined {
+ if (typeof value !== "string") {
+  return undefined;
+ }
+ const normalized = value.trim();
+ return normalized && normalized !== "unknown" ? normalized : undefined;
 }
 
 async function loadActionImpactValues(
@@ -207,10 +339,10 @@ async function updateActionModerationVisibility(
   actorUserId: string;
   reason: string;
  },
-): Promise<{
- found: boolean;
- previousValue: { moderationVisibility: "visible" |"hidden"; hiddenAt: string | null; hiddenByClerkId: string | null; hiddenReason: string | null } | null;
- newValue: { moderationVisibility: "visible" |"hidden"; hiddenAt: string | null; hiddenByClerkId: string | null; hiddenReason: string | null } | null;
+ ): Promise<{
+  found: boolean;
+  previousValue: { moderationVisibility: "visible" |"hidden" } | null;
+  newValue: { moderationVisibility: "visible" |"hidden" } | null;
 }> {
  const current = await supabase
  .from("actions")
@@ -253,19 +385,13 @@ async function updateActionModerationVisibility(
 
  return {
   found: Boolean(updated.data),
-  previousValue: {
-   moderationVisibility: current.data.moderation_visibility ??"visible",
-   hiddenAt: current.data.hidden_at ?? null,
-   hiddenByClerkId: current.data.hidden_by_clerk_id ?? null,
-   hiddenReason: current.data.hidden_reason ?? null,
-  },
-  newValue: updated.data
-   ? {
-    moderationVisibility: updated.data.moderation_visibility ??"visible",
-    hiddenAt: updated.data.hidden_at ?? null,
-    hiddenByClerkId: updated.data.hidden_by_clerk_id ?? null,
-    hiddenReason: updated.data.hidden_reason ?? null,
-   }
+   previousValue: {
+    moderationVisibility: current.data.moderation_visibility ??"visible",
+   },
+   newValue: updated.data
+    ? {
+     moderationVisibility: updated.data.moderation_visibility ??"visible",
+    }
    : null,
  };
 }
@@ -419,9 +545,13 @@ export async function POST(request: Request) {
 
  try {
  if (parsed.data.entityType ==="action") {
- const shouldRefreshImpact = hasSensitiveImpactEdit(parsed.data.edits);
- const previousImpactValue = shouldRefreshImpact
- ? await loadActionImpactValues(supabase, parsed.data.id)
+  const shouldRefreshImpact = hasSensitiveImpactEdit(parsed.data.edits);
+  const previousActionAuditState = await tryLoadActionAuditState(
+   supabase,
+   parsed.data.id,
+  );
+  const previousImpactValue = shouldRefreshImpact
+  ? await loadActionImpactValues(supabase, parsed.data.id)
  : null;
  const statusUpdate = await updateActionStatus(
  supabase,
@@ -526,8 +656,24 @@ let copied = false;
       actionId: parsed.data.id,
       userId: actionDetails?.created_by_clerk_id || "",
       moderatorId: access.userId,
-    });
+   });
   }
+
+  const loadedNewActionAuditState = await tryLoadActionAuditState(
+   supabase,
+   parsed.data.id,
+  );
+  const newActionAuditState =
+   loadedNewActionAuditState ??
+   applyExpectedActionAuditChanges(previousActionAuditState, {
+    status: parsed.data.status,
+    moderationVisibility: parsed.data.moderationVisibility,
+    edits: parsed.data.edits,
+   });
+  const targetUserId = canonicalTargetUserId(
+   previousActionAuditState?.createdByClerkId ??
+    newActionAuditState?.createdByClerkId,
+  );
 
  await appendAdminOperationAudit({
  operationId,
@@ -537,27 +683,20 @@ let copied = false;
  outcome:"success",
  targetId: parsed.data.id,
  details: {
- entityType: parsed.data.entityType,
- targetStatus: parsed.data.status,
- ...(requiredReasonOperation ? { operation: requiredReasonOperation } : {}),
- ...(reason ? { reason } : {}),
- ...(parsed.data.moderationVisibility
-  ? { moderationVisibility: parsed.data.moderationVisibility }
-  : {}),
- ...(visibilityUpdate?.previousValue
-  ? { previousValue: visibilityUpdate.previousValue }
-  : {}),
- ...(previousImpactValue ? { previousValue: previousImpactValue } : {}),
- ...(visibilityUpdate?.newValue ? { newValue: visibilityUpdate.newValue } : {}),
- ...(newImpactValue ? { newValue: newImpactValue } : {}),
- ...(refreshedProgressionUserIds.length > 0
-  ? { refreshedProgressionUserIds }
-  : {}),
- ...(shouldRefreshImpact ? { publicSurfaceSnapshotsInvalidated: true } : {}),
- sourceTable: statusUpdate.source,
- copiedToLocalValidatedStore: copied,
- editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
- },
+  entityType: parsed.data.entityType,
+  targetStatus: parsed.data.status,
+  ...(requiredReasonOperation ? { operation: requiredReasonOperation } : {}),
+  ...(reason ? { reason } : {}),
+  ...(targetUserId ? { targetUserId } : {}),
+  previousValue: toActionAuditSnapshot(previousActionAuditState),
+  newValue: toActionAuditSnapshot(newActionAuditState),
+  ...(refreshedProgressionUserIds.length > 0
+   ? { refreshedProgressionUserIds }
+   : {}),
+  ...(shouldRefreshImpact ? { publicSurfaceSnapshotsInvalidated: true } : {}),
+  sourceTable: statusUpdate.source,
+  copiedToLocalValidatedStore: copied,
+  },
  });
 
  return adminSuccessResponse({
