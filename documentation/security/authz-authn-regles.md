@@ -200,9 +200,6 @@ avec un statut invalide ou avec `status=approved` ne restitue que les actions
 approuvées et les signalements Trash Spotter `validated` ou `cleaned`. Cette
 lecture peut utiliser `loadOrRefreshPublicSurfaceSnapshot`.
 
-Une montée de version invalide strictement le snapshot précédent : si la
-reconstruction échoue, aucune version antérieure ne peut servir de fallback.
-
 Toute vue qui peut inclure un état non public — `status=pending`,
 `status=rejected` ou la vue globale explicite `status=all` — exige l'AuthN puis
 l'AuthZ de modération centrale (`admin`, `elu` ou `max`). Elle est lue
