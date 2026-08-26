@@ -49,7 +49,7 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
       ...snapshot,
     };
   } catch (error) {
-    if (existing) {
+    if (existing && existing.version === params.version) {
       return existing;
     }
     throw error;
