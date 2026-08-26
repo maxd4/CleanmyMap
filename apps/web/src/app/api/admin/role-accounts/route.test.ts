@@ -7,6 +7,7 @@ const clerkClientMock = vi.hoisted(() => vi.fn());
 const listManagedRoleAccountsMock = vi.hoisted(() => vi.fn());
 const searchManagedRoleAccountsMock = vi.hoisted(() => vi.fn());
 const getManagedRoleAccountByIdMock = vi.hoisted(() => vi.fn());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
@@ -33,6 +34,10 @@ vi.mock("@/lib/admin/role-management", () => ({
   getManagedRoleAccountById: getManagedRoleAccountByIdMock,
 }));
 
+vi.mock("@/lib/admin/operation-audit", () => ({
+  appendAdminOperationAudit: appendAdminOperationAuditMock,
+}));
+
 describe("GET/POST /api/admin/role-accounts", () => {
   beforeEach(() => {
     getCurrentUserRoleLabelMock.mockResolvedValue("max");
@@ -42,6 +47,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
       role: "max",
     });
     syncClerkUserToSupabaseMock.mockResolvedValue(null);
+    appendAdminOperationAuditMock.mockResolvedValue(null);
     clerkClientMock.mockResolvedValue({
       users: {
         getUser: vi.fn().mockResolvedValue({
@@ -135,6 +141,20 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(body.status).toBe("ok");
     expect(body.account?.["roleLabel"]).toBe("admin");
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "owner-1",
+        targetId: "user-2",
+        operationType: "moderation",
+        outcome: "success",
+        details: {
+          entityType: "role_account",
+          action: "assign",
+          previousRole: "benevole",
+          newRole: "admin",
+        },
+      }),
+    );
     expect(getManagedRoleAccountByIdMock).toHaveBeenCalledWith("user-2");
   });
 });

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
 import {
   getManagedRoleAccountById,
   listManagedRoleAccounts,
@@ -95,6 +96,10 @@ export async function POST(request: Request) {
 
   const client = await clerkClient();
   const currentUser = await client.users.getUser(parsed.data.userId);
+  const previousRole =
+    typeof (currentUser.publicMetadata as Record<string, unknown>).role === "string"
+      ? (currentUser.publicMetadata as Record<string, string>).role
+      : null;
   const updatedUser = await client.users.updateUser(parsed.data.userId, {
     publicMetadata: {
       ...(currentUser.publicMetadata as Record<string, unknown>),
@@ -109,6 +114,20 @@ export async function POST(request: Request) {
   });
 
   await syncClerkUserToSupabase(updatedUser);
+  await appendAdminOperationAudit({
+    operationId: `role-account-${parsed.data.userId}-${Date.now()}`,
+    at: new Date().toISOString(),
+    actorUserId: identity.userId,
+    operationType: "moderation",
+    outcome: "success",
+    targetId: parsed.data.userId,
+    details: {
+      entityType: "role_account",
+      action: parsed.data.action,
+      previousRole,
+      newRole: targetRole ?? null,
+    },
+  }).catch(() => undefined);
   const account = await getManagedRoleAccountById(parsed.data.userId);
 
   return NextResponse.json({

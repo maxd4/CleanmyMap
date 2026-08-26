@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const fetchUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
@@ -54,11 +54,11 @@ function createSupabaseMock(options?: {
 }
 
 vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
+  unauthorizedJsonResponse: () => new Response("unauthorized", { status: 401 }),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -109,7 +109,7 @@ describe("GET /api/reports/elus-dossier", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
+    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
     fetchUnifiedActionContractsMock.mockResolvedValue({
       items: [contract],
@@ -139,6 +139,22 @@ describe("GET /api/reports/elus-dossier", () => {
     });
     evaluateActionQualityMock.mockReturnValue({ score: 88 });
     toActionListItemMock.mockReturnValue({});
+  });
+
+  it("rejects anonymous requests before loading the dossier", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized",
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/reports/elus-dossier"),
+    );
+
+    expect(response.status).toBe(401);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
   it("returns markdown deliverables with coherent headers", async () => {
