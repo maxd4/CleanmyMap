@@ -262,6 +262,14 @@ export async function listPartnerOnboardingRequests(
   return store.records.slice(0, normalizedLimit);
 }
 
+export async function getPartnerOnboardingRequestById(
+  requestId: string,
+): Promise<PartnerOnboardingRequestRecord | null> {
+  assertPersistenceAvailable("partner_onboarding_requests");
+  const store = await readStore();
+  return store.records.find((record) => record.id === requestId) ?? null;
+}
+
 export async function countPartnerOnboardingRequests(): Promise<number> {
   assertPersistenceAvailable("partner_onboarding_requests");
   const store = await readStore();

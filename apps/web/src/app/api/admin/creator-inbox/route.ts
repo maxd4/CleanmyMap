@@ -3,9 +3,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
-import { updatePromotionRequestCreatorState } from "@/lib/admin/promotion-requests-store";
+import {
+  getPromotionRequestById,
+  updatePromotionRequestCreatorState,
+} from "@/lib/admin/promotion-requests-store";
 import {
   deleteCommunityBugReport,
+  getCommunityBugReportById,
   updateCommunityBugReportCreatorState,
   updateCommunityBugReportStatus,
 } from "@/lib/community/bug-reports-store";
@@ -13,27 +17,104 @@ import {
   buildFeedbackInboxItem,
   buildPartnerInboxItem,
   buildPromotionInboxItem,
-  formatCreatorInboxSourceLabel,
+  type CreatorInboxSource,
 } from "@/lib/community/creator-inbox";
 import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
-import { deletePartnerOnboardingRequest, listPartnerOnboardingRequests, updatePartnerOnboardingRequestCreatorState } from "@/lib/partners/onboarding-requests-store";
+import {
+  deletePartnerOnboardingRequest,
+  getPartnerOnboardingRequestById,
+  updatePartnerOnboardingRequestCreatorState,
+} from "@/lib/partners/onboarding-requests-store";
 
 export const runtime = "nodejs";
 
-const actionSchema = z.object({
-  source: z.enum(["feedback", "promotion", "partner"]),
-  itemId: z.string().trim().min(1),
-  action: z.enum(["mark_treated", "responded", "archive", "delete"]),
-});
+const actionSchema = z
+  .object({
+    source: z.enum(["feedback", "promotion", "partner"]),
+    itemId: z.string().trim().min(1),
+    action: z.enum(["mark_treated", "responded", "archive", "delete"]),
+    reason: z.string().trim().min(5).max(500),
+  });
 
-function creatorAccessResponse(status: number) {
-  return NextResponse.json({ error: "Forbidden" }, { status });
+const AUDIT_OPERATION = "creator_inbox_update";
+
+type InboxSnapshot = {
+  source: CreatorInboxSource;
+  status?: string;
+  creatorState?: string;
+};
+
+type ErrorStage = "creator_state_update" | "status_update";
+
+function canonicalTargetUserId(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized && normalized !== "unknown" ? normalized : undefined;
+}
+
+function buildSnapshot(
+  source: Exclude<CreatorInboxSource, "event">,
+  record: { status?: string; creatorState: string },
+): InboxSnapshot {
+  return {
+    source,
+    ...(record.status ? { status: record.status } : {}),
+    creatorState: record.creatorState,
+  };
+}
+
+function buildAuditDetails(params: {
+  reason: string;
+  targetUserId?: string;
+  previousValue: InboxSnapshot;
+  newValue: InboxSnapshot;
+  stage?: ErrorStage;
+  partialMutation?: boolean;
+}) {
+  return {
+    operation: AUDIT_OPERATION,
+    reason: params.reason,
+    ...(params.targetUserId ? { targetUserId: params.targetUserId } : {}),
+    previousValue: params.previousValue,
+    newValue: params.newValue,
+    ...(params.stage ? { stage: params.stage } : {}),
+    ...(params.partialMutation === undefined
+      ? {}
+      : { partialMutation: params.partialMutation }),
+  };
+}
+
+async function appendDecisionAudit(params: {
+  operationId: string;
+  actorUserId: string;
+  outcome: "success" | "error";
+  targetId: string;
+  details: ReturnType<typeof buildAuditDetails>;
+}) {
+  await appendAdminOperationAudit({
+    operationId: params.operationId,
+    at: new Date().toISOString(),
+    actorUserId: params.actorUserId,
+    operationType: "admin_operation",
+    outcome: params.outcome,
+    targetId: params.targetId,
+    details: params.details,
+  });
+}
+
+function mutationErrorResponse() {
+  return NextResponse.json(
+    { error: "Unable to update creator inbox item." },
+    { status: 500 },
+  );
 }
 
 export async function GET() {
   const access = await requireCreatorAccess();
   if (!access.ok) {
-    return creatorAccessResponse(access.status);
+    return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }
 
   try {
@@ -41,9 +122,7 @@ export async function GET() {
     return NextResponse.json({ status: "ok", count: items.length, items });
   } catch {
     return NextResponse.json(
-      {
-        error: "Unable to load creator inbox.",
-      },
+      { error: "Unable to load creator inbox." },
       { status: 500 },
     );
   }
@@ -52,12 +131,12 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const access = await requireCreatorAccess();
   if (!access.ok) {
-    return creatorAccessResponse(access.status);
+    return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }
 
   const identity = await getCurrentUserIdentity();
   if (!identity) {
-    return creatorAccessResponse(401);
+    return NextResponse.json({ error: "Forbidden" }, { status: 401 });
   }
 
   let payload: unknown;
@@ -79,208 +158,321 @@ export async function PATCH(request: Request) {
   }
 
   const operationId = randomUUID();
-  const sourceLabel = formatCreatorInboxSourceLabel(parsed.data.source, "fr");
+  const { source, itemId, action } = parsed.data;
+  const reason = parsed.data.reason;
 
-  try {
-    if (parsed.data.source === "feedback") {
-      if (parsed.data.action === "delete") {
-        const deleted = await deleteCommunityBugReport(parsed.data.itemId);
-        if (!deleted) {
-          return NextResponse.json({ error: "Report not found" }, { status: 404 });
-        }
-        await appendAdminOperationAudit({
-          operationId,
-          at: new Date().toISOString(),
-          actorUserId: identity.userId,
-          operationType: "moderation",
-          outcome: "success",
-          targetId: parsed.data.itemId,
-          details: {
-            entityType: "creator_inbox_feedback",
-            action: parsed.data.action,
-            source: sourceLabel,
-          },
-        });
-        return NextResponse.json({ status: "ok", deletedId: parsed.data.itemId });
+  if (source === "feedback") {
+    const current = await getCommunityBugReportById(itemId);
+    if (!current) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
+
+    if (action === "delete") {
+      const deleted = await deleteCommunityBugReport(itemId);
+      if (!deleted) {
+        return NextResponse.json({ error: "Report not found" }, { status: 404 });
       }
+      await appendDecisionAudit({
+        operationId,
+        actorUserId: identity.userId,
+        outcome: "success",
+        targetId: itemId,
+        details: buildAuditDetails({
+          reason,
+          targetUserId: canonicalTargetUserId(current.submittedByUserId),
+          previousValue: buildSnapshot("feedback", current),
+          newValue: { source: "feedback" },
+        }),
+      });
+      return NextResponse.json({ status: "ok", deletedId: itemId });
+    }
 
-      if (parsed.data.action === "mark_treated") {
-        const updated = await updateCommunityBugReportStatus({
-          reportId: parsed.data.itemId,
+    const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+    const previousValue = buildSnapshot("feedback", current);
+
+    if (action === "mark_treated") {
+      let updated;
+      try {
+        updated = await updateCommunityBugReportStatus({
+          reportId: itemId,
           status: "treated",
         });
         if (!updated) {
-          return NextResponse.json({ error: "Report not found" }, { status: 404 });
+          throw new Error("feedback status update did not persist");
         }
-        await appendAdminOperationAudit({
+      } catch {
+        await appendDecisionAudit({
           operationId,
-          at: new Date().toISOString(),
           actorUserId: identity.userId,
-          operationType: "moderation",
-          outcome: "success",
-          targetId: updated.id,
-          details: {
-            entityType: "creator_inbox_feedback",
-            action: parsed.data.action,
-            source: sourceLabel,
-          },
+          outcome: "error",
+          targetId: itemId,
+          details: buildAuditDetails({
+            reason,
+            targetUserId,
+            previousValue,
+            newValue: buildSnapshot("feedback", {
+              status: "treated",
+              creatorState: "treated",
+            }),
+            stage: "status_update",
+            partialMutation: false,
+          }),
         });
-        return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(updated) });
+        return mutationErrorResponse();
       }
 
-      const updated = await updateCommunityBugReportCreatorState({
-        reportId: parsed.data.itemId,
-        creatorState: parsed.data.action === "responded" ? "responded" : "archived",
-      });
-      if (!updated) {
-        return NextResponse.json({ error: "Report not found" }, { status: 404 });
-      }
-      if (parsed.data.action === "archive") {
-        await updateCommunityBugReportStatus({
-          reportId: parsed.data.itemId,
-          status: "archived",
-        });
-      }
-      const normalizedItem =
-        parsed.data.action === "archive"
-          ? {
-              ...updated,
-              status: "archived" as const,
-              creatorState: "archived" as const,
-            }
-          : updated;
-      await appendAdminOperationAudit({
+      await appendDecisionAudit({
         operationId,
-        at: new Date().toISOString(),
         actorUserId: identity.userId,
-        operationType: "moderation",
         outcome: "success",
         targetId: updated.id,
-        details: {
-          entityType: "creator_inbox_feedback",
-          action: parsed.data.action,
-          source: sourceLabel,
-        },
+        details: buildAuditDetails({
+          reason,
+          targetUserId,
+          previousValue,
+          newValue: buildSnapshot("feedback", updated),
+        }),
       });
-      return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(normalizedItem) });
+      return NextResponse.json({ status: "ok", item: buildFeedbackInboxItem(updated) });
     }
 
-    if (parsed.data.source === "promotion") {
-      if (parsed.data.action === "delete") {
-        return NextResponse.json(
-          { error: "Promotion requests can only be archived from the inbox." },
-          { status: 409 },
-        );
+    let creatorStateUpdated;
+    try {
+      creatorStateUpdated = await updateCommunityBugReportCreatorState({
+        reportId: itemId,
+        creatorState: action === "responded" ? "responded" : "archived",
+      });
+      if (!creatorStateUpdated) {
+        throw new Error("feedback creator state update did not persist");
       }
-      const updated = await updatePromotionRequestCreatorState({
-        requestId: parsed.data.itemId,
+    } catch {
+      await appendDecisionAudit({
+        operationId,
+        actorUserId: identity.userId,
+        outcome: "error",
+        targetId: itemId,
+        details: buildAuditDetails({
+          reason,
+          targetUserId,
+          previousValue,
+          newValue: buildSnapshot("feedback", {
+            status: current.status,
+            creatorState: action === "responded" ? "responded" : "archived",
+          }),
+          stage: "creator_state_update",
+          partialMutation: false,
+        }),
+      });
+      return mutationErrorResponse();
+    }
+
+    let finalRecord: NonNullable<typeof creatorStateUpdated> = creatorStateUpdated;
+    if (action === "archive") {
+      try {
+        const archivedRecord = await updateCommunityBugReportStatus({
+          reportId: itemId,
+          status: "archived",
+        });
+        if (!archivedRecord) {
+          throw new Error("feedback archive status update did not persist");
+        }
+        finalRecord = archivedRecord;
+      } catch {
+        await appendDecisionAudit({
+          operationId,
+          actorUserId: identity.userId,
+          outcome: "error",
+          targetId: itemId,
+          details: buildAuditDetails({
+            reason,
+            targetUserId,
+            previousValue,
+            newValue: buildSnapshot("feedback", {
+              status: "archived",
+              creatorState: "archived",
+            }),
+            stage: "status_update",
+            partialMutation: true,
+          }),
+        });
+        return mutationErrorResponse();
+      }
+    }
+
+    await appendDecisionAudit({
+      operationId,
+      actorUserId: identity.userId,
+      outcome: "success",
+      targetId: finalRecord.id,
+      details: buildAuditDetails({
+        reason,
+        targetUserId,
+        previousValue,
+        newValue: buildSnapshot("feedback", finalRecord),
+      }),
+    });
+    return NextResponse.json({
+      status: "ok",
+      item: buildFeedbackInboxItem(finalRecord),
+    });
+  }
+
+  if (source === "promotion") {
+    if (action === "delete") {
+      return NextResponse.json(
+        { error: "Promotion requests can only be archived from the inbox." },
+        { status: 409 },
+      );
+    }
+
+    const current = await getPromotionRequestById(itemId);
+    if (!current) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+    const previousValue = buildSnapshot("promotion", current);
+    const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+    let updated;
+    try {
+      updated = await updatePromotionRequestCreatorState({
+        requestId: itemId,
         creatorState:
-          parsed.data.action === "responded"
+          action === "responded"
             ? "responded"
-            : parsed.data.action === "mark_treated"
+            : action === "mark_treated"
               ? "treated"
               : "archived",
       });
       if (!updated) {
-        return NextResponse.json({ error: "Request not found" }, { status: 404 });
+        throw new Error("promotion creator state update did not persist");
       }
-      await appendAdminOperationAudit({
+    } catch {
+      await appendDecisionAudit({
         operationId,
-        at: new Date().toISOString(),
         actorUserId: identity.userId,
-        operationType: "moderation",
-        outcome: "success",
-        targetId: updated.id,
-        details: {
-          entityType: "creator_inbox_promotion",
-          action: parsed.data.action,
-          source: sourceLabel,
-        },
+        outcome: "error",
+        targetId: itemId,
+        details: buildAuditDetails({
+          reason,
+          targetUserId,
+          previousValue,
+          newValue: buildSnapshot("promotion", {
+            status: current.status,
+            creatorState:
+              action === "responded"
+                ? "responded"
+                : action === "mark_treated"
+                  ? "treated"
+                  : "archived",
+          }),
+          stage: "creator_state_update",
+          partialMutation: false,
+        }),
       });
-      return NextResponse.json({ status: "ok", item: buildPromotionInboxItem(updated) });
+      return mutationErrorResponse();
     }
 
-    const current = await listPartnerOnboardingRequests(500).then((items) =>
-      items.find((item) => item.id === parsed.data.itemId) ?? null,
-    );
+    await appendDecisionAudit({
+      operationId,
+      actorUserId: identity.userId,
+      outcome: "success",
+      targetId: updated.id,
+      details: buildAuditDetails({
+        reason,
+        targetUserId,
+        previousValue,
+        newValue: buildSnapshot("promotion", updated),
+      }),
+    });
+    return NextResponse.json({ status: "ok", item: buildPromotionInboxItem(updated) });
+  }
+
+  if (action === "delete") {
+    const current = await getPartnerOnboardingRequestById(itemId);
     if (!current) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
-
-    if (parsed.data.action === "delete") {
-      if (current.status === "accepted") {
-        return NextResponse.json(
-          { error: "Accepted partner requests cannot be deleted." },
-          { status: 409 },
-        );
-      }
-      const deleted = await deletePartnerOnboardingRequest(parsed.data.itemId);
-      if (!deleted) {
-        return NextResponse.json({ error: "Request not found" }, { status: 404 });
-      }
-      await appendAdminOperationAudit({
-        operationId,
-        at: new Date().toISOString(),
-        actorUserId: identity.userId,
-        operationType: "moderation",
-        outcome: "success",
-        targetId: parsed.data.itemId,
-        details: {
-          entityType: "creator_inbox_partner",
-          action: parsed.data.action,
-          source: sourceLabel,
-        },
-      });
-      return NextResponse.json({ status: "ok", deletedId: parsed.data.itemId });
+    if (current.status === "accepted") {
+      return NextResponse.json(
+        { error: "Accepted partner requests cannot be deleted." },
+        { status: 409 },
+      );
     }
+    const deleted = await deletePartnerOnboardingRequest(itemId);
+    if (!deleted) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+    await appendDecisionAudit({
+      operationId,
+      actorUserId: identity.userId,
+      outcome: "success",
+      targetId: itemId,
+      details: buildAuditDetails({
+        reason,
+        targetUserId: canonicalTargetUserId(current.submittedByUserId),
+        previousValue: buildSnapshot("partner", current),
+        newValue: { source: "partner" },
+      }),
+    });
+    return NextResponse.json({ status: "ok", deletedId: itemId });
+  }
 
-    const updated = await updatePartnerOnboardingRequestCreatorState({
-      requestId: parsed.data.itemId,
+  const current = await getPartnerOnboardingRequestById(itemId);
+  if (!current) {
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
+  const previousValue = buildSnapshot("partner", current);
+  const targetUserId = canonicalTargetUserId(current.submittedByUserId);
+  let updated;
+  try {
+    updated = await updatePartnerOnboardingRequestCreatorState({
+      requestId: itemId,
       creatorState:
-        parsed.data.action === "responded"
+        action === "responded"
           ? "responded"
-          : parsed.data.action === "mark_treated"
+          : action === "mark_treated"
             ? "treated"
             : "archived",
     });
     if (!updated) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+      throw new Error("partner creator state update did not persist");
     }
-
-    await appendAdminOperationAudit({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId: identity.userId,
-      operationType: "moderation",
-      outcome: "success",
-      targetId: updated.id,
-      details: {
-        entityType: "creator_inbox_partner",
-        action: parsed.data.action,
-        source: sourceLabel,
-      },
-    });
-    return NextResponse.json({ status: "ok", item: buildPartnerInboxItem(updated) });
   } catch {
-    await appendAdminOperationAudit({
+    await appendDecisionAudit({
       operationId,
-      at: new Date().toISOString(),
       actorUserId: identity.userId,
-      operationType: "moderation",
       outcome: "error",
-      targetId: parsed.data.itemId,
-      details: {
-        entityType: `creator_inbox_${parsed.data.source}`,
-        action: parsed.data.action,
-        source: sourceLabel,
-        error: "Unavailable",
-      },
+      targetId: itemId,
+      details: buildAuditDetails({
+        reason,
+        targetUserId,
+        previousValue,
+        newValue: buildSnapshot("partner", {
+          status: current.status,
+          creatorState:
+            action === "responded"
+              ? "responded"
+              : action === "mark_treated"
+                ? "treated"
+                : "archived",
+        }),
+        stage: "creator_state_update",
+        partialMutation: false,
+      }),
     });
-    return NextResponse.json(
-      {
-        error: "Unknown error",
-      },
-      { status: 500 },
-    );
+    return mutationErrorResponse();
   }
+
+  await appendDecisionAudit({
+    operationId,
+    actorUserId: identity.userId,
+    outcome: "success",
+    targetId: updated.id,
+    details: buildAuditDetails({
+      reason,
+      targetUserId,
+      previousValue,
+      newValue: buildSnapshot("partner", updated),
+    }),
+  });
+  return NextResponse.json({ status: "ok", item: buildPartnerInboxItem(updated) });
 }
