@@ -265,12 +265,6 @@ export async function POST(request: Request) {
   const botIdResponse = await requireBotIdHuman();
   if (botIdResponse) return botIdResponse;
 
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) {
-    return unauthorizedJsonResponse();
-  }
-  const { userId } = access;
-
   const rateLimit = await verifyRateLimit(request, {
     limit: 10,
     window: 60,
@@ -279,10 +273,17 @@ export async function POST(request: Request) {
   const rateLimitResponse = createServerRateLimitResponse(
     rateLimit.allowed,
     rateLimit.retryAfter,
+    rateLimit,
   );
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
+
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) {
+    return unauthorizedJsonResponse();
+  }
+  const { userId } = access;
 
   let payload: unknown;
   try {

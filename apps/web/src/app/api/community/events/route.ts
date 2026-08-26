@@ -212,6 +212,16 @@ export async function POST(request: Request) {
  const botIdResponse = await requireBotIdHuman();
  if (botIdResponse) return botIdResponse;
 
+ const writeRateLimit = await verifyRateLimit(request, { limit: 6, window: 60 });
+ const writeRateLimitResponse = createServerRateLimitResponse(
+  writeRateLimit.allowed,
+  writeRateLimit.retryAfter,
+  writeRateLimit,
+ );
+ if (writeRateLimitResponse) {
+  return writeRateLimitResponse;
+ }
+
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();
@@ -231,15 +241,6 @@ export async function POST(request: Request) {
  const parsed = createCommunityEventSchema.safeParse(payload);
  if (!parsed.success) {
  return validationErrorResponse(parsed.error.flatten().fieldErrors);
- }
-
- const writeRateLimit = await verifyRateLimit(request, { limit: 6, window: 60 });
- const writeRateLimitResponse = createServerRateLimitResponse(
-  writeRateLimit.allowed,
-  writeRateLimit.retryAfter,
- );
- if (writeRateLimitResponse) {
-  return writeRateLimitResponse;
  }
 
  const supabase = getSupabaseServerClient();

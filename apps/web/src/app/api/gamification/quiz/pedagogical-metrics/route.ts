@@ -4,6 +4,7 @@ import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncQuizPedagogicalMetrics } from "@/lib/learning/quiz-pedagogical-metrics";
 import { requireBotIdHuman } from "@/lib/botid/server";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 
@@ -104,6 +105,16 @@ const BodySchema = z.object({
 export async function POST(request: Request) {
   const botIdResponse = await requireBotIdHuman();
   if (botIdResponse) return botIdResponse;
+
+  const rateLimit = await verifyRateLimit(request, { limit: 10, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   let payload: unknown;
 

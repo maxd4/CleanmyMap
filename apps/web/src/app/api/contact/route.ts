@@ -37,6 +37,19 @@ export async function POST(request: Request) {
   const botIdResponse = await requireBotIdHuman();
   if (botIdResponse) return botIdResponse;
 
+  const writeRateLimit = await verifyRateLimit(request, {
+    limit: 3,
+    window: 300,
+  });
+  const writeRateLimitResponse = createServerRateLimitResponse(
+    writeRateLimit.allowed,
+    writeRateLimit.retryAfter,
+    writeRateLimit,
+  );
+  if (writeRateLimitResponse) {
+    return writeRateLimitResponse;
+  }
+
   const { userId } = await auth();
 
   let payload: unknown;
@@ -66,18 +79,6 @@ export async function POST(request: Request) {
   }
 
   const normalizedEmail = parsed.data.email.trim().toLowerCase();
-  const writeRateLimit = await verifyRateLimit(request, {
-    limit: 3,
-    window: 300,
-  });
-  const writeRateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-  );
-  if (writeRateLimitResponse) {
-    return writeRateLimitResponse;
-  }
-
   const created = await appendContactRequest({
     submittedByUserId: userId ?? null,
     input: {

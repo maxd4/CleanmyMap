@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { checkRateLimit } from "./store";
-import {
-  getClientIp,
-  getRateLimitConfig,
-  getRateLimitIdentity,
-  getRateLimitKey,
-} from "./utils";
+import { checkServerRateLimit } from "./server";
+import { getClientIp, getRateLimitConfig, getRateLimitIdentity } from "./utils";
 
 export interface RateLimitMiddlewareOptions {
   skipPaths?: string[];
@@ -68,20 +63,13 @@ export async function rateLimitMiddleware(
     return { allowed: true };
   }
 
-  const identity = await getRateLimitIdentity(request);
-  const ip = await getClientIp(request);
   const config = getRateLimitConfig(path, method);
   const limit = options.customLimit ?? config.limit;
   const window = options.customWindow ?? config.window;
-  const rateLimitKey = getRateLimitKey(identity.key, path, method);
 
-  const result = checkRateLimit({
-    key: rateLimitKey,
-    limit,
-    window,
-  });
+  const result = await checkServerRateLimit(request, { limit, window }, method);
 
-  const retryAfterSeconds = result.retryAfter || window;
+  const retryAfterSeconds = result.retryAfter ?? window;
   const response = NextResponse.json(
     {
       error: "Trop de tentatives. Réessayez dans quelques instants.",
@@ -102,7 +90,9 @@ export async function rateLimitMiddleware(
     },
   );
 
-  if (!result.success) {
+  if (!result.allowed) {
+    const identity = await getRateLimitIdentity(request);
+    const ip = await getClientIp(request);
     logAbuse(identity.key, path, ip);
     
     response.headers.set("X-RateLimit-Reset", String(result.reset));

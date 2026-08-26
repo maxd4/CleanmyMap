@@ -24,11 +24,23 @@ const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
+const requireBotIdHumanMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
   pickTraceableActorName: pickTraceableActorNameMock,
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
+}));
+
+vi.mock("@/lib/botid/server", () => ({
+  requireBotIdHuman: requireBotIdHumanMock,
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
 }));
 
 vi.mock("@/lib/gamification/progression", () => ({
@@ -128,6 +140,9 @@ describe("POST /api/actions", () => {
     emitActionCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
     emitSpotCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
+    requireBotIdHumanMock.mockResolvedValue(null);
+    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: undefined });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   it("creates an action from the dashboard form payload", async () => {

@@ -28,11 +28,17 @@ Aucune clé arbitraire fournie par le client n'est acceptée par
 `verifyRateLimit()`. Les valeurs comme un email ou un identifiant de payload
 ne peuvent donc pas remplacer l'identité de la requête.
 
+Lorsque Upstash est configuré, `verifyRateLimit()` utilise le client partagé de
+`src/lib/services/upstash.ts` et un sliding window distribué. La clé complète
+inclut la méthode, le pathname et l'identité ; elle est donc commune aux
+instances qui parlent au même Redis.
+
 Le `Map` de `src/lib/rate-limit/store.ts` est local au processus et nettoyé
-périodiquement. En production, chaque instance possède son propre compteur :
-une requête peut donc être répartie entre plusieurs instances sans compteur
-global partagé. Le repository n'utilise pas Redis, Upstash, Supabase ou un
-autre store distribué pour ce contrôle.
+périodiquement. Il n'est utilisé qu'en fallback immédiat si Upstash n'est pas
+configuré ou devient indisponible. Il reste best-effort, non distribué et ne
+doit pas être présenté comme une garantie de production multi-instance. Une
+panne Upstash ne transforme pas la requête en erreur applicative : elle est
+journalisée sans secret puis bascule sur ce store local.
 
 ## Classification méthode + route
 
@@ -56,8 +62,10 @@ Les limites par défaut sont :
 | `ai` | 20 | 60 s | sliding window |
 | `write` | 10 | 60 s | sliding window |
 
-La réponse de dépassement des wrappers contient HTTP `429`, le code
-`RATE_LIMIT_EXCEEDED` et un header `Retry-After` en secondes.
+La réponse de dépassement contient HTTP `429`, le code
+`RATE_LIMIT_EXCEEDED`, un header `Retry-After` en secondes et, lorsque le
+résultat du helper est disponible, les headers `X-RateLimit-Limit`,
+`X-RateLimit-Remaining` et `X-RateLimit-Reset`.
 
 ## Couche BotID anti-automation
 
@@ -80,8 +88,10 @@ Les routes protégées sont :
 - `/api/community/events`.
 
 Un bot détecté reçoit la réponse stable HTTP `403` avec le code
-`BOT_DETECTED`. Le contrôle BotID est indépendant du rate-limit mémoire et ne
-constitue pas un quota distribué.
+`BOT_DETECTED`. L'ordre d'exécution est `BotID → rate-limit Upstash (ou
+fallback local) → logique métier` : un rejet BotID ne déclenche pas Redis et
+un rejet `429` ne déclenche aucun service métier. BotID est un filtre
+anti-automation navigateur, pas un quota distribué.
 
 L'audit des appelants du dépôt ne trouve pas de webhook, script de
 maintenance ou client machine pour ces neuf POST. Les chemins voisins
@@ -102,6 +112,7 @@ sont les options explicitement passées au helper :
 | `/api/community/events` | `POST` | 6 | 60 s |
 | `/api/community/promotion-requests` | `POST` | 3 | 300 s |
 | `/api/contact` | `POST` | 3 | 300 s |
+| `/api/gamification/quiz/pedagogical-metrics` | `POST` | 10 | 60 s |
 | `/api/newsletter/subscribe` | `POST` | 5 | 60 s |
 | `/api/partners/onboarding-requests` | `POST` | 3 | 300 s |
 
@@ -132,13 +143,14 @@ Les formulaires publics concernés conservent leurs contrôles `honeypot` et
 - `/api/community/bug-reports` ;
 - `/api/partners/onboarding-requests`.
 
-Ces contrôles complètent le rate-limit local et ne le rendent pas distribué.
+Ces contrôles complètent le rate-limit Upstash et son fallback local ; ils ne
+remplacent ni BotID ni le quota métier pédagogique.
 
 ## Limites de production et prochain lot
 
-BotID Basic fournit désormais une protection anti-automation des flux
-navigateur, mais ne clôt pas la protection quota production : le `Map` reste
-local à chaque instance et best-effort. Aucune protection distribuée Redis,
-Upstash, Supabase ou équivalente n'est active dans ce lot. Le lot suivant peut
-ajouter un limiteur distribué adapté aux routes coûteuses sans présenter le
-compteur mémoire comme une garantie globale.
+BotID Basic fournit une protection anti-automation des flux navigateur.
+Upstash est le rate-limit distribué principal avec sliding window ; le `Map`
+reste uniquement son fallback local best-effort. Vercel DDoS est une couche
+plateforme séparée et n'est pas confondue avec ce contrôle applicatif. Ce lot
+ne clôt pas pour autant la protection anti-bot/quota production globale : les
+limites métier spécialisées et les contrôles de capacité restent distincts.
