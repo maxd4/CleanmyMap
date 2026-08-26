@@ -71,6 +71,8 @@ import {
 } from "./chat-shell.utils";
 import { logFailure } from "@/lib/logging/failure-log";
 import { getChatScrollTopAfterPrepend } from "@/lib/chat/chat-pagination";
+import { useChatSearch } from "./hooks/use-chat-search";
+import type { ChatSearchResult } from "@/lib/chat/chat-search";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -220,13 +222,17 @@ export function ChatShell({
     "Moi";
   const senderHandle =
     currentAccountIdentity?.handle || user?.username || "moi";
-  const targetMessageIdForScope =
+  const [searchTargetMessageId, setSearchTargetMessageId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const targetMessageIdForScope = searchTargetMessageId ?? (
     initialMessageId &&
     activeChannelType === initialChannelType &&
     activeTopicId === (initialTopicId ?? null) &&
     (selectedRecipient?.id ?? null) === (initialRecipient?.id ?? null)
       ? initialMessageId
-      : null;
+      : null
+  );
 
   const {
     messages,
@@ -257,6 +263,32 @@ export function ChatShell({
     canAccessProtectedChat: isLoaded && isSignedIn,
     supabase,
   });
+
+  const chatSearch = useChatSearch({
+    activeChannelType,
+    activeTopicId,
+    selectedRecipientId: selectedRecipient?.id ?? null,
+    effectiveZone,
+    territoryFocus,
+    query: searchQuery,
+    enabled: messagerieMode && !isBugReportChannel && isLoaded && isSignedIn,
+  });
+
+  const handleToggleSearch = useCallback(() => {
+    setIsSearchOpen((open) => !open);
+  }, []);
+
+  const handleCloseSearch = useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  }, []);
+
+  const handleSelectSearchResult = useCallback((result: ChatSearchResult) => {
+    setSearchTargetMessageId(result.messageId);
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setViewMode("messages");
+  }, [setViewMode]);
 
   const {
     conversations,
@@ -550,6 +582,9 @@ export function ChatShell({
       initialScrollScopeRef.current = null;
       latestMessageIdRef.current = null;
       setHighlightedMessageId(null);
+      setSearchTargetMessageId(null);
+      setIsSearchOpen(false);
+      setSearchQuery("");
     }
   }, [scrollScopeKey]);
 
@@ -1063,6 +1098,20 @@ export function ChatShell({
             showControls={!isLight}
             isLive={isLive}
             onBackToDmInbox={isDmSurface && showDmThreadOnMobile ? handleBackToDmInbox : undefined}
+            showSearch={messagerieMode && !isBugReportChannel}
+            isSearchOpen={isSearchOpen}
+            searchQuery={searchQuery}
+            searchResults={chatSearch.results}
+            searchIsLoading={chatSearch.isLoading}
+            searchError={chatSearch.error}
+            searchHasMore={chatSearch.hasMore}
+            searchIsLoadingMore={chatSearch.isLoadingMore}
+            searchLoadMoreError={chatSearch.loadMoreError}
+            onToggleSearch={handleToggleSearch}
+            onSearchQueryChange={setSearchQuery}
+            onCloseSearch={handleCloseSearch}
+            onSelectSearchResult={handleSelectSearchResult}
+            onLoadMoreSearch={() => void chatSearch.loadMore()}
           />
 
           {isBugReportChannel ? (
