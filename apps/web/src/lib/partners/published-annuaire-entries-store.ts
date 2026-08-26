@@ -467,6 +467,14 @@ export async function listPublishedPartnerAnnuaireEntries(): Promise<
   return store.records;
 }
 
+export async function getPublishedPartnerAnnuaireEntryById(
+  entryId: string,
+): Promise<PublishedPartnerAnnuaireEntry | null> {
+  assertPersistenceAvailable("published_partner_annuaire_entries");
+  const store = await readStore();
+  return store.records.find((record) => record.id === entryId) ?? null;
+}
+
 export async function updatePublishedPartnerAnnuaireEntryPublicationStatus(params: {
   entryId: string;
   publicationStatus: "accepted" | "rejected";

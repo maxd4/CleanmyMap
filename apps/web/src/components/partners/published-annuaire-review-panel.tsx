@@ -11,6 +11,20 @@ type PublishedAnnuaireReviewPanelProps = {
 
 const REVIEW_CONFIRM_PHRASE ="CONFIRMER PARTENAIRE";
 
+export function buildPublishedAnnuaireReviewPayload(params: {
+ id: string;
+ publicationStatus: "accepted" | "rejected";
+ confirmPhrase: string;
+ reason: string;
+}) {
+ return {
+ id: params.id,
+ publicationStatus: params.publicationStatus,
+ confirmPhrase: params.confirmPhrase,
+ reason: params.reason.trim(),
+ };
+}
+
 function statusLabel(
  status: PublishedPartnerAnnuaireEntry["publicationStatus"],
  fr: boolean,
@@ -43,18 +57,29 @@ export function PublishedAnnuaireReviewPanel({
  const { locale } = useSitePreferences();
  const fr = locale ==="fr";
  const [confirmPhrase, setConfirmPhrase] = useState("");
+ const [reasons, setReasons] = useState<Record<string, string>>({});
  const [error, setError] = useState<string | null>(null);
  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
  const reviewEntry = (
  entryId: string,
- publicationStatus: PublishedPartnerAnnuaireEntry["publicationStatus"],
+ publicationStatus: "accepted" | "rejected",
  ) => {
  if (confirmPhrase.trim().toUpperCase() !== REVIEW_CONFIRM_PHRASE) {
  setError(
  fr
   ? `Renseignez exactement "${REVIEW_CONFIRM_PHRASE}" pour valider la revue.`
  : `Type exactly"${REVIEW_CONFIRM_PHRASE}" to confirm the review.`,
+ );
+ return;
+ }
+
+ const reason = (reasons[entryId] ?? "").trim();
+ if (reason.length < 5) {
+ setError(
+ fr
+ ? "Renseignez un motif d'au moins 5 caractères."
+ : "Enter a reason of at least 5 characters.",
  );
  return;
  }
@@ -66,11 +91,14 @@ export function PublishedAnnuaireReviewPanel({
  const response = await fetch("/api/admin/partners/published-directory", {
  method:"POST",
  headers: {"Content-Type":"application/json" },
- body: JSON.stringify({
+ body: JSON.stringify(
+ buildPublishedAnnuaireReviewPayload({
  id: entryId,
  publicationStatus,
  confirmPhrase,
+ reason,
  }),
+ ),
  });
 
  if (!response.ok) {
@@ -82,6 +110,8 @@ export function PublishedAnnuaireReviewPanel({
  );
  }
 
+ setConfirmPhrase("");
+ setReasons((current) => ({ ...current, [entryId]: "" }));
  router.refresh();
  } catch (mutationError) {
  setError(
@@ -152,10 +182,36 @@ export function PublishedAnnuaireReviewPanel({
  {entry.lastUpdatedAt}
  </p>
 
+ <label className="mt-3 block space-y-1 cmm-text-caption font-semibold cmm-text-secondary">
+ <span>{fr ? "Motif de décision" : "Decision reason"}</span>
+ <textarea
+ value={reasons[entry.id] ?? ""}
+ onChange={(event) =>
+ setReasons((current) => ({ ...current, [entry.id]: event.target.value }))
+ }
+ minLength={5}
+ maxLength={500}
+ rows={2}
+ placeholder={
+ fr
+ ? "Expliquez la décision (5 à 500 caractères)..."
+ : "Explain the decision (5 to 500 characters)..."
+ }
+ className="block w-full resize-y rounded-lg border border-slate-300 px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+ />
+ <span className="font-normal cmm-text-muted">
+ {(reasons[entry.id] ?? "").trim().length}/500
+ </span>
+ </label>
+
  <div className="mt-3 flex flex-wrap gap-2">
  <button
  type="button"
- disabled={submittingId === entry.id}
+ disabled={
+ submittingId === entry.id ||
+ confirmPhrase.trim().toUpperCase() !== REVIEW_CONFIRM_PHRASE ||
+ (reasons[entry.id] ?? "").trim().length < 5
+ }
  onClick={() => reviewEntry(entry.id,"accepted")}
  className="rounded-lg bg-emerald-600 px-3 py-2 cmm-text-caption font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
  >
@@ -163,7 +219,11 @@ export function PublishedAnnuaireReviewPanel({
  </button>
  <button
  type="button"
- disabled={submittingId === entry.id}
+ disabled={
+ submittingId === entry.id ||
+ confirmPhrase.trim().toUpperCase() !== REVIEW_CONFIRM_PHRASE ||
+ (reasons[entry.id] ?? "").trim().length < 5
+ }
  onClick={() => reviewEntry(entry.id,"rejected")}
  className="rounded-lg border border-rose-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
  >
