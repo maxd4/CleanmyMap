@@ -61,7 +61,7 @@ const preparationProps: ReportsWebDocumentPreparationProps = {
   onDetailLevelChange: vi.fn(),
   modules: {
     dataAndCartography: true,
-    environmentalImpact: true,
+    transparencyAndMethods: true,
     rawData: false,
     detailedFiles: true,
   },
@@ -169,7 +169,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(props.onModuleToggle).toHaveBeenCalledTimes(4);
     expect(props.onModuleToggle.mock.calls.map(([key]) => key)).toEqual([
       "dataAndCartography",
-      "environmentalImpact",
+      "transparencyAndMethods",
       "rawData",
       "detailedFiles",
     ]);
@@ -239,14 +239,18 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(exportOptions.data.chapters[0].lines).toContain(
       "Période: Six mois · Par défaut (12 à 16 pages).",
     );
+    expect(exportOptions.data.summary).toContain(
+      "Modules optionnels inclus: Données & cartographie, Transparence & méthodes, Fichiers détaillés.",
+    );
     expect(markup).toContain("Générer le rapport");
 
     const previewProps = (
-      mocks.preview.mock.calls as unknown as Array<[{ onTogglePreview?: () => void }]>
+      mocks.preview.mock.calls as unknown as Array<[{ onTogglePreview?: () => void; modules?: unknown }]>
     )[0]?.[0];
     const historyProps = (
       mocks.deliveryHistory.mock.calls as unknown as Array<[{ onPreview?: () => void }]>
     )[0]?.[0];
+    expect(previewProps?.modules).toEqual(preparationProps.modules);
     expect(historyProps?.onPreview).toBe(previewProps?.onTogglePreview);
   });
 });

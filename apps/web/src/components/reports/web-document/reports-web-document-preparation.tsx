@@ -11,6 +11,7 @@ import {
   DETAIL_LEVEL_OPTIONS,
   GenerationStageCard,
   REPORT_HISTORY_SERVER_LIMIT,
+  REPORT_MODULE_DEFINITIONS,
   type DetailLevelId,
   type ModuleState,
   type SelectedPeriodId,
@@ -37,35 +38,6 @@ export type ReportsWebDocumentPreparationProps = {
   modules: ModuleState;
   onModuleToggle: (key: keyof ModuleState) => void;
 };
-
-type ModuleOption = {
-  id: keyof ModuleState;
-  label: string;
-  description: string;
-};
-
-const MODULE_OPTIONS: ModuleOption[] = [
-  {
-    id: "dataAndCartography",
-    label: "Données & cartographie",
-    description: "Carte, zones traitées et mesures géographiques.",
-  },
-  {
-    id: "environmentalImpact",
-    label: "Transparence & méthodes",
-    description: "Impact, fiabilité et contrôle qualité.",
-  },
-  {
-    id: "rawData",
-    label: "Données brutes",
-    description: "Listes détaillées et exports intermédiaires.",
-  },
-  {
-    id: "detailedFiles",
-    label: "Fichiers détaillés",
-    description: "Annexes, glossaire et pièces techniques.",
-  },
-];
 
 export function ReportsWebDocumentPreparation({
   period,
@@ -190,7 +162,7 @@ export function ReportsWebDocumentPreparation({
             </span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {MODULE_OPTIONS.map((option) => {
+            {REPORT_MODULE_DEFINITIONS.map((option) => {
               const checked = modules[option.id];
               return (
                 <label

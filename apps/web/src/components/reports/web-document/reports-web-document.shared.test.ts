@@ -6,9 +6,65 @@ import {
   buildScopeSelectValue,
   detailLevelLabel,
   detailLevelToModules,
+  type ModuleState,
+  REPORT_MODULE_DEFINITIONS,
+  REQUIRED_CORE_CHAPTER_IDS,
   periodLabel,
   parseScopeSelectValue,
 } from "./reports-web-document.shared";
+
+const fixtureModel = {
+  weatherAdvice: "Conditions stables.",
+  wasteProfile: {
+    dominantLabel: "Plastique",
+    coveragePercent: 100,
+    categories: [],
+  },
+  accountScopeCoverage: { coveragePercent: 100 },
+  exportRows: [{ Date: "2026-06-01", Masse_Kg: 4.5 }],
+  dataAvailability: {},
+  report: {
+    executive: {
+      summary: "Résumé contrôlé.",
+      watchouts: [],
+      budgetUseCases: ["Prioriser le terrain."],
+      readinessLabel: "Prêt",
+      readinessScore: 92,
+      evidence: [],
+      headline: "Impact suivi",
+    },
+    totals: { actions: 2, kg: 4.5, volunteers: 3, butts: 1, hours: 2 },
+    map: { geoCoverage: 80, traceCoverage: 75, points: 5 },
+    terrain: { spotCount: 1 },
+    climate: { co2AvoidedKg: 2.5, waterProtectedLiters: 10 },
+    recycling: { triIndex: 70 },
+    quality: { completenessScore: 95, coherenceScore: 90 },
+    impactMethodology: {
+      sources: { local: "fixture" },
+      pollutionScoreAverage: 65,
+      proxyVersion: "v1",
+      qualityRulesVersion: "v1",
+      formulas: [],
+    },
+    community: { totalEvents: 1, participationRate: 50, topLeaderboard: [] },
+    areas: [{ area: "Paris", actions: 2, kg: 4.5, recurrence: "stable", score: 80 }],
+    trendPercent: 4,
+    moderation: { approved: 2, rejected: 0, delayDays: 1 },
+    calendar: [],
+  },
+} as unknown as Parameters<typeof buildPdfData>[0]["model"];
+
+function buildPdfDataWithModules(modules: ModuleState) {
+  return buildPdfData({
+    reportTitle: "Rapport d'impact - Paris - Exhaustif",
+    scopeLabel: "Paris",
+    period: "full_history",
+    detailLevel: "exhaustif",
+    modules,
+    surfaceProxy: 42,
+    model: fixtureModel,
+  });
+}
 
 describe("reports web document shared helpers", () => {
   it("round-trips scope select values", () => {
@@ -26,16 +82,78 @@ describe("reports web document shared helpers", () => {
   it("maps detail levels to module toggles", () => {
     expect(detailLevelToModules("concis")).toEqual({
       dataAndCartography: true,
-      environmentalImpact: true,
+      transparencyAndMethods: true,
       rawData: false,
       detailedFiles: false,
     });
     expect(detailLevelToModules("exhaustif")).toEqual({
       dataAndCartography: true,
-      environmentalImpact: true,
+      transparencyAndMethods: true,
       rawData: true,
       detailedFiles: true,
     });
+    expect(detailLevelToModules("default")).toEqual({
+      dataAndCartography: true,
+      transparencyAndMethods: true,
+      rawData: false,
+      detailedFiles: true,
+    });
+  });
+
+  it("keeps the three core chapters and removes every disabled module from PDF chapters and raw rows", () => {
+    const allModules = detailLevelToModules("exhaustif");
+    const fullPdf = buildPdfDataWithModules(allModules);
+    const fullChapterIds = fullPdf.chapters.map((chapter) => chapter.id);
+
+    for (const definition of REPORT_MODULE_DEFINITIONS) {
+      const modules = { ...allModules, [definition.id]: false } as ModuleState;
+      const pdf = buildPdfDataWithModules(modules);
+      const chapterIds = pdf.chapters.map((chapter) => chapter.id);
+
+      expect(definition.chapterIds.every((chapterId) => !chapterIds.includes(chapterId))).toBe(true);
+      expect(chapterIds).toEqual(
+        fullChapterIds.filter((chapterId) => !definition.chapterIds.some((definitionChapterId) => definitionChapterId === chapterId)),
+      );
+      expect(REQUIRED_CORE_CHAPTER_IDS.every((chapterId) => chapterIds.includes(chapterId))).toBe(true);
+    }
+
+    const noModulesPdf = buildPdfDataWithModules({
+      dataAndCartography: false,
+      transparencyAndMethods: false,
+      rawData: false,
+      detailedFiles: false,
+    });
+    expect(noModulesPdf.rows).toEqual([]);
+    expect(noModulesPdf.columns).toEqual([]);
+    expect(noModulesPdf.summary).toContain("Modules optionnels inclus: aucun module optionnel.");
+  });
+
+  it("supports a custom combination with the same selection contract used by the PDF summary", () => {
+    const pdf = buildPdfDataWithModules({
+      dataAndCartography: true,
+      transparencyAndMethods: false,
+      rawData: true,
+      detailedFiles: false,
+    });
+    const chapterIds = pdf.chapters.map((chapter) => chapter.id);
+
+    expect(chapterIds).toEqual([
+      "synthese-executive",
+      "perimetre-rapport",
+      "resultats-terrain",
+      "cartographie-impact",
+      "contexte-local",
+      "communaute-mobilisation",
+      "recommandations-operationnelles",
+      "calendrier-previsionnel",
+    ]);
+    expect(chapterIds).not.toContain("indicateurs-environnementaux");
+    expect(chapterIds).not.toContain("methodologie-fiabilite");
+    expect(chapterIds).not.toContain("gouvernance-transparence");
+    expect(chapterIds).not.toContain("glossaire-simplifie");
+    expect(chapterIds).not.toContain("annexes");
+    expect(pdf.rows).toEqual(fixtureModel.exportRows);
+    expect(pdf.summary).toContain("Modules optionnels inclus: Données & cartographie, Données brutes.");
   });
 
   it("builds readable report labels", () => {
@@ -76,6 +194,7 @@ describe("reports web document shared helpers", () => {
       scopeLabel: "Paris",
       period: "full_history",
       detailLevel: "exhaustif",
+      modules: detailLevelToModules("exhaustif"),
       surfaceProxy: 42,
       model: {
         weatherAdvice: "Conditions stables.",

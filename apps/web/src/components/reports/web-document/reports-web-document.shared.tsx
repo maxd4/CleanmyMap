@@ -29,12 +29,84 @@ export const REPORT_HISTORY_SERVER_LIMIT = 1000;
 export type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
 export type PeriodId = "six_months" | "current_year" | "full_history";
 export type SelectedPeriodId = PeriodId | "";
+export type ReportModuleId =
+  | "dataAndCartography"
+  | "transparencyAndMethods"
+  | "rawData"
+  | "detailedFiles";
+
 export type ModuleState = {
   dataAndCartography: boolean;
-  environmentalImpact: boolean;
+  transparencyAndMethods: boolean;
   rawData: boolean;
   detailedFiles: boolean;
 };
+
+export const REPORT_MODULE_DEFINITIONS = [
+  {
+    id: "dataAndCartography",
+    label: "Données & cartographie",
+    description: "Carte, zones traitées et mesures géographiques.",
+    chapterIds: ["cartographie-impact", "contexte-local"],
+  },
+  {
+    id: "transparencyAndMethods",
+    label: "Transparence & méthodes",
+    description: "Impacts/proxies, qualité, hypothèses et limites.",
+    chapterIds: [
+      "indicateurs-environnementaux",
+      "methodologie-fiabilite",
+      "gouvernance-transparence",
+    ],
+  },
+  {
+    id: "rawData",
+    label: "Données brutes",
+    description: "Listes détaillées et données brutes disponibles.",
+    chapterIds: ["communaute-mobilisation", "calendrier-previsionnel"],
+  },
+  {
+    id: "detailedFiles",
+    label: "Fichiers détaillés",
+    description: "Annexes, glossaire et pièces techniques.",
+    chapterIds: ["glossaire-simplifie", "annexes"],
+  },
+] as const satisfies ReadonlyArray<{
+  id: ReportModuleId;
+  label: string;
+  description: string;
+  chapterIds: readonly string[];
+}>;
+
+export const REQUIRED_CORE_CHAPTER_IDS = [
+  "synthese-executive",
+  "perimetre-rapport",
+  "resultats-terrain",
+] as const;
+
+const ALWAYS_INCLUDED_CHAPTER_IDS = [
+  ...REQUIRED_CORE_CHAPTER_IDS,
+  "recommandations-operationnelles",
+] as const;
+
+export function getEnabledReportModules(modules: ModuleState) {
+  return REPORT_MODULE_DEFINITIONS.filter((definition) => modules[definition.id]);
+}
+
+export function getVisibleReportChapterIds(modules: ModuleState): Set<string> {
+  const chapterIds = new Set<string>(ALWAYS_INCLUDED_CHAPTER_IDS);
+  for (const definition of getEnabledReportModules(modules)) {
+    for (const chapterId of definition.chapterIds) {
+      chapterIds.add(chapterId);
+    }
+  }
+  return chapterIds;
+}
+
+export function buildModuleSelectionLabel(modules: ModuleState): string {
+  const labels = getEnabledReportModules(modules).map((module) => module.label);
+  return labels.length > 0 ? labels.join(", ") : "aucun module optionnel";
+}
 
 type RecentReportRow = {
   id: string;
@@ -196,7 +268,7 @@ export function buildDetailCoverageLabel(detailLevel: DetailLevelId): string {
     case "concis":
       return "Concis: seule la lecture synthétique est pleinement remplie, les sous-parties avancées restent verrouillées.";
     case "default":
-      return "Par défaut: le socle principal du rapport est rempli, avec les annexes détaillées ouvertes.";
+      return "Par défaut: le socle principal et les détails principaux sont remplis; les annexes techniques restent verrouillées.";
     case "exhaustif":
       return "Exhaustif: le rapport embarque le niveau maximal de détail et les annexes techniques.";
   }
@@ -284,21 +356,21 @@ export function detailLevelToModules(id: DetailLevelId): ModuleState {
     case "concis":
       return {
         dataAndCartography: true,
-        environmentalImpact: true,
+        transparencyAndMethods: true,
         rawData: false,
         detailedFiles: false,
       };
     case "default":
       return {
         dataAndCartography: true,
-        environmentalImpact: true,
+        transparencyAndMethods: true,
         rawData: false,
         detailedFiles: true,
       };
     case "exhaustif":
       return {
         dataAndCartography: true,
-        environmentalImpact: true,
+        transparencyAndMethods: true,
         rawData: true,
         detailedFiles: true,
       };
@@ -337,10 +409,11 @@ export function buildPdfData(params: {
   scopeLabel: string;
   period: PeriodId;
   detailLevel: DetailLevelId;
+  modules: ModuleState;
   model: ReportsWebDocumentModelLike;
   surfaceProxy: number;
 }) {
-  const { model, detailLevel, period, reportTitle, scopeLabel, surfaceProxy } = params;
+  const { model, detailLevel, modules, period, reportTitle, scopeLabel, surfaceProxy } = params;
   const report = model.report;
   const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
     model.dataAvailability ?? {},
@@ -357,7 +430,7 @@ export function buildPdfData(params: {
 
   const visibleDefaultDetail = isDetailLevelAtLeast(detailLevel, "default");
   const visibleExhaustifDetail = isDetailLevelAtLeast(detailLevel, "exhaustif");
-  const chapters = [
+  const allChapters = [
     {
       id: "synthese-executive",
       title: "Synthèse exécutive",
@@ -633,25 +706,30 @@ export function buildPdfData(params: {
           subtitle: "Données détaillées et exports techniques",
           required: "exhaustif",
         }),
-  ].map((chapter) => ({
-    id: chapter.id,
-    title: chapter.title,
-    subtitle: chapter.subtitle,
-    lines: chapter.lines,
-    stats: "stats" in chapter ? chapter.stats : undefined,
-    rows: "rows" in chapter ? chapter.rows : undefined,
-    columns: "columns" in chapter ? chapter.columns : undefined,
-    locked: "locked" in chapter ? chapter.locked : false,
-    requiredDetailLevelLabel:
-      "requiredDetailLevelLabel" in chapter ? chapter.requiredDetailLevelLabel : undefined,
-  }));
+  ];
+  const visibleChapterIds = getVisibleReportChapterIds(modules);
+  const chapters = allChapters
+    .map((chapter) => ({
+      id: chapter.id,
+      title: chapter.title,
+      subtitle: chapter.subtitle,
+      lines: chapter.lines,
+      stats: "stats" in chapter ? chapter.stats : undefined,
+      rows: "rows" in chapter ? chapter.rows : undefined,
+      columns: "columns" in chapter ? chapter.columns : undefined,
+      locked: "locked" in chapter ? chapter.locked : false,
+      requiredDetailLevelLabel:
+        "requiredDetailLevelLabel" in chapter ? chapter.requiredDetailLevelLabel : undefined,
+    }))
+    .filter((chapter) => visibleChapterIds.has(chapter.id));
 
   return {
     title: reportTitle,
     summary: [
       `Périmètre: ${scopeLabel}`,
       `Niveau de détail: ${detailLevelLabel(detailLevel)}.`,
-      `Structure commune: sommaire exhaustif complet pour tous les niveaux.`,
+      `Chapitres cœur inclus: Synthèse exécutive, Périmètre du rapport, Résultats terrain.`,
+      `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
       `Actions consolidées: ${report.totals.actions}`,
       `Qualité de données: ${report.quality.completenessScore.toFixed(0)}% de complétude, ${report.quality.coherenceScore.toFixed(0)}% de cohérence.`,
     ],
@@ -664,25 +742,27 @@ export function buildPdfData(params: {
       { label: "Événements communauté", value: report.community.totalEvents },
     ],
     chapters,
-    rows: model.exportRows,
-    columns: [
-      { key: "Date", label: "Date" },
-      { key: "Lieu", label: "Lieu" },
-      { key: "Compte", label: "Compte" },
-      { key: "Association", label: "Association" },
-      { key: "Masse_Kg", label: "Masse déclarée historique (kg)" },
-      { key: "Masse_Kg_Declaree", label: "Masse déclarée (kg)" },
-      { key: "Masse_Kg_Impact", label: "Masse impact (kg)" },
-      { key: "Origine_Masse", label: "Origine masse" },
-      { key: "Megots", label: "Mégots" },
-      { key: "Bénévoles", label: "Bénévoles" },
-      { key: "CO2e_Proxy_Kg", label: "CO2e proxy (kg)" },
-      { key: "Eau_Proxy_L", label: "Eau proxy (L)" },
-      { key: "Economie_Voirie_Proxy_EUR", label: "Économie voirie proxy (€)" },
-      { key: "Durée_Min", label: "Durée (min)" },
-      { key: "Type", label: "Type" },
-      { key: "Source", label: "Source" },
-    ],
+    rows: modules.rawData ? model.exportRows : [],
+    columns: modules.rawData
+      ? [
+          { key: "Date", label: "Date" },
+          { key: "Lieu", label: "Lieu" },
+          { key: "Compte", label: "Compte" },
+          { key: "Association", label: "Association" },
+          { key: "Masse_Kg", label: "Masse déclarée historique (kg)" },
+          { key: "Masse_Kg_Declaree", label: "Masse déclarée (kg)" },
+          { key: "Masse_Kg_Impact", label: "Masse impact (kg)" },
+          { key: "Origine_Masse", label: "Origine masse" },
+          { key: "Megots", label: "Mégots" },
+          { key: "Bénévoles", label: "Bénévoles" },
+          { key: "CO2e_Proxy_Kg", label: "CO2e proxy (kg)" },
+          { key: "Eau_Proxy_L", label: "Eau proxy (L)" },
+          { key: "Economie_Voirie_Proxy_EUR", label: "Économie voirie proxy (€)" },
+          { key: "Durée_Min", label: "Durée (min)" },
+          { key: "Type", label: "Type" },
+          { key: "Source", label: "Source" },
+        ]
+      : [],
     generatedAt: report.generatedAt,
   };
 }
