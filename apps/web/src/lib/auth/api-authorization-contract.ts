@@ -39,6 +39,44 @@ type ApiAuthorizationContract = Record<
  * made by each handler.
  */
 export const API_AUTHORIZATION_CONTRACT = {
+  "account/profile-role": {
+    POST: {
+      expected: "Authenticated current account; self-service role changes or admin/max-gated elevated targets only",
+      dimensions: [
+        "authentication",
+        "admin/creator role",
+        "business permission",
+        "ownership",
+      ],
+      actual:
+        "auth() + session.userId for the current Clerk account; isSelfServiceProfile/isAdminRole/isMaxRole constrain the target and sync the same account",
+      evidence: [
+        "auth()",
+        "session.userId",
+        "getCurrentUserRoleLabel",
+        "isSelfServiceProfile",
+        "isAdminRole",
+        "isMaxRole",
+        "syncClerkUserToSupabase",
+      ],
+    },
+  },
+  "analytics/funnel": {
+    POST: {
+      expected: "Public-safe validated funnel ingestion with optional current-user attribution",
+      dimensions: ["public-safe"],
+      actual:
+        "Bounded Zod payload; anonymous events remain accepted and auth() is used only when Clerk attribution is available",
+      evidence: ["appendFunnelEvent", "resolveFunnelUserId"],
+      evidenceScope: "module",
+    },
+    GET: {
+      expected: "Admin-like role for funnel metrics and event-derived snapshot",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess before listing funnel events or building the snapshot",
+      evidence: ["requireAdminAccess"],
+    },
+  },
   "actions/group-join": {
     GET: {
       expected: "Public joinable approved/pre-action read; private history only with session context",
@@ -371,6 +409,126 @@ export const API_AUTHORIZATION_CONTRACT = {
       dimensions: ["authentication", "ownership"],
       actual: "auth() + current userId used for RSVP ownership",
       evidence: ["auth()", "userId"],
+    },
+  },
+  chat: {
+    GET: {
+      expected:
+        "Authenticated member; channel access is checked server-side, with DM/feedback reads scoped to the current identity and admin/elu channel restricted by role",
+      dimensions: [
+        "authentication",
+        "business permission",
+        "ownership",
+        "admin/creator role",
+      ],
+      actual:
+        "auth() + getCurrentUserIdentity + canAccessChatChannel; DM and feedback queries bind sender/recipient filters to the current user and use Clerk-RLS",
+      evidence: [
+        "auth()",
+        "getCurrentUserIdentity",
+        "canAccessChatChannel",
+        "sender_id",
+      ],
+    },
+    POST: {
+      expected:
+        "Authenticated member; channel access is checked server-side, with current-user message ownership and role-gated admin/elu channel",
+      dimensions: [
+        "authentication",
+        "business permission",
+        "ownership",
+        "admin/creator role",
+      ],
+      actual:
+        "auth() + getCurrentUserIdentity + canAccessChatChannel; inserted sender_id is the current user and sensitive reads/writes use Clerk-RLS",
+      evidence: [
+        "auth()",
+        "getCurrentUserIdentity",
+        "canAccessChatChannel",
+        "sender_id",
+      ],
+    },
+  },
+  "chat/inbox": {
+    GET: {
+      expected: "Authenticated user reads only their own DM inbox",
+      dimensions: ["authentication", "ownership"],
+      actual:
+        "getAuthenticatedRlsClient authenticates the current user and delegates to list_my_dm_conversations through Clerk-RLS",
+      evidence: ["auth()", "getCurrentUserIdentity", "list_my_dm_conversations"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authenticated user marks only their own DM conversation as read",
+      dimensions: ["authentication", "ownership"],
+      actual:
+        "getAuthenticatedRlsClient authenticates the current user and delegates the peer update to mark_my_dm_conversation_read through Clerk-RLS",
+      evidence: ["auth()", "getCurrentUserIdentity", "mark_my_dm_conversation_read"],
+      evidenceScope: "module",
+    },
+  },
+  "chat/polls/[messageId]/vote": {
+    POST: {
+      expected:
+        "Authenticated community member votes on an existing community poll; the vote is owned by the current user",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual:
+        "upsertVote authenticates, loadVisiblePoll restricts the target to a community poll, and the upsert writes user_id from auth()",
+      evidence: ["auth()", "loadVisiblePoll", "userId"],
+      evidenceScope: "module",
+    },
+    PUT: {
+      expected:
+        "Authenticated community member changes their vote on an existing community poll; the vote is owned by the current user",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual:
+        "upsertVote authenticates, validates the community poll and option, and upserts the current user's vote only",
+      evidence: ["auth()", "loadVisiblePoll", "userId"],
+      evidenceScope: "module",
+    },
+    DELETE: {
+      expected:
+        "Authenticated community member removes only their own vote from an existing community poll",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual:
+        "auth() + loadVisiblePoll; delete is filtered by message_id and user_id from the current session",
+      evidence: ["auth()", "loadVisiblePoll", "userId"],
+      evidenceScope: "module",
+    },
+  },
+  "chat/users": {
+    GET: {
+      expected: "Authenticated member directory/search with requester-scoped exclusion and cache",
+      dimensions: ["authentication"],
+      actual:
+        "auth() + fetchCachedChatUsers(userId, ...); the shared search excludes the current profile and uses Clerk-RLS",
+      evidence: ["auth()", "fetchCachedChatUsers", "userId"],
+    },
+  },
+  "email/test": {
+    POST: {
+      expected: "Admin-like role for test email delivery with actor attribution and service audit event",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + sendEmail(actorUserId), whose service event records the sending outcome",
+      evidence: ["requireAdminAccess", "sendEmail", "actorUserId"],
+    },
+  },
+  "recycling/breakdown": {
+    GET: {
+      expected: "Authenticated user reads the bounded approved recycling breakdown",
+      dimensions: ["authentication"],
+      actual:
+        "requireAuthenticatedAccess before the approved-only snapshot is loaded; no owner or elevated role is required",
+      evidence: ["requireAuthenticatedAccess"],
+    },
+  },
+  "route/recommend": {
+    POST: {
+      expected: "Authenticated user requests a bounded route recommendation using their current location preference",
+      dimensions: ["authentication"],
+      actual:
+        "auth() + current-user location preference; approved spot candidates are bounded and progression tracking uses the same userId",
+      evidence: ["auth()", "getCurrentUserLocationPreference", "trackRouteRecommendationUse"],
     },
   },
   "partners/onboarding-requests": {

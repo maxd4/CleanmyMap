@@ -39,14 +39,20 @@ const intentionallyPublicApiPaths = [
 const auditedApiFamilies = new Set([
   "admin",
   "actions",
+  "account",
   "community",
+  "chat",
+  "analytics",
   "reports",
   "partners",
   "pilotage",
+  "recycling",
+  "route",
   "spots",
   "users",
   "send",
   "services",
+  "email",
 ]);
 const apiRoot = dirname(fileURLToPath(import.meta.url));
 
