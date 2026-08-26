@@ -1,46 +1,61 @@
-# Gouvernance temporaire des advisories de dépendance
+# Gouvernance des advisories de dépendance
 
-## Portée
+## Périmètre
 
-Cette acceptation de risque est limitée au `companion-app` et aux deux
-advisories `image-size` détectées dans son graphe npm. Elle ne constitue pas une
-exception globale de package, de niveau de sévérité ou de scanner.
+Cette gouvernance couvre les deux advisories `image-size` présentes dans le
+graphe du `companion-app`. Elle ne constitue pas une exception globale de
+package, de niveau de sévérité ou de scanner.
 
-| Advisory | CVE | Package résolu | Chemin transitif | Impact |
+| Advisory | CVE | Package utilisé dans le companion | Chemin transitif | Correctif couvert |
 | --- | --- | --- | --- | --- |
-| [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `image-size@1.2.1` | `@expo/metro` → `metro` → `image-size` | Boucle infinie du parseur ICNS, déni de service de l'event loop |
-| [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `image-size@1.2.1` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Boucle infinie des parseurs JXL/HEIF, déni de service de l'event loop |
+| [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `companion-app/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
+| [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `companion-app/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
 
-Les deux advisories concernent les versions `image-size <= 2.0.2`. Aucune
-version npm corrigée n'est actuellement publiée. Le lockfile du companion
-résout `image-size@1.2.1` ; aucune version d'Expo, React Native, Metro ou
-`image-size` n'est modifiée par cette gouvernance.
+## Mitigation effectivement versionnée
 
-## Surfaces réellement concernées
+`image-size@2.0.3` est un package local CleanMyMap basé sur le code publié de
+`image-size@1.2.1`. Ce package n'est pas une release npm upstream : sa version
+`2.0.3` sert à rendre le backport explicite pour le lockfile et les outils
+d'advisories.
+
+Les deux correctifs sont documentés dans
+`companion-app/vendor/image-size/SECURITY-PATCH.md` et vérifiés par
+`companion-app/security/image-size-security.test.mjs`. Le lockfile résout le
+package local `vendor/image-size` en version `2.0.3`.
+
+Les overrides Metro de `companion-app/package.json` redirigent les deux
+résolutions utilisées par le companion :
+
+- `metro@0.84.4` vers le package local `vendor/image-size` ;
+- `metro@0.87.0` vers le package local `vendor/image-size`.
+
+Cette mitigation remplace l'ancienne acceptation de risque. Il n'y a donc plus
+de date d'expiration ni de renouvellement périodique à maintenir
+pour cette décision locale. Dependabot, CodeQL et `npm audit` restent actifs ;
+aucun ignore global par package ou par niveau `High` n'est autorisé.
+
+La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
+Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
+build doivent provenir du dépôt contrôlé ou d'une source vérifiée avant
+exécution de Metro.
+
+## Suivi vers l'upstream
+
+Le vendor et les overrides ne pourront être retirés que lorsqu'une release
+upstream `image-size` contenant les deux correctifs sera publiée et validée ;
+la version upstream devra être une version contenant les deux correctifs
+dans le graphe Expo/React Native/Metro du companion. À ce moment seulement,
+le dépôt devra revenir à cette release officielle, régénérer le lockfile et
+supprimer le backport local après validation ciblée.
+
+L'état de cette mitigation dans le dépôt ne préjuge pas de l'état affiché par
+Dependabot côté GitHub. Une alerte peut rester visible jusqu'à l'actualisation
+du graphe ou du scanner GitHub, même si le runtime versionné utilise déjà le
+backport local.
+
+## Surfaces non concernées
 
 - `apps/web` n'est pas concerné : `image-size` n'est ni dans son graphe npm,
   ni importé par son code source.
 - Le runtime mobile n'expose pas directement `image-size` : le code compagnon
   utilise `expo-image-picker` et transmet l'URI de la photo à l'upload.
-- Le risque résiduel porte uniquement sur le bundling Metro d'un asset
-  spécialement forgé, avant ou pendant un build Expo/React Native.
-- Aucune asset non fiable ne doit entrer dans un build Metro. Les assets d'un
-  build doivent provenir du dépôt contrôlé ou d'une source vérifiée avant
-  exécution de Metro.
-
-Cette limitation ne désactive ni Dependabot, ni CodeQL, ni `npm audit`, et ne
-justifie pas un ignore global par package ou par niveau `High`.
-
-## Acceptation de risque bornée
-
-- Date de décision : `2026-08-25`
-- Date de réévaluation au plus tard : `2026-11-25`
-- Périmètre accepté : uniquement `GHSA-w3rx-r6r6-pgpr` et
-  `GHSA-5p2g-fcmc-qvqq` dans `companion-app`.
-- Condition obligatoire : aucun asset non fiable dans un build Metro.
-- Action à la réévaluation : vérifier les versions corrigées disponibles et
-  décider d'une mise à niveau coordonnée Expo / React Native / Metro, ou d'un
-  remplacement maintenu de la dépendance transitive.
-
-L'acceptation expire à la date de réévaluation et doit être renouvelée par une
-nouvelle décision documentée ; elle ne se prolonge pas silencieusement.

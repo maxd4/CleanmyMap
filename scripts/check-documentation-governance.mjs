@@ -52,9 +52,14 @@ const requiredDependencyAdvisoryGovernanceMarkers = [
   "CVE-2025-71330",
   "GHSA-5p2g-fcmc-qvqq",
   "CVE-2025-71329",
-  "image-size@1.2.1",
+  "image-size@2.0.3",
+  "companion-app/vendor/image-size",
+  "n'est pas une release npm upstream",
+  "metro@0.84.4",
+  "metro@0.87.0",
+  "version contenant les deux correctifs",
   "apps/web",
-  "Aucune asset non fiable ne doit entrer dans un build Metro.",
+  "Aucun asset non fiable ne doit entrer dans un build Metro.",
 ];
 
 function walk(dir) {
@@ -89,27 +94,6 @@ function lineSnippets(content, pattern) {
     .map(({ line, index }) => ({ line: index + 1, snippet: line.trim() }));
 }
 
-function parseIsoDate(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
-  if (!match) return null;
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (Number.isNaN(date.getTime())) return null;
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    return null;
-  }
-  return date;
-}
-
-function addCalendarMonths(date, months) {
-  const result = new Date(date.getTime());
-  result.setUTCMonth(result.getUTCMonth() + months);
-  return result;
-}
-
 function validateDependencyAdvisoryGovernance() {
   if (!fs.existsSync(dependencyAdvisoryGovernancePath)) {
     return ["documentation/security/dependency-advisory-governance.md is missing."];
@@ -119,21 +103,16 @@ function validateDependencyAdvisoryGovernance() {
   const issues = requiredDependencyAdvisoryGovernanceMarkers
     .filter((marker) => !content.includes(marker))
     .map((marker) => `missing marker: ${marker}`);
-  const decisionMatch = /Date de décision\s*:\s*`(\d{4}-\d{2}-\d{2})`/.exec(content);
-  const reviewMatch = /Date de réévaluation au plus tard\s*:\s*`(\d{4}-\d{2}-\d{2})`/.exec(content);
-  const decisionDate = parseIsoDate(decisionMatch?.[1]);
-  const reviewDate = parseIsoDate(reviewMatch?.[1]);
-
-  if (!decisionDate) issues.push("missing or invalid decision date");
-  if (!reviewDate) issues.push("missing or invalid review date");
-  if (decisionDate && reviewDate) {
-    if (reviewDate < decisionDate) issues.push("review date precedes decision date");
-    if (reviewDate > addCalendarMonths(decisionDate, 3)) {
-      issues.push("review date exceeds the three-month maximum");
+  const obsoleteTemporaryAcceptanceMarkers = [
+    "Date de décision",
+    "Date de réévaluation au plus tard",
+    "L'acceptation expire",
+    "acceptation temporaire",
+  ];
+  for (const marker of obsoleteTemporaryAcceptanceMarkers) {
+    if (content.includes(marker)) {
+      issues.push(`obsolete temporary acceptance marker: ${marker}`);
     }
-    const today = new Date();
-    const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-    if (reviewDate < todayUtc) issues.push("dependency advisory governance review date has expired");
   }
 
   return issues;
