@@ -258,14 +258,11 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-active-tab="analysis"');
     expect(markup).toContain('data-testid="summary-kpis"');
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 90, limit: 2200 });
-    expect(markup).toContain("Objectifs et repères");
-    expect(markup).toContain(
-      "Ces valeurs de référence ne sont pas calculées à partir de la fenêtre du rapport.",
-    );
-    expect(markup).toContain("Objectif réduction déchets");
-    expect(markup).toContain("Repère mobilisation");
-    expect(markup).toContain("Repère précision GPS");
-    expect(markup).toContain("Repère émissions évitées");
+    expect(markup).not.toContain("Objectifs et repères");
+    expect(markup).not.toContain("78%");
+    expect(markup).not.toContain("45%");
+    expect(markup).not.toContain("92%");
+    expect(markup).not.toContain("65%");
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
     expect(markup).toContain('data-icon="BarChart3"');
