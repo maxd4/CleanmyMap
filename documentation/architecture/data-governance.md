@@ -246,6 +246,23 @@ Tester au minimum :
 - rôle privilégié ;
 - service role lorsque réellement requis.
 
+Les lignes `public.missions` et `public.gps_points` sont des données
+propriétaires sensibles. La lecture web de `/missions/[id]` est autorisée au
+propriétaire porté par `missions.volunteer_id` et aux profils `admin`/`max`,
+après AuthN puis décision d'AuthZ côté serveur. Les profils `elu` et les autres
+profils ordinaires ne sont pas autorisés par analogie avec les actions.
+
+`missions.created_by` est conservé comme provenance potentielle, pas comme
+permission. Le `service_role` reste un moyen technique serveur uniquement ; il
+ne remplace ni l'identité Clerk ni la décision d'ownership et ne doit jamais
+être exposé au client. Les points GPS ne sont chargés qu'après une décision
+d'accès positive et cette lecture ne passe pas par un cache partagé indexé par
+mission.
+
+Aucun partage public de mission ou de GPS n'est autorisé dans ce contrat. Toute
+future surface publique devra reposer sur une vue sanitizée explicite et un
+contrat distinct.
+
 ## Application compagnon
 
 L'app mobile ne doit pas introduire une deuxième identité canonique indépendante sans décision explicite.

@@ -1,21 +1,16 @@
 import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
 import { MapPin, Clock, Trophy } from "lucide-react";
-import { unstable_cache } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { readAuthorizedMission } from "@/lib/missions/mission-access";
 import {
   formatMissionDistance,
   formatMissionDuration,
   formatMissionTimestamp,
   getMissionStatusLabel,
-  type MissionStatus,
 } from "@/components/missions/mission-page-contract";
-
-const MISSION_GPS_POINT_LIMIT = 1000;
-const MISSION_PAGE_CACHE_REVALIDATE_SECONDS = 60;
 
 type MissionPageParams = {
   params: {
@@ -23,84 +18,20 @@ type MissionPageParams = {
   };
 };
 
-type MissionSummary = {
-  id: string;
-  label: string | null;
-  status: MissionStatus | null;
-  started_at: string | null;
-  ended_at: string | null;
-  distance_m: number | null;
-  duration_s: number | null;
-};
-
-type MissionGpsPoint = {
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
-};
-
-type MissionPageData = {
-  mission: MissionSummary | null;
-  points: MissionGpsPoint[];
-};
-
-function buildMissionPageCacheKey(id: string): string {
-  return `mission:${id}`;
-}
-
-async function loadCachedMissionPageData(id: string): Promise<MissionPageData> {
-  const cached = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      const [missionResult, pointsResult] = await Promise.all([
-        supabase
-          .from("missions")
-          .select("id, label, status, started_at, ended_at, distance_m, duration_s")
-          .eq("id", id)
-          .maybeSingle(),
-        supabase
-          .from("gps_points")
-          .select("latitude, longitude, recorded_at")
-          .eq("mission_id", id)
-          .order("recorded_at")
-          .limit(MISSION_GPS_POINT_LIMIT),
-      ]);
-
-      if (missionResult.error) {
-        throw missionResult.error;
-      }
-
-      if (pointsResult.error) {
-        throw pointsResult.error;
-      }
-
-      const mission = (missionResult.data as MissionSummary | null) ?? null;
-      const points = (pointsResult.data ?? []) as MissionGpsPoint[];
-
-      return {
-        mission,
-        points,
-      };
-    },
-    ["mission-page", buildMissionPageCacheKey(id)],
-    {
-      revalidate: MISSION_PAGE_CACHE_REVALIDATE_SECONDS,
-      tags: [`mission-page:${id}`],
-    },
-  );
-
-  return cached();
-}
-
 export default async function MissionPage({ params }: MissionPageParams) {
   const { id } = params;
   const classes = getBlockClasses("act");
-  const { mission, points } = await loadCachedMissionPageData(id);
+  const access = await readAuthorizedMission(id);
 
-  if (!mission) {
+  if (access.kind === "unauthenticated") {
+    redirect(`/sign-in?redirect_url=${encodeURIComponent(`/missions/${id}`)}`);
+  }
+
+  if (access.kind === "not_found" || access.kind === "forbidden") {
     notFound();
   }
 
+  const { mission, points } = access;
   const m = mission;
   const isPending = m.status === "pending";
   const statusLabel = getMissionStatusLabel(m.status);

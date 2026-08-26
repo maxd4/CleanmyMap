@@ -230,6 +230,35 @@ qu'après le clic de l'auteur sur `Voir les preuves photo`; l'ownership média
 existant autorise l'auteur à lire ses propres preuves, y compris lorsque le
 signalement est encore `new`.
 
+### Lecture propriétaire des missions GPS
+
+La route `/missions/[id]` est une surface applicative protégée par AuthN Clerk.
+Le proxy assure l'entrée authentifiée mais ne remplace pas l'AuthZ serveur de
+la capacité de lecture.
+
+La capacité serveur suit obligatoirement cet ordre :
+
+1. appeler `requireAuthenticatedAccess` ;
+2. résoudre le rôle avec `getCurrentUserRoleLabel` et le helper central
+   `isAdminLikeProfile` ;
+3. lire la mission ciblée avec `volunteer_id` ;
+4. autoriser le `userId` correspondant à `volunteer_id`, ou un profil
+   `admin`/`max` ;
+5. lire `gps_points` seulement après cette décision positive.
+
+`mission` et `gps_points` constituent une donnée propriétaire sensible. Un
+profil `elu` ou un autre profil ordinaire ne reçoit pas un accès par analogie
+avec la modération des actions. `created_by` reste une provenance potentielle
+et ne constitue pas une permission tant qu'un producteur et un contrat d'accès
+explicites ne sont pas établis.
+
+Le `service_role` peut être utilisé par cette capacité comme moyen technique
+strictement serveur, mais il ne constitue jamais l'autorisation : toute
+restitution reste conditionnée par la décision d'ownership ou de rôle
+privilégié. La lecture mission/GPS est directe, sans cache partagé indexé par
+`missionId`, et aucun partage public n'est autorisé sans future vue sanitizée
+explicite.
+
 ## Centralisation des permissions
 
 Éviter les comparaisons dispersées de chaînes de rôles.

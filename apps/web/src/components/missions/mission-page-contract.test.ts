@@ -11,6 +11,10 @@ const missionPageSource = readFileSync(
   new URL("../../app/(app)/missions/[id]/page.tsx", import.meta.url),
   "utf8",
 );
+const missionAccessSource = readFileSync(
+  new URL("../../lib/missions/mission-access.ts", import.meta.url),
+  "utf8",
+);
 const missionMapSource = readFileSync(new URL("./mission-map.tsx", import.meta.url), "utf8");
 
 describe("mission page contract", () => {
@@ -32,8 +36,12 @@ describe("mission page contract", () => {
 
   it("ne contient aucun fallback, calcul environnemental ou partage factice", () => {
     expect(missionPageSource).toContain("notFound();");
-    expect(missionPageSource).toContain("if (missionResult.error)");
-    expect(missionPageSource).toContain("if (pointsResult.error)");
+    expect(missionPageSource).toContain("readAuthorizedMission");
+    expect(missionPageSource).not.toContain("unstable_cache");
+    expect(missionAccessSource).toContain("if (missionResult.error)");
+    expect(missionAccessSource).toContain("if (pointsResult.error)");
+    expect(missionAccessSource).toContain("volunteer_id");
+    expect(missionAccessSource).not.toContain("created_by");
     expect(missionPageSource).toContain("<DeferredMissionMap points={points} />");
     expect(missionPageSource).not.toContain("FALLBACK_STARTED_AT");
     expect(missionPageSource).not.toContain("Nettoyage Canal Saint-Martin");

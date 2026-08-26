@@ -13,6 +13,7 @@ describe("proxy app shell routes", () => {
   it("marks the application routes as shell routes", () => {
     const required = [
       "/actions",
+      "/missions",
       ADMIN_ROUTE,
       DASHBOARD_ROUTE,
       EXPLORER_ROUTE,
