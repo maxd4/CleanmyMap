@@ -20,7 +20,7 @@
 
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
-import { supabase } from '../lib/supabase';
+import { getAuthenticatedSupabaseClient } from '../lib/supabase';
 import { getStoredMissionId, bufferPoint, flushBuffer } from '../lib/storage';
 import { GPS_TASK_NAME } from '../lib/tracking-service';
 import type { MissionLocationInsert } from '../types/mission';
@@ -40,6 +40,23 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
     return;
   }
 
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    // Un réveil headless sans session Clerk valide ne doit jamais basculer vers
+    // Supabase Auth anonyme. Les points restent dans le buffer local.
+    for (const loc of locations) {
+      await bufferPoint({
+        mission_id: missionId,
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        accuracy_m: loc.coords.accuracy,
+        altitude_m: loc.coords.altitude,
+        recorded_at: new Date(loc.timestamp).toISOString(),
+      });
+    }
+    return;
+  }
+
   for (const loc of locations) {
     const point: MissionLocationInsert = {
       mission_id: missionId,
@@ -50,7 +67,13 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
       recorded_at: new Date(loc.timestamp).toISOString(),
     };
 
-    const { error: insertError } = await supabase.from('gps_points').insert(point);
+    let insertError: Error | null = null;
+    try {
+      const result = await client.from('gps_points').insert(point);
+      insertError = result.error;
+    } catch (error) {
+      insertError = error instanceof Error ? error : new Error('Session Clerk indisponible.');
+    }
 
     if (insertError) {
       // Hors ligne ou erreur réseau : buffer local

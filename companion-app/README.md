@@ -4,10 +4,11 @@ Application mobile Expo/React Native dédiée au suivi GPS des missions terrain.
 
 ## Statut
 
-**Expérimentale — ne pas considérer comme prête pour la production tant que les deux contrats suivants ne sont pas stabilisés :**
+**Expérimentale — ne pas considérer comme prête pour la production tant que les contrats suivants ne sont pas stabilisés :**
 
-1. identité mobile ↔ profil Clerk ;
-2. finalisation serveur du calcul de distance.
+1. contrat RLS Clerk des missions et des points GPS ;
+2. synchronisation fiable du GPS en background headless ;
+3. finalisation serveur du calcul de distance.
 
 Références :
 
@@ -19,10 +20,11 @@ documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md
 ## Stack
 
 ```txt
-Expo 54
-React Native 0.81
-TypeScript 5.9
-Supabase client
+Expo 57
+React Native 0.87
+TypeScript 7
+Clerk Expo SDK
+Supabase client (data plane)
 SecureStore
 AsyncStorage
 expo-location
@@ -46,8 +48,10 @@ Le navigateur web ne doit pas être considéré comme équivalent pour ce besoin
 
 ```mermaid
 flowchart LR
-  WEB[Site Next.js] --> SB[(Supabase)]
-  APP[Companion Expo] --> SB
+  WEB[Site Next.js / Clerk] --> SB[(Supabase data plane)]
+  APP[Companion Expo / Clerk] --> SB
+  CLERK[Clerk identity] --> APP
+  CLERK --> SB
   APP --> MISSIONS[missions]
   APP --> GPS[gps_points]
   APP --> ACTIONS[mission_actions]
@@ -55,30 +59,26 @@ flowchart LR
 
 Le site et l'app partagent le même projet Supabase.
 
-## Identité : limite actuelle
+## Identité Clerk
 
 Le web utilise Clerk comme fournisseur d'identité principal.
 
-L'app compagnon utilise actuellement Supabase Auth directement et propose une connexion anonyme.
+Le LOT 1 de l'ADR-004 est accepté et implémenté : Clerk est l'unique identité
+utilisateur du companion-app. L'interface utilise l'authentification hébergée
+Clerk (Account Portal), avec les méthodes activées dans le compte Clerk.
 
-Cette divergence ne doit pas être considérée comme un contrat final.
+Le `ClerkProvider` utilise le cache de token sécurisé Expo. Le client Supabase
+reste uniquement un data plane : il utilise la clé publique anon pour le
+transport et le token de session Clerk courant via `accessToken`. Supabase Auth
+n'est pas le fournisseur d'identité du companion et aucune session Supabase Auth
+n'est persistée ou observée.
 
-Problème à résoudre :
+Le chemin d'identité anonyme a été supprimé. Aucun JWT template legacy n'est
+copié dans l'app et aucune clé `service_role` n'est embarquée.
 
-```txt
-auth.uid() Supabase
-≠ automatiquement
-profiles.id Clerk
-```
-
-Avant production, choisir et tester un modèle d'identité explicite.
-
-Décision proposée :
-
-- Clerk reste l'identité canonique ;
-- Supabase reçoit une identité vérifiable compatible avec RLS ;
-- aucune identité anonyme n'est assimilée implicitement à un profil Clerk ;
-- aucune clé `service_role` n'est embarquée dans l'app.
+Le contrat RLS qui doit lire le `sub` Clerk et le rapprocher des colonnes
+d'ownership n'est pas traité dans ce lot. Tant qu'il n'est pas validé, l'app ne
+doit pas être qualifiée de prête pour la production.
 
 Voir `ADR-004`.
 
@@ -123,6 +123,7 @@ Variables publiques attendues :
 ```txt
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_ANON_KEY
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
 ```
 
 Ne jamais ajouter :
@@ -157,6 +158,16 @@ ou sur macOS :
 ```bash
 npx expo run:ios
 ```
+
+Le TaskManager demande le token Clerk courant avant toute écriture Supabase.
+Lorsqu'un réveil headless ne dispose pas d'un token Clerk valide, il ne tente
+aucune authentification alternative : les points sont conservés dans le buffer
+local sécurisé et la synchronisation est différée.
+
+Ce lot ne prétend pas résoudre le renouvellement d'un token Clerk lorsque le
+TaskManager est réveillé sans contexte JavaScript Clerk complet. Le contrat de
+réhydratation, de synchronisation background et les RLS correspondantes sont
+explicitement réservés au LOT 2 de l'ADR-004.
 
 ## Structure
 
@@ -194,7 +205,8 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ## Contrôles avant production
 
 ```txt
-□ Identité mobile alignée avec Clerk
+☑ Identité mobile alignée avec Clerk côté SDK et token provider (LOT 1)
+□ Intégration Clerk Third-Party Auth configurée et RLS missions validées
 □ Ownership des missions testé
 □ RLS missions testée
 □ RLS gps_points testée
@@ -204,7 +216,8 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 □ Buffer offline testé
 □ Restauration mission active testée
 □ Refus de permissions testé
-□ SecureStore vérifié
+☑ Cache de token Clerk dans SecureStore configuré (LOT 1)
+□ Renouvellement du token Clerk en background headless
 □ Typecheck en CI
 ```
 

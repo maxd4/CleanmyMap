@@ -1,7 +1,7 @@
 # ADR-004 — Identité de l'application compagnon
 
-**Statut : proposé — à valider avant production mobile**  
-**Date : 11 juillet 2026**
+**Statut : accepté pour le LOT 1 — LOT 2 requis avant production mobile**
+**Date : 26 août 2026**
 
 ## Contexte
 
@@ -9,11 +9,8 @@ L'application web CleanMyMap utilise Clerk comme fournisseur d'identité princip
 
 Les profils sont représentés dans Supabase pour les jointures et règles métier.
 
-L'application compagnon utilise actuellement le client Supabase Auth directement et peut appeler :
-
-```ts
-supabase.auth.signInAnonymously()
-```
+Avant le LOT 1, l'application compagnon utilisait le client Supabase Auth
+directement et proposait une identité anonyme.
 
 Les migrations de missions utilisent cependant des relations vers `public.profiles(id)` et des policies fondées sur :
 
@@ -41,28 +38,54 @@ Cela menace :
 - audit ;
 - suppression de compte.
 
-## Décision proposée
+## Décision acceptée — LOT 1
 
-Clerk reste l'identité canonique de l'utilisateur CleanMyMap.
+Clerk est l'unique identité canonique de l'utilisateur CleanMyMap, sur le web
+comme dans le companion-app.
 
-L'app compagnon doit utiliser une identité vérifiable qui permet à Supabase d'appliquer les règles attendues sans exposer `service_role`.
+Le companion utilise l'intégration native Clerk → Supabase Third-Party Auth.
+Supabase est le data plane : le client mobile utilise la clé publique anon et
+transmet le token de session Clerk courant via l'option `accessToken` de
+`@supabase/supabase-js`.
 
-La solution finale peut utiliser un JWT Clerk compatible avec Supabase ou un autre mécanisme de liaison explicite, mais elle doit respecter les invariants suivants.
+L'authentification hébergée Clerk réutilise l'Account Portal et les méthodes
+activées dans le compte Clerk. Le cache de token fourni par
+`@clerk/expo/token-cache` est utilisé avec `ClerkProvider` et SecureStore.
+
+Le LOT 1 ne copie pas de JWT template legacy, ne crée pas d'identité Supabase
+Auth et n'embarque jamais `service_role`.
 
 ## Invariants
 
 1. un utilisateur possède une identité canonique ;
-2. aucune identité anonyme n'est assimilée implicitement à un profil Clerk ;
+2. aucune identité anonyme n'est créée ou assimilée à un profil Clerk ;
 3. `service_role` n'est jamais embarquée dans l'app ;
-4. la propriété d'une mission est vérifiable par RLS ou service serveur ;
+4. le token Clerk est la seule identité transmise au data plane Supabase ;
 5. le site et l'app attribuent la mission au même utilisateur ;
 6. la suppression ou désactivation d'un compte reste traçable.
 
+## Implémentation du LOT 1
+
+Les invariants suivants sont désormais portés par le code :
+
+- `ClerkProvider` enveloppe l'application avec un cache de token sécurisé Expo ;
+- l'état d'accès est lu avec `useAuth`, et un utilisateur déconnecté ne peut
+  pas ouvrir l'interface Mission ;
+- l'authentification visible passe par `useHostedAuth` et l'Account Portal ;
+- le client Supabase désactive sa persistance et son auto-refresh Auth et
+  utilise le token Clerk courant via une abstraction unique ;
+- l'absence de token ne déclenche aucun fallback d'authentification et laisse
+  les points GPS dans le buffer offline.
+
+Cette implémentation ne constitue pas encore une validation de production des
+RLS : les migrations `missions`/`gps_points` ne sont pas modifiées dans ce lot.
+
 ## Options
 
-### Option A — Clerk vers Supabase
+### Option A — Clerk vers Supabase — retenue
 
-L'app obtient un token Clerk compatible avec Supabase.
+Le companion obtient le token de session Clerk courant et le transmet à
+Supabase via Third-Party Auth.
 
 Avantages :
 
@@ -78,7 +101,7 @@ Points à vérifier :
 - claims ;
 - configuration tierce Supabase.
 
-### Option B — Table de liaison explicite
+### Option B — Table de liaison explicite — rejetée pour ce contrat
 
 Conserver deux identités techniques mais les relier explicitement.
 
@@ -96,7 +119,7 @@ Inconvénients :
 - synchronisation ;
 - risques de dérive.
 
-### Option C — Endpoint serveur
+### Option C — Endpoint serveur — non retenue par défaut
 
 L'app appelle une API serveur qui vérifie l'identité et agit sur Supabase.
 
@@ -110,11 +133,17 @@ Inconvénients :
 - coût Vercel ;
 - gestion des tokens.
 
-## Recommandation
+## Suite recommandée — LOT 2
 
-Évaluer d'abord l'option A, car elle conserve Clerk comme identité principale conformément à `ADR-001-clerk-auth.md`.
+Le LOT 2 doit définir et tester le contrat RLS Clerk des missions et
+`gps_points`, notamment l'utilisation du `sub` Clerk pour l'ownership, puis le
+comportement de synchronisation lorsque le TaskManager est réveillé headless.
+Il doit aussi traiter la cohérence de finalisation et l'accès background sans
+réintroduire d'identité Supabase Auth.
 
-Ne pas utiliser l'option C par défaut pour chaque point GPS si cela augmente inutilement les coûts et la latence.
+Le LOT 2 ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
+hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
+offline reste l'état attendu.
 
 ## Migration
 
@@ -122,11 +151,11 @@ Avant bascule :
 
 1. inventorier les missions existantes ;
 2. identifier les UIDs anonymes ;
-3. définir le mapping ;
+3. définir et tester le contrat RLS fondé sur le `sub` Clerk ;
 4. écrire la migration ;
-5. tester propriétaire/non-propriétaire ;
+5. tester propriétaire/non-propriétaire avec tokens Clerk ;
 6. tester expiration et refresh ;
-7. tester offline ;
+7. tester offline et le réveil headless sans token ;
 8. supprimer le chemin anonyme seulement après migration.
 
 ## Tests requis

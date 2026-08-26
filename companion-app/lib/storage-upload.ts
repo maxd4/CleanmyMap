@@ -1,6 +1,6 @@
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system';
-import { supabase } from './supabase';
+import { getAuthenticatedSupabaseClient } from './supabase';
 
 const MISSION_ASSETS_BUCKET = 'mission-assets';
 const MISSION_ASSETS_BUCKET_HINT =
@@ -46,13 +46,18 @@ export async function uploadMissionPhoto(
   localUri: string
 ): Promise<{ path?: string; error?: string }> {
   try {
+    const client = await getAuthenticatedSupabaseClient();
+    if (!client) {
+      return { error: "Connexion Clerk requise pour envoyer une photo." };
+    }
+
     const fileName = `${missionId}/${Date.now()}.jpg`;
 
     const base64 = await FileSystem.readAsStringAsync(localUri, {
       encoding: 'base64',
     });
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await client.storage
       .from(MISSION_ASSETS_BUCKET)
       .upload(fileName, decode(base64), {
         contentType: 'image/jpeg',
