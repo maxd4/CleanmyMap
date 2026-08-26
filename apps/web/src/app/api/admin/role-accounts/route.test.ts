@@ -46,7 +46,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
       displayName: "Owner",
       role: "max",
     });
-    syncClerkUserToSupabaseMock.mockResolvedValue(null);
+    syncClerkUserToSupabaseMock.mockResolvedValue({ id: "user-2", role_label: "admin" });
     appendAdminOperationAuditMock.mockResolvedValue(null);
     clerkClientMock.mockResolvedValue({
       users: {
@@ -132,6 +132,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
           userId: "user-2",
           action: "assign",
           role: "admin",
+          reason: "Validated admin assignment",
         }),
       }),
     );
@@ -145,16 +146,154 @@ describe("GET/POST /api/admin/role-accounts", () => {
       expect.objectContaining({
         actorUserId: "owner-1",
         targetId: "user-2",
-        operationType: "moderation",
+        operationType: "role_management",
         outcome: "success",
-        details: {
-          entityType: "role_account",
-          action: "assign",
-          previousRole: "benevole",
-          newRole: "admin",
-        },
+        details: expect.objectContaining({
+          operation: "assign_role",
+          reason: "Validated admin assignment",
+          targetUserId: "user-2",
+          previousValue: { role: "benevole" },
+          newValue: { role: "admin" },
+        }),
       }),
     );
+    const successAudit = appendAdminOperationAuditMock.mock.calls[0]?.[0] as {
+      details: Record<string, unknown>;
+    };
+    expect(Object.keys(successAudit.details).sort()).toEqual([
+      "newValue",
+      "operation",
+      "previousValue",
+      "reason",
+      "targetUserId",
+    ]);
     expect(getManagedRoleAccountByIdMock).toHaveBeenCalledWith("user-2");
+  });
+
+  it.each([
+    ["assign", "admin"],
+    ["assign", "elu"],
+    ["revoke", undefined],
+  ])("audits %s role changes with one success entry", async (action, role) => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action,
+          ...(role ? { role } : {}),
+          reason: "Reviewed role change",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        outcome: "success",
+        details: expect.objectContaining({
+          operation: action === "assign" ? "assign_role" : "revoke_role",
+          newValue: { role: action === "assign" ? role : "benevole" },
+        }),
+      }),
+    );
+  });
+
+  it.each([undefined, "nope"]) (
+    "rejects an absent or short reason before any mutation (%s)",
+    async (reason) => {
+      const { POST } = await import("./route");
+      const response = await POST(
+        new Request("http://localhost/api/admin/role-accounts", {
+          method: "POST",
+          body: JSON.stringify({
+            userId: "user-2",
+            action: "assign",
+            role: "admin",
+            ...(reason === undefined ? {} : { reason }),
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      expect(clerkClientMock).not.toHaveBeenCalled();
+      expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+      expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("audits a Clerk failure without syncing Supabase", async () => {
+    clerkClientMock.mockResolvedValueOnce({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: "user-2",
+          publicMetadata: { role: "benevole" },
+          privateMetadata: {},
+        }),
+        updateUser: vi.fn().mockRejectedValue(new Error("Clerk unavailable")),
+      },
+    });
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "Clerk failure test",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: expect.objectContaining({
+          stage: "clerk_update",
+          previousValue: { role: "benevole" },
+          newValue: { role: "admin" },
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "Clerk unavailable",
+    );
+  });
+
+  it("audits a Supabase synchronization failure", async () => {
+    syncClerkUserToSupabaseMock.mockResolvedValueOnce(null);
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "elu",
+          reason: "Sync failure test",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: expect.objectContaining({
+          stage: "supabase_sync",
+          newValue: { role: "elu" },
+        }),
+      }),
+    );
   });
 });
