@@ -49,6 +49,9 @@ météo Open-Meteo avec revalidation 900 s
 ## Fonctionnalités
 
 - KPI de synthèse ;
+- snapshot des indicateurs du `ReportModel`, avec séparation explicite entre
+  collecte, qualité des données, couverture cartographique et impacts calculés
+  par proxy ;
 - tendances mensuelles ;
 - comparaisons ;
 - méthode KPI ;
@@ -57,6 +60,29 @@ météo Open-Meteo avec revalidation 900 s
 - météo ;
 - génération de document ;
 - exports pour profils autorisés.
+
+## Sémantique des indicateurs visibles
+
+Le snapshot ne présente que les champs fournis par `ReportModel` et conserve
+leurs unités. Les valeurs d'impact issues de `IMPACT_PROXY_CONFIG` sont
+qualifiées de `proxy` ; elles ne constituent pas des mesures instrumentales.
+
+| Champ | Libellé visible | Unité / qualification |
+|---|---|---|
+| `climate.co2AvoidedKg` | Émissions évitées (proxy) | kg CO₂e |
+| `climate.waterProtectedLiters` | Eau préservée (proxy) | L |
+| `recycling.recyclableKg` | Masse recyclable estimée | kg |
+| `recycling.triIndex` | Indice de tri (proxy) | % |
+| `quality.completenessScore` | Complétude des données | % |
+| `quality.coherenceScore` | Cohérence des données | % |
+| `map.geoCoverage` | Couverture géolocalisée | % |
+| `map.traceCoverage` | Couverture des traces | % |
+
+La complétude et la cohérence décrivent la qualité du jeu de données. Elles ne
+sont pas des niveaux de pollution, et le complément à 100 de la complétude
+n'est pas affiché comme une incertitude scientifique. Aucun objectif chiffré
+statique n'est affiché : le modèle d'objectifs configurables est hors de ce
+lot.
 
 ## Performance
 

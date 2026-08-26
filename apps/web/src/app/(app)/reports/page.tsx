@@ -96,47 +96,6 @@ function buildReportsAnalysisContent({
           <div className="space-y-10">
             <AnimatedImpactMetrics kpis={summaryKpis} />
 
-            <div className="space-y-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                  Objectifs et repères
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Ces valeurs de référence ne sont pas calculées à partir de la fenêtre du rapport.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <section className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                  Objectif réduction déchets
-                </p>
-                <p className="mt-2 text-2xl font-black text-slate-950">78%</p>
-                <p className="mt-1 text-sm text-slate-500">Objectif Q2 2026</p>
-              </section>
-              <section className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                  Repère mobilisation
-                </p>
-                <p className="mt-2 text-2xl font-black text-slate-950">45%</p>
-                <p className="mt-1 text-sm text-slate-500">Nouveaux bénévoles</p>
-              </section>
-              <section className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                  Repère précision GPS
-                </p>
-                <p className="mt-2 text-2xl font-black text-slate-950">92%</p>
-                <p className="mt-1 text-sm text-slate-500">Précision GPS</p>
-              </section>
-              <section className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
-                  Repère émissions évitées
-                </p>
-                <p className="mt-2 text-2xl font-black text-slate-950">65%</p>
-                <p className="mt-1 text-sm text-slate-500">Émissions évitées</p>
-              </section>
-              </div>
-            </div>
-
             <NavigationGrid
               items={navigationItems}
               columns={{ default: 1, sm: 2, md: 4, xl: 4 }}
@@ -230,7 +189,7 @@ function buildReportsAnalysisContent({
 export const metadata: Metadata = {
   title: "Rapports d'impact - CleanMyMap",
   description:
-    "Analysez les données de nettoyage participatif, téléchargez des rapports détaillés et visualisez l'évolution de l'impact environnemental.",
+    "Analysez les données de nettoyage participatif, les indicateurs d'impact calculés par proxy et la qualité des données.",
 };
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {

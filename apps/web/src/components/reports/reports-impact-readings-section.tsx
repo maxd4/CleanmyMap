@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarDays, Eye, FileText, Map, ShieldCheck, Sparkles } from "lucide-react";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
+import { formatScorePercent } from "@/lib/formatters/score";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { toFrInt, toFrNumber } from "@/lib/reports/report-model";
 import { SectionHeader } from "@/components/ui/page-structure";
@@ -32,7 +33,11 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
       accentClass: "bg-red-500",
       items: [
         { label: "Volumes collectés", value: `${toFrNumber(report.totals.kg)} kg`, icon: FileText },
-        { label: "Couverture géographique", value: `${toFrNumber(report.map.geoCoverage)}%`, icon: Map },
+        {
+          label: "Couverture géolocalisée",
+          value: formatScorePercent(report.map.geoCoverage, 1),
+          icon: Map,
+        },
         { label: "Fréquence", value: `${toFrInt(report.totals.actions)} actions`, icon: CalendarDays },
         { label: "Types de flux", value: `${bucketCount}`, icon: Sparkles },
         {
@@ -44,27 +49,63 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
     },
     {
       id: "impact-env",
-      title: "Impact environnemental",
+      title: "Impacts et estimations",
       accentClass: "bg-cyan-500",
       items: [
-        { label: "Émissions de CO2 évitées", value: `${toFrNumber(report.climate.co2AvoidedKg)} kg`, icon: Sparkles },
-        { label: "Pollution de l’air évitée", value: `${toFrNumber(report.quality.coherenceScore)}%`, icon: Eye },
-        { label: "Pollution de l’eau évitée", value: `${toFrInt(report.climate.waterProtectedLiters)} L`, icon: Sparkles },
-        { label: "Pollution des sols évitée", value: `${toFrNumber(report.recycling.triIndex)}%`, icon: ShieldCheck },
+        {
+          label: "Émissions évitées (proxy)",
+          value: `${toFrNumber(report.climate.co2AvoidedKg)} kg CO₂e`,
+          icon: Sparkles,
+        },
+        {
+          label: "Eau préservée (proxy)",
+          value: `${toFrInt(report.climate.waterProtectedLiters)} L`,
+          icon: Sparkles,
+        },
+        {
+          label: "Masse recyclable estimée",
+          value: `${toFrNumber(report.recycling.recyclableKg)} kg`,
+          icon: ShieldCheck,
+        },
         { label: "Charge bénévole", value: `${toFrNumber(report.totals.hours)} h`, icon: CalendarDays },
-        { label: "Économie de voirie (proxy)", value: `${toFrNumber(report.climate.streetCleaningSavingsEuros ?? 0)} €`, icon: ArrowRight },
+        {
+          label: "Économie de voirie (proxy)",
+          value:
+            report.climate.streetCleaningSavingsEuros == null
+              ? "Indisponible"
+              : `${toFrNumber(report.climate.streetCleaningSavingsEuros)} €`,
+          icon: ArrowRight,
+        },
       ],
     },
     {
-      id: "data-carto",
-      title: "Données & cartographie",
+      id: "tri-qualite",
+      title: "Tri et qualité des données",
       accentClass: "bg-blue-500",
       items: [
+        {
+          label: "Indice de tri (proxy)",
+          value: formatScorePercent(report.recycling.triIndex, 1),
+          icon: ShieldCheck,
+        },
         { label: "Zones couvertes", value: `${report.areas.length}`, icon: Map },
-        { label: "Précision des données", value: `${toFrNumber(report.quality.completenessScore)}%`, icon: FileText },
-        { label: "Sources de données", value: `${sourceCount}`, icon: Sparkles },
-        { label: "Résolution spatiale", value: `${toFrNumber(report.map.traceCoverage)}%`, icon: Eye },
-        { label: "Actualité des données", value: `${toFrNumber(report.quality.freshnessDays)} j`, icon: CalendarDays },
+        {
+          label: "Complétude des données",
+          value: formatScorePercent(report.quality.completenessScore, 1),
+          icon: FileText,
+        },
+        {
+          label: "Cohérence des données",
+          value: formatScorePercent(report.quality.coherenceScore, 1),
+          icon: FileText,
+        },
+        { label: "Sources de méthode", value: `${sourceCount}`, icon: Sparkles },
+        {
+          label: "Couverture des traces",
+          value: formatScorePercent(report.map.traceCoverage, 1),
+          icon: Eye,
+        },
+        { label: "Ancienneté des données", value: `${toFrNumber(report.quality.freshnessDays)} j`, icon: CalendarDays },
       ],
     },
     {
@@ -72,11 +113,16 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
       title: "Transparence & méthodes",
       accentClass: "bg-red-500",
       items: [
-        { label: "Méthodologie validée", value: report.impactMethodology.proxyVersion ?? "OK", icon: ShieldCheck },
-        { label: "Traçabilité des données", value: `${toFrNumber(report.map.geoCoverage)}%`, icon: FileText },
-        { label: "Conformité & normes", value: `${toFrNumber(report.quality.coherenceScore)}%`, icon: ShieldCheck },
-        { label: "Incertitudes", value: `${toFrNumber(100 - report.quality.completenessScore)}%`, icon: Eye },
-        { label: "Reproductibilité", value: report.impactMethodology.qualityRulesVersion ?? "Stable", icon: ArrowRight },
+        {
+          label: "Version du proxy",
+          value: report.impactMethodology.proxyVersion ?? "Indisponible",
+          icon: ShieldCheck,
+        },
+        {
+          label: "Version des règles qualité",
+          value: report.impactMethodology.qualityRulesVersion ?? "Indisponible",
+          icon: ArrowRight,
+        },
       ],
     },
   ];
