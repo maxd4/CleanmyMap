@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getChatRefreshIntervalMs } from "./use-chat-data";
+import { buildMessagesKey, getChatRefreshIntervalMs } from "./use-chat-data";
 
 describe("getChatRefreshIntervalMs", () => {
   it("pauses polling when the page is hidden or offline", () => {
@@ -60,5 +60,43 @@ describe("getChatRefreshIntervalMs", () => {
         isOnline: true,
       }),
     ).toBe(240_000);
+  });
+});
+
+describe("chat topic feed keys", () => {
+  it("keeps the global community feed unfiltered and adds a stable topic filter when selected", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "community",
+        activeTopicId: null,
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+      }),
+    ).toBe("/api/chat?channelType=community");
+
+    expect(
+      buildMessagesKey({
+        activeChannelType: "community",
+        activeTopicId: "relais_associatif",
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+      }),
+    ).toBe("/api/chat?channelType=community&topicId=relais_associatif");
+  });
+
+  it("keeps territory geography in the key alongside the selected topic", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "territory",
+        activeTopicId: "territoires_voisins",
+        selectedRecipientId: null,
+        effectiveZone: "Paris 11e",
+        territoryFocus: 11,
+      }),
+    ).toBe(
+      "/api/chat?channelType=territory&zoneName=Paris%2011e&topicId=territoires_voisins",
+    );
   });
 });

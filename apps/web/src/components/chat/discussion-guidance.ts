@@ -1,5 +1,8 @@
 import { ArrowLeftRight, MapPin, Megaphone, PackageSearch, Users, Workflow, type LucideIcon } from "lucide-react";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { ChatTopicId } from "@/lib/chat/topics";
+
+export type { ChatTopicId } from "@/lib/chat/topics";
 
 export type DiscussionLocale = "fr" | "en";
 
@@ -17,15 +20,6 @@ export type DiscussionGuidance = {
   composerHint: string;
   channelGoal: string;
 };
-
-export type ChatTopicId =
-  | "relais_associatif"
-  | "appel_aux_benevoles"
-  | "demande_diffusion"
-  | "besoin_ressources"
-  | "coordination_secteur"
-  | "mon_territoire"
-  | "territoires_voisins";
 
 export type ChatTopicDefinition = {
   id: ChatTopicId;
@@ -364,10 +358,6 @@ export function getDiscussionTopic(
   }
 
   return getDiscussionTopics(channelType).find((topic) => topic.id === topicId) ?? null;
-}
-
-export function getDefaultDiscussionTopicId(channelType: ChatChannelType): ChatTopicId | null {
-  return getDiscussionTopics(channelType)[0]?.id ?? null;
 }
 
 export function getDiscussionGuidance(

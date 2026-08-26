@@ -21,6 +21,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     activeTab,
     setActiveTab,
     initialChannelType,
+    initialTopicId,
     initialRecipient,
     initialArrondissement,
     initialZoneName,
@@ -61,6 +62,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               <DeferredChatShell
                 key={discussionShellKey}
                 initialChannelType={initialChannelType}
+                initialTopicId={initialTopicId}
                 initialArrondissement={initialArrondissement}
                 initialZoneName={initialZoneName}
                 initialRecipient={initialRecipient}

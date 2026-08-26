@@ -15,6 +15,13 @@ const permissionsMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const topicsMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260826000000_chat_message_topics.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
 
 it("creates an isolated per-user, per-peer read cursor with RLS", () => {
   expect(migration).toContain("create table if not exists public.chat_dm_read_states");
@@ -58,4 +65,21 @@ it("removes the default anon EXECUTE grant from both inbox RPCs", () => {
   expect(permissionsMigration).toContain(
     "grant execute on function public.mark_my_dm_conversation_read(text) to authenticated, service_role",
   );
+});
+
+it("adds nullable topic storage with strict channel integrity and a filtered index", () => {
+  expect(topicsMigration).toContain(
+    "add column if not exists topic_id text",
+  );
+  expect(topicsMigration).toContain(
+    "constraint app_messages_topic_channel_check",
+  );
+  expect(topicsMigration).toContain("topic_id is null");
+  expect(topicsMigration).toContain("channel_type = 'community'");
+  expect(topicsMigration).toContain("channel_type = 'territory'");
+  expect(topicsMigration).toContain(
+    "create index if not exists idx_app_messages_topic_created_at",
+  );
+  expect(topicsMigration).toContain("where topic_id is not null");
+  expect(topicsMigration).not.toContain("update public.app_messages");
 });

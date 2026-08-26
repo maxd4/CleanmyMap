@@ -16,6 +16,11 @@ import {
   type ZoneContext,
 } from "@/lib/chat/channels";
 import {
+  isChatTopicId,
+  isChatTopicAllowedForChannel,
+  type ChatTopicId,
+} from "@/lib/chat/topics";
+import {
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
@@ -41,6 +46,7 @@ const CHANNEL_TYPES = [
 const sendMessageSchema = z.object({
   channelType: z.enum(CHANNEL_TYPES),
   content: z.string().min(1).max(2000),
+  topicId: z.string().optional(),
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
   zoneName: z.string().optional(),
@@ -69,6 +75,25 @@ type ChatMessageRow = {
   created_at: string;
   [key: string]: unknown;
 };
+
+function validateTopicForChannel(
+  channelType: ChatChannelType,
+  topicId: string | null | undefined,
+): { topicId: ChatTopicId | null; error?: string } {
+  if (!topicId) {
+    return { topicId: null };
+  }
+
+  if (!isChatTopicId(topicId)) {
+    return { topicId: null, error: "Salon inconnu." };
+  }
+
+  if (!isChatTopicAllowedForChannel(channelType, topicId)) {
+    return { topicId: null, error: "Ce salon n'est pas disponible dans ce canal." };
+  }
+
+  return { topicId };
+}
 
 type ChatQueryResult<T> = PromiseLike<{
   data: T[] | null;
@@ -178,20 +203,21 @@ export async function POST(request: Request) {
   const botIdResponse = await requireBotIdHuman();
   if (botIdResponse) return botIdResponse;
 
+  const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
+  const writeRateLimitResponse = createServerRateLimitResponse(
+    writeRateLimit.allowed,
+    writeRateLimit.retryAfter,
+    writeRateLimit,
+  );
+  if (writeRateLimitResponse) {
+    return writeRateLimitResponse;
+  }
+
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
 
   const identity = await getCurrentUserIdentity();
   if (!identity) return unauthorizedJsonResponse();
-
-  const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
-  const writeRateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-  );
-  if (writeRateLimitResponse) {
-    return writeRateLimitResponse;
-  }
 
   let payload: unknown;
   try {
@@ -202,6 +228,20 @@ export async function POST(request: Request) {
 
   const parsed = sendMessageSchema.safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
+
+  const topicValidation = validateTopicForChannel(
+    parsed.data.channelType,
+    parsed.data.topicId,
+  );
+  if (topicValidation.error) {
+    return NextResponse.json(
+      {
+        error: "Salon invalide",
+        hint: topicValidation.error,
+      },
+      { status: 400 },
+    );
+  }
 
   if (parsed.data.attachmentUrl) {
     if (!parsed.data.attachmentType) {
@@ -345,6 +385,7 @@ export async function POST(request: Request) {
         sender_id: userId,
         recipient_id: recipientId,
         channel_type: parsed.data.channelType,
+        topic_id: topicValidation.topicId,
         arrondissement_id: targetArrondissementId,
         zone_name: targetZoneName,
         content: parsed.data.content,
@@ -382,6 +423,7 @@ export async function GET(request: Request) {
   const channelTypeRaw = searchParams.get("channelType");
   const channelType = isChatChannelType(channelTypeRaw) ? channelTypeRaw : null;
   const recipientId = searchParams.get("recipientId");
+  const requestedTopicId = searchParams.get("topicId");
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const requestedZoneName = searchParams.get("zoneName");
 
@@ -394,6 +436,18 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+
+  const topicValidation = validateTopicForChannel(channelType, requestedTopicId);
+  if (requestedTopicId && topicValidation.error) {
+    return NextResponse.json(
+      {
+        error: "Salon invalide",
+        hint: topicValidation.error,
+      },
+      { status: 400 },
+    );
+  }
+  const topicId = topicValidation.topicId;
 
   const supabase = await getSupabaseClerkRlsClient();
   if (!supabase) {
@@ -443,7 +497,11 @@ export async function GET(request: Request) {
 
   try {
     if (channelType === "community") {
-      const { data, error } = await createMessageQuery().eq("channel_type", "community");
+      let query = createMessageQuery().eq("channel_type", "community");
+      if (topicId) {
+        query = query.eq("topic_id", topicId);
+      }
+      const { data, error } = await query;
       if (error) {
         throw error;
       }
@@ -502,24 +560,34 @@ export async function GET(request: Request) {
       const territoryQueries: Promise<ChatMessageRow[]>[] = [];
 
       if (zoneName) {
-        territoryQueries.push(
-          runMessageQuery(createMessageQuery().eq("channel_type", "territory").eq("zone_name", zoneName)),
-        );
+        let query = createMessageQuery()
+          .eq("channel_type", "territory")
+          .eq("zone_name", zoneName);
+        if (topicId) {
+          query = query.eq("topic_id", topicId);
+        }
+        territoryQueries.push(runMessageQuery(query));
       }
       if (territory.zoneNames && territory.zoneNames.length > 0) {
+        let query = createMessageQuery()
+          .eq("channel_type", "territory")
+          .in("zone_name", territory.zoneNames);
+        if (topicId) {
+          query = query.eq("topic_id", topicId);
+        }
         territoryQueries.push(
-          runMessageQuery(
-            createMessageQuery().eq("channel_type", "territory").in("zone_name", territory.zoneNames),
-          ),
+          runMessageQuery(query),
         );
       }
       if (territory.arrondissementIds && territory.arrondissementIds.length > 0) {
+        let query = createMessageQuery()
+          .eq("channel_type", "territory")
+          .in("arrondissement_id", territory.arrondissementIds);
+        if (topicId) {
+          query = query.eq("topic_id", topicId);
+        }
         territoryQueries.push(
-          runMessageQuery(
-            createMessageQuery()
-              .eq("channel_type", "territory")
-              .in("arrondissement_id", territory.arrondissementIds),
-          ),
+          runMessageQuery(query),
         );
       }
 

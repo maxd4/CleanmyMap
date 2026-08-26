@@ -83,19 +83,6 @@ export const ChatHeader = memo(function ChatHeader({
                 {activeChannelDescription}
               </p>
             </div>
-            {showControls && activeChannelType === "community" && (
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isLight ? "text-slate-800" : "text-slate-200"}`}>Thèmes actifs :</span>
-                {["coordination", "bénévoles", "diffusion"].map(theme => (
-                  <span key={theme} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
-                    {theme}
-                  </span>
-                ))}
-                <button className={`flex items-center justify-center w-5 h-5 rounded-full ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}>
-                  +
-                </button>
-              </div>
-            )}
             {activeChannelType === "dm" && selectedRecipient ? (
               <p className="text-[10px] font-semibold text-indigo-500 dark:text-slate-400">
                 Conversation avec {selectedRecipient.display_name} @{selectedRecipient.handle}

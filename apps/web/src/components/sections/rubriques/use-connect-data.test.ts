@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildInitialDmRecipient } from "./use-connect-data";
+import { buildInitialDmRecipient, buildInitialTopicId } from "./use-connect-data";
 
 describe("DM deep-link recipient contract", () => {
   it("keeps the URL identity and opens a private thread", () => {
@@ -27,5 +27,20 @@ describe("DM deep-link recipient contract", () => {
         recipientHandle: "alex",
       }),
     ).toBeNull();
+  });
+});
+
+describe("public topic deep-link contract", () => {
+  it("keeps the community global view unclassified", () => {
+    expect(buildInitialTopicId("community", null)).toBeNull();
+    expect(buildInitialTopicId("community", "")).toBeNull();
+  });
+
+  it("accepts only a topic compatible with the selected channel", () => {
+    expect(buildInitialTopicId("community", "relais_associatif")).toBe(
+      "relais_associatif",
+    );
+    expect(buildInitialTopicId("territory", "relais_associatif")).toBeNull();
+    expect(buildInitialTopicId("dm", "relais_associatif")).toBeNull();
   });
 });

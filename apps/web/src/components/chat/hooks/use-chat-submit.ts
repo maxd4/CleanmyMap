@@ -10,6 +10,7 @@ import {
 } from "@/lib/chat/chat-attachments";
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import type { ChatTopicId } from "@/lib/chat/topics";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 import type { SendChatMessageParams } from "./use-chat-data";
 
@@ -24,6 +25,7 @@ type UseChatSubmitParams = {
   isSending: boolean;
   isUploading: boolean;
   activeChannelType: ChatChannelType;
+  activeTopicId: ChatTopicId | null;
   selectedRecipient: ChatUser | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -48,6 +50,7 @@ export function useChatSubmit({
   isSending,
   isUploading,
   activeChannelType,
+  activeTopicId,
   selectedRecipient,
   effectiveZone,
   territoryFocus,
@@ -178,6 +181,7 @@ export function useChatSubmit({
         sender_id: userId,
         content: currentMessage,
         channel_type: activeChannelType,
+        topic_id: activeTopicId,
         attachment_url: attachmentUrl,
         created_at: new Date().toISOString(),
         sender: {
@@ -191,6 +195,7 @@ export function useChatSubmit({
         optimisticMessage: optimisticMsg,
         body: {
           channelType: activeChannelType,
+          topicId: activeTopicId ?? undefined,
           content: currentMessage,
           recipientId:
             activeChannelType === "dm" ? selectedRecipient?.id : undefined,
@@ -238,6 +243,7 @@ export function useChatSubmit({
     }
   }, [
     activeChannelType,
+    activeTopicId,
     effectiveZone,
     file,
     isSending,

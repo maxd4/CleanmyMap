@@ -7,9 +7,6 @@ import {
   FileText,
   MessageSquare,
   Zap,
-  Heart,
-  MessageCircle,
-  MoreHorizontal
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,6 +15,7 @@ import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
 import { ChatAvatar } from "@/components/chat/chat-avatar";
 
 import type { ChatMessage } from "../chat-types";
+import { getDiscussionTopic } from "../discussion-guidance";
 
 type ChatMessageItemProps = {
   message: ChatMessage;
@@ -65,9 +63,7 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
         .toUpperCase() ?? "FICHIER"
     : "FICHIER";
 
-  // Simulate some reactions based on content length for mockup parity
-  const hearts = (message.content.length % 5) + 2;
-  const comments = (message.content.length % 3) + 1;
+  const topic = getDiscussionTopic(message.channel_type, message.topic_id);
 
   return (
     <motion.div
@@ -109,9 +105,6 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
               </span>
             </div>
           </div>
-          <button className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${isLight ? "text-slate-400 hover:bg-slate-100" : "text-slate-500 hover:bg-slate-700"}`}>
-            <MoreHorizontal size={16} />
-          </button>
         </div>
 
         {/* Content */}
@@ -122,6 +115,11 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
+            {topic && (
+              <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+                {topic.label}
+              </span>
+            )}
             {isActionRelated && (
               <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-rose-50 text-rose-600" : "bg-rose-500/20 text-rose-300"}`}>
                 <Zap size={10} /> Nettoyage
@@ -172,17 +170,6 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
             </div>
           )}
 
-          {/* Footer (Reactions) */}
-          <div className="flex items-center gap-4 mt-2">
-            <button className={`flex items-center gap-1.5 text-[11px] font-bold transition-colors ${isLight ? "text-slate-500 hover:text-rose-500" : "text-slate-400 hover:text-rose-400"}`}>
-              <Heart size={14} className={isLight ? "text-rose-400" : "text-rose-400"} />
-              {hearts}
-            </button>
-            <button className={`flex items-center gap-1.5 text-[11px] font-bold transition-colors ${isLight ? "text-slate-500 hover:text-indigo-500" : "text-slate-400 hover:text-indigo-400"}`}>
-              <MessageCircle size={14} />
-              {comments}
-            </button>
-          </div>
         </div>
       </div>
     </motion.div>

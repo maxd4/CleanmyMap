@@ -35,6 +35,7 @@ import { useDmInbox } from "./hooks/use-dm-inbox";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
 import type { ChatUser, DmConversation } from "./chat-types";
+import type { ChatTopicId } from "@/lib/chat/topics";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageItem } from "./ui/chat-message-item";
 import {
@@ -59,6 +60,7 @@ export type ChatShellProps = {
   initialArrondissement?: number;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
+  initialTopicId?: ChatTopicId | null;
   initialMessage?: string;
   tone?: "light" | "dark";
   fullHeight?: boolean;
@@ -70,6 +72,7 @@ export function ChatShell({
   initialArrondissement,
   initialZoneName,
   initialRecipient,
+  initialTopicId,
   initialMessage,
   tone = "dark",
   fullHeight = false,
@@ -138,6 +141,7 @@ export function ChatShell({
     initialArrondissement,
     initialZoneName,
     initialRecipient,
+    initialTopicId,
     initialMessage,
   });
 
@@ -196,6 +200,7 @@ export function ChatShell({
     isLive,
   } = useChatData({
     activeChannelType,
+    activeTopicId,
     selectedRecipientId: selectedRecipient?.id ?? null,
     effectiveZone,
     territoryFocus,
@@ -240,6 +245,7 @@ export function ChatShell({
     isSending,
     isUploading,
     activeChannelType,
+    activeTopicId,
     selectedRecipient,
     effectiveZone,
     territoryFocus,
@@ -457,6 +463,7 @@ export function ChatShell({
         return;
       }
       setComposerMode("message");
+      setActiveTopicId(null);
       setActiveChannelType(channelType);
       if (channelType !== "dm") {
         setIsDmThreadOpen(false);
@@ -469,6 +476,7 @@ export function ChatShell({
       effectiveZone,
       territoryFocus,
       setComposerMode,
+      setActiveTopicId,
       setActiveChannelType,
       setIsDmThreadOpen,
     ],
@@ -544,29 +552,32 @@ export function ChatShell({
 
   const handleSelectDmConversation = useCallback(
     (conversation: DmConversation) => {
+      setActiveTopicId(null);
       setActiveChannelType("dm");
       setSelectedRecipient(conversation.peer);
       setRecipientQuery("");
       setIsRecipientPickerOpen(false);
       setIsDmThreadOpen(true);
     },
-    [setActiveChannelType, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient],
+    [setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient],
   );
 
   const handleStartDmConversation = useCallback(() => {
+    setActiveTopicId(null);
     setActiveChannelType("dm");
     setSelectedRecipient(null);
     setRecipientQuery("");
     setIsRecipientPickerOpen(true);
     setIsDmThreadOpen(true);
-  }, [setActiveChannelType, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
+  }, [setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
 
   const handleBackToDmInbox = useCallback(() => {
+    setActiveTopicId(null);
     setSelectedRecipient(null);
     setRecipientQuery("");
     setIsRecipientPickerOpen(false);
     setIsDmThreadOpen(false);
-  }, [setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
+  }, [setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
 
   useEffect(() => {
     if (activeChannelType !== "dm" || !selectedRecipient) {
