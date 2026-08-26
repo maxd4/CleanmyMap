@@ -22,6 +22,13 @@ const topicsMigration = readFileSync(
   ),
   "utf8",
 ).toLowerCase();
+const announcementsMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260826010000_chat_announcements.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
 
 it("creates an isolated per-user, per-peer read cursor with RLS", () => {
   expect(migration).toContain("create table if not exists public.chat_dm_read_states");
@@ -82,4 +89,27 @@ it("adds nullable topic storage with strict channel integrity and a filtered ind
   );
   expect(topicsMigration).toContain("where topic_id is not null");
   expect(topicsMigration).not.toContain("update public.app_messages");
+});
+
+it("adds announcement kinds with a canonical event FK and channel constraints", () => {
+  expect(announcementsMigration).toContain(
+    "add column if not exists message_kind text not null default 'message'",
+  );
+  expect(announcementsMigration).toContain(
+    "add column if not exists related_event_id uuid",
+  );
+  expect(announcementsMigration).toContain(
+    "constraint app_messages_message_kind_check",
+  );
+  expect(announcementsMigration).toContain(
+    "constraint app_messages_announcement_channel_check",
+  );
+  expect(announcementsMigration).toContain("channel_type = 'community'");
+  expect(announcementsMigration).toContain(
+    "constraint app_messages_related_event_kind_check",
+  );
+  expect(announcementsMigration).toContain(
+    "references public.community_events(id)",
+  );
+  expect(announcementsMigration).toContain("on delete set null");
 });

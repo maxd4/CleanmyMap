@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
+import type { ChatMessageKind } from "@/lib/chat/announcements";
 import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
 import { readAppErrorResponse, toAppError } from "@/lib/errors/app-errors";
 import type {
@@ -34,6 +35,8 @@ export type SendChatMessageParams = {
   optimisticMessage: ChatMessage;
   body: {
     channelType: ChatChannelType;
+    messageKind: ChatMessageKind;
+    relatedEventId?: string;
     topicId?: ChatTopicId;
     content: string;
     recipientId?: string;

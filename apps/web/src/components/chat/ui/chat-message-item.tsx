@@ -3,8 +3,11 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
+  Calendar,
   Download,
   FileText,
+  MapPin,
+  Megaphone,
   MessageSquare,
   Zap,
 } from "lucide-react";
@@ -64,6 +67,7 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
     : "FICHIER";
 
   const topic = getDiscussionTopic(message.channel_type, message.topic_id);
+  const isAnnouncement = message.message_kind === "announcement";
 
   return (
     <motion.div
@@ -74,9 +78,13 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
       <div 
         className={cn(
           "w-full rounded-[1.5rem] border p-4 transition-all duration-300",
-          isLight 
-            ? "bg-white border-indigo-100 shadow-sm" 
-            : "bg-slate-800/80 border-slate-700 shadow-sm"
+          isAnnouncement
+            ? isLight
+              ? "border-rose-200 bg-rose-50/30 shadow-sm"
+              : "border-rose-400/20 bg-rose-500/5 shadow-sm"
+            : isLight
+              ? "bg-white border-indigo-100 shadow-sm"
+              : "bg-slate-800/80 border-slate-700 shadow-sm",
         )}
       >
         {/* Header */}
@@ -115,6 +123,11 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
+            {isAnnouncement && (
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
+                <Megaphone size={10} /> Annonce / Relai
+              </span>
+            )}
             {topic && (
               <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
                 {topic.label}
@@ -131,6 +144,25 @@ export function ChatMessageItem({ message, userId, tone = "dark" }: ChatMessageI
               </span>
             )}
           </div>
+
+          {isAnnouncement && message.related_event ? (
+            <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
+              <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">
+                Cleanup associé
+              </p>
+              <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
+                {message.related_event.title}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar size={12} /> {message.related_event.event_date}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={12} /> {message.related_event.location_label}
+                </span>
+              </div>
+            </div>
+          ) : null}
 
           {/* Attachments */}
           {safeAttachmentUrl && (

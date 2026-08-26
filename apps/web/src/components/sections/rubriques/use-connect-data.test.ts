@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildInitialDmRecipient, buildInitialTopicId } from "./use-connect-data";
+import {
+  buildInitialAnnouncementTemplate,
+  buildInitialDmRecipient,
+  buildInitialTopicId,
+} from "./use-connect-data";
+import { getAnnouncementTopicId } from "@/lib/chat/announcements";
 
 describe("DM deep-link recipient contract", () => {
   it("keeps the URL identity and opens a private thread", () => {
@@ -42,5 +47,17 @@ describe("public topic deep-link contract", () => {
     );
     expect(buildInitialTopicId("territory", "relais_associatif")).toBeNull();
     expect(buildInitialTopicId("dm", "relais_associatif")).toBeNull();
+  });
+});
+
+describe("announcement deep-link contract", () => {
+  it("opens the announcement mode from a template-only URL and selects its topic", () => {
+    const template = buildInitialAnnouncementTemplate("diffusion");
+    expect(template).toBe("diffusion");
+    expect(getAnnouncementTopicId(template)).toBe("demande_diffusion");
+  });
+
+  it("ignores an unknown template instead of preparing a draft", () => {
+    expect(buildInitialAnnouncementTemplate("fake")).toBeNull();
   });
 });

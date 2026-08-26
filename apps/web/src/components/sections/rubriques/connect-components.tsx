@@ -9,7 +9,6 @@ import {
   Mail,
   MapPin,
   MessageSquare,
-  Send,
   Shield,
   Users,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import type {
   ChannelStat,
-  CommunityAnnouncementTemplateKey,
   ConnectTab,
   ConnectTabItem,
 } from "./connect-types";
@@ -216,75 +214,6 @@ export const ConnectGuideCompact = memo(function ConnectGuideCompact({
       </div>
       <div className={cn("rounded-lg border px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500", badgeClass)}>
         {currentTabGuide.visibilityLabel}
-      </div>
-    </div>
-  );
-});
-
-export const ConnectAnnouncementCompact = memo(function ConnectAnnouncementCompact({
-  announcementTemplate,
-  setAnnouncementTemplate,
-  fr,
-}: {
-  announcementTemplate: CommunityAnnouncementTemplateKey | null;
-  setAnnouncementTemplate: (template: CommunityAnnouncementTemplateKey | null) => void;
-  fr: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-black text-white">
-            {fr ? "Préparer un message de relais" : "Prepare a relay message"}
-          </h3>
-          <p className="text-xs text-slate-400">
-            {fr ? "Utilisez un modèle pour aller plus vite." : "Use a template to go faster."}
-          </p>
-        </div>
-        {announcementTemplate && (
-          <CmmButton
-            type="button"
-            onClick={() => setAnnouncementTemplate(null)}
-            tone="tertiary"
-            variant="pill"
-            className="rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white"
-          >
-            {fr ? "Effacer" : "Clear"}
-          </CmmButton>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {[
-          { key: "relais_associatif" as const, label: fr ? "Relais Associatif" : "Association Relay", icon: Users, tone: "rose" },
-          { key: "benevoles" as const, label: fr ? "Appel Bénévoles" : "Volunteer Call", icon: Send, tone: "fuchsia" },
-          { key: "diffusion" as const, label: fr ? "Diffusion" : "Diffusion", icon: Hash, tone: "rose" },
-        ].map((option) => {
-          const isActive = announcementTemplate === option.key;
-          const isFuchsia = option.tone === "fuchsia";
-
-          return (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => setAnnouncementTemplate(option.key)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border px-4 py-2.5 text-left text-xs font-black uppercase tracking-widest transition-all",
-                isActive
-                  ? isFuchsia
-                    ? "border-fuchsia-400/50 bg-fuchsia-500/20 text-fuchsia-300"
-                    : "border-rose-400/50 bg-rose-500/20 text-rose-300"
-                  : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              <option.icon
-                size={14}
-                className={isActive ? (isFuchsia ? "text-fuchsia-400" : "text-rose-400") : "text-slate-500"}
-              />
-              {option.label}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

@@ -2,10 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type ConnectTab = "discussions" | "dm";
 
-export type CommunityAnnouncementTemplateKey =
-  | "relais_associatif"
-  | "benevoles"
-  | "diffusion";
+export type { CommunityAnnouncementTemplateKey } from "@/lib/chat/announcements";
 
 export interface ChannelStat {
   label: { fr: string; en: string };

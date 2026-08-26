@@ -21,6 +21,12 @@ import {
   type ChatTopicId,
 } from "@/lib/chat/topics";
 import {
+  CHAT_MESSAGE_KINDS,
+  isCommunityAnnouncementTopicId,
+  type ChatMessageKind,
+  type ChatRelatedEvent,
+} from "@/lib/chat/announcements";
+import {
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
@@ -46,6 +52,8 @@ const CHANNEL_TYPES = [
 const sendMessageSchema = z.object({
   channelType: z.enum(CHANNEL_TYPES),
   content: z.string().min(1).max(2000),
+  messageKind: z.enum(CHAT_MESSAGE_KINDS).optional().default("message"),
+  relatedEventId: z.string().uuid().optional(),
   topicId: z.string().optional(),
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
@@ -95,6 +103,30 @@ function validateTopicForChannel(
   return { topicId };
 }
 
+function validateMessageKind(
+  channelType: ChatChannelType,
+  messageKind: ChatMessageKind,
+  topicId: ChatTopicId | null,
+  relatedEventId: string | undefined,
+): { error?: string } {
+  if (messageKind === "message") {
+    if (relatedEventId) {
+      return { error: "Un message standard ne peut pas être lié à un événement." };
+    }
+    return {};
+  }
+
+  if (channelType !== "community") {
+    return { error: "Les annonces sont disponibles uniquement dans la communauté." };
+  }
+
+  if (!topicId || !isCommunityAnnouncementTopicId(topicId)) {
+    return { error: "Choisissez un modèle d'annonce compatible avec la communauté." };
+  }
+
+  return {};
+}
+
 type ChatQueryResult<T> = PromiseLike<{
   data: T[] | null;
   error: {
@@ -105,7 +137,9 @@ type ChatQueryResult<T> = PromiseLike<{
 }>;
 
 const messageSelect =
-  "*, sender:profiles!sender_id(display_name, handle, avatar_url)";
+  "*, sender:profiles!sender_id(display_name, handle, avatar_url), related_event:community_events!related_event_id(id, title, event_date, location_label)";
+
+type RelatedCommunityEventRow = ChatRelatedEvent;
 
 async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<ChatMessageRow[]> {
   const { data, error } = await query;
@@ -143,6 +177,23 @@ async function loadCurrentProfile(
   }
 
   return (data ?? null) as CurrentProfileRow | null;
+}
+
+async function loadRelatedCommunityEvent(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  eventId: string,
+): Promise<RelatedCommunityEventRow | null> {
+  const { data, error } = await supabase
+    .from("community_events")
+    .select("id, title, event_date, location_label")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as RelatedCommunityEventRow | null;
 }
 
 async function resolveBugReportRecipientId(
@@ -243,6 +294,23 @@ export async function POST(request: Request) {
     );
   }
 
+  const messageKind = parsed.data.messageKind;
+  const messageKindValidation = validateMessageKind(
+    parsed.data.channelType,
+    messageKind,
+    topicValidation.topicId,
+    parsed.data.relatedEventId,
+  );
+  if (messageKindValidation.error) {
+    return NextResponse.json(
+      {
+        error: "Type de message invalide",
+        hint: messageKindValidation.error,
+      },
+      { status: 400 },
+    );
+  }
+
   if (parsed.data.attachmentUrl) {
     if (!parsed.data.attachmentType) {
       return validationErrorResponse({
@@ -322,6 +390,23 @@ export async function POST(request: Request) {
     let recipientId: string | null = null;
     let targetArrondissementId: number | null = null;
     let targetZoneName: string | null = null;
+    let relatedEvent: RelatedCommunityEventRow | null = null;
+
+    if (parsed.data.relatedEventId) {
+      relatedEvent = await loadRelatedCommunityEvent(
+        supabase,
+        parsed.data.relatedEventId,
+      );
+      if (!relatedEvent) {
+        return NextResponse.json(
+          {
+            error: "Événement introuvable",
+            hint: "Le cleanup associé n'est plus disponible ou n'est pas accessible.",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     switch (parsed.data.channelType) {
       case "dm": {
@@ -386,6 +471,8 @@ export async function POST(request: Request) {
         recipient_id: recipientId,
         channel_type: parsed.data.channelType,
         topic_id: topicValidation.topicId,
+        message_kind: messageKind,
+        related_event_id: relatedEvent?.id ?? null,
         arrondissement_id: targetArrondissementId,
         zone_name: targetZoneName,
         content: parsed.data.content,

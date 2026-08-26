@@ -36,6 +36,12 @@ import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
 import type { ChatUser, DmConversation } from "./chat-types";
 import type { ChatTopicId } from "@/lib/chat/topics";
+import {
+  buildAnnouncementDraft,
+  getAnnouncementTopicId,
+  type ChatRelatedEvent,
+  type CommunityAnnouncementTemplateKey,
+} from "@/lib/chat/announcements";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageItem } from "./ui/chat-message-item";
 import {
@@ -61,6 +67,12 @@ export type ChatShellProps = {
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialTopicId?: ChatTopicId | null;
+  initialComposerMode?: "message" | "announcement" | "poll";
+  initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
+  initialRelatedEvent?: ChatRelatedEvent | null;
+  announcementEventRequested?: boolean;
+  announcementEventLoading?: boolean;
+  announcementEventError?: Error | null;
   initialMessage?: string;
   tone?: "light" | "dark";
   fullHeight?: boolean;
@@ -73,6 +85,12 @@ export function ChatShell({
   initialZoneName,
   initialRecipient,
   initialTopicId,
+  initialComposerMode = "message",
+  initialAnnouncementTemplate = null,
+  initialRelatedEvent = null,
+  announcementEventRequested = false,
+  announcementEventLoading = false,
+  announcementEventError = null,
   initialMessage,
   tone = "dark",
   fullHeight = false,
@@ -224,6 +242,52 @@ export function ChatShell({
     supabase,
   });
 
+  const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">(
+    initialComposerMode,
+  );
+  const [announcementTemplate, setAnnouncementTemplate] =
+    useState<CommunityAnnouncementTemplateKey | null>(initialAnnouncementTemplate);
+  const [relatedEvent, setRelatedEvent] = useState<ChatRelatedEvent | null>(
+    initialRelatedEvent,
+  );
+  const announcementMode = composerMode === "announcement";
+
+  useEffect(() => {
+    setRelatedEvent(initialRelatedEvent);
+  }, [initialRelatedEvent]);
+
+  const handleComposerModeChange = useCallback(
+    (mode: "message" | "announcement" | "poll") => {
+      setComposerMode(mode);
+      if (mode === "announcement" && !announcementTemplate) {
+        setActiveTopicId(null);
+      }
+    },
+    [announcementTemplate, setActiveTopicId],
+  );
+
+  const handleAnnouncementTemplateChange = useCallback(
+    (template: CommunityAnnouncementTemplateKey) => {
+      setAnnouncementTemplate(template);
+      setActiveTopicId(getAnnouncementTopicId(template));
+      setMessage(buildAnnouncementDraft(template));
+      setSendError(null);
+    },
+    [setActiveTopicId, setMessage, setSendError],
+  );
+
+  const handleSelectTopic = useCallback(
+    (topicId: ChatTopicId) => {
+      setActiveTopicId(topicId);
+      if (announcementMode) {
+        setComposerMode("message");
+        setAnnouncementTemplate(null);
+        setRelatedEvent(null);
+      }
+    },
+    [announcementMode, setActiveTopicId],
+  );
+
   const sendChatMessageWithInboxRefresh = useCallback(
     async (params: SendChatMessageParams) => {
       await sendChatMessage(params);
@@ -246,6 +310,8 @@ export function ChatShell({
     isUploading,
     activeChannelType,
     activeTopicId,
+    messageKind: composerMode === "announcement" ? "announcement" : "message",
+    relatedEvent,
     selectedRecipient,
     effectiveZone,
     territoryFocus,
@@ -292,7 +358,6 @@ export function ChatShell({
       ),
     [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
   );
-  const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">("message");
   const [isDmThreadOpen, setIsDmThreadOpen] = useState(Boolean(initialRecipient));
 
   const metaItems: ChatMetaItem[] = useMemo(
@@ -376,7 +441,6 @@ export function ChatShell({
     () => getChannelPlaceholder(activeChannelType),
     [activeChannelType],
   );
-
   const canSubmitMessage = useMemo(
     () =>
       Boolean(
@@ -386,6 +450,11 @@ export function ChatShell({
         (message.trim().length > 0 || file) &&
         !isSending &&
         !isUploading &&
+        composerMode !== "poll" &&
+        (!announcementMode || Boolean(announcementTemplate)) &&
+        (!announcementEventRequested || Boolean(relatedEvent)) &&
+        !announcementEventLoading &&
+        !announcementEventError &&
         !(activeChannelType === "dm" && !selectedRecipient) &&
         !(
           activeChannelType === "territory" &&
@@ -401,6 +470,13 @@ export function ChatShell({
       file,
       isSending,
       isUploading,
+      composerMode,
+      announcementMode,
+      announcementTemplate,
+      announcementEventRequested,
+      relatedEvent,
+      announcementEventLoading,
+      announcementEventError,
       activeChannelType,
       selectedRecipient,
       effectiveZone,
@@ -463,6 +539,8 @@ export function ChatShell({
         return;
       }
       setComposerMode("message");
+      setAnnouncementTemplate(null);
+      setRelatedEvent(null);
       setActiveTopicId(null);
       setActiveChannelType(channelType);
       if (channelType !== "dm") {
@@ -476,6 +554,8 @@ export function ChatShell({
       effectiveZone,
       territoryFocus,
       setComposerMode,
+      setAnnouncementTemplate,
+      setRelatedEvent,
       setActiveTopicId,
       setActiveChannelType,
       setIsDmThreadOpen,
@@ -681,7 +761,7 @@ export function ChatShell({
             channels={sidebarChannels}
             currentChannelType={activeChannelType}
             onSelectChannel={handleSelectChannel}
-            onSelectTopic={(topicId) => setActiveTopicId(topicId)}
+            onSelectTopic={handleSelectTopic}
             topicSectionTitle={sidebarTopicSectionTitle}
             topicSectionDescription={sidebarTopicSectionDescription}
             topics={sidebarTopics}
@@ -754,7 +834,13 @@ export function ChatShell({
                 composerPlaceholder={composerPlaceholder}
                 tone={isLight ? "light" : "dark"}
                 composerMode={composerMode}
-                onComposerModeChange={setComposerMode}
+                onComposerModeChange={handleComposerModeChange}
+                announcementTemplate={announcementTemplate}
+                onAnnouncementTemplateChange={handleAnnouncementTemplateChange}
+                relatedEvent={relatedEvent}
+                announcementEventRequested={announcementEventRequested}
+                announcementEventLoading={announcementEventLoading}
+                announcementEventError={announcementEventError}
                 showModeTabs={activeChannelType === "community"}
                 userId={userId}
                 message={message}

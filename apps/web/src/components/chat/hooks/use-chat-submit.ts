@@ -11,6 +11,7 @@ import {
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
+import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 import type { SendChatMessageParams } from "./use-chat-data";
 
@@ -26,6 +27,8 @@ type UseChatSubmitParams = {
   isUploading: boolean;
   activeChannelType: ChatChannelType;
   activeTopicId: ChatTopicId | null;
+  messageKind: ChatMessageKind;
+  relatedEvent: ChatRelatedEvent | null;
   selectedRecipient: ChatUser | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -39,6 +42,44 @@ type UseChatSubmitParams = {
   setShowMentions: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+export function buildOptimisticChatMessage({
+  id,
+  senderId,
+  content,
+  channelType,
+  topicId,
+  messageKind,
+  relatedEvent,
+  attachmentUrl,
+  createdAt,
+  sender,
+}: {
+  id: string;
+  senderId: string;
+  content: string;
+  channelType: ChatChannelType;
+  topicId: ChatTopicId | null;
+  messageKind: ChatMessageKind;
+  relatedEvent: ChatRelatedEvent | null;
+  attachmentUrl?: string;
+  createdAt: string;
+  sender: ChatMessage["sender"];
+}): ChatMessage {
+  return {
+    id,
+    sender_id: senderId,
+    content,
+    channel_type: channelType,
+    topic_id: topicId,
+    message_kind: messageKind,
+    related_event_id: relatedEvent?.id ?? null,
+    related_event: relatedEvent,
+    attachment_url: attachmentUrl,
+    created_at: createdAt,
+    sender,
+  };
+}
+
 export function useChatSubmit({
   submitLockRef,
   userId,
@@ -51,6 +92,8 @@ export function useChatSubmit({
   isUploading,
   activeChannelType,
   activeTopicId,
+  messageKind,
+  relatedEvent,
   selectedRecipient,
   effectiveZone,
   territoryFocus,
@@ -176,25 +219,29 @@ export function useChatSubmit({
         }
       }
 
-      const optimisticMsg: ChatMessage = {
+      const optimisticMsg = buildOptimisticChatMessage({
         id: `opt-${Date.now()}`,
-        sender_id: userId,
+        senderId: userId,
         content: currentMessage,
-        channel_type: activeChannelType,
-        topic_id: activeTopicId,
-        attachment_url: attachmentUrl,
-        created_at: new Date().toISOString(),
+        channelType: activeChannelType,
+        topicId: activeTopicId,
+        messageKind,
+        relatedEvent,
+        attachmentUrl,
+        createdAt: new Date().toISOString(),
         sender: {
           display_name: senderDisplayName,
           handle: senderHandle,
           avatar_url: user?.imageUrl || "",
         },
-      };
+      });
 
       await sendChatMessage({
         optimisticMessage: optimisticMsg,
         body: {
           channelType: activeChannelType,
+          messageKind,
+          relatedEventId: relatedEvent?.id,
           topicId: activeTopicId ?? undefined,
           content: currentMessage,
           recipientId:
@@ -244,6 +291,8 @@ export function useChatSubmit({
   }, [
     activeChannelType,
     activeTopicId,
+    messageKind,
+    relatedEvent,
     effectiveZone,
     file,
     isSending,
