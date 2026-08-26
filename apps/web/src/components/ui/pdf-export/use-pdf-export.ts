@@ -25,6 +25,7 @@ type UsePdfExportParams = {
   data?: PdfReportData | null;
   disabled?: boolean;
   onGenerate?: (payload: PdfReportPayload) => void | Promise<void>;
+  onExportSuccess?: (payload: PdfReportPayload) => void | Promise<void>;
   buildPrintableHtml?: (payload: PdfReportPayload) => string;
 };
 
@@ -144,6 +145,8 @@ export function usePdfExport(params: UsePdfExportParams) {
           downloadPdf(filename, buildPdfReportLines(payload));
         }
       }
+
+      await params.onExportSuccess?.(payload);
 
       const id = `CMM-PDF-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
       setHistory((prev) => [

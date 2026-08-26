@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   fetchCachedUnifiedActionContracts: vi.fn(),
   computeReportModel: vi.fn(),
   aggregateMonthlyAnalytics: vi.fn(),
+  listReportGenerationHistory: vi.fn(),
 }));
 
 const profileAction = {
@@ -172,6 +173,10 @@ vi.mock("@/lib/actions/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: mocks.fetchCachedUnifiedActionContracts,
 }));
 
+vi.mock("@/lib/reports/report-generation-history-store", () => ({
+  listReportGenerationHistory: mocks.listReportGenerationHistory,
+}));
+
 import ReportsPage from "./page";
 
 describe("/reports page contract", () => {
@@ -196,6 +201,7 @@ describe("/reports page contract", () => {
       areas: [],
     });
     mocks.aggregateMonthlyAnalytics.mockReturnValue([]);
+    mocks.listReportGenerationHistory.mockResolvedValue([]);
   });
 
   it("covers the non-connected state without loading reports", async () => {

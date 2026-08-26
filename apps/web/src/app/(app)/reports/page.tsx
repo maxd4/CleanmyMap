@@ -29,6 +29,7 @@ import type { Locale } from "@/lib/ui/preferences";
 import type { ProfileAction } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
+import { listReportGenerationHistory } from "@/lib/reports/report-generation-history-store";
 
 type ReportsPageTabId = "generation" | "analysis";
 
@@ -186,7 +187,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   if (activeTab === "generation") {
     if (canAccessDetailedReports) {
-      const generationData = await loadReportsGenerationData().catch(() => null);
+      const [generationData, recentRows] = await Promise.all([
+        loadReportsGenerationData().catch(() => null),
+        listReportGenerationHistory().catch(() => []),
+      ]);
 
       const generationContent = generationData ? (
         <DeferredReportsWebDocument
@@ -196,7 +200,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           communityEvents={generationData.communityEvents}
           communityEventsAvailability={generationData.communityEventsAvailability}
           weather={generationData.weather}
-          overviewGeneratedAt={null}
+          initialRecentRows={recentRows}
         />
       ) : (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">

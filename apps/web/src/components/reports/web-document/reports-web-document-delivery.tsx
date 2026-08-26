@@ -1,12 +1,11 @@
 "use client";
 
 import {
-  ArrowRight,
-  Download,
   FileText,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import { GenerationStageCard } from "./reports-web-document.shared";
 
 export type ReportsWebDocumentExportStatus = {
@@ -17,14 +16,7 @@ export type ReportsWebDocumentExportStatus = {
   iconTone: string;
 };
 
-export type ReportsWebDocumentHistoryRow = {
-  id: string;
-  report: string;
-  period: string;
-  perimeter: string;
-  detail: string;
-  generatedAt: string;
-};
+export type { ReportGenerationHistoryRow as ReportsWebDocumentHistoryRow };
 
 export type ReportsWebDocumentDeliveryProps = {
   state: "idle" | "pending" | "success" | "error";
@@ -32,13 +24,12 @@ export type ReportsWebDocumentDeliveryProps = {
   pendingLabel: string;
   isDisabled: boolean;
   exportStatus: ReportsWebDocumentExportStatus;
+  historyWarning: string | null;
   onGenerate: () => void;
 };
 
 export type ReportsWebDocumentDeliveryHistoryProps = {
-  recentRows: ReportsWebDocumentHistoryRow[];
-  onPreview: () => void;
-  onGenerate: () => void;
+  recentRows: ReportGenerationHistoryRow[];
 };
 
 export function ReportsWebDocumentDelivery({
@@ -47,6 +38,7 @@ export function ReportsWebDocumentDelivery({
   pendingLabel,
   isDisabled,
   exportStatus,
+  historyWarning,
   onGenerate,
 }: ReportsWebDocumentDeliveryProps) {
   const ExportStatusIcon = exportStatus.icon;
@@ -91,11 +83,11 @@ export function ReportsWebDocumentDelivery({
           <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
             <li className="flex gap-2">
               <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-              Le PDF officiel est généré avec la structure exhaustive commune.
+              Le PDF officiel reprend la configuration et les modules sélectionnés.
             </li>
             <li className="flex gap-2">
               <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-              Les sections verrouillées restent présentes mais affichent un contenu réduit.
+              Les contenus verrouillés restent réduits lorsque le niveau choisi ne suffit pas.
             </li>
             <li className="flex gap-2">
               <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -121,6 +113,14 @@ export function ReportsWebDocumentDelivery({
             {message}
           </p>
         ) : null}
+        {historyWarning ? (
+          <p
+            role="status"
+            className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
+          >
+            {historyWarning}
+          </p>
+        ) : null}
       </div>
     </GenerationStageCard>
   );
@@ -128,8 +128,6 @@ export function ReportsWebDocumentDelivery({
 
 export function ReportsWebDocumentDeliveryHistory({
   recentRows,
-  onPreview,
-  onGenerate,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section id="reports-history" className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
@@ -138,80 +136,53 @@ export function ReportsWebDocumentDeliveryHistory({
           <p className="text-base font-black text-red-600">Rapports récents</p>
           <p className="mt-1 text-sm text-slate-500">Les rapports générés sur ce périmètre.</p>
         </div>
-        <a
-          href="#reports-history"
-          className="inline-flex items-center gap-2 text-sm font-black text-red-600 transition hover:text-red-700"
-        >
-          Voir tous les rapports
-          <ArrowRight size={16} />
-        </a>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
-        <table className="w-full min-w-full border-separate border-spacing-0 text-left">
-          <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-            <tr>
-              {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
-                <th key={header} className="border-b border-slate-200 px-4 py-3 font-black">
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentRows.map((row) => (
-              <tr key={row.id} className="bg-white">
-                <td className="border-b border-slate-100 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                      <FileText size={16} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{row.report}</p>
-                      <p className="text-xs text-slate-500">{row.detail}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
-                  {row.period}
-                </td>
-                <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
-                  {row.perimeter}
-                </td>
-                <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
-                  {row.detail}
-                </td>
-                <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
-                  {row.generatedAt}
-                </td>
-                <td className="border-b border-slate-100 px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={onPreview}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                    >
-                      Voir
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onGenerate}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                      aria-label={`Télécharger ${row.report}`}
-                    >
-                      <Download size={16} />
-                    </button>
-                  </div>
-                </td>
+      {recentRows.length === 0 ? (
+        <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">
+          Aucun rapport généré
+        </p>
+      ) : (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+          <table className="w-full min-w-full border-separate border-spacing-0 text-left">
+            <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              <tr>
+                {["Rapport", "Période", "Périmètre", "Détail", "Généré le"].map((header) => (
+                  <th key={header} className="border-b border-slate-200 px-4 py-3 font-black">
+                    {header}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="mt-3 text-center text-sm text-slate-400">
-        Les rapports sont conservés pendant 24 mois.
-      </p>
+            </thead>
+            <tbody>
+              {recentRows.map((row) => (
+                <tr key={row.id} className="bg-white">
+                  <td className="border-b border-slate-100 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                        <FileText size={16} />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">{row.report}</p>
+                    </div>
+                  </td>
+                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                    {row.period}
+                  </td>
+                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                    {row.perimeter}
+                  </td>
+                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                    {row.detail}
+                  </td>
+                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                    {row.generatedAt}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

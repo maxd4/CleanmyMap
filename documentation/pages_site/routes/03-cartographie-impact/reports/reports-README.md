@@ -145,6 +145,25 @@ niveau de détail est insuffisant, les règles existantes de contenu verrouillé
 restent applicables. Le sélecteur de période de Génération est indépendant de
 la fenêtre fixe de l'onglet Analyse.
 
+## Historique des générations
+
+« Rapports récents » lit les générations réellement persistées dans
+`public.report_generations`, triées par `generated_at` décroissant et limitées
+aux 12 dernières entrées. Une ligne contient le titre, la période, le
+périmètre, le niveau de détail et la date de génération. Aucun rapport
+synthétique n'est créé lorsque la base est vide, auquel cas l'interface affiche
+« Aucun rapport généré ».
+
+Après un export PDF réussi, le payload JSON final, les modules et les
+métadonnées de configuration sont persistés ; le binaire PDF ne l'est pas.
+L'échec de cette persistance conserve le succès du PDF et affiche un
+avertissement non bloquant. Les actions de consultation et de téléchargement
+depuis l'historique restent absentes tant qu'un rejeu exact du snapshot n'est
+pas disponible. Aucune politique de rétention n'est promise par cette page.
+La génération et la lecture de cet historique sont réservées aux profils
+admin-like via `requireAdminAccess`; la table Supabase n'accorde aucun accès
+direct à `anon` ou `authenticated`.
+
 ## Performance
 
 Cette page peut être lourde.

@@ -608,6 +608,14 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["requireAdminAccess"],
     },
   },
+  "reports/generations": {
+    POST: {
+      expected: "Admin-like role for persisting a successful Reports generation snapshot",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess before validating and persisting the generation metadata",
+      evidence: ["requireAdminAccess", "persistReportGeneration"],
+    },
+  },
   "reports/elus-dossier": {
     GET: {
       expected: "Any authenticated user, per EffectiveAccess.canExportElusDossier",

@@ -108,15 +108,6 @@ export function buildModuleSelectionLabel(modules: ModuleState): string {
   return labels.length > 0 ? labels.join(", ") : "aucun module optionnel";
 }
 
-type RecentReportRow = {
-  id: string;
-  report: string;
-  period: string;
-  perimeter: string;
-  detail: string;
-  generatedAt: string;
-};
-
 type GenerationStageTone = "prepare" | "preview" | "export";
 
 type GenerationStageCardProps = {
@@ -224,17 +215,6 @@ export function GenerationStageCard({
       </div>
     </section>
   );
-}
-
-export function formatDateTime(value: string | undefined): string {
-  const date = value ? new Date(value) : new Date();
-  if (Number.isNaN(date.getTime())) {
-    return value ?? "";
-  }
-  return new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }
 
 export function formatDateLabel(value: Date): string {
@@ -375,29 +355,6 @@ export function detailLevelToModules(id: DetailLevelId): ModuleState {
         detailedFiles: true,
       };
   }
-}
-
-export function buildRecentReports(params: {
-  overviewGeneratedAt?: string | null;
-  activeScopeLabel: string;
-  period: PeriodId;
-  detailLevel: DetailLevelId;
-}): RecentReportRow[] {
-  const generatedAt = formatDateTime(params.overviewGeneratedAt ?? undefined);
-  const windows: Array<{ key: PeriodId; detail: DetailLevelId; period: string }> = [
-    { key: "six_months", detail: params.detailLevel, period: periodLabel(params.period) },
-    { key: "current_year", detail: "default", period: "Année en cours" },
-    { key: "full_history", detail: "exhaustif", period: "Historique complet" },
-  ];
-
-  return windows.map((window) => ({
-    id: `window-${window.key}`,
-    report: "Rapport d'impact",
-    period: window.period,
-    perimeter: params.activeScopeLabel,
-    detail: detailLevelLabel(window.detail),
-    generatedAt,
-  }));
 }
 
 export function buildReportTitle(scopeLabel: string, detailLevel: DetailLevelId): string {

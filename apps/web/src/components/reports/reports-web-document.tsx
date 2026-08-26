@@ -21,7 +21,6 @@ import {
   buildDetailCoverageLabel,
   buildModuleSelectionLabel,
   buildPdfData,
-  buildRecentReports,
   buildReportTitle,
   buildScopeSelectValue,
   detailLevelLabel,
@@ -35,6 +34,7 @@ import {
   type SelectedPeriodId,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
+import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import type { CommunityEventItem } from "@/lib/community/http";
@@ -43,6 +43,11 @@ import {
   type CommunityEventsAvailability,
 } from "@/lib/reports/data-availability";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import {
+  REPORT_GENERATION_HISTORY_LIMIT,
+  isReportGenerationHistoryRow,
+  type ReportGenerationHistoryRow,
+} from "@/lib/reports/report-generation-history-contract";
 
 function toIsoDateKey(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -90,7 +95,7 @@ export type ReportsWebDocumentProps = {
   communityEvents: CommunityEventItem[];
   communityEventsAvailability?: CommunityEventsAvailability;
   weather: ReportsWeather;
-  overviewGeneratedAt?: string | null;
+  initialRecentRows?: ReportGenerationHistoryRow[];
 };
 
 export function ReportsWebDocument({
@@ -100,10 +105,12 @@ export function ReportsWebDocument({
   communityEvents,
   communityEventsAvailability,
   weather,
-  overviewGeneratedAt,
+  initialRecentRows = [],
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [recentRows, setRecentRows] = useState(initialRecentRows);
+  const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [period, setPeriod] = useState<SelectedPeriodId>("");
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
   const [modules, setModules] = useState<ModuleState>(detailLevelToModules("default"));
@@ -141,17 +148,6 @@ export function ReportsWebDocument({
     report.totals.kg * IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg +
     report.totals.hours * 60 * IMPACT_PROXY_CONFIG.factors.surfaceM2PerVolunteerMinute;
   const selectedScopeValue = buildScopeSelectValue(model.scopeKind, model.scopeValue);
-  const recentRows = useMemo(
-    () =>
-      buildRecentReports({
-        overviewGeneratedAt,
-        activeScopeLabel,
-        period: effectivePeriod,
-        detailLevel,
-      }),
-    [activeScopeLabel, detailLevel, effectivePeriod, overviewGeneratedAt],
-  );
-
   const defaultTitle = buildReportTitle(activeScopeLabel, detailLevel);
   const pdfData = useMemo(
     () =>
@@ -167,6 +163,33 @@ export function ReportsWebDocument({
     [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, modules, surfaceProxy],
   );
 
+  async function persistSuccessfulExport(payload: PdfReportPayload): Promise<void> {
+    try {
+      const response = await fetch("/api/reports/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payload,
+          scopeKind: model.scopeKind,
+          scopeValue: model.scopeValue,
+          scopeLabel: activeScopeLabel,
+          detailLevel,
+          modules,
+        }),
+      });
+      const body = (await response.json().catch(() => null)) as { item?: unknown } | null;
+      const historyRow = body?.item;
+      if (!response.ok || !historyRow || !isReportGenerationHistoryRow(historyRow)) {
+        throw new Error("Report generation history persistence failed.");
+      }
+      setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+    } catch {
+      setHistoryWarning(
+        "Le PDF a bien été généré, mais cette génération n'a pas pu être ajoutée à l'historique.",
+      );
+    }
+  }
+
   const {
     state,
     message,
@@ -180,6 +203,7 @@ export function ReportsWebDocument({
     organizationType: activeScopeLabel,
     defaultTitle,
     data: pdfData,
+    onExportSuccess: persistSuccessfulExport,
     disabled: model.isLoading || model.hasError,
   });
 
@@ -196,6 +220,7 @@ export function ReportsWebDocument({
   }
 
   function handleGenerate(): void {
+    setHistoryWarning(null);
     void exportRubriquePdf();
   }
 
@@ -331,6 +356,7 @@ export function ReportsWebDocument({
             pendingLabel={copy.pendingLabel}
             isDisabled={isDisabled}
             exportStatus={exportStatus}
+            historyWarning={historyWarning}
             onGenerate={handleGenerate}
           />
         </div>
@@ -340,8 +366,6 @@ export function ReportsWebDocument({
       <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
         <ReportsWebDocumentDeliveryHistory
           recentRows={recentRows}
-          onPreview={handlePreview}
-          onGenerate={handleGenerate}
         />
       </CmmGridItem>
     </CmmGrid>

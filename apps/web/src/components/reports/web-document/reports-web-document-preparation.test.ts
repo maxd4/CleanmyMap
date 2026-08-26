@@ -188,7 +188,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Le rapport est généré à partir des données");
   });
 
-  it("keeps the parent model input and PDF export contract unchanged", () => {
+  it("propagates the final payload to history after a successful PDF generation", async () => {
     mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
     mocks.usePdfExport.mockReturnValue({
       state: "idle",
@@ -244,13 +244,74 @@ describe("ReportsWebDocumentPreparation", () => {
     );
     expect(markup).toContain("Générer le rapport");
 
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        item: {
+          id: "generation-1",
+          report: "Rapport d'impact - Global - Par défaut",
+          period: "Six mois",
+          perimeter: "Global",
+          detail: "Par défaut (12 à 16 pages)",
+          generatedAt: "27/08/2026 12:30",
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      exportOptions.onExportSuccess({
+        title: "Rapport d'impact - Global - Par défaut",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "Global",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+      }),
+    ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/reports/generations",
+      expect.objectContaining({ method: "POST" }),
+    );
+    vi.unstubAllGlobals();
+
     const previewProps = (
       mocks.preview.mock.calls as unknown as Array<[{ onTogglePreview?: () => void; modules?: unknown }]>
     )[0]?.[0];
-    const historyProps = (
-      mocks.deliveryHistory.mock.calls as unknown as Array<[{ onPreview?: () => void }]>
-    )[0]?.[0];
     expect(previewProps?.modules).toEqual(preparationProps.modules);
-    expect(historyProps?.onPreview).toBe(previewProps?.onTogglePreview);
+  });
+
+  it("does not fail an already successful PDF when history persistence fails", async () => {
+    mocks.useReportsWebDocumentModel.mockReturnValue(reportModel);
+    mocks.usePdfExport.mockReturnValue({
+      state: "success",
+      message: "Rapport ouvert.",
+      copy: { pendingLabel: "Génération en cours" },
+      hasData: true,
+      isDisabled: false,
+      exportRubriquePdf: vi.fn(),
+    });
+
+    renderToStaticMarkup(
+      React.createElement(ReportsWebDocument, {
+        contracts: [],
+        communityEvents: [],
+        weather: null,
+      } as ReportsWebDocumentProps),
+    );
+    const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "unavailable" }) }),
+    );
+
+    await expect(
+      exportOptions.onExportSuccess({
+        title: "Rapport",
+        rubrique: "reporting",
+        periode: "six_months",
+        organizationType: "Global",
+        data: { generatedAt: "2026-08-27T10:30:00.000Z" },
+      }),
+    ).resolves.toBeUndefined();
+    vi.unstubAllGlobals();
   });
 });
