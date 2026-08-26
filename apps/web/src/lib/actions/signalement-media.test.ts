@@ -256,6 +256,21 @@ describe("signalement media contract", () => {
     expect(supabase.storage.from().createSignedUrl).not.toHaveBeenCalled();
   });
 
+  it("lets the owner read ready media for a new parent", async () => {
+    const supabase = makeSupabase({
+      parent,
+      existingMedia: readyMedia,
+      signedUrl: "https://signed.test/owner-new",
+    });
+    const items = await listSignalementMedia(supabase as never, {
+      signalementId: "signalement-1",
+      userId: "user-1",
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.signedUrl).toBe("https://signed.test/owner-new");
+  });
+
   it("signs only ready media for a validated public parent", async () => {
     const supabase = makeSupabase({
       parent: { ...parent, status: "validated" },

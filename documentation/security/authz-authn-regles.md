@@ -209,6 +209,27 @@ par la source unifiée.
 
 Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transforme pas une pré-action en collecte finalisée.
 
+### Lecture propriétaire Trash Spotter
+
+La capacité `GET /api/signalements/me` est une surface propriétaire dédiée au
+suivi des observations du compte connecté. Le handler appelle
+`requireAuthenticatedAccess`, utilise exclusivement le `userId` retourné par
+ce contrôle et filtre `trash_spotter_spots.created_by_clerk_id = userId` côté
+serveur. Aucun paramètre client ne peut sélectionner un autre propriétaire.
+
+Cette lecture est limitée aux types `spot` et `clean_place`, aux statuts
+canoniques `new`, `validated` et `cleaned`, avec un ordre `created_at DESC` et
+une limite de 20 par défaut plafonnée à 50. Son DTO ne contient que les champs
+nécessaires au suivi utilisateur : identité, date, type, libellé, statut,
+coordonnées et dates de validation/nettoyage. Il ne passe ni par
+`GET /api/actions` ni par un snapshot de surface publique et doit rester
+strictement privé (`no-store`).
+
+La lecture des preuves photo reste une capacité séparée. Elle n'est déclenchée
+qu'après le clic de l'auteur sur `Voir les preuves photo`; l'ownership média
+existant autorise l'auteur à lire ses propres preuves, y compris lorsque le
+signalement est encore `new`.
+
 ## Centralisation des permissions
 
 Éviter les comparaisons dispersées de chaînes de rôles.

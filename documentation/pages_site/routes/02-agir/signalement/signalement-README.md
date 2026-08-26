@@ -9,8 +9,11 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
+- **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et le suivi propriétaire des observations récentes.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
+- **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.
+- **Preuves photo** : Aucun média n'est chargé avec la liste. Chaque observation conserve le contrôle explicite `Voir les preuves photo` de `SignalementMediaProofs`; l'auteur peut consulter ses preuves même lorsque le signalement est `new`.
+- **Après création** : La création réussie rafraîchit cette liste sans recharger la page ni la carte globale et expose un CTA vers `#mes-observations`. Le retry photo et le partial success restent inchangés.
 - **Palette attendue** : emerald
 - **Scope** : à corriger
 - **Terminée** : non
@@ -46,6 +49,7 @@
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+- **États de Mes observations** : le chargement est discret, l'état vide renvoie vers le formulaire situé plus haut et l'erreur propose une nouvelle tentative.
 
 
 

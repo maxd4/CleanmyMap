@@ -22,10 +22,12 @@ import {
 
 export type TrashSpotterObservationFormProps = {
   initialLocation?: { lat: number; lng: number } | null;
+  onSignalementCreated?: () => void;
 };
 
 export function TrashSpotterObservationForm({
   initialLocation = null,
+  onSignalementCreated,
 }: TrashSpotterObservationFormProps) {
   const [recordType, setRecordType] = useState<QuickSignalementRecordType>("spot");
   const [selectedCategories, setSelectedCategories] = useState<WasteCategorySlug[]>([]);
@@ -87,6 +89,7 @@ export function TrashSpotterObservationForm({
       );
       setSubmittedSignalementId(created.id);
       setSubmittedRecordType(recordType);
+      onSignalementCreated?.();
       if (photos.length > 0) {
         setIsPreparingPhotos(true);
         const uploadResult = await uploadSignalementEvidence(
@@ -182,6 +185,12 @@ export function TrashSpotterObservationForm({
             Dashboard
           </Link>
         </div>
+        <Link
+          href="#mes-observations"
+          className="mx-auto inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-100 transition hover:bg-emerald-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+        >
+          Voir mes observations
+        </Link>
       </div>
     );
   }
@@ -213,6 +222,12 @@ export function TrashSpotterObservationForm({
             Continuer
           </Link>
         </div>
+        <Link
+          href="#mes-observations"
+          className="mx-auto inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-100 transition hover:bg-emerald-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+        >
+          Voir mes observations
+        </Link>
         {error && <p className="text-sm font-bold text-amber-200">{error}</p>}
       </div>
     );
