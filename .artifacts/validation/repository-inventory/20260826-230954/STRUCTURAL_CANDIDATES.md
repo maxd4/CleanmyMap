@@ -1,0 +1,38 @@
+# Candidats structurels
+
+Ce classement sert a choisir les zones a **analyser**. Il ne constitue jamais une instruction automatique de scinder, de deplacer ou de supprimer des fichiers.
+
+Le score combine densite de fichiers tracked/source, nombre de sous-dossiers, profondeur, empreinte detaillee et presence de fichiers source depassant les seuils informatifs de `quality:top-heavy` (>1000 lignes ou >50 KB).
+
+| # | Dossier | Score | Tracked | Source | Direct tracked | Sous-dossiers | Profondeur interne | Top-heavy source | Max lignes source | Signaux |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | `apps/web/` | 19 | 1863 | 1815 | 13 | 13 | 9 | 3 | 1806 | 3 fichier(s) source au-dessus du seuil quality:top-heavy; 1863 fichiers tracked dans le sous-arbre; 13 fichiers tracked directement dans le dossier; 1815 fichiers source dans le sous-arbre; 13 sous-dossiers directs; profondeur interne 9; empreinte detaillee 1,77 GiB |
+| 2 | `apps/web/src/` | 17 | 1669 | 1661 | 6 | 8 | 8 | 2 | 1237 | 2 fichier(s) source au-dessus du seuil quality:top-heavy; 1669 fichiers tracked dans le sous-arbre; 6 fichiers tracked directement dans le dossier; 1661 fichiers source dans le sous-arbre; 8 sous-dossiers directs; profondeur interne 8; empreinte detaillee 9,13 MiB |
+| 3 | `apps/web/src/app/` | 17 | 238 | 236 | 12 | 21 | 7 | 1 | 1145 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 238 fichiers tracked dans le sous-arbre; 12 fichiers tracked directement dans le dossier; 236 fichiers source dans le sous-arbre; 21 sous-dossiers directs; profondeur interne 7; empreinte detaillee 1,32 MiB |
+| 4 | `apps/` | 16 | 1863 | 1815 | 0 | 2 | 10 | 3 | 1806 | 3 fichier(s) source au-dessus du seuil quality:top-heavy; 1863 fichiers tracked dans le sous-arbre; 1815 fichiers source dans le sous-arbre; profondeur interne 10; empreinte detaillee 1,77 GiB |
+| 5 | `apps/web/src/components/` | 15 | 712 | 709 | 3 | 27 | 5 | 1 | 1237 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 712 fichiers tracked dans le sous-arbre; 709 fichiers source dans le sous-arbre; 27 sous-dossiers directs; profondeur interne 5; empreinte detaillee 4,58 MiB |
+| 6 | `apps/web/src/lib/` | 14 | 702 | 701 | 48 | 54 | 4 | 0 | 811 | 702 fichiers tracked dans le sous-arbre; 48 fichiers tracked directement dans le dossier; 701 fichiers source dans le sous-arbre; 54 sous-dossiers directs; profondeur interne 4; empreinte detaillee 3,17 MiB |
+| 7 | `apps/web/src/app/api/` | 13 | 144 | 144 | 3 | 30 | 6 | 1 | 1145 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 144 fichiers tracked dans le sous-arbre; 144 fichiers source dans le sous-arbre; 30 sous-dossiers directs; profondeur interne 6 |
+| 8 | `documentation/` | 12 | 578 | 7 | 17 | 24 | 7 | 0 | 466 | 578 fichiers tracked dans le sous-arbre; 17 fichiers tracked directement dans le dossier; 24 sous-dossiers directs; profondeur interne 7; empreinte detaillee 37,29 MiB |
+| 9 | `apps/web/src/components/sections/rubriques/` | 11 | 169 | 168 | 99 | 6 | 3 | 0 | 995 | 169 fichiers tracked dans le sous-arbre; 99 fichiers tracked directement dans le dossier; 168 fichiers source dans le sous-arbre; profondeur interne 3; empreinte detaillee 1,35 MiB |
+| 10 | `scripts/` | 10 | 83 | 77 | 75 | 2 | 2 | 1 | 1320 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 83 fichiers tracked dans le sous-arbre; 75 fichiers tracked directement dans le dossier; 77 fichiers source dans le sous-arbre |
+| 11 | `documentation/pages_site/` | 10 | 290 | 6 | 12 | 2 | 6 | 0 | 466 | 290 fichiers tracked dans le sous-arbre; 12 fichiers tracked directement dans le dossier; profondeur interne 6; empreinte detaillee 27,74 MiB |
+| 12 | `apps/web/src/components/actions/` | 10 | 144 | 144 | 58 | 5 | 3 | 0 | 945 | 144 fichiers tracked dans le sous-arbre; 58 fichiers tracked directement dans le dossier; 144 fichiers source dans le sous-arbre; profondeur interne 3 |
+| 13 | `documentation/pages_site/routes/` | 9 | 271 | 0 | 0 | 11 | 5 | 0 | 0 | 271 fichiers tracked dans le sous-arbre; 11 sous-dossiers directs; profondeur interne 5; empreinte detaillee 27,57 MiB |
+| 14 | `apps/web/src/lib/actions/` | 9 | 116 | 116 | 112 | 1 | 2 | 0 | 811 | 116 fichiers tracked dans le sous-arbre; 112 fichiers tracked directement dans le dossier; 116 fichiers source dans le sous-arbre |
+| 15 | `apps/web/supabase/migrations/` | 9 | 115 | 115 | 115 | 0 | 1 | 0 | 477 | 115 fichiers tracked dans le sous-arbre; 115 fichiers tracked directement dans le dossier; 115 fichiers source dans le sous-arbre |
+| 16 | `maintenance/` | 8 | 55 | 52 | 0 | 1 | 4 | 1 | 2329 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 55 fichiers tracked dans le sous-arbre; 52 fichiers source dans le sous-arbre; profondeur interne 4 |
+| 17 | `maintenance/python/` | 8 | 55 | 52 | 3 | 3 | 3 | 1 | 2329 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 55 fichiers tracked dans le sous-arbre; 52 fichiers source dans le sous-arbre; profondeur interne 3 |
+| 18 | `apps/web/src/components/sections/` | 8 | 169 | 168 | 0 | 1 | 4 | 0 | 995 | 169 fichiers tracked dans le sous-arbre; 168 fichiers source dans le sous-arbre; profondeur interne 4; empreinte detaillee 1,35 MiB |
+| 19 | `apps/web/src/components/chat/` | 7 | 28 | 28 | 16 | 2 | 2 | 1 | 1237 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 28 fichiers tracked dans le sous-arbre; 16 fichiers tracked directement dans le dossier; 28 fichiers source dans le sous-arbre |
+| 20 | `maintenance/python/src/` | 7 | 27 | 27 | 15 | 5 | 2 | 1 | 2329 | 1 fichier(s) source au-dessus du seuil quality:top-heavy; 27 fichiers tracked dans le sous-arbre; 15 fichiers tracked directement dans le dossier; 27 fichiers source dans le sous-arbre |
+| 21 | `apps/web/src/components/learn/` | 7 | 72 | 72 | 72 | 0 | 1 | 0 | 859 | 72 fichiers tracked dans le sous-arbre; 72 fichiers tracked directement dans le dossier; 72 fichiers source dans le sous-arbre |
+| 22 | `apps/web/src/lib/gamification/` | 7 | 72 | 72 | 62 | 2 | 2 | 0 | 693 | 72 fichiers tracked dans le sous-arbre; 62 fichiers tracked directement dans le dossier; 72 fichiers source dans le sous-arbre |
+| 23 | `apps/web/src/components/ui/` | 7 | 52 | 52 | 50 | 1 | 2 | 0 | 439 | 52 fichiers tracked dans le sous-arbre; 50 fichiers tracked directement dans le dossier; 52 fichiers source dans le sous-arbre |
+| 24 | `apps/web/src/components/reports/` | 7 | 50 | 50 | 11 | 3 | 3 | 0 | 688 | 50 fichiers tracked dans le sous-arbre; 11 fichiers tracked directement dans le dossier; 50 fichiers source dans le sous-arbre; profondeur interne 3 |
+| 25 | `apps/web/supabase/` | 6 | 117 | 115 | 2 | 2 | 2 | 0 | 477 | 117 fichiers tracked dans le sous-arbre; 115 fichiers source dans le sous-arbre |
+| 26 | `apps/web/.next-sourcemap-test/server/app/` | 6 | 0 | 0 | 0 | 25 | 5 | 0 | 0 | 25 sous-dossiers directs; profondeur interne 5; empreinte detaillee 26,16 MiB |
+| 27 | `apps/web/.next-sourcemap-test/static/chunks/app/` | 6 | 0 | 0 | 0 | 24 | 5 | 0 | 0 | 24 sous-dossiers directs; profondeur interne 5; empreinte detaillee 5,82 MiB |
+| 28 | `.agents/skills/` | 5 | 93 | 2 | 0 | 43 | 3 | 0 | 41 | 93 fichiers tracked dans le sous-arbre; 43 sous-dossiers directs; profondeur interne 3 |
+| 29 | `documentation/development/` | 5 | 50 | 0 | 50 | 0 | 1 | 0 | 0 | 50 fichiers tracked dans le sous-arbre; 50 fichiers tracked directement dans le dossier |
+| 30 | `apps/web/src/app/(app)/` | 5 | 49 | 49 | 2 | 19 | 4 | 0 | 780 | 49 fichiers tracked dans le sous-arbre; 49 fichiers source dans le sous-arbre; 19 sous-dossiers directs; profondeur interne 4 |
