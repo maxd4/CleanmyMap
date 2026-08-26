@@ -2,8 +2,12 @@ import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { parseEntityTypesParam } from"@/lib/actions/unified-source";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
-import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import {
+  forbiddenJsonResponse,
+  unauthorizedJsonResponse,
+} from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 
 export const runtime ="nodejs";
 
@@ -27,6 +31,11 @@ export async function GET(request: Request) {
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();
+ }
+
+ const role = await getCurrentUserRoleLabel().catch(() => "anonymous" as const);
+ if (role !== "coordinateur" && role !== "max") {
+  return forbiddenJsonResponse();
  }
 
  const url = new URL(request.url);

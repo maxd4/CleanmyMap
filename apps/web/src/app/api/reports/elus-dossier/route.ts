@@ -16,8 +16,8 @@ import { buildPilotageOverviewFromContracts } from"@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from"@/lib/pilotage/prioritization";
 import { buildDeliverableHeaders } from"@/lib/reports/http";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
-import { requireAdminAccess } from"@/lib/authz";
-import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { requireAuthenticatedAccess } from"@/lib/authz";
+import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { formatScorePercent } from "@/lib/formatters/score";
 
@@ -303,9 +303,9 @@ function buildElusDossierPdfStoragePath(params: {
 }
 
 export async function GET(request: Request) {
- const access = await requireAdminAccess();
+ const access = await requireAuthenticatedAccess();
  if (!access.ok) {
- return adminAccessErrorJsonResponse(access);
+ return unauthorizedJsonResponse();
  }
 
  const url = new URL(request.url);
