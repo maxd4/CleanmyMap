@@ -57,12 +57,26 @@ export async function applyCreatorInboxAction(params: {
   return payload ?? {};
 }
 
-export async function acceptPromotionRequest(requestId: string): Promise<void> {
-  await postJson("/api/admin/promotion-requests", { requestId, action: "accept" }, "Approval failed.");
+export async function acceptPromotionRequest(params: {
+  requestId: string;
+  reason: string;
+}): Promise<void> {
+  await postJson(
+    "/api/admin/promotion-requests",
+    { requestId: params.requestId, action: "accept", reason: params.reason.trim() },
+    "Approval failed.",
+  );
 }
 
-export async function rejectPromotionRequest(requestId: string): Promise<void> {
-  await postJson("/api/admin/promotion-requests", { requestId, action: "reject" }, "Rejection failed.");
+export async function rejectPromotionRequest(params: {
+  requestId: string;
+  reason: string;
+}): Promise<void> {
+  await postJson(
+    "/api/admin/promotion-requests",
+    { requestId: params.requestId, action: "reject", reason: params.reason.trim() },
+    "Rejection failed.",
+  );
 }
 
 export async function acceptPartnerRequest(params: {

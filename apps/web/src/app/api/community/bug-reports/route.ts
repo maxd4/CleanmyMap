@@ -201,7 +201,7 @@ if (!updated) {
  action:`status_${parsed.data.status}`,
  source: updated.source,
  },
- }).catch(() => undefined);
+ });
 
  return NextResponse.json({ status:"ok", item: updated });
 }

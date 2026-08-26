@@ -13,6 +13,18 @@ type ActionState = {
   action: "accept" | "reject";
 } | null;
 
+export function buildPromotionReviewPayload(params: {
+  requestId: string;
+  action: "accept" | "reject";
+  reason: string;
+}) {
+  return {
+    requestId: params.requestId,
+    action: params.action,
+    reason: params.reason.trim(),
+  };
+}
+
 const STATUS_LABELS: Record<PromotionRequestRecord["status"], { fr: string; en: string }> = {
   pending_owner_review: { fr: "En attente de révision", en: "Awaiting review" },
   accepted: { fr: "Acceptée", en: "Accepted" },
@@ -27,6 +39,7 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -49,7 +62,21 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
     );
   }, [items, query]);
 
-  async function reviewRequest(requestId: string, action: "accept" | "reject") {
+  async function reviewRequest(
+    requestId: string,
+    action: "accept" | "reject",
+    reason: string,
+  ) {
+    const normalizedReason = reason.trim();
+    if (normalizedReason.length < 5) {
+      setErrorMessage(
+        fr
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
+
     setActionState({ requestId, action });
     setErrorMessage(null);
 
@@ -57,7 +84,9 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
       const response = await fetch("/api/admin/promotion-requests", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ requestId, action }),
+        body: JSON.stringify(
+          buildPromotionReviewPayload({ requestId, action, reason: normalizedReason }),
+        ),
       });
 
       if (!response.ok) {
@@ -213,11 +242,48 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
               </div>
 
               {item.status === "pending_owner_review" ? (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 space-y-3">
+                  <label className="block space-y-1">
+                    <span className="cmm-text-caption font-semibold cmm-text-secondary">
+                      {fr ? "Motif de décision" : "Decision reason"}
+                    </span>
+                    <textarea
+                      value={reasons[item.id] ?? ""}
+                      onChange={(event) =>
+                        setReasons((current) => ({
+                          ...current,
+                          [item.id]: event.target.value,
+                        }))
+                      }
+                      minLength={5}
+                      maxLength={500}
+                      rows={2}
+                      placeholder={
+                        fr
+                          ? "Expliquez la décision (5 à 500 caractères)..."
+                          : "Explain the decision (5 to 500 characters)..."
+                      }
+                      aria-describedby={`promotion-reason-hint-${item.id}`}
+                      className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+                    />
+                    <span
+                      id={`promotion-reason-hint-${item.id}`}
+                      className="cmm-text-caption cmm-text-muted"
+                    >
+                      {(reasons[item.id] ?? "").trim().length}/500
+                    </span>
+                  </label>
+
+                  <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={actionState?.requestId === item.id}
-                    onClick={() => void reviewRequest(item.id, "accept")}
+                    disabled={
+                      actionState?.requestId === item.id ||
+                      (reasons[item.id] ?? "").trim().length < 5
+                    }
+                    onClick={() =>
+                      void reviewRequest(item.id, "accept", reasons[item.id] ?? "")
+                    }
                     className="rounded-lg bg-emerald-600 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionState?.requestId === item.id && actionState.action === "accept"
@@ -230,8 +296,13 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
                   </button>
                   <button
                     type="button"
-                    disabled={actionState?.requestId === item.id}
-                    onClick={() => void reviewRequest(item.id, "reject")}
+                    disabled={
+                      actionState?.requestId === item.id ||
+                      (reasons[item.id] ?? "").trim().length < 5
+                    }
+                    onClick={() =>
+                      void reviewRequest(item.id, "reject", reasons[item.id] ?? "")
+                    }
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionState?.requestId === item.id && actionState.action === "reject"
@@ -242,6 +313,7 @@ export function PromotionRequestsPanel({ initialItems }: PromotionRequestsPanelP
                         ? "Refuser"
                         : "Reject"}
                   </button>
+                  </div>
                 </div>
               ) : null}
             </article>
