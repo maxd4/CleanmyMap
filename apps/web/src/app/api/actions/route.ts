@@ -4,10 +4,12 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createActionSchema } from "@/lib/validation/action";
 import {
   canAutoApproveOwnAction,
+  canModerateAnyAction,
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
 import {
   getCurrentUserIdentity,
+  getCurrentUserRoleLabel,
   pickTraceableActorName,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
@@ -22,7 +24,10 @@ import {
 } from "@/lib/actions/create-submission";
 import { buildActionInsights } from "@/lib/actions/insights";
 import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import {
+  forbiddenJsonResponse,
+  unauthorizedJsonResponse,
+} from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { resolveReportQuery } from "@/lib/reports/csv";
 import { verifyRateLimit, createServerRateLimitResponse } from "@/lib/rate-limit";
@@ -136,10 +141,13 @@ function buildActionsSnapshotKey(params: {
   });
 }
 
-async function buildActionsRoutePayload(url: URL) {
+async function buildActionsRoutePayload(
+  url: URL,
+  statusOverride: ActionStatus | null,
+) {
   const reportQuery = resolveReportQuery(url);
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
-  const status = parseStatusParam(url.searchParams.get("status"));
+  const status = statusOverride;
   const daysRaw = url.searchParams.get("days");
   const days =
     daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
@@ -201,12 +209,49 @@ async function buildActionsRoutePayload(url: URL) {
   };
 }
 
+type ActionsReadPolicy = {
+  status: ActionStatus | null;
+  usePublicSurfaceSnapshot: boolean;
+};
+
+function resolveActionsReadPolicy(rawStatus: string | null): ActionsReadPolicy {
+  const requestedStatus = parseStatusParam(rawStatus);
+  const isExplicitGlobalView = rawStatus?.trim() === "all";
+  const includesNonPublicState =
+    isExplicitGlobalView || requestedStatus === "pending" || requestedStatus === "rejected";
+
+  return {
+    // An omitted, empty or invalid status is public-safe and must not mean
+    // "all". The explicit all/pending/rejected paths are reserved for
+    // moderation and retain their source status semantics.
+    status: includesNonPublicState ? requestedStatus : "approved",
+    usePublicSurfaceSnapshot: !includesNonPublicState,
+  };
+}
+
+async function requireGlobalActionsModerationAccess(): Promise<
+  | { ok: true; userId: string }
+  | { ok: false; status: 401 | 403; error: string }
+> {
+  const authenticated = await requireAuthenticatedAccess();
+  if (!authenticated.ok) {
+    return authenticated;
+  }
+
+  const role = await getCurrentUserRoleLabel();
+  if (role === "anonymous" || !canModerateAnyAction({ role })) {
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  return authenticated;
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const reportQuery = resolveReportQuery(url);
     const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
-    const status = parseStatusParam(url.searchParams.get("status"));
+    const readPolicy = resolveActionsReadPolicy(url.searchParams.get("status"));
     const daysRaw = url.searchParams.get("days");
     const days =
       daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
@@ -220,7 +265,7 @@ export async function GET(request: Request) {
     const snapshotKey = buildActionsSnapshotKey({
       reportQuery,
       limit,
-      status,
+      status: readPolicy.status,
       days,
       types: types === null ? "all" : types.slice().sort().join(","),
       qualityGrade,
@@ -228,16 +273,37 @@ export async function GET(request: Request) {
       impact,
     });
 
+    if (!readPolicy.usePublicSurfaceSnapshot) {
+      const access = await requireGlobalActionsModerationAccess();
+      if (!access.ok) {
+        return access.status === 401
+          ? unauthorizedJsonResponse({ hint: access.error })
+          : forbiddenJsonResponse({ hint: access.error });
+      }
+
+      const payload = await buildActionsRoutePayload(url, readPolicy.status);
+      return NextResponse.json(
+        payload,
+        payload.partialSource
+          ? {
+              headers: {
+                "X-Data-Warning": "Partial source data",
+              },
+            }
+          : undefined,
+      );
+    }
+
     const snapshot = await loadOrRefreshPublicSurfaceSnapshot({
       snapshotKey,
       title: "Actions publiques",
       version: ACTIONS_SNAPSHOT_VERSION,
       ttlMinutes: ACTIONS_SNAPSHOT_TTL_MINUTES,
-      buildPayload: async () => buildActionsRoutePayload(url),
+      buildPayload: async () => buildActionsRoutePayload(url, readPolicy.status),
       meta: {
         route: "api/actions",
         limit,
-        status,
+        status: readPolicy.status,
         days,
         types,
         qualityGrade,
