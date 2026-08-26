@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { AdminWorkflowController } from "./types";
 import { StepConfirm } from "./step-confirm";
+import { StepFilter } from "./step-filter";
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
@@ -25,6 +26,8 @@ function buildWorkflow(
     setScopeKind: vi.fn(),
     setScopeValue: vi.fn(),
     setAssociation: vi.fn(),
+    recordTypeFilter: selectedRecordType === "action" ? "actions" : selectedRecordType,
+    setRecordTypeFilter: vi.fn(),
     associationOptions: [],
     scopeOptions: { accounts: [], associations: [], arrondissements: [] },
     csvState: "idle",
@@ -92,6 +95,18 @@ function buildWorkflow(
 }
 
 describe("admin workflow signalement media", () => {
+  it("offers the complete canonical record type filter", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(StepFilter, { workflow: buildWorkflow("action") }),
+    );
+
+    expect(markup).toContain(">Tous</option>");
+    expect(markup).toContain(">Actions</option>");
+    expect(markup).toContain("Signalements Trash Spotter");
+    expect(markup).toContain(">Spot</option>");
+    expect(markup).toContain("Lieu propre");
+  });
+
   it("does not render media for an action", () => {
     const markup = renderToStaticMarkup(
       React.createElement(StepConfirm, { workflow: buildWorkflow("action") }),

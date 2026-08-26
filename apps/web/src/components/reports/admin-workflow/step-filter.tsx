@@ -24,7 +24,25 @@ export function StepFilter({ workflow }: StepFilterProps) {
     <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
     {fr ? "Étape 1 - Filtrer" : "Step 1 - Filter"}
     </p>
-    <div className="mt-3 grid gap-3 md:grid-cols-5">
+    <div className="mt-3 grid gap-3 md:grid-cols-6">
+    <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
+    {fr ? "Type de record" : "Record type"}
+    <select
+      value={workflow.recordTypeFilter}
+      onChange={(event) =>
+        workflow.setRecordTypeFilter(
+          event.target.value as typeof workflow.recordTypeFilter,
+        )
+      }
+      className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
+    >
+      <option value="all">{fr ? "Tous" : "All"}</option>
+      <option value="actions">Actions</option>
+      <option value="signalements">{fr ? "Signalements Trash Spotter" : "Trash Spotter reports"}</option>
+      <option value="spot">Spot</option>
+      <option value="clean_place">{fr ? "Lieu propre" : "Clean place"}</option>
+    </select>
+    </label>
     <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
     {fr ? "Statut" : "Status"}
     <select

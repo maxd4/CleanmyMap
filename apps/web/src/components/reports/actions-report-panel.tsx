@@ -7,7 +7,9 @@ import { StepPreview } from "@/components/reports/admin-workflow/step-preview";
 import { useAdminWorkflow } from "@/components/reports/admin-workflow/use-admin-workflow";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import type { ActionListResponse } from "@/lib/actions/types";
+import type { ActionStatus } from "@/lib/actions/types";
 import type { AdminOperationAuditItem } from "@/components/reports/admin-workflow/types";
+import type { AdminRecordTypeFilter } from "@/components/reports/admin-workflow/types";
 
 /**
  * Standardized Admin Workflow Panel.
@@ -16,15 +18,21 @@ import type { AdminOperationAuditItem } from "@/components/reports/admin-workflo
 type ActionsReportPanelProps = {
   initialPreview?: ActionListResponse | null;
   initialAuditItems?: AdminOperationAuditItem[] | null;
+  initialRecordTypeFilter?: AdminRecordTypeFilter;
+  initialStatus?: ActionStatus | "all";
 };
 
 export function ActionsReportPanel({
   initialPreview,
   initialAuditItems,
+  initialRecordTypeFilter,
+  initialStatus,
 }: ActionsReportPanelProps) {
   const workflow = useAdminWorkflow({
     initialPreview,
     initialAuditItems,
+    initialRecordTypeFilter,
+    initialStatus,
   });
 
   return (

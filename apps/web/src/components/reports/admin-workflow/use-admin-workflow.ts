@@ -12,7 +12,11 @@ import {
  normalizeReportScope,
 } from"@/lib/reports/scope";
 import { createAdminWorkflowActions } from"./actions";
-import { buildExportQuery, resolveAdminSelectedRecordType } from"./helpers";
+import {
+ adminRecordTypeFilterToActionTypes,
+ buildExportQuery,
+ resolveAdminSelectedRecordType,
+} from"./helpers";
 import {
  fetchAdminOperationAudit,
 } from"./services";
@@ -29,12 +33,17 @@ export { buildExportQuery, parseAdminApiError } from"./helpers";
 type UseAdminWorkflowParams = {
  initialPreview?: ActionListResponse | null;
  initialAuditItems?: AdminOperationAuditItem[] | null;
+ initialRecordTypeFilter?: import("./types").AdminRecordTypeFilter;
+ initialStatus?: import("@/lib/actions/types").ActionStatus | "all";
 };
 
 export function useAdminWorkflow(
  params: UseAdminWorkflowParams = {},
 ): AdminWorkflowController {
- const state = useAdminWorkflowState();
+ const state = useAdminWorkflowState({
+  initialRecordTypeFilter: params.initialRecordTypeFilter,
+  initialStatus: params.initialStatus,
+ });
 
  const scope = useMemo(
  () => normalizeReportScope({ kind: state.scopeKind, value: state.scopeValue }),
@@ -47,9 +56,10 @@ export function useAdminWorkflow(
  status: state.status,
  days: state.days,
  limit: state.limit,
- scopeKind: state.scopeKind,
- scopeValue: state.scopeValue,
- association: state.association,
+  scopeKind: state.scopeKind,
+  scopeValue: state.scopeValue,
+  association: state.association,
+  recordTypeFilter: state.recordTypeFilter,
  }),
  [
  state.status,
@@ -58,6 +68,7 @@ export function useAdminWorkflow(
  state.scopeKind,
  state.scopeValue,
  state.association,
+ state.recordTypeFilter,
  ],
  );
  const csvExportUrl = `/api/reports/actions.csv?${query}`;
@@ -67,6 +78,7 @@ export function useAdminWorkflow(
  [
 "admin-workflow-preview",
  state.status,
+ state.recordTypeFilter,
  String(state.days),
  String(state.limit),
  state.scopeKind,
@@ -75,10 +87,10 @@ export function useAdminWorkflow(
  ],
  () =>
  fetchActions({
- status: state.status,
- days: state.days,
- limit: state.limit,
- types:"all",
+  status: state.status,
+  days: state.days,
+  limit: state.limit,
+  types: adminRecordTypeFilterToActionTypes(state.recordTypeFilter),
  scopeKind: state.scopeKind,
  scopeValue: state.scopeValue,
  association: state.association,
@@ -275,6 +287,8 @@ const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
  setScopeKind: state.setScopeKind,
  setScopeValue: state.setScopeValue,
  setAssociation: state.setAssociation,
+ recordTypeFilter: state.recordTypeFilter,
+ setRecordTypeFilter: state.setRecordTypeFilter,
  scopeOptions,
  associationOptions: scopeOptions.associations.map((item) => item.label),
  csvState: state.csvState,

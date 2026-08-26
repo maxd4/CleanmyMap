@@ -92,6 +92,12 @@ export type CleanPlaceModerationEditDraft = {
 };
 
 export type AdminSelectedRecordType = "action" | "spot" | "clean_place";
+export type AdminRecordTypeFilter =
+  | "all"
+  | "actions"
+  | "signalements"
+  | "spot"
+  | "clean_place";
 
 export type AdminWorkflowController = {
  status: ActionStatus |"all";
@@ -106,6 +112,8 @@ export type AdminWorkflowController = {
  setScopeKind: Dispatch<SetStateAction<ReportScopeKind>>;
  setScopeValue: Dispatch<SetStateAction<string>>;
  setAssociation: Dispatch<SetStateAction<string |"all">>;
+ setRecordTypeFilter: Dispatch<SetStateAction<AdminRecordTypeFilter>>;
+ recordTypeFilter: AdminRecordTypeFilter;
  associationOptions: string[];
  scopeOptions: {
  accounts: ReportScopeChoice[];
