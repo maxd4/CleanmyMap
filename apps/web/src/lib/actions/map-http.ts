@@ -182,6 +182,18 @@ function toActionStatusFromMapFeedRow(
   return rawStatus === "pending" || rawStatus === "rejected" ? rawStatus : "approved";
 }
 
+function isPublicMapFeedRow(row: ActionsMapFeedRow): boolean {
+  if (row.source === "actions" && row.entity_type === "action") {
+    return row.status === "approved";
+  }
+
+  return (
+    row.source === "trash_spotter_spots" &&
+    row.entity_type !== "action" &&
+    (row.status === "validated" || row.status === "cleaned")
+  );
+}
+
 function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContract {
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
@@ -443,9 +455,7 @@ export function buildMapActionsQueryString(
 
   query.set("types", serializeTypes(params.types, "all"));
 
-  if (resolvedStatus !== "all") {
-    query.set("status", resolvedStatus);
-  }
+  query.set("status", resolvedStatus);
 
   setScopeQueryParams(query, params);
 
@@ -487,10 +497,13 @@ export async function fetchMapActions(
         Array.isArray(body.items) &&
         typeof body.count === "number"
       ) {
-        const items = filterMapItemsByViewport(body.items, params.viewport);
-        return params.viewport
-          ? { ...body, count: items.length, items }
-          : body;
+        const publicItems = body.items.filter((item) => item.status === "approved");
+        const items = filterMapItemsByViewport(publicItems, params.viewport);
+        return {
+          ...body,
+          count: items.length,
+          items,
+        };
       }
     }
   } catch {
@@ -507,7 +520,9 @@ export async function fetchMapActions(
       : DEFAULT_POLLUTION_SCORE_REFERENCES;
 
   const remoteContracts = Array.isArray(rpcPayload.data)
-    ? (rpcPayload.data as ActionsMapFeedRow[]).map((row) => toActionContractFromMapFeedRow(row))
+    ? (rpcPayload.data as ActionsMapFeedRow[])
+        .filter(isPublicMapFeedRow)
+        .map((row) => toActionContractFromMapFeedRow(row))
     : [];
 
   const mergedContracts = buildMapContracts(

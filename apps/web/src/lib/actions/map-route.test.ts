@@ -68,15 +68,18 @@ describe("parseMapActionsParams", () => {
     expect(params.floorDate).toBeTruthy();
   });
 
-  it("supports explicit all status and all time", () => {
-    const params = parseMapActionsParams(
-      new URL("http://localhost/api/actions/map?status=all&floorDate=all"),
-      () => null,
-    );
+  it.each(["pending", "rejected", "all"])(
+    "normalizes non-public status %s to approved",
+    (status) => {
+      const params = parseMapActionsParams(
+        new URL(`http://localhost/api/actions/map?status=${status}&floorDate=all`),
+        () => null,
+      );
 
-    expect(params.status).toBeNull();
-    expect(params.floorDate).toBeNull();
-  });
+      expect(params.status).toBe("approved");
+      expect(params.floorDate).toBeNull();
+    },
+  );
 
   it("parses bounded viewport parameters for progressive map searches", () => {
     const params = parseMapActionsParams(
@@ -144,6 +147,51 @@ describe("buildMapActionsRouteResult", () => {
         },
       }),
     );
+  });
+
+  it.each(["pending", "rejected", "all"])(
+    "keeps viewport reads public for status %s",
+    async (status) => {
+      const deps = buildDeps();
+
+      await buildMapActionsRouteResult(
+        new URL(
+          `http://localhost/api/actions/map?status=${status}&south=48.8&west=2.2&north=48.9&east=2.4&zoom=12`,
+        ),
+        deps,
+      );
+
+      expect(deps.fetchUnifiedActionContracts).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({ status: "approved" }),
+      );
+    },
+  );
+
+  it("filters non-public contracts even when a source returns them", async () => {
+    const deps = buildDeps({
+      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+        items: [
+          { id: "approved", status: "approved" },
+          { id: "pending", status: "pending" },
+          { id: "rejected", status: "rejected" },
+        ],
+        sourceHealth: {
+          partial: false,
+          failedSources: [],
+          availableSources: ["actions", "spots"],
+          warnings: [],
+        },
+      }),
+    });
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?status=all"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["approved"]);
+    expect(result.body.count).toBe(1);
   });
 
   it("adds a partial-data warning header when needed", async () => {

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { buildMapActionsRouteResult, parseMapActionsParams } from "@/lib/actions/map-route";
+import {
+  buildMapActionsRouteResult,
+  filterPublicMapResponse,
+  parseMapActionsParams,
+} from "@/lib/actions/map-route";
 import { buildActionInsights } from "@/lib/actions/insights";
 import { toActionMapItem } from "@/lib/actions/data-contract";
 import { fetchUnifiedActionContracts, parseEntityTypesParam } from "@/lib/actions/unified-source";
@@ -13,7 +17,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAP_ACTIONS_SNAPSHOT_TTL_MINUTES = 15;
-const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v1";
+const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v2";
 
 function buildMapActionsSnapshotKey(url: URL): string {
   const parsed = parseMapActionsParams(url, parseEntityTypesParam);
@@ -58,9 +62,10 @@ export async function GET(request: Request) {
     // send this response through the persistent public snapshot stores.
     if (isGeolocatedMapRequest(url)) {
       const result = await buildMapActionsPayload(url);
+      const payload = filterPublicMapResponse(result.body);
       return NextResponse.json(
-        result.body,
-        result.body.partialSource
+        payload,
+        payload.partialSource
           ? {
               headers: {
                 "X-Data-Warning": "Partial source data",
@@ -81,9 +86,10 @@ export async function GET(request: Request) {
       },
     });
 
+    const payload = filterPublicMapResponse(snapshot.payload);
     return NextResponse.json(
-      snapshot.payload,
-      snapshot.payload.partialSource
+      payload,
+      payload.partialSource
         ? {
             headers: {
               "X-Data-Warning": "Partial source data",
