@@ -8,11 +8,29 @@ import {
   type SignalementMediaReadSnapshot,
 } from "@/lib/actions/signalement-media-client";
 
+export type SignalementMediaProofsVariant = "compact" | "panel";
+
 type SignalementMediaProofsProps = {
   signalementId: string;
+  variant?: SignalementMediaProofsVariant;
 };
 
-export function SignalementMediaProofs({ signalementId }: SignalementMediaProofsProps) {
+function shellClassName(variant: SignalementMediaProofsVariant): string {
+  return variant === "panel"
+    ? "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+    : "border-t border-slate-100 pt-3 dark:border-slate-800";
+}
+
+function titleClassName(variant: SignalementMediaProofsVariant): string {
+  return variant === "panel"
+    ? "cmm-text-small font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200"
+    : "cmm-text-caption font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400";
+}
+
+export function SignalementMediaProofs({
+  signalementId,
+  variant = "compact",
+}: SignalementMediaProofsProps) {
   const [, forceRender] = useState(0);
   const controller = useMemo(
     () =>
@@ -25,6 +43,7 @@ export function SignalementMediaProofs({ signalementId }: SignalementMediaProofs
   return (
     <SignalementMediaProofsView
       snapshot={controller.getSnapshot()}
+      variant={variant}
       onLoad={() => controller.load()}
       onRetry={() => controller.retry()}
     />
@@ -33,16 +52,27 @@ export function SignalementMediaProofs({ signalementId }: SignalementMediaProofs
 
 export function SignalementMediaProofsView({
   snapshot,
+  variant = "compact",
   onLoad,
   onRetry,
 }: {
   snapshot: SignalementMediaReadSnapshot;
+  variant?: SignalementMediaProofsVariant;
   onLoad: () => void;
   onRetry: () => void;
 }) {
+  const shell = shellClassName(variant);
+  const isPanel = variant === "panel";
+
   if (snapshot.status === "idle") {
     return (
-      <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
+      <div className={`${shell} space-y-2`}>
+        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
+        {isPanel ? (
+          <p className="cmm-text-small cmm-text-secondary">
+            Les preuves photo sont chargées uniquement à votre demande.
+          </p>
+        ) : null}
         <CmmButton
           type="button"
           onClick={onLoad}
@@ -61,7 +91,7 @@ export function SignalementMediaProofsView({
   if (snapshot.status === "loading") {
     return (
       <div
-        className="flex items-center gap-2 border-t border-slate-100 pt-3 cmm-text-caption text-slate-500 dark:border-slate-800 dark:text-slate-400"
+        className={`${shell} flex items-center gap-2 cmm-text-caption text-slate-500 dark:text-slate-400`}
         role="status"
         aria-live="polite"
       >
@@ -74,20 +104,21 @@ export function SignalementMediaProofsView({
   if (snapshot.status === "forbidden") {
     return (
       <div
-        className="border-t border-slate-100 pt-3 cmm-text-caption text-slate-500 dark:border-slate-800 dark:text-slate-400"
+        className={`${shell} cmm-text-caption text-slate-500 dark:text-slate-400`}
         role="status"
       >
-        Les preuves photo ne sont pas publiques pour ce signalement.
+        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
+        <p className={isPanel ? "mt-2" : undefined}>
+          Les preuves photo ne sont pas publiques pour ce signalement.
+        </p>
       </div>
     );
   }
 
   if (snapshot.status === "error") {
     return (
-      <div
-        className="space-y-2 border-t border-slate-100 pt-3 dark:border-slate-800"
-        role="alert"
-      >
+      <div className={`${shell} space-y-2`} role="alert">
+        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
         <p className="cmm-text-caption text-rose-700 dark:text-rose-300">
           Les preuves photo n&apos;ont pas pu être chargées.
         </p>
@@ -109,20 +140,24 @@ export function SignalementMediaProofsView({
   if (snapshot.status === "empty") {
     return (
       <div
-        className="border-t border-slate-100 pt-3 cmm-text-caption text-slate-500 dark:border-slate-800 dark:text-slate-400"
+        className={`${shell} cmm-text-caption text-slate-500 dark:text-slate-400`}
         role="status"
       >
-        Aucune preuve photo disponible.
+        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
+        <p className={isPanel ? "mt-2" : undefined}>Aucune preuve photo disponible.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-      <p className="cmm-text-caption font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-        Preuves photo
+    <section className={`${shell} space-y-3`} aria-label="Preuves terrain du signalement">
+      <p className={titleClassName(variant)}>
+        {isPanel ? "Preuves terrain" : "Preuves photo"}
       </p>
-      <div className="grid grid-cols-3 gap-2" aria-label="Preuves photo du signalement">
+      <div
+        className={isPanel ? "grid grid-cols-2 gap-3 sm:grid-cols-3" : "grid grid-cols-3 gap-2"}
+        aria-label="Preuves photo du signalement"
+      >
         {snapshot.items.slice(0, 3).map((item, index) => {
           const hasDimensions = item.width !== null && item.height !== null;
           return (
@@ -156,6 +191,6 @@ export function SignalementMediaProofsView({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

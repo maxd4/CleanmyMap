@@ -3,6 +3,8 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { OperationAuditTimeline } from "@/components/actions/operation-audit-timeline";
 import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
+import { isSignalementRecordType } from "@/lib/actions/signalement-media-contract";
+import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import { formatDate } from "./actions-history-list.helpers";
 import { formatScorePercent } from "@/lib/formatters/score";
 
@@ -28,8 +30,10 @@ type SelectedOperationalContext = {
 
 export type ActionsHistoryListDetailsProps = {
   selectedItem: {
+    id: string;
     location_label: string | null;
     contract?: {
+      type?: string;
       metadata: {
         placeType?: string | null;
       };
@@ -133,6 +137,11 @@ export function ActionsHistoryListDetails({
               Ajustement trajet: {selectedOperational.routeAdjustmentMessage}
             </p>
           ) : null}
+        </div>
+      ) : null}
+      {isSignalementRecordType(selectedItem.contract?.type) ? (
+        <div className="mt-3">
+          <SignalementMediaProofs signalementId={selectedItem.id} variant="panel" />
         </div>
       ) : null}
       {selectedCanModerateGroupJoin ? (

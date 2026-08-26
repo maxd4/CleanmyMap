@@ -1,5 +1,6 @@
 import { SCORE_THRESHOLDS } from "@/components/actions/map-marker-categories";
 import { mapItemLocationLabel } from "@/lib/actions/data-contract";
+import { isSignalementRecordType } from "@/lib/actions/signalement-media-contract";
 import type { ActionMapItem, ActionPreparationData } from "@/lib/actions/types";
 
 export type ScoreReading = {
@@ -23,7 +24,7 @@ export function isActionMapItem(item: ActionMapItem): boolean {
 }
 
 export function isSignalementMapItem(item: ActionMapItem): boolean {
-  return item.contract?.type === "spot" || item.contract?.type === "clean_place";
+  return isSignalementRecordType(item.contract?.type);
 }
 
 export function resolveActionTitle(item: ActionMapItem): string {

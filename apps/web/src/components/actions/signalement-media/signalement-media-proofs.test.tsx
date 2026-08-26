@@ -10,7 +10,7 @@ import type { SignalementMediaReadItem } from "@/lib/actions/signalement-media-c
 import {
   SignalementMediaProofs,
   SignalementMediaProofsView,
-} from "./action-popup-signalement-media";
+} from "./signalement-media-proofs";
 
 function mediaItem(overrides: Partial<SignalementMediaReadItem> = {}): SignalementMediaReadItem {
   return {
@@ -33,12 +33,12 @@ function mediaItem(overrides: Partial<SignalementMediaReadItem> = {}): Signaleme
   };
 }
 
-describe("signalement media popup", () => {
+describe("shared signalement media proofs", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the read request idle until the explicit load callback", async () => {
+  it("keeps the read request idle until the explicit load callback and caches success", async () => {
     const fetcher = vi.fn(async () => [mediaItem()]);
     const changes: string[] = [];
     const controller = createSignalementMediaReadController(
@@ -60,16 +60,33 @@ describe("signalement media popup", () => {
     );
   });
 
-  it("does not fetch while the popup only renders its idle control", () => {
+  it("caches an empty result and does not refetch it", async () => {
+    const fetcher = vi.fn(async () => []);
+    const controller = createSignalementMediaReadController(
+      "signalement-1",
+      () => undefined,
+      fetcher,
+    );
+
+    await controller.load();
+    await controller.load();
+
+    expect(controller.getSnapshot().status).toBe("empty");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fetch while history or popup only renders its idle control", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     const markup = renderToStaticMarkup(
       React.createElement(SignalementMediaProofs, {
         signalementId: "signalement-1",
+        variant: "panel",
       }),
     );
 
+    expect(markup).toContain("Preuves terrain");
     expect(markup).toContain("Voir les preuves photo");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -77,9 +94,7 @@ describe("signalement media popup", () => {
   it("allows an explicit retry after a read error", async () => {
     const fetcher = vi
       .fn()
-      .mockRejectedValueOnce(
-        new SignalementMediaReadError("Temporary failure", "request"),
-      )
+      .mockRejectedValueOnce(new SignalementMediaReadError("Temporary failure", "request"))
       .mockResolvedValueOnce([mediaItem({ id: "media-2" })]);
     const controller = createSignalementMediaReadController(
       "signalement-1",
@@ -140,6 +155,7 @@ describe("signalement media popup", () => {
   it("renders up to three ready media with dimensions, neutral alt text and ephemeral URLs", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SignalementMediaProofsView, {
+        variant: "panel",
         snapshot: {
           status: "ready",
           items: [

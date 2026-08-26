@@ -12,7 +12,7 @@ import {
 import { useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
-import { SignalementMediaProofs } from "./action-popup-signalement-media";
+import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 
 type ActionPopupContentBodyProps = {
   wasteKg: number;

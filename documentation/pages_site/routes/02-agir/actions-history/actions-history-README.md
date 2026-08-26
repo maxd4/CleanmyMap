@@ -37,6 +37,23 @@
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : faible
 
+## Preuves terrain
+
+La supervision de l'historique peut afficher les preuves photo associées à un
+signalement `spot` ou `clean_place`. Les enregistrements `action` ne sont pas
+concernés par ce bloc.
+
+- Aucun média n'est chargé avec la liste ni lors d'un simple changement de
+  sélection.
+- Le chargement démarre uniquement après l'action explicite « Voir les preuves
+  photo » et appelle `GET /api/signalements/{signalementId}/media`.
+- Le résultat est conservé dans l'instance du panneau après une réponse vide
+  ou réussie ; une erreur propose un retry explicite et un refus d'accès est
+  distingué comme preuve non publique.
+- Les règles d'accès restent celles du service média : auteur/admin pour un
+  signalement `new`, lecture publique signée pour `validated`/`cleaned`.
+- Les URLs signées sont éphémères et ne sont jamais persistées côté client.
+
 
 ## États à documenter
 

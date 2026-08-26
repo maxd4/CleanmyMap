@@ -38,3 +38,9 @@ export type SignalementMediaReadResponse = {
   status: "ok";
   items: SignalementMediaReadItem[];
 };
+
+export function isSignalementRecordType(
+  value: string | null | undefined,
+): value is "spot" | "clean_place" {
+  return value === "spot" || value === "clean_place";
+}
