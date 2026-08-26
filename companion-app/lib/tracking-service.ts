@@ -5,7 +5,7 @@
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { supabase } from './supabase';
+import { getAuthenticatedSupabaseClient } from './supabase';
 import {
   getStoredMissionId,
   setStoredMissionId,
@@ -26,6 +26,8 @@ import type {
 export const GPS_TASK_NAME = 'GPS_TRACKING';
 export const EXPO_GO_TRACKING_WARNING =
   "Le GPS en arrière-plan ne fonctionne pas dans Expo Go. Utilise un development build (npx expo run:android ou npx expo run:ios).";
+export const CLERK_SESSION_REQUIRED_ERROR =
+  "Connexion Clerk requise pour accéder à cette mission.";
 
 export function getBackgroundTrackingWarning(): string | null {
   const appOwnership = (Constants as { appOwnership?: string }).appOwnership;
@@ -61,6 +63,11 @@ async function requestPermissions(): Promise<ServiceResult> {
 }
 
 export async function startTracking(missionId: string): Promise<ServiceResult<Mission>> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
   const trackingWarning = getBackgroundTrackingWarning();
   if (trackingWarning) {
     return { ok: false, error: trackingWarning };
@@ -69,18 +76,29 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
   const permResult = await requestPermissions();
   if (!permResult.ok) return permResult;
 
-  const { data, error } = await supabase
-    .from('missions')
-    .update({
-      status: 'tracking',
-      started_at: new Date().toISOString(),
-    })
-    .eq('id', missionId)
-    .select()
-    .single<Mission>();
+  let data: Mission | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await client
+      .from('missions')
+      .update({
+        status: 'tracking',
+        started_at: new Date().toISOString(),
+      })
+      .eq('id', missionId)
+      .select()
+      .single<Mission>();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
 
-  if (error) {
-    return { ok: false, error: `Impossible de démarrer la mission : ${error.message}` };
+  if (error || !data) {
+    return {
+      ok: false,
+      error: `Impossible de démarrer la mission : ${error?.message ?? 'Réponse mission invalide.'}`,
+    };
   }
 
   await setStoredMissionId(missionId);
@@ -102,6 +120,11 @@ export async function startTracking(missionId: string): Promise<ServiceResult<Mi
 }
 
 export async function stopTracking(missionId: string): Promise<ServiceResult<Mission>> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
   const isRegistered = await TaskManager.isTaskRegisteredAsync(GPS_TASK_NAME);
   if (isRegistered) {
     await Location.stopLocationUpdatesAsync(GPS_TASK_NAME);
@@ -109,21 +132,32 @@ export async function stopTracking(missionId: string): Promise<ServiceResult<Mis
 
   await flushBuffer();
 
-  const { data, error } = await supabase
-    .from('missions')
-    .update({
-      status: 'completed',
-      ended_at: new Date().toISOString(),
-    })
-    .eq('id', missionId)
-    .select()
-    .single<Mission>();
-
-  if (error) {
-    return { ok: false, error: `Erreur lors de la finalisation : ${error.message}` };
+  let data: Mission | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await client
+      .from('missions')
+      .update({
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+      })
+      .eq('id', missionId)
+      .select()
+      .single<Mission>();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
   }
 
-  await supabase.rpc('compute_mission_distance', {
+  if (error || !data) {
+    return {
+      ok: false,
+      error: `Erreur lors de la finalisation : ${error?.message ?? 'Réponse mission invalide.'}`,
+    };
+  }
+
+  await client.rpc('compute_mission_distance', {
     p_mission_id: missionId,
   });
 
@@ -146,7 +180,18 @@ export async function saveLocationPoint(
     recorded_at: (recordedAt ?? new Date()).toISOString(),
   };
 
-  const { error } = await supabase.from('gps_points').insert(point);
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    await bufferPoint(point);
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
+  let error: Error | null = null;
+  try {
+    error = (await client.from('gps_points').insert(point)).error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
 
   if (error) {
     console.warn('[TrackingService] Insert échoué, mise en buffer :', error.message);
@@ -164,6 +209,11 @@ export async function saveMissionAction(
   content?: string,
   imageUrl?: string
 ): Promise<ServiceResult<MissionAction>> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
+
   let finalLocation = location;
 
   if (!finalLocation) {
@@ -188,30 +238,55 @@ export async function saveMissionAction(
     recorded_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
-    .from('mission_actions')
-    .insert(action)
-    .select()
-    .single<MissionAction>();
+  let data: MissionAction | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await client
+      .from('mission_actions')
+      .insert(action)
+      .select()
+      .single<MissionAction>();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
 
-  if (error) {
-    console.warn('[TrackingService] Action échouée, mise en buffer :', error.message);
+  if (error || !data) {
+    const message = error?.message ?? 'Réponse action invalide.';
+    console.warn('[TrackingService] Action échouée, mise en buffer :', message);
     await bufferAction(action);
-    return { ok: false, error: error.message };
+    return { ok: false, error: message };
   }
 
   return { ok: true, data };
 }
 
 export async function getMission(missionId: string): Promise<ServiceResult<Mission>> {
-  const { data, error } = await supabase
-    .from('missions')
-    .select('*')
-    .eq('id', missionId)
-    .single<Mission>();
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    return { ok: false, error: CLERK_SESSION_REQUIRED_ERROR };
+  }
 
-  if (error) {
-    return { ok: false, error: `Mission introuvable : ${error.message}` };
+  let data: Mission | null = null;
+  let error: Error | null = null;
+  try {
+    const result = await client
+      .from('missions')
+      .select('*')
+      .eq('id', missionId)
+      .single<Mission>();
+    data = result.data;
+    error = result.error;
+  } catch (requestError) {
+    error = requestError instanceof Error ? requestError : new Error('Session Clerk indisponible.');
+  }
+
+  if (error || !data) {
+    return {
+      ok: false,
+      error: `Mission introuvable : ${error?.message ?? 'Réponse mission invalide.'}`,
+    };
   }
 
   return { ok: true, data };

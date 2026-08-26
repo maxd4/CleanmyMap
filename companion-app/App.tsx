@@ -13,8 +13,9 @@ import { StatusBar } from 'expo-status-bar'
 import * as Linking from 'expo-linking'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from './lib/supabase'
+import { ClerkProvider, useAuth, useClerk } from '@clerk/expo'
+import { useHostedAuth } from '@clerk/expo/hosted-auth'
+import { tokenCache } from '@clerk/expo/token-cache'
 import {
   getBackgroundTrackingWarning,
   getMission,
@@ -28,6 +29,7 @@ import { uploadMissionPhoto } from './lib/storage-upload'
 import type { Mission, MissionActionType, TrackingPhase } from './types/mission'
 
 const { width } = Dimensions.get('window')
+const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
 
 function formatDuration(startedAt: string): string {
   const seconds = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
@@ -40,8 +42,9 @@ function formatDuration(startedAt: string): string {
   return `${remainingSeconds}s`
 }
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
+function CompanionApp() {
+  const { isLoaded, isSignedIn } = useAuth()
+  const { signOut } = useClerk()
   const [phase, setPhase] = useState<TrackingPhase>('idle')
   const [mission, setMission] = useState<Mission | null>(null)
   const [missionIdInput, setMissionIdInput] = useState('')
@@ -55,20 +58,31 @@ export default function App() {
   const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => setSession(currentSession))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
+    stopDurationTimer()
+    setMission(null)
+    setPhase('idle')
 
+    if (!isLoaded || !isSignedIn) return
+
+    let cancelled = false
     restoreActiveTracking().then(async (id) => {
-      if (!id) return
+      if (!id || cancelled) return
 
       const result = await getMission(id)
-      if (result.ok && result.data.status === 'tracking') {
+      if (!cancelled && result.ok && result.data.status === 'tracking') {
         setMission(result.data)
         setPhase('tracking')
         startDurationTimer(result.data.started_at ?? new Date().toISOString())
       }
     })
 
+    return () => {
+      cancelled = true
+      stopDurationTimer()
+    }
+  }, [isLoaded, isSignedIn])
+
+  useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       const { queryParams } = Linking.parse(event.url)
       if (queryParams?.id) {
@@ -90,9 +104,7 @@ export default function App() {
     }, 5000)
 
     return () => {
-      listener.subscription.unsubscribe()
       subscription.remove()
-      stopDurationTimer()
       if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
     }
   }, [])
@@ -115,8 +127,8 @@ export default function App() {
       return
     }
 
-    if (!session) {
-      setErrorMsg('Non connecté')
+    if (!isSignedIn) {
+      setErrorMsg('Connexion Clerk requise')
       return
     }
 
@@ -219,23 +231,24 @@ export default function App() {
     }
   }
 
+  if (!isLoaded) {
+    return (
+      <View style={styles.darkCenter}>
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text style={styles.hudLabel}>CHARGEMENT CLERK...</Text>
+      </View>
+    )
+  }
+
+  if (!isSignedIn) {
+    return <SignedOutScreen />
+  }
+
   if (phase === 'requesting' || phase === 'stopping') {
     return (
       <View style={styles.darkCenter}>
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={styles.hudLabel}>{phase === 'stopping' ? 'TRANSMISSION...' : 'INITIALISATION...'}</Text>
-      </View>
-    )
-  }
-
-  if (!session) {
-    return (
-      <View style={styles.darkCenter}>
-        <Text style={styles.hudTitle}>CLEANMYMAP</Text>
-        <Text style={styles.hudSubtitle}>SATELLITE COMPANION</Text>
-        <TouchableOpacity style={styles.hudBtnPrimary} onPress={() => supabase.auth.signInAnonymously()}>
-          <Text style={styles.hudBtnText}>AUTH ANONYME</Text>
-        </TouchableOpacity>
       </View>
     )
   }
@@ -346,7 +359,72 @@ export default function App() {
       >
         <Text style={styles.hudBtnText}>DÉMARRER</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.hudBtnSecondary} onPress={() => signOut()}>
+        <Text style={styles.hudBtnSecondaryText}>SE DÉCONNECTER</Text>
+      </TouchableOpacity>
     </View>
+  )
+}
+
+function SignedOutScreen() {
+  const { startHostedAuth } = useHostedAuth()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSignIn() {
+    setLoading(true)
+    setError(null)
+
+    try {
+      await startHostedAuth({ mode: 'sign-in' })
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : 'Connexion Clerk impossible.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <View style={styles.darkCenter}>
+      <Text style={styles.hudTitle}>CLEANMYMAP</Text>
+      <Text style={styles.hudSubtitle}>SATELLITE COMPANION</Text>
+      <Text style={styles.authDescription}>
+        Connectez-vous avec votre compte Clerk pour accéder à vos missions.
+      </Text>
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+      <TouchableOpacity style={styles.hudBtnPrimary} onPress={handleSignIn} disabled={loading}>
+        {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.hudBtnText}>SE CONNECTER</Text>}
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+function MissingClerkConfiguration() {
+  return (
+    <View style={styles.darkCenter}>
+      <Text style={styles.hudTitle}>CLEANMYMAP</Text>
+      <Text style={styles.hudSubtitle}>CONFIGURATION REQUISE</Text>
+      <Text style={styles.authDescription}>
+        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY est nécessaire pour ouvrir le compagnon.
+      </Text>
+    </View>
+  )
+}
+
+export default function App() {
+  if (!clerkPublishableKey) {
+    return <MissingClerkConfiguration />
+  }
+
+  return (
+    <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
+      <CompanionApp />
+    </ClerkProvider>
   )
 }
 
@@ -516,6 +594,17 @@ const styles = StyleSheet.create({
   hudBtnPrimaryDisabled: {
     backgroundColor: '#475569',
   },
+  hudBtnSecondary: {
+    marginTop: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  hudBtnSecondaryText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
   hudBtnDanger: {
     backgroundColor: '#ef4444',
     paddingVertical: 20,
@@ -562,5 +651,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '600',
+  },
+  authDescription: {
+    color: '#94a3b8',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 24,
+    maxWidth: 320,
+    textAlign: 'center',
   },
 })

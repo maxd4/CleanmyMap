@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { supabase } from './supabase';
+import { getAuthenticatedSupabaseClient } from './supabase';
 import type { MissionLocationInsert, MissionActionInsert } from '../types/mission';
 
 const MISSION_KEY = 'cmm_current_mission_id';
@@ -162,6 +162,12 @@ export async function bufferAction(action: MissionActionInsert): Promise<void> {
 // Flush
 
 export async function flushBuffer(): Promise<void> {
+  const client = await getAuthenticatedSupabaseClient();
+  if (!client) {
+    // Sans session Clerk, les données restent persistées localement.
+    return;
+  }
+
   // Flush GPS points
   try {
     const { keys, records: buffer } = await readSecureBufferRecords<MissionLocationInsert>(
@@ -169,7 +175,7 @@ export async function flushBuffer(): Promise<void> {
     );
     if (buffer.length > 0) {
       console.log(`[Storage] Flush GPS : ${buffer.length} points`);
-      const { error } = await supabase.from('gps_points').insert(buffer);
+      const { error } = await client.from('gps_points').insert(buffer);
       if (!error) {
         await clearSecureBufferRecords(keys);
         await writeIndex(GPS_BUFFER_INDEX_KEY, []);
@@ -187,7 +193,7 @@ export async function flushBuffer(): Promise<void> {
     );
     if (buffer.length > 0) {
       console.log(`[Storage] Flush Actions : ${buffer.length} actions`);
-      const { error } = await supabase.from('mission_actions').insert(buffer);
+      const { error } = await client.from('mission_actions').insert(buffer);
       if (!error) {
         await clearSecureBufferRecords(keys);
         await writeIndex(ACTION_BUFFER_INDEX_KEY, []);
