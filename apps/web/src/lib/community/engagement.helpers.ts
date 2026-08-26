@@ -63,34 +63,3 @@ export function badgeFromQuality(
   }
   return "En progression";
 }
-
-export function roleFromPartner(actions: number, avgQuality: number): string {
-  if (actions >= 20 && avgQuality >= 75) {
-    return "Coordinateur terrain";
-  }
-  if (actions >= 10) {
-    return "Referent associatif";
-  }
-  return "Relais local";
-}
-
-export function capacityLabel(actions: number): string {
-  const monthly = actions / 12;
-  if (monthly >= 3) {
-    return "Forte (>=3 sorties/mois)";
-  }
-  if (monthly >= 1.5) {
-    return "Moyenne (1 a 3 sorties/mois)";
-  }
-  return "Ponctuelle (<1.5 sortie/mois)";
-}
-
-export function nextActionFromPartner(zone: string, avgQuality: number): string {
-  if (avgQuality < 70) {
-    return "Renforcer la qualite de declaration (preuve geo, completude).";
-  }
-  if (zone === "Hors arrondissement") {
-    return "Preciser la zone d'action pour la prochaine intervention.";
-  }
-  return `Programmer une co-animation sur ${zone} avec objectif qualite maintenu.`;
-}

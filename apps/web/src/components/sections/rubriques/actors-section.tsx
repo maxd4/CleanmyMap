@@ -3,11 +3,11 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
-import { buildPartnerCards } from "@/lib/community/engagement";
+import { buildActorActivityCards } from "@/lib/community/engagement";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { Users, MapPin, TrendingUp, ShieldCheck, ArrowRight, Zap, Trophy, Target } from "lucide-react";
+import { Users, MapPin, TrendingUp, Target, ListChecks, Gauge } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 
@@ -40,22 +40,17 @@ export function ActorsSection() {
     return [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [mapData?.items]);
 
-  const hotspotSet = useMemo(
-    () => new Set(hotspots.slice(0, 3).map(([area]) => area)),
-    [hotspots],
-  );
-
-  const partnerCards = useMemo(() => {
-    return buildPartnerCards(actionsData?.items ?? []);
+  const actorActivityCards = useMemo(() => {
+    return buildActorActivityCards(actionsData?.items ?? []);
   }, [actionsData?.items]);
 
   return (
     <SectionShell
       id="actors"
-      title={fr ? "Écosystème des Acteurs" : "Actors Ecosystem"}
-      subtitle={fr 
-        ? "Cartographie des pressions territoriales et pilotage des partenaires opérationnels."
-        : "Mapping of territorial pressures and management of operational partners."}
+      title={fr ? "Activité des acteurs" : "Actors activity"}
+      subtitle={fr
+        ? "Synthèse des actions enregistrées, des zones observées et de la qualité des déclarations."
+        : "Summary of recorded actions, observed areas and declaration quality."}
       icon={Users}
       gradient="from-indigo-500/20 via-sky-500/10 to-transparent"
     >
@@ -74,7 +69,7 @@ export function ActorsSection() {
                 <Target size={20} />
              </div>
              <h3 className="text-xl font-black text-white tracking-tight">
-                {fr ? "Pression (12 mois)" : "Pressure (12 months)"}
+                {fr ? "Actions (12 mois)" : "Actions (12 months)"}
              </h3>
           </div>
           
@@ -103,7 +98,7 @@ export function ActorsSection() {
                   <div className="text-right">
                     <p className="text-lg font-black text-white tracking-tight">{count}</p>
                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                       {fr ? "Signalements" : "Reports"}
+                       {fr ? "Actions" : "Actions"}
                     </p>
                   </div>
                 </motion.li>
@@ -114,7 +109,7 @@ export function ActorsSection() {
                       <MapPin size={24} />
                    </div>
                    <p className="text-xs font-bold text-slate-500 italic">
-                      {fr ? "Aucune donnée sur cette période." : "No data for this period."}
+                      {fr ? "Aucune action sur cette période." : "No action for this period."}
                    </p>
                 </li>
               )}
@@ -122,19 +117,19 @@ export function ActorsSection() {
           )}
         </RubriqueCard>
 
-        {/* DROITE : Fiches partenaires */}
+        {/* DROITE : Activité observée des acteurs */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-4">
              <div className="flex items-center gap-4">
                 <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                   <ShieldCheck size={20} />
+                   <Users size={20} />
                 </div>
                 <h3 className="text-xl font-black text-white tracking-tight">
-                   {fr ? "Fiches Partenaires" : "Partner Files"}
+                   {fr ? "Acteurs observés dans les actions" : "Actors observed in actions"}
                 </h3>
              </div>
              <div className="text-xs font-black text-slate-500 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                {partnerCards.length} {fr ? "Actifs" : "Active"}
+                {actorActivityCards.length} {fr ? "Observés" : "Observed"}
              </div>
           </div>
 
@@ -145,7 +140,7 @@ export function ActorsSection() {
               ))
             ) : (
               <AnimatePresence mode="popLayout">
-                {partnerCards.map((card, idx) => (
+                {actorActivityCards.map((card, idx) => (
                   <RubriqueCard 
                     key={card.actor}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -161,26 +156,14 @@ export function ActorsSection() {
                           <h3 className="text-xl font-black text-white tracking-tight leading-tight group-hover:text-indigo-400 transition-colors">
                              {card.actor}
                           </h3>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                             {card.role}
-                          </p>
                         </div>
-                        {hotspotSet.has(card.zone) && (
-                          <div className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
-                             <Zap size={10} className="text-indigo-400 fill-indigo-400" />
-                             <span className="text-[8px] font-black uppercase tracking-widest text-indigo-500">
-                                {fr ? "Prioritaire" : "Priority"}
-                             </span>
-                          </div>
-                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                          {[
                            { label: fr ? "Zone" : "Zone", value: card.zone, icon: MapPin },
-                           { label: fr ? "Capacité" : "Capacity", value: card.capacity, icon: Users },
-                           { label: fr ? "Actions" : "Actions", value: card.actions, icon: Trophy },
-                           { label: fr ? "Qualité" : "Quality", value: `${card.avgQuality}%`, icon: ShieldCheck },
+                           { label: fr ? "Actions" : "Actions", value: card.actions, icon: ListChecks },
+                           { label: fr ? "Qualité des actions" : "Action quality", value: `${card.avgActionQuality}%`, icon: Gauge },
                          ].map((stat, i) => (
                            <div key={i} className="p-3 rounded-2xl bg-slate-950/40 border border-white/5 group-hover:border-white/10 transition-colors">
                               <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -189,32 +172,21 @@ export function ActorsSection() {
                          ))}
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-between group-hover:bg-indigo-500/10 transition-all">
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">
-                               {fr ? "Prochaine Action" : "Next Action"}
-                            </p>
-                            <p className="text-xs font-bold text-white leading-none">
-                               {card.nextAction}
-                            </p>
-                         </div>
-                         <ArrowRight size={16} className="text-indigo-400 group-hover:translate-x-1 transition-transform" />
-                      </div>
                     </div>
                   </RubriqueCard>
                 ))}
               </AnimatePresence>
             )}
 
-            {!actionsLoading && partnerCards.length === 0 && (
+            {!actionsLoading && actorActivityCards.length === 0 && (
               <div className="col-span-full py-20 rounded-[2.5rem] border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-center space-y-4">
                  <div className="p-6 rounded-full bg-slate-950/40 text-slate-600">
                     <Users size={48} />
                  </div>
                  <p className="text-sm font-bold text-slate-500 max-w-xs">
-                    {fr 
-                      ? "Aucun profil partenaire n'est encore relié à vos actions récentes." 
-                      : "No partner profile is linked to your recent actions yet."}
+                    {fr
+                      ? "Aucun acteur nommé n'est encore présent dans les actions récentes."
+                      : "No named actor is present in recent actions yet."}
                  </p>
               </div>
             )}

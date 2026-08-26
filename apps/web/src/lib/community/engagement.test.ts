@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import {
-  buildPartnerCards,
+  buildActorActivityCards,
   computeEventConversions,
   computeEventRelances,
   computeEventStaffingPlan,
@@ -134,9 +134,9 @@ describe("computeQualityLeaderboard", () => {
   });
 });
 
-describe("buildPartnerCards", () => {
-  it("builds actionable partner cards", () => {
-    const cards = buildPartnerCards([
+describe("buildActorActivityCards", () => {
+  it("builds activity cards only from observable action data", () => {
+    const cards = buildActorActivityCards([
       makeAction({
         id: "a1",
         actor_name: "Association X",
@@ -152,12 +152,23 @@ describe("buildPartnerCards", () => {
         actor_name: "Collectif Y",
         location_label: "Lyon 11e",
       }),
+      makeAction({
+        id: "a4",
+        actor_name: null,
+      }),
     ]);
 
-    expect(cards.length).toBeGreaterThan(0);
-    expect(cards[0]?.role).toBeTruthy();
-    expect(cards[0]?.zone).toBeTruthy();
-    expect(cards[0]?.contact).toContain("Canal");
-    expect(cards[0]?.capacity).toBeTruthy();
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toMatchObject({
+      actor: "Association X",
+      zone: "10e",
+      actions: 2,
+    });
+    expect(cards[0]?.avgActionQuality).toEqual(expect.any(Number));
+    expect(cards[0]).not.toHaveProperty("role");
+    expect(cards[0]).not.toHaveProperty("capacity");
+    expect(cards[0]).not.toHaveProperty("nextAction");
+    expect(cards[0]).not.toHaveProperty("contact");
+    expect(cards.map((card) => card.actor)).not.toContain("Anonyme");
   });
 });
