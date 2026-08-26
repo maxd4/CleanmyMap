@@ -499,6 +499,12 @@ Pour un sujet mixte :
 - lien entre les deux ;
 - aucune duplication.
 
+- Tous les 2 à 3 prompts consacrés à un même chantier, réévaluer la
+  documentation canonique et la mettre à jour dès qu’elle ne reflète plus
+  le comportement, les décisions, les validations ou les limites réelles.
+  Ne pas créer de modification documentaire artificielle lorsqu’aucune
+  information n’a changé.
+
 ### Quarto
 
 Ne pas numéroter manuellement les titres destinés à Quarto.
