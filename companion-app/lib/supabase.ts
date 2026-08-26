@@ -13,7 +13,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  *   eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "..."
  *
  * Les variables préfixées EXPO_PUBLIC_ sont embarquées dans le bundle
- * et visibles côté client — utiliser uniquement la clé anon (jamais la service_role).
+ * et visibles côté client — utiliser uniquement la clé anon, jamais une clé
+ * serveur privée.
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';

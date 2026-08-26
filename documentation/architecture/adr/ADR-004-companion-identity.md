@@ -1,6 +1,6 @@
 # ADR-004 — Identité de l'application compagnon
 
-**Statut : accepté pour les LOTS 1 et 2A — LOT 2B requis avant production mobile**
+**Statut : finalisé pour les LOTS 1, 2A et 2B — companion-app gelé**
 **Date : 26 août 2026**
 
 ## Contexte
@@ -101,9 +101,44 @@ Le contrat effectif est le suivant :
 - `service_role` reste réservé aux opérations serveur et conserve ses
   privilèges opérationnels ; il ne constitue pas l'identité du companion.
 
-Le companion n'est toujours pas prêt pour la production : l'appel client à
-`compute_mission_distance` et la finalisation de la synchronisation background
-font l'objet du LOT 2B.
+Le companion n'est toujours pas prêt pour la production : la synchronisation
+headless, `mission_actions` et l'usage opérationnel réel restent non validés.
+
+## Finalisation propriétaire — LOT 2B réalisé
+
+La migration additive
+`apps/web/supabase/migrations/20260826080000_clerk_compute_mission_distance.sql`
+rend `compute_mission_distance(uuid)` exécutable par `authenticated` et
+`service_role`, sans grant `anon` ou `public`.
+
+Pour un utilisateur `authenticated`, la fonction :
+
+- résout l'identité avec `coalesce((select auth.jwt()) ->> 'sub', '')` ;
+- refuse un `sub` vide ;
+- vérifie l'existence de la mission et `missions.volunteer_id = sub` avant de
+  lire ses points ;
+- calcule la distance uniquement depuis les `gps_points` de cette mission ;
+- écrit `distance_m` et `duration_s` côté fonction serveur ;
+- ne renseigne `duration_s` que lorsque `started_at` et `ended_at` sont
+  exploitables et dans un ordre cohérent.
+
+La fonction utilise `SECURITY DEFINER` avec `search_path = pg_catalog` afin de
+mettre à jour les colonnes dérivées sans réélargir les grants UPDATE mobiles.
+Le chemin `service_role` reste technique et opérationnel. `stopTracking` vérifie
+l'erreur RPC et ne déclare pas une finalisation complètement réussie lorsque
+le calcul serveur échoue.
+
+Le renouvellement fiable d'un token Clerk en réveil `TaskManager` headless n'est
+pas résolu : sans token valide, le buffer local reste la seule issue et aucune
+identité anonyme n'est utilisée.
+
+## Gel du companion-app
+
+L'ADR-004 est fermée pour la roadmap mobile actuelle. Le companion-app est gelé
+à long terme jusqu'à la finalisation et à l'utilisation réelle de l'application
+web. Aucune nouvelle UI, capacité GPS, photo, action ou publication store ne
+doit être engagée dans ce périmètre. `mission_actions` et les autres capacités
+expérimentales restent hors production.
 
 ## Options
 
@@ -158,15 +193,18 @@ Inconvénients :
 - coût Vercel ;
 - gestion des tokens.
 
-## Suite recommandée — LOT 2B
+## Clôture et suite hors companion
 
-Le LOT 2B doit traiter l'appel client actuellement impossible à
-`compute_mission_distance`, puis geler le companion-app jusqu'à la finalisation
-et à l'utilisation réelle de l'application web.
+Le LOT 2B a traité l'appel client à `compute_mission_distance` et a gelé le
+companion-app jusqu'à la finalisation et à l'utilisation réelle de l'application
+web.
 
-Le LOT 2B ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
+Le contrat ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
 hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
 offline reste l'état attendu.
+
+La roadmap revient désormais aux fonctionnalités web. Aucun nouveau lot
+companion n'est recommandé avant une décision explicite de dégel.
 
 ## Migration et validation
 
@@ -178,8 +216,10 @@ Le LOT 2A a réalisé la bascule RLS additive :
 4. vérifier propriétaire, tiers, `sub` absent et service role ;
 5. conserver le buffer offline lorsque le token n'est pas disponible.
 
-Le LOT 2B doit encore traiter l'appel client à `compute_mission_distance` et
-la décision de gel du companion-app avant finalisation et usage web réel.
+Le LOT 2B a ajouté la migration additive de finalisation propriétaire et le
+contrôle d'erreur RPC dans le tracking service. La validation de production
+reste exclue : aucune application distante de migration ni usage opérationnel
+réel n'est déclaré ici.
 
 ## Tests requis
 
@@ -189,9 +229,16 @@ utilisateur A ne modifie pas mission B
 app et web résolvent le même profil
 sub Clerk absent refusé
 champs sensibles mission non modifiables par authenticated
+propriétaire seul peut exécuter compute_mission_distance
+tiers et sub absent refusés par la fonction
+anon sans EXECUTE
+erreur RPC propagée par stopTracking
 service_role absente du bundle
 ```
 
 ## Conséquences
 
-L'app compagnon ne doit pas être qualifiée de prête pour la production avant validation de cette décision.
+La décision d'identité, de RLS et de finalisation est formalisée, mais l'app
+compagnon ne doit pas être qualifiée de prête pour la production. Elle est
+gelée à long terme jusqu'à la finalisation et à l'utilisation réelle de
+l'application web.

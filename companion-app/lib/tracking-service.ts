@@ -157,9 +157,24 @@ export async function stopTracking(missionId: string): Promise<ServiceResult<Mis
     };
   }
 
-  await client.rpc('compute_mission_distance', {
-    p_mission_id: missionId,
-  });
+  let distanceError: Error | null = null;
+  try {
+    const result = await client.rpc('compute_mission_distance', {
+      p_mission_id: missionId,
+    });
+    distanceError = result.error;
+  } catch (requestError) {
+    distanceError = requestError instanceof Error
+      ? requestError
+      : new Error('Réponse RPC de distance invalide.');
+  }
+
+  if (distanceError) {
+    return {
+      ok: false,
+      error: `Mission terminée, mais le calcul serveur de distance a échoué : ${distanceError.message}`,
+    };
+  }
 
   await clearStoredMissionId();
 
