@@ -193,6 +193,20 @@ moderation_visibility = visible | hidden
 
 Une action `hidden` est exclue des surfaces publiques, dont la carte, les listes publiques et la page Formulaire de groupe. Elle reste traitable par les chemins de modération autorisés.
 
+### Frontière de lecture de `GET /api/actions`
+
+La lecture publique globale est toujours public-safe : une requête sans statut,
+avec un statut invalide ou avec `status=approved` ne restitue que les actions
+approuvées et les signalements Trash Spotter `validated` ou `cleaned`. Cette
+lecture peut utiliser `loadOrRefreshPublicSurfaceSnapshot`.
+
+Toute vue qui peut inclure un état non public — `status=pending`,
+`status=rejected` ou la vue globale explicite `status=all` — exige l'AuthN puis
+l'AuthZ de modération centrale (`admin`, `elu` ou `max`). Elle est lue
+directement et ne doit jamais passer par un snapshot de surface publique. Cette
+règle vaut pour les actions `pending` comme pour les signalements `new` mappés
+par la source unifiée.
+
 Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transforme pas une pré-action en collecte finalisée.
 
 ## Centralisation des permissions

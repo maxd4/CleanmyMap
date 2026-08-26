@@ -27,14 +27,23 @@ function queryResult(data: unknown[], error: null | Error = null) {
   return query;
 }
 
-function params() {
+type TestParams = {
+  limit: number;
+  status: "pending" | "approved" | "rejected" | null;
+  floorDate: string | null;
+  requireCoordinates: boolean;
+  types: null;
+};
+
+function params(overrides: Partial<TestParams> = {}): TestParams {
   return {
     limit: 10,
     status: null,
     floorDate: null,
     requireCoordinates: false,
     types: null,
-  } as const;
+    ...overrides,
+  };
 }
 
 function canonicalSpot(overrides: Record<string, unknown> = {}) {
@@ -52,7 +61,7 @@ function canonicalSpot(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function remoteAction(id: string) {
+function remoteAction(id: string, status: "pending" | "approved" | "rejected" = "approved") {
   return {
     id,
     created_at: "2026-08-24T10:00:00Z",
@@ -67,7 +76,7 @@ function remoteAction(id: string) {
     cigarette_butts: 0,
     volunteers_count: 1,
     duration_minutes: 10,
-    status: "approved",
+    status,
     notes: null,
     action_phase: "post_action_complete",
     preparation_data: {},
@@ -148,6 +157,31 @@ describe("unified action source", () => {
 
     expect(result.items[0]?.type).toBe("clean_place");
     expect(result.items[0]?.source).toBe("trash_spotter_spots");
+  });
+
+  it("maps pending consistently for actions and canonical Trash Spotter new records", async () => {
+    fetchActionsMock.mockResolvedValue([remoteAction("action-pending", "pending")]);
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([canonicalSpot({ id: "spot-new", status: "new" })]) as never,
+      params({ status: "pending" }),
+    );
+
+    expect(fetchActionsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: "pending" }),
+    );
+    expect(result.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "action-pending", type: "action", status: "pending" }),
+        expect.objectContaining({
+          id: "spot-new",
+          type: "spot",
+          status: "pending",
+          sourceStatus: "new",
+        }),
+      ]),
+    );
   });
 
   it("never exposes Trash Spotter categories for a canonical clean place", async () => {
