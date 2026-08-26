@@ -96,6 +96,10 @@ Regle de lecture :
 
 ### 4. Verifications Supabase/Vercel
 
+- Projet Supabase de référence pour CleanMyMap : `supabase-vercel-codex`, à
+  administrer avec le compte Supabase `drm`. Vérifier le `project ref` dans
+  `apps/web/supabase/config.toml` et dans le Dashboard avant toute commande
+  liée ; ne pas utiliser un projet voisin ou un autre compte.
 - `npm run backend:doctor` doit passer avant toute publication.
 - `npm run backend:supabase:advisors` est la commande autonome de référence pour les advisories sécurité: elle tente le local si Docker est disponible puis bascule sur le projet lié.
 - Le mode `--linked` exige un token Supabase personnel avec accès au projet et la permission fine `advisors_read`; en cas de `403`, regénérer un token dans Supabase Dashboard -> Account -> Tokens, puis relancer `supabase login --token <token>` ou exporter `SUPABASE_ACCESS_TOKEN`.

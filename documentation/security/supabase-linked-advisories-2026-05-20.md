@@ -4,7 +4,14 @@ Source:
 
 - Command: `node scripts/supabase-security-advisors.mjs --linked`
 - Workspace: `apps/web`
+- Compte Supabase de référence : `drm`
+- Projet Supabase cible : `supabase-vercel-codex`
 - Date: `2026-05-20`
+
+Le projet à contrôler pour CleanMyMap est celui du compte Supabase `drm`,
+nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
+`apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
+lié. Cette information ne remplace pas une authentification CLI valide.
 
 Status:
 
@@ -34,3 +41,14 @@ After applying the corrective migration and rerunning the linked advisor, there 
 npm -C apps/web run backend:supabase:advisors:linked
 ```
 
+## Vérification courante
+
+Le résultat ci-dessus est historique et ne constitue pas une preuve de l'état
+actuel de l'alerte affichée dans le Dashboard. Une nouvelle vérification doit
+être lancée avec une session CLI authentifiée sur le compte `drm` et le projet
+`supabase-vercel-codex`.
+
+Le 27 août 2026, la commande a été tentée depuis le checkout mais a été
+bloquée avant l'appel aux advisors par `LegacyPlatformAuthRequiredError` :
+aucun `SUPABASE_ACCESS_TOKEN` n'était disponible dans la session. L'alerte ne
+peut donc pas être déclarée corrigée sur la base de cette tentative.
