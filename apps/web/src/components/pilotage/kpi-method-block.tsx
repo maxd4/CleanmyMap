@@ -1,17 +1,14 @@
 "use client";
 
-import { ArrowRight, FileText, Cpu, Database, RefreshCw, AlertCircle, Terminal, Box } from "lucide-react";
-import { motion } from "framer-motion";
-
-// Assuming MethodDefinition is consistent with the usage
-export interface MethodDefinition {
-  id: string;
-  kpi: string;
-  formula: string;
-  source: string;
-  recalc: string;
-  limits: string;
-}
+import {
+  AlertCircle,
+  ChevronDown,
+  Database,
+  FileText,
+  RefreshCw,
+} from "lucide-react";
+import { useId } from "react";
+import type { MethodDefinition } from "@/lib/pilotage/overview.types";
 
 type KpiMethodBlockProps = {
   title?: string;
@@ -19,130 +16,95 @@ type KpiMethodBlockProps = {
   method?: MethodDefinition;
 };
 
+type MethodDetailProps = {
+  icon: typeof Database;
+  label: string;
+  value: string;
+};
+
+function MethodDetail({ icon: Icon, label, value }: MethodDetailProps) {
+  return (
+    <div className="space-y-1.5">
+      <dt className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-red-700">
+        <Icon size={14} aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className="text-sm leading-6 text-slate-700">{value}</dd>
+    </div>
+  );
+}
+
 export function KpiMethodBlock({
-  title = "Référentiel Méthodologique",
+  title = "Référentiel méthodologique",
   methods: methodsProp,
   method,
 }: KpiMethodBlockProps) {
-  const methods = methodsProp || (method ? [method] : []);
+  const methods = methodsProp ?? (method ? [method] : []);
+  const titleId = useId();
 
   return (
-    <section className="space-y-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10 shadow-2xl">
-             <FileText size={24} className="text-slate-400" />
+    <section className="space-y-5" aria-labelledby={titleId}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700">
+            <FileText size={20} aria-hidden="true" />
           </div>
-          <div className="space-y-1">
-             <h2 className="text-2xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">{title}</h2>
-             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Institutional Standard v2.4</p>
+          <div>
+            <h2 id={titleId} className="cmm-text-h3 text-slate-950">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Formule visible; source, recalcul et limites dans chaque détail.
+            </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3 bg-slate-950/40 border border-white/5 px-4 py-2 rounded-xl backdrop-blur-3xl">
-           <Terminal size={14} className="text-amber-500" />
-           <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Live Computation Engine Active</span>
+        {methods.length > 0 ? (
+          <span className="w-fit rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-800">
+            {methods.length} méthode{methods.length > 1 ? "s" : ""}
+          </span>
+        ) : null}
+      </div>
+
+      {methods.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {methods.map((method, index) => (
+            <details
+              key={method.id}
+              className="group rounded-2xl border border-slate-200 bg-white/90 shadow-sm transition-colors hover:border-red-200 open:border-red-200"
+            >
+              <summary className="flex cursor-pointer list-none items-start gap-3 p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 [&::-webkit-details-marker]:hidden">
+                <span
+                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-50 text-xs font-bold tabular-nums text-red-700"
+                  aria-hidden="true"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-bold text-slate-950">{method.kpi}</span>
+                  <span className="mt-1 block font-mono text-xs leading-5 text-slate-600">
+                    {method.formula}
+                  </span>
+                </span>
+                <ChevronDown
+                  size={18}
+                  aria-hidden="true"
+                  className="mt-1 shrink-0 text-red-700 transition-transform group-open:rotate-180"
+                />
+              </summary>
+
+              <dl className="grid gap-4 border-t border-slate-100 px-4 pb-4 pt-4 sm:grid-cols-3">
+                <MethodDetail icon={Database} label="Source" value={method.source} />
+                <MethodDetail icon={RefreshCw} label="Recalcul" value={method.recalc} />
+                <MethodDetail icon={AlertCircle} label="Limites" value={method.limits} />
+              </dl>
+            </details>
+          ))}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8">
-        {methods.map((method, idx) => (
-          <motion.article
-            key={method.id}
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: idx * 0.1, duration: 0.5 }}
-            className="p-12 rounded-[3.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group hover:border-white/10 transition-all"
-          >
-            <div className="absolute top-0 right-0 h-64 w-64 bg-white/5 blur-[100px] rounded-full translate-x-32 -translate-y-32 transition-transform duration-1000 group-hover:scale-150" />
-            
-            <div className="relative z-10 space-y-10">
-               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
-                  <div className="space-y-3">
-                     <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
-                        <h3 className="text-3xl font-black text-white tracking-tighter leading-none">{method.kpi}</h3>
-                     </div>
-                     <p className="text-[10px] font-bold text-slate-500 leading-relaxed max-w-xl italic">
-                        Ce KPI constitue une brique fondamentale du score de performance territoriale.
-                     </p>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-4">
-                     <div className="px-4 py-1.5 rounded-full bg-slate-950/60 border border-white/10 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] shadow-2xl">
-                        INDEX: {method.id}
-                     </div>
-                     <div className="p-2 rounded-xl bg-white/5 border border-white/5 text-slate-700">
-                        <Box size={16} />
-                     </div>
-                  </div>
-               </div>
-
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-amber-400 group/label">
-                           <Cpu size={16} className="group-hover/label:rotate-90 transition-transform" />
-                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Algorithme de Calcul</span>
-                        </div>
-                        <div className="relative group/code">
-                           <div className="absolute inset-0 bg-amber-500/5 blur-xl opacity-0 group-hover/code:opacity-100 transition-opacity" />
-                           <p className="text-sm font-bold text-slate-300 leading-relaxed bg-slate-950/60 p-6 rounded-2xl border border-white/10 font-mono relative z-10 shadow-2xl overflow-x-auto">
-                              {method.formula}
-                           </p>
-                        </div>
-                     </div>
-
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-amber-400">
-                           <Database size={16} />
-                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Infrastructure de Données</span>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 transition-colors hover:bg-amber-500/10">
-                           <p className="text-sm font-black text-white tracking-tight">{method.source}</p>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="space-y-8">
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-amber-400">
-                           <RefreshCw size={16} className="animate-[spin_10s_linear_infinite]" />
-                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Cycle de Synchronisation</span>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 transition-colors hover:bg-amber-500/10">
-                           <p className="text-sm font-black text-white tracking-tight">{method.recalc}</p>
-                        </div>
-                     </div>
-
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-amber-400">
-                           <AlertCircle size={16} />
-                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Analyse des Biais & Limites</span>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 transition-colors hover:bg-amber-500/10">
-                           <p className="text-sm font-bold text-slate-400 leading-relaxed italic opacity-80">
-                              {method.limits}
-                           </p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-               
-               <div className="pt-8 border-t border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Audité par l&apos;équipe scientifique</span>
-                  </div>
-                  <button className="flex items-center gap-2 text-[9px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-[0.2em]">
-                     Consulter le livre blanc
-                     <ArrowRight size={12} />
-                  </button>
-               </div>
-            </div>
-          </motion.article>
-        ))}
-      </div>
+      ) : (
+        <p className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-600">
+          Aucune définition méthodologique n&apos;est disponible pour cette vue.
+        </p>
+      )}
     </section>
   );
 }

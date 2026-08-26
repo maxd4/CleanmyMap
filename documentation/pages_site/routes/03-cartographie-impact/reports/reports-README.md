@@ -84,6 +84,20 @@ n'est pas affiché comme une incertitude scientifique. Aucun objectif chiffré
 statique n'est affiché : le modèle d'objectifs configurables est hors de ce
 lot.
 
+## Référentiel méthodologique KPI
+
+Lorsque l'aperçu Pilotage est disponible, `/reports` conserve les 8 méthodes
+produites par `buildMethods()`. Chaque entrée affiche le nom du KPI et sa
+formule principale; un disclosure accessible expose la source, la fréquence de
+recalcul et les limites. La présentation utilise une grille dense sur desktop
+et une colonne sur mobile.
+
+La version n'est pas inventée dans l'interface. Lorsqu'une version runtime est
+fournie par la méthodologie d'impact, elle reste visible dans la source de la
+méthode concernée; sinon aucune version n'est affichée. Les formules, sources,
+fréquences et limites restent celles du contrat `MethodDefinition` partagé avec
+Pilotage.
+
 ## Performance
 
 Cette page peut être lourde.
