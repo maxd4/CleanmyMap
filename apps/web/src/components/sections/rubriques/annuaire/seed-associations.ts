@@ -1,4 +1,7 @@
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type {
+  AnnuaireEntry,
+  AnnuaireEntrySeedInput,
+} from "@/lib/partners/annuaire-types";
 
 const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> = {
   "asso-1": {
@@ -231,7 +234,7 @@ const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> 
   },
 };
 
-const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
+const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntrySeedInput[] = [
   {
     id: "asso-1",
     name: "Pik Pik Environnement",
@@ -664,7 +667,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
   },
 ];
 
-export const ASSOCIATIONS_ENTRIES: AnnuaireEntry[] = ASSOCIATIONS_BASE_ENTRIES.map(
+export const ASSOCIATIONS_ENTRIES: AnnuaireEntrySeedInput[] = ASSOCIATIONS_BASE_ENTRIES.map(
   (entry) => ({
     ...entry,
     associationProfile: ASSOCIATION_PROFILES[entry.id] ?? entry.associationProfile,

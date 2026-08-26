@@ -164,7 +164,7 @@ export function AnnuaireExplorationView({
            <div className="flex items-center gap-4">
               <Building2 size={18} className="text-slate-500" />
               <h3 className="text-xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">
-                {fr ? "Structures partenaires" : "Partner structures"}
+                {fr ? "Acteurs de l'annuaire" : "Directory actors"}
               </h3>
            </div>
            <div className="rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-violet-300 shadow-2xl">

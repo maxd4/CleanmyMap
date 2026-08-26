@@ -37,6 +37,7 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
     expect(entry).toMatchObject({
       sourceRequestId: "req-123",
       source: "partner_onboarding",
+      provenance: "published_partner",
       publicationStatus: "pending_admin_review",
       name: "Bas Belleville Atelier",
       legalIdentity: "Bas Belleville Atelier SAS",

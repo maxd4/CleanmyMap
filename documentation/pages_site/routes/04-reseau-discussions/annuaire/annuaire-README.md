@@ -37,6 +37,31 @@
 - Cette fiche est la source de vérité canonique pour la page.
 - Compléter après alignement visuel et métier.
 
+## Provenance et niveau de confiance
+
+L'annuaire public présente deux provenances distinctes, portées par le champ
+discriminant `provenance` :
+
+- `editorial_seed` : ressource éditoriale ou curatée versionnée dans le dépôt.
+  Sa présence dans le code ne constitue pas une validation, un partenariat,
+  une activité récente ni une mesure d'impact. Elle est affichée avec un niveau
+  de confiance neutre (`Ressource éditoriale`).
+- `published_partner` : fiche issue du parcours partenaire et de la
+  persistance, exposée publiquement seulement lorsqu'elle est acceptée par le
+  contrat de publication. Ses statuts persistés de vérification et de
+  qualification conservent le comportement de confiance prévu par le produit.
+
+Les seeds sont normalisés à la frontière du registre public : ils ne peuvent
+pas produire `trusted`, `Confirmée`, `Vérifiée`, `Partenaire actif`, une
+structure active ou validée, une activité récente prouvée ou un historique
+d'impact mesuré. Le tri ne leur attribue aucun avantage lié à la confiance ;
+une éventuelle mise en avant reste une sélection éditoriale distincte.
+
+Les fiches issues du seed restent visibles dans l'annuaire comme ressources
+éditoriales. Le nettoyage des affirmations présentes dans les fichiers seed
+eux-mêmes (statuts historiques, récence, historiques d'impact, formulations
+d'activité et raisons de mise en avant) est reporté au LOT 2B.
+
 ## Fichiers associés
 
 - [Présentation détaillée](./annuaire-presentation-detaillee.md)

@@ -105,7 +105,7 @@ export type PartnerOnboardingRequestInput = {
   motivation: string;
 };
 
-export type PartnerTrustState = "trusted" | "pending" | "incomplete";
+export type PartnerTrustState = "trusted" | "pending" | "incomplete" | "editorial";
 
 export function formatParisArrondissementLabel(value: number): string {
   return value === 1 ? "1er" : `${value}e`;

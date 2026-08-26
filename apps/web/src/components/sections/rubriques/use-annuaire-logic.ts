@@ -12,16 +12,19 @@ import {
   type EntityKind, 
   type ZoneFilter 
 } from "./annuaire-filters";
-import { 
-  getEntryTrustState, 
+import {
+  compareAnnuaireEntries,
   isNearbyEntry, 
   type EnrichedAnnuaireEntry 
 } from "./annuaire-helpers";
-import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
+import type {
+  AnnuaireEntry,
+  PublishedAnnuaireEntry,
+} from "@/lib/partners/annuaire-types";
 
 type PublishedDirectoryResponse = {
   status: "ok";
-  items: AnnuaireEntry[];
+  items: PublishedAnnuaireEntry[];
 };
 
 export function useAnnuaireLogic() {
@@ -116,22 +119,7 @@ export function useAnnuaireLogic() {
       result = result.filter(e => e.coveredArrondissements.includes(zoneFilter));
     }
 
-    return result.sort((a, b) => {
-      // Prioritize featured in the main list too if they are not already separated
-      if (a.isFeatured && !b.isFeatured) return -1;
-      if (!a.isFeatured && b.isFeatured) return 1;
-
-      const trustA = getEntryTrustState(a);
-      const trustB = getEntryTrustState(b);
-      if (trustA === "trusted" && trustB !== "trusted") return -1;
-      if (trustA !== "trusted" && trustB === "trusted") return 1;
-      
-      if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
-      if (a.distanceKm !== null) return -1;
-      if (b.distanceKm !== null) return 1;
-      
-      return a.name.localeCompare(b.name);
-    });
+    return result.sort(compareAnnuaireEntries);
   }, [allEntries, searchTerm, filterKind, filterContribution, zoneFilter, targetArrondissement]);
 
   const actorCardsTotalPages = Math.ceil(sortedAndFilteredEntries.length / ACTOR_CARDS_PAGE_SIZE);
