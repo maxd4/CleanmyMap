@@ -247,6 +247,22 @@ Logs:
 - console serveur
 - tableaux de bord Upstash
 
+### État OPS-01 — vérification runtime
+
+Le code conserve Upstash Redis comme rate limiter distribué principal et le
+fallback mémoire comme chemin dégradé documenté. Les variables de production
+requises sont `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN` ; leurs
+valeurs ne doivent jamais apparaître dans un rapport, un log ou la
+documentation.
+
+La clôture OPS-01 par smoke runtime n'est pas considérée comme prouvée dans la
+présente séquence : aucune fenêtre de logs Vercel attribuable à une invocation
+réelle de `verifyRateLimit` n'est consignée ici. Tant que le `PING` Redis, le
+chemin distribué et l'absence des raisons `not_configured` / `unavailable` ne
+sont pas observés sur une même invocation de production, OPS-01 reste
+`PARTIEL / À REVALIDER`. Aucun secret ni aucune configuration n'a été modifié
+pour tenter de fermer ce point.
+
 ### Pinecone
 
 Rôle:
