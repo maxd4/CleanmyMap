@@ -64,7 +64,7 @@ Référence canonique à garder en tête:
 - `cleanmymap.theme` : thème d'interface.
 - `cleanmymap.display_mode` : mode de rendu de l'interface.
 - `cleanmymap.display_mode_pending_sync` : état technique temporaire.
-- `cleanmymap_cookie_consent` : choix de consentement cookies/analytics.
+- `cleanmymap_cookie_consent` : choix de consentement cookies/analytics, accepté ou refusé, avec expiration et nettoyage après 6 mois ; le cookie miroir `cleanmymap_analytics_consent` porte la même décision côté requêtes.
 - `cmm_dashboard_days` : période de comparaison affichée dans l'interface.
 - `cleanmymap.guide.checklist` : checklist locale de la page guide.
 - Filtres, tris, onglets et états de vue purement visuels si un besoin similaire apparaît.

@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : consentement cookies et analytics — LEGAL-01
+- **Terminée** : oui pour le périmètre LEGAL-01
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -41,6 +41,13 @@
 - tableaux légaux
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
+
+## Comportement fonctionnel vérifié
+
+- Le consentement analytique est une décision explicite, acceptée ou refusée, conservée pendant 6 mois.
+- La décision est stockée dans `cleanmymap_cookie_consent` et synchronisée dans `cleanmymap_analytics_consent` ; une décision locale expirée est nettoyée et redevient absente.
+- Le retrait désactive le rendu Vercel Analytics / Speed Insights et arrête une instance PostHog déjà initialisée avant de réautoriser une nouvelle capture.
+- **Gérer mes cookies** est accessible en permanence depuis le footer et rouvre la bannière de choix.
 
 ## Références legacy
 

@@ -19,9 +19,9 @@ Ces documents sont également accessibles directement depuis la plateforme Clean
 
 Ces documents sont régulièrement mis à jour pour refléter les changements dans nos services et la réglementation applicables.
 
-Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, ainsi que les évolutions des fonctionnalités communautaires.
+Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, le cycle de consentement analytics de 6 mois, ainsi que les évolutions des fonctionnalités communautaires.
 
-**Dernière mise à jour :** 1 Juin 2026
+**Dernière mise à jour du périmètre cookies et analytics :** 27 août 2026
 
 ## Licence du projet
 
