@@ -68,6 +68,15 @@ export type GroupJoinProfileRow = {
   handle: string | null;
 };
 
+export type GroupJoinSupabaseErrors = {
+  actionLookup?: string;
+  actionUpdate?: string;
+  participantLookup?: string;
+  participantUpdate?: string;
+  participantInsert?: string;
+  participantCount?: string;
+};
+
 export const groupJoinMocks = {
   authMock,
   requireAuthenticatedAccessMock,
@@ -135,14 +144,15 @@ export function createGroupJoinSupabaseMock(params: {
   action: GroupJoinActionRow;
   participants?: GroupJoinParticipantRow[];
   profiles?: GroupJoinProfileRow[];
+  errors?: GroupJoinSupabaseErrors;
 }) {
   return {
     from: vi.fn((table: string) => {
       if (table === "actions") {
-        return createActionsChain(params.action);
+        return createActionsChain(params.action, params.errors);
       }
       if (table === "action_participants") {
-        return createParticipantsChain(params.participants ?? []);
+        return createParticipantsChain(params.participants ?? [], params.errors);
       }
       if (table === "profiles") {
         return createProfilesChain(params.profiles ?? []);
@@ -171,14 +181,19 @@ export function seedGroupJoinTestDefaults() {
   refreshProgressionProfileMock.mockResolvedValue(undefined);
 }
 
-function createActionsChain(action: GroupJoinActionRow) {
+function createActionsChain(
+  action: GroupJoinActionRow,
+  errors?: GroupJoinSupabaseErrors,
+) {
   const state = {
     notes: action.notes,
+    pendingNotes: undefined as string | null | undefined,
+    requestedId: null as string | null,
   };
 
   type SingleResult<T> = {
     data: T | null;
-    error: null;
+    error: { message: string } | null;
   };
 
   type ActionChain = {
@@ -199,33 +214,57 @@ function createActionsChain(action: GroupJoinActionRow) {
 
   const chain: ActionChain = {
     select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    maybeSingle: vi.fn(async () => ({
-      data: {
-        id: action.id,
-        created_by_clerk_id: action.created_by_clerk_id,
-        status: action.status,
-        notes: state.notes,
-      },
-      error: null,
-    })),
-    update: vi.fn((payload: { notes: string | null }) => {
-      state.notes = payload.notes;
+    eq: vi.fn((field: string, value: string) => {
+      if (field === "id") {
+        state.requestedId = value;
+      }
       return chain;
     }),
-    single: vi.fn(async () => ({
-      data: {
-        id: action.id,
-        notes: state.notes,
-      },
-      error: null,
-    })),
+    maybeSingle: vi.fn(async () =>
+      errors?.actionLookup
+        ? { data: null, error: { message: errors.actionLookup } }
+        : state.requestedId && state.requestedId !== action.id
+          ? { data: null, error: null }
+        : {
+            data: {
+              id: action.id,
+              created_by_clerk_id: action.created_by_clerk_id,
+              status: action.status,
+              notes: state.notes,
+            },
+            error: null,
+          },
+    ),
+    update: vi.fn((payload: { notes: string | null }) => {
+      state.pendingNotes = payload.notes;
+      return chain;
+    }),
+    single: vi.fn(async () => {
+      if (errors?.actionUpdate) {
+        state.pendingNotes = undefined;
+        return { data: null, error: { message: errors.actionUpdate } };
+      }
+      if (state.pendingNotes !== undefined) {
+        state.notes = state.pendingNotes;
+        state.pendingNotes = undefined;
+      }
+      return {
+        data: {
+          id: action.id,
+          notes: state.notes,
+        },
+        error: null,
+      };
+    }),
   };
 
   return chain;
 }
 
-function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
+function createParticipantsChain(
+  participants: GroupJoinParticipantRow[],
+  errors?: GroupJoinSupabaseErrors,
+) {
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
@@ -233,6 +272,7 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
     limitValue: number | null;
     inserting?: GroupJoinParticipantRow;
     pendingUpdate?: Record<string, unknown>;
+    pendingInsert?: GroupJoinParticipantRow;
   } = {
     filters: {},
     inFilters: {},
@@ -284,7 +324,7 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
 
   type SingleResult<T> = {
     data: T | null;
-    error: null;
+    error: { message: string } | null;
   };
 
   type ParticipantChain = {
@@ -305,9 +345,9 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
     }) => ParticipantChain;
     then: (
       resolve: (value: {
-        data: GroupJoinParticipantRow[] | null;
-        count?: number;
-        error: null;
+      data: GroupJoinParticipantRow[] | null;
+      count?: number;
+        error: { message: string } | null;
       }) => void,
       reject: (reason: unknown) => void,
     ) => Promise<void>;
@@ -336,6 +376,9 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
       };
     }),
     maybeSingle: vi.fn(async () => {
+      if (errors?.participantLookup) {
+        return { data: null, error: { message: errors.participantLookup } };
+      }
       const filtered = buildFiltered();
       return {
         data: filtered[0] ? normalizeRow(filtered[0]) : null,
@@ -348,6 +391,10 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
     }),
     single: vi.fn(async () => {
         if (state.pendingUpdate) {
+          if (errors?.participantUpdate) {
+            state.pendingUpdate = undefined;
+            return { data: null, error: { message: errors.participantUpdate } };
+          }
           const original =
             participants.find((row) => {
               const normalized = normalizeRow(row);
@@ -371,6 +418,19 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
         state.pendingUpdate = undefined;
         return {
           data: original ? normalizeRow(original) : null,
+          error: null,
+        };
+      }
+
+      if (state.pendingInsert) {
+        const inserting = state.pendingInsert;
+        state.pendingInsert = undefined;
+        if (errors?.participantInsert) {
+          return { data: null, error: { message: errors.participantInsert } };
+        }
+        participants.push(inserting);
+        return {
+          data: normalizeRow(inserting),
           error: null,
         };
       }
@@ -399,7 +459,7 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
           action_id: values.action_id,
           user_id: values.user_id,
         };
-        participants.push(state.inserting as GroupJoinParticipantRow);
+        state.pendingInsert = state.inserting as GroupJoinParticipantRow;
         return chain;
       },
     ),
@@ -407,19 +467,27 @@ function createParticipantsChain(participants: GroupJoinParticipantRow[]) {
       resolve: (value: {
         data: GroupJoinParticipantRow[] | null;
         count?: number;
-        error: null;
+        error: { message: string } | null;
       }) => void,
       reject: (reason: unknown) => void,
     ) =>
-      Promise.resolve({
-        data: state.countRequested
-          ? null
-          : buildFiltered()
-              .slice(0, state.limitValue ?? undefined)
-              .map((row) => normalizeRow(row)),
-        count: buildFiltered().length,
-        error: null,
-      }).then(resolve, reject),
+      Promise.resolve(
+        errors?.participantCount && state.countRequested
+          ? {
+              data: null,
+              count: undefined,
+              error: { message: errors.participantCount },
+            }
+          : {
+              data: state.countRequested
+                ? null
+                : buildFiltered()
+                    .slice(0, state.limitValue ?? undefined)
+                    .map((row) => normalizeRow(row)),
+              count: buildFiltered().length,
+              error: null,
+            },
+      ).then(resolve, reject),
   };
 
   return chain;

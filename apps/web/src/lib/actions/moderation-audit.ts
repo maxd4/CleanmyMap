@@ -61,7 +61,11 @@ export function buildActionModerationAuditDetails(
     required: isModerationReasonRequired(params.operation),
   });
 
-  if (isModerationReasonRequired(params.operation) && !reason) {
+  if (
+    params.outcome === "success" &&
+    isModerationReasonRequired(params.operation) &&
+    !reason
+  ) {
     throw new Error(
       `A moderation reason of at least 5 characters is required for ${params.operation}.`,
     );
