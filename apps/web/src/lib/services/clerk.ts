@@ -116,6 +116,15 @@ export async function getClerkService() {
       );
 
       return output;
-    }
+    },
+    async resolveEmail(userId: string | null): Promise<string | null> {
+      if (!userId?.trim()) return null;
+      try {
+        const user = await client.users.getUser(userId);
+        return user.primaryEmailAddress?.emailAddress?.trim() || null;
+      } catch {
+        return null;
+      }
+    },
   };
 }

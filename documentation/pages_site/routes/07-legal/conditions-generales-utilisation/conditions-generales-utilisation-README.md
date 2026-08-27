@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : CGU alignées sur la modération et le dispositif DSA-01 de notification électronique
+- **Scope** : CGU alignées sur la modération et les dispositifs DSA-01/02 de notification électronique et de décision tracée
 - **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

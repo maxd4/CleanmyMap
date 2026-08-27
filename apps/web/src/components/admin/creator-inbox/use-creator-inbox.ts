@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource, type CreatorInboxStatus } from "@/lib/community/creator-inbox";
-import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, fetchCreatorInboxItems, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
+import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxItems, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
 import { refreshList } from "./inbox-constants";
 import { getCreatorInboxCopy, PARTNER_CONFIRM_PHRASE, type CreatorInboxLocale } from "./creator-inbox-copy";
+import type {
+  LegalContentReportDecisionAction,
+  LegalContentReportDecisionOrigin,
+} from "@/lib/legal-content-report/legal-content-report";
 
 type UseCreatorInboxParams = {
   initialItems: CreatorInboxItem[];
@@ -251,6 +255,50 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     }
   }
 
+  async function decideLegalReport(params: {
+    item: CreatorInboxItem;
+    action: LegalContentReportDecisionAction;
+    origin: LegalContentReportDecisionOrigin;
+    reason: string;
+    automatedMeansUsed: boolean;
+    legalBasis?: string;
+    termsBasis?: string;
+  }) {
+    const reason = params.reason.trim();
+    if (reason.length < 5) {
+      setErrorMessage(
+        inboxLocale === "fr"
+          ? "Saisissez un motif d'au moins 5 caractères."
+          : "Enter a reason of at least 5 characters.",
+      );
+      return;
+    }
+    setUpdatingKey(`legal_content_report:${params.item.sourceRecordId}:${params.action}`);
+    setErrorMessage(null);
+    try {
+      const payload = await decideLegalContentReport({
+        reportId: params.item.sourceRecordId,
+        action: params.action,
+        origin: params.origin,
+        reason,
+        automatedMeansUsed: params.automatedMeansUsed,
+        legalBasis: params.legalBasis,
+        termsBasis: params.termsBasis,
+      });
+      setItems((current) => refreshList(current, payload.item ?? null));
+      setSuccessMessage(
+        payload.status === "partial"
+          ? "Décision enregistrée, mais une notification a échoué."
+          : copy.messages.actionSuccess,
+      );
+      window.setTimeout(() => setSuccessMessage(null), 2400);
+    } catch (error) {
+      setErrorMessage(resolveMessage(error, copy.messages.actionError));
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
   function actionBusy(source: CreatorInboxSource, id: string, action: string) {
     return updatingKey === `${source}:${id}:${action}`;
   }
@@ -287,5 +335,6 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     rejectPromotion,
     acceptPartner,
     rejectPartner,
+    decideLegalReport,
   };
 }

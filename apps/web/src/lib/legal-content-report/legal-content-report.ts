@@ -11,7 +11,57 @@ export type LegalContentReportCreatorState =
   | "new"
   | "responded"
   | "treated"
-  | "archived";
+  | "archived"
+  | "reviewing"
+  | "no_action"
+  | "content_restricted"
+  | "content_removed"
+  | "closed";
+
+export const LEGAL_CONTENT_REPORT_DECISION_ACTIONS = [
+  "reviewing",
+  "no_action",
+  "content_restricted",
+  "content_removed",
+  "closed",
+] as const;
+
+export type LegalContentReportDecisionAction =
+  (typeof LEGAL_CONTENT_REPORT_DECISION_ACTIONS)[number];
+
+export const LEGAL_CONTENT_REPORT_DECISION_ORIGINS = [
+  "received_notification",
+  "internal_initiative",
+] as const;
+
+export type LegalContentReportDecisionOrigin =
+  (typeof LEGAL_CONTENT_REPORT_DECISION_ORIGINS)[number];
+
+export type LegalContentReportNotificationStatus =
+  | "not_requested"
+  | "sent"
+  | "failed";
+
+export type LegalContentReportDecisionRecord = {
+  id: string;
+  reportId: string;
+  createdAt: string;
+  actorAdminUserId: string;
+  action: LegalContentReportDecisionAction;
+  origin: LegalContentReportDecisionOrigin;
+  reason: string;
+  automatedMeansUsed: boolean;
+  legalBasis: string | null;
+  termsBasis: string | null;
+  contentUrl: string;
+  contentId: string | null;
+  beforeState: Record<string, unknown>;
+  afterState: Record<string, unknown>;
+  auditOperationId: string;
+  notifierNotificationStatus: LegalContentReportNotificationStatus;
+  authorNotificationStatus: LegalContentReportNotificationStatus;
+  notificationError: string | null;
+};
 
 export type LegalContentReportInput = {
   submittedByUserId: string | null;
@@ -30,7 +80,26 @@ export type LegalContentReportRecord = LegalContentReportInput & {
   createdAt: string;
   status: LegalContentReportStatus;
   creatorState: LegalContentReportCreatorState;
+  latestDecision?: LegalContentReportDecisionRecord | null;
 };
+
+export function isLegalContentReportDecisionAction(
+  value: unknown,
+): value is LegalContentReportDecisionAction {
+  return (
+    typeof value === "string" &&
+    (LEGAL_CONTENT_REPORT_DECISION_ACTIONS as readonly string[]).includes(value)
+  );
+}
+
+export function isLegalContentReportDecisionOrigin(
+  value: unknown,
+): value is LegalContentReportDecisionOrigin {
+  return (
+    typeof value === "string" &&
+    (LEGAL_CONTENT_REPORT_DECISION_ORIGINS as readonly string[]).includes(value)
+  );
+}
 
 export function normalizeLegalContentReportUrl(value: unknown): string | null {
   if (typeof value !== "string") {

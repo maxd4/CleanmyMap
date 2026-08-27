@@ -102,6 +102,7 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
                     reason: inbox.actionReasons[item.sourceRecordId] ?? "",
                   })
                 }
+                onLegalDecision={(params) => void inbox.decideLegalReport(params)}
               />
             ))
           ) : (

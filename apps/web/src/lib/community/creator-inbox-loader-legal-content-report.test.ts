@@ -64,6 +64,6 @@ describe("creator inbox loader legal content integration", () => {
     expect(listLegalReportsMock).toHaveBeenCalledWith(200);
     expect(items).toHaveLength(1);
     expect(items[0]?.source).toBe("legal_content_report");
-    expect(items[0]?.canReview).toBe(false);
+    expect(items[0]?.canReview).toBe(true);
   });
 });

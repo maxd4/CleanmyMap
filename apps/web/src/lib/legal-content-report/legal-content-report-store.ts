@@ -1,8 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
+import {
+  allowLocalFileStoreFallback,
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+} from "@/lib/persistence/runtime-store";
 import { deleteSupabaseMirror, upsertSupabaseMirror } from "@/lib/supabase/mirror";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH,
   LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH,
@@ -11,6 +16,7 @@ import {
   type LegalContentReportInput,
   type LegalContentReportRecord,
 } from "./legal-content-report";
+import { getLatestLegalContentReportDecision } from "./legal-content-report-decisions-store";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -53,7 +59,12 @@ function normalizeRecord(value: unknown): LegalContentReportRecord | null {
   const creatorState =
     raw["creatorState"] === "responded" ||
     raw["creatorState"] === "treated" ||
-    raw["creatorState"] === "archived"
+    raw["creatorState"] === "archived" ||
+    raw["creatorState"] === "reviewing" ||
+    raw["creatorState"] === "no_action" ||
+    raw["creatorState"] === "content_restricted" ||
+    raw["creatorState"] === "content_removed" ||
+    raw["creatorState"] === "closed"
       ? raw["creatorState"]
       : "new";
 
@@ -134,6 +145,24 @@ function toSupabaseRow(record: LegalContentReportRecord): Record<string, unknown
   };
 }
 
+function fromSupabaseRow(row: Record<string, unknown>): LegalContentReportRecord | null {
+  return normalizeRecord({
+    id: row.id,
+    createdAt: row.created_at,
+    submittedByUserId: row.submitted_by_user_id,
+    notifierName: row.notifier_name,
+    notifierEmail: row.notifier_email,
+    identityExceptionReason: row.identity_exception_reason,
+    contentUrl: row.content_url,
+    contentType: row.content_type,
+    contentId: row.content_id,
+    allegationReason: row.allegation_reason,
+    goodFaithConfirmed: row.good_faith_confirmed,
+    status: row.status,
+    creatorState: row.creator_state,
+  });
+}
+
 export async function appendLegalContentReport(
   input: LegalContentReportInput,
 ): Promise<LegalContentReportRecord> {
@@ -161,8 +190,73 @@ export async function appendLegalContentReport(
 export async function listLegalContentReports(limit = 200): Promise<LegalContentReportRecord[]> {
   assertPersistenceAvailable("legal_content_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const result = await getSupabaseServerClient()
+        .from("legal_content_reports")
+        .select("id, created_at, submitted_by_user_id, notifier_name, notifier_email, identity_exception_reason, content_url, content_type, content_id, allegation_reason, good_faith_confirmed, status, creator_state")
+        .order("created_at", { ascending: false })
+        .limit(normalizedLimit);
+      if (!result.error) {
+        return Promise.all(
+          (result.data ?? [])
+            .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+            .filter((record): record is LegalContentReportRecord => Boolean(record))
+            .map(async (record) => ({
+              ...record,
+              latestDecision: await getLatestLegalContentReportDecision(record.id),
+            })),
+        );
+      }
+      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
+    } catch (error) {
+      if (!allowLocalFileStoreFallback()) throw error;
+    }
+  }
+
   const store = await readStore();
-  return store.records.slice(0, normalizedLimit);
+  return Promise.all(
+    store.records.slice(0, normalizedLimit).map(async (record) => ({
+      ...record,
+      latestDecision: await getLatestLegalContentReportDecision(record.id),
+    })),
+  );
+}
+
+export async function getLegalContentReportById(
+  reportId: string,
+): Promise<LegalContentReportRecord | null> {
+  assertPersistenceAvailable("legal_content_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const result = await getSupabaseServerClient()
+        .from("legal_content_reports")
+        .select("id, created_at, submitted_by_user_id, notifier_name, notifier_email, identity_exception_reason, content_url, content_type, content_id, allegation_reason, good_faith_confirmed, status, creator_state")
+        .eq("id", reportId)
+        .maybeSingle();
+      if (!result.error) {
+        const record = result.data
+          ? fromSupabaseRow(result.data as Record<string, unknown>)
+          : null;
+        return record
+          ? { ...record, latestDecision: await getLatestLegalContentReportDecision(record.id) }
+          : null;
+      }
+      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
+    } catch (error) {
+      if (!allowLocalFileStoreFallback()) throw error;
+    }
+  }
+
+  const store = await readStore();
+  const record = store.records.find((candidate) => candidate.id === reportId);
+  if (!record) return null;
+  return {
+    ...record,
+    latestDecision: await getLatestLegalContentReportDecision(record.id),
+  };
 }
 
 export async function updateLegalContentReportState(params: {
@@ -179,9 +273,12 @@ export async function updateLegalContentReportState(params: {
     ...current,
     creatorState: params.creatorState,
     status:
-      params.creatorState === "treated"
+      params.creatorState === "treated" ||
+      params.creatorState === "no_action" ||
+      params.creatorState === "content_restricted" ||
+      params.creatorState === "content_removed"
         ? "treated"
-        : params.creatorState === "archived"
+        : params.creatorState === "archived" || params.creatorState === "closed"
           ? "archived"
           : current.status,
   } satisfies LegalContentReportRecord;

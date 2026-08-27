@@ -26,7 +26,8 @@ nos services et la réglementation applicable.
 Les dernières mises à jour couvrent notamment le parrainage, l'alignement des
 cookies de consentement et des préférences, le cycle de consentement analytics
 de 6 mois, les traitements Sentry d'observabilité, les critères de rétention
-réellement implémentés et le dispositif DSA-01 de notification électronique.
+réellement implémentés et les dispositifs DSA-01/02 de notification électronique
+et de décision administrative tracée.
 
 **Dernière mise à jour juridique :** 27 août 2026
 
@@ -44,12 +45,31 @@ directive 2011/93/UE ; la qualification juridique complète n'est pas exigée.
 
 Les notifications sont persistées dans le domaine dédié
 `legal_content_reports`, sans copie brute du contenu tiers. Elles ne sont pas
-lisibles publiquement et apparaissent en lecture seule dans le creator inbox
-existant. L'accusé de réception est envoyé si un email a été fourni après la
-persistance ; une panne d'email ne supprime pas la notification. Le dispositif
-est conçu pour recevoir une notification électronique compatible avec l'article
-16 du DSA, sans présenter CleanMyMap comme un fournisseur d'hébergement au sens
-du DSA.
+lisibles publiquement et apparaissent dans le creator inbox existant, où un
+administrateur autorisé peut enregistrer une décision parmi la mise en examen,
+l'absence d'action, la restriction ou le retrait lorsque la capacité canonique
+du type de contenu existe, ou la clôture. Chaque décision conserve l'acteur
+administrateur, la date, l'origine, le motif, le fondement applicable, l'usage
+éventuel de moyens automatisés, l'URL/identifiant et des états avant/après
+bornés. L'audit ne copie pas l'identité du déclarant ni le contenu tiers.
+
+Après une décision, un accusé de décision est envoyé au déclarant lorsqu'un
+email a été fourni. Une notification destinée à l'auteur n'est envoyée que si
+un email canonique de l'auteur est effectivement connu. Une panne de
+notification est enregistrée comme erreur partielle et ne retire pas la
+décision ni une mutation déjà réalisée. Le dispositif est conçu pour recevoir
+une notification électronique compatible avec l'article 16 du DSA, sans
+présenter CleanMyMap comme un fournisseur d'hébergement au sens du DSA.
+
+## DSA-02 — Décision administrative traçable
+
+Le cycle est séparé en quatre étapes : notification reçue, décision de
+légalité ou de conformité aux CGU, éventuelle mutation du contenu via une
+capacité de modération canonique, puis audit et notifications. Les décisions
+`content_restricted` et `content_removed` sont refusées lorsqu'aucune capacité
+canonique ne permet d'identifier et de muter le contenu. Aucun mécanisme interne
+de recours, médiateur ou organisme extrajudiciaire non implémenté n'est promis ;
+les emails renvoient uniquement au contact réellement disponible.
 
 ## Clôture LEGAL-01 à LEGAL-03
 

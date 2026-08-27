@@ -14,7 +14,12 @@ export type CreatorInboxStatus =
   | "rejected"
   | "responded"
   | "treated"
-  | "archived";
+  | "archived"
+  | "reviewing"
+  | "no_action"
+  | "content_restricted"
+  | "content_removed"
+  | "closed";
 
 export type CreatorInboxItemDetail = {
   label: string;
@@ -51,6 +56,11 @@ const STATUS_LABELS: Record<CreatorInboxStatus, { fr: string; en: string }> = {
   responded: { fr: "Répondu", en: "Responded" },
   treated: { fr: "Traité", en: "Treated" },
   archived: { fr: "Archivé", en: "Archived" },
+  reviewing: { fr: "En examen", en: "Reviewing" },
+  no_action: { fr: "Aucune action", en: "No action" },
+  content_restricted: { fr: "Contenu restreint", en: "Content restricted" },
+  content_removed: { fr: "Contenu retiré", en: "Content removed" },
+  closed: { fr: "Clôturé", en: "Closed" },
 };
 
 const SOURCE_LABELS: Record<CreatorInboxSource, { fr: string; en: string }> = {
@@ -72,7 +82,12 @@ function normalizeCreatorState(
     value === "rejected" ||
     value === "responded" ||
     value === "treated" ||
-    value === "archived"
+    value === "archived" ||
+    value === "reviewing" ||
+    value === "no_action" ||
+    value === "content_restricted" ||
+    value === "content_removed" ||
+    value === "closed"
   ) {
     return value;
   }
@@ -304,12 +319,10 @@ export function buildEventInboxItem(
 export function buildLegalContentReportInboxItem(
   record: LegalContentReportRecord,
 ): CreatorInboxItem {
-  const status: CreatorInboxStatus =
-    record.creatorState === "responded" ||
-    record.creatorState === "treated" ||
-    record.creatorState === "archived"
-      ? record.creatorState
-      : "new";
+  const status: CreatorInboxStatus = normalizeCreatorState(
+    record.creatorState,
+    "new",
+  );
   const sourceLabel = SOURCE_LABELS.legal_content_report.fr;
   return {
     id: `legal-content-report-${record.id}`,
@@ -339,9 +352,16 @@ export function buildLegalContentReportInboxItem(
       { label: "Identifiant technique", value: record.contentId ?? "non communiqué" },
       { label: "Bonne foi confirmée", value: "oui" },
       { label: "Exception d'identité", value: record.identityExceptionReason ? "invoquée" : "non" },
+      ...(record.latestDecision
+        ? [
+            { label: "Dernière décision", value: record.latestDecision.action },
+            { label: "Origine de la décision", value: record.latestDecision.origin },
+            { label: "Moyens automatisés", value: record.latestDecision.automatedMeansUsed ? "oui" : "non" },
+          ]
+        : []),
     ],
     canDelete: false,
-    canReview: false,
+    canReview: true,
     hasReplyTarget: Boolean(record.notifierEmail),
   };
 }

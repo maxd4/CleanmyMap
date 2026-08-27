@@ -20,7 +20,7 @@ describe("creator inbox legal content reports", () => {
     });
 
     expect(item.source).toBe("legal_content_report");
-    expect(item.canReview).toBe(false);
+    expect(item.canReview).toBe(true);
     expect(item.canDelete).toBe(false);
     expect(item.details).toContainEqual({ label: "URL du contenu", value: "https://cleanmymap.fr/content/1" });
     expect(item.context).not.toContain("copie brute du contenu tiers");
