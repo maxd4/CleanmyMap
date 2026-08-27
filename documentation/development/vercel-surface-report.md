@@ -316,7 +316,7 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/lib/actions/query.ts` — Supabase client
 - `apps/web/src/lib/actions/store.ts` — Supabase client
 - `apps/web/src/lib/actions/training.ts` — Supabase client
-- `apps/web/src/lib/actions/unified-source-cache.ts` — Server client
+- `apps/web/src/lib/actions/unified-source/unified-source-cache.ts` — Server client
 - `apps/web/src/lib/actions/unified-source.ts` — Supabase client
 - `apps/web/src/lib/admin/access.ts` — Server client
 - `apps/web/src/lib/admin/moderation/action-moderation-edits.ts` — Server client

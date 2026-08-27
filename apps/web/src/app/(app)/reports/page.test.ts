@@ -182,7 +182,7 @@ vi.mock("@/lib/reports/report-model", () => ({
   computeReportModel: mocks.computeReportModel,
 }));
 
-vi.mock("@/lib/actions/unified-source-cache", () => ({
+vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: mocks.fetchCachedUnifiedActionContracts,
 }));
 

@@ -5,7 +5,7 @@ import type { ActionStatus } from "@/lib/actions/types";
 import {
   fetchUnifiedActionContracts,
   type UnifiedSourceHealth,
-} from "./unified-source";
+} from "../unified-source";
 
 export type CachedUnifiedActionContractsParams = {
   limit: number;

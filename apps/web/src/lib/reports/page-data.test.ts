@@ -17,7 +17,7 @@ vi.mock("@/lib/actions/data-contract", () => ({
   toActionMapItem: mocks.toActionMapItem,
 }));
 
-vi.mock("@/lib/actions/unified-source-cache", () => ({
+vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: mocks.fetchCachedUnifiedActionContracts,
 }));
 
