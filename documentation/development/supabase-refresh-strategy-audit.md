@@ -76,7 +76,7 @@ La règle utile pour la suite est simple:
 
 Fichiers concernés:
 
-- [`apps/web/src/lib/actions/group-participation.ts`](../../apps/web/src/lib/actions/group-participation.ts)
+- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../apps/web/src/lib/actions/participation/group-participation.ts)
 - [`apps/web/src/lib/admin/audit/operation-audit.ts`](../../apps/web/src/lib/admin/audit/operation-audit.ts)
 - [`apps/web/src/lib/auth/sync.ts`](../../apps/web/src/lib/auth/sync.ts)
 - [`apps/web/src/lib/admin/role-management.ts`](../../apps/web/src/lib/admin/role-management.ts)
@@ -116,7 +116,7 @@ Fichiers concernés:
 - [`apps/web/src/app/api/community/events/route.ts`](../../apps/web/src/app/api/community/events/route.ts)
 - [`apps/web/src/app/api/community/events/ops/route.ts`](../../apps/web/src/app/api/community/events/ops/route.ts)
 - [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../apps/web/src/app/api/community/funnel.csv/route.ts)
-- [`apps/web/src/lib/actions/group-participation.ts`](../../apps/web/src/lib/actions/group-participation.ts)
+- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../apps/web/src/lib/actions/participation/group-participation.ts)
 
 Problèmes observés:
 

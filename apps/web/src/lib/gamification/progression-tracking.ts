@@ -8,7 +8,7 @@ import {
   loadUserProgressionStats,
   syncUserActionProgression,
 } from "./progression-data";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
+import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import type { ProgressionStatusPhase } from "./progression-types";
 import {
   toFloat,

@@ -20,11 +20,11 @@ import {
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
-import { loadManualParticipantIdsForAction } from "@/lib/actions/group-participation.helpers";
+import { loadManualParticipantIdsForAction } from "@/lib/actions/participation/group-participation.helpers";
 import {
   loadActionOrganizerIdsForAction,
   syncActionManualParticipants,
-} from "@/lib/actions/organizers";
+} from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 
 export const runtime = "nodejs";

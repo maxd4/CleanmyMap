@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { appendActionMetadataToNotes } from "./metadata";
+import { appendActionMetadataToNotes } from "../metadata";
 import {
   isVisibleInGroupForms,
   loadJoinableActions,

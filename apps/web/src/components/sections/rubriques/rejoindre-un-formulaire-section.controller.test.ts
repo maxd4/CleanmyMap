@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { JoinableActionItem } from "@/lib/actions/group-participation";
+import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { getLocationFilterBucket, isWithinPeriod, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.controller";
 
 function makeItem(

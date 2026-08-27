@@ -22,7 +22,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
-vi.mock("@/lib/actions/organizers", () => ({
+vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 
