@@ -14,6 +14,13 @@ CleanMyMap sépare :
 - services externes ;
 - maintenance.
 
+CleanMyMap reste un seul produit et un seul monorepo avec deux applications
+déployables : `apps/web` pour le web Next.js et `apps/mobile` pour l'application
+mobile Expo / React Native. Elles partagent notamment Clerk, Supabase et les
+contrats métier nécessaires ; aucune n'est une copie ou un sous-projet
+indépendant. `packages/` reste une possibilité future pour du code réellement
+partagé et n'est pas présent dans l'architecture actuelle.
+
 Les versions exactes sont définies dans les manifestes.
 
 ## Vue globale
@@ -68,13 +75,13 @@ flowchart TD
 ```txt
 CleanMyMap/
 ├── apps/
-│   └── web/
-│       ├── src/
-│       │   ├── app/
-│       │   ├── components/
-│       │   └── lib/
-│       └── supabase/
-├── apps/mobile/
+│   ├── web/
+│   │   ├── src/
+│   │   │   ├── app/
+│   │   │   ├── components/
+│   │   │   └── lib/
+│   │   └── supabase/
+│   └── mobile/
 ├── documentation/
 ├── scripts/
 ├── maintenance/
@@ -83,6 +90,12 @@ CleanMyMap/
 ├── .codex/
 └── .agents/
 ```
+
+L'application mobile est issue de l'ancien `companion-app` ; cette mention est
+historique et ne désigne pas un projet séparé. Elle est actuellement gelée
+fonctionnellement. L'identité Clerk et `compute_mission_distance` sont
+finalisés puis gelés ; les sujets encore ouverts sont le background headless,
+`mission_actions`, la validation opérationnelle et la future évolution produit.
 
 ## Application web
 
@@ -126,7 +139,7 @@ Contient notamment :
 
 ## Identité
 
-Clerk est l'identité principale du web.
+Clerk est l'identité principale du web et de l'application mobile.
 
 Fichiers pivots :
 
@@ -145,6 +158,9 @@ Voir :
 documentation/architecture/adr/ADR-001-clerk-auth.md
 documentation/architecture/adr/ADR-004-companion-identity.md
 ```
+
+L'application mobile utilise le même produit et les contrats partagés. Les
+migrations actuelles restent dans `apps/web/supabase/`, conformément à ADR-006.
 
 ## Données
 

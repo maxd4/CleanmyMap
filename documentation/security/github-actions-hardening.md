@@ -46,7 +46,7 @@ d’un lot séparé avec validation mobile.
 npm run check:github-actions
 npm run security:secrets
 npm run test:security
-npm run companion:typecheck
+npm run typecheck -w apps/mobile
 ```
 
 Les alertes CodeQL ouvertes doivent être revalidées par une future analyse

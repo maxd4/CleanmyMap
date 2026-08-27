@@ -47,7 +47,7 @@ Repères actuels :
 - Supabase/PostgreSQL ;
 - Clerk ;
 - Vercel ;
-- Expo/React Native pour l'application compagnon.
+- Expo/React Native pour l'application mobile.
 
 ## Structure du dépôt
 
@@ -160,14 +160,24 @@ npm run test:e2e
 
 Ne jamais exposer une clé `service_role` dans un client web ou mobile.
 
-## Application compagnon
+## Application mobile
 
 `apps/mobile/` assure le suivi GPS natif.
 
-Deux points doivent être stabilisés avant de la considérer comme prête pour la production :
+CleanMyMap est un seul produit et un seul monorepo avec deux applications
+déployables distinctes : `apps/web` pour le web et `apps/mobile` pour le mobile.
+L'application mobile est issue de l'ancien `companion-app`, qui reste un repère
+historique et technique, mais elle ne constitue ni une copie du web ni un
+projet indépendant. Les deux applications partagent notamment Clerk,
+Supabase et les contrats métier nécessaires.
 
-- l'identité doit converger avec l'identité Clerk principale ;
-- la finalisation de distance ne doit pas appeler directement depuis le client une RPC réservée à `service_role`.
+Les contrats d'identité Clerk et de finalisation de distance sont finalisés puis
+gelés. Les limites encore ouvertes sont le renouvellement en background
+headless, `mission_actions`, la validation opérationnelle et la future évolution
+produit avant toute reprise du mobile.
+
+Les identifiants techniques historiques restent inchangés :
+`cleanmymap-companion` et `fr.cleanmymap.companion`.
 
 Voir :
 

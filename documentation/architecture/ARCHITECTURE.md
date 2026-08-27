@@ -10,7 +10,7 @@ apps/web/src/app/               pages et routes API
 apps/web/src/components/        UI
 apps/web/src/lib/               logique métier, auth, services et data
 apps/web/supabase/              configuration et migrations du workspace web
-apps/mobile/                  application mobile GPS
+apps/mobile/                     application mobile Expo / React Native
 scripts/                        garde-fous et maintenance Node
 maintenance/python/             maintenance Python hors runtime principal
 documentation/                  architecture, produit, sécurité et opérations
@@ -57,9 +57,17 @@ Règles :
 - RLS ne doit pas être désactivée pour contourner un défaut ;
 - les routes sensibles vérifient l'accès côté serveur.
 
-## Application compagnon
+## Application mobile
 
-`apps/mobile/` partage le projet Supabase mais son modèle d'identité doit être aligné avec Clerk avant production.
+`apps/mobile/` est la seconde application déployable du même produit CleanMyMap.
+Elle est issue de l'ancien `companion-app`, terme conservé uniquement pour
+l'historique et les identifiants techniques. Elle partage Clerk, Supabase et
+les contrats métier nécessaires avec `apps/web`, sans être une copie ni un
+sous-projet indépendant.
+
+L'identité Clerk et `compute_mission_distance` sont finalisés puis gelés. Les
+limites encore ouvertes sont le background headless, `mission_actions`, la
+validation opérationnelle et la future évolution produit mobile.
 
 Ne pas considérer comme valide un flux où :
 

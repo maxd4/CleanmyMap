@@ -1,16 +1,20 @@
-# companion-app — CleanMyMap GPS Tracker
+# Application mobile — CleanMyMap GPS Tracker
 
 Application mobile Expo/React Native dédiée au suivi GPS des missions terrain.
+
+Elle est issue de l'ancien `companion-app`, terme conservé uniquement pour
+l'historique et les identifiants techniques (`cleanmymap-companion`,
+`fr.cleanmymap.companion`). Elle appartient au même produit et au même
+monorepo que `apps/web` ; elle n'est ni une copie ni un projet indépendant.
 
 ## Statut
 
 **GELÉE — expérimentation long terme, non prête pour la production.**
 
 Les lots 1, 2A et 2B de l'ADR-004 ont raccordé l'identité Clerk, les RLS
-`missions`/`gps_points` et la finalisation propriétaire de distance. Le
-companion est désormais gelé jusqu'à la finalisation et à l'utilisation réelle
-de l'application web. Aucune nouvelle capacité mobile ni publication store ne
-doit être engagée dans l'état actuel.
+`missions`/`gps_points` et la finalisation propriétaire de distance. L'application
+mobile est désormais gelée fonctionnellement. Aucune nouvelle capacité mobile
+ni publication store ne doit être engagée dans l'état actuel.
 
 Références :
 
@@ -51,7 +55,7 @@ Le navigateur web ne doit pas être considéré comme équivalent pour ce besoin
 ```mermaid
 flowchart LR
   WEB[Site Next.js / Clerk] --> SB[(Supabase data plane)]
-  APP[Companion Expo / Clerk] --> SB
+  APP[Application mobile Expo / React Native / Clerk] --> SB
   CLERK[Clerk identity] --> APP
   CLERK --> SB
   APP --> MISSIONS[missions]
@@ -59,11 +63,13 @@ flowchart LR
   APP --> ACTIONS[mission_actions]
 ```
 
-Le site et l'app partagent le même projet Supabase.
+Le site et l'application mobile partagent le même produit, le même projet
+Supabase, Clerk et les contrats métier nécessaires.
 
 ## Identité Clerk
 
-Le web utilise Clerk comme fournisseur d'identité principal.
+Le web et l'application mobile utilisent Clerk comme fournisseur d'identité
+principal du produit.
 
 Le LOT 1 de l'ADR-004 est accepté et implémenté : Clerk est l'unique identité
 utilisateur de l'application mobile. L'interface utilise l'authentification hébergée
@@ -72,16 +78,17 @@ Clerk (Account Portal), avec les méthodes activées dans le compte Clerk.
 Le `ClerkProvider` utilise le cache de token sécurisé Expo. Le client Supabase
 reste uniquement un data plane : il utilise la clé publique anon pour le
 transport et le token de session Clerk courant via `accessToken`. Supabase Auth
-n'est pas le fournisseur d'identité du companion et aucune session Supabase Auth
-n'est persistée ou observée.
+n'est pas le fournisseur d'identité de l'application mobile et aucune session
+Supabase Auth n'est persistée ou observée.
 
 Le chemin d'identité anonyme a été supprimé. Aucun JWT template legacy n'est
 copié dans l'app et aucune clé `service_role` n'est embarquée.
 
 Le contrat RLS lit le `sub` Clerk et le rapproche de `missions.volunteer_id`.
-Il est porté par la migration additive du LOT 2A. Le companion ne doit toujours
-pas être qualifié de prêt pour la production : les capacités `mission_actions`,
-le renouvellement headless et l'usage opérationnel réel restent non validés.
+Il est porté par la migration additive du LOT 2A. L'application mobile ne doit
+toujours pas être qualifiée de prête pour la production : les capacités
+`mission_actions`, le renouvellement headless et l'usage opérationnel réel
+restent non validés.
 
 Voir `ADR-004`.
 
@@ -130,13 +137,12 @@ SUPABASE_SERVICE_ROLE_KEY
 
 dans l'app mobile.
 
-## Installation
+## Installation depuis la racine du monorepo
 
 ```bash
-cd apps/mobile
 npm install
-npm run typecheck
-npm start
+npm run typecheck -w apps/mobile
+npm start -w apps/mobile
 ```
 
 ## GPS background
