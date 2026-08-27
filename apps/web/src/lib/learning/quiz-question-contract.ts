@@ -1,6 +1,7 @@
 import type { QuizAccessTypeId } from "@/components/learn/quiz-access-types";
 import { buildQuizErrorGrid, getQuizErrorFollowUp, type QuizErrorSeverityId, type QuizErrorTypeId } from "../../components/learn/quiz-error-grid.ts";
-import type { QuizQuestionCategory, QuizReviewTarget } from "../../components/learn/quiz-review-targets.ts";
+import type { QuizQuestionCategory } from "./quiz-question-categories.ts";
+import type { QuizReviewTarget } from "../../components/learn/quiz-review-targets.ts";
 import type { QuizReasoningType } from "../../components/learn/quiz-reasoning-types.ts";
 import type { QuizQuestionFormatId } from "../../components/learn/quiz-question-formats.ts";
 import type { QuizTrapLevelId } from "../../components/learn/quiz-trap-levels.ts";

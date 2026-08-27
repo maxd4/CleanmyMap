@@ -4,6 +4,11 @@ import type {
   EnvironmentalImpactInfrastructureServiceKey,
 } from "./types";
 export { buildServiceThresholdAlerts } from "./service-risk-alerts";
+export type {
+  ServiceThresholdAlert,
+  ServiceThresholdAlertSeverity,
+  ServiceThresholdAlertSignal,
+} from "./service-risk-alerts";
 
 export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique";
 
@@ -50,22 +55,6 @@ export type ServiceRiskRow = {
   criticalityPercent: number;
   thresholdProximityPercent: number;
   driverBreakdown: ServiceRiskDriverBreakdown;
-};
-
-export type ServiceThresholdAlertSeverity = "warning" | "critical";
-export type ServiceThresholdAlertSignal = "quotaShare" | "growth" | "trend";
-
-export type ServiceThresholdAlert = {
-  id: string;
-  serviceKey: EnvironmentalImpactInfrastructureServiceKey;
-  serviceLabel: string;
-  severity: ServiceThresholdAlertSeverity;
-  signal: ServiceThresholdAlertSignal;
-  title: string;
-  thresholdLabel: string;
-  details: string;
-  sinceLabel: string;
-  recommendedAction: string;
 };
 
 const DEVELOPMENT_AI_SERVICE_KEYS = new Set<EnvironmentalImpactInfrastructureServiceKey>([

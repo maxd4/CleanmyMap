@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/ui/preferences";
+import type { Parcours } from "@/lib/domain-language";
 import { ADMIN_GODMODE_ROUTE, ADMIN_ROUTE, DASHBOARD_ROUTE, REPORTS_ROUTE, SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
-import type { AppProfile } from "./profiles";
 
 type Localized = Record<Locale, string>;
 
@@ -16,7 +16,7 @@ export type ProfileCtaConfig = {
   additionalActions?: ProfileAction[];
 };
 
-export const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
+export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
   benevole: {
     primaryCTA: {
       href: "/actions/new",

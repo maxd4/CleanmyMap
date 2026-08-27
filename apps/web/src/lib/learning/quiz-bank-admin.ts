@@ -1,6 +1,7 @@
 import type { QuizQuestion } from "@/components/learn/environmental-quiz";
 import { getQuizAccessTypesForQuestion, getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import { QUIZ_CATEGORY_LABELS, type QuizQuestionCategory, getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import { QUIZ_CATEGORY_LABELS, getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 import { auditQuizBank, type QuizQualityFinding } from "@/lib/learning/quiz-quality-audit";
 import { auditQuizSources } from "@/lib/learning/quiz-source-audit";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "@/lib/learning/quiz-source-metadata";

@@ -5,9 +5,9 @@ import {
   QUIZ_REVIEW_TARGETS,
   getQuizReviewTarget,
   getQuizReviewFollowUp,
-  type QuizQuestionCategory,
   type QuizReviewTarget,
 } from "./quiz-review-targets.ts";
+import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 
 export type QuizErrorSeverityId = "low" | "medium" | "high";
 

@@ -9,7 +9,7 @@ import {
   type QuizAccessTypeId,
 } from "@/components/learn/quiz-access-types";
 import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import type { QuizQuestionCategory } from "@/components/learn/quiz-review-targets";
+import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 import {
   getQuizDifficulty,
   getQuizDifficultyIndex,

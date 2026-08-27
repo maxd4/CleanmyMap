@@ -1,9 +1,21 @@
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
 import type { EnvironmentalImpactInfrastructureServiceKey } from "./types";
-import type {
-  ServiceThresholdAlert,
-  ServiceThresholdAlertSignal,
-} from "./service-risk";
+
+export type ServiceThresholdAlertSeverity = "warning" | "critical";
+export type ServiceThresholdAlertSignal = "quotaShare" | "growth" | "trend";
+
+export type ServiceThresholdAlert = {
+  id: string;
+  serviceKey: EnvironmentalImpactInfrastructureServiceKey;
+  serviceLabel: string;
+  severity: ServiceThresholdAlertSeverity;
+  signal: ServiceThresholdAlertSignal;
+  title: string;
+  thresholdLabel: string;
+  details: string;
+  sinceLabel: string;
+  recommendedAction: string;
+};
 
 type ServiceRiskSource = {
   key: EnvironmentalImpactInfrastructureServiceKey;
