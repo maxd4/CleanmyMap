@@ -44,7 +44,7 @@ Points d'appui deja presents :
 - `apps/web/vercel.json`
 - `npm run backend:vercel:env:sync`
 - `npm run metrics:cicd`
-- `scripts/cicd-metrics-report.mjs`
+- `scripts/reports/cicd-metrics-report.mjs`
 
 ## Strategie de reduction progressive
 

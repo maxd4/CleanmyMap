@@ -55,7 +55,7 @@ Priorite consolidation et perennisation
 Messages fermes / absorbes
 
 - Audit initial des ecarts : absorbe et conserve uniquement dans le journal d'impact et les controles du depot.
-- Securite publication : absorbee par `scripts/pre-release-check.mjs` et `documentation/operations/pre-release-security-check.md`.
+- Securite publication : absorbee par `scripts/ci/pre-release-check.mjs` et `documentation/operations/pre-release-security-check.md`.
 - Observabilite admin centralisee initiale : absorbee par l'enrichissement de `/api/services`, l'affichage admin et les tests de contrat.
 - Convergence exports serveur/UI : absorbee par les helpers communs de headers et de messages, avec tests associes.
 - Tracabilite documentaire : absorbee par `documentation/architecture/traceability-matrix.md`.

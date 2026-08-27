@@ -7,7 +7,7 @@ import {
   hasPagesSiteRouteDrift,
   renderPagesSiteRouteDriftMarkdown,
   runPagesSiteRouteDriftAudit,
-} from "../../scripts/check-pages-site-route-drift.mjs";
+} from "../../scripts/checks/check-pages-site-route-drift.mjs";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -29,7 +29,7 @@ if (forbiddenFlag) {
     [
       "generate-canonical-pages.mjs est désormais non destructif.",
       `Le flag ${forbiddenFlag} est refusé pour éviter d'écraser des fiches enrichies manuellement.`,
-      "Utiliser scripts/check-pages-site-route-drift.mjs pour auditer la dérive.",
+      "Utiliser scripts/checks/check-pages-site-route-drift.mjs pour auditer la dérive.",
     ].join("\n"),
   );
   process.exit(2);

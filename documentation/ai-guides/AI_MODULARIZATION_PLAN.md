@@ -9,7 +9,7 @@ Ce document ne maintient plus une liste figée de 15 fichiers héritée d'avril 
 Sources de vérité, dans cet ordre :
 
 1. `documentation/architecture/monolith-split-plan.md`
-2. `scripts/heavy-files-baseline.json`
+2. `scripts/checks/heavy-files-baseline.json`
 3. résultat du scan courant des fichiers lourds
 4. tests, lint et erreurs réellement observés
 
@@ -109,7 +109,7 @@ Minimum attendu :
 - tests ciblés du périmètre ;
 - contrôle TypeScript si types ou exports changent ;
 - lint ciblé si disponible ;
-- `node scripts/check-top-heavy-files.mjs --top=25` pour une cible de modularisation ;
+- `node scripts/checks/check-top-heavy-files.mjs --top=25` pour une cible de modularisation ;
 - build complet uniquement si le périmètre le justifie.
 
 Ne jamais annoncer un test non exécuté.

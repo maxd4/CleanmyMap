@@ -25,9 +25,6 @@ const BACKUP_DIR = 'artifacts/backups/dark-cleanup';
 /** Fichiers cibles à sauvegarder avant toute modification */
 const TARGET_FILES: string[] = [
   'apps/web/src/app/globals.css',
-  'scripts/upgrade-map-ui.js',
-  'scripts/refactor_ui.js',
-  'scripts/fix_forms_and_map.js',
   'apps/web/figma-plugin-cleanmymap-templates/code.js',
 ];
 

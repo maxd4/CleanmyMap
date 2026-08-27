@@ -50,7 +50,7 @@ npm run checks
 Équivalent explicite :
 
 ```bash
-powershell -ExecutionPolicy Bypass -File scripts/run_checks2.ps1 -Scope full
+powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks2.ps1 -Scope full
 ```
 
 La lane maintenance reste disponible à part :
@@ -62,7 +62,7 @@ npm run checks:maintenance
 Ou directement :
 
 ```bash
-powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope full
+powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full
 ```
 
 La validation complète couvre notamment :
@@ -123,7 +123,7 @@ npm run test:e2e
 Ou via le script PowerShell :
 
 ```bash
-powershell -ExecutionPolicy Bypass -File scripts/run_checks2.ps1 -Scope full -IncludeE2E
+powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks2.ps1 -Scope full -IncludeE2E
 ```
 
 Le premier périmètre E2E doit rester limité aux parcours à fort risque :

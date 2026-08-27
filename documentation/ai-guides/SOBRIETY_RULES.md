@@ -21,7 +21,7 @@ Avant toute nouvelle fonctionnalité ou refactorisation majeure assistée par IA
 
 ## 4. Gouvernance et Maintenance
 - **Rôle de Responsable Sobriété** : Un développeur doit être désigné pour chaque lot comme garant de la sobriété. Il a le droit de veto sur le code jugé trop lourd.
-- **Mise à jour des Stats** : Après chaque merge important, lancer le script `node scripts/update-audit-stats.mjs` pour maintenir la transparence de l'audit.
+- **Mise à jour des Stats** : Après chaque merge important, lancer le script `node scripts/reports/update-audit-stats.mjs` pour maintenir la transparence de l'audit.
 - **Mitigation du Lock-in** : Tout nouveau service tiers (API d'IA, Auth, Base de données) doit être isolé derrière un adaptateur pour permettre une migration facile si le fournisseur devient insoutenable.
 
 ## 5. Checklist de Validation (Definition of Done)

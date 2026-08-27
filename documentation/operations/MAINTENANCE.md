@@ -38,7 +38,7 @@ Standard exit codes for `ci_cleanup.py`:
 ## Recommended workflow
 
 - Local quick gate:
-  - `powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed -SkipE2E -SkipEncodingAutofix`
+  - `powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope changed -SkipE2E -SkipEncodingAutofix`
 - Full Python suite when touching `src/*` or `tests/*`:
   - `pytest -q`
 - Web gates when touching `apps/web/*`:
@@ -50,7 +50,7 @@ Standard exit codes for `ci_cleanup.py`:
 
 When local tooling reports `Access denied` or files appear locked:
 - Run:
-  - `powershell -ExecutionPolicy Bypass -File scripts/unblock_repo_access.ps1 -Root .`
+  - `powershell -ExecutionPolicy Bypass -File scripts/dev/unblock_repo_access.ps1 -Root .`
 - The script performs:
   - optional stop of repo-scoped `python/node` processes,
   - read-only attribute cleanup outside `.git`,

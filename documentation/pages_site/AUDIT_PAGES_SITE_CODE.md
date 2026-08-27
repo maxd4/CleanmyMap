@@ -178,7 +178,7 @@ Actions :
 Créer un script dédié, par exemple :
 
 ```txt
-scripts/check-pages-site-route-drift.mjs
+scripts/checks/check-pages-site-route-drift.mjs
 ```
 
 Il doit comparer au minimum :
@@ -984,7 +984,7 @@ ne pas écraser les fiches enrichies
 Créer :
 
 ```txt
-scripts/check-pages-site-route-drift.mjs
+scripts/checks/check-pages-site-route-drift.mjs
 ```
 
 Puis l'ajouter aux checks de gouvernance.
@@ -1079,7 +1079,7 @@ npm run build
 Ajouter le nouveau check :
 
 ```bash
-node scripts/check-pages-site-route-drift.mjs
+node scripts/checks/check-pages-site-route-drift.mjs
 ```
 
 ---

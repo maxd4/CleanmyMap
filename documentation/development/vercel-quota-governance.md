@@ -160,8 +160,8 @@ Les composants chargés en `dynamic(..., { ssr: false })` protègent parfois le 
 
 Le dépôt inclut maintenant un audit statique dédié:
 
-- script: `scripts/audit-vercel-quota.mjs`
-- baseline: `scripts/vercel-quota-audit-baseline.json`
+- script: `scripts/audits/audit-vercel-quota.mjs`
+- baseline: `scripts/audits/vercel-quota-audit-baseline.json`
 - commande: `npm run audit:vercel-quota`
 - audit par route: `documentation/development/vercel-route-cost-audit.md`
 - retour d'expérience: `documentation/development/vercel-anti-regression-playbook.md`
@@ -248,7 +248,7 @@ Quand une fonctionnalité peut attendre un compte connecté ou un rôle privilé
 - `npm run audit:vercel:polling`
 - `npm run report:vercel-surface`
 
-Ces commandes s'appuient sur [`scripts/vercel-audit-core.mjs`](../../scripts/vercel-audit-core.mjs), [`scripts/generate-vercel-surface-report.mjs`](../../scripts/generate-vercel-surface-report.mjs) et la baseline [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json).
+Ces commandes s'appuient sur [`scripts/vercel-audit-core.mjs`](../../scripts/vercel-audit-core.mjs), [`scripts/reports/generate-vercel-surface-report.mjs`](../../scripts/reports/generate-vercel-surface-report.mjs) et la baseline [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json).
 
 Lectures associées:
 - [Stratégie de répartition Vercel, Supabase et navigateur](./vercel-supabase-browser-strategy.md)

@@ -68,7 +68,7 @@ Règle d'exploitation:
 
 ### 1. Script pre-release
 
-Le script `scripts/pre-release-check.mjs` verifie :
+Le script `scripts/ci/pre-release-check.mjs` verifie :
 
 - la presence de fichiers interdits a la racine (`.env.production`, `service-account.json`, `secrets.json`) ;
 - la presence de mots-cles sensibles uniquement dans les fichiers susceptibles d'entrer dans le bundle client (`use client`, pages/layouts/templates client) ;
