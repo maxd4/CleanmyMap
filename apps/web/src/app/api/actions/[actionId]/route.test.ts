@@ -6,11 +6,13 @@ const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 const loadManualParticipantIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
+const canAutoApproveOwnActionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -30,6 +32,7 @@ vi.mock("@/lib/actions/group-participation.helpers", () => ({
 
 vi.mock("@/lib/actions/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
+  syncActionManualParticipants: syncActionManualParticipantsMock,
 }));
 
 vi.mock("@/lib/actions/metadata", () => ({
@@ -39,6 +42,16 @@ vi.mock("@/lib/actions/metadata", () => ({
 vi.mock("@/lib/actions/moderation-audit", () => ({
   appendActionModerationAudit: appendActionModerationAuditMock,
 }));
+
+vi.mock("@/lib/actions/permissions", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/actions/permissions")>(
+    "@/lib/actions/permissions",
+  );
+  return {
+    ...actual,
+    canAutoApproveOwnAction: canAutoApproveOwnActionMock,
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -108,7 +121,20 @@ describe("PATCH /api/actions/:actionId", () => {
     });
     loadManualParticipantIdsForActionMock.mockResolvedValue(["user-manual-1"]);
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
+    syncActionManualParticipantsMock.mockResolvedValue({
+      participants: [],
+      unresolvedTokens: [],
+    });
     appendActionModerationAuditMock.mockResolvedValue(undefined);
+    canAutoApproveOwnActionMock.mockImplementation(
+      (identity: { userId?: string; role?: string } | null, action: { createdByClerkId?: string | null }) =>
+        Boolean(
+          identity?.userId &&
+            action.createdByClerkId &&
+            identity.userId === action.createdByClerkId &&
+            ["admin", "elu", "max"].includes(identity.role ?? ""),
+        ),
+    );
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     unauthorizedJsonResponseMock.mockReturnValue({ status: 401 });
     handleApiErrorMock.mockResolvedValue(new Response("error", { status: 500 }));
@@ -304,6 +330,313 @@ describe("PATCH /api/actions/:actionId", () => {
         operation: "edit_action",
         outcome: "success",
       }),
+    );
+  });
+
+  it("records one allowlisted before/after snapshot for an admin override", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: { actionTitle: "Ancienne préparation" },
+      created_by_clerk_id: "user-test-2",
+      actor_name: "Ancien nom",
+      location_label: "Ancien lieu",
+      latitude: 48.1,
+      longitude: 2.3,
+      waste_kg: 1,
+      cigarette_butts: 2,
+      volunteers_count: 3,
+      duration_minutes: 30,
+      notes: "Anciennes notes privées",
+    });
+    extractActionMetadataFromNotesMock.mockReturnValueOnce({
+      cleanNotes: "Anciennes notes privées",
+      associationName: "Association interne",
+      groupJoinEnabled: false,
+      departureLocationLabel: null,
+      arrivalLocationLabel: null,
+      routeStyle: "souple",
+      routeAdjustmentMessage: null,
+      placeType: "plage",
+      submissionMode: "complete",
+      wasteBreakdown: { megotsKg: 1, triQuality: "faible" },
+      photos: [
+        {
+          id: "photo-old",
+          name: "ancienne-photo.jpg",
+          mimeType: "image/jpeg",
+          size: 100,
+          width: 10,
+          height: 10,
+        },
+      ],
+      visionEstimate: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          actorName: "Nouveau nom",
+          locationLabel: "Nouveau lieu",
+          latitude: 48.2,
+          longitude: 2.4,
+          wasteKg: 2,
+          cigaretteButts: 4,
+          volunteersCount: 5,
+          durationMinutes: 45,
+          notes: "Nouvelles notes privées",
+          preparationData: { actionTitle: "Nouvelle préparation" },
+          actionPhase: "post_action_complete",
+          groupJoinEnabled: true,
+          participantAccounts: ["participant-2"],
+          wasteBreakdown: { megotsKg: 2, triQuality: "elevee" },
+          photos: [
+            {
+              id: "photo-new",
+              name: "nouvelle-photo.jpg",
+              mimeType: "image/jpeg",
+              size: 200,
+              width: 20,
+              height: 20,
+              dataUrl: "data:image/jpeg;base64,abc",
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    const audit = appendActionModerationAuditMock.mock.calls[0]?.[0] as {
+      actorUserId: string;
+      targetActionId: string;
+      operation: string;
+      targetUserId: string;
+      previousValue: Record<string, unknown>;
+      newValue: Record<string, unknown>;
+    };
+    const snapshotKeys = [
+      "status",
+      "actionPhase",
+      "groupJoinEnabled",
+      "wasteKg",
+      "cigaretteButts",
+      "volunteersCount",
+      "durationMinutes",
+      "actorNameChanged",
+      "locationChanged",
+      "coordinatesChanged",
+      "notesChanged",
+      "preparationDataChanged",
+      "participantsChanged",
+      "wasteBreakdownChanged",
+      "photosChanged",
+    ];
+    expect(audit).toMatchObject({
+      actorUserId: "user-test-1",
+      targetActionId: "action-test-1",
+      operation: "edit_action",
+      targetUserId: "user-test-2",
+    });
+    expect(Object.keys(audit.previousValue)).toEqual(snapshotKeys);
+    expect(Object.keys(audit.newValue)).toEqual(snapshotKeys);
+    expect(audit.previousValue).toEqual({
+      status: "pending",
+      actionPhase: "pre_action",
+      groupJoinEnabled: false,
+      wasteKg: 1,
+      cigaretteButts: 2,
+      volunteersCount: 3,
+      durationMinutes: 30,
+      actorNameChanged: true,
+      locationChanged: true,
+      coordinatesChanged: true,
+      notesChanged: true,
+      preparationDataChanged: true,
+      participantsChanged: true,
+      wasteBreakdownChanged: true,
+      photosChanged: true,
+    });
+    expect(audit.newValue).toEqual({
+      status: "pending",
+      actionPhase: "post_action_complete",
+      groupJoinEnabled: true,
+      wasteKg: 2,
+      cigaretteButts: 4,
+      volunteersCount: 5,
+      durationMinutes: 45,
+      actorNameChanged: true,
+      locationChanged: true,
+      coordinatesChanged: true,
+      notesChanged: true,
+      preparationDataChanged: true,
+      participantsChanged: true,
+      wasteBreakdownChanged: true,
+      photosChanged: true,
+    });
+    const serializedAudit = JSON.stringify(audit);
+    expect(serializedAudit).not.toContain("Ancien nom");
+    expect(serializedAudit).not.toContain("Nouveau nom");
+    expect(serializedAudit).not.toContain("Ancien lieu");
+    expect(serializedAudit).not.toContain("Nouveau lieu");
+    expect(serializedAudit).not.toContain("notes privées");
+    expect(serializedAudit).not.toContain("photo-old");
+    expect(serializedAudit).not.toContain("photo-new");
+    expect(serializedAudit).not.toContain("participant-2");
+  });
+
+  it("audits an admin action update failure with partialMutation false", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-2",
+      actor_name: "Nom interne",
+      location_label: "Lieu interne",
+      latitude: null,
+      longitude: null,
+      waste_kg: 1,
+      cigarette_butts: 0,
+      volunteers_count: 1,
+      duration_minutes: 30,
+      notes: null,
+    });
+    updateMock.mockReturnValueOnce({
+      eq: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: "raw database detail" },
+          }),
+        }),
+      }),
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ locationLabel: "Nouveau lieu" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetUserId: "user-test-2",
+        details: { stage: "action_update", partialMutation: false },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "raw database detail",
+    );
+  });
+
+  it("audits participant sync failures after the action update with partialMutation true", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-2",
+      actor_name: "Nom interne",
+      location_label: "Lieu interne",
+      latitude: null,
+      longitude: null,
+      waste_kg: 1,
+      cigarette_butts: 0,
+      volunteers_count: 1,
+      duration_minutes: 30,
+      notes: null,
+    });
+    syncActionManualParticipantsMock.mockRejectedValueOnce(
+      new Error("raw participant sync detail"),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          locationLabel: "Nouveau lieu",
+          participantAccounts: ["participant-2"],
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetUserId: "user-test-2",
+        details: { stage: "participant_sync", partialMutation: true },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "raw participant sync detail",
+    );
+  });
+
+  it("audits post-update failures after the action update with partialMutation true", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-2",
+      actor_name: "Nom interne",
+      location_label: "Lieu interne",
+      latitude: null,
+      longitude: null,
+      waste_kg: 1,
+      cigarette_butts: 0,
+      volunteers_count: 1,
+      duration_minutes: 30,
+      notes: null,
+    });
+    canAutoApproveOwnActionMock.mockReturnValue(true);
+    recordRepollutionPredictionEvaluationForActionMock.mockRejectedValueOnce(
+      new Error("raw post-update detail"),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ actionPhase: "post_action_complete" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetUserId: "user-test-2",
+        details: { stage: "post_update", partialMutation: true },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "raw post-update detail",
     );
   });
 });

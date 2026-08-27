@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { parseDrawingFromNotes } from "@/lib/actions/drawing";
 import {
@@ -20,12 +21,183 @@ import {
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadManualParticipantIdsForAction } from "@/lib/actions/group-participation.helpers";
-import { loadActionOrganizerIdsForAction, syncActionManualParticipants } from "@/lib/actions/organizers";
+import {
+  loadActionOrganizerIdsForAction,
+  syncActionManualParticipants,
+} from "@/lib/actions/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
+
+type ActionUpdateInput = z.infer<typeof updateActionSchema>;
+type ActionSnapshotSource = NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
+type ActionMetadata = ReturnType<typeof extractActionMetadataFromNotes>;
+
+type ActionAuditSnapshot = {
+  status: ActionSnapshotSource["status"];
+  actionPhase: ActionSnapshotSource["action_phase"];
+  groupJoinEnabled: boolean;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
+  volunteersCount: number | null;
+  durationMinutes: number | null;
+  actorNameChanged: boolean;
+  locationChanged: boolean;
+  coordinatesChanged: boolean;
+  notesChanged: boolean;
+  preparationDataChanged: boolean;
+  participantsChanged: boolean;
+  wasteBreakdownChanged: boolean;
+  photosChanged: boolean;
+};
+
+type AdminOverrideErrorStage =
+  | "action_update"
+  | "post_update"
+  | "participant_sync";
+
+function normalizeComparableValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeComparableValue);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, nestedValue]) => [key, normalizeComparableValue(nestedValue)]),
+    );
+  }
+  return value;
+}
+
+function valuesAreEqual(left: unknown, right: unknown): boolean {
+  return (
+    JSON.stringify(normalizeComparableValue(left)) ===
+    JSON.stringify(normalizeComparableValue(right))
+  );
+}
+
+function projectPhotoMetadata(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((photo) => {
+    const item = photo as {
+      id?: unknown;
+      name?: unknown;
+      mimeType?: unknown;
+      size?: unknown;
+      width?: unknown;
+      height?: unknown;
+    };
+    return {
+      id: item.id ?? null,
+      name: item.name ?? null,
+      mimeType: item.mimeType ?? null,
+      size: item.size ?? null,
+      width: item.width ?? null,
+      height: item.height ?? null,
+    };
+  });
+}
+
+function buildActionAuditSnapshots(
+  current: ActionSnapshotSource,
+  body: ActionUpdateInput,
+  currentMetadata: ActionMetadata,
+  permissionIdentity: Parameters<typeof canAutoApproveOwnAction>[0],
+): { previousValue: ActionAuditSnapshot; newValue: ActionAuditSnapshot } {
+  const currentPreparationData = current.preparation_data ?? {};
+  const nextPreparationData =
+    body.preparationData === undefined
+      ? currentPreparationData
+      : body.preparationData ?? {};
+  const nextActionPhase = body.actionPhase ?? current.action_phase;
+  let nextStatus = current.status;
+  if (body.actionPhase === "pre_action") {
+    nextStatus = "pending";
+  } else if (body.actionPhase === "post_action_complete") {
+    nextStatus = canAutoApproveOwnAction(permissionIdentity, {
+      createdByClerkId: current.created_by_clerk_id,
+    })
+      ? "approved"
+      : "pending";
+  }
+
+  const nextActorName =
+    body.actorName === undefined
+      ? current.actor_name ?? null
+      : body.actorName.trim() || null;
+  const nextLocation =
+    body.locationLabel === undefined
+      ? current.location_label
+      : body.locationLabel.trim();
+  const nextLatitude = body.latitude ?? current.latitude;
+  const nextLongitude = body.longitude ?? current.longitude;
+  const nextNotes =
+    body.notes === undefined ? currentMetadata.cleanNotes : body.notes.trim() || null;
+  const nextWasteBreakdown =
+    body.wasteBreakdown === undefined
+      ? currentMetadata.wasteBreakdown
+      : body.wasteBreakdown;
+  const nextPhotos =
+    body.photos === undefined ? currentMetadata.photos : body.photos;
+
+  const flags = {
+    actorNameChanged:
+      body.actorName !== undefined && nextActorName !== (current.actor_name ?? null),
+    locationChanged:
+      body.locationLabel !== undefined && nextLocation !== current.location_label,
+    coordinatesChanged:
+      body.latitude !== undefined || body.longitude !== undefined
+        ? nextLatitude !== current.latitude || nextLongitude !== current.longitude
+        : false,
+    notesChanged:
+      body.notes !== undefined && nextNotes !== currentMetadata.cleanNotes,
+    preparationDataChanged:
+      body.preparationData !== undefined &&
+      !valuesAreEqual(nextPreparationData, currentPreparationData),
+    participantsChanged: body.participantAccounts !== undefined,
+    wasteBreakdownChanged:
+      body.wasteBreakdown !== undefined &&
+      !valuesAreEqual(nextWasteBreakdown, currentMetadata.wasteBreakdown),
+    photosChanged:
+      body.photos !== undefined &&
+      !valuesAreEqual(
+        projectPhotoMetadata(nextPhotos),
+        projectPhotoMetadata(currentMetadata.photos),
+      ),
+  };
+
+  return {
+    previousValue: {
+      status: current.status,
+      actionPhase: current.action_phase,
+      groupJoinEnabled: currentMetadata.groupJoinEnabled,
+      wasteKg: current.waste_kg ?? null,
+      cigaretteButts: current.cigarette_butts ?? null,
+      volunteersCount: current.volunteers_count ?? null,
+      durationMinutes: current.duration_minutes ?? null,
+      ...flags,
+    },
+    newValue: {
+      status: nextStatus,
+      actionPhase: nextActionPhase,
+      groupJoinEnabled:
+        body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
+      wasteKg: body.wasteKg ?? current.waste_kg ?? null,
+      cigaretteButts: body.cigaretteButts ?? current.cigarette_butts ?? null,
+      volunteersCount:
+        body.volunteersCount ?? current.volunteers_count ?? null,
+      durationMinutes:
+        body.durationMinutes ?? current.duration_minutes ?? null,
+      ...flags,
+    },
+  };
+}
 
 function buildActionEditorPayload(
   row: Awaited<ReturnType<typeof loadActionById>>,
@@ -166,6 +338,23 @@ export async function PATCH(
     return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
 
+  let shouldAuditModeration = false;
+  let adminAuditActorUserId = userId;
+  let adminAuditTargetUserId: string | null = null;
+  let auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null = null;
+  let actionWriteSucceeded = false;
+  let adminAuditRecorded = false;
+  let adminErrorStage: AdminOverrideErrorStage = "action_update";
+  const appendAdminAuditOnce = async (
+    params: Parameters<typeof appendActionModerationAudit>[0],
+  ): Promise<void> => {
+    if (adminAuditRecorded) {
+      return;
+    }
+    adminAuditRecorded = true;
+    await appendActionModerationAudit(params);
+  };
+
   try {
     const supabase = getSupabaseServerClient();
     const current = await loadActionById(supabase, trimmedActionId);
@@ -201,6 +390,20 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
     const body = parsed.data;
     const currentMetadata = extractActionMetadataFromNotes(current.notes);
+    adminAuditActorUserId = identity?.userId ?? userId;
+    adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
+    shouldAuditModeration =
+      Boolean(identity) &&
+      userId !== current.created_by_clerk_id &&
+      canUseAdminOverride(identity);
+    auditSnapshots = shouldAuditModeration
+      ? buildActionAuditSnapshots(
+          current,
+          body,
+          currentMetadata,
+          permissionIdentity,
+        )
+      : null;
     const shouldRefreshNotes = Object.entries(body).some(
       ([key, value]) =>
         key !== "actionPhase" &&
@@ -292,6 +495,7 @@ export async function PATCH(
     }
 
     const hasActionUpdates = Object.keys(updateData).length > 0;
+    adminErrorStage = "action_update";
     const updateResult = hasActionUpdates
       ? await supabase
           .from("actions")
@@ -302,9 +506,11 @@ export async function PATCH(
       : { data: { id: trimmedActionId }, error: null };
 
     if (updateResult.error) {
-      throw new Error(updateResult.error.message);
+      throw new Error("Action update failed");
     }
+    actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
 
+    adminErrorStage = "post_update";
     if (updateData["status"] === "approved") {
       await recordRepollutionPredictionEvaluationForAction(
         supabase,
@@ -313,6 +519,7 @@ export async function PATCH(
     }
 
     if (body.participantAccounts !== undefined) {
+      adminErrorStage = "participant_sync";
       const organizerIds = await loadActionOrganizerIdsForAction(
         supabase,
         trimmedActionId,
@@ -341,23 +548,17 @@ export async function PATCH(
       });
     }
 
-    const actorUserId = identity?.userId ?? userId;
-    const shouldAuditModeration =
-      Boolean(identity) &&
-      userId !== current.created_by_clerk_id &&
-      canUseAdminOverride(identity);
-
-    if (shouldAuditModeration && identity) {
-      await appendActionModerationAudit({
+    if (shouldAuditModeration && auditSnapshots) {
+      adminErrorStage = "post_update";
+      await appendAdminAuditOnce({
         operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
-        actorUserId,
+        actorUserId: adminAuditActorUserId,
         targetActionId: trimmedActionId,
         operation: "edit_action",
         outcome: "success",
-        details: {
-          editedFields: Object.keys(body).filter((key) => body[key as keyof typeof body] !== undefined),
-          participantAccountsChanged: body.participantAccounts !== undefined,
-        },
+        targetUserId: adminAuditTargetUserId,
+        previousValue: auditSnapshots.previousValue,
+        newValue: auditSnapshots.newValue,
       });
     }
 
@@ -367,6 +568,25 @@ export async function PATCH(
       actionPhase: body.actionPhase ?? current["action_phase"],
     });
   } catch (error) {
+    if (
+      shouldAuditModeration &&
+      auditSnapshots
+    ) {
+      await appendAdminAuditOnce({
+        operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
+        actorUserId: adminAuditActorUserId,
+        targetActionId: trimmedActionId,
+        operation: "edit_action",
+        outcome: "error",
+        targetUserId: adminAuditTargetUserId,
+        previousValue: auditSnapshots.previousValue,
+        newValue: auditSnapshots.newValue,
+        details: {
+          stage: adminErrorStage,
+          partialMutation: actionWriteSucceeded,
+        },
+      });
+    }
     return handleApiError(error, "PATCH /api/actions/:actionId");
   }
 }
