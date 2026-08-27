@@ -210,6 +210,27 @@ function buildSupabaseMock(options: {
     insert: vi.fn(() => insertBuilder),
   };
 
+  const serviceRpc = vi.fn((functionName: string) => {
+    if (functionName !== "get_my_chat_poll_vote_summaries") {
+      throw new Error(`Unexpected service RPC: ${functionName}`);
+    }
+
+    return Promise.resolve({
+      data: (options.pollMessage?.poll_options ?? []).map((option) => ({
+        message_id: options.pollMessage?.id,
+        option_id: option.id,
+        vote_count: 0,
+        total_votes: 0,
+        selected_option_id: null,
+      })),
+      error: null,
+    });
+  });
+
+  const serviceSupabase = {
+    rpc: serviceRpc,
+  };
+
   const supabase = {
     from: vi.fn((table: string) => {
       if (table === "profiles") {
@@ -223,19 +244,7 @@ function buildSupabaseMock(options: {
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
-  rpc: vi.fn((functionName: string) => {
-      if (functionName === "get_my_chat_poll_vote_summaries") {
-        return Promise.resolve({
-          data: (options.pollMessage?.poll_options ?? []).map((option) => ({
-            message_id: options.pollMessage?.id,
-            option_id: option.id,
-            vote_count: 0,
-            total_votes: 0,
-            selected_option_id: null,
-          })),
-          error: null,
-        });
-      }
+    rpc: vi.fn((functionName: string) => {
       if (functionName !== "create_chat_poll_with_options") {
         throw new Error(`Unexpected RPC: ${functionName}`);
       }
@@ -254,6 +263,8 @@ function buildSupabaseMock(options: {
     appMessagesTable,
     insertBuilder,
     insertResult,
+    serviceSupabase,
+    serviceRpc,
   };
 }
 
@@ -996,7 +1007,7 @@ describe("GET /api/chat and POST /api/chat", () => {
       pollMessage,
     });
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue({ service: true });
+    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
     const { GET, POST } = await import("./route");
     const response = await POST(
@@ -1020,6 +1031,13 @@ describe("GET /api/chat and POST /api/chat", () => {
         p_content: "Quel créneau préférez-vous ?",
         p_topic_id: "coordination_secteur",
         p_option_labels: ["Samedi", "Dimanche"],
+      },
+    );
+    expect(supabaseMock.serviceRpc).toHaveBeenCalledWith(
+      "get_my_chat_poll_vote_summaries",
+      {
+        p_message_ids: ["poll-1"],
+        p_user_id: "user-1",
       },
     );
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();

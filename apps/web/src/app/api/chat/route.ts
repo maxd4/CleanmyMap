@@ -225,8 +225,34 @@ async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<
   return (data ?? []) as ChatMessageRow[];
 }
 
+async function loadVisiblePollIds(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  candidateIds: string[],
+): Promise<string[]> {
+  if (candidateIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("app_messages")
+    .select("id")
+    .in("id", candidateIds)
+    .eq("message_kind", "poll")
+    .eq("channel_type", "community");
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? [])
+    .map((row) => row.id)
+    .filter((id): id is string => typeof id === "string");
+}
+
 async function enrichPollVoteSummaries(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
   rows: ChatMessageRow[],
 ): Promise<ChatMessageRow[]> {
   const normalizedRows = rows.map(normalizeChatMessageRow);
@@ -238,8 +264,14 @@ async function enrichPollVoteSummaries(
     return normalizedRows;
   }
 
-  const { data, error } = await supabase.rpc("get_my_chat_poll_vote_summaries", {
-    p_message_ids: pollIds,
+  const visiblePollIds = await loadVisiblePollIds(supabase, pollIds);
+  if (visiblePollIds.length === 0) {
+    return normalizedRows;
+  }
+
+  const { data, error } = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
+    p_message_ids: visiblePollIds,
+    p_user_id: userId,
   });
   if (error) {
     throw error;
@@ -318,6 +350,8 @@ async function loadRelatedCommunityEvent(
 
 async function loadMessageById(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
   messageId: string,
 ): Promise<ChatMessageRow | null> {
   const { data, error } = await supabase
@@ -334,7 +368,12 @@ async function loadMessageById(
     return null;
   }
 
-  const [message] = await enrichPollVoteSummaries(supabase, [data as ChatMessageRow]);
+  const [message] = await enrichPollVoteSummaries(
+    supabase,
+    serviceSupabase,
+    userId,
+    [data as ChatMessageRow],
+  );
   return message ?? null;
 }
 
@@ -627,7 +666,7 @@ export async function POST(request: Request) {
         );
       }
 
-      message = await loadMessageById(supabase, pollMessageId);
+      message = await loadMessageById(supabase, serviceSupabase, userId, pollMessageId);
       if (!message) {
         return handleApiError(
           new Error("Le sondage créé est introuvable."),
@@ -912,6 +951,8 @@ export async function GET(request: Request) {
       pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
     const messages = await enrichPollVoteSummaries(
       supabase,
+      getSupabaseServerClient(),
+      userId,
       sortChatMessages(pageRows),
     );
     const previousCursor = messages[0]

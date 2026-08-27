@@ -5,6 +5,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { normalizeChatPollVoteSummaryRows } from "@/lib/chat/poll-votes";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 const votePayloadSchema = z.object({
@@ -63,12 +64,14 @@ async function loadVisiblePoll(
 }
 
 async function loadPollVoteResponse(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  serviceSupabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
   messageId: string,
   options: PollOptionRow[],
 ): Promise<PollVoteResponse> {
-  const { data, error } = await supabase.rpc("get_my_chat_poll_vote_summaries", {
+  const { data, error } = await serviceSupabase.rpc("get_my_chat_poll_vote_summaries", {
     p_message_ids: [messageId],
+    p_user_id: userId,
   });
   if (error) {
     throw error;
@@ -162,7 +165,12 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
     }
 
     return NextResponse.json(
-      await loadPollVoteResponse(supabase, messageId, poll.options),
+      await loadPollVoteResponse(
+        getSupabaseServerClient(),
+        userId,
+        messageId,
+        poll.options,
+      ),
     );
   } catch (error) {
     return handleApiError(error, "PUT /api/chat/polls/[messageId]/vote");
@@ -216,7 +224,12 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
     }
 
     return NextResponse.json(
-      await loadPollVoteResponse(supabase, messageId, poll.options),
+      await loadPollVoteResponse(
+        getSupabaseServerClient(),
+        userId,
+        messageId,
+        poll.options,
+      ),
     );
   } catch (error) {
     return handleApiError(error, "DELETE /api/chat/polls/[messageId]/vote");
