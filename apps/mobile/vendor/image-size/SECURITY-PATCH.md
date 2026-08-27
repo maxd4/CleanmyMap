@@ -14,4 +14,4 @@ Advisories covered:
 - `GHSA-5p2g-fcmc-qvqq` / `CVE-2025-71329`;
 - `GHSA-w3rx-r6r6-pgpr` / `CVE-2025-71330`.
 
-The override in `companion-app/package.json` makes every Metro resolution use this local backport. Remove the vendor and override only after an actual upstream `image-size` release containing both fixes is available and verified.
+The override in `apps/mobile/package.json` makes every Metro resolution use this local backport. Remove the vendor and override only after an actual upstream `image-size` release containing both fixes is available and verified.

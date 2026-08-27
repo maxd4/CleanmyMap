@@ -44,7 +44,7 @@ export const trackedCanonicalRootDirectories = [
   "supabase",
 ];
 
-export const trackedTransitionalRootDirectories = ["companion-app"];
+export const trackedTransitionalRootDirectories = [];
 
 export const localOnlyRootDirectories = [
   "artifacts",

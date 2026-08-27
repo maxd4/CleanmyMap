@@ -6,7 +6,7 @@ const repoRoot = resolve(process.cwd());
 const scriptName = "report-local-dev-processes.mjs";
 const patterns = [
   "cleanmymap-main",
-  "companion-app",
+  "apps/mobile",
   "dev-with-fallback-port",
   "next dev",
   "expo",
@@ -28,7 +28,7 @@ function escapeForSingleQuotes(value) {
 
 function classifyProcess(commandLine, name) {
   const haystack = `${name ?? ""} ${commandLine ?? ""}`.toLowerCase();
-  if (haystack.includes("companion-app") || haystack.includes("expo") || haystack.includes("react-native") || haystack.includes("metro")) {
+  if (haystack.includes("apps/mobile") || haystack.includes("expo") || haystack.includes("react-native") || haystack.includes("metro")) {
     return "companion";
   }
   if (haystack.includes("dev-with-fallback-port") || haystack.includes("next dev")) {

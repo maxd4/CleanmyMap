@@ -33,10 +33,10 @@ const CATALOG = [
     note: "Dépendances racine du monorepo.",
   },
   {
-    path: "companion-app/node_modules",
+    path: "apps/mobile/node_modules",
     category: "PRESERVE_WARM",
-    regenerate: "npm install --prefix companion-app",
-    note: "Dépendances du companion, à conserver même si isolées du flux quotidien.",
+    regenerate: "npm install -w apps/mobile",
+    note: "Dépendances du workspace mobile, à conserver même si isolées du flux quotidien.",
   },
   {
     path: "artifacts",

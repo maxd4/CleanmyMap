@@ -22,7 +22,7 @@ npm install
 Pour l'application compagnon :
 
 ```bash
-npm install --prefix companion-app
+npm install -w apps/mobile
 ```
 
 Pour les tests E2E Playwright :
@@ -200,7 +200,7 @@ Ne jamais fabriquer manuellement un fichier interne `.next`.
 Minimum obligatoire :
 
 ```bash
-npm --prefix companion-app run typecheck
+npm run typecheck -w apps/mobile
 ```
 
 Avant production mobile, ajouter des tests ciblés couvrant :

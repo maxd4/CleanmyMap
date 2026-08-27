@@ -17,7 +17,7 @@ Il classe les dossiers lourds avant tout nettoyage automatique et distingue ce q
 | `apps/web/.next-sourcemap-test` | `1773.47 MB` | Non | Aucun producteur direct prouvé dans le dépôt; artefact Next lié aux tests source maps | Non prouvée dans le dépôt | Non démontré | Non démontré | Non, tant que la régénération n’est pas prouvée | `UNKNOWN_KEEP` |
 | `apps/web/node_modules` | `2.38 MB` | Non | `npm install` dans `apps/web` | `npm install` dans `apps/web` | Oui | Oui, pour le dev web | Non | `PRESERVE_WARM` |
 | `node_modules` | `771.63 MB` | Non | `npm install` à la racine | `npm install` à la racine | Oui | Oui, pour le workspace racine | Non | `PRESERVE_WARM` |
-| `companion-app/node_modules` | `257.96 MB` | Non | `npm install` dans `companion-app` | `npm install` dans `companion-app` | Oui pour le companion | Oui, si le companion est travaillé | Non | `PRESERVE_WARM` |
+| `apps/mobile/node_modules` | `257.96 MB` | Non | `npm install -w apps/mobile` | `npm install -w apps/mobile` | Oui pour le mobile | Oui, si le mobile est travaillé | Non | `PRESERVE_WARM` |
 | `artifacts` | `61.97 MB` | Non | Scripts d’audit, captures, logs et exports divers | Selon le sous-dossier; pas un bloc unique prouvé régénérable | Non | Non | Non, classification par sous-dossier requise | `PRESERVE_PROJECT` |
 | `backups` | `0.06 MB` | Oui, selon les archives conservées | Scripts de sauvegarde et archives manuelles | Selon le backup; récréation possible mais pas suffisante pour suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
 | `scratch` | `0.03 MB` | Oui, plusieurs scripts utiles existent | Scripts ponctuels et brouillons techniques | Selon le script; pas de suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
@@ -26,7 +26,7 @@ Il classe les dossiers lourds avant tout nettoyage automatique et distingue ce q
 ## Décisions déjà prises
 
 - Le cache Next utile au démarrage local reste conservé.
-- `companion-app` reste versionné mais est exclu des watchers et des recherches quotidiennes.
+- `apps/mobile` reste versionné mais est exclu des watchers et des recherches quotidiennes.
 - `artifacts`, `backups`, `scratch` et `.vercel` restent hors du nettoyage safe par défaut.
 - Aucun chemin n’entre encore dans un script de suppression safe sans preuve explicite de catégorie `REGENERABLE_SAFE`.
 

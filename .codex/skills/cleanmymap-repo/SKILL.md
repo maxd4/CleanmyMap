@@ -38,7 +38,7 @@ Current major baselines:
 - Clerk;
 - Supabase/PostgreSQL;
 - Vercel;
-- Expo/React Native for `companion-app`.
+- Expo/React Native for `apps/mobile`.
 
 ## Non-negotiable rules
 

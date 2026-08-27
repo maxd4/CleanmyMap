@@ -151,8 +151,8 @@ $policy = $policyJson | ConvertFrom-Json
 $webRelevant = [bool]$policy.webRelevant
 $buildRelevant = [bool]$policy.buildRelevant
 $scriptsRelevant = [bool]$policy.scriptsRelevant
-$companionRelevant = $Scope -eq "full" -or @($changedFiles | Where-Object {
-    $_ -like "companion-app/*" -and $_ -notlike "companion-app/*.md"
+$mobileRelevant = $Scope -eq "full" -or @($changedFiles | Where-Object {
+    $_ -like "apps/mobile/*" -and $_ -notlike "apps/mobile/*.md"
 }).Count -gt 0
 $pythonRelevant = [bool]$policy.pythonRelevant
 
@@ -206,10 +206,10 @@ if ($webRelevant) {
         [pscustomobject]@{ Label = "quality:top-heavy"; Command = "npm run quality:top-heavy" }
     )
 
-    if ($companionRelevant) {
+    if ($mobileRelevant) {
         $staticWebSteps += [pscustomobject]@{
             Label = "companion:typecheck"
-            Command = "npm --prefix companion-app run typecheck"
+            Command = "npm run typecheck -w apps/mobile"
         }
     }
 
@@ -245,8 +245,8 @@ if ($webRelevant) {
     Write-Host "No web-relevant changes detected; web quality gates skipped."
 }
 
-if ($companionRelevant -and -not $webRelevant) {
-    Invoke-Step { npm --prefix companion-app run typecheck } "companion:typecheck"
+if ($mobileRelevant -and -not $webRelevant) {
+    Invoke-Step { npm run typecheck -w apps/mobile } "companion:typecheck"
 }
 
 if ($pythonRelevant) {

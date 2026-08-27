@@ -290,7 +290,7 @@ sequenceDiagram
 ### Architecture de l'app Expo
 
 ```
-companion-app/
+apps/mobile/
 ├── app/
 │   ├── _layout.tsx          # Root layout + auth check
 │   ├── login.tsx            # Auth Supabase (email/magic link)

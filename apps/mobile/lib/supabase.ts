@@ -5,7 +5,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 /**
  * Variables d'environnement Supabase.
  *
- * En développement : créer un fichier .env à la racine de companion-app/
+ * En développement : créer un fichier .env à la racine de apps/mobile/
  * (voir .env.example pour le format).
  *
  * En production (EAS Build) : configurer les secrets via :
@@ -46,7 +46,7 @@ async function requireClerkSupabaseAccessToken(): Promise<string> {
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
     '[Supabase] Variables EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY manquantes.\n' +
-    'Créer companion-app/.env à partir de .env.example.'
+    'Créer apps/mobile/.env à partir de .env.example.'
   );
 }
 
