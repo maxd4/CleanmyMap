@@ -23,7 +23,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: vi.fn(),
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 
@@ -32,7 +32,7 @@ vi.mock("@/lib/data/local-sync", () => ({
   copyValidatedSpotToLocalStore: copyValidatedSpotToLocalStoreMock,
 }));
 
-vi.mock("@/lib/admin/signalement-moderation", () => ({
+vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   moderateSignalement: moderateSignalementMock,
   readSignalementForModeration: readSignalementForModerationMock,
 }));

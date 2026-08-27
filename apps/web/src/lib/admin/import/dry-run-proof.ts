@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { env, isConfigured } from "../env";
+import { env, isConfigured } from "../../env";
 
 const DEFAULT_TTL_SECONDS = 20 * 60;
 

@@ -31,7 +31,7 @@ vi.mock("@/lib/auth/sync", () => ({
   syncClerkUserToSupabase: syncClerkUserToSupabaseMock,
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 

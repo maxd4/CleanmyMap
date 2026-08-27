@@ -46,7 +46,7 @@
   - `apps/web/src/lib/actions/unified-source.ts`
 - Admin and moderation:
   - `apps/web/src/app/api/admin/moderation/route.ts`
-  - `apps/web/src/lib/admin/operation-audit.ts`
+  - `apps/web/src/lib/admin/audit/operation-audit.ts`
 - Messaging & Security Hardening:
   - Rate Limiting: `apps/web/src/lib/community/discussion-rate-limit.ts`
   - Message Pruning: `apps/web/supabase/migrations/20260420000015_advanced_chat_core.sql`

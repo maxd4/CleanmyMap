@@ -24,7 +24,7 @@ vi.mock("@/lib/actions/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   listAdminOperationAudit: listAdminOperationAuditMock,
 }));
 

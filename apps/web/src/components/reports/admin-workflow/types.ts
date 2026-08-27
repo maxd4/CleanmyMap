@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from"react";
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionQualityResult } from"@/lib/actions/quality";
 import type {
  ActionListItem,
@@ -14,7 +14,7 @@ import type {
   ModerationCleanPlaceStatus,
   ModerationEntityType,
   ModerationVisibility,
-} from"@/lib/admin/moderation-client";
+} from"@/lib/admin/moderation/moderation-client";
 
 export type AsyncState ="idle" |"pending" |"success" |"error";
 

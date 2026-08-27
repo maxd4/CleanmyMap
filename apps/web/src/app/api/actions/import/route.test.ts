@@ -21,10 +21,10 @@ vi.mock("@/lib/actions/store", () => ({
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
-vi.mock("@/lib/admin/dry-run-proof", () => ({
+vi.mock("@/lib/admin/import/dry-run-proof", () => ({
   createDryRunProof: createDryRunProofMock,
   hashImportPayload: hashImportPayloadMock,
   verifyDryRunProof: verifyDryRunProofMock,

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AdminCleanPlaceEdits } from "@/lib/admin/action-moderation-edits";
+import type { AdminCleanPlaceEdits } from "@/lib/admin/moderation/action-moderation-edits";
 
 export const SIGNALEMENT_MODERATION_SOURCES = [
   "trash_spotter_spots",

@@ -1,4 +1,4 @@
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 
 export type ActionModerationAuditOutcome = "success" | "error";
 

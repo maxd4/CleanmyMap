@@ -1,7 +1,7 @@
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { OperationAuditTimeline } from "@/components/actions/operation-audit-timeline";
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
 import { isSignalementRecordType } from "@/lib/actions/signalement-media-contract";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";

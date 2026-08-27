@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type OperationAuditTimelineProps = {

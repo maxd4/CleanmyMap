@@ -2,7 +2,7 @@ import { auth } from"@clerk/nextjs/server";
 import { randomUUID } from"node:crypto";
 import { NextResponse } from"next/server";
 import { z } from"zod";
-import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { requireAdminAccess } from"@/lib/authz";
 import { trackCommunityOpsUpdate } from"@/lib/gamification/progression";
 import {

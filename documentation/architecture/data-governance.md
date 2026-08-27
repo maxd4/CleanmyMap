@@ -99,7 +99,7 @@ conserve les champs utiles et écrit une correspondance idempotente dans
 libre et génère un nouvel UUID en cas de collision ; `legacy_waste_type` et
 `legacy_notes` préservent la provenance.
 
-La capacité `apps/web/src/lib/admin/signalement-moderation.ts` et les flux
+La capacité `apps/web/src/lib/admin/moderation/signalement-moderation.ts` et les flux
 unifiés utilisent désormais uniquement `trash_spotter_spots`. Les anciennes
 clés d'événement XP (`spots` + `spot-id:*`) restent reconnues comme historique
 dans la progression afin de ne pas réattribuer un XP après migration, sans

@@ -34,7 +34,7 @@ vi.mock("@/lib/admin/role-management", () => ({
   getManagedRoleAccountById: getManagedRoleAccountByIdMock,
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 

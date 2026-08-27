@@ -14,7 +14,7 @@ import {
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
   readSignalementForModeration,
-} from "@/lib/admin/signalement-moderation";
+} from "@/lib/admin/moderation/signalement-moderation";
 
 type ActionRow = {
   id: string;

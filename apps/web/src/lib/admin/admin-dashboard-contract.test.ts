@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { AdminOperationalMetricGrid } from "@/components/admin/admin-dashboard-ui";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
 import type { PublishedPartnerAnnuaireEntry } from "@/lib/partners/published-annuaire-entries-store";
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
-import type { ModeratableSignalement } from "@/lib/admin/signalement-moderation";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
+import type { ModeratableSignalement } from "@/lib/admin/moderation/signalement-moderation";
 import {
   buildAdminAlert,
   buildAdminMetricItems,
