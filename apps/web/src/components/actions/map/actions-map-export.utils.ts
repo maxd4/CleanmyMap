@@ -10,7 +10,7 @@ import {
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionCsvRowWithDrawing } from "@/lib/reports/csv";
 import { buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
-import type { MapViewportState } from "./map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 
 type GeoJsonGeometry =
   | {

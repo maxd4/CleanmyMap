@@ -1,6 +1,6 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemCoordinates } from "@/lib/actions/data-contract";
-import type { MapViewportState } from "./map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 
 type MapCenter = [number, number];
 

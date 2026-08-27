@@ -9,7 +9,7 @@ import {
   INITIAL_MAP_SEARCH_RADII_KM,
   isWithinRadialSearch,
 } from "@/lib/actions/pollution/initial-nearest-pollution";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { createActionsMapViewport } from "@/components/actions/actions-map-canvas.utils";
 
 export type { InitialPollutionCandidateFetcher, MapReferencePoint } from "@/lib/actions/pollution/initial-nearest-pollution";

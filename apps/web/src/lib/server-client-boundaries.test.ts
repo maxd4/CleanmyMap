@@ -10,6 +10,7 @@ const SERVER_ONLY_IMPORT_PATTERN = new RegExp(
   String.raw`^\s*(?:import|export)\b[^\n]*from\s*["'](?:@/lib/supabase/server|@/lib/supabase/clerk-rls|@clerk/nextjs/server|next/headers|server-only|node:(?:fs|fs/promises|path|crypto))["']`,
   "gm",
 );
+const COMPONENTS_IMPORT_PATTERN = /(?:\b(?:import|export)\b[\s\S]*?\bfrom\s*|\bimport\s*\()\s*["']@\/components\//;
 
 const SOURCE_FILE_PATTERN = /\.(?:ts|tsx)$/;
 const TEST_FILE_PATTERN = /\.(?:test|spec|stories)\.[tj]sx?$/;
@@ -26,6 +27,25 @@ async function collectSourceFiles(directory: string): Promise<string[]> {
     }
 
     if (SOURCE_FILE_PATTERN.test(entry.name) && !TEST_FILE_PATTERN.test(entry.name)) {
+      files.push(absolutePath);
+    }
+  }
+
+  return files;
+}
+
+async function collectTypeScriptFiles(directory: string): Promise<string[]> {
+  const entries = await readDirectory(directory);
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const absolutePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectTypeScriptFiles(absolutePath)));
+      continue;
+    }
+
+    if (SOURCE_FILE_PATTERN.test(entry.name)) {
       files.push(absolutePath);
     }
   }
@@ -56,6 +76,26 @@ describe("Server/Client boundaries", () => {
 
     expect(violations).toEqual([]);
   }, 30000);
+
+  it("keeps geo and map Actions independent from components", async () => {
+    const sourceRoots = [
+      path.join(LIB_ROOT, "actions", "map"),
+      path.join(LIB_ROOT, "geo"),
+    ];
+    const violations: string[] = [];
+
+    for (const sourceRoot of sourceRoots) {
+      const files = await collectTypeScriptFiles(sourceRoot);
+      for (const file of files) {
+        const content = await readFile(file, "utf8");
+        if (COMPONENTS_IMPORT_PATTERN.test(content)) {
+          violations.push(path.relative(process.cwd(), file));
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
 
   it("keeps sign-in Clerk loading UI on the server/client boundary", async () => {
     const source = await readFile(

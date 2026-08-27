@@ -20,7 +20,7 @@ import {
   type ActionsMapDateScope,
 } from "@/components/actions/map/actions-map-filters.utils";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";

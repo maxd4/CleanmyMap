@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import type { ActionsMapCanvasComponent } from "../map-feed.types";
 import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 
 const ActionStoriesCarousel = dynamic(

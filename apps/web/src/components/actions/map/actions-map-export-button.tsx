@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { buildActionsCsv, buildActionsCsvFilename } from "@/lib/reports/csv";
-import type { MapViewportState } from "./map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
   buildActionsMapGeoJsonFilename,
   buildActionsMapGeoJsonString,
