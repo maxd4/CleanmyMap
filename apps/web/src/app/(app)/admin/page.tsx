@@ -7,7 +7,7 @@ import {
   AdminActionGrid,
   AdminHeroStrip,
   AdminInfoBanner,
-  AdminMetricGrid,
+  AdminOperationalMetricGrid,
   AdminPillLink,
   AdminProfileSwitchStrip,
   AdminSectionHeader,
@@ -15,38 +15,30 @@ import {
 import type { AdminActionItem } from "@/components/admin/admin-dashboard-ui";
 import {
   ModerationByBlockPanel,
-  type ModerationBlockSummary,
 } from "@/components/admin/moderation-by-block-panel";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
-import { runActionQuery } from "@/lib/actions/query";
-import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
-import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
-import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
-import {
-  listModeratableSignalements,
-  type ModeratableSignalement,
-} from "@/lib/admin/signalement-moderation";
-import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
-import type { PublishedPartnerAnnuaireEntry } from "@/lib/partners/published-annuaire-entries-store";
 import {
   getProfileLabel,
-  getProfilePrimaryAction,
   getSwitchableProfiles,
   isAdminLikeProfile,
   toProfile,
 } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildProfileRoute, ADMIN_GODMODE_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
-import { formatScorePercent } from "@/lib/formatters/score";
-import { loadPilotageOverview, type DecisionSummaryKpi } from "@/lib/pilotage/overview";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import {
-  ADMIN_SIGNALEMENTS_MODERATION_HREF,
+  buildAdminAlert,
+  buildAdminMetricItems,
+  buildModerationBlockSummaries,
+  getCreatorInboxNeedsAttention,
+  getPendingPublishedEntries,
+  loadAdminSources,
+} from "@/lib/admin/admin-dashboard-contract";
+import {
   parseAdminModerationParam,
 } from "@/components/reports/admin-workflow/helpers";
 
@@ -55,248 +47,6 @@ export const metadata: Metadata = {
   description:
     "Back-office du site pour gérer les utilisateurs, la modération et les demandes.",
 };
-
-type PendingActionModerationRow = {
-  id: string;
-  action_date: string;
-  location_label: string;
-  created_at: string;
-  volunteers_count: number;
-  duration_minutes: number;
-};
-
-type PendingSpotModerationRow = ModeratableSignalement;
-
-async function loadAdminOverview() {
-  return loadPilotageOverview({
-    periodDays: 30,
-    limit: 1800,
-  });
-}
-
-function getForecastLabel(kpi: DecisionSummaryKpi): string {
-  if (kpi.id === "impact") return "Prévision prochaine : stabilisation";
-  if (kpi.id === "mobilization") return "Prévision prochaine : consolidation";
-  return "Prévision prochaine : vigilance renforcée";
-}
-
-function formatModerationDate(value: string): string {
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(value));
-}
-
-async function loadModerationQueues() {
-  const supabase = getSupabaseServerClient();
-
-  const [pendingActions, pendingActionsCount, pendingSpots, pendingGroupJoinRequests] =
-    await Promise.all([
-      runActionQuery<PendingActionModerationRow>(supabase, (query) =>
-        query
-          .select(
-            "id, action_date, location_label, created_at, volunteers_count, duration_minutes",
-          )
-          .eq("status", "pending")
-          .order("action_date", { ascending: false })
-          .limit(6),
-      ),
-      supabase
-        .from("actions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-      listModeratableSignalements(supabase, { status: "new", limit: 6 }),
-      supabase
-        .from("action_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("participation_status", "pending"),
-    ]);
-
-  if (pendingActionsCount.error) {
-    throw new Error(pendingActionsCount.error.message);
-  }
-  if (pendingGroupJoinRequests.error) {
-    throw new Error(pendingGroupJoinRequests.error.message);
-  }
-
-  return {
-    pendingActions,
-    pendingActionsCount: Number(pendingActionsCount.count ?? 0),
-    pendingSpots: pendingSpots.items as PendingSpotModerationRow[],
-    pendingSpotsCount: pendingSpots.count,
-    pendingGroupJoinRequestsCount: Number(pendingGroupJoinRequests.count ?? 0),
-  };
-}
-
-function buildModerationBlockSummaries(params: {
-  creatorInboxItems: CreatorInboxItem[];
-  publishedEntries: PublishedPartnerAnnuaireEntry[];
-  adminAudit: Awaited<ReturnType<typeof listAdminOperationAudit>>;
-  pendingActions: PendingActionModerationRow[];
-  pendingActionsCount: number;
-  pendingSpots: PendingSpotModerationRow[];
-  pendingSpotsCount: number;
-  pendingGroupJoinRequestsCount: number;
-}): ModerationBlockSummary[] {
-  const creatorInboxNeedsAttention = params.creatorInboxItems.filter(
-    (item) => item.status === "pending" || item.status === "new",
-  );
-  const pendingFeedbackItems = creatorInboxNeedsAttention.filter(
-    (item) => item.source === "feedback",
-  );
-  const pendingPromotionItems = creatorInboxNeedsAttention.filter(
-    (item) => item.source === "promotion",
-  );
-  const pendingPartnerInboxItems = creatorInboxNeedsAttention.filter(
-    (item) => item.source === "partner",
-  );
-  const pendingPublishedEntries = params.publishedEntries.filter(
-    (item) => item.publicationStatus === "pending_admin_review",
-  );
-  const pendingAuditErrors = params.adminAudit.filter(
-    (item) => item.outcome === "error",
-  );
-  const pendingAuditLabel =
-    pendingAuditErrors.length === 0
-      ? "Aucun incident récent"
-      : pendingAuditErrors.length === 1
-        ? "1 incident récent"
-        : `${pendingAuditErrors.length} incidents récents`;
-
-  return [
-    {
-      id: "apprendre",
-      number: 5,
-      label: "Apprendre",
-      count: 0,
-      description:
-        "Aucune file de modération n’est encore branchée sur ce bloc. Il reste en bas de la pile par défaut.",
-      href: "/learn",
-      ctaLabel: "Voir les contenus",
-      accent: "amber",
-      details: [
-        "Pas de file dédiée aujourd’hui.",
-        "Le bloc peut recevoir une revue éditoriale plus tard si besoin.",
-      ],
-      samples: [
-        {
-          label: "File dédiée",
-          meta: "0 élément à gérer",
-        },
-      ],
-    },
-    {
-      id: "reseau-discussions",
-      number: 4,
-      label: "Réseau & Discussions",
-      count: creatorInboxNeedsAttention.length + pendingPublishedEntries.length,
-      description:
-        "Les demandes liées aux échanges, aux promotions et aux fiches partenaires restent centralisées ici.",
-      href: "/admin/services",
-      ctaLabel: "Ouvrir la revue",
-      accent: "indigo",
-      details: [
-        `${pendingFeedbackItems.length} retours créateur à traiter.`,
-        `${pendingPromotionItems.length} demandes de promotion en attente.`,
-        `${pendingPartnerInboxItems.length} demandes partenaires et ${pendingPublishedEntries.length} fiches publiées à revoir.`,
-      ],
-      samples: [
-        ...creatorInboxNeedsAttention.slice(0, 2).map((item) => ({
-          label: item.title,
-          meta: `${item.sourceLabel} · ${formatModerationDate(item.createdAt)}`,
-        })),
-        ...pendingPublishedEntries.slice(0, 1).map((item) => ({
-          label: item.name,
-          meta: `Publication ${item.publicationStatus} · ${formatModerationDate(item.publishedAt)}`,
-        })),
-      ],
-    },
-    {
-      id: "cartographie-impact",
-      number: 3,
-      label: "Cartographie & Impact",
-      count: params.pendingSpotsCount,
-      description:
-        "Les éléments cartographiques en attente restent visibles depuis ce bloc avant d’alimenter les vues publiques.",
-      href: ADMIN_SIGNALEMENTS_MODERATION_HREF,
-      ctaLabel: "Modérer les signalements",
-      accent: "sky",
-      details: [
-        `${params.pendingSpotsCount} lieux ou spots à valider.`,
-        "Les entrées nouvelles restent en file jusqu’à validation.",
-      ],
-      samples: [
-        ...params.pendingSpots.slice(0, 3).map((spot) => ({
-          label: spot.label,
-          meta: `${spot.spot_type === "spot" ? "Spot" : "Lieu propre"} · ${spot.sourceTable} · ${formatModerationDate(spot.created_at)}`,
-        })),
-        ...(params.pendingSpots.length === 0
-          ? [
-              {
-                label: "Aucun lieu en attente",
-                meta: "La file est vide pour l’instant",
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      id: "agir",
-      number: 2,
-      label: "Agir",
-      count: params.pendingActionsCount + params.pendingGroupJoinRequestsCount,
-      description:
-        "Les formulaires d’action et les demandes de participation sont consolidés ici avant traitement.",
-      href: "/actions/history",
-      ctaLabel: "Ouvrir la modération",
-      accent: "emerald",
-      details: [
-        `${params.pendingActionsCount} formulaires d’action en attente.`,
-        `${params.pendingGroupJoinRequestsCount} demandes de participation à traiter.`,
-        "Les comptes admin passent directement, les autres restent en file d’attente.",
-      ],
-      samples: [
-        ...params.pendingActions.slice(0, 2).map((action) => ({
-          label: action.location_label,
-          meta: `${formatModerationDate(action.action_date)} · ${action.volunteers_count} bénévoles · ${action.duration_minutes} min`,
-        })),
-        {
-          label: "File de participation",
-          meta: `${params.pendingGroupJoinRequestsCount} compte${params.pendingGroupJoinRequestsCount > 1 ? "s" : ""} en attente`,
-        },
-      ],
-    },
-    {
-      id: "accueil-pilotage",
-      number: 1,
-      label: "Accueil & Pilotage",
-      count: pendingAuditErrors.length,
-      description:
-        "Les incidents d’audit récents et les signaux de supervision restent visibles en dernier niveau de bloc.",
-      href: "/admin",
-      ctaLabel: "Voir le pilotage",
-      accent: "rose",
-      details: [
-        `${pendingAuditLabel} à relire.`,
-        "Cette zone sert de filet pour les alertes transverses et la supervision.",
-      ],
-      samples: [
-        ...pendingAuditErrors.slice(0, 2).map((item) => ({
-          label: String(item.details["entityType"] ?? item.operationType),
-          meta: `${item.operationType} · ${formatModerationDate(item.at)}`,
-        })),
-        ...(pendingAuditErrors.length === 0
-          ? [
-              {
-                label: "Aucun incident",
-                meta: "La supervision est stable pour le moment",
-              },
-            ]
-          : []),
-      ],
-    },
-  ];
-}
 
 export default async function AdminPage({
   searchParams,
@@ -335,7 +85,6 @@ export default async function AdminPage({
 
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
-  const primaryAction = getProfilePrimaryAction(profile);
   const pageFamily = resolvePageFamily("/admin");
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
   const creatorIdentity =
@@ -359,84 +108,9 @@ export default async function AdminPage({
     );
   }
 
-  const [overview, creatorInboxItems, publishedEntries, adminAudit] =
-    await Promise.all([
-      loadAdminOverview().catch(() => null),
-      loadCreatorInboxItems().catch(() => []),
-      listPublishedPartnerAnnuaireEntries().catch(() => []),
-      listAdminOperationAudit(25).catch(() => []),
-    ]);
-
-  const moderationQueues = await loadModerationQueues().catch(() => ({
-    pendingActions: [],
-    pendingActionsCount: 0,
-    pendingSpots: [],
-    pendingSpotsCount: 0,
-    pendingGroupJoinRequestsCount: 0,
-  }));
-
-  const onboardingStatus = {
-    pending: creatorInboxItems.filter(
-      (item) =>
-        item.source === "partner" &&
-        item.sourceStatus === "pending_admin_review",
-    ).length,
-    accepted: creatorInboxItems.filter(
-      (item) => item.source === "partner" && item.sourceStatus === "accepted",
-    ).length,
-  };
-
-  const publicationStatus = {
-    pending: publishedEntries.filter(
-      (item) => item.publicationStatus === "pending_admin_review",
-    ).length,
-    accepted: publishedEntries.filter(
-      (item) => item.publicationStatus === "accepted",
-    ).length,
-  };
-
-  const moderationAudit = {
-    success: adminAudit.filter((item) => item.outcome === "success").length,
-    error: adminAudit.filter((item) => item.outcome === "error").length,
-  };
-
-  const summaryKpis: DecisionSummaryKpi[] = (
-    overview?.summary.kpis ?? [
-      {
-        id: "mobilization",
-        label: "Actions validées",
-        value: `${moderationAudit.success}`,
-        previousValue: "—",
-        deltaAbsolute: "—",
-        deltaPercent: "—",
-        interpretation: "positive",
-      },
-      {
-        id: "quality",
-        label: "Qualité data",
-        value: formatScorePercent(Math.max(
-          0,
-          100 - (publicationStatus.pending + onboardingStatus.pending) * 4,
-        )),
-        previousValue: "—",
-        deltaAbsolute: "—",
-        deltaPercent: "—",
-        interpretation: "neutral",
-      },
-    ]
-  ).filter((kpi) => kpi.id !== "impact");
-
-  const fallbackRecommendedAction = {
-    href: primaryAction.href,
-    label: primaryAction.label[locale],
-  };
-  const recommendedAction =
-    overview?.summary.recommendedAction ?? fallbackRecommendedAction;
-  const alertTitle =
-    overview?.summary.alert.title ?? "Qualité des données à renforcer";
-  const alertDetail =
-    overview?.summary.alert.detail ??
-    "La qualité de la geo-ouverture conditionne le lecteur KPI et les rapports institutionnels.";
+  const adminSources = await loadAdminSources();
+  const adminAlert = buildAdminAlert(adminSources);
+  const metricItems = buildAdminMetricItems(adminSources);
   const switchableProfiles = getSwitchableProfiles(profile);
   const profileLink = buildProfileRoute(profile);
   const profileCountLabel =
@@ -444,15 +118,21 @@ export default async function AdminPage({
       ? `${switchableProfiles.length} profils`
       : "Profil actif";
 
-  const metricCards = summaryKpis.map((kpi) => ({
-    id: kpi.id,
-    label: kpi.label,
-    value: kpi.value,
-    previousValue: kpi.previousValue,
-    deltaPercent: kpi.deltaPercent,
-    interpretation: kpi.interpretation,
-    forecastLabel: getForecastLabel(kpi),
-  }));
+  const creatorInboxNeedsAttention =
+    adminSources.creatorInbox.status === "available"
+      ? getCreatorInboxNeedsAttention(adminSources.creatorInbox.data)
+      : null;
+  const pendingPartnerInboxItems = creatorInboxNeedsAttention
+    ? creatorInboxNeedsAttention.filter((item) => item.source === "partner")
+    : null;
+  const pendingPublishedEntries =
+    adminSources.publishedEntries.status === "available"
+      ? getPendingPublishedEntries(adminSources.publishedEntries.data)
+      : null;
+  const auditErrors =
+    adminSources.audit.status === "available"
+      ? adminSources.audit.data.filter((item) => item.outcome === "error")
+      : null;
 
   const actionTiles: AdminActionItem[] = [
     {
@@ -460,8 +140,10 @@ export default async function AdminPage({
       icon: "Inbox",
       title: "Inbox créateur",
       description:
-        onboardingStatus.pending > 0
-          ? `${onboardingStatus.pending} demandes prioritaires à traiter.`
+        pendingPartnerInboxItems === null
+          ? "Source indisponible."
+          : pendingPartnerInboxItems.length > 0
+            ? `${pendingPartnerInboxItems.length} demandes prioritaires à traiter.`
           : "Aucune demande prioritaire en attente.",
       href: "/admin/services#governance-report",
       badge: "Prioritaire",
@@ -471,8 +153,10 @@ export default async function AdminPage({
       icon: "Download",
       title: "Exporter les données",
       description:
-        publishedEntries.length > 0
-          ? `${publishedEntries.length} entrées visibles dans l'annuaire.`
+        pendingPublishedEntries === null
+          ? "Source indisponible."
+          : pendingPublishedEntries.length > 0
+            ? `${pendingPublishedEntries.length} publications partenaires à revoir.`
           : "Suivre les exports et les journaux.",
       href: "/admin/services#governance-report",
       badge: "Rapide",
@@ -482,8 +166,10 @@ export default async function AdminPage({
       icon: "Activity",
       title: "Contrôle système",
       description:
-        moderationAudit.error > 0
-          ? `${moderationAudit.error} incidents techniques à inspecter.`
+        auditErrors === null
+          ? "Source indisponible."
+          : auditErrors.length > 0
+            ? `${auditErrors.length} incidents techniques à inspecter.`
           : "Ouvrir l'arbitrage et les outils sensibles.",
       href: ADMIN_GODMODE_ROUTE,
       badge: "Rapide",
@@ -525,7 +211,7 @@ export default async function AdminPage({
       id: "traceability",
       icon: "ShieldCheck",
       title: "Renforcer traçabilité",
-      description: "Qualité data en baisse.",
+      description: "Consulter les journaux d'administration.",
       href: "/admin/services#governance-report",
       badge: "Rapide",
       iconWrapClassName: "bg-violet-100 text-violet-700 border-violet-200/60",
@@ -578,17 +264,7 @@ export default async function AdminPage({
     },
   ];
 
-  const systemChips = ["Classement global", "Niveau utilisateur"];
-  const moderationBlocks = buildModerationBlockSummaries({
-    creatorInboxItems,
-    publishedEntries,
-    adminAudit,
-    pendingActions: moderationQueues.pendingActions,
-    pendingActionsCount: moderationQueues.pendingActionsCount,
-    pendingSpots: moderationQueues.pendingSpots,
-    pendingSpotsCount: moderationQueues.pendingSpotsCount,
-    pendingGroupJoinRequestsCount: moderationQueues.pendingGroupJoinRequestsCount,
-  });
+  const moderationBlocks = buildModerationBlockSummaries(adminSources);
 
   return (
     <AccountCompletionGate state={accountCompletion}>
@@ -640,19 +316,21 @@ export default async function AdminPage({
 
           <AdminInfoBanner
             eyebrow="Alerte"
-            title={alertTitle}
-            description={alertDetail}
+            title={adminAlert.title}
+            description={adminAlert.detail}
             icon="AlertTriangle"
             tone="light"
             action={
-              <AdminPillLink href={recommendedAction.href}>
-                {recommendedAction.label}
-              </AdminPillLink>
+              adminAlert.action ? (
+                <AdminPillLink href={adminAlert.action.href}>
+                  {adminAlert.action.label}
+                </AdminPillLink>
+              ) : undefined
             }
             className="mt-8"
           />
 
-          <AdminMetricGrid items={metricCards} className="mt-8 lg:grid-cols-2" />
+          <AdminOperationalMetricGrid items={metricItems} className="mt-8" />
 
           <section className="mt-10">
             <AdminSectionHeader
@@ -722,24 +400,6 @@ export default async function AdminPage({
                 <PageHeaderBadge family={pageFamily} muted>
                   {profileCountLabel}
                 </PageHeaderBadge>
-              }
-            />
-
-            <AdminInfoBanner
-              eyebrow="Classement global"
-              title="Le classement n'est pas encore disponible."
-              tone="muted"
-              action={
-                <div className="flex flex-wrap gap-2">
-                  {systemChips.map((chip) => (
-                    <span
-                      key={chip}
-                      className="inline-flex rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-white/90"
-                    >
-                      {chip}
-                    </span>
-                  ))}
-                </div>
               }
             />
 

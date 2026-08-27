@@ -3,6 +3,10 @@ import type { ReactNode } from "react";
 import { AlertTriangle, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import type { Role } from "@/lib/domain-language";
+import type {
+  AdminOperationalMetricAvailability,
+  AdminOperationalMetricItem,
+} from "@/lib/admin/admin-dashboard-types";
 import { cn } from "@/lib/utils";
 import {
   ActionCard,
@@ -279,6 +283,42 @@ export function AdminMetricGrid({
       {items.map((item) => (
         <AdminMetricCard key={item.id} {...item} />
       ))}
+    </section>
+  );
+}
+
+const OPERATIONAL_METRIC_STATUS: Record<
+  AdminOperationalMetricAvailability,
+  { label: string; tone: "emerald" | "amber" | "rose" }
+> = {
+  available: { label: "Source disponible", tone: "emerald" },
+  partial: { label: "Partiel", tone: "amber" },
+  unavailable: { label: "Indisponible", tone: "rose" },
+};
+
+export function AdminOperationalMetricGrid({
+  items,
+  className,
+}: {
+  items: AdminOperationalMetricItem[];
+  className?: string;
+}) {
+  return (
+    <section className={cn("grid gap-5 lg:grid-cols-4", className)}>
+      {items.map((item) => {
+        const status = OPERATIONAL_METRIC_STATUS[item.availability];
+        return (
+          <StatCard
+            key={item.id}
+            label={item.label}
+            value={item.value ?? status.label}
+            badge={<SourceBadge tone={status.tone}>{status.label}</SourceBadge>}
+            description={item.description}
+            tone="amber"
+            className="bg-[linear-gradient(145deg,rgba(76,61,48,0.94)_0%,rgba(112,94,78,0.90)_58%,rgba(198,177,154,0.24)_100%)]"
+          />
+        );
+      })}
     </section>
   );
 }

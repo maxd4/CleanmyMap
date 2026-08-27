@@ -14,10 +14,10 @@ import { getClerkService } from "@/lib/services/clerk";
 
 export async function loadCreatorInboxItems(): Promise<CreatorInboxItem[]> {
   const [feedback, promotion, partner, events] = await Promise.all([
-    listCommunityBugReports(200).catch(() => []),
-    listPromotionRequests(200).catch(() => []),
-    listPartnerOnboardingRequests(200).catch(() => []),
-    loadCreatorInboxEvents().catch(() => []),
+    listCommunityBugReports(200),
+    listPromotionRequests(200),
+    listPartnerOnboardingRequests(200),
+    loadCreatorInboxEvents(),
   ]);
 
   const items = [
@@ -42,7 +42,10 @@ export async function loadCreatorInboxEvents(): Promise<CreatorInboxItem[]> {
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (eventsResult.error || !eventsResult.data || eventsResult.data.length === 0) {
+  if (eventsResult.error) {
+    throw new Error("Creator inbox events read failed");
+  }
+  if (!eventsResult.data || eventsResult.data.length === 0) {
     return [];
   }
 

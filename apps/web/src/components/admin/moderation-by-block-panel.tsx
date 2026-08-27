@@ -5,10 +5,11 @@ import { AdminPillLink, AdminSectionHeader } from "@/components/admin/admin-dash
 import { cn } from "@/lib/utils";
 
 export type ModerationBlockSummary = {
-  id: "accueil-pilotage" | "agir" | "cartographie-impact" | "reseau-discussions" | "apprendre";
+  id: "accueil-pilotage" | "agir" | "cartographie-impact" | "reseau-discussions";
   number: number;
   label: string;
-  count: number;
+  count: number | null;
+  availability: "available" | "partial" | "unavailable";
   description: string;
   href: string;
   ctaLabel: string;
@@ -31,6 +32,14 @@ const ACCENT_CLASSES: Record<ModerationBlockSummary["accent"], string> = {
 
 function formatBlockNumber(number: number): string {
   return String(number).padStart(2, "0");
+}
+
+function formatBlockCount(
+  count: number | null,
+  availability: ModerationBlockSummary["availability"],
+): string {
+  if (count !== null) return `${count} à gérer`;
+  return availability === "partial" ? "Partiel" : "Indisponible";
 }
 
 export function ModerationByBlockPanel({
@@ -66,7 +75,7 @@ export function ModerationByBlockPanel({
                 <h3 className="flex flex-wrap items-center gap-2 text-lg font-black tracking-tight text-stone-950">
                   {block.label}
                   <span className="inline-flex rounded-full border border-stone-300/70 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-stone-700">
-                    {block.count} à gérer
+                    {formatBlockCount(block.count, block.availability)}
                   </span>
                 </h3>
               </div>
