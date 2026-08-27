@@ -162,8 +162,10 @@ est indiqué :
   demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.
 - **`legal_content_report_decisions`** : l'historique des décisions
   administratives, de leur audit et de leurs états avant/après est conservé
-  avec le signalement pour assurer la traçabilité de l'examen. Aucune durée
-  fixe supplémentaire n'est configurée dans le dépôt ; l'effacement ou la
+  avec le signalement pour assurer la traçabilité de l'examen. Les états de
+  notification sont enrichis de manière bornée après l'envoi ou l'échec ; cela
+  ne remplace pas la décision et ne la défait pas. Aucune durée fixe
+  supplémentaire n'est configurée dans le dépôt ; l'effacement ou la
   limitation sont examinés au regard des obligations de preuve, des droits des
   tiers et de la nécessité du suivi.
 - **Profils, actions, lieux, médias de signalement, rapports, notifications,
@@ -212,6 +214,8 @@ Les décisions administratives liées à ces notifications sont enregistrées da
 autorisé, la date, l'action, l'origine (notification reçue ou initiative
 interne), le motif, l'usage éventuel de moyens automatisés, le fondement légal
 ou CGU applicable, l'URL/identifiant du contenu et des états avant/après bornés.
+Les états d'envoi sont ensuite enrichis de façon bornée pour distinguer un
+envoi réussi d'un échec.
 L'audit exclut les emails, noms et motifs bruts du déclarant ainsi que les
 payloads tiers. Une notification email de décision est tentée après l'audit ;
 son échec est enregistré comme erreur partielle et n'annule pas une mutation
