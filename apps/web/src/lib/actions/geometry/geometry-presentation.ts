@@ -1,4 +1,4 @@
-import { ActionGeometryOrigin, ActionMapItem } from "./types";
+import { ActionGeometryOrigin, ActionMapItem } from "../types";
 import { resolveGeometryOriginFromConfidence } from "./derived-geometry";
 
 export type GeometryPresentation = {

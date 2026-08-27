@@ -1,5 +1,5 @@
 import type { ActionMapItem, ActionStatus } from "@/lib/actions/types";
-import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
+import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/geometry/drawing";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { readAllLocalStores } from "@/lib/data/local-store";
 import { mapLocalStatusToActionStatus } from "@/lib/data/local-records";

@@ -15,7 +15,7 @@ import {
 import {
   buildPersistedGeometryFromStoredFields,
   type PersistedDerivedGeometry,
-} from "./derived-geometry";
+} from "./geometry/derived-geometry";
 import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionEntityType = ActionRecordType;

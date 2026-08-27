@@ -6,8 +6,8 @@ import {
   mapItemDrawing,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
-import type { GeometryPresentation } from "@/lib/actions/geometry-presentation";
-import { isRenderableDrawing } from "@/lib/actions/derived-geometry";
+import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
+import { isRenderableDrawing } from "@/lib/actions/geometry/derived-geometry";
 
 type CoordinatePair = [number, number];
 

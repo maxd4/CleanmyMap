@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { exportFormAsPdf } from "@/lib/actions/export-form-pdf";
+import { exportFormAsPdf } from "@/lib/actions/exports/export-form-pdf";
 import {
   buildActionDeclarationExportLabel,
   buildActionDeclarationExportFilename,
@@ -25,18 +25,18 @@ import {
   getActionDeclarationExportTargets,
   type ActionDeclarationExportBundleId,
   type ActionDeclarationExportTarget,
-} from "@/lib/actions/export-form-media";
+} from "@/lib/actions/exports/export-form-media";
 import {
   downloadActionDeclarationExportBundle,
   getActionDeclarationExportBundleImageTargets,
-} from "@/lib/actions/export-form-bundle";
+} from "@/lib/actions/exports/export-form-bundle";
 import {
   createActionDeclarationExportHistoryEntry,
   mergeActionDeclarationExportHistory,
   readActionDeclarationExportHistory,
   writeActionDeclarationExportHistory,
   type ActionDeclarationExportHistoryEntry,
-} from "@/lib/actions/export-form-history";
+} from "@/lib/actions/exports/export-form-history";
 import { cn } from "@/lib/utils";
 import type { FormState } from "./action-declaration-form.model";
 

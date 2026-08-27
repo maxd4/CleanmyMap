@@ -1,4 +1,4 @@
-import { toGeoJsonString } from "@/lib/actions/drawing";
+import { toGeoJsonString } from "@/lib/actions/geometry/drawing";
 import {
   mapItemCoordinates,
   mapItemCigaretteButts,

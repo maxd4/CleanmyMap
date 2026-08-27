@@ -16,7 +16,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AppError } from "@/lib/errors/app-errors";
 import { buildActionInsights } from "./insights";
-import { parseDrawingFromNotes } from "./drawing";
+import { parseDrawingFromNotes } from "./geometry/drawing";
 import { extractActionMetadataFromNotes } from "./metadata";
 import { fetchActionPollutionScoreReferences } from "./pollution-score-references";
 import {

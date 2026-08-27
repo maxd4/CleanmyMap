@@ -1,4 +1,4 @@
-import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
+import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/geometry/drawing";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import {
   buildActionDataContract,

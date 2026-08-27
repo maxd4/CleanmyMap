@@ -3,8 +3,8 @@ import {
   isRenderableDrawing,
   parseDrawingFromGeoJson,
   toGeoJsonString,
-} from "@/lib/actions/derived-geometry";
-import { stripEventRefFromNotes } from "./event-link";
+} from "@/lib/actions/geometry/derived-geometry";
+import { stripEventRefFromNotes } from "../event-link";
 
 export const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 const INGESTION_SYNC_MARKER = "[google-sheet-sync]";

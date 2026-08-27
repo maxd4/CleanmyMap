@@ -1,4 +1,4 @@
-import { GEOMETRY_CONFIDENCE } from "./geometry-core";
+import { GEOMETRY_CONFIDENCE } from "./geometry/geometry-core";
 
 export const PROJECTION_CONFIDENCE_CONSTANTS = {
   reliableGeometryMinimum: GEOMETRY_CONFIDENCE.PERSISTED_IMPORTED,

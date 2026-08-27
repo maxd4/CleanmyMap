@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { parseDrawingFromNotes } from "@/lib/actions/drawing";
+import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import {
   buildPersistedGeometry,
   GEOMETRY_CONFIDENCE,
   toGeoJsonString,
-} from "@/lib/actions/derived-geometry";
+} from "@/lib/actions/geometry/derived-geometry";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { buildPersistedNotes } from "@/lib/actions/store";
 import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";

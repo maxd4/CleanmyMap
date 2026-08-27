@@ -6,7 +6,7 @@ import {
   type ActionDeclarationExportBundleId,
   type ActionDeclarationExportPreset,
   type ActionDeclarationExportPresetId,
-} from "@/lib/actions/export-form-media";
+} from "@/lib/actions/exports/export-form-media";
 
 type ActionDeclarationExportImageTarget = ActionDeclarationExportPreset & {
   buttonLabel: string;

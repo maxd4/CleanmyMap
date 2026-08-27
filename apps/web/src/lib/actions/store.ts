@@ -11,14 +11,14 @@ import type {
   ResolvedActionParticipant,
 } from "@/lib/actions/organizers";
 import type { ActionMapViewportQuery } from "@/lib/actions/types";
-import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
+import { DRAWING_NOTE_PREFIX } from "@/lib/actions/geometry/drawing";
 import {
   buildPersistedGeometry,
   GEOMETRY_CONFIDENCE,
   toGeoJsonString,
-} from "@/lib/actions/derived-geometry";
+} from "@/lib/actions/geometry/derived-geometry";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
-import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
+import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import { computeButtsCount } from "@/lib/actions/impact-calculators";
 import {
   buildTrainingExampleInsert,

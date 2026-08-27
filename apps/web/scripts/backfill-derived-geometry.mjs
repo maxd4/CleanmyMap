@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
-import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
-import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
+import { normalizeLabel } from "../src/lib/actions/geometry/geometry-core.ts";
+import { resolveBestGeometry } from "../src/lib/actions/geometry/geometry-resolution.ts";
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
