@@ -63,10 +63,10 @@ lots détaillés plus bas doivent être revalidés contre ce radar avant exécut
   cohésion, les responsabilités, le couplage, la duplication, la testabilité et
   le contexte nécessaire à une modification locale.
 - Ajouter des tests de logique avant de supprimer le code source.
-- `scripts/heavy-files-baseline.json` reste un inventaire temporaire de dette
+- `scripts/checks/heavy-files-baseline.json` reste un inventaire temporaire de dette
   historique : toute nouvelle entrée doit être explicitement justifiée et
   mesurée ; retirer les entrées devenues obsolètes ou repassées sous les seuils.
-- Commande de vérification recommandée : tests ciblés d'abord, puis `node scripts/check-top-heavy-files.mjs --top=25`.
+- Commande de vérification recommandée : tests ciblés d'abord, puis `node scripts/checks/check-top-heavy-files.mjs --top=25`.
 - Ajouter un `npm run typecheck -w apps/web` ciblé quand la modification touche vraiment le typage ou les contrats exportés.
 - Si le typecheck ciblé est trop coûteux pour une étape intermédiaire de refactor, le repousser à la fin du lot, sans supprimer les tests ciblés ni le contrôle des fichiers lourds.
 
@@ -80,7 +80,7 @@ Ces règles s'appliquent à chaque shell ou module monolithique traité dans ce 
 - Valider chaque étape avec la séquence suivante, selon le coût du lot :
   - tests ciblés quand il y en a ;
   - `npm run typecheck -w apps/web` ou commande équivalente ciblée sur le périmètre modifié, si le changement touche les types ou les exports ;
-  - `node scripts/check-top-heavy-files.mjs --top=25`.
+  - `node scripts/checks/check-top-heavy-files.mjs --top=25`.
 - Pour les très gros fichiers ou les refactors multi-extractions, il est acceptable de faire d'abord les tests ciblés + le contrôle des fichiers lourds, puis de réserver le typecheck ciblé à la fin du lot.
 - Objectif de sortie :
   - plus aucun fichier applicatif au-dessus de `1000` lignes par défaut ;

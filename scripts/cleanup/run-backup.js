@@ -17,9 +17,6 @@ const BACKUP_DIR = path.join(PROJECT_ROOT, 'artifacts', 'backups', 'dark-cleanup
 
 const TARGET_FILES = [
   'apps/web/src/app/globals.css',
-  'scripts/upgrade-map-ui.js',
-  'scripts/refactor_ui.js',
-  'scripts/fix_forms_and_map.js',
   'apps/web/figma-plugin-cleanmymap-templates/code.js',
 ];
 

@@ -28,9 +28,6 @@ import type { DarkReference, DarkReferenceKind, InventoryReport } from './types'
 /** Fichiers cibles à analyser */
 const TARGET_FILES: Array<{ path: string; type: 'CSS' | 'JS' | 'FIGMA' }> = [
   { path: 'apps/web/src/app/globals.css', type: 'CSS' },
-  { path: 'scripts/upgrade-map-ui.js', type: 'JS' },
-  { path: 'scripts/refactor_ui.js', type: 'JS' },
-  { path: 'scripts/fix_forms_and_map.js', type: 'JS' },
   { path: 'apps/web/figma-plugin-cleanmymap-templates/code.js', type: 'FIGMA' },
 ];
 

@@ -134,7 +134,7 @@ jobs:
 
       - name: Web tests
         if: steps.scope.outputs.docs_only != 'true'
-        run: node scripts/validation-policy.mjs --assert-full-suite
+        run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
       - name: Web Vitest suite
         if: steps.scope.outputs.docs_only != 'true'

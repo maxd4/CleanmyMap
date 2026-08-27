@@ -32,7 +32,7 @@ Les dossiers et fichiers generes sont exclus : `node_modules`, `.git`, `.next`, 
 Utiliser une allowlist uniquement pour les exemples publics ou placeholders documentes :
 
 ```bash
-npm run security:secrets -- --allowlist=scripts/secret-audit.allowlist.json
+npm run security:secrets -- --allowlist=scripts/checks/secret-audit.allowlist.json
 ```
 
 Format :
