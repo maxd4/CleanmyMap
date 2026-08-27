@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 interface AdminPanelShellProps {
   title: string;
   subtitle?: string;
+  variant?: "dark" | "warm";
   children: ReactNode;
   className?: string;
   headerAction?: ReactNode;
@@ -19,6 +20,7 @@ interface AdminPanelShellProps {
 export function AdminPanelShell({
   title,
   subtitle,
+  variant = "dark",
   children,
   className,
   headerAction,
@@ -27,18 +29,32 @@ export function AdminPanelShell({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5",
-        className
+        variant === "warm"
+          ? "group relative overflow-hidden rounded-[1.75rem] border border-stone-200/80 bg-white/78 p-5 shadow-[0_16px_40px_-32px_rgba(69,45,28,0.24)] backdrop-blur-sm transition-shadow hover:shadow-[0_18px_42px_-30px_rgba(69,45,28,0.28)]"
+          : "group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5",
+        className,
       )}
     >
       <div className="relative z-10 flex flex-col h-full">
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tighter text-white leading-none">
+            <h2
+              className={cn(
+                "text-2xl font-black tracking-tighter leading-none",
+                variant === "warm" ? "text-stone-950" : "text-white",
+              )}
+            >
               {title}
             </h2>
             {subtitle && (
-              <p className="text-sm font-medium text-slate-400 opacity-80 leading-relaxed">
+              <p
+                className={cn(
+                  "text-sm font-medium leading-relaxed",
+                  variant === "warm"
+                    ? "text-stone-600"
+                    : "text-slate-400 opacity-80",
+                )}
+              >
                 {subtitle}
               </p>
             )}
@@ -55,7 +71,12 @@ export function AdminPanelShell({
         </div>
 
         {footer && (
-          <div className="mt-8 pt-6 border-t border-white/5">
+          <div
+            className={cn(
+              "mt-8 border-t pt-6",
+              variant === "warm" ? "border-stone-200" : "border-white/5",
+            )}
+          >
             {footer}
           </div>
         )}

@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
-import { AdminOperationalMetricGrid } from "@/components/admin/admin-dashboard-ui";
+import {
+  AdminOperationalMetricGrid,
+} from "@/components/admin/admin-dashboard-ui";
+import { ModerationByBlockPanel } from "@/components/admin/moderation-by-block-panel";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
 import type { PublishedPartnerAnnuaireEntry } from "@/lib/partners/published-annuaire-entries-store";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
@@ -175,6 +178,47 @@ describe("/admin data availability contract", () => {
     expect(buildAdminAlert(current).title).toBe("Aucune urgence de modération détectée");
   });
 
+  it("keeps partial and unavailable states visible in the operational UI", () => {
+    const current = sources();
+    current.actions = unavailable();
+    current.signalements = unavailable();
+
+    const markup = renderToStaticMarkup(
+      createElement(AdminOperationalMetricGrid, {
+        items: buildAdminMetricItems(current),
+      }),
+    );
+    const blocksMarkup = renderToStaticMarkup(
+      createElement(ModerationByBlockPanel, {
+        blocks: buildModerationBlockSummaries(current),
+      }),
+    );
+
+    expect(markup).toContain("Partiel");
+    expect(blocksMarkup).toContain("Partiel");
+    expect(blocksMarkup).not.toContain("Bloc ");
+  });
+
+  it("shows at most two moderation examples per file", () => {
+    const blocks = buildModerationBlockSummaries(sources());
+    const agir = blocks.find((item) => item.id === "agir");
+
+    expect(agir).toBeDefined();
+    agir!.samples = [
+      { label: "Exemple 1", meta: "Meta 1" },
+      { label: "Exemple 2", meta: "Meta 2" },
+      { label: "Exemple 3", meta: "Meta 3" },
+    ];
+
+    const markup = renderToStaticMarkup(
+      createElement(ModerationByBlockPanel, { blocks }),
+    );
+
+    expect(markup).toContain("Exemple 1");
+    expect(markup).toContain("Exemple 2");
+    expect(markup).not.toContain("Exemple 3");
+  });
+
   it("builds admin metrics only from the real moderation files", () => {
     const current = sources();
     current.actions = available({ items: [], count: 2 });
@@ -236,5 +280,33 @@ describe("/admin data availability contract", () => {
     expect(source).not.toContain("Apprendre");
     expect(source).not.toContain('href=\"/learn\"');
     expect(source).not.toContain("Classement global");
+    expect(source.match(/<PageHeader\b/g)).toHaveLength(1);
+    expect(source).not.toContain("AdminHeroStrip");
+    expect(source.match(/href=\{profileLink\}/g)).toHaveLength(1);
+    expect(source).not.toContain("À faire maintenant");
+    expect(source).not.toContain("Confidentialité & compte");
+    expect(source).not.toContain("Vous avez déjà un niveau de supervision élevé");
+    expect(source).not.toContain("Déclarer une action");
+    expect(source).not.toContain("Gérer les données");
+    expect(source).not.toContain("Renforcer traçabilité");
+    expect(source).toContain('id="workflow-administration"');
+    expect(source).toContain("<ActionsReportPanel");
+    expect(source).toContain('role === "max"');
+    expect(source).toContain("AdminCreatorConsole");
+  });
+
+  it("keeps the workflow title singular and uses the warm admin shell", () => {
+    const pageSource = readFileSync(
+      new URL("../../app/(app)/admin/page.tsx", import.meta.url),
+      "utf8",
+    );
+    const workflowSource = readFileSync(
+      new URL("../../components/reports/actions-report-panel.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(pageSource).not.toContain("Workflow administration");
+    expect(workflowSource.match(/title="Workflow administration"/g)).toHaveLength(1);
+    expect(workflowSource).toContain('variant="warm"');
   });
 });
