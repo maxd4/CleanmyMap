@@ -69,7 +69,7 @@ vi.mock("@/lib/actions/store", () => ({
   resolveActionCreationStatus: resolveActionCreationStatusMock,
 }));
 
-vi.mock("@/lib/actions/create-signalement", () => ({
+vi.mock("@/lib/actions/signalement/create-signalement", () => ({
   createSignalement: createSignalementMock,
 }));
 

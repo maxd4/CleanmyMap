@@ -2,7 +2,7 @@
 
 import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
 import { MyObservationsSection } from "@/components/actions/my-observations-section";
-import { useMyObservations } from "@/lib/actions/my-observations-client";
+import { useMyObservations } from "@/lib/actions/signalement/my-observations-client";
 
 export function TrashSpotterOwnerLoop({
   initialLocation,

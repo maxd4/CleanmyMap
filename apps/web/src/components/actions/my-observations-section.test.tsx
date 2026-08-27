@@ -1,7 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MyObservationsReadSnapshot } from "@/lib/actions/my-observations-client";
+import type { MyObservationsReadSnapshot } from "@/lib/actions/signalement/my-observations-client";
 import { MyObservationsSection } from "./my-observations-section";
 
 function snapshot(overrides: Partial<MyObservationsReadSnapshot>): MyObservationsReadSnapshot {

@@ -5,7 +5,7 @@ import { handleApiError, forbiddenResponse } from "@/lib/http/api-errors";
 import {
   listSignalementMedia,
   SignalementMediaError,
-} from "@/lib/actions/signalement-media";
+} from "@/lib/actions/signalement/signalement-media";
 
 export const runtime = "nodejs";
 // Justification Vercel: les URLs signées dépendent de la session, du statut du parent et de Storage.

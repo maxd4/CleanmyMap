@@ -13,7 +13,7 @@ import {
   createSignalement,
   SignalementCreationValidationError,
   type CreatedSignalement,
-} from "@/lib/actions/create-signalement";
+} from "@/lib/actions/signalement/create-signalement";
 import type { ActionStatus } from "@/lib/actions/types";
 
 export class ActionCreationValidationError extends Error {

@@ -1,6 +1,6 @@
 import { SCORE_THRESHOLDS } from "@/components/actions/map-marker-categories";
 import { mapItemLocationLabel } from "@/lib/actions/data-contract";
-import { isSignalementRecordType } from "@/lib/actions/signalement-media-contract";
+import { isSignalementRecordType } from "@/lib/actions/signalement/signalement-media-contract";
 import type { ActionMapItem, ActionPreparationData } from "@/lib/actions/types";
 
 export type ScoreReading = {

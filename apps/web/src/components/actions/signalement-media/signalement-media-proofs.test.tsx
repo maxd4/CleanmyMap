@@ -5,8 +5,8 @@ import {
   createSignalementMediaReadController,
   fetchSignalementMedia,
   SignalementMediaReadError,
-} from "@/lib/actions/signalement-media-client";
-import type { SignalementMediaReadItem } from "@/lib/actions/signalement-media-contract";
+} from "@/lib/actions/signalement/signalement-media-client";
+import type { SignalementMediaReadItem } from "@/lib/actions/signalement/signalement-media-contract";
 import {
   SignalementMediaProofs,
   SignalementMediaProofsView,

@@ -6,7 +6,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import {
   createSignalementMediaReadController,
   type SignalementMediaReadSnapshot,
-} from "@/lib/actions/signalement-media-client";
+} from "@/lib/actions/signalement/signalement-media-client";
 
 export type SignalementMediaProofsVariant = "compact" | "panel";
 

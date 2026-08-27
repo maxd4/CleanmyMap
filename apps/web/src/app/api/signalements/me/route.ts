@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedAccess } from "@/lib/authz";
-import { listMyObservations, clampMyObservationsLimit } from "@/lib/actions/my-observations";
+import { listMyObservations, clampMyObservationsLimit } from "@/lib/actions/signalement/my-observations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";

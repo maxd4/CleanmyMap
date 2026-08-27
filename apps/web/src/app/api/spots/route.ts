@@ -10,7 +10,7 @@ import {
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
-import { createSignalement } from "@/lib/actions/create-signalement";
+import { createSignalement } from "@/lib/actions/signalement/create-signalement";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {

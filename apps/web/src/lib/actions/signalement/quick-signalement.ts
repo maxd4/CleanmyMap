@@ -1,4 +1,4 @@
-import type { CreateActionPayload } from "./types";
+import type { CreateActionPayload } from "../types";
 import {
   appendWasteCategoriesToNotes,
   type WasteCategorySlug,

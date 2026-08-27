@@ -6,11 +6,11 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import type {
   MyObservationsReadSnapshot,
-} from "@/lib/actions/my-observations-client";
+} from "@/lib/actions/signalement/my-observations-client";
 import type {
   MyObservation,
   MyObservationStatus,
-} from "@/lib/actions/my-observations-contract";
+} from "@/lib/actions/signalement/my-observations-contract";
 
 export function getMyObservationStatusLabel(status: MyObservationStatus): string {
   switch (status) {
