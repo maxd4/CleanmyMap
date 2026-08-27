@@ -5,7 +5,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres-campaign";
+import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres/gestes-propres-campaign";
 
 type SituationIcon = LucideIcon;
 

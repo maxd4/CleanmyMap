@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { QuizSchoolKitPage } from "@/components/learn/quiz-school-kit-page";
+import { QuizSchoolKitPage } from "@/components/learn/quiz/quiz-school-kit-page";
 
 export const metadata: Metadata = {
   title: "Mode École - Kit d'atelier | CleanMyMap",

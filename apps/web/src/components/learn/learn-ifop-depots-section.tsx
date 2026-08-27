@@ -2,7 +2,7 @@ import { ArrowRight, FileText } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import { IFOP_DEPOTS_STUDY } from "@/lib/learning/ifop-depots-study";
+import { IFOP_DEPOTS_STUDY } from "@/lib/learning/gestes-propres/ifop-depots-study";
 import { cn } from "@/lib/utils";
 
 function getMetric(id: string) {

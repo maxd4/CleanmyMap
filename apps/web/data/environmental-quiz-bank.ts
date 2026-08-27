@@ -1,6 +1,6 @@
-import type { QuizQuestion } from "../src/lib/learning/quiz-question-contract";
-import { QUIZ_REVIEW_TARGETS } from "../src/lib/learning/quiz-review-targets.ts";
-import { IMPACT_REFERENCE_QUIZ_QUESTIONS } from "../src/lib/learning/impact-reference-data.ts";
+import type { QuizQuestion } from "../src/lib/learning/quiz/quiz-question-contract";
+import { QUIZ_REVIEW_TARGETS } from "../src/lib/learning/quiz/quiz-review-targets.ts";
+import { IMPACT_REFERENCE_QUIZ_QUESTIONS } from "../src/lib/learning/quiz/impact-reference-data.ts";
 
 export const QUIZ_QUESTION_BANK: QuizQuestion[] = [
   {

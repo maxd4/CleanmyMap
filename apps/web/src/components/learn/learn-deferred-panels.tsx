@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
-import type { QuizSentrainerEntryState } from "@/lib/learning/quiz-entry-state";
+import type { QuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
 
 const DeferredLearnArtworkAccordionComponent = dynamic(
   () =>
@@ -83,7 +83,7 @@ const DeferredSustainableGoalsInteractiveComponent = dynamic(
 );
 
 const DeferredEnvironmentalQuizComponent = dynamic(
-  () => import("@/components/learn/environmental-quiz").then((module) => module.EnvironmentalQuiz),
+  () => import("@/components/learn/quiz/environmental-quiz").then((module) => module.EnvironmentalQuiz),
   {
     ssr: false,
     loading: () => (

@@ -10,7 +10,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
-vi.mock("@/lib/learning/quiz-pedagogical-metrics", () => ({
+vi.mock("@/lib/learning/quiz/quiz-pedagogical-metrics", () => ({
   syncQuizPedagogicalMetrics: syncQuizPedagogicalMetricsMock,
 }));
 

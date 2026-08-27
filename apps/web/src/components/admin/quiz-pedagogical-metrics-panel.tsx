@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SourceBadge, StatCard } from "@/components/ui/page-structure";
 import { cn } from "@/lib/utils";
-import type { QuizPedagogicalMetricsSnapshot } from "@/lib/learning/quiz-pedagogical-metrics";
+import type { QuizPedagogicalMetricsSnapshot } from "@/lib/learning/quiz/quiz-pedagogical-metrics";
 
 function formatRate(value: number): string {
   return `${Math.round(value * 100)}%`;

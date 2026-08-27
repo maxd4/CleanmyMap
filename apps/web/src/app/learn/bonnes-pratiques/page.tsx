@@ -9,7 +9,7 @@ import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-track
 import {
   LearnPracticeThemeTabs,
 } from "@/components/learn/learn-practice-theme-tabs";
-import type { LearnPracticeThemeId } from "@/lib/learning/learn-practice-themes";
+import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 

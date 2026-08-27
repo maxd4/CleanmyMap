@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { syncQuizPedagogicalMetrics } from "@/lib/learning/quiz-pedagogical-metrics";
+import { syncQuizPedagogicalMetrics } from "@/lib/learning/quiz/quiz-pedagogical-metrics";
 import { requireBotIdHuman } from "@/lib/botid/server";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 

@@ -3,7 +3,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import { GESTES_PROPRES_BAROMETER_2025 } from "@/lib/learning/gestes-propres-barometer";
+import { GESTES_PROPRES_BAROMETER_2025 } from "@/lib/learning/gestes-propres/gestes-propres-barometer";
 import { LearnGestesPropresCollectiveActionSection } from "@/components/learn/learn-gestes-propres-collective-action-section";
 import { LearnGestesPropresMythsSection } from "@/components/learn/learn-gestes-propres-myths-section";
 
