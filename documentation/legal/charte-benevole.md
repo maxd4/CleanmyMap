@@ -1,112 +1,91 @@
-# Charte de sécurité et de comportement CleanMyMap
+# Charte de sécurité et de comportement
 
-**Dernière mise à jour :** 27 août 2026
+**Dernière mise à jour : 27 août 2026**
 
-Cette charte présente les règles de sécurité et de comportement applicables à
-l'utilisation de CleanMyMap et à la participation à une action de terrain
-référencée par le service. Elle complète les [Conditions générales
-d'utilisation](https://cleanmymap.fr/conditions-generales-utilisation) sans
-créer de garantie, d'assurance ou de lien d'organisation qui ne serait pas
-explicitement établi.
+Cette charte présente les bonnes pratiques pour utiliser CleanMyMap et
+participer à une action de terrain. Elle ne crée pas de contrat d'organisation
+d'une action et ne remplace pas les consignes locales, les règles du lieu ou
+les instructions de l'organisateur.
 
-## 1. Deux situations à distinguer
+## 1. Rôles
 
-### Action créée par un utilisateur ou un organisateur tiers
+- **CleanMyMap** est une plateforme de publication, de cartographie et de
+  coordination ;
+- **l'organisateur** est l'utilisateur ou la structure qui crée et publie une
+  action ou un événement ;
+- **le bénévole** est la personne qui choisit librement de participer à cette
+  action.
 
-Une action déclarée, créée ou partagée par un utilisateur, un groupe ou un
-organisateur tiers reste sous la responsabilité de cette personne ou de cet
-organisateur. Sa présence sur la carte ou dans un événement CleanMyMap ne
-signifie pas que CleanMyMap l'organise, la vérifie sur le terrain, l'encadre ou
-la couvre.
+**Action créée par un utilisateur ou un organisateur tiers** : elle n'est pas,
+du seul fait de sa présence sur CleanMyMap, organisée, encadrée ou couverte par
+CleanMyMap.
 
-Les informations sur le rendez-vous, l'accès au site, les consignes, le
-matériel, l'assurance éventuelle ou les personnes responsables doivent être
-confirmées directement auprès de l'organisateur concerné.
+**Action éventuellement organisée par CleanMyMap** : CleanMyMap n'organise pas actuellement
+d'action de terrain présentée comme officielle dans cette charte.
+Une telle action ferait l'objet d'informations propres, publiées séparément et
+de façon factuelle.
 
-### Action éventuellement organisée par CleanMyMap
+CleanMyMap ne promet par avance ni assurance, ni responsabilité civile, ni matériel,
+d'encadrement, de prise en charge médicale ou de statut de membre d'une
+structure. Les engagements d'un organisateur tiers doivent être vérifiés
+auprès de celui-ci.
 
-CleanMyMap n'organise pas actuellement d'action de terrain présentée comme
-officielle par cette charte. Si une telle action est mise en place à l'avenir,
-son organisateur, son périmètre et ses conditions de sécurité seront indiqués
-dans une information dédiée. Rien dans cette charte ne promet par avance une
-assurance, du matériel, un encadrement, une formation, des secours ou une
-couverture pour un tiers.
+## 2. Avant l'action
 
-## 2. Principes de sécurité
+L'organisateur et les participants vérifient :
 
-Avant toute participation, chaque personne doit évaluer sa situation, le lieu,
-la météo, les accès et les risques connus. Elle doit notamment :
+- l'autorisation d'accès et les règles du lieu ;
+- la météo, la durée, les accès et les moyens de retour ;
+- la nature prévisible des déchets et les limites de l'action ;
+- les consignes d'urgence et le moyen de contacter l'organisateur ;
+- l'aptitude de chacun à participer dans les conditions prévues.
 
-- ne pas entrer dans une propriété privée, une zone interdite ou une zone
-  dangereuse sans autorisation appropriée ;
-- respecter les consignes des autorités, du propriétaire du lieu et de
-  l'organisateur présent ;
-- utiliser les équipements de protection adaptés à son activité et à sa
-  situation, sans supposer qu'ils sont fournis par CleanMyMap ;
-- ne pas manipuler de déchet dangereux, d'objet coupant, de substance inconnue
-  ou de matériel abandonné présentant un risque ;
-- arrêter l'activité lorsqu'une situation devient dangereuse et prévenir les
-  personnes concernées ;
-- contacter les services d'urgence en cas d'urgence réelle.
+Une personne ne doit pas participer si les conditions présentent un risque
+qu'elle ne peut pas maîtriser.
 
-La participation est libre. Une personne peut refuser une consigne, quitter le
-lieu ou renoncer à l'action si elle estime que les conditions ne sont pas
-sûres.
+## 3. Équipements et déchets
 
-## 3. Comportement sur le service et sur le terrain
+Les équipements adaptés doivent être déterminés et fournis par l'organisateur
+ou les participants selon ce qui a été annoncé. Des gants adaptés, des
+chaussures fermées, une protection contre les projections et une tenue adaptée
+peuvent être nécessaires.
 
-Les participants s'engagent à :
+Ne pas manipuler un déchet inconnu, coupant, explosif, inflammable, chimique,
+biologique ou autrement dangereux. Ne pas ouvrir un contenant suspect et ne pas
+intervenir sur une zone dangereuse. S'éloigner, sécuriser la zone sans se mettre
+en danger et prévenir les services compétents ou l'organisateur.
 
-- respecter les autres participants, les riverains, les propriétaires, les
-  agents publics et les personnes rencontrées ;
-- respecter la faune, la flore, les équipements et les lieux ;
-- fournir des informations sincères lorsqu'ils déclarent une action ou un
-  signalement ;
-- ne pas publier de données personnelles, de photographies ou d'informations
-  permettant d'identifier une personne sans base légitime ;
-- garder une communication constructive et ne pas harceler, menacer, spammer
-  ou discriminer ;
-- laisser le lieu dans un état sûr et ne pas abandonner de déchets ou de
-  matériel.
+Les déchets doivent être triés et déposés uniquement dans les filières ou
+points autorisés. Il ne faut pas déplacer un déchet vers un autre lieu sans
+solution de dépôt identifiée.
 
-Les contenus ou comportements potentiellement illicites peuvent être transmis
-via la [notification électronique dédiée](https://cleanmymap.fr/signaler-contenu-illicite).
-Les demandes d'assistance ou relatives aux données personnelles passent par le
-[contact](https://cleanmymap.fr/contact).
+## 4. Comportement sur le terrain
 
-## 4. Contributions et reconnaissance
+Chaque participant respecte les personnes, les riverains, les propriétaires,
+les autres usagers, la faune, la flore et les équipements. Il ne bloque pas un
+passage, ne pénètre pas dans une propriété sans autorisation et ne met pas une
+autre personne en danger pour collecter un déchet ou obtenir une image.
 
-Une déclaration d'action, une photo ou un message reste soumis aux règles des
-CGU. Les statistiques, badges et exports affichés par le service dépendent des
-données déclarées et des parcours effectivement disponibles ; ils ne
-constituent ni une certification scientifique, ni une validation de la sécurité
-d'une action.
+Les consignes de l'organisateur, les règles du lieu et les consignes des
+services de secours priment sur toute indication générale de la plateforme.
 
-Cette charte ne crée aucun droit à une rémunération, à une décision collective,
-à une couverture d'assurance, à du matériel, à une formation ou à une prise en
-charge des dommages.
+En cas d'accident ou de danger immédiat, interrompre l'action et contacter les
+services d'urgence compétents.
 
-## 5. Modération
+## 5. Données, photos et publication
 
-Les manquements aux CGU ou à cette charte peuvent être examinés dans le cadre
-des capacités de modération effectivement disponibles. Les notifications de
-contenu illicite suivent le cycle décrit dans les CGU : notification reçue,
-décision motivée, éventuelle mutation du contenu lorsqu'une capacité canonique
-le permet, audit puis notification des personnes dont les coordonnées sont
-disponibles.
+Ne pas photographier ou publier une personne identifiable sans base appropriée.
+Éviter les visages, plaques d'immatriculation, adresses et autres informations
+qui ne sont pas nécessaires à la description de l'action.
 
-La charte ne promet pas une sanction déterminée ni une procédure qui ne serait
-pas déployée.
+Chaque contributeur vérifie les droits dont il dispose sur ses textes, photos
+et autres contenus. Les règles de publication et la licence technique limitée
+sont décrites dans les [CGU](conditions-generales-utilisation.md).
 
-## 6. Mise à jour et contact
+## 6. Problème ou signalement
 
-La présente charte peut être mise à jour pour suivre le produit, les règles de
-sécurité ou le droit applicable. La date de mise à jour est indiquée en tête du
-document.
-
-Pour toute question, utilisez le [contact CleanMyMap](https://cleanmymap.fr/contact)
-ou l'adresse publique `contact@cleanmymap.fr`.
-
----
-
-*CleanMyMap — charte de sécurité et de comportement mise à jour le 27 août 2026.*
+Un problème de sécurité, de comportement, de publication ou d'accès doit être
+signalé à l'organisateur lorsqu'il concerne son action ou son événement. Pour
+une question de service, utilisez le [contact](https://cleanmymap.fr/contact).
+Pour notifier un contenu potentiellement illicite, utilisez le formulaire
+[Signaler un contenu](https://cleanmymap.fr/signaler-contenu-illicite).
