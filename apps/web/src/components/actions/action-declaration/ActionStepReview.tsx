@@ -16,10 +16,10 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionDataQualityResult } from "../action-declaration-form/action-declaration-form.quality";
+import { estimateWasteKg } from "../action-declaration-form/action-declaration-form.estimation";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
@@ -56,13 +56,6 @@ function fmtAssociation(name: string | undefined): string {
 
 function fmtLocation(label: string | undefined): string {
   return label?.trim() || "Non renseigné";
-}
-
-function qualityLabel(score: number): { label: string; color: string; bg: string; border: string } {
-  if (score >= 80) return { label: "Excellent", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" };
-  if (score >= 55) return { label: "Bon", color: "text-sky-700", bg: "bg-sky-50", border: "border-sky-200" };
-  if (score >= 35) return { label: "Moyen", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" };
-  return { label: "Faible", color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-200" };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -117,63 +110,43 @@ export function ActionStepReview({
     payload.recordType === "clean_place" || payload.recordType === "spot";
   const hasWarnings = dataQuality.warnings.length > 0;
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
-  const quality = qualityLabel(dataQuality.score);
+  const indicativeWasteEstimate = isCleanPlaceMode
+    ? null
+    : estimateWasteKg({
+        volunteersCount: String(payload.volunteersCount),
+        durationMinutes: String(payload.durationMinutes),
+        placeType: payload.placeType ?? "",
+        wasteMegotsKg: String(payload.wasteBreakdown?.megotsKg ?? 0),
+      });
 
   const readyMessage = hasWarnings
     ? "Déclaration transmissible — certains éléments peuvent être améliorés."
     : isCleanPlaceMode
-      ? "Le lieu propre est cohérent et prêt à être publié."
-      : "Toutes les données semblent cohérentes. Merci pour cette contribution.";
+      ? "Aucun point d’attention supplémentaire détecté pour ce lieu."
+      : "Aucun point d’attention supplémentaire détecté dans ce formulaire.";
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-      {/* ── 1. Score de fiabilité ────────────────────────────────────────── */}
+      {/* ── 1. Aide à la relecture ───────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle color="bg-emerald-500">Analyse de fiabilité</SectionTitle>
-
-        <div className="flex items-center gap-5">
-          {/* Cercle score */}
-          <div className="relative h-20 w-20 shrink-0">
-            <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                strokeWidth="9"
-                stroke="#f1f5f9"
-                fill="transparent"
-                r="40" cx="50" cy="50"
-              />
-              <circle
-                strokeWidth="9"
-                strokeDasharray={2 * Math.PI * 40}
-                strokeDashoffset={2 * Math.PI * 40 * (1 - dataQuality.score / SCORE_SCALE)}
-                strokeLinecap="round"
-                stroke={dataQuality.score >= 55 ? "#10b981" : dataQuality.score >= 35 ? "#f59e0b" : "#f43f5e"}
-                fill="transparent"
-                r="40" cx="50" cy="50"
-                className="transition-all duration-[1.2s] ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-slate-900">
-                {formatScorePercent(dataQuality.score)}
-              </span>
-            </div>
+        <SectionTitle color="bg-emerald-500">Aide à la relecture</SectionTitle>
+        <p className="text-sm leading-6 text-slate-700">
+          Les mesures affichées correspondent aux valeurs déclarées. Les repères
+          estimatifs restent indicatifs et ne modifient pas ces mesures.
+        </p>
+        {indicativeWasteEstimate !== null && (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold text-slate-600">Repère indicatif</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">
+              Estimation de déchets : {fmtKg(indicativeWasteEstimate)}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Ce repère ne remplace pas la masse déclarée et n&apos;entre pas dans les points d&apos;attention.
+            </p>
           </div>
-
-          {/* Texte */}
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={cn(
-                "rounded-full border px-2.5 py-1 text-xs font-semibold",
-                quality.bg, quality.border, quality.color
-              )}>
-                {quality.label}
-              </span>
-              <span className="text-xs text-slate-400">Niveau {dataQuality.level}</span>
-            </div>
-            <p className="text-sm font-medium text-slate-700 leading-snug">{readyMessage}</p>
-          </div>
-        </div>
+        )}
+        <p className="mt-4 text-sm font-medium leading-snug text-slate-700">{readyMessage}</p>
       </section>
 
       {/* ── 2. Cartes résumé ─────────────────────────────────────────────── */}
@@ -289,7 +262,7 @@ export function ActionStepReview({
             ))}
           </ul>
           <p className="text-[10px] text-amber-700">
-            Ces points n&apos;empêchent pas l&apos;envoi. Ils améliorent la fiabilité de votre déclaration.
+            Ces points n&apos;empêchent pas l&apos;envoi. Ils facilitent la relecture et la vérification de votre déclaration.
           </p>
         </section>
       )}
