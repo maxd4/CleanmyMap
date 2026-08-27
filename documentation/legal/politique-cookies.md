@@ -1,153 +1,83 @@
-# Politique des Cookies - CleanMyMap
+# Politique des cookies et traceurs
 
-**Dernière mise à jour :** 27 août 2026
+**Dernière mise à jour : 27 août 2026**
 
----
+Cette politique décrit les cookies, le stockage local et les services
+conditionnés au choix analytics sur CleanMyMap.
 
-## 1. Qu'est-ce qu'un Cookie ?
+## 1. Choix initial
 
-Un cookie est un petit fichier texte déposé sur votre appareil lors de la visite d'un site web. Il permet de mémoriser des informations relatives à votre navigation.
+Lors de la première visite, la bannière présente deux choix de premier niveau :
 
-CleanMyMap utilise des cookies pour :
-- Fonctionnement essentiel du site
-- Amélioration de l'expérience utilisateur
-- Analyse de la navigation (avec votre consentement)
+| Choix | Effet |
+| --- | --- |
+| **Tout accepter** | Autorise les services analytics conditionnés au consentement |
+| **Tout refuser** | N'autorise pas ces services et conserve uniquement le fonctionnement essentiel |
 
----
+Les deux choix ont le même niveau d'accès et le même nombre de clics. Aucun
+choix intermédiaire n'est requis au premier niveau.
 
-## 2. Bannière de Consentement
+## 2. Durée et retrait
 
-Lors de votre première visite sur CleanMyMap, une bannière vous permet de choisir :
+L'acceptation comme le refus sont mémorisés pendant **180 jours**, soit six
+mois :
 
-| Option | Description |
-|--------|-------------|
-| **Tout accepter** | Active les services analytiques en plus des services essentiels |
-| **Tout refuser** | Laisse uniquement les services essentiels au fonctionnement |
+- `cleanmymap_cookie_consent` dans le `localStorage` du navigateur ;
+- `cleanmymap_analytics_consent=1` ou `cleanmymap_analytics_consent=0` dans
+  le cookie de consentement, avec la même durée.
 
-Votre choix, acceptation comme refus, est enregistré pour **6 mois** dans `localStorage` sous `cleanmymap_cookie_consent` et synchronisé avec le cookie `cleanmymap_analytics_consent`, écrit avec la même durée.
+Lorsque la décision locale est expirée, elle est nettoyée et le choix est
+proposé à nouveau. Le contrôle permanent **Gérer mes cookies**, présent dans le
+pied de page, permet de rouvrir les préférences sans supprimer manuellement le
+stockage du navigateur.
 
-Vous pouvez modifier vos préférences à tout moment en cliquant sur le contrôle permanent **Gérer mes cookies** dans le pied de page. Si le choix local expire après 6 mois, il est nettoyé automatiquement et la bannière est reproposée. Le retrait du consentement arrête la capture PostHog et ne rend plus Vercel Analytics ni Vercel Speed Insights ; un nouveau consentement peut les réactiver.
+Le retrait est possible à tout moment. Il arrête la capture PostHog et empêche
+le rendu de Vercel Analytics et Vercel Speed Insights. Un nouveau consentement
+peut réactiver ces services.
 
----
+## 3. Fonctionnement essentiel
 
-## 3. Types de Cookies Utilisés
+Les cookies et stockages nécessaires au fonctionnement du site peuvent être
+utilisés sans consentement analytics, notamment :
 
-### 3.1 Cookies Essentiels (Sans Consentement)
+- la session et l'authentification Clerk ;
+- les préférences d'interface nécessaires au parcours, comme la langue ou le
+  mode d'affichage, lorsqu'elles sont activées ;
+- les éléments techniques nécessaires à la sécurité et au fonctionnement de la
+  plateforme.
 
-Ces cookies sont nécessaires au fonctionnement du site. Vous ne pouvez pas les désactiver.
+Les durées de ces éléments peuvent dépendre de la session, du navigateur ou de
+la configuration du fournisseur. La présente politique ne leur attribue pas de
+durée générique non vérifiée.
 
-| Service | Purpose | Durée |
-|---------|---------|-------|
-| **Clerk** | Authentification et session utilisateur | Session |
-| **Next.js** | Fonctionnement technique (locale, display mode) | Session |
-| **Supabase** | Gestion des requêtes base de données | Session |
+## 4. Services soumis au consentement analytics
 
-Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont également synchronisées via cookies `SameSite=Lax` lorsqu'elles sont actives. Le mode d'affichage en attente de synchronisation reste en `localStorage` (`cleanmymap.display_mode_pending_sync`).
+| Service | Finalité | Condition |
+| --- | --- | --- |
+| PostHog | Mesure d'audience et analytics des parcours | Consentement positif |
+| Vercel Analytics | Mesure de performance web | Consentement positif |
+| Vercel Speed Insights | Mesure des temps de chargement | Consentement positif |
 
-### 3.2 Services soumis au consentement analytics
+PostHog n'est jamais chargé avant un consentement positif. Après un retrait,
+l'instance déjà initialisée est arrêtée, son identité et sa persistance utile
+sont réinitialisées et la capture reste désactivée jusqu'à un nouveau
+consentement.
 
-Ces cookies permettent d'analyser la navigation pour améliorer le service.
+Sentry n'est pas classé comme analytics soumis à ce consentement. Lorsqu'il est
+activé par une DSN, il sert à l'observabilité, à la sécurité et au diagnostic
+sur la base de l'intérêt légitime. Les données techniques éventuellement
+transmises et leur durée chez le fournisseur ne sont pas décrites comme
+anonymisées ou conservées pendant une durée fixée par ce dépôt.
 
-| Service | Description | Consentement |
-|---------|-------------|---------------|
-| **PostHog** | Analytics et mesure d'audience | Requis |
-| **Vercel Analytics** | Mesure de performance et Core Web Vitals | Requis |
-| **Vercel Speed Insights** | Analyse des temps de chargement | Requis |
+## 5. Gestion par navigateur
 
-Sentry n'est pas un service analytics soumis au consentement. Lorsqu'il est
-activé par une DSN, il est utilisé pour l'observabilité, la sécurité et le
-diagnostic sur la base de l'intérêt légitime.
+Le navigateur permet de supprimer, bloquer ou limiter les cookies et le
+stockage local. Un blocage général peut perturber la session, les préférences
+ou certaines fonctions essentielles. Le contrôle **Gérer mes cookies** reste
+le moyen prévu par CleanMyMap pour modifier le choix analytics.
 
----
+## 6. Contact
 
-## 4. Détail des Outils Analytiques
-
-### PostHog
-- **Type** : Analytics et mesure d'audience
-- **Configuration** : l'hôte UE est la valeur par défaut du projet, mais l'hôte est configurable.
-- **Données** : événements de parcours envoyés après consentement ; aucune anonymisation supplémentaire n'est déclarée ici comme garantie.
-- **Consentement** : Requis - désactivé si pas de consentement
-- **Note** : le parrainage et les liens d'invitation ne reposent pas sur un cookie dédié ; ils sont suivis en base de données via le profil utilisateur.
-
-### Vercel Analytics
-- **Type** : Mesure de performance web
-- **Données** : Métriques de performance (FCP, LCP, CLS)
-- **Consentement** : Requis - désactivé si pas de consentement
-
-### Vercel Speed Insights
-- **Type** : Analyse des temps de chargement
-- **Données** : Métriques de vitesse et performances
-- **Consentement** : Requis - désactivé si pas de consentement
-
-### Sentry
-- **Type** : Monitoring et error tracking
-- **Données** : Erreurs techniques, stack traces, contexte utilisateur
-- **Consentement** : Intérêt légitime (sécurité) - activé sans consentement explicite
-- **Base légale** : Article 6.1.f RGPD - intérêt légitime pour la sécurité du service
-
----
-
-## 5. Gestion des Cookies par Navigateur
-
-Vous pouvez configurer votre navigateur pour :
-
-### Chrome
-1. Paramètres > Confidentialité > Cookies
-2. Bloquer tous les cookies ou exceptions par site
-
-### Firefox
-1. Paramètres > Protection > Cookies
-2. Gestion des exceptions
-
-### Safari
-1. Préférences > Confidentialité
-2. Bloquer les cookies
-
-### Edge
-1. Paramètres > Cookies et autorisations
-2. Gestion par site
-
-**Note :** La désactivation des cookies peut limiter certaines fonctionnalités du site.
-
----
-
-## 6. Cookies Tiers
-
-CleanMyMap intègre des services tiers qui peuvent déposer leurs propres cookies :
-
-- **Clerk** (authentification)
-- **PostHog** (analytics)
-- **Vercel** (hébergement)
-- **Resend** (emails)
-
-Nous n'avons pas de contrôle sur ces cookies tiers. Veuillez consulter leurs politiques de confidentialité respectives.
-
----
-
-## 7. Durée de Conservation
-
-| Type de cookie | Durée maximale |
-|----------------|-----------------|
-| Cookies essentiels | Session |
-| Cookies analytiques configurés par CleanMyMap | 6 mois |
-| Consentement | 6 mois |
-| Journaux techniques | Période nécessaire à la sécurité et au diagnostic ; aucune durée fixe n'est configurée par ce dépôt |
-
----
-
-## 8. Mise à Jour de cette Politique
-
-Cette politique peut être mise à jour pour refléter les changements dans nos services ou la réglementation.
-
-En cas de modification substantielle, une notification sera affichée sur le site.
-
----
-
-## 9. Contact
-
-Pour toute question concernant cette politique de cookies :
-- **Point de contact actuellement configuré** : contact@cleanmymap.fr
-
----
-
-*Pour plus d'informations sur la protection des données personnelles, consultez notre Politique de Confidentialité.*
+Pour toute question sur les cookies ou le consentement, écrivez à
+<contact@cleanmymap.fr>. Les traitements associés aux données personnelles sont
+décrits dans la [Politique de confidentialité](politique-confidentialite.md).
