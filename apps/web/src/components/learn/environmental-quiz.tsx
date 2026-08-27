@@ -24,24 +24,24 @@ import { QuizReasoningPicker } from "@/components/learn/quiz-reasoning-picker";
 import { QuizSchoolPicker } from "@/components/learn/quiz-school-picker";
 import { QuizSessionPanel } from "@/components/learn/quiz-session-panel";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz-adaptive";
-import { getQuizReviewTarget, type QuizReviewTarget } from "@/components/learn/quiz-review-targets";
-import { buildQuizErrorGrid, type QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
+import { getQuizReviewTarget } from "@/lib/learning/quiz-review-targets";
+import { buildQuizErrorGrid, type QuizErrorTypeId } from "@/lib/learning/quiz-error-grid";
 import {
   getNextReasoningType,
   type QuizReasoningType,
-} from "@/components/learn/quiz-reasoning-types";
+} from "@/lib/learning/quiz-reasoning-types";
 import {
   QUIZ_ACCESS_TYPES,
   matchesQuizAccessType,
   getQuizAccessType,
   type QuizAccessTypeId,
-} from "@/components/learn/quiz-access-types";
-import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
+} from "@/lib/learning/quiz-access-types";
+import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/lib/learning/quiz-trap-levels";
 import {
   getQuizSchoolKeyMessages,
   getQuizSchoolTrackLabel,
-  type QuizSchoolTrackId,
 } from "@/components/learn/quiz-school-modes";
+import type { QuizSchoolTrackId } from "@/lib/learning/quiz-school-types";
 import {
   getQuizUiCopy,
 } from "@/lib/learning/quiz-i18n";
@@ -54,40 +54,20 @@ import {
 } from "@/lib/learning/quiz-personal-progress";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz-question-bank";
 import type { QuizQuestion } from "@/lib/learning/quiz-question-contract";
+import type {
+  QuizModeRecommendation,
+  QuizSessionSummary,
+  QuizThemeSummary,
+} from "@/lib/learning/quiz-session-types";
 
 export { QUIZ_QUESTIONS };
 export type { QuizQuestion };
-
-export type QuizThemeSummary = {
-  label: string;
-  href: string;
-  total: number;
-  correct: number;
-  accuracy: number;
-};
-
-export type QuizErrorTypeSummary = {
-  label: string;
-  count: number;
-};
-
-export type QuizModeRecommendation = {
-  id: QuizAccessTypeId;
-  label: string;
-  reason: string;
-};
-
-export type QuizSessionSummary = {
-  score: number;
-  totalQuestions: number;
-  totalAnswered: number;
-  themesSucceeded: QuizThemeSummary[];
-  themesToReview: QuizThemeSummary[];
-  frequentErrorTypes: QuizErrorTypeSummary[];
-  recommendedMode: QuizModeRecommendation | null;
-  recommendedLearningTarget: QuizReviewTarget | null;
-  nextReviewTarget: QuizReviewTarget | null;
-};
+export type {
+  QuizErrorTypeSummary,
+  QuizModeRecommendation,
+  QuizSessionSummary,
+  QuizThemeSummary,
+} from "@/lib/learning/quiz-session-types";
 
 const QUIZ_QUESTION_IDS = QUIZ_QUESTIONS.map((question) => question.id);
 

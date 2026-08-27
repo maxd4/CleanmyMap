@@ -1,4 +1,4 @@
-import type { QuizQuestion } from "@/components/learn/environmental-quiz";
+import type { QuizQuestion } from "./quiz-question-contract";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "./quiz-source-metadata.ts";
 
 export type QuizSourceAuditFinding = {

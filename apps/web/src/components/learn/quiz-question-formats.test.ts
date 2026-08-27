@@ -4,7 +4,7 @@ import {
   QUIZ_QUESTION_FORMATS,
   getQuizQuestionFormat,
   listQuizQuestionFormatIds,
-} from "./quiz-question-formats";
+} from "@/lib/learning/quiz-question-formats";
 
 describe("quiz-question-formats", () => {
   it("defines the full pedagogical format catalog with concrete objectives", () => {

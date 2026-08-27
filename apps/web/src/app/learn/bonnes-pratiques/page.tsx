@@ -8,8 +8,8 @@ import { LearnTriContextSection } from "@/components/learn/learn-tri-context-sec
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import {
   LearnPracticeThemeTabs,
-  type LearnPracticeThemeId,
 } from "@/components/learn/learn-practice-theme-tabs";
+import type { LearnPracticeThemeId } from "@/lib/learning/learn-practice-themes";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 

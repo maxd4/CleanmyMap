@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { QuizQuestion } from "@/components/learn/environmental-quiz";
-import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import { QUIZ_CATEGORY_LABELS, getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import type { QuizQuestion } from "./quiz-question-contract";
+import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "./quiz-access-types";
+import { QUIZ_CATEGORY_LABELS, getQuizReviewTarget } from "./quiz-review-targets";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz-taxonomy";
-import { getQuizTrapLevel } from "@/components/learn/quiz-trap-levels";
-import type { QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
+import { getQuizTrapLevel } from "./quiz-trap-levels";
+import type { QuizErrorTypeId } from "./quiz-error-grid";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type QuizPedagogicalMetricBucketType = "question" | "mode" | "skill" | "error_type";

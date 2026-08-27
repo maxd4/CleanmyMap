@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { QuizQuestion } from "../../components/learn/environmental-quiz";
+import type { QuizQuestion } from "./quiz-question-contract";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { auditQuizSources } from "./quiz-source-audit";
 

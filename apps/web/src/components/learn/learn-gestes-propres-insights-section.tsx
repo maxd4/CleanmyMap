@@ -5,7 +5,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { GESTES_PROPRES_INSIGHTS } from "@/lib/learning/gestes-propres-insights";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import type { LearnPracticeThemeId } from "@/components/learn/learn-practice-theme-tabs";
+import type { LearnPracticeThemeId } from "@/lib/learning/learn-practice-themes";
 import { LearnGestesPropresCampaignSection } from "@/components/learn/learn-gestes-propres-campaign-section";
 import {
   LearnPartnerInsightCard,

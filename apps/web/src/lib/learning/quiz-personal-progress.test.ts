@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { QUIZ_REVIEW_TARGETS } from "@/components/learn/quiz-review-targets";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import { QUIZ_REVIEW_TARGETS } from "./quiz-review-targets";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 import {
   buildQuizPersonalProgressSnapshot,
   mergeQuizPersonalProgress,

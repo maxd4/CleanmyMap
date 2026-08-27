@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { QuizAccessPicker } from "./quiz-access-picker";
-import { QUIZ_REVIEW_TARGETS } from "./quiz-review-targets";
+import { QUIZ_REVIEW_TARGETS } from "@/lib/learning/quiz-review-targets";
 import {
   buildQuizPersonalProgressSnapshot,
   mergeQuizPersonalProgress,

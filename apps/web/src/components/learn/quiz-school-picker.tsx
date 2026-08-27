@@ -7,8 +7,8 @@ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { cn } from "@/lib/utils";
 import {
   QUIZ_SCHOOL_TRACKS,
-  type QuizSchoolTrackId,
 } from "@/components/learn/quiz-school-modes";
+import type { QuizSchoolTrackId } from "@/lib/learning/quiz-school-types";
 import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
 
 const INTERACTIVE_FOCUS_RING =

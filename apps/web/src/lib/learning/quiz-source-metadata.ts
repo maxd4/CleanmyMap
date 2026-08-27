@@ -1,27 +1,7 @@
-import type { QuizQuestion } from "@/components/learn/environmental-quiz";
+import type { QuizQuestion } from "./quiz-question-contract";
+import type { QuizSourceMetadata } from "./quiz-source-types";
 
-export type QuizSourceType =
-  | "institutionnelle"
-  | "scientifique"
-  | "associative"
-  | "presse"
-  | "interne"
-  | "estimation";
-
-export type QuizConfidenceLevel = "élevé" | "moyen" | "faible";
-
-export type QuizLocalScope = "national" | "regional" | "departemental" | "communal" | "variable";
-
-export type QuizSourceMetadata = {
-  sourceUrl: string;
-  sourceLabel: string;
-  sourceType: QuizSourceType;
-  confidenceLevel: QuizConfidenceLevel;
-  isLocalRule: boolean;
-  localScope: QuizLocalScope;
-  lastCheckedAt: string;
-  needsReview: boolean;
-};
+export type { QuizConfidenceLevel, QuizLocalScope, QuizSourceMetadata, QuizSourceType } from "./quiz-source-types";
 
 const LAST_CHECKED_AT = "2026-06-21";
 

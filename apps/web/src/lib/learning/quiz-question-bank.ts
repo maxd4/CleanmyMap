@@ -1,10 +1,11 @@
 import { QUIZ_QUESTION_BANK } from "../../../data/environmental-quiz-bank.ts";
-import { buildQuizErrorGrid } from "../../components/learn/quiz-error-grid.ts";
+import { buildQuizErrorGrid } from "./quiz-error-grid.ts";
 import { buildQuizSourceMetadata } from "./quiz-source-metadata.ts";
 import { getQuizDifficulty } from "./quiz-taxonomy.ts";
-import { getQuizTrapLevel } from "../../components/learn/quiz-trap-levels.ts";
+import { getQuizTrapLevel } from "./quiz-trap-levels.ts";
 import { getQuizPedagogicalType } from "./quiz-taxonomy.ts";
-import { stabilizeQuizQuestion, type ResolvedQuizQuestion } from "./quiz-question-contract.ts";
+import { stabilizeQuizQuestion } from "./quiz-question-normalization.ts";
+import type { ResolvedQuizQuestion } from "./quiz-question-contract.ts";
 
 export const QUIZ_QUESTIONS: ResolvedQuizQuestion[] = QUIZ_QUESTION_BANK.map((question) => {
   const errorGrid = buildQuizErrorGrid(question);

@@ -1,13 +1,13 @@
-import type { QuizQuestion } from "@/components/learn/environmental-quiz";
-import { getQuizAccessTypesForQuestion, getQuizAccessType, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import { QUIZ_CATEGORY_LABELS, getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import type { QuizQuestion } from "./quiz-question-contract";
+import { getQuizAccessTypesForQuestion, getQuizAccessType, type QuizAccessTypeId } from "./quiz-access-types";
+import { QUIZ_CATEGORY_LABELS, getQuizReviewTarget } from "./quiz-review-targets";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 import { auditQuizBank, type QuizQualityFinding } from "@/lib/learning/quiz-quality-audit";
 import { auditQuizSources } from "@/lib/learning/quiz-source-audit";
 import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "@/lib/learning/quiz-source-metadata";
 import { getQuizDifficulty, getQuizPedagogicalType, getQuizPedagogicalTypeLabel, type QuizDifficultyId, type QuizPedagogicalTypeId, type QuizSkillId } from "@/lib/learning/quiz-taxonomy";
-import { getQuizTrapLevel, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import { getQuizTrapLevel, type QuizTrapLevelId } from "./quiz-trap-levels";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 
 export type QuizBankSourceState = "missing" | "weak" | "sourced";
 
