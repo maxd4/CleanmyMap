@@ -25,6 +25,8 @@ create table if not exists public.legal_content_report_decisions (
   content_id text,
   before_state jsonb not null default '{}'::jsonb,
   after_state jsonb not null default '{}'::jsonb,
+  execution_status text not null default 'not_applicable',
+  execution_error_code text,
   audit_operation_id uuid not null,
   notifier_notification_status text not null default 'not_requested',
   author_notification_status text not null default 'not_requested',
@@ -39,6 +41,30 @@ create table if not exists public.legal_content_report_decisions (
     action not in ('content_restricted', 'content_removed')
     or ((legal_basis is not null) <> (terms_basis is not null))
   ),
+  constraint legal_content_report_decisions_execution_status_check check (
+    execution_status in ('not_applicable', 'pending', 'applied', 'failed')
+  ),
+  constraint legal_content_report_decisions_execution_error_code_check check (
+    execution_error_code is null
+    or execution_error_code in (
+      'capability_unavailable', 'content_not_found', 'mutation_failed',
+      'projection_failed', 'legacy_execution_unknown'
+    )
+  ),
+  constraint legal_content_report_decisions_execution_consistency_check check (
+    (
+      action in ('content_restricted', 'content_removed')
+      and execution_status in ('pending', 'applied', 'failed')
+    )
+    or (
+      action in ('reviewing', 'no_action', 'closed')
+      and execution_status = 'not_applicable'
+    )
+  ),
+  constraint legal_content_report_decisions_execution_error_presence_check check (
+    (execution_status = 'failed' and execution_error_code is not null)
+    or (execution_status <> 'failed' and execution_error_code is null)
+  ),
   constraint legal_content_report_decisions_lengths_check check (
     char_length(reason) between 5 and 2000
     and char_length(coalesce(legal_basis, '')) <= 1000
@@ -47,6 +73,7 @@ create table if not exists public.legal_content_report_decisions (
     and char_length(coalesce(content_id, '')) <= 160
     and octet_length(before_state::text) <= 4000
     and octet_length(after_state::text) <= 4000
+    and char_length(coalesce(execution_error_code, '')) <= 80
     and char_length(coalesce(notification_error, '')) <= 500
   ),
   constraint legal_content_report_decisions_notification_status_check check (

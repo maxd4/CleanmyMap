@@ -3,7 +3,10 @@ import type { PromotionRequestRecord } from "@/lib/admin/promotion-requests-stor
 import type { PartnerOnboardingRequestRecord } from "@/lib/partners/onboarding-requests-store";
 import type { ClerkUserIdentity } from "@/lib/services/clerk";
 import type { CommunityEventRow } from "@/types/database";
-import type { LegalContentReportRecord } from "@/lib/legal-content-report/legal-content-report";
+import {
+  formatLegalContentReportExecutionStatus,
+  type LegalContentReportRecord,
+} from "@/lib/legal-content-report/legal-content-report";
 
 export type CreatorInboxSource = "feedback" | "promotion" | "partner" | "event" | "legal_content_report";
 
@@ -355,6 +358,13 @@ export function buildLegalContentReportInboxItem(
       ...(record.latestDecision
         ? [
             { label: "Dernière décision", value: record.latestDecision.action },
+            {
+              label: "État d'exécution",
+              value: formatLegalContentReportExecutionStatus(record.latestDecision.executionStatus),
+            },
+            ...(record.latestDecision.executionErrorCode
+              ? [{ label: "Code d'exécution", value: record.latestDecision.executionErrorCode }]
+              : []),
             { label: "Origine de la décision", value: record.latestDecision.origin },
             { label: "Moyens automatisés", value: record.latestDecision.automatedMeansUsed ? "oui" : "non" },
           ]

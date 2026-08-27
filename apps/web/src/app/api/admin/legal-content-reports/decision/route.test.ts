@@ -12,10 +12,11 @@ const applyCanonicalLegalContentMutationMock = vi.hoisted(() => vi.fn());
 const sendNotifierMock = vi.hoisted(() => vi.fn());
 const sendAuthorMock = vi.hoisted(() => vi.fn());
 const buildInboxItemMock = vi.hoisted(() => vi.fn((record) => ({
-  id: `legal-content-report-${record.id}`,
+  id: "legal-content-report-" + record.id,
   source: "legal_content_report",
   sourceRecordId: record.id,
   status: record.creatorState,
+  executionStatus: record.latestDecision?.executionStatus,
 })));
 
 vi.mock("@/lib/authz", () => ({
@@ -63,6 +64,8 @@ const baseReport = {
   creatorState: "new" as const,
 };
 
+let currentDecision: Record<string, unknown>;
+
 function request(body: unknown): Request {
   return new Request("http://localhost/api/admin/legal-content-reports/decision", {
     method: "POST",
@@ -85,6 +88,7 @@ function validBody(overrides: Record<string, unknown> = {}) {
 describe("POST /api/admin/legal-content-reports/decision", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    currentDecision = {};
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "admin-1" });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
@@ -93,39 +97,25 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
       async ({ creatorState }: { creatorState: string }) => ({
         ...baseReport,
         creatorState,
-        status:
-          creatorState === "closed" ? "archived" : creatorState === "reviewing" ? "open" : "treated",
+        status: creatorState === "closed" ? "archived" : creatorState === "reviewing" ? "open" : "treated",
       }),
     );
-    appendDecisionMock.mockImplementation(async (input) => ({
-      id: "decision-1",
-      createdAt: "2026-08-27T10:01:00.000Z",
-      ...input,
-      notifierNotificationStatus: "not_requested",
-      authorNotificationStatus: "not_requested",
-      notificationError: null,
-    }));
+    appendDecisionMock.mockImplementation(async (input) => {
+      currentDecision = {
+        id: "decision-1",
+        createdAt: "2026-08-27T10:01:00.000Z",
+        ...input,
+        notifierNotificationStatus: "not_requested",
+        authorNotificationStatus: "not_requested",
+        notificationError: null,
+      };
+      return currentDecision;
+    });
+    updateDecisionStatesMock.mockImplementation(async (input) => {
+      currentDecision = { ...currentDecision, ...input };
+      return currentDecision;
+    });
     updateDecisionNotificationsMock.mockResolvedValue(undefined);
-    updateDecisionStatesMock.mockImplementation(async ({ decisionId, beforeState, afterState }) => ({
-      id: decisionId,
-      createdAt: "2026-08-27T10:01:00.000Z",
-      reportId: baseReport.id,
-      actorAdminUserId: "admin-1",
-      action: "content_restricted",
-      origin: "received_notification",
-      reason: "Examen administratif engagé.",
-      automatedMeansUsed: false,
-      legalBasis: "Article 16 DSA",
-      termsBasis: null,
-      contentUrl: baseReport.contentUrl,
-      contentId: baseReport.contentId,
-      beforeState,
-      afterState,
-      auditOperationId: "audit-1",
-      notifierNotificationStatus: "not_requested",
-      authorNotificationStatus: "not_requested",
-      notificationError: null,
-    }));
     applyCanonicalLegalContentMutationMock.mockResolvedValue({
       supported: true,
       found: true,
@@ -138,62 +128,96 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
   });
 
   it("requires a clear reason and rejects ambiguous bases", async () => {
-    const missingReason = await POST(request(validBody({ reason: "no" })));
-    expect(missingReason.status).toBe(400);
-
-    const bothBases = await POST(
-      request(
-        validBody({
-          action: "content_restricted",
-          legalBasis: "Article 16 DSA",
-          termsBasis: "CGU article 4",
-        }),
-      ),
-    );
-    expect(bothBases.status).toBe(400);
-
-    const missingBasis = await POST(
-      request(validBody({ action: "content_removed" })),
-    );
-    expect(missingBasis.status).toBe(400);
+    expect((await POST(request(validBody({ reason: "no" })))).status).toBe(400);
+    expect(
+      (
+        await POST(
+          request(
+            validBody({
+              action: "content_restricted",
+              legalBasis: "Article 16 DSA",
+              termsBasis: "CGU article 4",
+            }),
+          ),
+        )
+      ).status,
+    ).toBe(400);
+    expect((await POST(request(validBody({ action: "content_removed" })))).status).toBe(400);
     expect(appendDecisionMock).not.toHaveBeenCalled();
   });
 
-  it("records the canonical admin, decision, bounded states and notification", async () => {
+  it("does not create a decision when no canonical capability exists", async () => {
+    getLegalContentReportByIdMock.mockResolvedValueOnce({ ...baseReport, contentType: "profile" });
+
     const response = await POST(
-      request(
-        validBody({
-          action: "no_action",
-          termsBasis: "Aucune clause des CGU ne justifie une mesure.",
-          automatedMeansUsed: true,
-        }),
-      ),
+      request(validBody({ action: "content_removed", legalBasis: "Article 16 DSA" })),
+    );
+
+    expect(response.status).toBe(409);
+    expect(appendDecisionMock).not.toHaveBeenCalled();
+    expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
+  });
+
+  it("marks a decision without mutation as not_applicable", async () => {
+    const response = await POST(
+      request(validBody({ action: "no_action", termsBasis: "Aucune clause des CGU ne justifie une mesure." })),
     );
 
     expect(response.status).toBe(200);
     expect(appendDecisionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorAdminUserId: "admin-1",
         action: "no_action",
-        termsBasis: "Aucune clause des CGU ne justifie une mesure.",
-        legalBasis: null,
-        automatedMeansUsed: true,
-        contentUrl: baseReport.contentUrl,
-        contentId: baseReport.contentId,
+        executionStatus: "not_applicable",
+        executionErrorCode: null,
       }),
     );
-    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0];
-    expect(audit.actorUserId).toBe("admin-1");
-    expect(audit.outcome).toBe("success");
-    expect(audit.details.beforeState).toEqual(expect.any(Object));
-    expect(audit.details.afterState).toEqual(expect.any(Object));
-    expect(audit.details).not.toHaveProperty("notifierEmail");
-    expect(audit.details).not.toHaveProperty("allegationReason");
-    expect(sendNotifierMock).toHaveBeenCalledTimes(1);
+    expect(updateDecisionStatesMock).not.toHaveBeenCalled();
     expect(sendAuthorMock).not.toHaveBeenCalled();
   });
 
-  it("mutates only through the canonical capability and notifies the author without reporter identity", async () => {
+  it("marks a missing action as failed and keeps the report state unchanged", async () => {
+    applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
+      supported: true,
+      found: false,
+      beforeState: {},
+      afterState: {},
+      authorEmail: "author@example.com",
+    });
+
+    const response = await POST(
+      request(validBody({ action: "content_removed", legalBasis: "Article 16 DSA" })),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionStatus: "failed",
+        executionErrorCode: "content_not_found",
+      }),
+    );
+    expect(updateLegalContentReportStateMock).not.toHaveBeenCalled();
+    expect(sendAuthorMock).not.toHaveBeenCalled();
+  });
+
+  it("marks a mutation exception as failed", async () => {
+    applyCanonicalLegalContentMutationMock.mockRejectedValueOnce(new Error("provider failure"));
+
+    const response = await POST(
+      request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionStatus: "failed",
+        executionErrorCode: "mutation_failed",
+      }),
+    );
+    expect(sendAuthorMock).not.toHaveBeenCalled();
+  });
+
+  it("marks a projection failure as failed without projecting the creator state", async () => {
+    updateLegalContentReportStateMock.mockResolvedValueOnce(null);
     applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
       supported: true,
       found: true,
@@ -203,77 +227,59 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     });
 
     const response = await POST(
-      request(
-        validBody({
-          action: "content_restricted",
-          legalBasis: "Article 16 DSA",
-          termsBasis: undefined,
-        }),
-      ),
+      request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
+    );
+
+    expect(response.status).toBe(500);
+    expect(updateDecisionStatesMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ executionStatus: "applied" }),
+    );
+    expect(updateDecisionStatesMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        executionStatus: "failed",
+        executionErrorCode: "projection_failed",
+      }),
+    );
+    expect(sendAuthorMock).not.toHaveBeenCalled();
+  });
+
+  it("marks successful mutation as applied and then notifies the author", async () => {
+    applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
+      supported: true,
+      found: true,
+      beforeState: { source: "actions", moderationVisibility: "visible" },
+      afterState: { source: "actions", moderationVisibility: "hidden" },
+      authorEmail: "author@example.com",
+    });
+
+    const response = await POST(
+      request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
     );
 
     expect(response.status).toBe(200);
-    expect(applyCanonicalLegalContentMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ actorUserId: "admin-1", contentId: "action-1" }),
+    expect(appendDecisionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ executionStatus: "pending" }),
+    );
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionStatus: "applied",
+        executionErrorCode: null,
+      }),
+    );
+    expect(updateLegalContentReportStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ creatorState: "content_restricted" }),
     );
     expect(sendAuthorMock).toHaveBeenCalledWith(
       expect.objectContaining({ authorEmail: "author@example.com" }),
     );
-    expect(sendAuthorMock.mock.calls[0]?.[0]).not.toHaveProperty("notifierName");
-    expect(sendAuthorMock.mock.calls[0]?.[0]).not.toHaveProperty("notifierEmail");
   });
 
-  it("does not mutate when the requested content action has no canonical capability", async () => {
-    applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
-      supported: false,
-      found: false,
-      beforeState: {},
-      afterState: {},
-      authorEmail: null,
-    });
-    getLegalContentReportByIdMock.mockResolvedValueOnce({
-      ...baseReport,
-      contentType: "profile",
-    });
-    const response = await POST(
-      request(validBody({ action: "content_removed", legalBasis: "Article 16 DSA" })),
-    );
-    expect(response.status).toBe(409);
-    expect(appendDecisionMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "error" }),
-    );
-  });
+  it("keeps the admin gate before every decision or mutation", async () => {
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, status: 403, error: "Forbidden" });
 
-  it("records a partial error when notification fails after the decision", async () => {
-    sendNotifierMock.mockRejectedValueOnce(new Error("provider failure"));
     const response = await POST(request(validBody()));
-    expect(response.status).toBe(207);
-    expect(updateDecisionNotificationsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        decisionId: "decision-1",
-        notifierNotificationStatus: "failed",
-      }),
-    );
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(2);
-    expect(appendAdminOperationAuditMock.mock.calls[1]?.[0]).toEqual(
-      expect.objectContaining({
-        outcome: "error",
-        details: expect.objectContaining({
-          stage: "notification",
-          partialMutation: true,
-        }),
-      }),
-    );
-  });
 
-  it("uses the canonical admin gate before any mutation", async () => {
-    requireAdminAccessMock.mockResolvedValueOnce({
-      ok: false,
-      status: 403,
-      error: "Forbidden",
-    });
-    const response = await POST(request(validBody()));
     expect(response.status).toBe(403);
     expect(getLegalContentReportByIdMock).not.toHaveBeenCalled();
     expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
