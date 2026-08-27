@@ -1,5 +1,5 @@
 import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 
 export type QuizTrapLevelId = "low" | "medium" | "high";
 

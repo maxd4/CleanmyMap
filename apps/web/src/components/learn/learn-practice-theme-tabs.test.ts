@@ -2,10 +2,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import {
-  LEARN_PRACTICE_THEME_ORDER,
-  LearnPracticeThemeTabs,
-} from "./learn-practice-theme-tabs";
+import { LearnPracticeThemeTabs } from "./learn-practice-theme-tabs";
+import { LEARN_PRACTICE_THEME_ORDER } from "@/lib/learning/learn-practice-themes";
 
 describe("LearnPracticeThemeTabs", () => {
   it("renders accessible tabs and the three visual schemas", () => {

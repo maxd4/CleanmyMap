@@ -1,6 +1,6 @@
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 import type { QuizUiCopyKey } from "@/lib/learning/quiz-i18n";
 
 export type QuizAccessTypeId =

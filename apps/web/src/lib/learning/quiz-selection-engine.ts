@@ -7,8 +7,8 @@ import {
   getQuizAccessType,
   matchesQuizAccessType,
   type QuizAccessTypeId,
-} from "@/components/learn/quiz-access-types";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+} from "./quiz-access-types";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 import {
   getQuizDifficulty,
@@ -24,8 +24,8 @@ import {
   getQuizTrapLevel,
   matchesQuizTrapLevel,
   type QuizTrapLevelId,
-} from "@/components/learn/quiz-trap-levels";
-import type { QuizSchoolTrackId } from "@/components/learn/quiz-school-modes";
+} from "./quiz-trap-levels";
+import type { QuizSchoolTrackId } from "./quiz-school-types";
 
 export type QuizSelectionQuestionLike = {
   id: string;

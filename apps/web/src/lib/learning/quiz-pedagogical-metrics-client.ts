@@ -1,6 +1,6 @@
-import type { QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import type { QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
+import type { QuizAccessTypeId } from "./quiz-access-types";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
+import type { QuizErrorTypeId } from "./quiz-error-grid";
 
 export type QuizPedagogicalMetricsClientQuestionResult = {
   questionId: string;

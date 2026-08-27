@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { listQuizQuestionFormatIds } from "@/components/learn/quiz-question-formats";
+import { listQuizQuestionFormatIds } from "@/lib/learning/quiz-question-formats";
 import { awardPointsOnce } from "./points/system";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";

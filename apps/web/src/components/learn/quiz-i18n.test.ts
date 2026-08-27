@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { QUIZ_ACCESS_TYPES } from "@/components/learn/quiz-access-types";
+import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz-access-types";
 import { QUIZ_SCHOOL_TRACKS } from "@/components/learn/quiz-school-modes";
 import {
   QUIZ_UI_COPY,
   getQuizLocalizedTextFallback,
   getQuizLocalizedTextListFallback,
-} from "./quiz-i18n";
+} from "@/lib/learning/quiz-i18n";
 
 describe("quiz i18n conventions", () => {
   it("falls back to French when the locale-specific text is missing", () => {

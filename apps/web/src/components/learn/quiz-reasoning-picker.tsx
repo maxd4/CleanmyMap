@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { CognitivePrimer } from "@/components/learn/cognitive-primer";
 import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-strip";
 import type { CognitiveQuizSummary, SupportedLocale } from "@/lib/learning/cognitive-principles";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizReasoningType } from "@/lib/learning/quiz-reasoning-types";
 
 type ReasoningType = QuizReasoningType;
 

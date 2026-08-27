@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildQuizErrorGrid, getQuizErrorFollowUp, getQuizErrorReviewTarget } from "./quiz-error-grid";
+import { buildQuizErrorGrid, getQuizErrorFollowUp, getQuizErrorReviewTarget } from "@/lib/learning/quiz-error-grid";
 
 describe("quiz error grid follow-up", () => {
   it("routes security and tri errors toward the existing field rubrics", () => {

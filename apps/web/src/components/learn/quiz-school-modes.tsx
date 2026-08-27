@@ -3,12 +3,9 @@ import { Calculator, MapPin, Megaphone, Repeat2 } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizUiCopyKey } from "@/lib/learning/quiz-i18n";
 import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
+import type { QuizSchoolTrackId } from "@/lib/learning/quiz-school-types";
 
-export type QuizSchoolTrackId =
-  | "debat-classe"
-  | "mission-terrain"
-  | "ordres-de-grandeur"
-  | "gestes-du-quotidien";
+export type { QuizSchoolTrackId } from "@/lib/learning/quiz-school-types";
 
 export type QuizSchoolTrackDefinition = {
   id: QuizSchoolTrackId;

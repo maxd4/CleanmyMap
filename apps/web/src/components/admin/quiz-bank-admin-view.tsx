@@ -6,10 +6,8 @@ import { Filter, RotateCcw, ShieldAlert } from "lucide-react";
 import { AdminSectionHeader } from "@/components/admin/admin-dashboard-ui";
 import { SourceBadge, StatCard } from "@/components/ui/page-structure";
 import { cn } from "@/lib/utils";
-import {
-  QUIZ_ACCESS_TYPES,
-} from "@/components/learn/quiz-access-types";
-import { QUIZ_TRAP_LEVELS } from "@/components/learn/quiz-trap-levels";
+import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz-access-types";
+import { QUIZ_TRAP_LEVELS } from "@/lib/learning/quiz-trap-levels";
 import {
   QUIZ_DIFFICULTY_PRIORITY,
   QUIZ_PEDAGOGICAL_TYPE_PRIORITY,
@@ -17,7 +15,7 @@ import {
   type QuizDifficultyId,
   type QuizPedagogicalTypeId,
 } from "@/lib/learning/quiz-taxonomy";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizReasoningType } from "@/lib/learning/quiz-reasoning-types";
 import type { QuizSourceType } from "@/lib/learning/quiz-source-metadata";
 import type {
   QuizBankAdminFilters,

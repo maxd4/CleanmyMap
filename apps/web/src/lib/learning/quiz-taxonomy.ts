@@ -1,8 +1,8 @@
-import type { QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import { QUIZ_QUESTION_FORMATS, type QuizQuestionFormatId } from "../../components/learn/quiz-question-formats.ts";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
-import type { QuizReviewTarget } from "@/components/learn/quiz-review-targets";
-import type { QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
+import type { QuizAccessTypeId } from "./quiz-access-types";
+import { QUIZ_QUESTION_FORMATS, type QuizQuestionFormatId } from "./quiz-question-formats.ts";
+import type { QuizReasoningType } from "./quiz-reasoning-types";
+import type { QuizReviewTarget } from "./quiz-review-targets";
+import type { QuizTrapLevelId } from "./quiz-trap-levels";
 
 export type QuizModeId = QuizAccessTypeId;
 

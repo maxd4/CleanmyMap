@@ -6,9 +6,9 @@ import {
   getQuizAccessTypesForQuestion,
   listQuizAccessTypeIds,
   matchesQuizAccessType,
-} from "./quiz-access-types";
-import { getQuizTrapLevel, matchesQuizTrapLevel } from "./quiz-trap-levels";
-import { QUIZ_REVIEW_TARGETS, getQuizReviewTarget } from "./quiz-review-targets";
+} from "@/lib/learning/quiz-access-types";
+import { getQuizTrapLevel, matchesQuizTrapLevel } from "@/lib/learning/quiz-trap-levels";
+import { QUIZ_REVIEW_TARGETS, getQuizReviewTarget } from "@/lib/learning/quiz-review-targets";
 
 describe("EnvironmentalQuiz", () => {
   const reasoningTypes = [

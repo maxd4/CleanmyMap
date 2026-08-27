@@ -1,4 +1,4 @@
-import type { QuizSchoolTrackId } from "@/components/learn/quiz-school-modes";
+import type { QuizSchoolTrackId } from "./quiz-school-types";
 
 import { getWastePedagogicalProjection } from "@/lib/waste";
 

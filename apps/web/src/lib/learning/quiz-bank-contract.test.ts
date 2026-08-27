@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { buildQuizErrorGrid } from "@/components/learn/quiz-error-grid";
-import { QUIZ_ACCESS_TYPES, matchesQuizAccessType } from "@/components/learn/quiz-access-types";
-import { getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
+import { buildQuizErrorGrid } from "./quiz-error-grid";
+import { QUIZ_ACCESS_TYPES, matchesQuizAccessType } from "./quiz-access-types";
+import { getQuizReviewTarget } from "./quiz-review-targets";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
 

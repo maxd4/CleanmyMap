@@ -1,8 +1,9 @@
-import type { QuizQuestion, QuizSessionSummary } from "@/components/learn/environmental-quiz";
-import { buildQuizErrorGrid } from "@/components/learn/quiz-error-grid";
-import { getQuizReviewTarget } from "@/components/learn/quiz-review-targets";
-import type { QuizErrorTypeId } from "@/components/learn/quiz-error-grid";
-import type { QuizReasoningType } from "@/components/learn/quiz-reasoning-types";
+import type { QuizQuestion } from "@/lib/learning/quiz-question-contract";
+import type { QuizSessionSummary } from "@/lib/learning/quiz-session-types";
+import { buildQuizErrorGrid } from "@/lib/learning/quiz-error-grid";
+import { getQuizReviewTarget } from "@/lib/learning/quiz-review-targets";
+import type { QuizErrorTypeId } from "@/lib/learning/quiz-error-grid";
+import type { QuizReasoningType } from "@/lib/learning/quiz-reasoning-types";
 import type { CognitiveQuizStateId } from "@/lib/learning/cognitive-principles";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizStateLabel } from "@/lib/learning/cognitive-principles";

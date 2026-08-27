@@ -1,6 +1,6 @@
-import type { QuizQuestion } from "../../components/learn/environmental-quiz";
-import { getQuizAccessTypesForQuestion } from "../../components/learn/quiz-access-types.ts";
-import { getQuizReviewTarget } from "../../components/learn/quiz-review-targets.ts";
+import type { QuizQuestion } from "./quiz-question-contract";
+import { getQuizAccessTypesForQuestion } from "./quiz-access-types.ts";
+import { getQuizReviewTarget } from "./quiz-review-targets.ts";
 import type {
   QuizConfidenceLevel,
   QuizLocalScope,

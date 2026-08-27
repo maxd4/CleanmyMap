@@ -1,5 +1,5 @@
-import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
-import { QUIZ_SCHOOL_TRACKS, type QuizSchoolTrackId } from "@/components/learn/quiz-school-modes";
+import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "./quiz-access-types";
+import { QUIZ_SCHOOL_TRACK_ORDER, type QuizSchoolTrackId } from "./quiz-school-types";
 
 export type QuizSentrainerEntryState = {
   initialAccessType: QuizAccessTypeId | null;
@@ -13,7 +13,7 @@ function isQuizAccessTypeId(value: string | null): value is QuizAccessTypeId {
 }
 
 function isQuizSchoolTrackId(value: string | null): value is QuizSchoolTrackId {
-  return Boolean(value) && QUIZ_SCHOOL_TRACKS.some((track) => track.id === value);
+  return Boolean(value) && QUIZ_SCHOOL_TRACK_ORDER.includes(value as QuizSchoolTrackId);
 }
 
 function resolveInitialAccessType(mode: string | null): QuizAccessTypeId | null {
@@ -37,7 +37,7 @@ function resolveInitialSchoolTrack(mode: string | null, track: string | null): Q
     return track;
   }
 
-  return QUIZ_SCHOOL_TRACKS[0]?.id ?? null;
+  return QUIZ_SCHOOL_TRACK_ORDER[0] ?? null;
 }
 
 export function parseQuizSentrainerEntryState(

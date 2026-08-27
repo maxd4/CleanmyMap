@@ -3,8 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { QuizSessionPanel } from "./quiz-session-panel";
-import { QUIZ_REVIEW_TARGETS } from "./quiz-review-targets";
-import type { QuizQuestion, QuizSessionSummary } from "./environmental-quiz";
+import { QUIZ_REVIEW_TARGETS } from "@/lib/learning/quiz-review-targets";
+import type { QuizQuestion } from "@/lib/learning/quiz-question-contract";
+import type { QuizSessionSummary } from "@/lib/learning/quiz-session-types";
 
 describe("QuizSessionPanel", () => {
   it("renders an explanation and a review destination for the correction", () => {

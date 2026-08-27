@@ -48,6 +48,7 @@
     "check:agent-skills": "node scripts/checks/check-agent-skill-mirrors.mjs",
     "check:github-actions": "node scripts/checks/check-github-actions-security.mjs",
     "check:gitnexus-hygiene": "node scripts/checks/check-gitnexus-hygiene.mjs",
+    "check:learning-import-boundary": "node scripts/checks/check-learning-import-boundary.mjs",
     "audit:pages-site-drift": "node scripts/checks/check-pages-site-route-drift.mjs",
     "check:pages-site-drift": "node scripts/checks/check-pages-site-route-drift.mjs --strict",
     "audit:repository-tree": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audits/audit-repository-tree.ps1",

@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
-import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/components/learn/quiz-access-types";
+import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "@/lib/learning/quiz-access-types";
 import { getDefaultQuizSessionSize } from "@/lib/learning/quiz-selection-engine";
-import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/components/learn/quiz-trap-levels";
+import { QUIZ_TRAP_LEVELS, type QuizTrapLevelId } from "@/lib/learning/quiz-trap-levels";
 import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz-personal-progress";
 import { getQuizUiCopy } from "@/lib/learning/quiz-i18n";
 
