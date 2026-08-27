@@ -1,13 +1,12 @@
 "use client";
 
-import { type ElementType, type FormEvent, useEffect, useState } from "react";
+import { type ElementType, type FormEvent, useState } from "react";
 import {
   AlertTriangle,
   ClipboardCheck,
   Download,
   History,
   Loader2,
-  Smartphone,
   Sparkles,
   User,
   X,
@@ -130,35 +129,12 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     handleConfirmSubmit,
   } = useActionDeclarationForm(props);
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 768px)").matches
-      : false,
-  );
   const [showRestrictionDialog, setShowRestrictionDialog] = useState(false);
 
   const actClasses = getBlockClasses("act");
   const formattedPendingDraftSavedAt = formatDraftDate(pendingDraftSavedAt);
-  const isCompletionBlocked = !props.isAuthenticated || isMobile;
-  const restrictionMessage = isMobile
-    ? "La saisie complète se fait sur ordinateur. Sur mobile, l'aperçu reste en lecture seule."
-    : "La saisie complète se fait sur ordinateur.";
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const media = window.matchMedia("(max-width: 768px)");
-    const handleChange = () => setIsMobile(media.matches);
-
-    handleChange();
-    media.addEventListener("change", handleChange);
-
-    return () => {
-      media.removeEventListener("change", handleChange);
-    };
-  }, []);
+  const isCompletionBlocked = !props.isAuthenticated;
+  const restrictionMessage = "Connectez-vous pour compléter et envoyer ce formulaire.";
 
   async function onSubmit(event?: FormEvent) {
     event?.preventDefault();
@@ -268,9 +244,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     id="action-restriction-title"
                     className="mt-1 text-xl font-black tracking-tight text-amber-950"
                   >
-                    {isMobile
-                      ? "Saisie mobile indisponible"
-                      : "Saisie verrouillée"}
+                    Connexion requise
                   </h3>
                 </div>
               </div>
@@ -287,14 +261,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
               <p className="text-sm leading-7 text-amber-950/82">
                 {restrictionMessage}
               </p>
-              {isMobile ? (
-                <div className="flex items-start gap-3 rounded-2xl border border-amber-200/70 bg-amber-50 px-4 py-3">
-                  <Smartphone size={16} className="mt-0.5 shrink-0 text-amber-700" />
-                  <p className="text-sm leading-6 text-amber-950/76">
-                    Ouvrez le formulaire sur ordinateur pour continuer.
-                  </p>
-                </div>
-              ) : null}
             </div>
             <div className="flex justify-end gap-3 border-t border-amber-200/70 bg-[#FFF8EE] px-6 py-5">
               <button
@@ -357,28 +323,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             </div>
           ) : null}
 
-          {isMobile ? (
-            <div className="rounded-[2rem] border border-amber-200/80 bg-amber-50/95 px-4 py-3 text-amber-950 shadow-[0_18px_36px_-28px_rgba(245,158,11,0.24)]">
-              <button
-                type="button"
-                onClick={() => setShowRestrictionDialog(true)}
-                className="flex w-full items-start gap-3 text-left"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200/80 bg-white text-amber-700 shadow-sm">
-                  <Smartphone size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700/80">
-                    Aperçu mobile
-                  </p>
-                  <p className="mt-1 text-sm font-semibold leading-6">
-                    L&apos;aperçu est en lecture seule. Ouvrez-le sur ordinateur pour remplir le formulaire.
-                  </p>
-                </div>
-              </button>
-            </div>
-          ) : null}
-
           <form
             onSubmit={onSubmit}
             className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl"
@@ -387,11 +331,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
               {isCompletionBlocked ? (
                 <button
                   type="button"
-                  aria-label={
-                    isMobile
-                      ? "Ouvrir l'explication mobile"
-                      : "Ouvrir l'explication"
-                  }
+                  aria-label="Ouvrir l'explication"
                   aria-hidden="true"
                   tabIndex={-1}
                   onClick={() => setShowRestrictionDialog(true)}
