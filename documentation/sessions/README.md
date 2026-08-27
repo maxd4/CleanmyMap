@@ -1,16 +1,20 @@
-# Sessions - Guide IA
+# Sessions — Guide IA
 
-Contexte et historique des sessions de développement pour agents IA.
+Contexte complémentaire et historique des sessions de développement pour les
+agents IA. Cette documentation ne remplace pas les règles du dépôt ni le
+contexte projet canonique.
 
 ---
 
 ## 📁 Structure
 
 ### history/
-- **latest-session.md** ⭐ - Dernière session (TOUJOURS lire au démarrage)
-- **quality-audit-snapshot.md** - Résumé court du prochain audit qualité et du backlog prioritaire
+- **latest-session.md** — mémoire volatile de la dernière session ; source
+  canonique de clôture et troisième source lue au démarrage ;
+- **quality-audit-snapshot.md** — ressource de contexte, à consulter si le
+  chantier le nécessite.
 
-### context/
+### context/ — ressources à consulter seulement lorsque nécessaires
 - **fiche_projet.txt** - Fiche projet complète
 - **fiche_projet_resume.txt** - Résumé du projet
 - **background.txt** - Contexte général
@@ -23,7 +27,7 @@ Contexte et historique des sessions de développement pour agents IA.
 - **oral_DU_engagement.md** - Mémo de soutenance et trame de pitch pour le jury DU Engagement
 - **Rapport_Annuel_Depollution_Citoyenne_Paris.pdf** - Rapport annuel
 
-### assets/
+### assets/ — ressources à consulter seulement lorsque nécessaires
 - **data_pipeline.webp** - Pipeline de données
 - **ecosystem_overview.webp** - Vue d'ensemble écosystème
 - **monorepo_structure.webp** - Structure monorepo
@@ -31,66 +35,64 @@ Contexte et historique des sessions de développement pour agents IA.
 - **LEGENDES.md** - Légendes des diagrammes
 - **SOURCE_SCHEMAS.md** - Schémas sources
 
-### templates/
+### templates/ — ressources à consulter seulement lorsque nécessaires
 - **diagram-flow.mmd** - Template diagramme de flux
 - **diagram-sequence.mmd** - Template diagramme de séquence
 - **schema-rubrique.md** - Template schéma rubrique
 
 ---
 
-## 🤖 Instructions IA
+## Sources canoniques au démarrage
 
-### Au Démarrage de Chaque Session
-1. **OBLIGATOIRE** : Lire **history/latest-session.md**
-2. Consulter **context/fiche_projet_resume.txt** si besoin de contexte
-3. Vérifier **context/economie_token.txt** pour optimiser les prompts
+Lire uniquement ces trois sources avant de commencer une session :
 
-### Pour Comprendre le Projet
-1. Lire **context/fiche_projet.txt** (complet)
-2. Consulter **context/background.txt**
-3. Voir **assets/ecosystem_overview.webp**
+1. `AGENTS.md` ;
+2. `documentation/project_context.md` ;
+3. `documentation/sessions/history/latest-session.md`.
 
-### Pour Créer des Diagrammes
-1. Utiliser **templates/diagram-flow.mmd** pour flux
-2. Utiliser **templates/diagram-sequence.mmd** pour séquences
-3. Consulter **assets/LEGENDES.md** pour conventions
+Le bootstrap vérifie leur présence sans charger automatiquement les autres
+fichiers de `context/`, `assets/`, `templates/` ou de l'historique.
 
-### Pour Économiser des Tokens
-1. Lire **context/economie_token.txt**
-2. Utiliser **context/economie_token_prompt_template.md**
+## Ressources complémentaires
+
+- consulter `context/` uniquement pour le contexte nécessaire au chantier ;
+- consulter `assets/` uniquement pour une analyse ou une vérification visuelle
+  qui le justifie ;
+- consulter `templates/` uniquement pour produire le document ou diagramme
+  concerné ;
+- ne pas traiter une ressource complémentaire comme une nouvelle source de
+  vérité concurrente.
 
 ---
 
-## 📊 Workflow Session IA
+## Workflow Session IA
 
 ```
-1. Lire history/latest-session.md
+1. Lire les trois sources canoniques
    ↓
 2. Comprendre le contexte actuel
    ↓
-3. Consulter context/ si besoin
+3. Consulter les ressources complémentaires si besoin
    ↓
 4. Développer
    ↓
-5. Mettre à jour latest-session.md en fin de session
+5. Mettre à jour `documentation/sessions/history/latest-session.md` en fin de session
 ```
 
 ---
 
-## 🎯 Règles Clés
+## Règles clés
 
 ### Continuité
-- Toujours lire **latest-session.md** au démarrage
+- Toujours lire les trois sources canoniques au démarrage
 - Comprendre ce qui a été fait avant
 - Continuer le travail en cours
 
 ### Contexte
-- Utiliser **context/** pour comprendre le projet
-- Consulter **assets/** pour visualiser
-- Référencer **templates/** pour créer
+- Utiliser `context/`, `assets/` et `templates/` seulement lorsque nécessaire
 
 ### Économie
-- Optimiser les prompts avec **economie_token.txt**
+- Optimiser les prompts avec `context/economie_token_prompt_template.md`
 - Éviter les répétitions inutiles
 - Être concis et précis
 
@@ -98,7 +100,8 @@ Contexte et historique des sessions de développement pour agents IA.
 
 ## 📝 Mise à Jour de Session
 
-En fin de session, mettre à jour **history/latest-session.md** avec :
+En fin de session, mettre à jour uniquement
+`documentation/sessions/history/latest-session.md` avec :
 - Ce qui a été fait
 - Ce qui reste à faire
 - Les décisions prises
@@ -106,6 +109,5 @@ En fin de session, mettre à jour **history/latest-session.md** avec :
 
 ---
 
-**Optimisé pour** : Agents IA  
-**Priorité** : CRITIQUE - Lire latest-session.md au démarrage  
-**Dernière mise à jour** : 2025-01-XX
+Les historiques de session restent des historiques : ils ne doivent pas être
+réécrits pour se présenter comme l'état courant du projet.
