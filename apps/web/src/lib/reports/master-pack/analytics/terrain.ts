@@ -1,4 +1,5 @@
-import { buildRouteSteps, computeMapCoverageMetrics } from "@/lib/reports/report-model";
+import { buildRouteSteps } from "@/lib/reports/report-model/builders";
+import { computeMapCoverageMetrics } from "@/lib/reports/report-model/metrics";
 import type { ActionMapItem } from "@/lib/actions/types";
 
 export function computeTerrainMetrics(mapItems: ActionMapItem[]) {

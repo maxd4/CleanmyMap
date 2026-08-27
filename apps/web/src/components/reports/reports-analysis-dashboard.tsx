@@ -19,7 +19,7 @@ import { formatScorePercent } from "@/lib/formatters/score";
 import type { MethodDefinition } from "@/lib/pilotage/overview.types";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
 import type { ReportsSummaryKpi } from "@/lib/reports/page-data";
-import { toFrInt, toFrNumber } from "@/lib/reports/report-model";
+import { toFrInt, toFrNumber } from "@/lib/reports/report-model/formatters";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import type { Locale } from "@/lib/ui/preferences";
 import type { ProfileAction } from "@/lib/profiles";

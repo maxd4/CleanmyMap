@@ -1,8 +1,5 @@
-import {
-  computeEnvironmentalProxyMetrics,
-  toFrNumber,
-  toFrInt,
-} from "@/lib/reports/report-model";
+import { computeEnvironmentalProxyMetrics } from "@/lib/reports/report-model/metrics";
+import { toFrNumber, toFrInt } from "@/lib/reports/report-model/formatters";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
 import { formatScorePercent } from "@/lib/formatters/score";
 

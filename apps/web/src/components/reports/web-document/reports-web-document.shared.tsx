@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import { toFrOptionalNumber } from "@/lib/reports/report-model";
+import { toFrOptionalNumber } from "@/lib/reports/report-model/formatters";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { formatScorePercent } from "@/lib/formatters/score";
 import {

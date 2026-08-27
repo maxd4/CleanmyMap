@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChapterAudience } from "@/lib/reports/report-model/types";
-import { toFrNumber } from "@/lib/reports/report-model";
+import { toFrNumber } from "@/lib/reports/report-model/formatters";
 import type { MonthRow } from "@/lib/reports/report-model/types";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 import { SCORE_SCALE } from "@/lib/formatters/score";

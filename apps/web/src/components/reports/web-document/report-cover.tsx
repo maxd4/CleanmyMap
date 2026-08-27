@@ -3,7 +3,8 @@
 import { BarChart3, FileText, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import { MetricCard } from "./ui";
 import type { ReportModel } from "@/lib/reports/report-model/types";
-import { buildExecutiveNarrative, toFrInt, toFrNumber } from "@/lib/reports/report-model";
+import { buildExecutiveNarrative } from "@/lib/reports/report-model/builders";
+import { toFrInt, toFrNumber } from "@/lib/reports/report-model/formatters";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type ReportCoverProps = {
