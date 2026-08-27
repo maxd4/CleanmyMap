@@ -2,29 +2,41 @@
 
 Ce document décrit la structure des droits d'accès et de l'expérience utilisateur (UX) sur la plateforme CleanMyMap. Il sert de guide de référence pour les développeurs et les agents IA.
 
+Le contrat canonique d'autorisation est défini dans
+[`authorization-capabilities.md`](./authorization-capabilities.md). Ce fichier
+reste un guide compact de compatibilité pour les surfaces et helpers existants
+et ne doit pas maintenir une seconde matrice de permissions.
+
 ## 1. Glossaire Technique
 
 | Terme | Définition |
 | :--- | :--- |
-| **Role** | Attribution métier technique (`admin`, `benevole`, etc.) définissant les droits. |
+| **Role** | Attribution métier technique (`admin`, `benevole`, etc.) qui contribue à la décision sans suffire à elle seule. |
 | **SessionRole** | État d'authentification de la session en cours (inclut `anonymous`). |
 | **Parcours** | (ou **Profile**) Projection UX du rôle (priorité des menus, CTAs, dashboard). |
 | **Espace** | Groupe de navigation transverse (`execute`, `supervise`, `decide`, `prepare`). |
-| **EffectiveAccess** | Droits réels (booléens) calculés à partir du rôle pour autoriser une action. |
+| **Capability** | Opération métier autorisable. |
+| **Scope** | Périmètre dans lequel une capacité peut s'exercer. |
+| **EffectiveAccess** | Décision serveur issue de l'identité, de la capacité, du rôle compatible, du scope ou ownership et de l'état métier. |
 
-## 2. Matrice des Rôles et Droits (`EffectiveAccess`)
+## 2. Repères d'accès (`EffectiveAccess`)
 
-La source de vérité pour ce mapping se trouve dans `apps/web/src/lib/domain-language.ts`.
+La matrice cible des capacités, rôles et scopes se trouve dans
+[`authorization-capabilities.md`](./authorization-capabilities.md). La valeur
+de `Role` seule ne constitue pas une permission.
 
-| Droit / Permission | anonymous | benevole | coordinateur / scientifique / elu | admin / elu / max |
-| :--- | :---: | :---: | :---: | :---: |
-| Accès App Protégée | ❌ | ✅ | ✅ | ✅ |
-| Accès Page Admin | ❌ | ❌ | ❌ | ✅ |
-| Modération | ❌ | ❌ | ❌ | ✅ |
-| Imports sensibles | ❌ | ❌ | ❌ | ✅ |
-| Export Elus Dossier | ❌ | ✅ | ✅ | ✅ |
+| Surface | Contrat de décision |
+| :--- | :--- |
+| Accès app protégée | AuthN puis parcours UX adapté |
+| Accès backoffice | capacité `admin.view_backoffice` et contrôle serveur |
+| Modération globale | capacité de modération, scope global et état métier |
+| Imports sensibles | capacité opérationnelle dédiée et garde-fous de données |
+| Export territorial | capacité d'export et relation territoriale canonique |
 
-Note : Certains droits sont plus granulaires et vérifiés directement dans les APIs via `requireAdminAccess` ou les helpers centraux de permissions comme `canUseAdminOverride`, `canManageAction` et `canReviewActionParticipants`.
+Les droits effectifs sont vérifiés directement dans les APIs via les helpers
+de domaine, par exemple `canUseAdminOverride`, `canManageAction` et
+`canReviewActionParticipants`. Le proxy et le parcours UX ne remplacent pas
+cette décision serveur.
 
 ## 3. Parcours Utilisateur (UX)
 
@@ -62,10 +74,11 @@ Pour les routes d'action, préférer les helpers métier centralisés:
 - `canChangeActionStatus`
 - `canViewModerationAudit`
 
-Règle de lecture:
+Règle de lecture :
 
 - parcours normal: créer, rejoindre, modérer selon le rôle métier et la propriété de l'action;
-- dérogation admin: explicite, serveur, journalisée, réservée aux rôles `admin`, `elu` et `max`;
+- dérogation administrative : explicite, serveur, journalisée et autorisée par une capacité avec le scope requis ;
+- le domaine Actions contient encore une divergence connue : certaines capacités de modération globale acceptent actuellement `elu` ; cela ne constitue pas une règle `admin-like` transversale et ne doit pas être propagé aux autres domaines ;
 - un admin qui rejoint via le flux normal reste traité comme une demande normale `group_form`.
 - un organisateur ou coorganisateur autorisé peut gérer la file de sa propre action sans devenir modérateur global;
 - une pré-action ouverte au groupe reste une action prévue, pas une collecte validée ni une preuve d'impact.
@@ -82,7 +95,7 @@ Règle d'audit:
 - `appendActionModerationAudit(...)` centralise le contrat d'audit action avec auteur, action cible, opération, issue, motif obligatoire si sensible, valeurs avant/après et cible utilisateur éventuelle;
 - les nouvelles dérogations de participation utilisent `participation_source = admin_override`; `admin` reste une valeur historique acceptée en lecture;
 - un retrait admin d'un participant confirmé est journalisé comme `admin_remove_participant`, distinct d'un refus de demande en attente;
-- le journal d'audit d'une action est lisible par le créateur, les organisateurs/coorganisateurs autorisés et les rôles `admin`, `elu`, `max`;
+- le journal d'audit d'une action est lisible selon une capacité de lecture d'audit dédiée, avec minimisation des données ; les accès historiques doivent être réalignés lors de la convergence ;
 - les motifs sensibles doivent contenir au moins 5 caractères après trim;
 - les détails techniques libres ne doivent pas écraser les champs canoniques d'audit.
 

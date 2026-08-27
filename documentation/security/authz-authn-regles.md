@@ -2,17 +2,38 @@
 
 Référence durable pour l'authentification, les permissions, les dérogations administratives et les frontières d'accès.
 
+Le modèle de capacités et de périmètres cible est défini dans :
+
+```txt
+documentation/security/authorization-capabilities.md
+```
+
+Ce document conserve les contrats techniques AuthN/AuthZ et les règles propres aux surfaces existantes. En cas de divergence pendant la migration, le code et les tests actuels décrivent le comportement réellement implémenté ; la matrice de capacités décrit la direction à atteindre.
+
 ## Principes
 
 ```txt
 AuthN = qui est l'utilisateur ?
 AuthZ = que peut-il faire dans ce contexte ?
+Capability = quelle opération métier demande-t-il ?
+Scope = dans quel périmètre peut-il l'exercer ?
 Ownership = cette ressource lui appartient-elle ?
 Override = agit-il explicitement comme modérateur ?
 Audit = l'opération sensible est-elle traçable ?
 ```
 
 Une session valide ne donne jamais implicitement tous les droits.
+
+La décision serveur cible suit :
+
+```txt
+identité
++ capacité
++ rôle compatible
++ scope / ownership
++ état métier
++ projection de données autorisée
+```
 
 ## Architecture
 
@@ -39,9 +60,13 @@ Préserver la distinction entre :
 Role
 SessionRole
 Parcours
+Capability
+Scope
 ```
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
+
+`service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
 ## Règles durables pour les tests authentifiés
 
@@ -58,12 +83,12 @@ Ne pas créer une seconde identité canonique indépendante sans ADR.
 - Les handlers authentifiés réutilisent les helpers centraux compatibles avec
   Clerk et le bypass local. Ils ne recréent pas une logique d'identification
   parallèle à partir de `auth()` ou d'en-têtes propres au handler.
-- `service_role` est une identité technique serveur pour les contrôles et
-  opérations explicitement privilégiées ; ce n'est jamais une identité HTTP
-  utilisateur et elle ne remplace jamais la session Clerk.
 - Aucun bypass de production ne doit être ajouté pour faciliter un test. Si une
   preuve de production est nécessaire, elle doit passer par le parcours et les
   permissions réels.
+- Les tests d'AuthZ doivent vérifier les refus de scope : owner/non-owner,
+  organizer/non-organizer, organisation A/B, territoire A/B lorsque ces scopes
+  existent.
 
 ## Catégories d'accès
 
@@ -75,9 +100,13 @@ Chaque surface doit appartenir à une catégorie explicite.
 | Authentifié | profil courant | session |
 | Propriétaire | modifier sa ressource | session + ownership |
 | Organisateur | gérer son action | session + relation organisateur |
-| Admin-like | modération globale | rôle serveur |
+| Organisation | gérer les ressources de son organisation | session + relation canonique |
+| Territoire | consulter/piloter un territoire | session + attribution territoriale canonique |
+| Modération globale | dérogation plateforme | capacité privilégiée serveur |
 | Service | cron, RPC privilégiée | secret/service role |
 | Webhook | Stripe ou tiers | signature |
+
+Une relation organisationnelle ou territoriale absente ou ambiguë ne doit jamais être remplacée par un droit global.
 
 ## Routes sensibles
 
@@ -88,10 +117,53 @@ apps/web/src/lib/auth/protected-routes.ts
 apps/web/src/proxy.ts
 apps/web/src/lib/authz.ts
 apps/web/src/lib/auth/
+apps/web/src/lib/profiles.ts
 apps/web/src/app/api/
 ```
 
 Le proxy ne remplace pas l'autorisation du handler.
+
+La navigation et le parcours UX ne remplacent pas non plus l'AuthZ serveur.
+
+## Rôles et capacités
+
+Les rôles ne sont pas une hiérarchie linéaire.
+
+La cible est :
+
+```txt
+benevole     → self / owned
+coordinateur → organized / organization
+scientifique → sanitized analytics
+entreprise   → organization
+elu          → territory
+admin        → global moderation
+max          → platform administration
+```
+
+Le contrat détaillé, les scopes et les données accessibles sont définis dans `authorization-capabilities.md`.
+
+### Divergence actuelle importante
+
+Le code générique considère principalement `admin` et `max` comme rôles admin-like, tandis que le domaine Actions inclut encore actuellement `elu` dans certaines capacités de modération globale.
+
+Cette divergence est un état à faire converger, pas une règle à propager.
+
+Ne pas conclure :
+
+```txt
+elu peut modérer globalement les actions
+→ donc elu doit devenir admin-like partout
+```
+
+La direction cible est :
+
+```txt
+elu → scope territorial explicite
+admin/max → modération globale selon capacité
+```
+
+Tant qu'une relation territoriale canonique n'existe pas pour une opération, appliquer le fail-closed plutôt qu'un fallback global.
 
 ## Permissions sur les actions
 
@@ -104,7 +176,9 @@ Exemples :
 - créer une action ;
 - demander à rejoindre ;
 - annuler sa propre demande ;
-- modifier ce que son rôle et l'ownership autorisent.
+- modifier ce que l'ownership autorise.
+
+Le rôle seul ne permet pas de modifier une action d'un tiers.
 
 ### Organisateur
 
@@ -116,20 +190,31 @@ Un organisateur autorisé peut, selon le contrat de l'action :
 - ouvrir ou fermer les inscriptions ;
 - modifier les informations autorisées.
 
-Cette gestion reste limitée à sa propre action. Elle ne déclenche pas les droits de modération globale et ne doit pas être confondue avec une dérogation admin.
+Cette gestion reste limitée à l'action dont il est organisateur/coorganisateur. Elle ne déclenche pas les droits de modération globale et ne doit pas être confondue avec une dérogation admin.
 
-### Admin, élu ou max
+### Dérogation globale et future dérogation territoriale
 
-Un rôle privilégié peut disposer de droits de supervision globale.
+Une dérogation globale doit être une capacité explicite de modération, normalement réservée au rôle qui possède cette capacité dans le domaine concerné.
 
-Mais :
+Une future dérogation territoriale pour `elu` doit être distincte :
 
-> un admin qui utilise le parcours utilisateur normal reste dans le parcours normal.
+```txt
+canModerateTerritoryAction(identity, action, territoryAssignment)
+```
+
+et ne doit être activée que lorsque :
+
+- le territoire de l'utilisateur est canonique ;
+- le territoire de la ressource est canonique ;
+- la relation est vérifiée côté serveur ;
+- les cas territoire A / territoire B sont testés.
+
+Un utilisateur privilégié qui suit le parcours utilisateur normal reste dans le parcours normal.
 
 Exemple canonique :
 
 ```txt
-demande normale pour rejoindre l'action d'un tiers
+admin demande normalement à rejoindre l'action d'un tiers
 → participationStatus: "pending"
 → participationSource: "group_form"
 ```
@@ -151,12 +236,13 @@ Exemples :
 
 Une dérogation sensible doit :
 
-1. vérifier le rôle côté serveur ;
-2. être explicite dans le code ;
-3. être séparée du bouton ou flux utilisateur normal ;
-4. exiger un motif lorsque pertinent ;
-5. créer une trace d'audit ;
-6. utiliser une source claire, par exemple `admin_override`, si le contrat le permet.
+1. vérifier l'identité et la capacité côté serveur ;
+2. vérifier le scope lorsque l'opération n'est pas globale ;
+3. être explicite dans le code ;
+4. être séparée du bouton ou flux utilisateur normal ;
+5. exiger un motif lorsque pertinent ;
+6. créer une trace d'audit ;
+7. utiliser une source claire, par exemple `admin_override`, si le contrat le permet.
 
 Ne pas utiliser un booléen envoyé par le client comme preuve d'autorisation.
 
@@ -176,9 +262,9 @@ Le contrat d'audit action doit conserver au minimum :
 - la cible utilisateur lorsque l'opération concerne une participation ou un compte ;
 - le contexte technique utile, sans pouvoir écraser les champs canoniques.
 
-Les opérations sensibles comme rejet, masquage, restauration, correction d'impact, changement d'organisateur ou dérogation de participation exigent un motif d'au moins 5 caractères après trim.
+Les opérations sensibles comme rejet, masquage, restauration, correction d'impact, changement d'organisateur ou dérogation de participation exigent un motif d'au moins 5 caractères après trim lorsqu'elles sont classées comme telles par leur contrat.
 
-Le journal d'audit d'une action n'est pas public. Il peut être lu par le créateur de l'action, ses organisateurs/coorganisateurs autorisés et les rôles de modération `admin`, `elu`, `max`.
+Le journal d'audit d'une action n'est pas public. Son droit de lecture doit suivre une capacité dédiée et la minimisation des données. Les accès historiques actuellement présents doivent être relus lors de la convergence vers la matrice de capacités.
 
 Ne pas ajouter `change_organizer` ou `reopen_action` tant qu'une commande produit et un modèle d'état explicites n'existent pas. Un changement d'organisateur devra préserver les coorganisateurs existants et auditer avant/après.
 
@@ -202,10 +288,19 @@ lecture peut utiliser `loadOrRefreshPublicSurfaceSnapshot`.
 
 Toute vue qui peut inclure un état non public — `status=pending`,
 `status=rejected` ou la vue globale explicite `status=all` — exige l'AuthN puis
-l'AuthZ de modération centrale (`admin`, `elu` ou `max`). Elle est lue
-directement et ne doit jamais passer par un snapshot de surface publique. Cette
-règle vaut pour les actions `pending` comme pour les signalements `new` mappés
-par la source unifiée.
+l'AuthZ de modération prévue par le code courant. Au moment de la rédaction,
+le domaine Actions accepte encore `admin`, `elu` ou `max` sur certaines de ces
+surfaces. Cette permission actuelle doit rester testée jusqu'à sa migration et
+ne doit pas être généralisée à d'autres domaines.
+
+La cible architecturale reste :
+
+```txt
+admin/max → capacité de modération globale
+elu       → lecture/pilotage territorial puis éventuelle modération territoriale bornée
+```
+
+Les vues non publiques sont lues directement et ne doivent jamais passer par un snapshot de surface publique.
 
 Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transforme pas une pré-action en collecte finalisée.
 
@@ -229,7 +324,7 @@ La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utili
 la session du compte courant et peut restituer ses propres observations `new`,
 sans les exposer à la carte publique.
 
-### Lecture propriétaire Trash Spotter
+## Lecture propriétaire Trash Spotter
 
 La capacité `GET /api/signalements/me` est une surface propriétaire dédiée au
 suivi des observations du compte connecté. Le handler appelle
@@ -250,7 +345,7 @@ qu'après le clic de l'auteur sur `Voir les preuves photo`; l'ownership média
 existant autorise l'auteur à lire ses propres preuves, y compris lorsque le
 signalement est encore `new`.
 
-### Lecture propriétaire des missions GPS
+## Lecture propriétaire des missions GPS
 
 La route `/missions/[id]` est une surface applicative protégée par AuthN Clerk.
 Le proxy assure l'entrée authentifiée mais ne remplace pas l'AuthZ serveur de
@@ -283,9 +378,9 @@ explicite.
 
 Éviter les comparaisons dispersées de chaînes de rôles.
 
-Préférer des helpers centraux déjà existants ou à compléter.
+Préférer des helpers de capacité orientés domaine.
 
-Exemples de capacités :
+Exemples existants :
 
 ```txt
 canManageAction
@@ -297,7 +392,37 @@ canChangeActionStatus
 canViewModerationAudit
 ```
 
-Ne pas créer un système parallèle si un helper canonique existe déjà.
+Exemples de cibles plus précises lorsqu'un scope est nécessaire :
+
+```txt
+canModerateAction(identity, action, scope)
+canViewTerritoryReport(identity, territory)
+canManageOrganizationResource(identity, organization)
+canAssignRole(identity, targetRole)
+```
+
+Ne pas créer un moteur universel parallèle si les helpers de domaine suffisent. La convergence porte sur le vocabulaire, les invariants et les scopes, pas sur une abstraction unique obligatoire.
+
+## Permissions sur les données
+
+L'accès à une fonctionnalité ne donne pas accès à toutes les colonnes disponibles.
+
+Appliquer la minimisation des DTO :
+
+```txt
+public
+owner_private
+scoped_operational
+sanitized_analytics
+privileged_admin
+security_audit
+```
+
+Un scientifique doit recevoir les données nécessaires à l'analyse, pas les PII disponibles par commodité.
+
+Un élu doit recevoir les informations nécessaires au pilotage territorial, pas un accès implicite à tous les comptes individuels du territoire.
+
+Une projection serveur sanitizée est préférable au chargement d'un objet complet suivi d'un masquage client.
 
 ## Auto-validation
 
@@ -316,19 +441,25 @@ Ne pas auto-valider une action créée au nom d'un tiers sans règle métier exp
 
 L'AuthZ applicative ne remplace pas RLS.
 
-Tester :
+Tester selon le domaine :
 
 - anonyme ;
 - connecté propriétaire ;
 - connecté non-propriétaire ;
-- admin-like ;
+- organisateur / non-organisateur ;
+- organisation A / organisation B ;
+- territoire A / territoire B ;
+- admin ;
+- max ;
 - service role si réellement nécessaire.
 
 Ne jamais :
 
 - désactiver RLS pour débloquer un flux ;
 - envoyer `service_role` au client ;
-- accorder une RPC sensible au public uniquement pour contourner un échec client.
+- accorder une RPC sensible au public uniquement pour contourner un échec client ;
+- utiliser `service_role` comme justification de l'autorisation d'un utilisateur ;
+- élargir une policy organisationnelle ou territoriale faute de relation canonique.
 
 ## Secrets
 
@@ -373,20 +504,25 @@ apps/web/src/proxy.protected-routes.test.ts
 apps/web/src/lib/seo/indexability.test.ts
 ```
 
+Le fait qu'une route soit protégée ne prouve pas que chaque capacité interne de cette route est autorisée correctement.
+
 ## Checklist avant modification sensible
 
 ```txt
 □ Session requise ?
-□ Rôle requis ?
-□ Ownership requis ?
+□ Capacité exacte identifiée ?
+□ Rôle compatible ?
+□ Scope minimal identifié ?
+□ Ownership / organisation / territoire vérifié côté serveur ?
 □ État métier vérifié ?
+□ Projection de données minimale ?
 □ Input validé ?
 □ RLS cohérente ?
 □ RPC correctement permissionnée ?
 □ Override séparé du flux normal ?
 □ Motif requis ?
 □ Audit requis ?
-□ Test négatif présent ?
+□ Tests négatifs de scope présents ?
 ```
 
 ## Validation
@@ -402,4 +538,15 @@ Pour une modification structurante :
 
 ```bash
 npm run checks
+```
+
+## Références
+
+```txt
+documentation/security/authorization-capabilities.md
+documentation/architecture/adr/ADR-007-capability-scoped-authorization.md
+apps/web/src/lib/domain-language.ts
+apps/web/src/lib/profiles.ts
+apps/web/src/lib/authz.ts
+apps/web/src/lib/actions/permissions.ts
 ```
