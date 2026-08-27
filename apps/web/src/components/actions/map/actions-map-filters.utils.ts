@@ -1,4 +1,4 @@
-import type { ActionImpactLevel, ActionMapItem, ActionStatus } from "@/lib/actions/types";
+import type { ActionImpactLevel, ActionMapItem } from "@/lib/actions/types";
 import { extractArrondissement } from "@/components/sections/rubriques/helpers";
 import {
   DEFAULT_VISIBLE_CATEGORIES,
@@ -6,23 +6,17 @@ import {
 } from "@/components/actions/map-marker-categories";
 
 export const ACTIONS_MAP_FILTERS_STORAGE_KEY = "cmm_actions_map_filters";
-export type ActionsMapStatusFilter = ActionStatus | "all";
 export type ActionsMapDateScope = "current_year" | "all_time";
 
 export type ActionsMapFilters = {
   days: number;
   dateScope: ActionsMapDateScope;
-  statusFilter: ActionsMapStatusFilter;
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
   zoneQuery: string;
   visibleCategories: Record<MarkerCategory, boolean>;
 };
 
-const VALID_STATUSES = new Set<ActionsMapStatusFilter>([
-  "all",
-  "approved",
-]);
 const VALID_DATE_SCOPES = new Set<ActionsMapDateScope>([
   "current_year",
   "all_time",
@@ -141,7 +135,6 @@ export function buildDefaultActionsMapFilters(
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
     dateScope: "current_year",
-    statusFilter: "approved",
     impactFilter: "all",
     qualityMin: 0,
     zoneQuery: "",
@@ -172,9 +165,6 @@ export function normalizeActionsMapFilters(
   return {
     days: defaults.days,
     dateScope: normalizedDateScope,
-    statusFilter: VALID_STATUSES.has(source.statusFilter ?? "all")
-      ? ((source.statusFilter === "all" ? "approved" : source.statusFilter) as ActionsMapStatusFilter)
-      : defaults.statusFilter,
     impactFilter: VALID_IMPACTS.has(source.impactFilter ?? "all")
       ? (source.impactFilter as ActionImpactLevel | "all")
       : defaults.impactFilter,

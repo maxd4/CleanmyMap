@@ -31,7 +31,7 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - CTA Déclarer ;
 - CTA Méthodologie ;
 - carte immersive ;
-- filtres ;
+- filtres publics actifs : Zone, Période, Catégories visibles et Réinitialiser ;
 - sélection d'action ;
 - KPI de résultats terrain (`kg`, mégots, bénévoles) et proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
 - tour de contrôle ;
@@ -49,6 +49,24 @@ La carte ne doit pas confondre mémoire des interventions et pollution actuellem
 | Trash Spotter | pollution actuellement signalée et encore actionnable |
 
 Une action ancienne ne devient jamais automatiquement un nouveau spot Trash Spotter.
+
+## Contrat des filtres publics
+
+Le flux public de cette route est strictement limité aux actions `approved`. Ce
+contrat est appliqué par la requête de la page ; il n'est pas exposé comme un
+choix utilisateur.
+
+Les seuls contrôles de filtrage affichés sont ceux qui modifient effectivement
+la vue :
+
+- recherche par zone ou lieu ;
+- période (`Année en cours` ou `Depuis la création`) ;
+- catégories visibles ;
+- réinitialisation des filtres.
+
+Il n'y a pas de filtre `Statut` ni d'option `Toutes les actions` sur la carte
+publique, car aucune action non approuvée ne fait partie de son contrat de
+visibilité.
 
 ## Logique de score constaté
 

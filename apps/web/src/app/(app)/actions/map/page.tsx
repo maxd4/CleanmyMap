@@ -74,7 +74,6 @@ function ActionsMapPageContent() {
   const {
     filters,
     setDateScope,
-    setStatusFilter,
     setZoneQuery,
     toggleCategory,
     resetFilters,
@@ -82,7 +81,6 @@ function ActionsMapPageContent() {
   const {
     days,
     dateScope,
-    statusFilter,
     impactFilter,
     qualityMin,
     zoneQuery,
@@ -110,11 +108,6 @@ function ActionsMapPageContent() {
     setDateScope(dateScopeValue);
   }, [setDateScope]);
 
-  const handleStatusChange = useCallback((statusValue: typeof statusFilter) => {
-    setSelectedActionId(null);
-    setStatusFilter(statusValue);
-  }, [setStatusFilter]);
-
   const handleZoneQueryChange = useCallback((zoneQueryValue: string) => {
     setSelectedActionId(null);
     setZoneQuery(zoneQueryValue);
@@ -134,7 +127,7 @@ function ActionsMapPageContent() {
     types: "all",
     days,
     dateScope,
-    statusFilter,
+    statusFilter: "approved",
     impactFilter,
     qualityMin,
     zoneQuery,
@@ -237,7 +230,6 @@ function ActionsMapPageContent() {
                 viewport={mapViewport}
                 onZoneQueryChange={handleZoneQueryChange}
                 onDateScopeChange={handleDateScopeChange}
-                onStatusChange={handleStatusChange}
                 onCategoryToggle={handleCategoryToggle}
                 onReset={handleResetFilters}
               />

@@ -9,4 +9,11 @@ describe("actions map public semantics", () => {
     expect(source).toContain("pollution projetée");
     expect(source).toContain("ne constituent pas une mesure actuelle du terrain");
   });
+
+  it("keeps the public feed approved-only without exposing a status control", () => {
+    expect(source).toContain('statusFilter: "approved"');
+    expect(source).not.toContain("setStatusFilter");
+    expect(source).not.toContain("handleStatusChange");
+    expect(source).not.toContain("onStatusChange");
+  });
 });
