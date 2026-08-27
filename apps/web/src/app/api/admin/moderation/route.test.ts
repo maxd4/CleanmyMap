@@ -10,6 +10,7 @@ const invalidatePublicSurfaceSnapshotsByRouteMock = vi.hoisted(() => vi.fn());
 const copyValidatedActionToLocalStoreMock = vi.hoisted(() => vi.fn());
 const copyValidatedSpotToLocalStoreMock = vi.hoisted(() => vi.fn());
 const moderateSignalementMock = vi.hoisted(() => vi.fn());
+const readSignalementForModerationMock = vi.hoisted(() => vi.fn());
 const emitActionValidatedMock = vi.hoisted(() => vi.fn());
 const emitSpotValidatedMock = vi.hoisted(() => vi.fn());
 
@@ -33,6 +34,7 @@ vi.mock("@/lib/data/local-sync", () => ({
 
 vi.mock("@/lib/admin/signalement-moderation", () => ({
   moderateSignalement: moderateSignalementMock,
+  readSignalementForModeration: readSignalementForModerationMock,
 }));
 
 vi.mock("@/lib/events/emit", () => ({
@@ -141,12 +143,36 @@ describe("POST /api/admin/moderation", () => {
       copied: true,
     });
     copyValidatedSpotToLocalStoreMock.mockResolvedValue(true);
+    readSignalementForModerationMock.mockResolvedValue({
+      id: "spot-1",
+      created_at: "2026-08-20T10:00:00.000Z",
+      created_by_clerk_id: "creator-1",
+      label: "Ancien libellé",
+      latitude: 48.1,
+      longitude: 2.3,
+      status: "new",
+      notes: "Anciennes notes",
+      sourceTable: "trash_spotter_spots",
+      spot_type: "spot",
+      validated_at: null,
+      cleaned_at: null,
+    });
     moderateSignalementMock.mockResolvedValue({
       found: true,
       sourceTable: "trash_spotter_spots",
       signalement: {
         id: "spot-1",
+        created_at: "2026-08-20T10:00:00.000Z",
         created_by_clerk_id: "creator-1",
+        label: "Zone validée",
+        latitude: 48.1,
+        longitude: 2.3,
+        status: "validated",
+        notes: "Anciennes notes",
+        sourceTable: "trash_spotter_spots",
+        spot_type: "spot",
+        validated_at: "2026-08-27T10:00:00.000Z",
+        cleaned_at: null,
       },
     });
   });
@@ -362,6 +388,340 @@ describe("POST /api/admin/moderation", () => {
     );
     expect(emitSpotValidatedMock).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "creator-1" }),
+    );
+  });
+
+  it("audits clean_place before and after from the canonical signalement", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+    moderateSignalementMock.mockResolvedValueOnce({
+      found: true,
+      sourceTable: "trash_spotter_spots",
+      signalement: {
+        id: "spot-1",
+        created_at: "2026-08-20T10:00:00.000Z",
+        created_by_clerk_id: "creator-1",
+        label: "Nouveau libellé",
+        latitude: 48.2,
+        longitude: 2.3,
+        status: "validated",
+        notes: "Notes mises à jour",
+        sourceTable: "trash_spotter_spots",
+        spot_type: "spot",
+        validated_at: "2026-08-27T10:00:00.000Z",
+        cleaned_at: null,
+      },
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+          edits: {
+            label: "Nouveau libellé",
+            latitude: 48.2,
+            notes: "Notes mises à jour",
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "spot-1",
+        details: expect.objectContaining({
+          entityType: "clean_place",
+          targetUserId: "creator-1",
+          previousValue: {
+            status: "new",
+            spotType: "spot",
+            labelChanged: true,
+            coordinatesChanged: true,
+            notesChanged: true,
+          },
+          newValue: {
+            status: "validated",
+            spotType: "spot",
+            labelChanged: true,
+            coordinatesChanged: true,
+            notesChanged: true,
+          },
+        }),
+      }),
+    );
+
+    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0] as {
+      details: Record<string, unknown>;
+    };
+    const serializedDetails = JSON.stringify(audit.details);
+    expect(serializedDetails).not.toContain("Nouveau libellé");
+    expect(serializedDetails).not.toContain("Notes mises à jour");
+    expect(serializedDetails).not.toContain("48.2");
+    expect(audit.details).not.toHaveProperty("label");
+    expect(audit.details).not.toHaveProperty("latitude");
+    expect(audit.details).not.toHaveProperty("longitude");
+    expect(audit.details).not.toHaveProperty("notes");
+  });
+
+  it("audits a clean_place not found during canonical lookup once", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+    readSignalementForModerationMock.mockResolvedValueOnce(null);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "missing-spot",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(moderateSignalementMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetId: "missing-spot",
+        details: expect.objectContaining({
+          entityType: "clean_place",
+          stage: "lookup",
+          code: "not_found",
+        }),
+      }),
+    );
+  });
+
+  it("audits clean_place update failures with bounded context", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+    moderateSignalementMock.mockRejectedValueOnce(
+      new Error("database update detail must not be audited"),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Vérification administrative",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0] as {
+      targetId?: string;
+      details: Record<string, unknown>;
+    };
+    expect(audit.targetId).toBe("spot-1");
+    expect(audit.details).toEqual(
+      expect.objectContaining({
+        entityType: "clean_place",
+        reason: "Vérification administrative",
+        stage: "update",
+      }),
+    );
+    expect(JSON.stringify(audit.details)).not.toContain(
+      "database update detail must not be audited",
+    );
+  });
+
+  it("audits clean_place post-update failures without a second audit", async () => {
+    getSupabaseAdminClientMock.mockReturnValue({});
+    invalidatePublicSurfaceSnapshotsByRouteMock.mockRejectedValueOnce(
+      new Error("snapshot failure must not be audited"),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Post-traitement contrôlé",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetId: "spot-1",
+        details: expect.objectContaining({
+          entityType: "clean_place",
+          reason: "Post-traitement contrôlé",
+          stage: "post_update",
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "snapshot failure must not be audited",
+    );
+  });
+
+  it("audits an action not found after canonical identification", async () => {
+    const harness = createActionSupabaseHarness();
+    harness.updateMock.mockImplementationOnce(() => ({
+      eq: vi.fn(() => ({
+        select: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      })),
+    }));
+    const actionFrom = harness.from;
+    harness.from = vi.fn((table: string) => {
+      if (table === "submissions") {
+        return {
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              })),
+            })),
+          })),
+        };
+      }
+      return actionFrom(table);
+    }) as typeof harness.from;
+    getSupabaseAdminClientMock.mockReturnValue(harness);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "action",
+          id: "missing-action",
+          status: "rejected",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Action introuvable à contrôler",
+          edits: {},
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetId: "missing-action",
+        details: expect.objectContaining({
+          entityType: "action",
+          operation: "reject_action",
+          reason: "Action introuvable à contrôler",
+          stage: "lookup",
+        }),
+      }),
+    );
+  });
+
+  it("audits an action update failure with bounded context", async () => {
+    const harness = createActionSupabaseHarness();
+    harness.updateMock.mockImplementationOnce(() => ({
+      eq: vi.fn(() => ({
+        select: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: "raw action update detail must not be audited" },
+          }),
+        })),
+      })),
+    }));
+    getSupabaseAdminClientMock.mockReturnValue(harness);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "action",
+          id: "action-1",
+          status: "rejected",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Mise à jour action refusée",
+          edits: {},
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    const audit = appendAdminOperationAuditMock.mock.calls[0]?.[0] as {
+      details: Record<string, unknown>;
+    };
+    expect(audit.details).toEqual(
+      expect.objectContaining({
+        entityType: "action",
+        operation: "reject_action",
+        reason: "Mise à jour action refusée",
+        stage: "update",
+      }),
+    );
+    expect(JSON.stringify(audit.details)).not.toContain(
+      "raw action update detail must not be audited",
+    );
+  });
+
+  it("audits action post-update failures once", async () => {
+    getSupabaseAdminClientMock.mockReturnValue(createActionSupabaseHarness());
+    invalidatePublicSurfaceSnapshotsByRouteMock.mockRejectedValueOnce(
+      new Error("raw action post-update detail must not be audited"),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "action",
+          id: "action-1",
+          status: "pending",
+          confirmPhrase: "CONFIRMER MODERATION",
+          reason: "Correction d’impact contrôlée",
+          edits: { wasteKg: 2 },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetId: "action-1",
+        details: expect.objectContaining({
+          entityType: "action",
+          operation: "correct_impact",
+          reason: "Correction d’impact contrôlée",
+          stage: "post_update",
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "raw action post-update detail must not be audited",
     );
   });
 
