@@ -280,6 +280,18 @@ développement futur. La taille est un signal architectural, pas un objectif de
 refactor : les responsabilités, la cohésion, les dépendances, la testabilité et
 la fréquence de changement priment sur le nombre de lignes.
 
+### Dette de structure et d'organisation
+
+Chaque chantier doit éviter d'ajouter de la dette de structure ou
+d'organisation. Avant de créer un fichier, un dossier, une abstraction ou une
+nouvelle responsabilité, vérifier si l'emplacement, le nommage, les frontières
+de module et les dépendances restent cohérents avec l'architecture existante.
+Ne pas empiler les exceptions, les doublons, les fichiers fourre-tout ou les
+répertoires plats pour livrer plus vite : corriger la cause localement lorsque
+c'est sûr et proportionné, ou signaler explicitement le reliquat et préparer un
+lot dédié. Toute modification doit laisser la zone concernée au moins aussi
+simple à comprendre, maintenir et tester qu'avant.
+
 Pendant tout chantier fonctionnel, évaluer aussi la dette structurelle des
 fichiers et dossiers réellement traversés par le changement. Si une
 modularisation ou une réorganisation directement liée est sûre, utile et
@@ -528,6 +540,18 @@ Toute surface modifiée gère lorsque pertinent :
 - états ;
 - captures ;
 - améliorations propres à la page.
+
+### README de dossier
+
+Lorsqu'un dossier porte une responsabilité identifiable, une convention
+particulière, un point d'entrée, une procédure de validation ou une frontière
+d'architecture, ajouter ou mettre à jour son `README.md` dès que c'est
+pertinent. Le README doit expliquer le rôle du dossier, les fichiers ou sous-
+dossiers importants, les règles d'organisation et les commandes utiles, sans
+dupliquer une documentation canonique déjà présente. Après toute
+réorganisation significative, vérifier que les README concernés restent
+exacts ; créer un README uniquement lorsqu'il apporte une orientation durable,
+pas pour réduire artificiellement la taille d'un autre document.
 
 Les sujets techniques transversaux restent dans les dossiers techniques adaptés.
 
