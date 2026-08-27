@@ -1,69 +1,70 @@
-# AI Developer Guide - CleanmyMap
+# AI Developer Guide — CleanMyMap
 
-Ce projet utilise une architecture très structurée (Next.js 15, React Server Components/Client Components, Supabase, Clerk) et un vocabulaire d'entreprise très strict (Domain Language). Si tu es un agent de développement (coding assistant, LLM, ou automation tool), **lis attentivement ce fichier avant de modifier du code.**
+Ce guide complète les fichiers de gouvernance à la racine du dépôt. Ils restent
+les sources canoniques pour les règles transversales d'exécution, de sécurité,
+de Git, de validation et de collaboration. Ce document ne les duplique pas ;
+il fournit uniquement les repères propres au développement de CleanMyMap.
 
-## 1. Domain Language (Vocabulaire Critique)
-Toute l'application repose sur `apps/web/src/lib/domain-language.ts` et `apps/web/src/lib/profiles.ts`.
-Ne confonds jamais ces 3 concepts d'autorisation :
-- **Role** : L'attribution métier d'un utilisateur dans la base (`benevole`, `coordinateur`, `scientifique`, `elu`, `admin`).
-- **SessionRole** : Le `Role` + l'état déconnecté (`anonymous`).
-- **Parcours** : Lens de navigation (UX) appliquée à un rôle. Actuellement, `Parcours = Role`.
+## 1. Vocabulaire métier canonique
 
-Ne modifie jamais le typage de ces éléments sans autorisation formelle du lead developer. 
-Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionRole` dans `lib/domain-language.ts` ou la surcouche Clerk dans `lib/authz.ts`.
+Le vocabulaire d'autorisation est défini par
+`apps/web/src/lib/domain-language.ts` et `apps/web/src/lib/profiles.ts`.
 
-## 2. Architecture de la Plateforme (`apps/web/src`)
+- **Role** : `benevole`, `coordinateur`, `scientifique`, `entreprise`, `elu`,
+  `admin`, `max`.
+- **SessionRole** : un `Role` ou l'état de session non connecté `anonymous`.
+- **Parcours** : la projection de navigation d'un `Role` ; actuellement
+  `Parcours = Role`.
 
-- `/app` : App Router Next.js 15. Contient les routes publiques (`/`), les routes membres `(app)/` et les webhooks.
-- `/components/ui/` : Composants génériques et réutilisables (Boutons, Modals, Wrappers).
-- `/components/actions/` : Tout le flux de collecte terrain (Formulaires de déclaration, Cartes des déchets).
-- `/components/sections/rubriques/` : Le cœur de l'UI. Chaque "rubrique" (ex: Annuaire, Météo, Classement) est un composant isolé ici. Ne mets pas de logique globale dans ces fichiers.
-- `/lib/sections-registry/config.ts` : Registre central de toutes les vues `Rubriques`. Si tu crées un nouveau module dans le site, tu **dois** l'enregistrer ici pour qu'il apparaisse dans le routeur et la navigation.
+`anonymous` est un état de session, pas un rôle métier. Ne modifie pas ces
+contrats sans vérifier leurs consommateurs et les règles canoniques du dépôt.
 
-## 3. Données et Intégration (Supabase + Clerk)
-- Clerk gère l'authentification. Les métadonnées rôles sont sur `publicMetadata.role`. 
-- Supabase gère la donnée applicative métier (Actions terrain, déchets).
-- Données sensibles & Gouvernance : Toute modification sur le **Profil** (`profile`), les modules **Open Data** (`open-data`) ou les flux de **Financement** (`funding`) doit respecter scrupuleusement les contrats de données établis.
-- Ne fais jamais de requêtes SQL brutes. L'application utilise typiquement le client Supabase `createClient()` ou des helpers dans `lib/actions/http.ts`.
+## 2. Architecture actuelle
 
-## 4. Règles d'Architecture & Gouvernance
-1. **Gouvernance Globale** : Avant toute modification structurale, consulte la couche de gouvernance dans `documentation/` :
-   - [Design System](../design-system/README.md) (index de gouvernance visuelle).
-   - [Design Charter](../design-system/charte-ui-pro-moderne-futuriste.md) (Règles visuelles Premium).
-   - [Display Modes](../design-system/display-modes-chartes.md) (Chartes des 3 modes).
-   - [Typography](../design-system/TYPOGRAPHY_SYSTEM.md) (Système typographique).
-   - [Data Governance](../technical/data-governance.md) (Contrats et Ingestion).
-   - [API Standard](../technical/api-standard.md) (Erreurs et Sécurité).
-2. **Fichiers miroir interdits** : ne crée pas de dossier ou de fichier miroir pour reproduire un contenu déjà publié ou déjà interne; choisis un seul emplacement source de vérité et documente explicitement toute copie nécessaire.
-3. **Nomenclature Utilisateur** : Utilise toujours les noms engageants pour les rubriques FR (ex: "Signalement Déchets" au lieu de "Trash Spotter", "Mon Profil & Impact" au lieu de "Compte", "Entraide Locale" au lieu de "Discussion").
-4. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
-5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
-6. **Icons Lucide-React** : Standard unique pour les icônes.
-7. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
-8. **Précision TypeScript** : `any` est un dernier recours interdit par défaut, les casts doivent être prouvés, `Record<string, unknown>` ne sert qu'aux frontières brutes, et tout accès dynamique doit être normalisé avant d'atteindre la logique métier.
-9. **Diagnostic TypeScript** : pour les erreurs de compilation, privilégie `npm run typecheck` ou `npx tsc --noEmit --pretty false`; si la sortie est trop longue ou semble tronquée, redirige-la vers `typescript-errors.txt` puis regroupe les erreurs par cause racine avant de corriger.
+CleanMyMap est un monorepo avec deux applications déployables :
 
-## 5. Scripts et Automatisation
-Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.
-- Évite de lancer plusieurs commandes lourdes en parallèle, notamment `npm run checks`, `pytest`, `typecheck`, `rg -n` sur tout le repo et les scans de documentation.
-- N'active pas en même temps `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
-- Si un contrôle ciblé suffit, préfère-le à un scan global pour préserver la réactivité de la machine.
-- Pour les timeouts locaux, consulte les fenêtres recommandées dans `TESTING.md` avant de relancer un build, un lint ou une suite de tests.
-- Arrête une commande dès qu'elle n'est plus utile.
-- Ferme les commandes qui tournent pour un `localhost` dès que ce `localhost` n'est plus ouvert ou plus utilisé.
-- Les commandes `git` peuvent rester en arrière-plan car leur coût machine est généralement faible.
+- `apps/web` : application web Next.js `16.3.1` avec App Router ;
+- `apps/mobile` : application Expo / React Native du même produit.
 
-## 6. Mémoire persistante et cycle de travail
+Les deux applications partagent les contrats nécessaires, Clerk et Supabase,
+mais restent des surfaces déployables distinctes. Les versions exactes sont
+définies par les manifestes, en particulier `apps/web/package.json`.
 
-- Lis la doctrine de mémoire persistante et de clôture de session propre au dépôt avant de prolonger un travail.
-- Avant de répondre sur une tâche complexe, planifie d'abord, puis décompose en sous-tâches logiques si nécessaire.
-- Après chaque modification, teste le cas nominal, les cas limites et les cas d'erreur quand le dépôt le permet.
-- En cas de bug, cherche la cause racine, corrige de manière ciblée et re-teste avant de conclure.
-- Conclus toujours par une synthèse explicite des changements, des validations et des risques restants.
+Dans `apps/web` :
 
-## 7. Encodage et Accents Français (CRITIQUE)
-- **Tous les fichiers doivent être encodés en UTF-8 sans BOM.** Le `.editorconfig` à la racine l'impose.
-- **Utilise systématiquement les vrais caractères accentués français** dans les strings visibles : `é`, `è`, `ê`, `à`, `ù`, `ç`, `ô`, `î`, etc.
-- **Interdit** : omettre les accents (ex: "Declarer" au lieu de "Déclarer") ou insérer des séquences mojibake (ex: "DÃ©clarer").
-- **Vérification** : avant tout commit contenant du texte français, lancer `Select-String -Recurse -Pattern "\xC3" apps/web/src` (PowerShell) ou `grep -rn "Ã" apps/web/src` (bash). Zéro résultat = OK.
-- **Règle i18n** : ne jamais utiliser `.label.fr` ou `.description.fr` en dur. Toujours passer par `label[locale]` avec la locale récupérée via `getServerLocale()` (Server) ou `useSitePreferences()` (Client).
+- `src/app/` contient les pages, layouts et routes API ;
+- `src/components/` contient l'UI ;
+- `src/lib/` contient le domaine, les services et les contrats ;
+- `src/lib/sections-registry/config.ts` est le registre canonique des rubriques.
+
+Clerk reste l'identité principale. Supabase fournit la persistence et les
+services de données ; les frontières serveur/client et les droits effectifs
+restent ceux du code courant.
+
+## 3. Documentation spécialisée à consulter
+
+Consulte uniquement la documentation réellement concernée par le changement :
+
+- [Architecture](../architecture/README.md) pour les décisions et frontières ;
+- [Gouvernance des données](../architecture/data-governance.md) pour les
+  contrats de données et l'ingestion ;
+- [Standard API](./api-standard.md) pour les contrats HTTP et les invariants
+  de sécurité ;
+- [Testing](./TESTING.md) pour les validations de développement ;
+- [Design system](../design-system/README.md) pour une modification UI.
+
+Ne crée pas de copie locale d'une règle déjà portée par les fichiers de
+gouvernance à la racine ou une source documentaire spécialisée. Si deux
+documents semblent prescrire des règles différentes, vérifie le code et les
+sources canoniques avant de modifier l'un d'eux.
+
+## 4. Repères de développement
+
+Les décisions générales ne sont pas recopiées ici. Pour une tâche donnée,
+identifie le contrat ou le module réellement concerné, conserve ses
+consommateurs, puis applique les validations proportionnées définies par la
+gouvernance du dépôt.
+
+Les scripts Python de maintenance vivent sous `maintenance/python/` et restent
+hors du runtime web. Toute modification de cette zone doit rester explicitement
+dans son propre périmètre.
