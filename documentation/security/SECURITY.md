@@ -41,9 +41,21 @@ Ne pas introduire une seconde identité canonique pour le même utilisateur sans
 
 ## Autorisation
 
-Les permissions sont vérifiées côté serveur.
+Les permissions sont vérifiées côté serveur selon le contrat :
 
-Un rôle `admin`, `elu` ou `max` ne doit pas modifier silencieusement le comportement d'un parcours utilisateur normal.
+```txt
+Role + Capability + Scope + relation à la ressource + état métier
+```
+
+Un rôle seul ne constitue pas une permission globale.
+
+Un utilisateur privilégié ne doit pas modifier silencieusement le comportement
+d'un parcours utilisateur normal.
+
+Le domaine Actions conserve actuellement une divergence documentée : `elu` est
+encore accepté par certaines capacités de modération globale. Cette exception
+runtime ne définit pas un rôle admin-like global et ne doit pas être étendue aux
+autres domaines.
 
 Une dérogation administrative sensible doit être :
 
@@ -57,6 +69,7 @@ Référence :
 
 ```txt
 documentation/security/authz-authn-regles.md
+documentation/security/authorization-capabilities.md
 ```
 
 ## Secrets
@@ -101,10 +114,16 @@ Catégories :
 public
 authenticated
 owner
-admin
+organizer
+organization
+territory
+global moderation
 service/cron
 signed webhook
 ```
+
+Une catégorie d'accès doit être reliée à une capacité et à son scope minimal,
+pas uniquement à une comparaison de rôle.
 
 ## Email
 
@@ -132,7 +151,9 @@ Vérifier :
 - export ;
 - suppression.
 
-L'app compagnon doit avoir un modèle d'identité cohérent avant production.
+L'application mobile utilise le même contrat d'identité Clerk que le web. Son
+renouvellement en background headless, `mission_actions` et sa validation
+opérationnelle restent ouverts avant toute production mobile.
 
 ## Dépendances et CodeQL
 

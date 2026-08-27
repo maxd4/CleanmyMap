@@ -8,13 +8,14 @@ Lire cette page avant toute modification concernant API, auth, données, CI, sec
 2. `SECURITY_QUICK_REFERENCE.md`
 3. `SECURITY_GUIDE.md`
 4. `authz-authn-regles.md`
-5. `url-validation-security.md`
-6. `regex-security.md`
-7. `../backend/RATE_LIMITING.md`
-8. `CODEX_SECURITY_PLAYBOOK.md`
-9. `supabase-review-checklist.md`
-10. `github-audit-backlog.md`
-11. `dependency-advisory-governance.md` pour les acceptations de risque de
+5. `authorization-capabilities.md`
+6. `url-validation-security.md`
+7. `regex-security.md`
+8. `../backend/RATE_LIMITING.md`
+9. `CODEX_SECURITY_PLAYBOOK.md`
+10. `supabase-review-checklist.md`
+11. `github-audit-backlog.md`
+12. `dependency-advisory-governance.md` pour les acceptations de risque de
     dépendances bornées par advisory et par date
 
 ## Principes non négociables
@@ -39,10 +40,21 @@ Une session valide ne suffit pas.
 Vérifier :
 
 1. authentification ;
-2. rôle ;
-3. ownership ;
-4. état métier ;
-5. audit si dérogation sensible.
+2. capacité demandée ;
+3. rôle compatible avec cette capacité ;
+4. ownership, organisation, territoire ou autre scope nécessaire ;
+5. état métier ;
+6. projection de données autorisée ;
+7. audit si dérogation sensible.
+
+Références :
+
+```txt
+authz-authn-regles.md
+authorization-capabilities.md
+```
+
+Ne pas traiter les rôles comme une hiérarchie linéaire. Un rôle métier peut disposer d'une capacité forte dans son périmètre sans obtenir un droit global dans les autres domaines.
 
 ### Supabase
 
@@ -59,11 +71,14 @@ Chaque endpoint doit être classé :
 - public ;
 - authentifié ;
 - propriétaire ;
-- admin ;
+- organisateur ;
+- organisation ;
+- territoire ;
+- admin/modération globale ;
 - cron/service ;
 - webhook signé.
 
-Ne pas se fier uniquement au proxy : le handler doit vérifier les permissions nécessaires.
+Ne pas se fier uniquement au proxy : le handler doit vérifier la capacité et le scope nécessaires.
 
 ### Validation
 
@@ -149,16 +164,23 @@ L'audit de secrets doit s'exécuter pour les commits documentaires.
 apps/web/src/lib/security/validation.ts
 apps/web/src/lib/seo/indexability.ts
 apps/web/src/lib/auth/protected-routes.ts
+apps/web/src/lib/authz.ts
+apps/web/src/lib/profiles.ts
+apps/web/src/lib/actions/permissions.ts
 apps/web/src/lib/community/discussion-rate-limit.ts
 apps/web/src/lib/supabase/server.ts
 apps/web/src/lib/supabase/clerk-rls.ts
 apps/web/src/lib/rate-limit/server.ts
 ```
 
+Les permissions métier doivent préférer les helpers de capacité propres au domaine plutôt que des comparaisons de chaînes de rôles dispersées.
+
 ## Bloquer une livraison si
 
 - secret probable détecté ;
 - route sensible sans contrôle serveur ;
+- rôle métier transformé implicitement en permission globale ;
+- scope organisation/territoire accepté sans relation canonique ;
 - page privée indexable ;
 - RLS désactivée pour contourner une erreur ;
 - `service_role` exposée au client ;

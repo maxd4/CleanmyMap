@@ -31,13 +31,11 @@ Décisions existantes :
 
 - `ADR-001-clerk-auth.md` — Clerk comme identité principale ;
 - `ADR-002-service-role-key.md` — usage des clés privilégiées ;
-- `ADR-003-monorepo-structure.md` — structure du dépôt.
-
-Décisions à intégrer avec cet audit :
-
+- `ADR-003-monorepo-structure.md` — structure du dépôt ;
 - `ADR-004-companion-identity.md` — identité de l'application compagnon ;
 - `ADR-005-next-canary-policy.md` — usage d'une version canary de Next.js ;
-- `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations.
+- `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations ;
+- `ADR-007-capability-scoped-authorization.md` — autorisation par capacités et périmètres.
 
 ## Architecture active
 
@@ -66,12 +64,20 @@ Avant une décision d'architecture :
 
 - identité Clerk ↔ Supabase ;
 - `service_role` strictement serveur ;
+- AuthZ par capacité + scope ;
 - RLS ;
 - frontières serveur/client ;
 - routes publiques/protégées/admin ;
 - migrations Supabase ;
 - quotas Vercel/Supabase ;
 - app compagnon et géolocalisation.
+
+Pour les permissions et périmètres :
+
+```txt
+documentation/security/authorization-capabilities.md
+documentation/security/authz-authn-regles.md
+```
 
 ## Refactoring
 
