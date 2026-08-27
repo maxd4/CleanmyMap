@@ -56,6 +56,17 @@ Le 27 août 2026, depuis `apps/web` :
 - `npm run backend:supabase:advisors:linked` a retourné trois warnings non
   critiques, mais aucun finding `rls_disabled_in_public`.
 
+La migration `20260827000002_close_legacy_table_rls_advisories.sql` ferme
+également les findings `rls_enabled_no_policy` des tables
+`public.forms`, `public.legacy_spot_migrations` et `public.spots` : RLS reste
+activée, les rôles `anon` et `authenticated` n'ont plus de privilèges de table,
+et `service_role` conserve uniquement `SELECT` avec une policy explicite
+service-only. `forms` reste donc lisible par le chemin serveur de progression,
+et les deux tables legacy restent réservées à l'export d'archive technique.
+La migration est préparée dans le dépôt ; son dry-run, son application et la
+vérification de la disparition effective des trois findings restent à exécuter
+avec une session CLI disposant des droits sur le projet `drm`.
+
 L'alerte « Table publiquement accessible » visible dans la capture fournie
 correspond donc à un finding qui n'est plus retourné par le contrôle lié
 actuel. Les warnings restants concernent `pg_trgm` installé dans `public` et
