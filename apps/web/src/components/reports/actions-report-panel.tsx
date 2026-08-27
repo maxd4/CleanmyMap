@@ -37,8 +37,9 @@ export function ActionsReportPanel({
 
   return (
     <AdminPanelShell
-      title="Workflow Administration"
+      title="Workflow administration"
       subtitle="Parcours guidé : filtrage, prévisualisation, confirmation et journalisation."
+      variant="warm"
     >
       <div className="space-y-8">
         <div className="grid gap-6">
@@ -48,27 +49,27 @@ export function ActionsReportPanel({
           <StepJournal workflow={workflow} />
         </div>
 
-        <div className="mt-8 pt-6 border-t border-white/5 space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+        <div className="mt-8 space-y-2 border-t border-stone-200 pt-6">
+          <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">
             Exports directs
           </p>
-          <div className="flex gap-4 text-[10px] font-mono text-emerald-400/60">
-            <code className="bg-emerald-500/5 px-2 py-1 rounded">CSV: {workflow.csvExportUrl}</code>
-            <code className="bg-emerald-500/5 px-2 py-1 rounded">JSON: {workflow.jsonExportUrl}</code>
+          <div className="flex flex-wrap gap-3 text-[10px] font-mono text-stone-700">
+            <code className="rounded bg-stone-100 px-2 py-1">CSV: {workflow.csvExportUrl}</code>
+            <code className="rounded bg-stone-100 px-2 py-1">JSON: {workflow.jsonExportUrl}</code>
           </div>
         </div>
 
         {workflow.lastSuccessMessage && (
-          <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
-            <p className="text-xs font-medium text-emerald-400">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-xs font-medium text-emerald-800">
               {workflow.lastSuccessMessage}
             </p>
           </div>
         )}
 
         {workflow.errorMessage && (
-          <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-4">
-            <p className="text-xs font-medium text-red-400">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+            <p className="text-xs font-medium text-red-800">
               {workflow.errorMessage}
             </p>
           </div>

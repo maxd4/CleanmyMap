@@ -411,6 +411,7 @@ export function AdminInfoBanner({
   tone = "warm",
   icon,
   iconTone = "amber",
+  compact = false,
   className,
 }: {
   eyebrow: string;
@@ -421,6 +422,7 @@ export function AdminInfoBanner({
   tone?: keyof typeof INFO_VARIANT_CLASSES;
   icon?: AdminDashboardIconName;
   iconTone?: keyof typeof ACTION_ICON_TONES;
+  compact?: boolean;
   className?: string;
 }) {
   const textClasses = INFO_VARIANT_TEXT_CLASSES[tone];
@@ -429,17 +431,24 @@ export function AdminInfoBanner({
   return (
     <section
       className={cn(
-        "rounded-[1.75rem] border p-5",
+        "border",
+        compact ? "rounded-2xl p-3.5" : "rounded-[1.75rem] p-5",
         INFO_VARIANT_CLASSES[tone],
         className,
       )}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 gap-4">
+      <div
+        className={cn(
+          "flex flex-col sm:flex-row sm:items-start sm:justify-between",
+          compact ? "gap-3" : "gap-4",
+        )}
+      >
+        <div className={cn("flex min-w-0", compact ? "gap-3" : "gap-4")}>
           {Icon ? (
             <div
               className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border bg-white/10 shadow-inner",
+                "flex shrink-0 items-center justify-center border bg-white/10 shadow-inner",
+                compact ? "h-9 w-9 rounded-xl" : "h-12 w-12 rounded-2xl",
                 ACTION_ICON_TONES[iconTone],
                 tone === "light" ? "bg-white/80" : null,
               )}
@@ -464,7 +473,9 @@ export function AdminInfoBanner({
             </p>
             <h3
               className={cn(
-                "mt-3 text-2xl font-black tracking-tight",
+                compact
+                  ? "mt-1 text-base font-bold tracking-tight"
+                  : "mt-3 text-2xl font-black tracking-tight",
                 textClasses.title,
               )}
             >
@@ -473,7 +484,8 @@ export function AdminInfoBanner({
             {description ? (
               <p
                 className={cn(
-                  "mt-3 text-sm leading-relaxed",
+                  compact ? "mt-1.5 text-xs" : "mt-3 text-sm",
+                  "leading-relaxed",
                   textClasses.description,
                 )}
               >

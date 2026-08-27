@@ -13,11 +13,11 @@
 - **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
 - **Palette attendue** : amber / brun sombre
 - **Scope** : cockpit de supervision et files de modération
-- **Terminée** : non
-- **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
+- **Terminée** : oui pour le périmètre UI du cockpit `/admin`
+- **Couleurs actuellement détectées** : fond blanc chaud / pierre, accents amber et brun sombre
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen à élevé : la palette doit rester technique et ne pas ressembler au pilotage.
-- **Niveau de surcharge textuelle** : fort
+- **Niveau de surcharge textuelle** : modéré
 - **Textes à conserver** :
 - Accès de rôle
 - tableaux
@@ -28,12 +28,16 @@
 - rappels de contexte
 - textes non essentiels
 - Le bloc `max` caché est intégré en fin de page et ne doit pas apparaître comme une surface autonome.
+- La page expose un seul `PageHeader`, avec l’état d’accès, le rôle actif et un unique lien vers le profil.
+- L’ordre de lecture est : alerte et quatre KPI, files de modération en grille 2 × 2, workflow complet, outils d’administration, changement de profil si plusieurs profils sont disponibles, puis console `max` conditionnelle.
+- Les cartes de file n’affichent plus les numéros de bloc et limitent les exemples visibles à deux éléments par file ; les états `Partiel` et `Indisponible` restent explicites.
+- Le workflow conserve le filtrage, la prévisualisation, la confirmation, la journalisation et les exports. Son enveloppe adopte la variante claire et chaude du shell admin sans modifier le shell sombre de ses autres consommateurs.
 - Le cockpit charge indépendamment les actions pending, les demandes de participation pending, les signalements pending, l’inbox créateur, les publications partenaires et le journal d’audit. Chaque source expose un état disponible ou indisponible ; une erreur n’est jamais convertie en zéro métier.
 - Les quatre indicateurs opérationnels sont : `Agir à traiter` (actions + participations), `Signalements à traiter` (spots / lieux propres), `Réseau à traiter` (inbox créateur + publications pending_admin_review) et `Incidents récents` (audit outcome=error). Une dépendance indisponible est affichée comme `Partiel` ou `Indisponible`.
 - L’alerte principale suit l’ordre indisponibilité des sources, incidents d’audit, backlog réel, puis absence d’urgence lorsque toutes les lectures ont réussi et que les files sont vides.
 - Les blocs de modération conservés sont `Réseau & Discussions`, `Cartographie & Impact`, `Agir` et `Accueil & Pilotage`. Le journal utilise le deep-link `#workflow-administration`; Cartographie & Impact conserve `/admin?moderation=signalements#workflow-administration`.
 - Les blocs fictifs `Apprendre` et `Classement global` ne font pas partie de cette surface.
-- **Bulles / cartes / contextes trop nombreux** : Les vues d'administration concentrent des panneaux, tables et actions à forte densité.
+- **Bulles / cartes / contextes trop nombreux** : la hiérarchie du cockpit a été resserrée dans ce lot ; les écrans détaillés de services, godmode et workflow restent volontairement denses.
 - **Composants UI concernés** :
 - Dashboards admin
 - tables
