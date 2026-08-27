@@ -1,48 +1,53 @@
-# Documentation Policy (Mandatory)
+# Documentation Policy
 
 ## Scope
 
-The following changes must always be documented:
-- new features,
-- bug fixes,
-- behavior changes,
-- significant implementation or architecture updates,
-- security-relevant updates.
+Documenter un changement uniquement lorsqu'il modifie une connaissance durable
+pertinente, notamment :
 
-## Required Artifacts Per Change
+- un contrat ;
+- un comportement ;
+- l'architecture ou une frontière de responsabilité ;
+- l'exploitation ou une procédure de validation ;
+- la sécurité ;
+- une limite ou une décision qui doit être conservée.
 
-For each eligible change, update both:
-1. `README.md`
-2. `documentation/repo-docs/wiki/CHANGELOG.md` (and optionally a dedicated wiki page when needed)
+Une modification interne sans effet durable sur ces éléments ne crée pas, à
+elle seule, une obligation documentaire.
 
-## Minimum Required Content
+## Règle de sélection
 
-Each documentation entry must include:
-- **What changed** (functional summary),
-- **Why** (problem or objective),
-- **Where** (main files/modules impacted),
-- **Validation** (tests/checks run),
-- **Compatibility notes** (breaking/risky impacts, if any).
+Modifier uniquement la documentation spécialisée réellement concernée par le
+changement. Maintenir une source canonique par règle, relier les documents
+complémentaires lorsque nécessaire et ne pas dupliquer le même contenu dans
+plusieurs index, guides ou rapports.
 
-## Audience Requirements
+Les documents historiques restent historiques. Ils peuvent être annotés pour
+éviter une confusion avec l'état courant, mais ne doivent pas être réécrits
+uniquement pour refléter le présent.
 
-Documentation must stay usable by:
-- end users: clear behavior and usage impact,
-- developers: technical impact and maintenance guidance.
+## Contenu attendu
 
-## Quality Rules
+Lorsqu'une documentation est requise, elle doit permettre de comprendre, selon
+le cas :
 
-- clear and concise language,
-- accurate and current state only,
-- no stale TODO-style placeholders,
-- explicit assumptions and limitations,
-- dates in ISO format (`YYYY-MM-DD`) for traceability.
+- ce qui change et pourquoi ;
+- le contrat, le comportement ou la décision concernés ;
+- les fichiers ou surfaces impactés ;
+- les limites et hypothèses utiles ;
+- les validations effectuées lorsqu'elles apportent une preuve pertinente.
 
-## Delivery Checklist
+Ne pas présenter une intention, une roadmap ou une proposition comme un
+comportement implémenté. Ne pas créer de placeholder durable ni de référence
+vers une source documentaire non canonique.
 
-Before closing any task:
-- [ ] README updated,
-- [ ] Wiki changelog updated,
-- [ ] Validation notes added,
-- [ ] Compatibility/regression risk noted (or explicitly none),
-- [ ] Links between README and wiki kept valid.
+## Vérification avant clôture
+
+Avant de clôturer un changement documenté :
+
+- vérifier que le document spécialisé correspond au code et aux contrats
+  actuels lorsqu'il décrit le présent ;
+- conserver explicitement les limites ou l'état historique lorsqu'ils sont
+  nécessaires à l'interprétation ;
+- exécuter les checks documentaires pertinents pour le périmètre ;
+- contrôler les liens et le diff du lot.
