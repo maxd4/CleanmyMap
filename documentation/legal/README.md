@@ -51,8 +51,11 @@ administrateur autorisé peut enregistrer une décision parmi la revue,
 l'absence d'action, la restriction ou le retrait lorsque la capacité canonique
 du type de contenu existe, ou la clôture. Chaque décision conserve l'acteur
 administrateur, la date, l'origine, le motif, le fondement applicable, l'usage
-éventuel de moyens automatisés, l'URL/identifiant et des états avant/après
-bornés. L'audit ne copie pas l'identité du déclarant ni le contenu tiers.
+éventuel de moyens automatisés, l'URL/identifiant, des états avant/après bornés
+et l'état d'exécution. Une décision sans mutation est `not_applicable` ; une
+restriction ou un retrait passe par `pending`, puis `applied` ou `failed` avec
+un code d'erreur borné. L'audit ne copie pas l'identité du déclarant ni le
+contenu tiers.
 
 Après une décision, un accusé de décision est envoyé au déclarant lorsqu'un
 email a été fourni. Une notification destinée à l'auteur n'est envoyée que si
@@ -64,13 +67,18 @@ présenter CleanMyMap comme un fournisseur d'hébergement au sens du DSA.
 
 ## DSA-02 — Décision administrative traçable
 
-Le cycle est séparé en quatre étapes : notification reçue, décision de
-légalité ou de conformité aux CGU, éventuelle mutation du contenu via une
-capacité de modération canonique, puis audit et notifications. Les décisions
-`content_restricted` et `content_removed` sont refusées lorsqu'aucune capacité
-canonique ne permet d'identifier et de muter le contenu. Aucun mécanisme interne
-de recours, médiateur ou organisme extrajudiciaire non implémenté n'est promis ;
-les emails renvoient uniquement au contact réellement disponible.
+Le cycle est séparé en cinq étapes : notification reçue, décision de légalité ou
+de conformité aux CGU, éventuelle mutation du contenu via une capacité de
+modération canonique, projection de l'état d'exécution, puis audit et
+notifications. Les décisions `content_restricted` et `content_removed` sont
+refusées lorsqu'aucune capacité canonique ne permet d'identifier et de muter le
+contenu. Une ressource absente, une exception de mutation ou une projection
+échouée produit une décision `failed` et ne projette pas
+`creatorState=content_restricted` ou `creatorState=content_removed`. L'auteur
+n'est notifié comme restreint ou retiré que lorsque l'état est `applied`.
+Aucun mécanisme interne de recours, médiateur ou organisme extrajudiciaire non
+implémenté n'est promis ; les emails renvoient uniquement au contact réellement
+disponible.
 
 ## Clôture LEGAL-01 à LEGAL-04
 

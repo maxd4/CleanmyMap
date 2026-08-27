@@ -1,8 +1,9 @@
 import { sendEmail } from "@/lib/services/email";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
-import type {
-  LegalContentReportDecisionRecord,
-  LegalContentReportRecord,
+import {
+  formatLegalContentReportExecutionStatus,
+  type LegalContentReportDecisionRecord,
+  type LegalContentReportRecord,
 } from "./legal-content-report";
 
 function escapeHtml(value: string): string {
@@ -74,6 +75,13 @@ function decisionLabel(action: LegalContentReportDecisionRecord["action"]): stri
   )[action];
 }
 
+function executionSummary(decision: LegalContentReportDecisionRecord): string {
+  const status = formatLegalContentReportExecutionStatus(decision.executionStatus);
+  return decision.executionErrorCode
+    ? `${status} (code : ${decision.executionErrorCode})`
+    : status;
+}
+
 export async function sendLegalContentReportDecisionToNotifier(params: {
   record: LegalContentReportRecord;
   decision: LegalContentReportDecisionRecord;
@@ -90,7 +98,7 @@ export async function sendLegalContentReportDecisionToNotifier(params: {
     subject: `[CleanMyMap] Décision sur votre notification - ${params.record.id}`,
     actorUserId: params.actorUserId,
     meta: { source: "legal_content_report", notification: "decision_notifier" },
-    html: `<p>Une décision a été prise concernant votre notification électronique.</p><ul><li><strong>Décision :</strong> ${escapeHtml(decisionLabel(params.decision.action))}</li><li><strong>Motif :</strong> ${escapeHtml(params.decision.reason)}</li><li><strong>URL concernée :</strong> ${escapeHtml(params.decision.contentUrl)}</li><li><strong>Moyens automatisés :</strong> ${params.decision.automatedMeansUsed ? "oui" : "non"}</li><li><strong>${escapeHtml(basis)}</strong></li></ul><p>Pour demander un réexamen ou exercer vos droits, utilisez le <a href="/contact">formulaire de contact</a> en rappelant l’identifiant ${escapeHtml(params.record.id)}.</p>`,
+    html: `<p>Une décision a été prise concernant votre notification électronique.</p><ul><li><strong>Décision :</strong> ${escapeHtml(decisionLabel(params.decision.action))}</li><li><strong>État d'exécution :</strong> ${escapeHtml(executionSummary(params.decision))}</li><li><strong>Motif :</strong> ${escapeHtml(params.decision.reason)}</li><li><strong>URL concernée :</strong> ${escapeHtml(params.decision.contentUrl)}</li><li><strong>Moyens automatisés :</strong> ${params.decision.automatedMeansUsed ? "oui" : "non"}</li><li><strong>${escapeHtml(basis)}</strong></li></ul><p>Pour demander un réexamen ou exercer vos droits, utilisez le <a href="/contact">formulaire de contact</a> en rappelant l’identifiant ${escapeHtml(params.record.id)}.</p>`,
   });
 }
 
@@ -100,7 +108,7 @@ export async function sendLegalContentReportDecisionToAuthor(params: {
   allegationReason: string;
   actorUserId: string;
 }) {
-  if (!params.authorEmail) return null;
+  if (!params.authorEmail || params.decision.executionStatus !== "applied") return null;
   const basis = params.decision.legalBasis
     ? `Fondement légal : ${params.decision.legalBasis}`
     : params.decision.termsBasis
@@ -111,6 +119,6 @@ export async function sendLegalContentReportDecisionToAuthor(params: {
     subject: `[CleanMyMap] Décision concernant un contenu - ${params.decision.contentId ?? params.decision.contentUrl}`,
     actorUserId: params.actorUserId,
     meta: { source: "legal_content_report", notification: "decision_author" },
-    html: `<p>Une décision administrative concerne un contenu dont vous êtes l’auteur.</p><ul><li><strong>Nature de la mesure :</strong> ${escapeHtml(decisionLabel(params.decision.action))}</li><li><strong>Faits et circonstances examinés :</strong> ${escapeHtml(params.allegationReason)}</li><li><strong>Motif de la décision :</strong> ${escapeHtml(params.decision.reason)}</li><li><strong>Moyens automatisés :</strong> ${params.decision.automatedMeansUsed ? "oui" : "non"}</li><li><strong>${escapeHtml(basis)}</strong></li><li><strong>Contenu concerné :</strong> ${escapeHtml(params.decision.contentUrl)}${params.decision.contentId ? ` (${escapeHtml(params.decision.contentId)})` : ""}</li></ul><p>Pour demander un réexamen, utilisez le <a href="/contact">formulaire de contact</a> en rappelant l’URL ou l’identifiant du contenu.</p>`,
+    html: `<p>Une décision administrative concerne un contenu dont vous êtes l’auteur.</p><ul><li><strong>Nature de la mesure :</strong> ${escapeHtml(decisionLabel(params.decision.action))}</li><li><strong>État d'exécution :</strong> ${escapeHtml(executionSummary(params.decision))}</li><li><strong>Faits et circonstances examinés :</strong> ${escapeHtml(params.allegationReason)}</li><li><strong>Motif de la décision :</strong> ${escapeHtml(params.decision.reason)}</li><li><strong>Moyens automatisés :</strong> ${params.decision.automatedMeansUsed ? "oui" : "non"}</li><li><strong>${escapeHtml(basis)}</strong></li><li><strong>Contenu concerné :</strong> ${escapeHtml(params.decision.contentUrl)}${params.decision.contentId ? ` (${escapeHtml(params.decision.contentId)})` : ""}</li></ul><p>Pour demander un réexamen, utilisez le <a href="/contact">formulaire de contact</a> en rappelant l’URL ou l’identifiant du contenu.</p>`,
   });
 }

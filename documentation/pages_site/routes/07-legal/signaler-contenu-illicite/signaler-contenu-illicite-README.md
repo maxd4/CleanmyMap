@@ -25,7 +25,8 @@
 - BotID, rate limit, validation Zod et honeypot protègent l'envoi.
 - Le signalement est persisté avant toute tentative d'email. Un email fourni déclenche un accusé de réception ; le signalement reste conservé si l'email échoue.
 - La notification est visible uniquement dans le creator inbox authentifié et n'est jamais publiée avec le contenu signalé. Un administrateur autorisé peut y enregistrer une décision : mise en examen, aucune action, restriction, retrait lorsque la capacité canonique existe, ou clôture.
-- Chaque décision conserve l'acteur admin canonique, la date, l'action, l'origine, le motif, l'usage de moyens automatisés, le fondement légal ou CGU lorsque pertinent, l'URL/identifiant et des snapshots bornés avant/après.
+- Chaque décision conserve l'acteur admin canonique, la date, l'action, l'origine, le motif, l'usage de moyens automatisés, le fondement légal ou CGU lorsque pertinent, l'URL/identifiant, des snapshots bornés avant/après et un état d'exécution (`not_applicable`, `pending`, `applied` ou `failed`).
+- Une décision de restriction ou de retrait reste `pending` pendant l'exécution. Une ressource absente, une mutation échouée ou une projection échouée devient `failed` avec un code borné ; le creator inbox ne présente pas alors la mesure comme appliquée et l'auteur n'est pas notifié comme restreint ou retiré.
 - La mutation éventuelle précède l'audit puis les notifications. Une panne de notification est enregistrée comme erreur partielle et ne défait pas silencieusement la décision ou la mutation.
 
 ## Position juridique publique

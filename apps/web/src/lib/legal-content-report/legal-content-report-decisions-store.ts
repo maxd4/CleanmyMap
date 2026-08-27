@@ -10,10 +10,14 @@ import { upsertSupabaseMirror } from "@/lib/supabase/mirror";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   isLegalContentReportDecisionAction,
+  isLegalContentReportDecisionExecutionErrorCode,
+  isLegalContentReportDecisionExecutionStatus,
   isLegalContentReportDecisionOrigin,
   normalizeLegalContentReportUrl,
   normalizeOptionalReportText,
   type LegalContentReportDecisionRecord,
+  type LegalContentReportDecisionExecutionErrorCode,
+  type LegalContentReportDecisionExecutionStatus,
   type LegalContentReportNotificationStatus,
 } from "./legal-content-report";
 
@@ -57,6 +61,28 @@ function normalizeNotificationStatus(value: unknown): LegalContentReportNotifica
   return value === "sent" || value === "failed" ? value : "not_requested";
 }
 
+function normalizeExecutionStatus(
+  value: unknown,
+  action: LegalContentReportDecisionRecord["action"],
+): LegalContentReportDecisionExecutionStatus {
+  const isContentMutation = action === "content_restricted" || action === "content_removed";
+  if (!isContentMutation) return "not_applicable";
+  if (!isLegalContentReportDecisionExecutionStatus(value) || value === "not_applicable") {
+    return "failed";
+  }
+  return value;
+}
+
+function normalizeExecutionErrorCode(
+  value: unknown,
+  executionStatus: LegalContentReportDecisionExecutionStatus,
+): LegalContentReportDecisionExecutionErrorCode | null {
+  if (executionStatus !== "failed") return null;
+  return isLegalContentReportDecisionExecutionErrorCode(value)
+    ? value
+    : "legacy_execution_unknown";
+}
+
 function normalizeRecord(value: unknown): LegalContentReportDecisionRecord | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
@@ -80,6 +106,8 @@ function normalizeRecord(value: unknown): LegalContentReportDecisionRecord | nul
     return null;
   }
 
+  const executionStatus = normalizeExecutionStatus(raw.executionStatus, raw.action);
+
   return {
     id: raw.id,
     reportId: raw.reportId,
@@ -101,6 +129,8 @@ function normalizeRecord(value: unknown): LegalContentReportDecisionRecord | nul
     contentId: normalizeOptionalReportText(raw.contentId, 160),
     beforeState: normalizeSnapshot(raw.beforeState),
     afterState: normalizeSnapshot(raw.afterState),
+    executionStatus,
+    executionErrorCode: normalizeExecutionErrorCode(raw.executionErrorCode, executionStatus),
     auditOperationId: raw.auditOperationId,
     notifierNotificationStatus: normalizeNotificationStatus(
       raw.notifierNotificationStatus,
@@ -131,6 +161,8 @@ function fromSupabaseRow(row: Record<string, unknown>): LegalContentReportDecisi
     contentId: row.content_id,
     beforeState: row.before_state,
     afterState: row.after_state,
+    executionStatus: row.execution_status,
+    executionErrorCode: row.execution_error_code,
     auditOperationId: row.audit_operation_id,
     notifierNotificationStatus: row.notifier_notification_status,
     authorNotificationStatus: row.author_notification_status,
@@ -181,6 +213,8 @@ function toSupabaseRow(record: LegalContentReportDecisionRecord): Record<string,
     content_id: record.contentId,
     before_state: record.beforeState,
     after_state: record.afterState,
+    execution_status: record.executionStatus,
+    execution_error_code: record.executionErrorCode,
     audit_operation_id: record.auditOperationId,
     notifier_notification_status: record.notifierNotificationStatus,
     author_notification_status: record.authorNotificationStatus,
@@ -197,7 +231,7 @@ export async function listLegalContentReportDecisions(
     try {
       let query = getSupabaseServerClient()
         .from("legal_content_report_decisions")
-        .select("id, report_id, created_at, actor_admin_user_id, action, decision_origin, reason, automated_means_used, legal_basis, terms_basis, content_url, content_id, before_state, after_state, audit_operation_id, notifier_notification_status, author_notification_status, notification_error")
+        .select("id, report_id, created_at, actor_admin_user_id, action, decision_origin, reason, automated_means_used, legal_basis, terms_basis, content_url, content_id, before_state, after_state, execution_status, execution_error_code, audit_operation_id, notifier_notification_status, author_notification_status, notification_error")
         .order("created_at", { ascending: false })
         .limit(8000);
       if (reportId) query = query.eq("report_id", reportId);
@@ -290,8 +324,10 @@ export async function updateLegalContentReportDecisionNotifications(params: {
 
 export async function updateLegalContentReportDecisionStates(params: {
   decisionId: string;
-  beforeState: Record<string, unknown>;
-  afterState: Record<string, unknown>;
+  beforeState?: Record<string, unknown>;
+  afterState?: Record<string, unknown>;
+  executionStatus?: LegalContentReportDecisionExecutionStatus;
+  executionErrorCode?: LegalContentReportDecisionExecutionErrorCode | null;
 }): Promise<LegalContentReportDecisionRecord | null> {
   assertPersistenceAvailable("legal_content_report_decisions");
   const store = await readStore();
@@ -301,8 +337,19 @@ export async function updateLegalContentReportDecisionStates(params: {
   if (!current) return null;
   const updated = {
     ...current,
-    beforeState: normalizeSnapshot(params.beforeState),
-    afterState: normalizeSnapshot(params.afterState),
+    beforeState:
+      params.beforeState === undefined
+        ? current.beforeState
+        : normalizeSnapshot(params.beforeState),
+    afterState:
+      params.afterState === undefined
+        ? current.afterState
+        : normalizeSnapshot(params.afterState),
+    executionStatus: params.executionStatus ?? current.executionStatus,
+    executionErrorCode:
+      (params.executionStatus ?? current.executionStatus) === "failed"
+        ? params.executionErrorCode ?? current.executionErrorCode
+        : null,
   };
   const records = [...store.records];
   records[index] = updated;

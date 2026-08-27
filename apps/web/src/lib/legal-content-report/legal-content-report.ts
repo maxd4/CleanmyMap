@@ -37,6 +37,27 @@ export const LEGAL_CONTENT_REPORT_DECISION_ORIGINS = [
 export type LegalContentReportDecisionOrigin =
   (typeof LEGAL_CONTENT_REPORT_DECISION_ORIGINS)[number];
 
+export const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES = [
+  "not_applicable",
+  "pending",
+  "applied",
+  "failed",
+] as const;
+
+export type LegalContentReportDecisionExecutionStatus =
+  (typeof LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES)[number];
+
+export const LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES = [
+  "capability_unavailable",
+  "content_not_found",
+  "mutation_failed",
+  "projection_failed",
+  "legacy_execution_unknown",
+] as const;
+
+export type LegalContentReportDecisionExecutionErrorCode =
+  (typeof LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES)[number];
+
 export type LegalContentReportNotificationStatus =
   | "not_requested"
   | "sent"
@@ -57,6 +78,8 @@ export type LegalContentReportDecisionRecord = {
   contentId: string | null;
   beforeState: Record<string, unknown>;
   afterState: Record<string, unknown>;
+  executionStatus: LegalContentReportDecisionExecutionStatus;
+  executionErrorCode: LegalContentReportDecisionExecutionErrorCode | null;
   auditOperationId: string;
   notifierNotificationStatus: LegalContentReportNotificationStatus;
   authorNotificationStatus: LegalContentReportNotificationStatus;
@@ -99,6 +122,35 @@ export function isLegalContentReportDecisionOrigin(
     typeof value === "string" &&
     (LEGAL_CONTENT_REPORT_DECISION_ORIGINS as readonly string[]).includes(value)
   );
+}
+
+export function isLegalContentReportDecisionExecutionStatus(
+  value: unknown,
+): value is LegalContentReportDecisionExecutionStatus {
+  return (
+    typeof value === "string" &&
+    (LEGAL_CONTENT_REPORT_DECISION_EXECUTION_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function isLegalContentReportDecisionExecutionErrorCode(
+  value: unknown,
+): value is LegalContentReportDecisionExecutionErrorCode {
+  return (
+    typeof value === "string" &&
+    (LEGAL_CONTENT_REPORT_DECISION_EXECUTION_ERROR_CODES as readonly string[]).includes(value)
+  );
+}
+
+export function formatLegalContentReportExecutionStatus(
+  status: LegalContentReportDecisionExecutionStatus,
+): string {
+  return {
+    not_applicable: "Non applicable",
+    pending: "En attente d'exécution",
+    applied: "Appliquée",
+    failed: "Échec d'exécution",
+  }[status];
 }
 
 export function normalizeLegalContentReportUrl(value: unknown): string | null {
