@@ -1,5 +1,102 @@
 # Change Log
 
+## 2026-08-27
+
+### Lots sécurité, performance et quotas — SEC-01, SEC-02, PERF-01, QUOTA-01
+
+- **SEC-01 — finalisation des missions**
+  - Commit : `8c1701f7950ac7160d767bc9cdf53cca36eeddfb`.
+  - La finalisation calculée passe par le trigger `SECURITY INVOKER`
+    `20260827100000_clerk_mission_completion_metrics_trigger.sql` lors du
+    passage à `completed`.
+  - Le client mobile garde le flush GPS avant l'UPDATE final et ne peut pas
+    écrire directement `distance_m` ou `duration_s`.
+  - La RPC authentifiée `compute_mission_distance(uuid)` n'est plus la surface
+    de finalisation.
+
+- **SEC-02 — résumés de votes de sondage**
+  - Commit : `24405dbb309c305e180a1d048b29498b3e3e20d8`.
+  - `get_my_chat_poll_vote_summaries(uuid[], text)` est invoker et exécutable
+    uniquement par `service_role`.
+  - Les routes déterminent l'identité exclusivement via Clerk, vérifient la
+    visibilité avec le client Clerk-RLS, puis limitent l'appel privilégié à la
+    liste autorisée. Les votes individuels et l'upsert/delete RLS restent
+    protégés.
+
+- **PERF-01 — Performance Advisor Supabase**
+  - Commit : `1ba4339fb1579e844831ee952e78f8c723ed9144`.
+  - Les policies signalées `auth_rls_initplan` évaluent les helpers Auth une
+    fois par statement.
+  - Seuls les doublons d'index explicitement ciblés ont été supprimés :
+    `idx_actions_status_action_date_desc` et
+    `idx_trash_spotter_spots_created_at_desc`; les index `unused_index` hors
+    périmètre ont été conservés.
+
+- **QUOTA-01 — homepage bornée**
+  - Commit : `7c7d15f2017dba02186480738f1d3a5e1ef619a3`.
+  - `loadLandingSummary()` remplace l'overview pilotage complet par la RPC
+    agrégée `load_public_landing_action_summary(date)` et trois activités
+    récentes.
+  - Le loader demande `types=["action"]` et évite ainsi la lecture inutile de
+    `trash_spotter_spots`. La migration est
+    `20260827130000_public_landing_action_summary.sql` ; le snapshot utilise la
+    clé `cleanmymap-landing-summary`, la version
+    `landing-summary-2026.08-v1` et un TTL de 60 minutes.
+  - Les tests ciblés du lot ont réussi : `5` fichiers, `28` tests ;
+    `npm run typecheck`, lint ciblé et `npm run backend:supabase:quota-audit`
+    ont également réussi.
+
+### Vérifications production QUOTA-01
+
+- La migration `20260827130000` a été appliquée à Supabase production dans
+  une transaction et inscrite comme migration appliquée. La divergence
+  d'historique a été traitée sans modifier les migrations parallèles : le
+  dry-run signalait la migration distante `20260827171557`, absente du
+  checkout.
+- La RPC live est présente, `SECURITY INVOKER`, avec
+  `search_path=pg_catalog, public`, `anon/authenticated EXECUTE=false` et
+  `service_role EXECUTE=true`. L'appel privilégié a retourné exactement une
+  ligne valide.
+- Le déploiement Vercel
+  `dpl_8xx3CCoNDWeNEffAvTwJqM6sVuQb` est `READY` sur
+  `40a777add39329a7d4f6a367b3d7435bed422422`, descendant de QUOTA-01. Le
+  smoke `GET https://cleanmymap.fr/` a retourné `200` entre
+  `2026-08-27T18:06:40.912Z` et `2026-08-27T18:06:41.686Z`.
+- Le snapshot attendu existait, mais `generated_at=2026-08-27T18:02:36.171Z`,
+  antérieur au déploiement `READY` et au smoke. La page a été servie
+  `PRERENDER` puis `HIT`; les logs Vercel de la fenêtre ne contenaient pas
+  d'invocation runtime exploitable ni d'erreur liée à la RPC. La clôture
+  runtime QUOTA-01 reste donc **partielle** : le chemin déployé et le `200`
+  sont prouvés, mais pas une régénération post-déploiement du snapshot.
+- `pg_stat_statements` a fourni des compteurs historiques pour la RPC, sans
+  timestamp permettant d'attribuer les lectures au smoke. L'absence de lecture
+  `trash_spotter_spots` et de `limit=5001` n'est donc pas affirmée comme une
+  mesure runtime directement attribuée à cette fenêtre.
+
+### OPS-01 — rate limiting Upstash
+
+- Aucun secret n'a été affiché, ajouté ou modifié.
+- La présence et la connectivité Upstash n'ont pas été prouvées par une
+  invocation runtime `verifyRateLimit` attribuable à cette séquence.
+- OPS-01 reste `PARTIEL / À REVALIDER` tant qu'un smoke de production et ses
+  logs ne démontrent pas le chemin distribué sans `not_configured`,
+  `unavailable` ni fallback mémoire.
+
+### Validation et état du workspace
+
+- Le premier build local a échoué sur `CONTACT_EMAIL` invalide dans
+  `.env.production.local`. Un override de processus temporaire avec l'adresse
+  canonique a permis un build complet réussi sans modifier la configuration.
+- Les contrôles généraux avaient aussi signalé des problèmes hors périmètre :
+  une erreur lint dans `use-chat-submit.ts` et un secret de test détecté dans
+  `apps/mobile/vendor/image-size/package.json`. Ces fichiers appartenaient à
+  des chantiers parallèles et n'ont pas été modifiés.
+- Aucun commit ni push n'a été créé pour la clôture runtime ; le déploiement
+  utilisé reste rattaché au SHA exact indiqué ci-dessus. Les valeurs
+  `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_TOKEN`,
+  `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN` ne sont pas
+  documentées.
+
 ## 2026-08-23
 
 ### Audit de reproductibilité locale des GitHub Actions

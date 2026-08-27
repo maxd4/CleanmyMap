@@ -15,6 +15,40 @@ Pour la stratégie d'accès qui évite d'exposer trop tôt les surfaces les plus
 - repérage des `SELECT *`, requêtes non bornées, écritures répétées et accès déclenchés au montage
 - croisement avec les usages opérationnels déjà présents dans le dépôt
 
+## Mise à jour ciblée du 27 août 2026 — QUOTA-01
+
+La homepage ne doit plus reconstruire l'overview pilotage complet pour afficher
+des compteurs publics et trois activités récentes. Le commit
+`7c7d15f2017dba02186480738f1d3a5e1ef619a3` introduit
+`loadLandingSummary()` et la migration
+`20260827130000_public_landing_action_summary.sql`.
+
+Le nouveau chemin :
+
+- agrège les compteurs d'actions approuvées et visibles dans
+  `public.load_public_landing_action_summary(date)` ;
+- conserve la période de 365 jours, l'exclusion des marqueurs de test et les
+  règles métier existantes ;
+- charge seulement trois activités récentes depuis la source canonique ;
+- demande `types=["action"]` au unified loader, qui ne requête alors pas
+  `trash_spotter_spots` ;
+- persiste un snapshot borné sous
+  `cleanmymap-landing-summary` / `landing-summary-2026.08-v1` avec un TTL de
+  60 minutes.
+
+La migration a été appliquée au projet Supabase de production puis enregistrée
+dans l'historique pour la seule version `20260827130000`. La vérification live
+a confirmé : `SECURITY INVOKER`, `search_path=pg_catalog, public`,
+`anon/authenticated EXECUTE=false`, `service_role EXECUTE=true`, et une seule
+ligne de métriques valide retournée par l'appel privilégié.
+
+La télémétrie disponible (`pg_stat_statements`) montre des appels historiques
+à cette RPC, mais ne permet pas d'attribuer précisément les compteurs au smoke
+du 27 août. Le snapshot observé après le déploiement restait celui généré à
+`2026-08-27T18:02:36.171Z`, avant le déploiement `READY` et le smoke. Il ne faut
+donc pas présenter cette séquence comme une preuve complète de la
+reconstruction runtime post-déploiement.
+
 ## Quotas Supabase à surveiller
 
 Les quotas exacts dépendent du plan et de l'organisation, mais les dimensions qui comptent pour CleanMyMap sont les suivantes.

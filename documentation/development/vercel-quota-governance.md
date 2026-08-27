@@ -1,8 +1,65 @@
 # Gouvernance des quotas Vercel de CleanMyMap
 
-Dernière vérification: 2026-07-13
+Dernière vérification: 2026-08-27
 
 Objectif: repérer tôt les régressions de coût Vercel avant qu'une fonctionnalité ne fasse grimper les quotas sans alerte.
+
+## QUOTA-01 — résumé borné de la homepage
+
+Le lot QUOTA-01 est porté par le commit
+`7c7d15f2017dba02186480738f1d3a5e1ef619a3`. Il remplace la reconstruction
+complète de l'overview pilotage (`periodDays=365`, `limit=5000`) par
+`loadLandingSummary()` :
+
+- les compteurs du hero sont produits par la RPC agrégée
+  `public.load_public_landing_action_summary(date)` ;
+- les trois activités récentes restent chargées depuis la source canonique
+  avec une borne de trois lignes ;
+- le unified loader ne consulte pas `trash_spotter_spots` lorsque
+  `types=["action"]` ;
+- le snapshot `cleanmymap-landing-summary`, version
+  `landing-summary-2026.08-v1`, est conservé pendant 60 minutes ;
+- les règles métier restent inchangées : période de 365 jours, statut public
+  `approved`, marqueurs de test exclus et mêmes compteurs.
+
+Avant ce lot, le loader demandait `limit + 1`, ce qui produisait des lectures
+`5001` sur `actions` et `trash_spotter_spots`. Après le lot, le payload de la
+landing est borné et le chemin `types=["action"]` est documenté et testé.
+
+### Preuves de validation
+
+- tests ciblés landing/unified loader/migration/snapshot : `5` fichiers,
+  `28` tests réussis ;
+- `npm run typecheck` réussi ;
+- lint ciblé des fichiers du lot réussi ;
+- `npm run backend:supabase:quota-audit` réussi ;
+- build web réussi après correction temporaire de l'environnement local
+  `CONTACT_EMAIL` par override de processus, sans modification de fichier.
+
+La migration
+`apps/web/supabase/migrations/20260827130000_public_landing_action_summary.sql`
+a ensuite été appliquée en production et enregistrée dans l'historique
+Supabase. Le dry-run CLI initial était bloqué par une divergence d'historique
+(migration distante `20260827171557` absente du checkout) ; aucune migration
+parallèle n'a été réparée ou réécrite.
+
+### Limite de la preuve runtime du 27 août
+
+Le déploiement Vercel `dpl_8xx3CCoNDWeNEffAvTwJqM6sVuQb` est `READY` sur le SHA
+`40a777add39329a7d4f6a367b3d7435bed422422`, descendant de QUOTA-01. Le smoke
+`GET https://cleanmymap.fr/` a retourné `200` entre
+`2026-08-27T18:06:40.912Z` et `2026-08-27T18:06:41.686Z`.
+
+Le snapshot attendu existait, mais son `generated_at`
+(`2026-08-27T18:02:36.171Z`) était antérieur au déploiement et au smoke. Les
+réponses étaient servies `PRERENDER`/`HIT`, et les logs Vercel de la fenêtre ne
+contenaient pas d'invocation runtime exploitable ni d'erreur RPC. La clôture
+runtime est donc **partielle** : la migration, le build, le déploiement et le
+`200` sont prouvés, mais pas une régénération post-déploiement du snapshot.
+
+La télémétrie `pg_stat_statements` indiquait des appels historiques à la RPC,
+sans timestamp permettant de les attribuer à ce smoke. Aucun secret ou contenu
+d'environnement n'est conservé dans cette documentation.
 
 Ce guide se concentre sur les surfaces Vercel que CleanMyMap utilise réellement:
 - `Invocations`
