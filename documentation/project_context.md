@@ -2,13 +2,13 @@
 
 ## Scope
 - Project: CleanMyMap monorepo.
-- Active runtime: Next.js app in `apps/web`. The repository root has been sanitized; the historical Python maintenance code now lives in `maintenance/python/` and is out of the active runtime path.
+- Deployable applications: `apps/web` and `apps/mobile` in the same CleanMyMap monorepo. `maintenance/python/` remains outside the runtime.
 
 ## Stack
 - Frontend/API: Next.js (App Router), React, TypeScript.
 - Data/backend integration: Supabase.
-- Auth: Clerk.
-- Main package manager: npm workspaces (`apps/web` workspace).
+- Auth: Clerk is the canonical identity for web and mobile. The mobile app uses `ClerkProvider`, `useAuth`, hosted auth and `tokenCache`, then passes the Clerk token to Supabase through Third-Party Auth.
+- Main package manager: npm workspaces (`apps/web` and `apps/mobile` workspaces).
 
 ## Current architecture anchors
 - Public map feed uses the browser client with Supabase RPC `actions_map_feed`.
@@ -33,7 +33,8 @@
 
 ## ADR decisions (active)
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
-- Active runtime is only `apps/web`; `maintenance/python/` is archive and out of runtime scope.
+- `apps/web` and `apps/mobile` are the two deployable applications; `maintenance/python/` remains outside runtime scope.
+- Mobile identity, missions/GPS RLS and metric finalization are finalized and frozen. Open topics are only background headless, `mission_actions`, operational validation and future evolution after explicit unfreeze.
 - Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/sessions/history/latest-session.md`).
 
 ## Sensitive zones
