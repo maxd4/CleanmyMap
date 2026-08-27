@@ -196,7 +196,7 @@ src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(140,115): 
   Type 'undefined' is not assignable to type 'string'.
 src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(149,91): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
-src/components/sections/rubriques/climate-section.tsx(141,35): error TS18048: 'priorityIndicator' is possibly 'undefined'.
+src/components/sections/rubriques/climate/climate-section.tsx(141,35): error TS18048: 'priorityIndicator' is possibly 'undefined'.
 src/components/sections/rubriques/community/campaigns-section.tsx(129,12): error TS2532: Object is possibly 'undefined'.
 src/components/sections/rubriques/community/campaigns-section.tsx(130,30): error TS2532: Object is possibly 'undefined'.
 src/components/sections/rubriques/community/campaigns-section.tsx(152,14): error TS2532: Object is possibly 'undefined'.

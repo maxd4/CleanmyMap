@@ -16,7 +16,7 @@ import {
   HubCategory,
   HubZone,
 } from "./community-section-components";
-import { PartnersNetworkSection } from "./partners-network-section";
+import { PartnersNetworkSection } from "../partners-network-section";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { motion, AnimatePresence } from "framer-motion";

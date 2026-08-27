@@ -13,6 +13,8 @@ const recyclingSectionPath = join(rubriquesRoot, "recycling-section.tsx");
 const complexEntrypoints = [
   join(rubriquesRoot, "community", "index.tsx"),
   join(rubriquesRoot, "annuaire", "index.tsx"),
+  join(rubriquesRoot, "climate", "index.tsx"),
+  join(rubriquesRoot, "compost", "index.tsx"),
   join(rubriquesRoot, "feedback", "index.ts"),
   join(rubriquesRoot, "route", "index.tsx"),
   join(rubriquesRoot, "recycling-question-assistant", "index.tsx"),
@@ -31,12 +33,16 @@ describe("rubrique entrypoints", () => {
 
     expect(renderer).toContain('import("./community")');
     expect(renderer).toContain('import("./annuaire")');
+    expect(renderer).toContain('import("./climate")');
+    expect(renderer).toContain('import("./compost")');
     expect(renderer).toContain('import("./feedback")');
     expect(renderer).toContain('from "./route"');
     expect(renderer).toContain('import("./gamification")');
     expect(renderer).toContain('import("./actors-section")');
     expect(renderer).not.toContain('from "./community-section"');
     expect(renderer).not.toContain('from "./annuaire-section"');
+    expect(renderer).not.toContain('from "./climate-section"');
+    expect(renderer).not.toContain('from "./compost-section"');
     expect(renderer).not.toContain('from "./feedback-section"');
     expect(renderer).not.toContain('from "./route-section"');
     expect(renderer).not.toContain('from "./engagement-sections"');

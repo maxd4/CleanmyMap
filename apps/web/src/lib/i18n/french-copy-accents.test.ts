@@ -17,7 +17,7 @@ const COPY_FILES = [
   "src/components/sections/rubriques/weather-section.tsx",
   "src/components/sections/rubriques/annuaire/annuaire-governance-panel.tsx",
   "src/components/sections/rubriques/annuaire/annuaire-section.tsx",
-  "src/components/sections/rubriques/climate-section.tsx",
+  "src/components/sections/rubriques/climate/climate-section.tsx",
   "src/components/sections/rubriques/discussion-badges-panel.tsx",
   "src/components/sections/rubriques/discussion-bug-report-form.tsx",
   "src/components/sections/rubriques/annuaire/seed-index.ts",

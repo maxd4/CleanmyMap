@@ -44,10 +44,10 @@ const RecyclingSection = dynamic(() =>
   import("./recycling-section").then((module) => module.RecyclingSection),
 );
 const CompostSection = dynamic(() =>
-  import("./compost-section").then((module) => module.CompostSection),
+  import("./compost").then((module) => module.CompostSection),
 );
 const ClimateSection = dynamic(() =>
-  import("./climate-section").then((module) => module.ClimateSection),
+  import("./climate").then((module) => module.ClimateSection),
 );
 const CompareSection = dynamic(() =>
   import("./compare-section").then((module) => module.CompareSection),
