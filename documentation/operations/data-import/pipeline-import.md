@@ -5,8 +5,8 @@
 flowchart LR
   S1[Source Google Sheet CSV historique] --> N1[Extraction & parsing]
   N1 --> N2[Normalisation metier]
-  N2 --> N3[Validation qualite]
-  N3 --> ST1[Stockage Supabase actions/spots]
+  N2 --> N3[Validation qualité]
+  N3 --> ST1[Stockage runtime : public.actions + public.trash_spotter_spots]
   ST1 --> R1[Restitution API actions/map/reports]
   N3 --> E1[Erreurs de schema/qualite]
   N1 --> E2[Erreurs d'acces Sheet/CSV]
@@ -23,8 +23,18 @@ Fallback statique:
 | Extraction & parsing | URL CSV Google Sheet, snapshots locaux | CSV brut local | Sheet non accessible, HTML au lieu de CSV, encodage invalide |
 | Normalisation metier | CSV brut + mapping colonnes | Payload JSON admin + payload lieux propres | Colonnes manquantes, types invalides, association non reconnue |
 | Validation qualite | Payload normalise | Payload validable importable | Geoloc manquante/incoherente, dates invalides, champs requis absents |
-| Stockage Supabase | Payload valide + env Supabase | Lignes `public.actions` et `public.spots` | `SUPABASE_SERVICE_ROLE_KEY` absente, echec insertion, conflit idempotence |
+| Stockage Supabase | Payload valide + env Supabase | Lignes `public.actions` et `public.trash_spotter_spots` | `SUPABASE_SERVICE_ROLE_KEY` absente, échec insertion, conflit idempotence |
 | Restitution API | Donnees stockees | `/api/actions`, RPC `actions_map_feed`, exports reports | Contrat data casse, mismatch champs, reponse partielle |
+
+### Frontière des tables
+
+- `public.actions` est la table canonique des actions.
+- `public.trash_spotter_spots` est la cible unique de tout nouveau
+  signalement `spot` ou `clean_place`.
+- `public.spots` est une archive legacy read-only. Elle est hors du chemin
+  d'import runtime : aucune nouvelle écriture, modération ou restitution
+  runtime ne doit la cibler. Une lecture explicite reste réservée aux
+  opérations de maintenance ou d'export historiques.
 
 ## Sequence d'execution recommandee
 ```mermaid
@@ -37,10 +47,12 @@ sequenceDiagram
   Ops->>Build: data:sheet:build-import (--geocode optionnel)
   Build-->>Ops: payloads JSON + CSV
   Ops->>Import: flux retire
-  Import->>DB: ecriture actions/spots
+  Import->>DB: écriture public.actions
+  Import->>DB: écriture public.trash_spotter_spots pour les nouveaux spot/clean_place
   DB-->>Import: statut insertion
   Import-->>Ops: resultat sync
   Ops->>API: verifier /api/actions et le RPC actions_map_feed
+  Note over DB: public.spots reste une archive legacy read-only, hors de la séquence d'import runtime
 ```
 Fallback statique:
 ```md
