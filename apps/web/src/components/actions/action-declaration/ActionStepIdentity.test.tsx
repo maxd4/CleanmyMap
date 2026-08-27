@@ -43,7 +43,8 @@ describe("ActionStepIdentity", () => {
       } as ComponentProps<typeof ActionStepIdentity>),
     );
 
-    expect(html).toContain("Action terrain");
+    expect(html).not.toContain("Type d&#x27;action");
+    expect(html).not.toContain("Action terrain");
     expect(html).not.toContain("Lieu propre");
   });
 });

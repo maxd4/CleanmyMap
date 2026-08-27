@@ -26,11 +26,11 @@ vi.mock("@/lib/actions/store", () => ({
     recordRepollutionPredictionEvaluationForActionMock,
 }));
 
-vi.mock("@/lib/actions/group-participation.helpers", () => ({
+vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({
   loadManualParticipantIdsForAction: loadManualParticipantIdsForActionMock,
 }));
 
-vi.mock("@/lib/actions/organizers", () => ({
+vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
   syncActionManualParticipants: syncActionManualParticipantsMock,
 }));

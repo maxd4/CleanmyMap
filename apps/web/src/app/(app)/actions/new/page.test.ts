@@ -127,4 +127,33 @@ describe("action creation entry point", () => {
     expect(formSource).not.toContain("Saisie mobile indisponible");
     expect(formSource).not.toContain("Aperçu mobile");
   });
+
+  it("keeps the action entry focused on terrain results", () => {
+    const formSource = readFileSync(
+      new URL(
+        "../../../../components/actions/action-declaration-form/action-declaration-form.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const identitySource = readFileSync(
+      new URL(
+        "../../../../components/actions/action-declaration/ActionStepIdentity.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    expect(formSource).toContain("Déclarer les résultats terrain");
+    expect(formSource).toContain("Préparation existante reprise");
+    expect(formSource).not.toContain("Formulaire continu");
+    expect(formSource).not.toContain("4 rubriques");
+    expect(formSource).not.toContain("Pré-action");
+    expect(formSource).not.toContain("loadedActionPhase ??");
+    expect(identitySource).not.toContain("Type d&apos;action");
+    expect(identitySource).not.toContain("Action terrain");
+    for (const sectionTitle of ["Identité", "Récolte", "Parcours", "Validation"]) {
+      expect(formSource).toContain(`title="${sectionTitle}"`);
+    }
+  });
 });

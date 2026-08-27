@@ -11,7 +11,7 @@ import type {
 } from "./progression-types";
 import {
   loadActionOrganizerIdsForAction,
-} from "@/lib/actions/organizers";
+} from "@/lib/actions/participation/organizers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   actionRowToListItem,

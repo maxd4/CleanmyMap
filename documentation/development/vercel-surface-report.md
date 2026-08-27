@@ -229,7 +229,7 @@ Clerk se trouve à la frontière auth. Les usages serveur et middleware augmente
 - `apps/web/src/components/sections/rubriques/use-kit-data.ts` — Clerk client
 - `apps/web/src/components/sections/rubriques/use-weather-data.ts` — Clerk client
 - `apps/web/src/components/ui/clerk-required-gate.tsx` — Clerk gate
-- `apps/web/src/lib/actions/organizers.ts` — Clerk server
+- `apps/web/src/lib/actions/participation/organizers.ts` — Clerk server
 - `apps/web/src/lib/admin/access.ts` — Clerk auth, Clerk server
 - `apps/web/src/lib/auth/account-setup.ts` — Clerk auth, Clerk server
 - `apps/web/src/lib/auth/display-mode.ts` — Clerk auth, Clerk server
@@ -307,11 +307,11 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/components/chat/hooks/use-chat-data.ts` — Supabase client
 - `apps/web/src/components/chat/hooks/use-chat-submit.ts` — Supabase client
 - `apps/web/src/components/chat/ui/chat-feed-states.tsx` — Supabase client
-- `apps/web/src/lib/actions/group-participation.helpers.ts` — Supabase client
-- `apps/web/src/lib/actions/group-participation.ts` — Supabase client
+- `apps/web/src/lib/actions/participation/group-participation.helpers.ts` — Supabase client
+- `apps/web/src/lib/actions/participation/group-participation.ts` — Supabase client
 - `apps/web/src/lib/actions/map-route.ts` — Server client, Supabase client
-- `apps/web/src/lib/actions/organizers.ts` — Supabase client
-- `apps/web/src/lib/actions/participant-summaries.ts` — Supabase client
+- `apps/web/src/lib/actions/participation/organizers.ts` — Supabase client
+- `apps/web/src/lib/actions/participation/participant-summaries.ts` — Supabase client
 - `apps/web/src/lib/actions/pollution/pollution-score-references.ts` — Supabase client
 - `apps/web/src/lib/actions/query.ts` — Supabase client
 - `apps/web/src/lib/actions/store.ts` — Supabase client

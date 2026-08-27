@@ -23,7 +23,7 @@ import { runSingleActionQuery } from"@/lib/actions/query";
 import {
  normalizeModerationReason,
 } from"@/lib/actions/moderation-audit";
-import { loadActionOrganizerIdsForAction } from"@/lib/actions/organizers";
+import { loadActionOrganizerIdsForAction } from"@/lib/actions/participation/organizers";
 import {
  refreshProgressionProfile,
  syncUserActionProgression,

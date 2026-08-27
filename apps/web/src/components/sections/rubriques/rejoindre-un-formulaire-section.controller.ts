@@ -7,7 +7,7 @@ import type {
   ActionParticipationSearchItem,
   JoinableActionHistoryItem,
   JoinableActionItem,
-} from "@/lib/actions/group-participation";
+} from "@/lib/actions/participation/group-participation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { filterAndSortJoinableActions, type JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
 import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.shared";

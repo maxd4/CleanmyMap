@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { createAction } from "@/lib/actions/store";
-import type { ResolvedActionOrganizer } from "@/lib/actions/organizers";
+import type { ResolvedActionOrganizer } from "@/lib/actions/participation/organizers";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { isValidAssociationName } from "@/lib/actions/association-options";
 import type { ActionDataQualitySummary } from "@/lib/actions/data-quality";

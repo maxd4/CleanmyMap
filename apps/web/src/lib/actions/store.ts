@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ResolvedActionOrganizer,
   ResolvedActionParticipant,
-} from "@/lib/actions/organizers";
+} from "@/lib/actions/participation/organizers";
 import type { ActionMapViewportQuery } from "@/lib/actions/types";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/geometry/drawing";
 import {

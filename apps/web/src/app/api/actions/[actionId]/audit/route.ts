@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
 import { listAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
+import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { canViewModerationAudit } from "@/lib/actions/permissions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
