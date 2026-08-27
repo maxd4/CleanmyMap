@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : CGU alignées sur la modération et le dispositif DSA-01 de notification électronique
+- **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -45,6 +45,12 @@
 ## Références legacy
 
 - Aucun fichier legacy dédié.
+
+## Comportement fonctionnel vérifié
+
+- La modération peut traiter un contenu contraire aux règles, à un besoin légal ou à la sécurité du service.
+- Le formulaire `/signaler-contenu-illicite` permet de transmettre une notification électronique avec URL exacte et motif circonstancié.
+- Le dispositif ne demande pas au déclarant de qualifier juridiquement parfaitement les faits et ne présente pas CleanMyMap comme un fournisseur d'hébergement au sens du DSA.
 
 ## Notes d'audit
 
