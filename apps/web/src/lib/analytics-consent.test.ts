@@ -3,11 +3,13 @@ import {
   getAnalyticsConsentCookieDecision,
   hasAnalyticsConsent,
   hasAnalyticsConsentCookie,
+  ANALYTICS_CONSENT_MAX_AGE_SECONDS,
+  clearAnalyticsConsentCookie,
   syncAnalyticsConsentCookie,
 } from "./analytics-consent";
 import { cookieConsentStorage } from "@/lib/storage/ui-state-storage";
 
-function installMockBrowser(initialCookie = "") {
+function installMockBrowser(initialCookie = "", withLocalStorage = true) {
   const memory = new Map<string, string>();
   let cookieValue = initialCookie;
 
@@ -21,10 +23,12 @@ function installMockBrowser(initialCookie = "") {
     },
   };
 
-  vi.stubGlobal("window", {
-    localStorage,
-    location: { protocol: "https:" },
-  } as unknown as Window);
+  vi.stubGlobal(
+    "window",
+    (withLocalStorage
+      ? { localStorage, location: { protocol: "https:" } }
+      : { location: { protocol: "https:" } }) as unknown as Window,
+  );
   vi.stubGlobal(
     "document",
     {
@@ -56,7 +60,7 @@ describe("analytics consent", () => {
   });
 
   it("falls back to the mirrored cookie when local storage is empty", () => {
-    installMockBrowser("cleanmymap_analytics_consent=1");
+    installMockBrowser("cleanmymap_analytics_consent=1", false);
 
     expect(hasAnalyticsConsent()).toBe(true);
     expect(hasAnalyticsConsentCookie("cleanmymap_analytics_consent=1")).toBe(
@@ -73,7 +77,7 @@ describe("analytics consent", () => {
     expect(
       cookieConsentStorage.write({
         choice: "accepted",
-        timestamp: 123,
+        timestamp: Date.now(),
         analytics: true,
       }),
     ).toBe(true);
@@ -81,9 +85,42 @@ describe("analytics consent", () => {
     expect(hasAnalyticsConsent()).toBe(true);
 
     syncAnalyticsConsentCookie(true);
-    expect(browser.cookie()).toContain("cleanmymap_analytics_consent=1");
+    expect(browser.cookie()).toContain(
+      `cleanmymap_analytics_consent=1; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}`,
+    );
 
     syncAnalyticsConsentCookie(false);
-    expect(browser.cookie()).toContain("cleanmymap_analytics_consent=0");
+    expect(browser.cookie()).toContain(
+      `cleanmymap_analytics_consent=0; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}`,
+    );
+  });
+
+  it("keeps an explicit refusal as a fresh local decision", () => {
+    installMockBrowser();
+
+    expect(
+      cookieConsentStorage.write({
+        choice: "rejected",
+        timestamp: Date.now(),
+        analytics: false,
+      }),
+    ).toBe(true);
+
+    expect(hasAnalyticsConsent()).toBe(false);
+    expect(cookieConsentStorage.read()).toEqual({
+      choice: "rejected",
+      timestamp: expect.any(Number),
+      analytics: false,
+    });
+  });
+
+  it("only clears the mirrored cookie through explicit clearing", () => {
+    const browser = installMockBrowser("cleanmymap_analytics_consent=1");
+
+    clearAnalyticsConsentCookie();
+
+    expect(browser.cookie()).toContain(
+      "cleanmymap_analytics_consent=; Path=/; Max-Age=0",
+    );
   });
 });

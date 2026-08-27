@@ -72,7 +72,7 @@ Pour activer ces options, allez dans : Profil > Préférences > Confidentialité
 | Calcul et affichage de l'impact | Contrat | 5 ans |
 | Parrainage / invitations communautaires | Exécution du service + intérêt légitime | Durée du compte + purge ou anonymisation à la suppression |
 | Communication/newsletter | Consentement | jusqu'au retrait |
-| Analytics (PostHog) | Consentement | 13 mois |
+| Analytics (PostHog) | Consentement | 6 mois après consentement |
 | Support utilisateur | Intérêt légitime | 2 ans |
 
 ## 6. Destinataires des Données
@@ -101,7 +101,7 @@ Pour activer ces options, allez dans : Profil > Préférences > Confidentialité
 | Actions déclarées | 5 ans |
 | Logs techniques | 12 mois |
 | Données comptables | 10 ans |
-| Cookies analytiques | 13 mois maximum |
+| Cookies analytiques configurés par CleanMyMap | 6 mois maximum |
 | Données newsletter | Jusqu'au désabonnement |
 
 ## 8. Vos Droits (Articles 15-22 RGPD)

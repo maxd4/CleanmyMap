@@ -1,7 +1,13 @@
-import { cookieConsentStorage } from "@/lib/storage/ui-state-storage";
+import { canUseLocalStorage } from "@/lib/storage/local-storage";
+import {
+  cookieConsentStorage,
+  COOKIE_CONSENT_MAX_AGE_MS,
+} from "@/lib/storage/ui-state-storage";
 
 export const ANALYTICS_CONSENT_COOKIE_NAME = "cleanmymap_analytics_consent";
-const ANALYTICS_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
+export const ANALYTICS_CONSENT_MAX_AGE_SECONDS = Math.floor(
+  COOKIE_CONSENT_MAX_AGE_MS / 1000,
+);
 
 function parseCookieValue(rawValue: string | null): boolean | null {
   if (!rawValue) {
@@ -68,6 +74,12 @@ export function hasAnalyticsConsent(): boolean {
     return consentDecision;
   }
 
+  // A browser with usable localStorage has an explicit local decision source.
+  // Do not resurrect an expired or missing local decision from a stale cookie.
+  if (canUseLocalStorage()) {
+    return false;
+  }
+
   if (typeof document === "undefined") {
     return false;
   }
@@ -83,9 +95,18 @@ export function syncAnalyticsConsentCookie(hasConsent: boolean): void {
 
   const secureAttribute = window.location.protocol === "https:" ? "; Secure" : "";
   const value = hasConsent ? "1" : "0";
-  const maxAge = hasConsent ? ANALYTICS_CONSENT_MAX_AGE_SECONDS : 0;
 
   document.cookie =
     `${ANALYTICS_CONSENT_COOKIE_NAME}=${encodeURIComponent(value)}` +
-    `; Path=/; Max-Age=${maxAge}; SameSite=Lax${secureAttribute}`;
+    `; Path=/; Max-Age=${ANALYTICS_CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${secureAttribute}`;
+}
+
+export function clearAnalyticsConsentCookie(): void {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  const secureAttribute = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie =
+    `${ANALYTICS_CONSENT_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax${secureAttribute}`;
 }

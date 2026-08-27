@@ -12,6 +12,10 @@ export type LocalStorageStore<T> = {
   remove: () => boolean;
 };
 
+export type LocalStorageStoreOptions = {
+  removeWhenReadIsNull?: boolean;
+};
+
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
@@ -86,6 +90,7 @@ export function writeLocalStorageJson<T>(key: string, value: T): boolean {
 export function createLocalStorageStore<T>(
   key: string,
   codec: LocalStorageCodec<T>,
+  options: LocalStorageStoreOptions = {},
 ): LocalStorageStore<T> {
   return {
     key,
@@ -96,7 +101,11 @@ export function createLocalStorageStore<T>(
       }
 
       try {
-        return codec.parse(raw);
+        const parsed = codec.parse(raw);
+        if (parsed === null && options.removeWhenReadIsNull) {
+          removeLocalStorageEntry(key);
+        }
+        return parsed;
       } catch {
         return null;
       }

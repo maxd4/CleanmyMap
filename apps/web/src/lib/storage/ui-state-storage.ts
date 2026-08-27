@@ -26,6 +26,8 @@ export type CookieConsentState = {
 
 const COOKIE_CONSENT_KEY = "cleanmymap_cookie_consent";
 export const COOKIE_CONSENT_CHANGE_EVENT = "cleanmymap-cookie-consent-change";
+export const COOKIE_CONSENT_MANAGE_EVENT = "cleanmymap-cookie-consent-manage";
+export const COOKIE_CONSENT_MAX_AGE_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 const DEFAULT_COOKIE_CONSENT_STATE: CookieConsentState = {
   choice: null,
   timestamp: null,
@@ -104,6 +106,15 @@ export const cookieConsentStorage = createLocalStorageStore<CookieConsentState>(
         const timestamp = (parsed as { timestamp?: unknown }).timestamp;
         const analytics = (parsed as { analytics?: unknown }).analytics;
 
+        if (
+          (choice === "accepted" || choice === "rejected") &&
+          (typeof timestamp !== "number" ||
+            !Number.isFinite(timestamp) ||
+            Date.now() - timestamp >= COOKIE_CONSENT_MAX_AGE_MS)
+        ) {
+          return null;
+        }
+
         return {
           choice:
             choice === "accepted" || choice === "rejected" ? choice : null,
@@ -116,6 +127,7 @@ export const cookieConsentStorage = createLocalStorageStore<CookieConsentState>(
     },
     serialize: (value) => JSON.stringify(value),
   },
+  { removeWhenReadIsNull: true },
 );
 
 export const DEFAULT_SITE_PREFERENCES = {
@@ -130,4 +142,12 @@ export function notifyCookieConsentChanged(): void {
   }
 
   window.dispatchEvent(new Event(COOKIE_CONSENT_CHANGE_EVENT));
+}
+
+export function requestCookieConsentPreferences(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new Event(COOKIE_CONSENT_MANAGE_EVENT));
 }

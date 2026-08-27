@@ -17,19 +17,16 @@ CleanMyMap utilise des cookies pour :
 
 ## 2. Bannière de Consentement
 
-Lors de votre première visite sur CleanMyMap, une bannière vous permet de choix :
+Lors de votre première visite sur CleanMyMap, une bannière vous permet de choisir :
 
 | Option | Description |
 |--------|-------------|
-| **Accepter tout** | Active tous les cookies y compris analytiques |
-| **Essentiels seulement** | Active uniquement les cookies nécessaires au fonctionnement |
-| **Refuser** | Désactive tous les cookies non essentiels |
+| **Tout accepter** | Active les services analytiques en plus des services essentiels |
+| **Tout refuser** | Laisse uniquement les services essentiels au fonctionnement |
 
-Votre choix est enregistré pour **1 an** dans `localStorage` sous `cleanmymap_cookie_consent` et synchronisé avec le cookie analytique `cleanmymap_analytics_consent`.
+Votre choix, acceptation comme refus, est enregistré pour **6 mois** dans `localStorage` sous `cleanmymap_cookie_consent` et synchronisé avec le cookie `cleanmymap_analytics_consent`, écrit avec la même durée.
 
-Vous pouvez modifier vos préférences à tout moment en :
-- Cliquant sur le lien "Paramètres cookies" en bas de page
-- Supprimant la clé `cleanmymap_cookie_consent` de `localStorage` et le cookie `cleanmymap_analytics_consent`
+Vous pouvez modifier vos préférences à tout moment en cliquant sur le contrôle permanent **Gérer mes cookies** dans le pied de page. Si le choix local expire après 6 mois, il est nettoyé automatiquement et la bannière est reproposée. Le retrait du consentement arrête la capture PostHog et ne rend plus Vercel Analytics ni Vercel Speed Insights ; un nouveau consentement peut les réactiver.
 
 ---
 
@@ -132,8 +129,8 @@ Nous n'avons pas de contrôle sur ces cookies tiers. Veuillez consulter leurs po
 | Type de cookie | Durée maximale |
 |----------------|-----------------|
 | Cookies essentiels | Session |
-| Cookies analytiques | 13 mois |
-| Consentement | 1 an |
+| Cookies analytiques configurés par CleanMyMap | 6 mois |
+| Consentement | 6 mois |
 | Logs techniques | 12 mois |
 
 ---
