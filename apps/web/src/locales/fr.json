@@ -97,16 +97,6 @@
         "desc": "Proxy de coût évité calculé à partir de la masse terrain retenue. Il ne constitue pas une dépense ou une économie comptable constatée.",
         "source": "SOURCE: {src}"
       }
-    },
-    "audit": {
-      "title": "Bilan d'Impact IA 2026",
-      "desc": "Consultez notre audit complet sur l'usage de l'Intelligence Artificielle au sein de CleanMyMap : impacts environnementaux, sociaux et analyse systémique.",
-      "cta": "Télécharger l'audit (PDF)"
-    },
-    "footer": {
-      "version": "Protocol Version: {version}",
-      "copyright": "© 2026 CleanMyMap Scientific Committee.",
-      "partner": "PARTENAIRE ADEME <br/> SOON"
     }
   },
   "learnHub": {

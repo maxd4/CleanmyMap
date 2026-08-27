@@ -1,11 +1,15 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ACTION_POLLUTION_COLOR_STOPS } from "@/components/actions/map-marker-categories";
+import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
 } from "@/lib/actions/pollution/local-repollution-calibration";
 import { buildActionPollutionProjectionMethodology } from "@/lib/actions/pollution/revisit-priority";
-import { ActionMapMethodologySection } from "./methodologie-page-client";
+import {
+  ActionMapMethodologySection,
+  MethodologiePageClient,
+} from "./methodologie-page-client";
 
 describe("ActionMapMethodologySection", () => {
   it("publishes the action history/projection distinction and methodology anchor", () => {
@@ -24,7 +28,7 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("Pollution observée · niveau non quantifié");
     expect(markup).toContain("scoreKind measured|projected|unavailable");
     expect(markup).toContain("Un spot ponctuel ne recolore jamais une polyline");
-    expect(markup).toContain("le read path actuel ne fabrique aucune donnée");
+    expect(markup).toContain("aucun score n’est fabriqué");
     expect(markup).toContain(projection.t80Formula);
     expect(markup).toContain(projection.projectionFormula);
     expect(markup).toContain("pas une mesure en temps réel");
@@ -32,11 +36,15 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("Calibration locale");
     expect(markup).toContain("Confiance de la projection");
     expect(markup).toContain("robustesse des données");
-    expect(markup).toContain("ledger d&#x27;erreur futur");
+    expect(markup).toContain("ne remplace pas une mesure réelle");
     expect(markup).toContain("historique complet");
     expect(markup).toContain("derivedPlaceKey");
-    expect(markup).toContain("Aucune place_id");
+    expect(markup).toContain("identifiant canonique de lieu");
     expect(markup).toContain("Une source partielle");
+    expect(markup).toContain("aucun score n’est fabriqué");
+    expect(markup).toContain("ne remplace pas une mesure réelle");
+    expect(markup).not.toContain("contrat futur");
+    expect(markup).not.toContain("ledger d'erreur futur");
     expect(markup).toContain(
       `≤ ${LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS.nearDistanceMeters} m`,
     );
@@ -58,5 +66,33 @@ describe("ActionMapMethodologySection", () => {
     }
     expect(markup).toContain("Le vert est réservé aux lieux explicitement propres");
     expect(markup).not.toContain("Vert · faible");
+  });
+
+  it("keeps experimental and future-facing sections out of the public page", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider>
+        <MethodologiePageClient
+          freePlanServices={[]}
+          impactTotals={{
+            monthlyKgCo2eProxy: null,
+            annualKgCo2eProxy: null,
+            totalKgCo2eProxy: null,
+            generatedAt: null,
+          }}
+          impactSnapshots={[]}
+          impactGeneratedAt={null}
+          impactLaunchedAt={null}
+          githubStats={null}
+        />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain("Méthode de calcul");
+    expect(markup).toContain("Plans et quotas");
+    expect(markup).toContain("Empreinte technique des services suivis");
+    expect(markup).not.toContain("Terraink");
+    expect(markup).not.toContain("Gamification");
+    expect(markup).not.toContain("restez à l’écoute");
+    expect(markup).not.toContain("COMING SOON");
   });
 });

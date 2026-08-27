@@ -192,8 +192,8 @@ export function ActionMapMethodologySection({
         </ul>
         <p className="mt-3 text-xs leading-relaxed text-emerald-100/70">
           {isFrench
-            ? "Chaque état expose source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date et action historique. Un spot ponctuel ne recolore jamais une polyline. Le champ observé quantifié Trash Spotter reste un contrat futur : le read path actuel ne fabrique aucune donnée."
-            : "Each state exposes source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date, and action history. A point spot never recolors a polyline. The quantified Trash Spotter field remains a future contract: the current read path invents no data."}
+            ? "Chaque état expose source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date et action historique. Un spot ponctuel ne recolore jamais une polyline. Lorsqu’aucune mesure quantifiée Trash Spotter n’est disponible, aucun score n’est fabriqué."
+            : "Each state exposes source observed|projected|historical, scoreKind measured|projected|unavailable, provenance, date, and action history. A point spot never recolors a polyline. When no quantified Trash Spotter measurement is available, no score is fabricated."}
         </p>
       </div>
 
@@ -259,8 +259,8 @@ export function ActionMapMethodologySection({
             </ul>
             <p className="mt-3 text-xs leading-relaxed text-slate-400">
               {isFrench
-                ? "Cette confiance est affichée sans modifier la palette, l'opacité ou l'épaisseur de la carte. Le ledger d'erreur futur sera la source de validation statistique ; la confiance ne la remplace pas."
-                : "This confidence is displayed without changing the map palette, opacity, or stroke width. The future error ledger will provide statistical validation; confidence does not replace it."}
+                ? "Cette confiance décrit la qualité des données d’entrée ; elle ne mesure pas l’exactitude du modèle et ne remplace pas une mesure réelle."
+                : "This confidence describes input-data quality; it does not measure model accuracy and does not replace a real measurement."}
             </p>
           </div>
         </div>
@@ -296,8 +296,8 @@ export function ActionMapMethodologySection({
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-slate-300/75">
             {isFrench
-              ? "Le runtime peut regrouper conservativement des actions en une identité dérivée de lieu (derivedPlaceKey), remplaçable plus tard par un véritable identifiant canonique. Aucune place_id n'est persistée par ce lot."
-              : "The runtime can conservatively group actions under a derived place identity (derivedPlaceKey), replaceable later by a true canonical identifier. This lot persists no place_id."}
+              ? "Le runtime peut regrouper conservativement des actions sous une identité dérivée de lieu (derivedPlaceKey). Les données actuelles ne fournissent pas d’identifiant canonique de lieu."
+              : "The runtime can conservatively group actions under a derived place identity (derivedPlaceKey). The current data does not provide a canonical place identifier."}
           </p>
           <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-slate-300/75">
             <li>
@@ -318,8 +318,8 @@ export function ActionMapMethodologySection({
           </ul>
           <p className="mt-3 text-xs leading-relaxed text-violet-100/70">
             {isFrench
-              ? "Une source partielle (fenêtre, limite ou viewport non exhaustif) ne déclenche jamais cet apprentissage : le modèle générique reste utilisé."
-              : "A partial source (window, limit, or non-exhaustive viewport) never activates this learning: the generic model remains in use."}
+              ? "Une source partielle (fenêtre, limite ou viewport non exhaustif) n’est pas utilisée pour la calibration locale : le modèle générique reste utilisé."
+              : "A partial source (window, limit, or non-exhaustive viewport) is not used for local calibration: the generic model remains in use."}
           </p>
         </div>
 
