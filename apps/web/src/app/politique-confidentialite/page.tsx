@@ -61,11 +61,11 @@ export default function PolitiqueConfidentialitePage() {
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-950">Responsable du traitement</h2>
             <p className="text-sm leading-6 text-slate-600">
-              Le nom juridique, le statut et les coordonnées complètes du responsable
-              du traitement ne sont pas publiés dans cette version : ils restent
-              soumis à la validation factuelle de LEGAL-02. Aucune forme juridique,
-              adresse, téléphone ou fonction de délégué à la protection des données
-              n&apos;est déduite ou affirmée ici. Le point de contact actuellement
+              Le responsable du traitement est <strong>Maxence Deroome</strong>,
+              personne physique éditant CleanMyMap à titre non professionnel dans
+              le cadre d&apos;un projet étudiant. Aucune société, entreprise,
+              association ou autre personne morale n&apos;exploite actuellement le
+              service. Le point de contact actuellement
               configuré pour les questions RGPD est :{" "}
               <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">
                 {contactEmail}

@@ -23,45 +23,34 @@ Les dernières mises à jour couvrent notamment le parrainage, l'alignement des 
 
 **Dernière mise à jour du périmètre cookies et analytics :** 27 août 2026
 
-## État LEGAL-02 — Mentions légales
+## LEGAL-02 — Gate factuel résolu
 
-La mise en conformité de `/mentions-legales` est **bloquée avant modification**
-tant qu'une information opérateur explicite et fiable n'a pas confirmé le régime
-de l'éditeur :
+La confirmation opérateur établit que CleanMyMap est actuellement édité par
+**Maxence Deroome**, personne physique éditant à titre non professionnel dans le
+cadre d'un projet étudiant. Aucune société, entreprise, association ou autre
+personne morale n'exploite actuellement le service. Maxence Deroome est le
+directeur de la publication conformément à l'article 93-2 de la loi du
+29 juillet 1982.
 
-- personne physique éditant à titre non professionnel ;
-- personne physique éditant à titre professionnel ;
-- personne morale.
+La page /mentions-legales sépare désormais :
 
-Les sources actuellement disponibles établissent seulement que CleanMyMap est
-un projet initié et conçu par Maxence Deroome. Elles ne confirment ni son rôle
-juridique d'éditeur, ni sa qualité de directeur de publication, ni le statut
-juridique du projet. La mention historique d'une association en cours de
-constitution n'est donc pas une donnée opérateur exploitable.
+- l'édition et la publication ;
+- l'hébergement par **Vercel Inc.**, 440 N Barranca Avenue #4133, Covina, CA
+  91723, United States ;
+- les services techniques distincts : Supabase, Clerk, Resend, PostHog et
+  Sentry.
 
-Les champs factuels encore manquants sont :
-
-- l'identité et le régime juridique de l'éditeur ;
-- le domicile ou siège social, le téléphone et, selon le régime, les références
-  RCS/RNE et les autres informations légalement requises ;
-- la confirmation du directeur ou codirecteur de publication ;
-- le téléphone général actuellement publié par l'hébergeur Vercel.
-
-Vercel est documenté séparément comme hébergeur technique : sa source officielle
-actuelle confirme **Vercel Inc.** et l'adresse `440 N Barranca Avenue #4133,
-Covina, CA 91723, United States`. Le numéro publié dans sa politique DMCA reste
-réservé à son agent désigné pour les notifications de copyright et ne doit pas
-être repris comme téléphone général. Supabase, Clerk, Resend, PostHog et Sentry
-restent des services techniques distincts et ne sont pas présentés comme
-l'hébergeur du site.
-
-La reprise de LEGAL-02 devra fournir ces informations avant toute modification
-de `/mentions-legales` ou insertion du bloc d'identité dans les documents qui en
-dépendent. Les autres documents juridiques peuvent être réconciliés avec les
-traitements runtime sans déduire ces informations manquantes.
+La condition d'anonymat de l'article 1-1 II de la LCEN — communication préalable
+à Vercel des éléments personnels nécessaires à l'identification — n'est pas
+vérifiable dans les données de compte accessibles depuis ce checkout. Le
+domicile et le téléphone personnels de l'éditeur ne sont donc pas publiés par
+défaut. Aucun numéro de téléphone général Vercel n'est inventé et le numéro
+réservé aux notifications DMCA n'est pas réutilisé.
 
 Références vérifiées le 27 août 2026 :
 
+- [article 1-1 de la LCEN sur Légifrance](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000049568614) ;
+- [article 93-2 de la loi du 29 juillet 1982 sur Légifrance](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033971722) ;
 - [article 6 de la LCEN sur Légifrance](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000049577522) ;
 - [Vercel Privacy Notice](https://vercel.com/legal/privacy-notice) ;
 - [Vercel DMCA Policy](https://vercel.com/legal/dmca-policy).

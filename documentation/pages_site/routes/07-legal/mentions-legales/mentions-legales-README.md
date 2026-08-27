@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : LEGAL-02 — gate factuel bloqué
-- **Terminée** : non
+- **Scope** : LEGAL-02 — régime de personne physique éditant à titre non professionnel
+- **Terminée** : oui, sous réserve de la condition d'anonymat Vercel non vérifiable localement
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -51,16 +51,23 @@
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
 
-## Gate factuel LEGAL-02
+## Statut juridique LEGAL-02
 
-La page ne doit pas être déclarée conforme ni complétée avec un placeholder
-tant qu'une information opérateur explicite n'a pas déterminé si l'éditeur est
-une personne physique non professionnelle, une personne physique
-professionnelle ou une personne morale.
+La confirmation opérateur établit que CleanMyMap est actuellement édité par
+Maxence Deroome, personne physique éditant à titre non professionnel dans le
+cadre d'un projet étudiant. Aucune société, entreprise, association ou autre
+personne morale n'exploite actuellement le service. Maxence Deroome est le
+directeur de la publication conformément à l'article 93-2 de la loi du
+29 juillet 1982.
 
-Les sources du projet confirment uniquement l'initiative et la conception de
-CleanMyMap par Maxence Deroome. Elles ne confirment pas son rôle d'éditeur légal
-ou de directeur de publication. Il manque également l'identité juridique et
-les coordonnées de l'éditeur selon le régime retenu, ainsi que le téléphone
-général de l'hébergeur Vercel. Le diagnostic détaillé et les sources vérifiées
-sont centralisés dans [`documentation/legal/README.md`](../../../../legal/README.md).
+La page sépare explicitement l'édition et la publication, l'hébergement par
+Vercel Inc. et les services techniques fournis par Supabase, Clerk, Resend,
+PostHog et Sentry. Ces derniers ne sont pas présentés comme l'hébergeur du site.
+
+La page ne publie ni domicile ni téléphone personnels : la condition d'anonymat
+de l'article 1-1 II de la LCEN, qui suppose la communication préalable à Vercel
+des éléments personnels nécessaires à l'identification, n'est pas vérifiable
+dans les données de compte accessibles depuis ce checkout. Aucun téléphone
+général de Vercel ni numéro réservé aux notifications DMCA n'est repris.
+Le diagnostic et les sources sont centralisés dans
+[documentation/legal/README.md](../../../../legal/README.md).
