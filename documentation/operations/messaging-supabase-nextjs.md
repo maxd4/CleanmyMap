@@ -1,6 +1,10 @@
 # Etapes a suivre pour corriger la messagerie Supabase / Next.js
 
-## Etat actuel
+> **HISTORIQUE — ne pas utiliser comme état courant ni comme backlog.** Ce
+> document conserve le contexte et les étapes disponibles au moment de cette
+> réparation. Ne pas exécuter ni réactualiser ces étapes depuis cette fiche.
+
+## Etat au moment de la réparation
 
 Fait:
 
@@ -12,7 +16,7 @@ Fait:
 6. Les policies RLS par canal sont en place.
 7. Le code chat utilise maintenant un client RLS via Clerk quand un template JWT est disponible.
 
-Il reste:
+Etapes encore prévues à ce moment-là:
 
 1. Configurer le template JWT Supabase cote Clerk.
 2. Verifier que le chat ne renvoie plus `503` apres connexion.
