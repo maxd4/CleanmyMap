@@ -156,9 +156,10 @@ export default function PolitiqueConfidentialitePage() {
           <DataList
             items={[
               "Préférences d'interface : langue, thème et mode d'affichage.",
-              "Le choix de consentement est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` et synchronisé avec le cookie `cleanmymap_analytics_consent` pour appliquer la préférence analytique côté navigateur.",
+              "Le choix de consentement est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` pendant 6 mois ; à l'expiration, il est nettoyé et le choix est reproposé. Il est synchronisé avec le cookie `cleanmymap_analytics_consent`, également conservé 6 mois.",
               "Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont écrites dans `localStorage` puis synchronisées dans des cookies SameSite=Lax lorsqu'elles sont actives.",
-              "Analytics PostHog, Vercel Analytics et Vercel Speed Insights sont déclenchés uniquement si l'utilisateur accepte les cookies analytiques.",
+              "Analytics PostHog, Vercel Analytics et Vercel Speed Insights sont déclenchés uniquement si l'utilisateur accepte les cookies analytiques ; un retrait arrête la capture PostHog et ne rend plus les intégrations Vercel.",
+              "Le contrôle permanent `Gérer mes cookies`, présent dans le pied de page, permet de rouvrir les choix sans supprimer manuellement les données du navigateur. Un nouveau consentement réactive les services analytiques.",
               "PostHog est configuré sur l'hôte UE par défaut via `eu.i.posthog.com`.",
               "Si Sentry est activé, les erreurs techniques peuvent inclure des traces, messages console et métadonnées de requêtes, avec un masquage par défaut des informations sensibles selon la configuration du SDK.",
             ]}
@@ -280,7 +281,7 @@ export default function PolitiqueConfidentialitePage() {
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Consentement cookies / préférences</td>
-                  <td className="px-4 py-3">1 an pour le consentement, 13 mois max pour les cookies analytiques, selon le service</td>
+                  <td className="px-4 py-3">6 mois pour le consentement et les cookies analytiques configurés par CleanMyMap</td>
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Journaux techniques / sécurité</td>

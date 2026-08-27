@@ -29,8 +29,14 @@ async function loadPostHogModule() {
 
 export async function initPostHogClient(enableAnalytics = true) {
   if (initialized) {
+    if (!hasAnalyticsConsent()) {
+      return null;
+    }
+
     const posthogModule = await loadPostHogModule();
-    return posthogModule?.default ?? null;
+    const posthog = posthogModule?.default ?? null;
+    posthog?.opt_in_capturing({ captureEventName: false });
+    return posthog;
   }
 
   if (!hasAnalyticsConsent()) {
@@ -55,6 +61,18 @@ export async function initPostHogClient(enableAnalytics = true) {
     return null;
   }
 
+  // Consent can be withdrawn while the SDK chunk is loading. Re-check before
+  // initializing so a stale async request cannot opt the user back in.
+  if (!hasAnalyticsConsent()) {
+    return null;
+  }
+
+  if (initialized) {
+    const posthog = posthogModule.default;
+    posthog.opt_in_capturing({ captureEventName: false });
+    return posthog;
+  }
+
   const posthog = posthogModule.default;
   posthog.init(key, {
     api_host: getPostHogHost(),
@@ -64,9 +82,29 @@ export async function initPostHogClient(enableAnalytics = true) {
       initialized = true;
     },
     disable_persistence: !enableAnalytics,
+    opt_out_capturing_by_default: true,
+    opt_out_persistence_by_default: true,
     respect_dnt: true,
   });
 
   initialized = true;
+  posthog.opt_in_capturing({ captureEventName: false });
   return posthog;
+}
+
+export async function disablePostHogClient(): Promise<void> {
+  if (!initialized) {
+    return;
+  }
+
+  const posthogModule = await loadPostHogModule();
+  const posthog = posthogModule?.default;
+  if (!posthog) {
+    return;
+  }
+
+  // reset() clears the identity and SDK persistence; the explicit opt-out is
+  // applied last so the instance remains silent until a new consent is given.
+  posthog.reset(true);
+  posthog.opt_out_capturing();
 }

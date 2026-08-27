@@ -62,9 +62,10 @@ export default function PolitiqueCookiesPage() {
             1. Choix de consentement
           </h2>
           <p className="text-sm leading-6 text-slate-600">
-            La bannière de consentement propose trois choix : accepter tout,
-            n&apos;autoriser que les éléments essentiels, ou refuser les
-            traceurs non essentiels. Le choix est mémorisé pendant 1 an.
+            La bannière de consentement propose deux choix de même niveau :
+            tout accepter ou tout refuser. Les services essentiels au
+            fonctionnement du site restent actifs dans les deux cas. Le choix
+            est mémorisé pendant 6 mois.
           </p>
           <p className="text-sm leading-6 text-slate-600">
             La préférence est enregistrée dans <strong>localStorage</strong>{" "}
@@ -129,11 +130,13 @@ export default function PolitiqueCookiesPage() {
             3. Comment modifier ou retirer votre choix
           </h2>
           <ul className="space-y-2 text-sm leading-6 text-slate-600">
-            <li>Cliquer sur la bannière cookies si elle est à nouveau proposée.</li>
-            <li>Supprimer les données locales du navigateur pour réinitialiser le consentement.</li>
             <li>
-              Supprimer les clés locales mentionnées ci-dessus si vous voulez
-              effacer vos préférences de site.
+              Cliquer sur <strong>Gérer mes cookies</strong>, disponible en
+              permanence dans le pied de page, pour rouvrir les choix.
+            </li>
+            <li>
+              Un choix expiré après 6 mois est automatiquement nettoyé et la
+              bannière est reproposée.
             </li>
           </ul>
         </section>
@@ -153,11 +156,11 @@ export default function PolitiqueCookiesPage() {
               <tbody className="text-slate-600">
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Consentement</td>
-                  <td className="px-4 py-3">1 an</td>
+                  <td className="px-4 py-3">6 mois</td>
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Cookies analytiques</td>
-                  <td className="px-4 py-3">13 mois maximum</td>
+                  <td className="px-4 py-3">6 mois lorsque le consentement est donné</td>
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Sessions d&apos;authentification</td>

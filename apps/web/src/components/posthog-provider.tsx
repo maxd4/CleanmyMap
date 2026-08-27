@@ -6,7 +6,11 @@ import {
   hasAnalyticsConsent,
   syncAnalyticsConsentCookie,
 } from "@/lib/analytics-consent";
-import { initPostHogClient, isPostHogInitialized } from "@/lib/posthog/client";
+import {
+  disablePostHogClient,
+  initPostHogClient,
+  isPostHogInitialized,
+} from "@/lib/posthog/client";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
 } from "@/lib/storage/ui-state-storage";
@@ -38,15 +42,25 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (consentDecision !== null) {
       syncAnalyticsConsentCookie(consentDecision);
     }
-    if (hasConsent && !isPostHogInitialized()) {
-      void initPostHogClient(true).then((posthog) => {
-        if (posthog) {
-          posthog.capture("cmm_posthog_initialized_with_consent", {
-            timestamp: Date.now(),
-          });
-        }
-      });
+    if (!hasConsent) {
+      void disablePostHogClient();
+      return;
     }
+
+    void initPostHogClient(true).then((posthog) => {
+      if (!posthog) {
+        return;
+      }
+
+      if (!hasAnalyticsConsent()) {
+        void disablePostHogClient();
+        return;
+      }
+
+      posthog.capture("cmm_posthog_initialized_with_consent", {
+        timestamp: Date.now(),
+      });
+    });
   }, [consentDecision, hasConsent]);
 
   return <>{children}</>;

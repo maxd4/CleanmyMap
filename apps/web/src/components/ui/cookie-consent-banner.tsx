@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Cookie, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Cookie } from "lucide-react";
 import {
-  getAnalyticsConsentCookieDecision,
   syncAnalyticsConsentCookie,
 } from "@/lib/analytics-consent";
 import {
+  COOKIE_CONSENT_MANAGE_EVENT,
   cookieConsentStorage,
   notifyCookieConsentChanged,
   type CookieConsentState,
@@ -14,36 +14,33 @@ import {
 
 export function CookieConsentBanner() {
   const [isClient] = useState(() => typeof window !== "undefined");
-  const [, forceRender] = useState(0);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isClient) {
+      return;
+    }
+
+    const handleManageCookies = () => setIsPreferencesOpen(true);
+    window.addEventListener(COOKIE_CONSENT_MANAGE_EVENT, handleManageCookies);
+    return () =>
+      window.removeEventListener(COOKIE_CONSENT_MANAGE_EVENT, handleManageCookies);
+  }, [isClient]);
 
   const consent: CookieConsentState = isClient
     ? cookieConsentStorage.read() ?? { choice: null, timestamp: null, analytics: false }
     : { choice: null, timestamp: null, analytics: false };
-  const showBanner =
-    isClient &&
-    consent.choice === null &&
-    getAnalyticsConsentCookieDecision(document.cookie) === null;
+  const showBanner = isClient && (consent.choice === null || isPreferencesOpen);
 
-  const handleAccept = (analytics: boolean) => {
+  const handleDecision = (analytics: boolean) => {
     cookieConsentStorage.write({
-      choice: "accepted",
+      choice: analytics ? "accepted" : "rejected",
       timestamp: Date.now(),
       analytics,
     });
     syncAnalyticsConsentCookie(analytics);
     notifyCookieConsentChanged();
-    forceRender((value) => value + 1);
-  };
-  
-  const handleReject = () => {
-    cookieConsentStorage.write({
-      choice: "rejected",
-      timestamp: Date.now(),
-      analytics: false,
-    });
-    syncAnalyticsConsentCookie(false);
-    notifyCookieConsentChanged();
-    forceRender((value) => value + 1);
+    setIsPreferencesOpen(false);
   };
 
   // Don't render on server or if already consented
@@ -84,22 +81,18 @@ export function CookieConsentBanner() {
 
             <div className="flex flex-wrap gap-3 pt-2">
               <button
-                onClick={() => handleAccept(true)}
-                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                type="button"
+                onClick={() => handleDecision(true)}
+                className="min-h-10 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
               >
-                Accepter tout
+                Tout accepter
               </button>
               <button
-                onClick={() => handleAccept(false)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                type="button"
+                onClick={() => handleDecision(false)}
+                className="min-h-10 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                Essentiels seulement
-              </button>
-              <button
-                onClick={handleReject}
-                className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-300"
-              >
-                Refuser
+                Tout refuser
               </button>
             </div>
 
@@ -115,12 +108,6 @@ export function CookieConsentBanner() {
             </p>
           </div>
 
-          <button
-            onClick={handleReject}
-            className="shrink-0 rounded-full p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X size={18} className="text-slate-400" />
-          </button>
         </div>
       </div>
     </div>

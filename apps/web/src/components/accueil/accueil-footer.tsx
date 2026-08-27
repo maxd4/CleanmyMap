@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail } from "lucide-react";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { requestCookieConsentPreferences } from "@/lib/storage/ui-state-storage";
 import { shouldUseFullFooter } from "@/lib/ui/footer-variant";
 
 function InstagramMark({
@@ -81,6 +82,13 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
             <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
               Cookies
             </Link>
+            <button
+              type="button"
+              onClick={requestCookieConsentPreferences}
+              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+            >
+              Gérer mes cookies
+            </button>
           </nav>
         </div>
       </footer>
@@ -160,6 +168,13 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
             >
               Cookies
             </Link>
+            <button
+              type="button"
+              onClick={requestCookieConsentPreferences}
+              className="whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+            >
+              Gérer mes cookies
+            </button>
                           <div className="mt-2 text-center text-xs text-white">
                   <p className="font-bold">Cultivons l&apos;entraide</p>
                   <p>© 2026 CleanMyMap</p>
