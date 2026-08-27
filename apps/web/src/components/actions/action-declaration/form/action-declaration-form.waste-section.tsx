@@ -1,5 +1,5 @@
 import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/place-type-options";
-import type { FormState } from"./action-declaration-form.model";
+import type { FormState } from"./model";
 import { ActionDeclarationWasteAssist } from"./action-declaration-form.smart-assist";
 
 type ActionDeclarationWasteSectionProps = {

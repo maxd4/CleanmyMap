@@ -46,7 +46,7 @@ Traiter une cible uniquement après vérification de son état réel :
 ### P2 — Cibles moyennes à reprendre ensuite
 
 - `components/actions/action-before-declaration-form.tsx`
-- `components/actions/action-declaration-form/action-declaration-export-picker.tsx`
+- `components/actions/action-declaration/form/action-declaration-export-picker.tsx`
 - `components/admin/free-plan-services-panel.tsx`
 - `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts`
 - `components/learn/environmental-quiz.tsx`

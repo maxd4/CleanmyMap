@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
-import { createInitialFormState } from "./payload";
+import { createInitialFormState } from "../payload";
 import { ActionStepIdentity } from "./ActionStepIdentity";
 
 describe("ActionStepIdentity", () => {

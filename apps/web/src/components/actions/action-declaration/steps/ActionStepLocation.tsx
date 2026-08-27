@@ -5,9 +5,9 @@ import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapP
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
-import type { FormState } from "../action-declaration-form/action-declaration-form.model";
+import type { FormState } from "../form/model";
 import type { ActionDrawing } from "@/lib/actions/types";
-import type { UpdateFormField } from "./types";
+import type { UpdateFormField } from "../types";
 import {
   getLocalGeoAddressSuggestions,
   mergeGeoAddressSuggestions,
@@ -16,7 +16,7 @@ import {
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../map/actions-map-geometry.utils";
+} from "../../map/actions-map-geometry.utils";
 
 type AddressSuggestionsResponse = {
   status: "ok";

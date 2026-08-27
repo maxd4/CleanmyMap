@@ -1,5 +1,5 @@
 import type { ActionPhotoAsset, ActionVisionEstimate } from"@/lib/actions/types";
-import type { FormState } from"./action-declaration-form.model";
+import type { FormState } from"./model";
 
 function uniqueMessages(messages: string[]): string[] {
  return Array.from(new Set(messages));

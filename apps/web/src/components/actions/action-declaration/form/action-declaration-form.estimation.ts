@@ -1,4 +1,4 @@
-import { toRequiredNumber } from"./action-declaration-form.model";
+import { toRequiredNumber } from"./model";
 
 type EstimateWasteInput = {
  volunteersCount: string;

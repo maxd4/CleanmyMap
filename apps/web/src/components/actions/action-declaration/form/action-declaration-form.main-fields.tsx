@@ -1,7 +1,7 @@
 import { ASSOCIATION_SELECTION_OPTIONS, ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from "@/lib/actions/place-type-options";
-import type { FormState } from "./action-declaration-form.model";
-import { convertCigaretteButtsToKg } from "./action-declaration-form.model";
+import type { FormState } from "./model";
+import { convertCigaretteButtsToKg } from "./model";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 
 type ActionDeclarationMainFieldsProps = {

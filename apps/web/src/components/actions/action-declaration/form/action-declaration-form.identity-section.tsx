@@ -1,5 +1,5 @@
 import { ActionDeclarationIdentityFields } from"./action-declaration-form.identity-fields";
-import type { FormState } from"./action-declaration-form.model";
+import type { FormState } from"./model";
 
 type ActionDeclarationIdentitySectionProps = {
  resolvedActorOptions: string[];

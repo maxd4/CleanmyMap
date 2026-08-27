@@ -66,7 +66,7 @@ Pourquoi ce lot passe avant les autres:
 Corriger les routes et les helpers qui servent plusieurs écrans, surtout quand ils portent encore des variables mortes ou des branches de contrôle difficiles à lire.
 
 - `apps/web/src/app/api/admin/creator-inbox/route.ts`
-- `apps/web/src/components/actions/action-declaration-form/action-declaration-form.tsx`
+- `apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx`
 - `apps/web/src/components/admin/quiz-bank-admin-view.tsx`
 - `apps/web/src/components/reports/analytics-cockpit.tsx`
 - `apps/web/src/components/sections/rubriques/annuaire/academie-climat-workshops-panel.tsx`
