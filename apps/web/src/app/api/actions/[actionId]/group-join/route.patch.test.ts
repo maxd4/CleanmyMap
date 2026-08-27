@@ -51,6 +51,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.groupJoinEnabled).toBe(false);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("lets the organizer reopen the group form", async () => {
@@ -122,7 +123,123 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
         targetActionId: "action-old",
         operation: "toggle_group_join",
         outcome: "success",
+        previousValue: { groupJoinEnabled: true },
+        newValue: { groupJoinEnabled: false },
       }),
+    );
+    expect(appendActionModerationAuditMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      "targetUserId",
+    );
+  }, 15000);
+
+  it("audits an admin toggle with the canonical target and before/after values", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+    });
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user_123",
+          groupJoinEnabled: false,
+        }),
+      }),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: true }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "toggle_group_join",
+        outcome: "success",
+        targetUserId: "user_123",
+        previousValue: { groupJoinEnabled: false },
+        newValue: { groupJoinEnabled: true },
+      }),
+    );
+  }, 15000);
+
+  it("audits an admin not-found toggle without sensitive details", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+    });
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({ id: "other-action" }),
+      }),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/missing-action/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: true }),
+      }),
+      { params: Promise.resolve({ actionId: "missing-action" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "toggle_group_join",
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "notes",
+    );
+  }, 15000);
+
+  it("audits an admin toggle update error once", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+    });
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user_123",
+          groupJoinEnabled: true,
+        }),
+        errors: { actionUpdate: "vendor database detail" },
+      }),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: false }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetUserId: "user_123",
+        details: { stage: "update", partialMutation: false },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "vendor database detail",
     );
   }, 15000);
 

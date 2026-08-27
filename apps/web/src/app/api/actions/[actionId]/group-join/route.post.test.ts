@@ -191,7 +191,145 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     );
 
     expect(response.status).toBe(400);
-    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "admin_add_participant",
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
+  }, 15000);
+
+  it("audits a participation update error before any write", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-1",
+        created_at: "2026-06-01T10:00:00Z",
+        participation_status: "pending",
+        participation_source: "group_form",
+        action_id: "action-1",
+        user_id: "user-2",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user_123",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+        errors: { participantUpdate: "vendor database detail" },
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantId: "participant-1",
+          decision: "accept",
+          reason: "Validation administrative.",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(participants[0]?.participation_status).toBe("pending");
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "admin_review_accept",
+        outcome: "error",
+        targetUserId: "user-2",
+        details: { stage: "participation_update", partialMutation: false },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "vendor database detail",
+    );
+  }, 15000);
+
+  it("marks an admin add as partial when the post-update count fails", async () => {
+    const participants: Array<{
+      id: string;
+      created_at: string;
+      action_id: string;
+      user_id: string;
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
+    }> = [];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user_123",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+        errors: { participantCount: "vendor database detail" },
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+          reason: "Ajout administratif justifié.",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(participants).toHaveLength(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "admin_add_participant",
+        outcome: "error",
+        targetUserId: "user-2",
+        details: { stage: "post_update", partialMutation: true },
+      }),
+    );
+    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
+      "vendor database detail",
+    );
+  }, 15000);
+
+  it("audits an admin participation not-found before any write", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({ id: "other-action" }),
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/missing-action/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+          reason: "Ajout administratif justifié.",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "missing-action" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "admin_add_participant",
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
   }, 15000);
 });
 

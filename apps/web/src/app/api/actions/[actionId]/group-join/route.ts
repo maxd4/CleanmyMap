@@ -23,6 +23,7 @@ import {
 } from "@/lib/actions/metadata";
 import {
   addActionParticipationByAdmin,
+  ActionParticipationOperationError,
   cancelActionParticipation,
   loadActionParticipationReviews,
   reviewActionParticipation,
@@ -53,6 +54,43 @@ const searchSchema = z.object({
   q: z.string().trim().min(2).max(120),
   limit: z.coerce.number().int().min(1).max(12).default(8),
 });
+
+type GroupJoinAuditErrorStage =
+  | "lookup"
+  | "update"
+  | "participation_update"
+  | "post_update";
+
+function resolveCanonicalClerkUserId(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+  return /^user_[A-Za-z0-9]+$/.test(normalized) ? normalized : null;
+}
+
+function getAdminParticipationOperation(
+  data: z.infer<typeof reviewSchema> | z.infer<typeof addParticipantSchema>,
+): string {
+  if ("participantUserId" in data) {
+    return "admin_add_participant";
+  }
+  return `admin_review_${data.decision}`;
+}
+
+async function resolveAdminAuditIdentity(
+  fallbackUserId?: string,
+): Promise<{
+  actorUserId: string;
+} | null> {
+  try {
+    const identity = await getCurrentUserIdentity();
+    if (!identity || !canUseAdminOverride(identity)) {
+      return null;
+    }
+    const actorUserId = identity.userId ?? fallbackUserId ?? null;
+    return actorUserId ? { actorUserId } : null;
+  } catch {
+    return null;
+  }
+}
 
 async function resolveGroupJoinUserId(operation: string): Promise<string | null> {
   try {
@@ -138,6 +176,24 @@ export async function PATCH(
     });
   }
 
+  let toggleAdminAuditRecorded = false;
+  let toggleAdminAuditContext: {
+    actorUserId: string;
+    targetUserId: string | null;
+    previousValue: { groupJoinEnabled: boolean };
+    newValue: { groupJoinEnabled: boolean };
+  } | null = null;
+  let toggleActionKnown = false;
+  const appendToggleAuditOnce = async (
+    params: Parameters<typeof appendActionModerationAudit>[0],
+  ): Promise<void> => {
+    if (toggleAdminAuditRecorded) {
+      return;
+    }
+    toggleAdminAuditRecorded = true;
+    await appendActionModerationAudit(params);
+  };
+
   try {
     const supabase = getSupabaseServerClient();
     const actionResult = await runSingleActionQuery<{
@@ -151,11 +207,27 @@ export async function PATCH(
     );
 
     if (!actionResult) {
+      const adminIdentity = await resolveAdminAuditIdentity(userId);
+      if (adminIdentity) {
+        await appendToggleAuditOnce({
+          operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
+          actorUserId: adminIdentity.actorUserId,
+          targetActionId: trimmedActionId,
+          operation: "toggle_group_join",
+          outcome: "error",
+          details: {
+            stage: "lookup",
+            partialMutation: false,
+          },
+        });
+      }
       return NextResponse.json(
         { error: "Action introuvable." },
         { status: 404 },
       );
     }
+
+    toggleActionKnown = true;
 
     if (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action") {
       return validationErrorResponse({
@@ -180,6 +252,26 @@ export async function PATCH(
       );
     }
 
+    const shouldAuditToggle =
+      Boolean(access.identity) &&
+      canUseAdminOverride(access.identity) &&
+      actorUserId !== actionResult.created_by_clerk_id;
+    const previousValue = {
+      groupJoinEnabled: extractActionMetadataFromNotes(actionResult.notes)
+        .groupJoinEnabled,
+    };
+    if (shouldAuditToggle) {
+      toggleActionKnown = true;
+      toggleAdminAuditContext = {
+        actorUserId,
+        targetUserId: resolveCanonicalClerkUserId(
+          actionResult.created_by_clerk_id,
+        ),
+        previousValue,
+        newValue: { groupJoinEnabled: parsed.data.groupJoinEnabled },
+      };
+    }
+
     const updatedNotes = setActionGroupJoinEnabledInNotes(
       actionResult.notes,
       parsed.data.groupJoinEnabled,
@@ -194,28 +286,26 @@ export async function PATCH(
       .select("id, notes")
       .single();
 
-    if (updateResult.error) {
-      throw new Error(updateResult.error.message);
+    if (updateResult.error || !updateResult.data) {
+      throw new Error("Action update failed.");
     }
 
     const updatedMetadata = extractActionMetadataFromNotes(
       updateResult.data?.notes ?? updatedNotes,
     );
 
-    if (
-      access.identity &&
-      canUseAdminOverride(access.identity) &&
-      access.identity.userId !== actionResult.created_by_clerk_id
-    ) {
-      await appendActionModerationAudit({
+    if (toggleAdminAuditContext) {
+      await appendToggleAuditOnce({
         operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
-        actorUserId,
+        actorUserId: toggleAdminAuditContext.actorUserId,
         targetActionId: trimmedActionId,
         operation: "toggle_group_join",
         outcome: "success",
-        details: {
-          groupJoinEnabled: updatedMetadata.groupJoinEnabled,
-        },
+        previousValue: toggleAdminAuditContext.previousValue,
+        newValue: { groupJoinEnabled: updatedMetadata.groupJoinEnabled },
+        ...(toggleAdminAuditContext.targetUserId
+          ? { targetUserId: toggleAdminAuditContext.targetUserId }
+          : {}),
       });
     }
 
@@ -225,6 +315,39 @@ export async function PATCH(
       groupJoinEnabled: updatedMetadata.groupJoinEnabled,
     });
   } catch (error) {
+    if (toggleAdminAuditContext) {
+      await appendToggleAuditOnce({
+        operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
+        actorUserId: toggleAdminAuditContext.actorUserId,
+        targetActionId: trimmedActionId,
+        operation: "toggle_group_join",
+        outcome: "error",
+        previousValue: toggleAdminAuditContext.previousValue,
+        newValue: toggleAdminAuditContext.newValue,
+        ...(toggleAdminAuditContext.targetUserId
+          ? { targetUserId: toggleAdminAuditContext.targetUserId }
+          : {}),
+        details: {
+          stage: "update",
+          partialMutation: false,
+        },
+      });
+    } else if (!toggleActionKnown) {
+      const adminIdentity = await resolveAdminAuditIdentity(userId);
+      if (adminIdentity) {
+        await appendToggleAuditOnce({
+          operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
+          actorUserId: adminIdentity.actorUserId,
+          targetActionId: trimmedActionId,
+          operation: "toggle_group_join",
+          outcome: "error",
+          details: {
+            stage: "lookup",
+            partialMutation: false,
+          },
+        });
+      }
+    }
     return handleApiError(error, "PATCH /api/actions/:actionId/group-join");
   }
 }
@@ -360,6 +483,50 @@ export async function POST(
     });
   }
 
+  let adminParticipationAuditRecorded = false;
+  let adminParticipationAuditContext: {
+    actorUserId: string;
+    operation: string;
+    reason: string | null;
+    targetUserId: string | null;
+  } | null = null;
+  const appendAdminParticipationAuditOnce = async (
+    params: Parameters<typeof appendActionModerationAudit>[0],
+  ): Promise<void> => {
+    if (adminParticipationAuditRecorded) {
+      return;
+    }
+    adminParticipationAuditRecorded = true;
+    await appendActionModerationAudit(params);
+  };
+  const appendAdminParticipationError = async (params: {
+    actorUserId: string;
+    operation: string;
+    reason: string | null;
+    targetUserId?: string | null;
+    stage: GroupJoinAuditErrorStage;
+    partialMutation: boolean;
+  }): Promise<void> => {
+    await appendAdminParticipationAuditOnce({
+      operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
+      actorUserId: params.actorUserId,
+      targetActionId: trimmedActionId,
+      operation: params.operation,
+      outcome: "error",
+      reason: params.reason,
+      ...(params.targetUserId
+        ? { targetUserId: params.targetUserId }
+        : {}),
+      details: {
+        stage: params.stage,
+        partialMutation: params.partialMutation,
+      },
+    });
+  };
+
+  const adminOperation = getAdminParticipationOperation(parsed.data);
+  const requestReason = normalizeModerationReason(parsed.data.reason);
+
   try {
     const supabase = getSupabaseServerClient();
     const actionResult = await runSingleActionQuery<{
@@ -376,6 +543,20 @@ export async function POST(
     );
 
     if (!actionResult || (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")) {
+      const adminIdentity = await resolveAdminAuditIdentity(userId);
+      if (adminIdentity) {
+        await appendAdminParticipationError({
+          actorUserId: adminIdentity.actorUserId,
+          operation: adminOperation,
+          reason: requestReason,
+          targetUserId:
+            "participantUserId" in parsed.data
+              ? parsed.data.participantUserId
+              : null,
+          stage: "lookup",
+          partialMutation: false,
+        });
+      }
       return NextResponse.json(
         { error: "Action introuvable." },
         { status: 404 },
@@ -398,16 +579,41 @@ export async function POST(
 
     const adminOverrideOperation =
       access.identity && canUseAdminOverride(access.identity)
-        ? "participantUserId" in parsed.data
-          ? "admin_add_participant"
-          : parsed.data.decision === "reject"
-            ? "admin_review_reject"
-            : null
+        ? adminOperation
         : null;
+    const reasonRequired =
+      adminOverrideOperation === "admin_add_participant" ||
+      adminOverrideOperation === "admin_review_reject";
     const reason = normalizeModerationReason(parsed.data.reason, {
-      required: Boolean(adminOverrideOperation),
+      required: reasonRequired,
     });
-    if (adminOverrideOperation && !reason) {
+    if (adminOverrideOperation) {
+      adminParticipationAuditContext = {
+        actorUserId: access.identity?.userId ?? userId,
+        operation: adminOverrideOperation,
+        reason,
+        targetUserId:
+          "participantUserId" in parsed.data
+            ? parsed.data.participantUserId
+            : null,
+      };
+    }
+    if (adminOverrideOperation && reasonRequired && !reason) {
+      const auditContext = adminParticipationAuditContext;
+      if (!auditContext) {
+        return NextResponse.json(
+          { error: "Opération admin non résolue." },
+          { status: 400 },
+        );
+      }
+      await appendAdminParticipationError({
+        actorUserId: auditContext.actorUserId,
+        operation: auditContext.operation,
+        reason: auditContext.reason,
+        targetUserId: auditContext.targetUserId,
+        stage: "lookup",
+        partialMutation: false,
+      });
       return NextResponse.json(
         {
           error:
@@ -441,7 +647,7 @@ export async function POST(
 
     if (access.identity && canUseAdminOverride(access.identity)) {
       const actorUserId = access.identity?.userId ?? userId;
-      await appendActionModerationAudit({
+      await appendAdminParticipationAuditOnce({
         operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
         actorUserId,
         targetActionId: trimmedActionId,
@@ -483,6 +689,42 @@ export async function POST(
       participantsCount: result.participantsCount,
     });
   } catch (error) {
+    if (adminParticipationAuditContext) {
+      const operationError =
+        error instanceof ActionParticipationOperationError
+          ? error
+          : null;
+      const stage: GroupJoinAuditErrorStage = operationError?.stage ??
+        (error instanceof Error &&
+        (error.name === "NotFoundError" || error.name === "ValidationError")
+          ? "lookup"
+          : "participation_update");
+      await appendAdminParticipationError({
+        actorUserId: adminParticipationAuditContext.actorUserId,
+        operation: adminParticipationAuditContext.operation,
+        reason: adminParticipationAuditContext.reason,
+        targetUserId:
+          operationError?.targetUserId ??
+          adminParticipationAuditContext.targetUserId,
+        stage,
+        partialMutation: operationError?.partialMutation ?? false,
+      });
+    } else {
+      const adminIdentity = await resolveAdminAuditIdentity(userId);
+      if (adminIdentity) {
+        await appendAdminParticipationError({
+          actorUserId: adminIdentity.actorUserId,
+          operation: getAdminParticipationOperation(parsed.data),
+          reason: normalizeModerationReason(parsed.data.reason),
+          targetUserId:
+            "participantUserId" in parsed.data
+              ? parsed.data.participantUserId
+              : null,
+          stage: "lookup",
+          partialMutation: false,
+        });
+      }
+    }
     if (error instanceof Error) {
       if (error.name === "NotFoundError") {
         return NextResponse.json(
