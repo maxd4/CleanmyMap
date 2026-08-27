@@ -426,7 +426,7 @@ Leaflet et react-leaflet gonflent le bundle client. Le coût principal est le tr
 - `apps/web/src/components/maps/territory-map-comparison-cards.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/missions/mission-map.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx` — Leaflet, React Leaflet
-- `apps/web/src/components/sections/rubriques/compost-map-canvas.tsx` — Leaflet, React Leaflet
+- `apps/web/src/components/sections/rubriques/compost/compost-map-canvas.tsx` — Leaflet, React Leaflet
 - `apps/web/src/types/leaflet-draw.d.ts` — Leaflet, Leaflet Draw
 
 ## Lecture prioritaire

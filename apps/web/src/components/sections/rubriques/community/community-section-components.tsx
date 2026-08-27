@@ -23,7 +23,7 @@ import { DeferredChatShell } from "@/components/chat/deferred-chat-shell";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck, type LucideIcon } from "lucide-react";
-import type { UseCommunitySectionModel } from "./community/use-community-section";
+import type { UseCommunitySectionModel } from "./use-community-section";
 
 export type HubCategory = "agir" | "missions" | "solutions";
 export type HubZone = "france" | "region" | "departement" | "ville";
