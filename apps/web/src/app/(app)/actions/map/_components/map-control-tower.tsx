@@ -1,11 +1,9 @@
-import { useMemo } from "react";
 import type { RefObject } from "react";
 import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionsMapFilterControls } from "@/components/actions/map/actions-map-filter-controls";
 import { ActionsMapExportButton } from "@/components/actions/map/actions-map-export-button";
-import { buildActionsMapGeoQuality } from "@/components/actions/map/actions-map-quality";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type {
   ActionsMapFilters,
@@ -55,29 +53,24 @@ export function MapControlTower({
     classes.shadow
   );
 
-  const geoQuality = buildActionsMapGeoQuality(filteredMapItems);
-  const categoryCounts = useMemo(
-    () =>
-      allMapItems.reduce<Record<MarkerCategory, number>>(
-        (acc, item) => {
-          for (const category of deriveMarkerCategories(item, references)) {
-            acc[category] += 1;
-          }
-          return acc;
-        },
-        {
-          blue: 0,
-          orange: 0,
-          red: 0,
-          green: 0,
-          violet: 0,
-          black: 0,
-          bin: 0,
-          ashtray: 0,
-          combo: 0,
-        },
-      ),
-    [allMapItems, references],
+  const categoryCounts = allMapItems.reduce<Record<MarkerCategory, number>>(
+    (acc, item) => {
+      for (const category of deriveMarkerCategories(item, references)) {
+        acc[category] += 1;
+      }
+      return acc;
+    },
+    {
+      blue: 0,
+      orange: 0,
+      red: 0,
+      green: 0,
+      violet: 0,
+      black: 0,
+      bin: 0,
+      ashtray: 0,
+      combo: 0,
+    },
   );
 
   return (
@@ -121,23 +114,6 @@ export function MapControlTower({
       />
 
       <MapLegend />
-
-      <div className="grid grid-cols-2 gap-6 border-t border-sky-200/80 pt-10 sm:grid-cols-5">
-        {[
-          { label: "Qualité géo", val: geoQuality.total, color: "text-sky-500" },
-          { label: "Sans coord.", val: geoQuality.missingCoordinates, color: "text-rose-400" },
-          { label: "Réels", val: geoQuality.realGeometry, color: "text-emerald-400" },
-          { label: "Estimés", val: geoQuality.estimatedGeometry, color: "text-amber-400" },
-          { label: "Fallback", val: geoQuality.fallbackPoint, color: "text-slate-500" },
-        ].map((q, i) => (
-          <div key={i} className="space-y-2">
-            <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600 leading-none">
-              {q.label}
-            </p>
-            <p className="text-2xl font-black tracking-tighter leading-none text-slate-950">{q.val}</p>
-          </div>
-        ))}
-      </div>
     </section>
   );
 }

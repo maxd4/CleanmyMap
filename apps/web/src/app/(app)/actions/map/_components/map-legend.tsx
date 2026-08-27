@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Cigarette, Info, Trash2 } from "lucide-react";
+import { ChevronDown, Cigarette, Info, Trash2 } from "lucide-react";
 import {
   ACTION_POLLUTION_COLOR_THRESHOLDS,
   INFRASTRUCTURE_ALERT_THRESHOLD,
@@ -99,51 +99,66 @@ function LegendChip({ item }: { item: LegendItem }) {
 export function MapLegend() {
   return (
     <section className="rounded-[2.5rem] border border-sky-200/80 bg-sky-50/85 p-6 shadow-[0_16px_40px_-30px_rgba(14,165,233,0.24)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="space-y-4">
         <div className="space-y-1">
           <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
             <Info size={14} className="text-sky-700" />
             Légende
           </p>
           <p className="text-sm font-medium leading-relaxed text-slate-600">
-            Les actions combinent la pollution constatée avant l&apos;intervention et une projection de re-pollution qui dépend du temps écoulé. Les Trash Spotter quantifiés suivent cette palette ; les signalements qualitatifs restent neutres. Le vert est réservé aux lieux explicitement propres.
+            Les couleurs résument la pollution projetée des actions ; les résultats terrain restent distincts. Les infrastructures indiquent un besoin de collecte ou de traitement des mégots.
           </p>
         </div>
+
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Déchets: max kg / bénévole = 100
+          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-sky-500 via-orange-500 to-slate-950" />
+            Actions : bleu → noir, pollution projetée
           </span>
-          <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Mégots: max mégots / bénévole = 100
+          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            Vert : lieu propre
           </span>
-          <span className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Couleur action = pollution projetée
+          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+            Trash Spotter : signalement neutre
           </span>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3 lg:grid-cols-2">
-        <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-            Couleurs
-          </p>
-          <div className="grid gap-3">
-            {colorItems.map((item) => (
-              <LegendChip key={item.label} item={item} />
-            ))}
-          </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-violet-600" />
+            Infra : bac, cendrier, combiné
+          </span>
         </div>
 
-        <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-            Infra
-          </p>
-          <div className="grid gap-3">
-            {infrastructureItems.map((item) => (
-              <LegendChip key={item.label} item={item} />
-            ))}
+        <details className="group rounded-[1.75rem] border border-sky-200/80 bg-white/75 p-4">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-950">
+            <span>Détails des couleurs, de l&apos;infrastructure et des seuils</span>
+            <ChevronDown size={16} className="shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+          </summary>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                Couleurs
+              </p>
+              <div className="grid gap-3">
+                {colorItems.map((item) => (
+                  <LegendChip key={item.label} item={item} />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                Infra
+              </p>
+              <div className="grid gap-3">
+                {infrastructureItems.map((item) => (
+                  <LegendChip key={item.label} item={item} />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
     </section>
   );

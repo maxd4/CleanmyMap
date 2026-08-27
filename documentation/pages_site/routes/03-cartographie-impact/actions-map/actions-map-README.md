@@ -34,10 +34,17 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - filtres publics actifs : Zone, Période, Catégories visibles et Réinitialiser ;
 - sélection d'action ;
 - KPI de résultats terrain (`kg`, mégots, bénévoles) et proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
-- tour de contrôle ;
+- tour de contrôle avec filtres, compteur visible/chargé et export ;
+- légende compacte avec résumé couleurs/infrastructure et détails/seuils en disclosure ;
 - journal / insights ;
+- analyse et journal ;
 - tableau de données ;
+- stories ;
 - export de la vue.
+
+La page ne présente pas les diagnostics techniques de qualité géométrique dans
+la vue publique. La carte conserve sa géométrie et ses interactions ; les
+informations utiles à la lecture restent accessibles via la légende compacte.
 
 ## Séparation des calques
 
