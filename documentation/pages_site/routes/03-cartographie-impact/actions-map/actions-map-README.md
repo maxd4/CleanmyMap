@@ -33,7 +33,7 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - carte immersive ;
 - filtres ;
 - sélection d'action ;
-- KPI ;
+- KPI de résultats terrain (`kg`, mégots, bénévoles) et proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
 - tour de contrôle ;
 - journal / insights ;
 - tableau de données ;
@@ -85,6 +85,10 @@ Règles :
 - pas de fetch score séparé par popup.
 
 Ce score est une pollution constatée avant l'action, pas une pollution actuelle. Il ne doit pas être réécrit par le temps écoulé.
+
+La carte ne présente jamais la pollution projetée comme une mesure actuelle du terrain. La fraîcheur affichée concerne uniquement la dernière actualisation du flux de données (`Dernière actualisation ...`), pas l'actualisation d'une pollution mesurée.
+
+Les `kg`, mégots et bénévoles affichés dans les KPI restent des résultats terrain. Le `CO₂e`, l'eau et l'économie de voirie sont des proxys/estimations et portent cette qualification directement sur la carte. Aucun facteur ni calcul de projection n'est modifié par cette présentation.
 
 ## Projection de re-pollution
 
