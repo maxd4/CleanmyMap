@@ -9,13 +9,14 @@ Lire cette page avant toute modification concernant API, auth, données, CI, sec
 3. `SECURITY_GUIDE.md`
 4. `authz-authn-regles.md`
 5. `authorization-capabilities.md`
-6. `url-validation-security.md`
-7. `regex-security.md`
-8. `../backend/RATE_LIMITING.md`
-9. `CODEX_SECURITY_PLAYBOOK.md`
-10. `supabase-review-checklist.md`
-11. `github-audit-backlog.md`
-12. `dependency-advisory-governance.md` pour les acceptations de risque de
+6. `admin-operation-audit.md`
+7. `url-validation-security.md`
+8. `regex-security.md`
+9. `../backend/RATE_LIMITING.md`
+10. `CODEX_SECURITY_PLAYBOOK.md`
+11. `supabase-review-checklist.md`
+12. `github-audit-backlog.md`
+13. `dependency-advisory-governance.md` pour les acceptations de risque de
     dépendances bornées par advisory et par date
 
 ## Principes non négociables
@@ -52,9 +53,37 @@ Références :
 ```txt
 authz-authn-regles.md
 authorization-capabilities.md
+admin-operation-audit.md
 ```
 
 Ne pas traiter les rôles comme une hiérarchie linéaire. Un rôle métier peut disposer d'une capacité forte dans son périmètre sans obtenir un droit global dans les autres domaines.
+
+### Audit des opérations admin
+
+Une opération admin mutable ou un effet externe privilégié doit être évalué selon le contrat `admin-operation-audit.md`.
+
+Règles essentielles :
+
+- AuthZ avant audit ;
+- acteur canonique issu de l'identité serveur ;
+- une tentative autorisée = un audit final pertinent ;
+- `success` uniquement après effet réussi ;
+- `partialMutation` uniquement si une écriture partielle est connue ;
+- before/after par allowlist ;
+- stages et codes d'erreur bornés ;
+- aucune PII, payload brut ou erreur fournisseur dans le journal.
+
+Le mécanisme transversal est :
+
+```txt
+apps/web/src/lib/admin/audit/operation-audit.ts
+```
+
+Le domaine Actions conserve sa spécialisation :
+
+```txt
+apps/web/src/lib/actions/moderation-audit.ts
+```
 
 ### Supabase
 
@@ -132,7 +161,9 @@ La route de test recommandée est :
 
 avec accès admin.
 
-Si `/api/send` est conservée pour la compatibilité locale, son token de test ne doit jamais contourner l'admin en production.
+Si `/api/send` est conservée pour la compatibilité locale, son token de test ne doit jamais contourner l'admin en production et le parcours local ne doit pas être artificiellement journalisé comme une opération admin sans acteur canonique.
+
+Les envois de test effectués par un admin suivent `admin-operation-audit.md`.
 
 ## Application compagnon
 
@@ -167,6 +198,8 @@ apps/web/src/lib/auth/protected-routes.ts
 apps/web/src/lib/authz.ts
 apps/web/src/lib/profiles.ts
 apps/web/src/lib/actions/permissions.ts
+apps/web/src/lib/admin/audit/operation-audit.ts
+apps/web/src/lib/actions/moderation-audit.ts
 apps/web/src/lib/community/discussion-rate-limit.ts
 apps/web/src/lib/supabase/server.ts
 apps/web/src/lib/supabase/clerk-rls.ts
@@ -179,6 +212,9 @@ Les permissions métier doivent préférer les helpers de capacité propres au d
 
 - secret probable détecté ;
 - route sensible sans contrôle serveur ;
+- mutation admin sensible non auditée sans justification ;
+- audit déclarant un succès avant l'effet réel ;
+- audit contenant PII, payload brut ou erreur fournisseur sans nécessité contractuelle ;
 - rôle métier transformé implicitement en permission globale ;
 - scope organisation/territoire accepté sans relation canonique ;
 - page privée indexable ;
