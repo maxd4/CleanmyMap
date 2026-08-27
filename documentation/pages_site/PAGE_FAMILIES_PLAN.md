@@ -130,7 +130,7 @@ Ne pas les déplacer ou les mapper arbitrairement.
 | ID | Route | Résultat |
 |---|---|---|
 | `explorer-sommaire` | `/explorer` | famille jaune dédiée |
-| `methodologie-impact` | `/methodologie` | Cartographie & Impact, variante sky actuelle |
+| `methodologie-impact` | `/methodologie` | Cartographie & Impact, variante red actuelle |
 | `weather-operations` | `/sections/weather` | Agir |
 | `join-group-form` | `/sections/rejoindre-un-formulaire` | Agir |
 | `reports-impact` | `/reports`, `/gamification`, `/sections/gamification` | variante red |

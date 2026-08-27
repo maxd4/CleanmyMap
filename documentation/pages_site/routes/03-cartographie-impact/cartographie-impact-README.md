@@ -13,7 +13,7 @@ Vue cartographique, méthodologie, progression et rapports d'impact.
 | Route | Fiche | Accès runtime | Palette runtime | Source principale |
 |---|---|---|---|---|
 | `/actions/map` | [Carte des actions](./actions-map/actions-map-README.md) | `public-visible` | sky | `apps/web/src/app/(app)/actions/map/page.tsx` |
-| `/methodologie` | [Méthodologie](./methodologie/methodologie-README.md) | `public-visible` | sky, exception `methodologie-impact` | `apps/web/src/app/(app)/methodologie/page.tsx` |
+| `/methodologie` | [Méthodologie](./methodologie/methodologie-README.md) | `public-visible` | red, exception `methodologie-impact` | `apps/web/src/app/(app)/methodologie/page.tsx` |
 | `/sections/gamification` | [Progression & badges](./gamification/gamification-README.md) | `auth-disabled-gate` | red, exception `reports-impact` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/profil/impact` | [Profil impact](./profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage actuellement | `apps/web/src/app/(app)/profil/impact/page.tsx` |
 | `/reports` | [Rapports d'impact](./reports/reports-README.md) | `auth-blur-gate` | red | `apps/web/src/app/(app)/reports/page.tsx` |

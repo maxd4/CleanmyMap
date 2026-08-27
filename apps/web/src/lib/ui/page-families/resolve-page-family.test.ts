@@ -96,7 +96,14 @@ describe("page-families resolver", () => {
 
     expect(resolvePageFamily("/methodologie")).toMatchObject({
       id: "cartographie-impact",
-      backdropToneKey: "sky",
+      backdropToneKey: "red",
+      hero: {
+        title: "cmm-page-header-title text-rose-900",
+      },
+      card: {
+        rubriqueTheme: "rose",
+        shell: expect.stringContaining("border-rose-200/18"),
+      },
       exceptionId: "methodologie-impact",
     });
 

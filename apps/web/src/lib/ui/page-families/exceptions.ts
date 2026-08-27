@@ -23,7 +23,7 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
   {
     id: "methodologie-impact",
     note:
-      "Méthodologie rattachée à Cartographie & Impact ; le runtime résout actuellement la variante sky dédiée.",
+      "Méthodologie rattachée à Cartographie & Impact ; le runtime résout la variante red dédiée.",
     match: (pathname) =>
       pathname === "/methodologie" ||
       pathname.startsWith("/methodologie/"),

@@ -110,7 +110,7 @@ error-429
 
 ## Méthodologie
 
-Le runtime actuel résout `/methodologie` avec la variante sky dédiée.
+Le runtime actuel résout `/methodologie` avec la variante red dédiée.
 
 La documentation doit suivre ce comportement tant qu'une décision inverse n'est pas appliquée dans le code et les tests.
 
