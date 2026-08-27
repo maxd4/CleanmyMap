@@ -124,44 +124,15 @@ create policy "volunteer_read" on public.gps_points
   );
 ```
 
-### Fonction de calcul de distance (post-traitement)
+### Fonction de calcul de distance (finalisation)
 
-```sql
--- Fonction Haversine pour calculer la distance totale d'une mission
-create or replace function public.compute_mission_distance(p_mission_id uuid)
-returns integer as $$
-declare
-  total_m double precision := 0;
-  prev record;
-  curr record;
-begin
-  for curr in
-    select latitude, longitude, recorded_at
-    from public.gps_points
-    where mission_id = p_mission_id
-    order by recorded_at
-  loop
-    if prev is not null then
-      total_m := total_m + (
-        6371000 * 2 * asin(sqrt(
-          sin(radians(curr.latitude - prev.latitude) / 2) ^ 2 +
-          cos(radians(prev.latitude)) * cos(radians(curr.latitude)) *
-          sin(radians(curr.longitude - prev.longitude) / 2) ^ 2
-        ))
-      );
-    end if;
-    prev := curr;
-  end loop;
-
-  update public.missions
-  set distance_m = total_m::integer,
-      duration_s = extract(epoch from (ended_at - started_at))::integer
-  where id = p_mission_id;
-
-  return total_m::integer;
-end;
-$$ language plpgsql security definer;
-```
+La finalisation est portée par le trigger
+`public.finalize_completed_mission_metrics()` de la migration corrective
+`apps/web/supabase/migrations/20260827100000_clerk_mission_completion_metrics_trigger.sql`.
+Lorsqu'une mission passe à `completed`, ce trigger `BEFORE UPDATE` lit les
+`gps_points` visibles au propriétaire Clerk, calcule la distance Haversine et
+la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
+`SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
 
 ---
 
@@ -188,7 +159,7 @@ sequenceDiagram
 
     Vol->>Vol: Bouton "Fin"
     Vol->>DB: UPDATE mission status='completed', ended_at=now()
-    Vol->>DB: CALL compute_mission_distance()
+    DB->>DB: BEFORE UPDATE trigger<br/>calcule distance + durée
 
     Admin->>DB: SELECT mission + gps_points
     Admin->>Admin: Affiche tracé carte + durée + distance
@@ -204,7 +175,9 @@ sequenceDiagram
 
 4. **Tracking** : un point GPS est enregistré toutes les ~5 minutes. Chaque point est envoyé à Supabase dès que possible (avec retry si hors réseau, stockage local temporaire).
 
-5. **Fin** : la bénévole appuie sur "Fin". `status → completed`, `ended_at` est set. Le calcul de distance est déclenché.
+5. **Fin** : la bénévole appuie sur "Fin". Le buffer GPS est d'abord vidé, puis
+   `status → completed` et `ended_at` sont envoyés. Le trigger serveur calcule
+   les métriques dans la même mise à jour.
 
 6. **Consultation** : le site récupère les points, calcule le tracé (Leaflet/Mapbox), affiche durée et distance.
 

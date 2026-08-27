@@ -94,17 +94,17 @@ Voir `ADR-004`.
 
 ## Finalisation de mission : contrat finalisé puis gelé
 
-Le code mobile appelle après le passage de la mission à `completed` :
+Le mobile effectue le flush des points GPS, puis une seule mise à jour de la
+mission vers `completed` avec `ended_at`. Un trigger `BEFORE UPDATE` serveur
+calcule alors la distance Haversine et la durée dans `NEW`, puis la ligne
+finalisée est renvoyée par le même `.select()`.
 
-`compute_mission_distance` est désormais exécutable par `authenticated` avec un
-contrôle interne strict : `sub` Clerk non vide, mission existante et
-`volunteer_id` correspondant. La fonction est `SECURITY DEFINER` avec
-`search_path = pg_catalog`, écrit les colonnes dérivées côté serveur et ne
-réouvre pas les grants UPDATE mobiles sur `distance_m` ou `duration_s`.
-
-`service_role` conserve son accès opérationnel ; `anon` et `public` n'ont aucun
-EXECUTE. `stopTracking` vérifie explicitement l'erreur RPC et ne retourne pas
-un succès complet lorsque le calcul serveur échoue. Le mobile ne calcule ni la
+La fonction du trigger est `SECURITY INVOKER` avec `search_path = pg_catalog` :
+la lecture des `gps_points` reste donc soumise aux RLS de l'appelant. Le
+propriétaire Clerk peut finaliser sa mission ; un autre utilisateur et `anon`
+ne peuvent pas atteindre cette mise à jour. Les grants mobiles restent limités
+à `status`, `started_at` et `ended_at` ; `distance_m` et `duration_s` ne sont
+jamais directement inscriptibles par le client. Le mobile ne calcule ni la
 distance ni la durée lui-même.
 
 ## Variables d'environnement

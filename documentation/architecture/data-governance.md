@@ -266,15 +266,14 @@ Le grant UPDATE mobile est limité à `status`, `started_at` et `ended_at`.
 surface d'écriture `authenticated`. Le `service_role` conserve ses privilèges
 serveur sans devenir une identité mobile.
 
-La migration
-`apps/web/supabase/migrations/20260826080000_clerk_compute_mission_distance.sql`
-finalise aussi la lecture/calcul propriétaire de distance :
-`compute_mission_distance` vérifie le `sub` Clerk, l'existence de la mission et
-son ownership avant de lire les points GPS. Elle calcule uniquement les points
-de la mission autorisée et écrit `distance_m`/`duration_s` côté fonction
-serveur. `authenticated` reçoit uniquement EXECUTE sur cette fonction ; les
-grants UPDATE directs des colonnes dérivées restent fermés, et `anon`/`public`
-n'ont aucun EXECUTE.
+La migration corrective
+`apps/web/supabase/migrations/20260827100000_clerk_mission_completion_metrics_trigger.sql`
+porte désormais la finalisation des métriques : le trigger
+`finalize_completed_mission_metrics` s'exécute en `SECURITY INVOKER` lors du
+passage à `completed`, lit uniquement les `gps_points` visibles selon les RLS
+du propriétaire Clerk et écrit `distance_m`/`duration_s` dans `NEW`. Le client
+mobile ne reçoit toujours aucun grant UPDATE direct sur les colonnes dérivées
+et l'ancien RPC `compute_mission_distance` est supprimé.
 
 `missions.created_by` est conservé comme provenance potentielle, pas comme
 permission. Le `service_role` reste un moyen technique serveur uniquement ; il
