@@ -1,5 +1,5 @@
 import type { ActionDataContract } from "./data-contract";
-import { evaluateActionQuality } from "./quality";
+import { evaluateActionQuality } from "./quality/quality";
 import { toActionListItem } from "./data-contract";
 import type { ActionImpactLevel, ActionQualityGrade } from "./types";
 

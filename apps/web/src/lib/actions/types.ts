@@ -13,7 +13,7 @@ export type ActionMapViewportQuery = {
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
 export type ActionSourceName = "actions" | "spots" | "local";
 
-import type { ActionDataQualitySummary } from "./data-quality";
+import type { ActionDataQualitySummary } from "./quality/data-quality";
 import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];

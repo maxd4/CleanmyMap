@@ -1,6 +1,6 @@
 import {
   auditActionContract,
-} from "@/lib/actions/data-quality";
+} from "@/lib/actions/quality/data-quality";
 import type {
   ActionDataContract,
   ActionEntityType,

@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from"react";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
-import type { ActionQualityResult } from"@/lib/actions/quality";
+import type { ActionQualityResult } from"@/lib/actions/quality/quality";
 import type {
  ActionListItem,
  ActionMegotsCondition,

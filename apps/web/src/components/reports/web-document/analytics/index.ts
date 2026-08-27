@@ -3,7 +3,7 @@ import {
   mapItemLocationLabel,
   mapItemType,
 } from "@/lib/actions/data-contract";
-import { evaluateActionQuality } from "@/lib/actions/quality";
+import { evaluateActionQuality } from "@/lib/actions/quality/quality";
 import { computeActionImpactKpis, sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
 import { extractArrondissement } from "@/components/sections/rubriques/helpers";

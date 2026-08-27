@@ -37,7 +37,7 @@ directe dans `actions` n'est pas un chemin d'import valide : elle contourne les
 organisateurs, la geometrie persistee et les metadonnees du contrat.
 
 Le resume de qualite est versionne par
-`apps/web/src/lib/actions/data-quality.ts` et distingue :
+`apps/web/src/lib/actions/quality/data-quality.ts` et distingue :
 
 - `measured` : valeur declaree ou relevee sur le terrain ;
 - `derived` : valeur calculee a partir d'autres donnees, notamment l'impact ;

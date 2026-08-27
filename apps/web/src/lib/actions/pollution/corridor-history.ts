@@ -4,7 +4,7 @@ import {
   computePollutionScoresRelativeToReferences,
 } from "./pollution-score";
 import type { ActionDataContract } from "../contracts/contract-model";
-import { auditActionContract } from "../data-quality";
+import { auditActionContract } from "../quality/data-quality";
 import { presentActionPollutionProjection } from "./revisit-priority";
 import type { ProjectionConfidence } from "./projection-confidence";
 

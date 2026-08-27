@@ -75,7 +75,7 @@
 - La revue du formulaire affiche une aide à la relecture et des points d'attention concrets; elle ne présente pas de score ou de grade local comme une mesure de qualité démontrée.
 - La masse de déchets saisie reste la mesure déclarée. `estimateWasteKg()` fournit seulement un repère indicatif séparé, sans pénaliser une valeur qui s'en écarte.
 - La confirmation conserve les mesures déclarées séparément des proxys d'impact. Les proxys affichés réutilisent `computeActionImpactKpis()`; aucune quantité de plastique n'est déduite du poids total sans donnée dédiée.
-- Les statuts, anomalies et provenances du contrat de données restent définis par `apps/web/src/lib/actions/data-quality.ts`; la revue locale ne les duplique pas.
+- Les statuts, anomalies et provenances du contrat de données restent définis par `apps/web/src/lib/actions/quality/data-quality.ts`; la revue locale ne les duplique pas.
 - Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe uniquement s'il est explicitement publié.
 - Les membres ajoutés avant publication sont conservés dans `participantAccounts` puis synchronisés en tant que participations `manual_add`.
 - Les champs de récolte, de validation finale et les calculs d'impact restent réservés au formulaire après action.

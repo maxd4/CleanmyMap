@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from"react";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
-import { evaluateActionQuality } from"@/lib/actions/quality";
+import { evaluateActionQuality } from"@/lib/actions/quality/quality";
 import type { ActionListItem, ActionListResponse } from"@/lib/actions/types";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import {

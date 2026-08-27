@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { evaluateActionQuality } from "@/lib/actions/quality";
+import { evaluateActionQuality } from "@/lib/actions/quality/quality";
 import type {
   ActionRow,
   EventInsertParams,

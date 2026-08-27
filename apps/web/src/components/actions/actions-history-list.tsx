@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
-import { evaluateActionQuality } from "@/lib/actions/quality";
+import { evaluateActionQuality } from "@/lib/actions/quality/quality";
 import { fetchActionOperationAudit } from "@/lib/actions/operation-audit";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { isAdminLikeProfile, normalizeProfileRole } from "@/lib/profiles";

@@ -6,7 +6,7 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildMonthlyActionDataQualityReview,
-} from "@/lib/actions/data-quality";
+} from "@/lib/actions/quality/data-quality";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 
 export const runtime = "nodejs";

@@ -1,6 +1,6 @@
 import type { ActionListItem } from "@/lib/actions/types";
 import type { ActionEditorRecord } from "./http";
-import { evaluateActionQuality } from "./quality";
+import { evaluateActionQuality } from "./quality/quality";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 
 export type PostActionImpactMetric = {
