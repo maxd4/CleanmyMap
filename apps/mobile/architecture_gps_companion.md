@@ -29,102 +29,35 @@ flowchart LR
 
 ---
 
-## 2. Schéma Supabase
+## 2. Architecture courante — Clerk, Supabase Third-Party Auth et RLS
 
-### Table `missions`
+L'application mobile utilise Clerk comme identité canonique, au même titre que
+`apps/web`. Le flux courant est le suivant :
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | `uuid` PK default `gen_random_uuid()` | Identifiant unique |
-| `volunteer_id` | `uuid` FK → `profiles.id` | Bénévole assignée |
-| `created_by` | `uuid` FK → `profiles.id` | Créateur (admin/site) |
-| `label` | `text` | Description courte de la mission |
-| `status` | `text` check `('pending','tracking','completed','cancelled')` | État courant |
-| `started_at` | `timestamptz` | Heure réelle de début (set par l'app) |
-| `ended_at` | `timestamptz` | Heure réelle de fin (set par l'app) |
-| `distance_m` | `integer` | Distance calculée en mètres (post-traitement) |
-| `duration_s` | `integer` | Durée réelle en secondes (`ended_at - started_at`) |
-| `created_at` | `timestamptz` default `now()` | — |
+1. `ClerkProvider` initialise l'application avec le `tokenCache` sécurisé Expo ;
+2. `useAuth` expose l'état de session et l'authentification hébergée Clerk ouvre
+   le parcours de connexion ;
+3. le client Supabase reste le data plane et reçoit le token Clerk courant via
+   Third-Party Auth ; aucune session Supabase Auth n'est créée ou persistée ;
+4. les appels mobiles aux missions et au GPS sont autorisés par les RLS à partir
+   du `sub` Clerk transmis dans le JWT.
 
-```sql
-create table public.missions (
-  id uuid primary key default gen_random_uuid(),
-  volunteer_id uuid references public.profiles(id),
-  created_by uuid references public.profiles(id),
-  label text not null,
-  status text not null default 'pending'
-    check (status in ('pending','tracking','completed','cancelled')),
-  started_at timestamptz,
-  ended_at timestamptz,
-  distance_m integer,
-  duration_s integer,
-  created_at timestamptz not null default now()
-);
+### Tables courantes
 
--- RLS
-alter table public.missions enable row level security;
+| Table | Colonne | Type | Contrat |
+|---|---|---|---|
+| `missions` | `volunteer_id` | `text` | Identifiant propriétaire correspondant au `sub` Clerk |
+| `missions` | `created_by` | `text` | Identifiant Clerk du créateur côté site |
+| `missions` | `status`, `started_at`, `ended_at` | états et timestamps | Seules ces colonnes sont directement modifiables par le mobile |
+| `missions` | `distance_m`, `duration_s` | `integer` | Métriques dérivées finalisées par le trigger serveur |
+| `gps_points` | `mission_id`, coordonnées et timestamps | schéma GPS | Accès autorisé seulement pour une mission appartenant au `sub` Clerk |
 
--- La bénévole voit ses missions
-create policy "volunteer_read" on public.missions
-  for select using (auth.uid() = volunteer_id);
+Les policies courantes ciblent le rôle `authenticated` et rapprochent le
+`sub` du JWT Clerk de `missions.volunteer_id`. Les policies de `gps_points`
+utilisent la même identité par l'intermédiaire de la mission liée. Le mobile
+ne reçoit pas de droit d'écriture sur `distance_m` ou `duration_s`.
 
--- L'app mobile peut update status/started_at/ended_at
-create policy "volunteer_update" on public.missions
-  for update using (auth.uid() = volunteer_id)
-  with check (auth.uid() = volunteer_id);
-```
-
-### Table `gps_points`
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | `bigint` PK generated always as identity | Auto-incrémenté |
-| `mission_id` | `uuid` FK → `missions.id` | Référence mission |
-| `latitude` | `double precision` | — |
-| `longitude` | `double precision` | — |
-| `accuracy_m` | `real` | Précision du fix en mètres |
-| `altitude_m` | `real` | Altitude (nullable) |
-| `recorded_at` | `timestamptz` | Timestamp du fix GPS |
-| `created_at` | `timestamptz` default `now()` | Timestamp d'insertion |
-
-```sql
-create table public.gps_points (
-  id bigint primary key generated always as identity,
-  mission_id uuid not null references public.missions(id) on delete cascade,
-  latitude double precision not null,
-  longitude double precision not null,
-  accuracy_m real,
-  altitude_m real,
-  recorded_at timestamptz not null,
-  created_at timestamptz not null default now()
-);
-
--- Index pour récupérer les points d'une mission rapidement
-create index idx_gps_points_mission on public.gps_points(mission_id, recorded_at);
-
--- RLS
-alter table public.gps_points enable row level security;
-
--- L'app insère des points pour les missions de la bénévole
-create policy "volunteer_insert" on public.gps_points
-  for insert with check (
-    exists (
-      select 1 from public.missions
-      where id = mission_id and volunteer_id = auth.uid()
-    )
-  );
-
--- Lecture par la bénévole et les admins
-create policy "volunteer_read" on public.gps_points
-  for select using (
-    exists (
-      select 1 from public.missions
-      where id = mission_id and volunteer_id = auth.uid()
-    )
-  );
-```
-
-### Fonction de calcul de distance (finalisation)
+### Finalisation des métriques
 
 La finalisation est portée par le trigger
 `public.finalize_completed_mission_metrics()` de la migration corrective
@@ -133,6 +66,21 @@ Lorsqu'une mission passe à `completed`, ce trigger `BEFORE UPDATE` lit les
 `gps_points` visibles au propriétaire Clerk, calcule la distance Haversine et
 la durée, puis renseigne `NEW.distance_m` et `NEW.duration_s`. Il est
 `SECURITY INVOKER` et n'ajoute aucun droit d'écriture client sur ces colonnes.
+
+L'identité Clerk, les RLS missions/GPS et la finalisation des métriques sont
+finalisées puis gelées. Les seuls sujets encore ouverts sont le background
+headless, `mission_actions`, la validation opérationnelle et l'évolution future
+après dégel explicite.
+
+### Proposition historique — non cible actuelle
+
+La première proposition de cette fiche reposait sur Supabase Auth/anonyme, des
+colonnes `profiles` en UUID et des policies de la forme `auth.uid() =
+volunteer_id`. Elle prévoyait également un login Supabase et une finalisation
+ancienne par RPC `compute_mission_distance(uuid)`. Ces éléments sont conservés
+uniquement comme historique de conception : ils ne décrivent ni l'identité,
+ni les policies, ni le flux de métriques courants et ne doivent pas être
+réintroduits comme cible.
 
 ---
 
@@ -169,7 +117,7 @@ sequenceDiagram
 
 1. **Côté site** : l'admin crée la mission, elle passe en `pending`. Le site génère un QR code encodant : `https://monapp.fr/mission/{mission_id}` (deep link universel).
 
-2. **Côté app** : la bénévole scanne le QR. L'app résout le deep link, extrait `mission_id`, vérifie dans Supabase que la mission existe et lui est assignée.
+2. **Côté app** : la bénévole scanne le QR. L'app résout le deep link, extrait `mission_id`, puis les RLS vérifient dans Supabase que le `sub` Clerk courant correspond à la mission assignée.
 
 3. **Début** : l'app met à jour `status → tracking` et `started_at`. Le service de localisation background démarre.
 
@@ -243,7 +191,13 @@ sequenceDiagram
 
 ---
 
-## 7. Recommandation MVP
+## 7. Historique — recommandation MVP initiale
+
+Cette section conserve la recommandation technique initiale pour référence. Elle
+ne constitue pas une nouvelle cible : l'identité Clerk, les RLS missions/GPS et
+la finalisation des métriques sont déjà finalisées puis gelées. Les seuls sujets
+ouverts restent le background headless, `mission_actions`, la validation
+opérationnelle et l'évolution future après dégel explicite.
 
 > [!TIP]
 > **Expo (React Native) avec `expo-location` + `expo-task-manager`**
@@ -266,7 +220,7 @@ sequenceDiagram
 apps/mobile/
 ├── app/
 │   ├── _layout.tsx          # Root layout + auth check
-│   ├── login.tsx            # Auth Supabase (email/magic link)
+│   ├── login.tsx            # Auth Clerk hébergée
 │   ├── scan.tsx             # Scanner QR / réception deep link
 │   └── tracking.tsx         # Écran mission (Début/Fin + status)
 ├── lib/

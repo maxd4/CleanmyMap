@@ -93,9 +93,10 @@ CleanMyMap/
 
 L'application mobile est issue de l'ancien `companion-app` ; cette mention est
 historique et ne désigne pas un projet séparé. Elle est actuellement gelée
-fonctionnellement. L'identité Clerk et la finalisation des métriques par
-trigger invoker sont finalisées puis gelées ; les sujets encore ouverts sont le background headless,
-`mission_actions`, la validation opérationnelle et la future évolution produit.
+fonctionnellement. L'identité Clerk, les RLS missions/GPS et la finalisation des
+métriques par trigger `SECURITY INVOKER` sont finalisées puis gelées. Les seuls
+sujets encore ouverts sont le background headless, `mission_actions`, la
+validation opérationnelle et l'évolution future après dégel explicite.
 
 ## Application web
 
@@ -199,12 +200,21 @@ Ne pas réactiver un ancien import sans vérifier le contrat courant.
 
 `apps/mobile/` assure le suivi GPS natif.
 
-Statut architectural :
+Statut architectural courant :
 
 - surface séparée du workspace web ;
 - même projet Supabase ;
-- identité mobile à aligner avec Clerk ;
-- finalisation de distance à sécuriser.
+- Clerk est l'identité canonique du web et du mobile ;
+- l'app mobile utilise `ClerkProvider`, `useAuth`, l'authentification hébergée
+  Clerk et `tokenCache` ;
+- le token Clerk courant est transmis à Supabase via Third-Party Auth ;
+- les RLS des missions et du GPS rapprochent le `sub` Clerk des identifiants
+  propriétaires ;
+- le trigger courant `SECURITY INVOKER` finalise `distance_m` et `duration_s`.
+
+L'identité Clerk, les RLS et la finalisation des métriques sont finalisées puis
+gelées. Les seuls sujets ouverts sont le background headless, `mission_actions`,
+la validation opérationnelle et l'évolution future après dégel explicite.
 
 Voir ADR-004 et ADR-006.
 
