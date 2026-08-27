@@ -6,7 +6,7 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import {
   appendEmailTestAudit,
   createEmailTestAuditOperationId,
-} from "@/lib/admin/email-test-audit";
+} from "@/lib/admin/audit/email-test-audit";
 import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
 import {

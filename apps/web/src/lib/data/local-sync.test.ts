@@ -8,7 +8,7 @@ vi.mock("@/lib/data/local-store", () => ({
   upsertLocalRecords: upsertLocalRecordsMock,
 }));
 
-vi.mock("@/lib/admin/signalement-moderation", () => ({
+vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   readSignalementForModeration: readSignalementForModerationMock,
 }));
 

@@ -5,7 +5,7 @@ import type {
   ModerationCleanPlaceStatus,
   ModerationEntityType,
   ModerationVisibility,
-} from"@/lib/admin/moderation-client";
+} from"@/lib/admin/moderation/moderation-client";
 import type {
   ActionModerationEditDraft,
   AdminWorkflowController,

@@ -12,7 +12,7 @@ vi.mock("@/lib/reports/report-generation-history-store", () => ({
   persistReportGeneration: persistReportGenerationMock,
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 

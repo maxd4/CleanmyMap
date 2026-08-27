@@ -8,12 +8,12 @@ import type { ActionDataQualitySummary } from "@/lib/actions/data-quality";
 import { normalizeExternalActionImport } from "@/lib/actions/unified-source";
 import { requireAdminAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import {
   createDryRunProof,
   hashImportPayload,
   verifyDryRunProof,
-} from "@/lib/admin/dry-run-proof";
+} from "@/lib/admin/import/dry-run-proof";
 import {
   adminErrorResponse,
   adminSuccessResponse,

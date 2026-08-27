@@ -1,6 +1,6 @@
 import { NextResponse } from"next/server";
 import { requireAdminAccess } from"@/lib/authz";
-import { listAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { listAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { adminErrorResponse, newOperationId } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 

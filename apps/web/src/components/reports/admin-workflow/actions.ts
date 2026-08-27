@@ -4,7 +4,7 @@ import {
  type AdminCleanPlaceEditPayload,
  postAdminModeration,
  type ModerationPayload,
-} from"@/lib/admin/moderation-client";
+} from"@/lib/admin/moderation/moderation-client";
 import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
 import type {
  AsyncState,

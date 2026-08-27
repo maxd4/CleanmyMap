@@ -6,7 +6,7 @@ import { extractRole } from "@/lib/auth/role-resolution";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import {
   getManagedRoleAccountById,
   listManagedRoleAccounts,

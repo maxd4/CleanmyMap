@@ -19,7 +19,7 @@ import type {
   ActionQualityGrade,
   ActionStatus,
 } from "@/lib/actions/types";
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";

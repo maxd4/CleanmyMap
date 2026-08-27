@@ -267,19 +267,19 @@ src/lib/actions/vision.ts(269,15): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(270,15): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(282,20): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(286,19): error TS2532: Object is possibly 'undefined'.
-src/lib/admin/dry-run-proof.ts(37,32): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
-src/lib/admin/dry-run-proof.ts(38,31): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
-src/lib/admin/moderation-client.ts(166,16): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
-src/lib/admin/moderation-client.ts(167,23): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
-src/lib/admin/moderation-client.ts(168,23): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
-src/lib/admin/moderation-client.ts(178,28): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
-src/lib/admin/moderation-client.ts(179,20): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
-src/lib/admin/moderation-client.ts(181,25): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
-src/lib/admin/moderation-client.ts(182,22): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
-src/lib/admin/moderation-client.ts(185,25): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
-src/lib/admin/moderation-client.ts(186,22): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
-src/lib/admin/moderation-client.ts(189,25): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
-src/lib/admin/moderation-client.ts(190,22): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
+src/lib/admin/import/dry-run-proof.ts(37,32): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
+src/lib/admin/import/dry-run-proof.ts(38,31): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
+src/lib/admin/moderation/moderation-client.ts(166,16): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/admin/moderation/moderation-client.ts(167,23): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
+src/lib/admin/moderation/moderation-client.ts(168,23): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/moderation/moderation-client.ts(178,28): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
+src/lib/admin/moderation/moderation-client.ts(179,20): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/moderation/moderation-client.ts(181,25): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
+src/lib/admin/moderation/moderation-client.ts(182,22): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
+src/lib/admin/moderation/moderation-client.ts(185,25): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
+src/lib/admin/moderation/moderation-client.ts(186,22): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
+src/lib/admin/moderation/moderation-client.ts(189,25): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
+src/lib/admin/moderation/moderation-client.ts(190,22): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
 src/lib/admin/promotion-requests-store.ts(57,28): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
 src/lib/admin/promotion-requests-store.ts(57,53): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
 src/lib/admin/promotion-requests-store.ts(58,35): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].

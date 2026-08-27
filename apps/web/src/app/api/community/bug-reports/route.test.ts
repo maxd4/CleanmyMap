@@ -23,7 +23,7 @@ vi.mock("@/lib/authz", () => ({
   getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: vi.fn(),
 }));
 

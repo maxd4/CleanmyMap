@@ -1,6 +1,6 @@
 import { z } from"zod";
 import { requireAdminAccess } from"@/lib/authz";
-import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import {
  adminErrorResponse,
  adminSuccessResponse,

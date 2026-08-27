@@ -99,7 +99,7 @@ vi.mock("@/lib/http/auth-responses", () => ({
   adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 

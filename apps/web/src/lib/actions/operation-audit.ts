@@ -1,4 +1,4 @@
-import type { AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 
 function parseAuditResponse(body: unknown): { items?: AdminOperationAuditEntry[] } {
   if (!body || typeof body !== "object") {

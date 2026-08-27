@@ -35,7 +35,7 @@ vi.mock("@/lib/services/email", () => ({
     error instanceof Error && error.name === "EmailQuotaExceededError",
 }));
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 

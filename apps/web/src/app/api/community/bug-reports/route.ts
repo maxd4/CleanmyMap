@@ -2,7 +2,7 @@ import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
-import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import {
  appendCommunityBugReport,

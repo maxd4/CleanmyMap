@@ -1,11 +1,11 @@
 import { runActionQuery } from "@/lib/actions/query";
 import type { CreatorInboxItem } from "@/lib/community/creator-inbox";
 import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
-import { listAdminOperationAudit, type AdminOperationAuditEntry } from "@/lib/admin/operation-audit";
+import { listAdminOperationAudit, type AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
 import {
   listModeratableSignalements,
   type ModeratableSignalement,
-} from "@/lib/admin/signalement-moderation";
+} from "@/lib/admin/moderation/signalement-moderation";
 import {
   listPublishedPartnerAnnuaireEntries,
   type PublishedPartnerAnnuaireEntry,

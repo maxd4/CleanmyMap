@@ -14,13 +14,13 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/community/creator-inbox-loader", () => ({
   loadCreatorInboxItems: loadCreatorInboxItemsMock,
 }));
-vi.mock("@/lib/admin/signalement-moderation", () => ({
+vi.mock("@/lib/admin/moderation/signalement-moderation", () => ({
   listModeratableSignalements: listModeratableSignalementsMock,
 }));
 vi.mock("@/lib/partners/published-annuaire-entries-store", () => ({
   listPublishedPartnerAnnuaireEntries: listPublishedPartnerAnnuaireEntriesMock,
 }));
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   listAdminOperationAudit: listAdminOperationAuditMock,
 }));
 

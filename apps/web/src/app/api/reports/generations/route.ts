@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   persistReportGeneration,

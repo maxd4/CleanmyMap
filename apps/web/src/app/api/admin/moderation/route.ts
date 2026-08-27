@@ -5,13 +5,13 @@ import {
  actionEditsSchema,
  buildAdminActionUpdates,
  cleanPlaceEditsSchema,
-} from"@/lib/admin/action-moderation-edits";
+} from"@/lib/admin/moderation/action-moderation-edits";
 import { extractActionMetadataFromNotes } from"@/lib/actions/metadata";
 import {
  copyValidatedActionToLocalStore,
  copyValidatedSpotToLocalStore,
 } from"@/lib/data/local-sync";
-import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { emitActionRejected, emitActionValidated, emitSpotValidated } from"@/lib/events/emit";
 import {
  adminErrorResponse,
@@ -34,7 +34,7 @@ import {
  moderateSignalement,
  readSignalementForModeration,
  type ModeratableSignalement,
-} from"@/lib/admin/signalement-moderation";
+} from"@/lib/admin/moderation/signalement-moderation";
 
 export const runtime ="nodejs";
 const MODERATION_CONFIRM_PHRASE ="CONFIRMER MODERATION";

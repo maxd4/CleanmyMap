@@ -4,9 +4,9 @@ import {
   buildActionModerationAuditDetails,
   normalizeModerationReason,
 } from "@/lib/actions/moderation-audit";
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 
-vi.mock("@/lib/admin/operation-audit", () => ({
+vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: vi.fn(),
 }));
 

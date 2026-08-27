@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import {

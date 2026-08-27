@@ -39,4 +39,4 @@ Toutes les API doivent renvoyer un objet JSON cohérent, même en cas d'erreur.
 Toute route sensible (modération, admin, exports) **doit** passer par le Proxy de contrôle situé dans `apps/web/src/proxy.ts`. L'assistant IA ne doit jamais contourner ce proxy pour un accès direct à la DB.
 
 ## 4. Journalisation d'Audit
-Les opérations critiques (suppression, validation d'action, export de masse) doivent être tracées via `lib/admin/operation-audit.ts`. Une opération réussie sur un endpoint admin sans audit log est considérée comme une **rupture de gouvernance**.
+Les opérations critiques (suppression, validation d'action, export de masse) doivent être tracées via `lib/admin/audit/operation-audit.ts`. Une opération réussie sur un endpoint admin sans audit log est considérée comme une **rupture de gouvernance**.

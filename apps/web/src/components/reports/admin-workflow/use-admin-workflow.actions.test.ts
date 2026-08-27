@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from"vitest";
-import { ModerationClientError, postAdminModeration } from"@/lib/admin/moderation-client";
+import { ModerationClientError, postAdminModeration } from"@/lib/admin/moderation/moderation-client";
 import { runImportConfirm, runImportDryRun } from"./services";
 import {
  createAdminWorkflowActions,
@@ -17,10 +17,10 @@ vi.mock("./services", async () => {
  };
 });
 
-vi.mock("@/lib/admin/moderation-client", async () => {
+vi.mock("@/lib/admin/moderation/moderation-client", async () => {
  const actual = await vi.importActual<
- typeof import("@/lib/admin/moderation-client")
- >("@/lib/admin/moderation-client");
+ typeof import("@/lib/admin/moderation/moderation-client")
+ >("@/lib/admin/moderation/moderation-client");
  return {
  ...actual,
  postAdminModeration: vi.fn(),

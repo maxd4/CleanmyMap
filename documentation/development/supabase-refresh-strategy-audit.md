@@ -77,7 +77,7 @@ La règle utile pour la suite est simple:
 Fichiers concernés:
 
 - [`apps/web/src/lib/actions/group-participation.ts`](../../apps/web/src/lib/actions/group-participation.ts)
-- [`apps/web/src/lib/admin/operation-audit.ts`](../../apps/web/src/lib/admin/operation-audit.ts)
+- [`apps/web/src/lib/admin/audit/operation-audit.ts`](../../apps/web/src/lib/admin/audit/operation-audit.ts)
 - [`apps/web/src/lib/auth/sync.ts`](../../apps/web/src/lib/auth/sync.ts)
 - [`apps/web/src/lib/admin/role-management.ts`](../../apps/web/src/lib/admin/role-management.ts)
 - [`apps/web/src/lib/authz.ts`](../../apps/web/src/lib/authz.ts)
