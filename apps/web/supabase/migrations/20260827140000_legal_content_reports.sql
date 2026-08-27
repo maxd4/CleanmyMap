@@ -34,12 +34,7 @@ create index if not exists legal_content_reports_creator_state_idx
 
 revoke all privileges on table public.legal_content_reports from anon, authenticated;
 revoke all privileges on table public.legal_content_reports from service_role;
-grant all privileges on table public.legal_content_reports to service_role;
+grant select, insert, update, delete on table public.legal_content_reports to service_role;
 
 alter table public.legal_content_reports enable row level security;
 drop policy if exists legal_content_reports_service_only on public.legal_content_reports;
-create policy legal_content_reports_service_only
-on public.legal_content_reports
-for all
-using ((select auth.role()) = 'service_role')
-with check ((select auth.role()) = 'service_role');

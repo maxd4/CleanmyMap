@@ -36,10 +36,22 @@ describe("legal content report public contracts", () => {
     expect(legalSection).not.toContain("Signaler un abus");
   });
 
-  it("keeps the migration service-only and without public table privileges", () => {
+  it("keeps both migrations server-only without deprecated auth.role policies", () => {
     expect(migration).toContain("revoke all privileges on table public.legal_content_reports from anon, authenticated");
+    expect(migration).toContain("revoke all privileges on table public.legal_content_reports from service_role");
+    expect(migration).toContain("grant select, insert, update, delete on table public.legal_content_reports to service_role");
     expect(migration).toContain("alter table public.legal_content_reports enable row level security");
-    expect(migration).toContain("with check ((select auth.role()) = 'service_role')");
+    expect(migration).toContain("drop policy if exists legal_content_reports_service_only");
+    expect(migration).not.toContain("auth.role()");
+    expect(migration).not.toContain("create policy legal_content_reports_service_only");
+
+    expect(decisionsMigration).toContain("revoke all privileges on table public.legal_content_report_decisions from anon, authenticated");
+    expect(decisionsMigration).toContain("revoke all privileges on table public.legal_content_report_decisions from service_role");
+    expect(decisionsMigration).toContain("grant select, insert, update, delete on table public.legal_content_report_decisions to service_role");
+    expect(decisionsMigration).toContain("alter table public.legal_content_report_decisions enable row level security");
+    expect(decisionsMigration).toContain("drop policy if exists legal_content_report_decisions_service_only");
+    expect(decisionsMigration).not.toContain("auth.role()");
+    expect(decisionsMigration).not.toContain("create policy legal_content_report_decisions_service_only");
   });
 
   it("keeps administrative decisions separated, bounded and auditable", () => {
