@@ -54,4 +54,39 @@ describe("InboxItemCard state actions", () => {
     expect(markup).toContain('maxLength="500"');
     expect((markup.match(/disabled=""/g) ?? []).length).toBe(4);
   });
+
+  it("keeps legal content notifications read-only in the shared inbox", () => {
+    const markup = renderToStaticMarkup(
+      <InboxItemCard
+        item={{
+          ...feedbackItem,
+          id: "legal-report-1",
+          source: "legal_content_report",
+          sourceLabel: "Notification de contenu illicite",
+          title: "Notification de contenu potentiellement illicite",
+          context: "Motif circonstancié",
+          canDelete: false,
+        }}
+        locale="fr"
+        copy={getCreatorInboxCopy("fr")}
+        copiedKey={null}
+        promotionReason=""
+        onPromotionReasonChange={vi.fn()}
+        partnerReason=""
+        onPartnerReasonChange={vi.fn()}
+        actionReason=""
+        onActionReasonChange={vi.fn()}
+        actionBusy={() => false}
+        onCopySummary={vi.fn()}
+        onAcceptPromotion={vi.fn()}
+        onRejectPromotion={vi.fn()}
+        onAcceptPartner={vi.fn()}
+        onRejectPartner={vi.fn()}
+        onApplyInboxAction={vi.fn()}
+      />,
+    );
+
+    expect(markup).not.toContain("Motif de traitement");
+    expect(markup).not.toContain("Marquer traité");
+  });
 });

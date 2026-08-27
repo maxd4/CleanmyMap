@@ -8,6 +8,7 @@ export const BOT_ID_BASIC_PROTECTED_PATHS = [
   "/api/gamification/quiz/pedagogical-metrics",
   "/api/actions",
   "/api/community/events",
+  "/api/legal-content-reports",
 ] as const;
 
 export const BOT_ID_BASIC_PROTECTED_ROUTES = BOT_ID_BASIC_PROTECTED_PATHS.map(

@@ -16,6 +16,7 @@ type Summary = {
   promotion: number;
   partner: number;
   event: number;
+  legalContentReport: number;
 };
 
 export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
@@ -47,6 +48,7 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       promotion: items.filter((item) => item.source === "promotion").length,
       partner: items.filter((item) => item.source === "partner").length,
       event: items.filter((item) => item.source === "event").length,
+      legalContentReport: items.filter((item) => item.source === "legal_content_report").length,
     }),
     [items],
   );

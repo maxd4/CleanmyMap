@@ -100,6 +100,14 @@ export default function ConditionsGeneralesUtilisationPage() {
             Lorsque l&apos;historique public doit être conservé pour l&apos;intérêt
             collectif, les contenus peuvent être anonymisés ou agrégés.
           </p>
+          <p className="text-sm leading-6 text-slate-600">
+            Pour transmettre une notification électronique concernant un contenu
+            potentiellement illicite, utilisez le{" "}
+            <Link href="/signaler-contenu-illicite" className="font-medium text-emerald-700 hover:underline">
+              formulaire dédié
+            </Link>
+            .
+          </p>
         </section>
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">

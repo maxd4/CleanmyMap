@@ -115,6 +115,21 @@ export default function MentionsLegalesPage() {
               .
             </p>
           </div>
+
+          <Link
+            href="/signaler-contenu-illicite"
+            className="rounded-3xl border border-amber-200 bg-amber-50 p-5 transition hover:border-amber-300 hover:bg-amber-100"
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
+              Notification électronique
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-slate-950">
+              Signaler un contenu potentiellement illicite
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Accéder au formulaire de notification circonstanciée et retrouver les informations utiles.
+            </p>
+          </Link>
         </section>
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">

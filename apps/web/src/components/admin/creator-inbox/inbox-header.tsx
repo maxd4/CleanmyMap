@@ -9,6 +9,7 @@ type InboxHeaderProps = {
     promotion: number;
     partner: number;
     event: number;
+    legalContentReport: number;
   };
   copy: CreatorInboxCopy;
 };
@@ -34,7 +35,7 @@ export function InboxHeader({ itemsCount, summary, copy }: InboxHeaderProps) {
         <p className="cmm-text-caption cmm-text-muted">
           {copy.panel.feedbackLabel}: {summary.feedback} · {copy.panel.promotionLabel}:{" "}
           {summary.promotion} · {copy.panel.partnerLabel}: {summary.partner} ·{" "}
-          {copy.panel.eventLabel}: {summary.event}
+          {copy.panel.eventLabel}: {summary.event} · L: {summary.legalContentReport}
         </p>
       </div>
     </div>

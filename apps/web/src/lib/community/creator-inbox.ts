@@ -3,8 +3,9 @@ import type { PromotionRequestRecord } from "@/lib/admin/promotion-requests-stor
 import type { PartnerOnboardingRequestRecord } from "@/lib/partners/onboarding-requests-store";
 import type { ClerkUserIdentity } from "@/lib/services/clerk";
 import type { CommunityEventRow } from "@/types/database";
+import type { LegalContentReportRecord } from "@/lib/legal-content-report/legal-content-report";
 
-export type CreatorInboxSource = "feedback" | "promotion" | "partner" | "event";
+export type CreatorInboxSource = "feedback" | "promotion" | "partner" | "event" | "legal_content_report";
 
 export type CreatorInboxStatus =
   | "new"
@@ -57,6 +58,7 @@ const SOURCE_LABELS: Record<CreatorInboxSource, { fr: string; en: string }> = {
   promotion: { fr: "Promotion", en: "Promotion" },
   partner: { fr: "Partenariat", en: "Partnership" },
   event: { fr: "Événement", en: "Event" },
+  legal_content_report: { fr: "Notification de contenu illicite", en: "Illegal content notification" },
 };
 
 function normalizeCreatorState(
@@ -296,5 +298,50 @@ export function buildEventInboxItem(
     canDelete: false,
     canReview: false,
     hasReplyTarget: false,
+  };
+}
+
+export function buildLegalContentReportInboxItem(
+  record: LegalContentReportRecord,
+): CreatorInboxItem {
+  const status: CreatorInboxStatus =
+    record.creatorState === "responded" ||
+    record.creatorState === "treated" ||
+    record.creatorState === "archived"
+      ? record.creatorState
+      : "new";
+  const sourceLabel = SOURCE_LABELS.legal_content_report.fr;
+  return {
+    id: `legal-content-report-${record.id}`,
+    source: "legal_content_report",
+    sourceLabel,
+    sourceRecordId: record.id,
+    title: "Notification de contenu potentiellement illicite",
+    subtitle: record.contentType,
+    authorName: record.notifierName ?? "Déclarant non identifié",
+    authorEmail: record.notifierEmail,
+    authorRole: null,
+    createdAt: record.createdAt,
+    pagePath: "/signaler-contenu-illicite",
+    status,
+    sourceStatus: record.status,
+    priority: "high",
+    context: record.allegationReason,
+    details: [
+      ...buildCommonDetails({
+        sourceLabel,
+        sourceStatus: record.status,
+        pagePath: "/signaler-contenu-illicite",
+        createdAt: record.createdAt,
+        authorRole: null,
+      }),
+      { label: "URL du contenu", value: record.contentUrl },
+      { label: "Identifiant technique", value: record.contentId ?? "non communiqué" },
+      { label: "Bonne foi confirmée", value: "oui" },
+      { label: "Exception d'identité", value: record.identityExceptionReason ? "invoquée" : "non" },
+    ],
+    canDelete: false,
+    canReview: false,
+    hasReplyTarget: Boolean(record.notifierEmail),
   };
 }

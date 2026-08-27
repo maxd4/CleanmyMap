@@ -5,7 +5,6 @@ import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, Arrow
 import type { LucideIcon } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
 type LegalCard = {
@@ -186,7 +185,7 @@ export function LegalSection() {
              </RubriqueCard>
            </Link>
 
-           <div className="block group">
+           <Link href="/signaler-contenu-illicite" className="block group">
              <RubriqueCard 
                themeColor="amber" 
                withTopBar={false} 
@@ -197,15 +196,13 @@ export function LegalSection() {
                      <AlertTriangle size={20} />
                   </div>
                   <div className="space-y-1">
-                     <h4 className="text-sm font-black text-white uppercase tracking-widest">Signaler un abus</h4>
-                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contenu inapproprié ou illégal</p>
+                     <h4 className="text-sm font-black text-white uppercase tracking-widest">Signaler un contenu illicite</h4>
+                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Notification électronique circonstanciée</p>
                   </div>
                </div>
-               <CmmButton tone="tertiary" variant="pill" className="relative z-10 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
-                  Formulaire
-               </CmmButton>
+               <ExternalLink size={18} className="text-slate-600 group-hover:text-white group-hover:scale-110 transition-all relative z-10" />
              </RubriqueCard>
-           </div>
+           </Link>
         </div>
       </div>
     </SectionShell>

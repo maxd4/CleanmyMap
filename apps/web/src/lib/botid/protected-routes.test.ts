@@ -16,8 +16,9 @@ describe("BotID protected route contract", () => {
       "/api/gamification/quiz/pedagogical-metrics",
       "/api/actions",
       "/api/community/events",
+      "/api/legal-content-reports",
     ]);
-    expect(BOT_ID_BASIC_PROTECTED_ROUTES).toHaveLength(9);
+    expect(BOT_ID_BASIC_PROTECTED_ROUTES).toHaveLength(10);
     expect(BOT_ID_BASIC_PROTECTED_ROUTES).toEqual(
       expect.arrayContaining(
         BOT_ID_BASIC_PROTECTED_PATHS.map((path) => ({
