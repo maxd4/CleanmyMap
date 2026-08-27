@@ -439,6 +439,38 @@ Ne pas lancer une refonte UI importante pour masquer une architecture métier en
 
 ## 15. Dette structurelle et modularisation
 
+### Restructuration en trois niveaux
+
+Une restructuration ne se limite jamais aux déplacements de fichiers. Toute
+restructuration importante doit distinguer les trois niveaux suivants, dans cet
+ordre :
+
+1. **Structure physique** : vérifier l'emplacement cohérent des fichiers, le
+   regroupement par responsabilité ou domaine, la suppression d'un legacy
+   prouvé et la colocation des tests lorsque cela est pertinent.
+2. **Architecture logique** : après stabilisation de l'arborescence, auditer
+   les dépendances et cycles, les directions d'import autorisées, les API
+   publiques et implémentations internes, la duplication de logique/types/
+   constantes, le dead code et les façades inutiles, les monolithes par
+   responsabilité, les frontières Server/Client, le nommage ambigu et les
+   sources canoniques.
+3. **Gouvernance** : à la fin d'une restructuration importante, ajouter
+   uniquement les garde-fous architecturaux utiles, auditer les dépendances
+   npm, workspaces et configurations, aligner la documentation canonique,
+   produire un nouvel inventaire structurel et exécuter une validation
+   globale.
+
+Ne pas créer mécaniquement de `index.ts`, de façade ou de sous-dossier, et ne
+pas déplacer pour l'esthétique seule. Préserver les contrats publics utiles,
+privilégier une forte cohésion et un faible couplage. Les petits lots physiques
+doivent rester courts ; les passes logiques et de gouvernance transversales
+interviennent après stabilisation de l'arborescence, sans imposer toutes ces
+passes à chaque petit lot.
+
+Les règles détaillées de dette structurelle, de modularisation, de suppression,
+de documentation et de validation de ce contrat s'appliquent à chacun de ces
+niveaux.
+
 Lorsqu'un chantier traverse un fichier ou dossier :
 
 - trop couplé ;
