@@ -160,6 +160,7 @@ $pythonRelevant = [bool]$policy.pythonRelevant
 Invoke-ParallelSteps @(
     [pscustomobject]@{ Label = "security:secrets"; Command = "npm run security:secrets" },
     [pscustomobject]@{ Label = "check:root-files"; Command = "npm run check:root-files" },
+    [pscustomobject]@{ Label = "check:gitnexus-hygiene"; Command = "npm run check:gitnexus-hygiene" },
     [pscustomobject]@{ Label = "check:doc-governance"; Command = "npm run check:doc-governance" },
     [pscustomobject]@{ Label = "check:stack-doc-drift"; Command = "npm run check:stack-doc-drift" },
     [pscustomobject]@{ Label = "check:agent-skills"; Command = "npm run check:agent-skills" },
