@@ -225,7 +225,7 @@ Clerk se trouve à la frontière auth. Les usages serveur et middleware augmente
 - `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` — Clerk client
 - `apps/web/src/components/sections/rubriques/feedback/questionnaire-card.tsx` — Clerk client
 - `apps/web/src/components/sections/rubriques/guide-section.tsx` — Clerk client
-- `apps/web/src/components/sections/rubriques/use-annuaire-logic.ts` — Clerk client
+- `apps/web/src/components/sections/rubriques/annuaire/use-annuaire-logic.ts` — Clerk client
 - `apps/web/src/components/sections/rubriques/use-kit-data.ts` — Clerk client
 - `apps/web/src/components/sections/rubriques/use-weather-data.ts` — Clerk client
 - `apps/web/src/components/ui/clerk-required-gate.tsx` — Clerk gate
@@ -425,7 +425,7 @@ Leaflet et react-leaflet gonflent le bundle client. Le coût principal est le tr
 - `apps/web/src/components/actions/smart-routing-map.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/maps/territory-map-comparison-cards.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/missions/mission-map.tsx` — Leaflet, React Leaflet
-- `apps/web/src/components/sections/rubriques/annuaire-map-canvas.tsx` — Leaflet, React Leaflet
+- `apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx` — Leaflet, React Leaflet
 - `apps/web/src/components/sections/rubriques/compost-map-canvas.tsx` — Leaflet, React Leaflet
 - `apps/web/src/types/leaflet-draw.d.ts` — Leaflet, Leaflet Draw
 

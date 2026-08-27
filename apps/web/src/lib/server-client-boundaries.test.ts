@@ -109,6 +109,7 @@ describe("Server/Client boundaries", () => {
         "components",
         "sections",
         "rubriques",
+        "annuaire",
         "annuaire-map-canvas.tsx",
       ),
       "utf8",

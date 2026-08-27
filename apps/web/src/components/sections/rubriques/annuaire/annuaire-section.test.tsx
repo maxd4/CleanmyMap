@@ -6,7 +6,7 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),
 }));
 
-vi.mock("@/components/sections/rubriques/use-annuaire-logic", () => ({
+vi.mock("@/components/sections/rubriques/annuaire/use-annuaire-logic", () => ({
   useAnnuaireLogic: () => ({
     searchTerm: "",
     setSearchTerm: vi.fn(),
@@ -20,19 +20,19 @@ vi.mock("@/components/sections/rubriques/shared", () => ({
     React.createElement("section", null, children),
 }));
 
-vi.mock("@/components/sections/rubriques/academie-climat-workshops-panel", () => ({
+vi.mock("@/components/sections/rubriques/annuaire/academie-climat-workshops-panel", () => ({
   AcademieClimatWorkshopsPanel: () => React.createElement("div"),
 }));
 
-vi.mock("@/components/sections/rubriques/annuaire-featured-section", () => ({
+vi.mock("@/components/sections/rubriques/annuaire/annuaire-featured-section", () => ({
   AnnuaireFeaturedSection: () => React.createElement("div"),
 }));
 
-vi.mock("@/components/sections/rubriques/annuaire-thematic-exploration", () => ({
+vi.mock("@/components/sections/rubriques/annuaire/annuaire-thematic-exploration", () => ({
   AnnuaireThematicExploration: () => React.createElement("div"),
 }));
 
-vi.mock("@/components/sections/rubriques/annuaire-exploration-view", () => ({
+vi.mock("@/components/sections/rubriques/annuaire/annuaire-exploration-view", () => ({
   AnnuaireExplorationView: () => React.createElement("div"),
 }));
 

@@ -1,4 +1,4 @@
-import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
+import { hasRecentActivity } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";

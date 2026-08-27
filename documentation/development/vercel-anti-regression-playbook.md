@@ -83,8 +83,8 @@ Pattern retenu:
 
 Les cartes lourdes ne doivent pas être chargées au montage si leur zone n'est pas encore visible:
 
-- [apps/web/src/components/sections/rubriques/annuaire-sidebar.tsx](../../apps/web/src/components/sections/rubriques/annuaire-sidebar.tsx)
-- [apps/web/src/components/sections/rubriques/annuaire-exploration-view.tsx](../../apps/web/src/components/sections/rubriques/annuaire-exploration-view.tsx)
+- [apps/web/src/components/sections/rubriques/annuaire/annuaire-sidebar.tsx](../../apps/web/src/components/sections/rubriques/annuaire/annuaire-sidebar.tsx)
+- [apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx](../../apps/web/src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx)
 - [apps/web/src/components/sections/rubriques/compost-section.tsx](../../apps/web/src/components/sections/rubriques/compost-section.tsx)
 - [apps/web/src/components/actions/map-feed/actions-map-feed.tsx](../../apps/web/src/components/actions/map-feed/actions-map-feed.tsx)
 

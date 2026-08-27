@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 
 const seedFiles = [
-  "./annuaire/seed-associations.ts",
-  "./annuaire/seed-entreprises.ts",
-  "./annuaire/seed-evenements.ts",
+  "./seed-associations.ts",
+  "./seed-entreprises.ts",
+  "./seed-evenements.ts",
 ];
 
 const forbiddenSeedKeys =
@@ -21,15 +21,15 @@ describe("annuaire editorial seed contract", () => {
 
   it("keeps removed qualitative seed records out of the source contract", () => {
     const source = readFileSync(
-      new URL("./annuaire/seed-associations.ts", import.meta.url),
+      new URL("./seed-associations.ts", import.meta.url),
       "utf8",
     );
     const enterpriseSource = readFileSync(
-      new URL("./annuaire/seed-entreprises.ts", import.meta.url),
+      new URL("./seed-entreprises.ts", import.meta.url),
       "utf8",
     );
     const eventSource = readFileSync(
-      new URL("./annuaire/seed-evenements.ts", import.meta.url),
+      new URL("./seed-evenements.ts", import.meta.url),
       "utf8",
     );
     const combinedSource = `${source}\n${enterpriseSource}\n${eventSource}`;

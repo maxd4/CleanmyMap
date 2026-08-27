@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 import {
   compareAnnuaireEntries,
   getAssociationProfile,

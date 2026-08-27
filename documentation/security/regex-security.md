@@ -180,7 +180,7 @@ function collectHumanStrings(raw: string): string[] {
 | `lib/supabase/server.ts` | `startsWith("https://")` | `hasHttpsProtocol()` avec `new URL()` |
 | `lib/supabase/client.ts` | `startsWith("https://")` | `hasHttpsProtocol()` avec `new URL()` |
 | `lib/persistence/runtime-store.ts` | `startsWith("https://")` | `hasHttpsProtocol()` avec `new URL()` |
-| `components/sections/rubriques/academie-climat-workshops.test.ts` | `startsWith("https://www...")` | `new URL().hostname` |
+| `components/sections/rubriques/annuaire/academie-climat-workshops.test.ts` | `startsWith("https://www...")` | `new URL().hostname` |
 
 ## Checklist pour les revues de code
 
