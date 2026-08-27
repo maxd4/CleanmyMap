@@ -43,7 +43,6 @@ La page charge en parallèle :
 pilotage overview sur 90 j
 jusqu'à 2 200 actions approuvées
 événements communautaires
-météo Open-Meteo avec revalidation 900 s
 ```
 
 ## Fonctionnalités
@@ -57,9 +56,12 @@ météo Open-Meteo avec revalidation 900 s
 - méthode KPI ;
 - données d'actions ;
 - événements communautaires ;
-- météo ;
 - génération de document ;
 - exports pour profils autorisés.
+
+La météo et la logistique ne font pas partie du contrat `/reports` et ne
+conditionnent pas la génération d'un rapport d'impact. Elles restent des
+capacités produit séparées.
 
 ## Sémantique des indicateurs visibles
 
@@ -193,8 +195,13 @@ Règles :
 visiteur anonyme → gate flouté
 compte connecté standard → rapports sans génération admin
 profil admin-like → génération et exports
-échec de chargement → données de repli
+Analyse indisponible → erreur explicite, sans faux modèle zéro
+historique indisponible → erreur explicite, sans faux état vide
 ```
+
+Une Analyse chargée avec succès peut afficher des zéros réels. De même,
+« Aucun rapport généré » n'est affiché qu'après une lecture réussie sans ligne;
+une erreur de lecture affiche « Historique temporairement indisponible ».
 
 ## Statut documentaire
 

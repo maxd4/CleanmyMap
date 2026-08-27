@@ -21,7 +21,6 @@ import type { ReportModel } from "@/lib/reports/report-model/types";
 export type ReportsWebDocumentPreviewProps = {
   report: ReportModel;
   activeScopeLabel: string;
-  weatherAdvice: string;
   showPreview: boolean;
   previewRef: RefObject<HTMLDivElement | null>;
   onTogglePreview: () => void;
@@ -38,7 +37,6 @@ export type ReportsWebDocumentPreviewProps = {
 export function ReportsWebDocumentPreview({
   report,
   activeScopeLabel,
-  weatherAdvice,
   showPreview,
   previewRef,
   onTogglePreview,
@@ -234,7 +232,6 @@ export function ReportsWebDocumentPreview({
               id="synthese-executive"
               report={report}
               activeScopeLabel={activeScopeLabel}
-              weatherAdvice={weatherAdvice}
             />
           </div>
         ) : null}

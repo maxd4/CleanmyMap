@@ -38,7 +38,6 @@ function createProps(
   return {
     report,
     activeScopeLabel: "Global",
-    weatherAdvice: "Conditions stables.",
     showPreview: false,
     previewRef: { current: null },
     onTogglePreview: vi.fn(),
@@ -101,7 +100,6 @@ describe("ReportsWebDocumentPreview", () => {
         id: "synthese-executive",
         report,
         activeScopeLabel: "Global",
-        weatherAdvice: "Conditions stables.",
       }),
       undefined,
     );

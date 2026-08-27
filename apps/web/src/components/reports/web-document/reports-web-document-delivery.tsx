@@ -30,6 +30,7 @@ export type ReportsWebDocumentDeliveryProps = {
 
 export type ReportsWebDocumentDeliveryHistoryProps = {
   recentRows: ReportGenerationHistoryRow[];
+  historyAvailability?: "available" | "unavailable";
   actionStateById?: Record<string, ReportGenerationHistoryActionState>;
   onView: (id: string) => void;
   onReexport: (id: string) => void;
@@ -137,6 +138,7 @@ export function ReportsWebDocumentDelivery({
 
 export function ReportsWebDocumentDeliveryHistory({
   recentRows,
+  historyAvailability = "available",
   actionStateById = {},
   onView,
   onReexport,
@@ -150,7 +152,14 @@ export function ReportsWebDocumentDeliveryHistory({
         </div>
       </div>
 
-      {recentRows.length === 0 ? (
+      {historyAvailability === "unavailable" ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-8 text-center text-sm font-semibold text-amber-900"
+        >
+          Historique temporairement indisponible
+        </p>
+      ) : recentRows.length === 0 ? (
         <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">
           Aucun rapport généré
         </p>

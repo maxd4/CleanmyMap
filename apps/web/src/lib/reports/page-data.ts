@@ -54,7 +54,7 @@ export async function loadReportsAnalysisData(now = new Date()) {
 }
 
 export async function loadReportsGenerationData() {
-  const [contractsResult, weather, communityEventsResult] = await Promise.all([
+  const [contractsResult, communityEventsResult] = await Promise.all([
     import("@/lib/actions/unified-source-cache").then(
       ({ fetchCachedUnifiedActionContracts }) =>
         fetchCachedUnifiedActionContracts({
@@ -65,23 +65,6 @@ export async function loadReportsGenerationData() {
           types: null,
         }),
     ),
-    fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
-      { next: { revalidate: REPORT_DATA_BUDGET.weather.revalidateSeconds } },
-    )
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-        return response.json() as Promise<{
-          current?: {
-            temperature_2m?: number;
-            precipitation?: number;
-            wind_speed_10m?: number;
-          };
-        }>;
-      })
-      .catch(() => null),
     loadCachedReportCommunityEvents(REPORT_DATA_BUDGET.communityEvents.limit)
       .then((items) => ({ items, availability: "available" as const }))
       .catch(() => ({ items: [], availability: "unavailable" as const })),
@@ -92,7 +75,6 @@ export async function loadReportsGenerationData() {
     contracts: contractsResult.items,
     isTruncated: contractsResult.isTruncated,
     sourceHealth: contractsResult.sourceHealth,
-    weather,
     communityEvents,
     communityEventsAvailability: communityEventsResult.availability,
   };
@@ -163,14 +145,4 @@ export function buildReportsSummaryKpis(
     deltaPercent: kpi.deltaPercent ?? "",
     interpretation: kpi.interpretation ?? "neutral",
   })) as [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi];
-}
-
-export function buildEmptyReportsModel() {
-  return computeReportModel({
-    allItems: [],
-    approvedItems: [],
-    mapItems: [],
-    events: [],
-    moderationAvailability: "unavailable",
-  });
 }

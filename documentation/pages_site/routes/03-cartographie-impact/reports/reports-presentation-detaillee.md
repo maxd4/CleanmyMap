@@ -7,10 +7,11 @@
 - **Rôle** : comparer une fenêtre d'actions validées, lire les indicateurs
   calculés et accéder à la méthode KPI selon les droits du profil.
 - **Périmètre** : synthèse du `ReportModel`, tendances mensuelles, méthode,
-  événements, météo, génération et exports autorisés.
+  événements, génération et exports autorisés. La météo et la logistique sont
+  hors du contrat Reports.
 - **États à documenter** : visiteur anonyme avec aperçu flouté, compte connecté,
-  profil incomplet, accès génération réservé, données de repli en cas d'échec
-  de chargement.
+  profil incomplet, accès génération réservé, indisponibilité explicite
+  d'Analyse ou de l'historique, et données optionnelles indisponibles.
 - **Composants concernés** : `ReportsAnalysisDashboard`, `AnalyticsCockpit`,
   `KpiMethodBlock`, `ReportsPageTabs` et les flux de génération/export
   existants.

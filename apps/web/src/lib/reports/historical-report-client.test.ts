@@ -64,7 +64,8 @@ describe("historical report client", () => {
 
   it("keeps two history rows addressed to their own IDs", async () => {
     const secondId = "22222222-2222-4222-8222-222222222222";
-    const fetchMock = vi.fn((url: string) => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
       const selected = url.endsWith(secondId) ? { ...generation, id: secondId } : generation;
       return Promise.resolve(new Response(JSON.stringify({ generation: selected }), { status: 200 }));
     });

@@ -10,14 +10,12 @@ type ReportCoverProps = {
   id?: string;
   report: ReportModel;
   activeScopeLabel: string;
-  weatherAdvice: string;
 };
 
 export function ReportCover({
   id = "synthese-executive",
   report,
   activeScopeLabel,
-  weatherAdvice,
 }: ReportCoverProps) {
   const narrative = buildExecutiveNarrative(report);
   const topArea = report.areas[0];
@@ -185,7 +183,6 @@ export function ReportCover({
               Qualité de données: {toFrNumber(report.quality.completenessScore)}% complétude,{" "}
               {toFrNumber(report.quality.coherenceScore)}% cohérence.
             </p>
-            <p className="mt-2 cmm-text-small cmm-text-secondary">{weatherAdvice}</p>
           </article>
         </div>
       </div>

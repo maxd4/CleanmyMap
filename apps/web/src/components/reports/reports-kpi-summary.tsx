@@ -64,7 +64,7 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
             Synthèse d&apos;Impact Scientifique
           </h2>
           <p className="mt-2 text-sm font-semibold text-slate-500">
-            Indicateurs consolidés en temps réel.{" "}
+            Indicateurs consolidés.{" "}
             <a
               href="/methodologie"
               className="text-red-600 underline decoration-red-500/30 underline-offset-4 transition-colors hover:text-red-700"

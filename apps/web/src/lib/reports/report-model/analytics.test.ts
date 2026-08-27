@@ -7,7 +7,6 @@ import {
  buildRouteSteps,
  computeReportModel,
  computeCommunityEngagementMetrics,
- getWeatherAdvice,
 } from "@/lib/reports/report-model";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 
@@ -301,16 +300,6 @@ describe("reports web analytics", () => {
  });
 
  expect(metrics.sourceBuckets).toEqual({ citoyen: 0, associatif: 0, institutionnel: 0 });
- });
-
- it("returns weather advice by risk thresholds", () => {
- expect(getWeatherAdvice({ temperature: 20, rain: 4, wind: 10 })).toContain("prudent");
- expect(getWeatherAdvice({ temperature: 30, rain: 0, wind: 10 })).toContain("chaud");
- expect(getWeatherAdvice({ temperature: 1, rain: 0, wind: 10 })).toContain("froid");
- });
-
- it("does not turn unavailable weather into a cold-weather signal", () => {
- expect(getWeatherAdvice({ temperature: null, rain: null, wind: null })).toContain("indisponible");
  });
 
  it("builds a narrative suitable for an institutional cover", () => {

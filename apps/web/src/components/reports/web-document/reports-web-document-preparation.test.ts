@@ -105,7 +105,6 @@ const reportModel = {
     calendar: [],
   },
   dataAvailability: {},
-  weatherAdvice: "Conditions stables.",
   wasteProfile: { dominantLabel: "Plastique", coveragePercent: 100, categories: [] },
   accountScopeCoverage: { coveragePercent: 100 },
   exportRows: [],
@@ -181,7 +180,7 @@ describe("ReportsWebDocumentPreparation", () => {
     );
 
     expect(markup).toContain("Préparer le rapport");
-    expect(markup).toContain("Historique complet: la vue actuelle charge jusqu");
+    expect(markup).toContain("Historique disponible — plafonné à");
     expect(markup).toContain("1000 actions approuvées");
     expect(markup).toContain("Périmètre géographique");
     expect(markup).toContain("Modules optionnels");
@@ -213,7 +212,6 @@ describe("ReportsWebDocumentPreparation", () => {
       contracts: [approvedContract, pendingContract],
       isTruncated: true,
       communityEvents: [],
-      weather: null,
     } as unknown as ReportsWebDocumentProps;
 
     const markup = renderToStaticMarkup(React.createElement(ReportsWebDocument, props));
@@ -223,7 +221,6 @@ describe("ReportsWebDocumentPreparation", () => {
         initialContracts: [approvedContract],
         initialIsTruncated: true,
         initialCommunityEvents: [],
-        initialWeather: null,
       }),
     );
     const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
@@ -242,6 +239,8 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(exportOptions.data.summary).toContain(
       "Modules optionnels inclus: Données & cartographie, Transparence & méthodes, Fichiers détaillés.",
     );
+    expect(exportOptions.data).not.toHaveProperty("weather");
+    expect(JSON.stringify(exportOptions.data)).not.toMatch(/weather|météo/i);
     expect(markup).toContain("Générer le rapport");
 
     const fetchMock = vi.fn().mockResolvedValue({
@@ -294,7 +293,6 @@ describe("ReportsWebDocumentPreparation", () => {
       React.createElement(ReportsWebDocument, {
         contracts: [],
         communityEvents: [],
-        weather: null,
       } as ReportsWebDocumentProps),
     );
     const exportOptions = mocks.usePdfExport.mock.calls[0]?.[0];
