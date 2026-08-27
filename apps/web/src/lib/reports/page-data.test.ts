@@ -150,7 +150,8 @@ describe("/reports server data budget", () => {
         warnings: [],
       },
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false });
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await loadReportsGenerationData();
 
@@ -171,6 +172,7 @@ describe("/reports server data budget", () => {
       requireCoordinates: false,
       types: null,
     });
+    expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 });

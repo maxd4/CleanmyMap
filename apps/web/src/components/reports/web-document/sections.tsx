@@ -32,14 +32,6 @@ type ReportsWebSectionsProps = {
   activeScopeLabel: string;
   accountCoverage: ReportAccountScopeCoverage;
   wasteProfile: WasteProfile;
-  weather: {
-    current?: {
-      temperature_2m?: number;
-      precipitation?: number;
-      wind_speed_10m?: number;
-    };
-  };
-  weatherAdvice: string;
   isLoading: boolean;
   hasError: boolean;
 };
@@ -66,8 +58,6 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
     activeScopeLabel,
     accountCoverage,
     wasteProfile,
-    weather,
-    weatherAdvice,
     isLoading,
     hasError,
   } = props;
@@ -139,7 +129,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
               label="Sources des données"
               value={`${Object.keys(report.impactMethodology.sources ?? {}).length} familles`}
               tone="accent"
-              hint="Actions, carte, communauté, météo"
+              hint="Actions, carte et communauté"
             />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -148,7 +138,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             lines={[
               `Fenêtre consolidée: ${report.generatedAt}.`,
               `Territoire actif: ${activeScopeLabel}.`,
-              "Le rapport agrège les données validées, la cartographie d’action, les événements communauté et les proxys météo.",
+              "Le rapport agrège les données validées, la cartographie d’action et les événements communauté.",
             ]}
           />
         <ReportTable
@@ -288,10 +278,8 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <InsightBox
             title="Lecture opérationnelle"
             lines={[
-              weatherAdvice,
-              `Température: ${weather.current?.temperature_2m ?? "n/a"} °C`,
-              `Précipitations: ${weather.current?.precipitation ?? "n/a"} mm`,
-              `Vent: ${weather.current?.wind_speed_10m ?? "n/a"} km/h`,
+              "Les indicateurs environnementaux sont des proxies de décision et non des mesures instrumentales.",
+              "Les actions et la couverture cartographique doivent être lues selon le périmètre actif.",
             ]}
           />
         </div>
@@ -320,7 +308,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <InsightBox
             title="Contraintes du territoire"
             lines={[
-              "La météo et la densité urbaine influencent la récurrence des dépôts.",
+              "La densité urbaine et la récurrence observée influencent la lecture des dépôts.",
               "Les axes de passage et les franges de quartier restent les zones les plus sensibles.",
               "Le rapport doit être lu en tenant compte du périmètre actif et du niveau de couverture cartographique.",
             ]}

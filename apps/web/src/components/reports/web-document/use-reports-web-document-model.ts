@@ -7,7 +7,7 @@ import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { swrRecentViewOptions } from "@/lib/swr-config";
-import { computeReportModel, getWeatherAdvice } from "@/lib/reports/report-model";
+import { computeReportModel } from "@/lib/reports/report-model";
 import type {
   CommunityEventsAvailability,
   ReportDataAvailability,
@@ -22,14 +22,6 @@ import {
   type ReportScopeKind,
 } from "@/lib/reports/scope";
 
-type ReportsWeather = {
-  current?: {
-    temperature_2m?: number;
-    precipitation?: number;
-    wind_speed_10m?: number;
-  };
-} | null;
-
 type WasteProfileCategory = {
   key: "megotsKg" | "plastiqueKg" | "verreKg" | "metalKg" | "mixteKg";
   label: string;
@@ -43,7 +35,7 @@ type UseReportsWebDocumentModelOptions = {
   initialSourceHealth?: UnifiedSourceHealth;
   initialCommunityEvents?: CommunityEventItem[];
   initialCommunityEventsAvailability?: CommunityEventsAvailability;
-  initialWeather?: ReportsWeather;
+  initialNow?: Date;
 };
 
 export function useReportsWebDocumentModel({
@@ -52,7 +44,7 @@ export function useReportsWebDocumentModel({
   initialSourceHealth,
   initialCommunityEvents,
   initialCommunityEventsAvailability,
-  initialWeather,
+  initialNow,
 }: UseReportsWebDocumentModelOptions = {}) {
   const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
   const [scopeValue, setScopeValue] = useState<string>("");
@@ -97,19 +89,6 @@ export function useReportsWebDocumentModel({
     () => fetchCommunityEvents({ limit: 120 }),
     swrRecentViewOptions,
   );
-  const weather = useSWR(
-    initialWeather ? null : ["report-web-weather"],
-    async () => {
-      const response = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
-        { cache: "no-store" },
-      );
-      if (!response.ok) throw new Error("weather_unavailable");
-      return (await response.json()) as ReportsWeather;
-    },
-    swrRecentViewOptions,
-  );
-
   const actionsAllItems = useMemo(
     () => (initialContracts ? initialActionListItems : actionsAll.data?.items ?? []),
     [actionsAll.data?.items, initialActionListItems, initialContracts],
@@ -135,15 +114,12 @@ export function useReportsWebDocumentModel({
         : community.data
           ? "available"
           : undefined);
-  const weatherData = initialWeather ?? weather.data ?? null;
-
   const isLoading =
     actionsAll.isLoading ||
     mapAll.isLoading ||
-    community.isLoading ||
-    weather.isLoading;
+    community.isLoading;
   const hasError = Boolean(
-    actionsAll.error || mapAll.error || community.error || weather.error,
+    actionsAll.error || mapAll.error || community.error,
   );
 
   const scopeOptions = useMemo(
@@ -254,8 +230,9 @@ export function useReportsWebDocumentModel({
         mapItems: scopedMapAll,
         events: scopedCommunity,
         moderationAvailability: "unavailable",
+        now: initialNow,
       }),
-    [scopedActionsAll, scopedActionsApproved, scopedCommunity, scopedMapAll],
+    [initialNow, scopedActionsAll, scopedActionsApproved, scopedCommunity, scopedMapAll],
   );
 
   const exportRows = useMemo(
@@ -293,13 +270,6 @@ export function useReportsWebDocumentModel({
     [scopedActionsApproved],
   );
 
-  const weatherAdvice = useMemo(() => {
-    const temperature = weatherData?.current?.temperature_2m ?? null;
-    const rain = weatherData?.current?.precipitation ?? null;
-    const wind = weatherData?.current?.wind_speed_10m ?? null;
-    return getWeatherAdvice({ temperature, rain, wind });
-  }, [weatherData]);
-
   const activeScopeLabel = formatReportScopeLabel(scope, scopeOptions);
   const dataAvailability: ReportDataAvailability = {
     isTruncated: initialIsTruncated,
@@ -320,12 +290,6 @@ export function useReportsWebDocumentModel({
     report,
     isTruncated: initialIsTruncated,
     dataAvailability,
-    weather: {
-      data: weatherData,
-      error: weather.error,
-      isLoading: weather.isLoading,
-    },
-    weatherAdvice,
     isLoading,
     hasError,
   };

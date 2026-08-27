@@ -164,4 +164,18 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("Aucun rapport généré");
     expect(markup).not.toContain("Rapport d&#x27;impact");
   });
+
+  it("distinguishes an unavailable history from a successful empty read", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReportsWebDocumentDeliveryHistory, {
+        recentRows: [],
+        historyAvailability: "unavailable",
+        onView: vi.fn(),
+        onReexport: vi.fn(),
+      }),
+    );
+
+    expect(markup).toContain("Historique temporairement indisponible");
+    expect(markup).not.toContain("Aucun rapport généré");
+  });
 });

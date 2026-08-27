@@ -47,25 +47,38 @@ vi.mock("@/components/reports/reports-analysis-dashboard", () => ({
     summaryKpis,
     primaryAction,
     secondaryAction,
+    report,
   }: {
     summaryKpis: unknown;
     primaryAction: { href: string };
     secondaryAction?: { href: string } | null;
+    report?: { totals?: { actions?: number } };
   }) =>
     React.createElement(
       "div",
       { "data-testid": "reports-analysis-dashboard" },
       React.createElement("div", { "data-testid": "summary-kpis" }, JSON.stringify(summaryKpis)),
+      React.createElement("div", { "data-testid": "report-actions" }, report?.totals?.actions),
       React.createElement("a", { href: primaryAction.href }),
       secondaryAction ? React.createElement("a", { href: secondaryAction.href }) : null,
     ),
 }));
 
 vi.mock("@/components/reports/deferred-reports-web-document", () => ({
-  DeferredReportsWebDocument: ({ isTruncated }: { isTruncated?: boolean }) =>
+  DeferredReportsWebDocument: ({
+    isTruncated,
+    initialHistoryAvailability,
+  }: {
+    isTruncated?: boolean;
+    initialHistoryAvailability?: string;
+  }) =>
     React.createElement(
       "section",
-      { "data-testid": "report-generation", "data-truncated": isTruncated ? "true" : "false" },
+      {
+        "data-testid": "report-generation",
+        "data-truncated": isTruncated ? "true" : "false",
+        "data-history-availability": initialHistoryAvailability,
+      },
       "Génération",
     ),
 }));
@@ -252,6 +265,26 @@ describe("/reports page contract", () => {
     expect(markup).toContain('href="/actions/history"');
   });
 
+  it("keeps a real zero visible after a successful analysis load", async () => {
+    mocks.computeReportModel.mockReturnValueOnce({
+      totals: { kg: 0, hours: 0, actions: 0 },
+      map: { geoCoverage: 0, traceCoverage: 0 },
+      climate: { co2AvoidedKg: 0, waterProtectedLiters: 0 },
+      quality: { coherenceScore: 0, completenessScore: 0, freshnessDays: 0 },
+      recycling: { triIndex: 0 },
+      community: { sourceBuckets: {} },
+      impactMethodology: { sources: {}, proxyVersion: "v1", qualityRulesVersion: "v1" },
+      areas: [],
+    });
+
+    const markup = renderToStaticMarkup(
+      await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis" }) }),
+    );
+
+    expect(markup).toContain('data-testid="reports-analysis-dashboard"');
+    expect(markup).toContain('data-testid="report-actions">0</div>');
+  });
+
   it("keeps the generation tab permission-gated for a non-admin profile", async () => {
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }));
 
@@ -288,7 +321,7 @@ describe("/reports page contract", () => {
     }
   });
 
-  it("exposes CSV export for an admin and preserves the empty-data fallback", async () => {
+  it("shows a real analysis outage instead of an empty zero model", async () => {
     mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
     mocks.toProfile.mockReturnValue("admin");
     mocks.isAdminLikeProfile.mockReturnValue(true);
@@ -297,9 +330,24 @@ describe("/reports page contract", () => {
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "pilotage" }) }));
 
     expect(markup).toContain('data-active-tab="analysis"');
-    expect(markup).toContain('data-testid="csv-export"');
-    expect(markup).toContain('data-row-count="0"');
-    expect(markup).toContain('data-testid="summary-kpis"');
-    expect(markup).toContain("n/a");
+    expect(markup).toContain("Analyse temporairement indisponible");
+    expect(markup).not.toContain('data-testid="reports-analysis-dashboard"');
+    expect(markup).not.toContain('data-testid="csv-export"');
+    expect(mocks.computeReportModel).not.toHaveBeenCalled();
+  });
+
+  it("keeps a history outage distinct from the real empty state without blocking generation", async () => {
+    mocks.getCurrentUserRoleLabel.mockResolvedValue("admin");
+    mocks.toProfile.mockReturnValue("admin");
+    mocks.isAdminLikeProfile.mockReturnValue(true);
+    mocks.listReportGenerationHistory.mockRejectedValueOnce(new Error("history unavailable"));
+
+    const markup = renderToStaticMarkup(
+      await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }),
+    );
+
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).toContain('data-history-availability="unavailable"');
+    expect(markup).not.toContain("Aucun rapport généré");
   });
 });

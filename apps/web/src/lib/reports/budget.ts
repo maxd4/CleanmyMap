@@ -16,7 +16,4 @@ export const REPORT_DATA_BUDGET = {
   communityEvents: {
     limit: 120,
   },
-  weather: {
-    revalidateSeconds: 900,
-  },
 } as const;

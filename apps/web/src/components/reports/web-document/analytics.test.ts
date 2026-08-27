@@ -6,7 +6,6 @@ import {
  buildExecutiveNarrative,
  buildRouteSteps,
  computeReportModel,
- getWeatherAdvice,
 } from"./analytics";
 
 function makeListItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
@@ -184,12 +183,6 @@ describe("reports web analytics", () => {
  expect(report.community.sourceBuckets.institutionnel).toBe(0);
  expect(report.impactMethodology.formulas).toHaveLength(4);
  expect(report.impactMethodology.proxyVersion.length).toBeGreaterThan(0);
- });
-
- it("returns weather advice by risk thresholds", () => {
- expect(getWeatherAdvice({ temperature: 20, rain: 4, wind: 10 })).toContain("prudent");
- expect(getWeatherAdvice({ temperature: 30, rain: 0, wind: 10 })).toContain("chaud");
- expect(getWeatherAdvice({ temperature: 1, rain: 0, wind: 10 })).toContain("froid");
  });
 
  it("builds a narrative suitable for an institutional cover", () => {

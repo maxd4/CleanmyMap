@@ -10,14 +10,6 @@ import {
   type ReportDataAvailability,
 } from "@/lib/reports/data-availability";
 
-export type ReportsWeather = {
-  current?: {
-    temperature_2m?: number;
-    precipitation?: number;
-    wind_speed_10m?: number;
-  };
-} | null;
-
 export const DETAIL_LEVEL_OPTIONS = [
   { id: "concis", label: "Concis", pages: "6 à 8 pages" },
   { id: "default", label: "Par défaut", pages: "12 à 16 pages" },
@@ -158,7 +150,6 @@ const GENERATION_STAGE_STYLES: Record<
 
 type ReportsWebDocumentModelLike = {
   report: ReportModel;
-  weatherAdvice: string;
   wasteProfile: {
     dominantLabel: string;
     coveragePercent: number;
@@ -263,6 +254,14 @@ export function periodLabel(period: PeriodId): string {
     case "full_history":
       return "Historique complet";
   }
+}
+
+export function reportPeriodLabel(period: PeriodId, isTruncated = false): string {
+  if (period === "full_history" && isTruncated) {
+    return `Historique disponible — plafonné à ${REPORT_HISTORY_SERVER_LIMIT.toLocaleString("fr-FR")} actions approuvées`;
+  }
+
+  return periodLabel(period);
 }
 
 export function detailLevelLabel(id: DetailLevelId): string {
@@ -396,8 +395,7 @@ export function buildPdfData(params: {
         ...dataAvailabilityNotices,
         executive.summary,
         `Lecture: ${executive.readinessLabel}.`,
-        model.weatherAdvice,
-        `Période: ${periodLabel(period)} · ${detailLevelLabel(detailLevel)}.`,
+        `Période: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated)} · ${detailLevelLabel(detailLevel)}.`,
       ],
       stats: [
         { label: "Actions validées", value: report.totals.actions },
@@ -411,7 +409,7 @@ export function buildPdfData(params: {
       title: "Périmètre du rapport",
       subtitle: "Période analysée, territoire couvert et sources des données",
       lines: [
-        `Période analysée: ${periodLabel(period)}.`,
+        `Période analysée: ${reportPeriodLabel(period, model.dataAvailability?.isTruncated)}.`,
         `Territoire couvert: ${scopeLabel}.`,
         `Organisation ou collectif concerné: ${scopeLabel === "Global" ? "Collectif CleanMyMap" : scopeLabel}.`,
         `Sources des données: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ")}.`,
@@ -492,7 +490,6 @@ export function buildPdfData(params: {
           lines: [
             `Typologie dominante: ${model.wasteProfile.dominantLabel}.`,
             `Couverture des déchets typés: ${model.wasteProfile.coveragePercent.toFixed(1)}%.`,
-            model.weatherAdvice,
           ],
           rows: model.wasteProfile.categories.map((category) => ({
             Déchet: category.label,

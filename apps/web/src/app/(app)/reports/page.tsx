@@ -18,7 +18,6 @@ import {
   toProfile,
 } from "@/lib/profiles";
 import {
-  buildEmptyReportsModel,
   buildReportsSummaryKpis,
   loadReportsGenerationData,
   loadReportsAnalysisData,
@@ -187,9 +186,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   if (activeTab === "generation") {
     if (canAccessDetailedReports) {
-      const [generationData, recentRows] = await Promise.all([
+      const [generationData, historyResult] = await Promise.all([
         loadReportsGenerationData().catch(() => null),
-        listReportGenerationHistory().catch(() => []),
+        listReportGenerationHistory()
+          .then((rows) => ({ rows, availability: "available" as const }))
+          .catch(() => ({ rows: [], availability: "unavailable" as const })),
       ]);
 
       const generationContent = generationData ? (
@@ -199,8 +200,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           sourceHealth={generationData.sourceHealth}
           communityEvents={generationData.communityEvents}
           communityEventsAvailability={generationData.communityEventsAvailability}
-          weather={generationData.weather}
-          initialRecentRows={recentRows}
+          initialRecentRows={historyResult.rows}
+          initialHistoryAvailability={historyResult.availability}
         />
       ) : (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
@@ -211,8 +212,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             Le document détaillé n&apos;a pas pu être chargé
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Réessayez dans un instant. Le chargement serveur des contrats ou de la météo a
-            échoué.
+            Réessayez dans un instant. Le chargement serveur des contrats a échoué.
           </p>
         </section>
       );
@@ -250,26 +250,42 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     );
   }
 
-  const analysisData = await loadReportsAnalysisData().catch(() => null);
-  const overview = analysisData?.overview ?? null;
-  const report = analysisData?.report ?? buildEmptyReportsModel();
-  const monthlyData = analysisData?.monthlyData ?? [];
-  const summaryKpis = buildReportsSummaryKpis(overview);
-
-  const analysisContent = buildReportsAnalysisContent({
-    locale,
-    roleLabel,
-    primaryAction,
-    secondaryAction,
-    summaryKpis,
-    overview,
-    report,
-    monthlyData,
-    canAccessExports: canAccessDetailedReports,
-    exportRows: overview
-      ? overview.contracts.map(toReportsExportRow)
-      : null,
-  });
+  const analysisResult = await loadReportsAnalysisData()
+    .then((data) => ({ data, availability: "available" as const }))
+    .catch(() => ({ data: null, availability: "unavailable" as const }));
+  const analysisContent = analysisResult.availability === "unavailable" ? (
+    <section
+      role="alert"
+      className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-[0_10px_24px_-18px_rgba(180,83,9,0.25)]"
+    >
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-amber-700">
+        Analyse temporairement indisponible
+      </p>
+      <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+        Les indicateurs n&apos;ont pas pu être chargés
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-amber-900">
+        Réessayez dans un instant. Aucun zéro n&apos;est affiché tant que les données Analyse ne
+        sont pas disponibles.
+      </p>
+    </section>
+  ) : (
+    (() => {
+      const { overview, report, monthlyData } = analysisResult.data;
+      return buildReportsAnalysisContent({
+        locale,
+        roleLabel,
+        primaryAction,
+        secondaryAction,
+        summaryKpis: buildReportsSummaryKpis(overview),
+        overview,
+        report,
+        monthlyData,
+        canAccessExports: canAccessDetailedReports,
+        exportRows: overview.contracts.map(toReportsExportRow),
+      });
+    })()
+  );
 
   return (
     <AccountCompletionGate state={accountCompletion}>

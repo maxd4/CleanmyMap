@@ -25,12 +25,10 @@ import {
   buildScopeSelectValue,
   detailLevelLabel,
   detailLevelToModules,
-  periodLabel,
   parseScopeSelectValue,
+  reportPeriodLabel,
   type DetailLevelId,
   type ModuleState,
-  type PeriodId,
-  type ReportsWeather,
   type SelectedPeriodId,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
@@ -52,48 +50,10 @@ import {
   isReportGenerationHistoryRow,
   type ReportGenerationHistoryRow,
 } from "@/lib/reports/report-generation-history-contract";
+import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
 import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-client";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
-import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
-
-function toIsoDateKey(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function getPeriodFloorDate(period: PeriodId): string | null {
-  const today = new Date();
-  const utcToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-
-  switch (period) {
-    case "six_months": {
-      const floor = new Date(utcToday);
-      floor.setUTCMonth(floor.getUTCMonth() - 6);
-      return toIsoDateKey(floor);
-    }
-    case "current_year":
-      return `${today.getUTCFullYear()}-01-01`;
-    case "full_history":
-      return null;
-  }
-
-  return null;
-}
-
-function filterContractsByPeriod(contracts: ActionDataContract[], period: PeriodId) {
-  const floorDate = getPeriodFloorDate(period);
-
-  return contracts.filter((contract) => {
-    if (contract.status !== "approved") {
-      return false;
-    }
-
-    if (!floorDate) {
-      return true;
-    }
-
-    return contract.dates.observedAt >= floorDate;
-  });
-}
+import { filterReportGenerationContracts } from "@/lib/reports/generation-period";
 
 export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
@@ -101,8 +61,8 @@ export type ReportsWebDocumentProps = {
   sourceHealth?: UnifiedSourceHealth;
   communityEvents: CommunityEventItem[];
   communityEventsAvailability?: CommunityEventsAvailability;
-  weather: ReportsWeather;
   initialRecentRows?: ReportGenerationHistoryRow[];
+  initialHistoryAvailability?: "available" | "unavailable";
 };
 
 export function ReportsWebDocument({
@@ -111,12 +71,13 @@ export function ReportsWebDocument({
   sourceHealth,
   communityEvents,
   communityEventsAvailability,
-  weather,
   initialRecentRows = [],
+  initialHistoryAvailability = "available",
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [recentRows, setRecentRows] = useState(initialRecentRows);
+  const [historyAvailability, setHistoryAvailability] = useState(initialHistoryAvailability);
   const [historyActionStateById, setHistoryActionStateById] = useState<
     Record<string, ReportGenerationHistoryActionState>
   >({});
@@ -125,10 +86,11 @@ export function ReportsWebDocument({
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
   const [modules, setModules] = useState<ModuleState>(detailLevelToModules("default"));
   const effectivePeriod = period || "six_months";
-  const historyCompletenessWarning = effectivePeriod === "full_history";
+  const reportNow = useMemo(() => new Date(), []);
+  const historyCompletenessWarning = effectivePeriod === "full_history" && isTruncated;
   const filteredContracts = useMemo(
-    () => filterContractsByPeriod(contracts, effectivePeriod),
-    [contracts, effectivePeriod],
+    () => filterReportGenerationContracts(contracts, effectivePeriod, reportNow),
+    [contracts, effectivePeriod, reportNow],
   );
   const coverageRangeLabel = useMemo(
     () => buildCoverageRangeLabel(filteredContracts),
@@ -145,7 +107,7 @@ export function ReportsWebDocument({
     initialSourceHealth: sourceHealth,
     initialCommunityEvents: communityEvents,
     initialCommunityEventsAvailability: communityEventsAvailability,
-    initialWeather: weather,
+    initialNow: reportNow,
   });
 
   const dataAvailabilityNotices = buildReportDataAvailabilityNotices(
@@ -193,6 +155,7 @@ export function ReportsWebDocument({
         throw new Error("Report generation history persistence failed.");
       }
       setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+      setHistoryAvailability("available");
     } catch {
       setHistoryWarning(
         "Le PDF a bien été généré, mais cette génération n'a pas pu être ajoutée à l'historique.",
@@ -397,11 +360,12 @@ export function ReportsWebDocument({
           <ReportsWebDocumentPreview
             report={report}
             activeScopeLabel={activeScopeLabel}
-            weatherAdvice={model.weatherAdvice}
             showPreview={showPreview}
             previewRef={previewRef}
             onTogglePreview={handlePreview}
-            periodDisplayLabel={periodLabel(effectivePeriod)}
+            periodDisplayLabel={
+              reportPeriodLabel(effectivePeriod, isTruncated)
+            }
             detailDisplayLabel={detailLevelLabel(detailLevel)}
             modules={modules}
             historyCoverageLabel={
@@ -435,6 +399,7 @@ export function ReportsWebDocument({
       <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
         <ReportsWebDocumentDeliveryHistory
           recentRows={recentRows}
+          historyAvailability={historyAvailability}
           actionStateById={historyActionStateById}
           onView={(id) => void handleHistoricalAction(id, "view")}
           onReexport={(id) => void handleHistoricalAction(id, "reexport")}
