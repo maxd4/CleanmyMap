@@ -17,7 +17,7 @@
 - **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Formulaire de groupe. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
 - **Scope** : point d'entrée nettoyé, métier des formulaires conservé
-- **Terminée** : oui pour le contrat du point d'entrée
+- **Statut de finition UI** : terminé pour le contrat du point d'entrée; la page reste protégée
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
@@ -68,7 +68,10 @@
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée commence par le choix entre déclaration après action et préparation avant action.
 - Choisir un parcours ne crée encore aucune action.
+- `/actions/new` conserve `recordType = action` comme invariant interne sans afficher de choix à option unique.
 - Le parcours sélectionné s'affiche directement; un état de chargement est réservé à l'hydratation d'un enregistrement ou au handoff après une vraie écriture.
+- La déclaration après action affiche un bandeau compact lorsqu'une préparation existante est reprise; les phases techniques ne sont pas affichées.
+- Le header utilisateur est `Déclarer les résultats terrain`; les badges redondants de date, déchets et structure du formulaire ne sont pas affichés.
 - La revue du formulaire affiche une aide à la relecture et des points d'attention concrets; elle ne présente pas de score ou de grade local comme une mesure de qualité démontrée.
 - La masse de déchets saisie reste la mesure déclarée. `estimateWasteKg()` fournit seulement un repère indicatif séparé, sans pénaliser une valeur qui s'en écarte.
 - La confirmation conserve les mesures déclarées séparément des proxys d'impact. Les proxys affichés réutilisent `computeActionImpactKpis()`; aucune quantité de plastique n'est déduite du poids total sans donnée dédiée.

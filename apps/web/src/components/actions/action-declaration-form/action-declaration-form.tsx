@@ -24,9 +24,7 @@ import { ActionStepIdentity } from "../action-declaration/ActionStepIdentity";
 import { ActionStepLocation } from "../action-declaration/ActionStepLocation";
 import { ActionStepReview } from "../action-declaration/ActionStepReview";
 import {
-  formatActionDate,
   formatDraftDate,
-  formatWasteSummary,
 } from "./action-declaration-form.summary";
 import { useActionDeclarationForm } from "./use-action-declaration-form";
 
@@ -191,8 +189,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   }
 
   const showPreparationSummary = Boolean(props.initialActionId || loadedActionPhase);
-  const isPreparationDraft =
-    loadedActionPhase === "pre_action" || loadedActionPhase === "post_action_draft";
   const canShowGroupInvite =
     form.recordType === "action" &&
     form.groupJoinEnabled &&
@@ -339,76 +335,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 />
               ) : null}
               {showPreparationSummary ? (
-                <section className="rounded-[2rem] border border-emerald-200/70 bg-white/88 p-5 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
-                        Informations préparées avant l&apos;action
-                      </p>
-                      <h3 className="mt-1 text-lg font-black tracking-tight text-emerald-950">
-                        Pré-action {isPreparationDraft ? "en préparation" : "chargée"}
-                      </h3>
-                    </div>
-                    <span className="rounded-full border border-emerald-200 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-900">
-                      {loadedActionPhase ?? "pre_action"}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                        Titre et contexte
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-950">
-                        {form.actionTitle || form.locationLabel || "Sans titre"}
-                      </p>
-                      {form.shortDescription ? (
-                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
-                          {form.shortDescription}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                        Rendez-vous et zone cible
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-950">
-                        {form.departureLocationLabel || "Point de rendez-vous non renseigné"}
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-emerald-900/72">
-                        {form.arrivalLocationLabel || "Zone cible non renseignée"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                        Bénévoles et message
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-950">
-                        {form.volunteersCount || "0"} bénévoles attendus
-                      </p>
-                      {form.participantMessage ? (
-                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
-                          {form.participantMessage}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div className="rounded-2xl border border-emerald-100 bg-[#F3FBF6] p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">
-                        Matériel et sécurité
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-950">
-                        {form.recommendedMaterials || "Matériel non renseigné"}
-                      </p>
-                      {form.safetyInstructions ? (
-                        <p className="mt-2 text-sm leading-6 text-emerald-900/72">
-                          {form.safetyInstructions}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
+                <section className="rounded-2xl border border-emerald-200/70 bg-white/88 px-5 py-4 shadow-sm">
+                  <p className="text-sm font-bold text-emerald-950">
+                    Préparation existante reprise
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-emerald-900/70">
+                    Les informations déjà saisies sont conservées pour compléter les résultats terrain.
+                  </p>
                 </section>
               ) : null}
               <fieldset
@@ -417,34 +350,12 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
               >
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1">
-                    <Sparkles size={14} className="text-emerald-600" />
-                    <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-950/75">
-                      Formulaire continu
-                    </span>
-                  </div>
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">
-                    Créer un formulaire
+                    Déclarer les résultats terrain
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 font-medium text-emerald-900/62 md:text-[0.98rem]">
-                    Tous les champs tiennent sur une page. Les données servent à mesurer l&apos;impact réel et à
-                    organiser la suite. Quatre rubriques structurent la saisie: identité, récolte, parcours,
-                    validation.
+                    Renseignez les informations de l&apos;action, les résultats de collecte, le parcours et les éléments de validation.
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900/74">
-                      <User size={11} className="text-emerald-600" />
-                      4 rubriques
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900/74">
-                      <ClipboardCheck size={11} className="text-sky-600" />
-                      {formatActionDate(form.actionDate)}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-900/74">
-                      <Sparkles size={11} className="text-emerald-600" />
-                      {formatWasteSummary(form.wasteKg, form.wasteMegotsKg)}
-                    </span>
-                  </div>
                 </div>
 
               </header>
