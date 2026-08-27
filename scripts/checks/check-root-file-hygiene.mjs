@@ -17,6 +17,7 @@ const allowedRootFiles = new Set([
   ".vercelignore",
   "AGENTS.md",
   "AUTHORS.md",
+  "CHATGPT.md",
   "COMMANDES_UTILISATEUR.md",
   "package-lock.json",
   "package.json",
