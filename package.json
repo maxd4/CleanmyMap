@@ -116,7 +116,7 @@
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.5",
-    "@rollup/rollup-linux-x64-gnu": "4.62.4",
+    "@rollup/rollup-linux-x64-gnu": "4.62.5",
     "@sentry/cli-linux-x64": "3.6.2",
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3"
   },
@@ -160,7 +160,7 @@
   },
   "dependencies": {
     "image-size": "file:apps/mobile/vendor/image-size",
-    "posthog-js": "^1.418.5",
-    "posthog-node": "^5.49.1"
+    "posthog-js": "^1.418.13",
+    "posthog-node": "^5.51.1"
   }
 }
