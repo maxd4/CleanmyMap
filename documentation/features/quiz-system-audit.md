@@ -12,7 +12,7 @@ Cette note synthétise l'audit du système de quiz et liste les points qui doive
 
 ## Corrections sûres appliquées
 
-- Le build de production a été débloqué en sécurisant la lecture de `sourceHealth` dans [apps/web/src/lib/actions/map-route.ts](../../apps/web/src/lib/actions/map-route.ts).
+- Le build de production a été débloqué en sécurisant la lecture de `sourceHealth` dans [apps/web/src/lib/actions/map/map-route.ts](../../apps/web/src/lib/actions/map/map-route.ts).
 - Un test de progression personnelle a été aligné sur le type exporté par le module correspondant dans [apps/web/src/lib/learning/quiz-personal-progress.test.ts](../../apps/web/src/lib/learning/quiz-personal-progress.test.ts).
 
 ## Performance et quotas Vercel / Supabase

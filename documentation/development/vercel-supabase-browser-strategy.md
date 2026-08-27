@@ -213,8 +213,8 @@ Règle pratique:
 La carte dynamique est maintenant traitée sans proxy Vercel intermédiaire:
 
 - [apps/web/src/lib/actions/http.ts](../../apps/web/src/lib/actions/http.ts)
-- [apps/web/src/lib/actions/map-http.ts](../../apps/web/src/lib/actions/map-http.ts)
-- [apps/web/src/lib/actions/map-http-utils.ts](../../apps/web/src/lib/actions/map-http-utils.ts)
+- [apps/web/src/lib/actions/map/map-http.ts](../../apps/web/src/lib/actions/map/map-http.ts)
+- [apps/web/src/lib/actions/map/map-http-utils.ts](../../apps/web/src/lib/actions/map/map-http-utils.ts)
 
 Le bon emplacement est ici:
 

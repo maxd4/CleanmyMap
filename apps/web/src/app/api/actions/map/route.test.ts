@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const buildMapActionsRouteResultMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/actions/map-route", async () => ({
-  ...(await vi.importActual<typeof import("@/lib/actions/map-route")>("@/lib/actions/map-route")),
+vi.mock("@/lib/actions/map/map-route", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/actions/map/map-route")>("@/lib/actions/map/map-route")),
   buildMapActionsRouteResult: buildMapActionsRouteResultMock,
 }));
 vi.mock("@/lib/actions/unified-source", () => ({
