@@ -3,9 +3,9 @@
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
-import { GESTES_PROPRES_INSIGHTS } from "@/lib/learning/gestes-propres-insights";
+import { GESTES_PROPRES_INSIGHTS } from "@/lib/learning/gestes-propres/gestes-propres-insights";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import type { LearnPracticeThemeId } from "@/lib/learning/learn-practice-themes";
+import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 import { LearnGestesPropresCampaignSection } from "@/components/learn/learn-gestes-propres-campaign-section";
 import {
   LearnPartnerInsightCard,

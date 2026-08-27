@@ -6,23 +6,23 @@ import { Filter, RotateCcw, ShieldAlert } from "lucide-react";
 import { AdminSectionHeader } from "@/components/admin/admin-dashboard-ui";
 import { SourceBadge, StatCard } from "@/components/ui/page-structure";
 import { cn } from "@/lib/utils";
-import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz-access-types";
-import { QUIZ_TRAP_LEVELS } from "@/lib/learning/quiz-trap-levels";
+import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz/quiz-access-types";
+import { QUIZ_TRAP_LEVELS } from "@/lib/learning/quiz/quiz-trap-levels";
 import {
   QUIZ_DIFFICULTY_PRIORITY,
   QUIZ_PEDAGOGICAL_TYPE_PRIORITY,
   getQuizPedagogicalTypeLabel,
   type QuizDifficultyId,
   type QuizPedagogicalTypeId,
-} from "@/lib/learning/quiz-taxonomy";
-import type { QuizReasoningType } from "@/lib/learning/quiz-reasoning-types";
-import type { QuizSourceType } from "@/lib/learning/quiz-source-metadata";
+} from "@/lib/learning/quiz/quiz-taxonomy";
+import type { QuizReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";
+import type { QuizSourceType } from "@/lib/learning/quiz/quiz-source-metadata";
 import type {
   QuizBankAdminFilters,
   QuizBankAdminQuestion,
   QuizBankAdminSnapshot,
   QuizBankSourceState,
-} from "@/lib/learning/quiz-bank-admin";
+} from "@/lib/learning/quiz/quiz-bank-admin";
 
 const DEFAULT_FILTERS: QuizBankAdminFilters = {
   mode: "all",

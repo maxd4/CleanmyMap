@@ -4,12 +4,12 @@ import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { resolvePageFamily } from "@/lib/ui/page-families";
-import { QUIZ_QUESTIONS } from "@/lib/learning/quiz-question-bank";
-import { buildQuizBankAdminSnapshot } from "@/lib/learning/quiz-bank-admin";
+import { QUIZ_QUESTIONS } from "@/lib/learning/quiz/quiz-question-bank";
+import { buildQuizBankAdminSnapshot } from "@/lib/learning/quiz/quiz-bank-admin";
 import {
   loadQuizPedagogicalMetricsSnapshot,
   summarizeQuizPedagogicalMetrics,
-} from "@/lib/learning/quiz-pedagogical-metrics";
+} from "@/lib/learning/quiz/quiz-pedagogical-metrics";
 import { QuizPedagogicalMetricsPanel } from "@/components/admin/quiz-pedagogical-metrics-panel";
 import { QuizBankAdminView } from "@/components/admin/quiz-bank-admin-view";
 

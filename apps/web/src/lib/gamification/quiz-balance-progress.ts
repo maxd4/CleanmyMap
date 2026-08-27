@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { listQuizQuestionFormatIds } from "@/lib/learning/quiz-question-formats";
+import { listQuizQuestionFormatIds } from "@/lib/learning/quiz/quiz-question-formats";
 import { awardPointsOnce } from "./points/system";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
-import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz-taxonomy";
+import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
 
 export const QUIZ_BALANCE_MILESTONES = [
   { threshold: 10, xp: 1, badgeId: "quiz-balance-10" },

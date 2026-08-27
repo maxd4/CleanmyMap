@@ -1,5 +1,5 @@
-import { QUIZ_QUESTIONS } from "../../apps/web/src/lib/learning/quiz-question-bank.ts";
-import { auditQuizSources, formatQuizSourceAuditReport } from "../../apps/web/src/lib/learning/quiz-source-audit.ts";
+import { QUIZ_QUESTIONS } from "../../apps/web/src/lib/learning/quiz/quiz-question-bank.ts";
+import { auditQuizSources, formatQuizSourceAuditReport } from "../../apps/web/src/lib/learning/quiz/quiz-source-audit.ts";
 
 const report = auditQuizSources(QUIZ_QUESTIONS);
 

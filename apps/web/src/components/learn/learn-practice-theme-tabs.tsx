@@ -18,17 +18,17 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
-import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres-campaign";
+import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres/gestes-propres-campaign";
 import { LearnGestesPropresBarometer } from "@/components/learn/learn-gestes-propres-barometer";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { LearnIfopDepotsSection } from "@/components/learn/learn-ifop-depots-section";
 import {
   LEARN_PRACTICE_THEME_ORDER,
   type LearnPracticeThemeId,
-} from "@/lib/learning/learn-practice-themes";
+} from "@/lib/learning/practice/themes";
 
-export { LEARN_PRACTICE_THEME_ORDER } from "@/lib/learning/learn-practice-themes";
-export type { LearnPracticeThemeId } from "@/lib/learning/learn-practice-themes";
+export { LEARN_PRACTICE_THEME_ORDER } from "@/lib/learning/practice/themes";
+export type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 
 const THEME_LABELS: Record<
   LearnPracticeThemeId,

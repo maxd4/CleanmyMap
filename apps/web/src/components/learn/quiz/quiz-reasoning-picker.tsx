@@ -1,0 +1,216 @@
+"use client";
+
+import type { ReactNode } from "react";
+import {
+  CheckCircle,
+  Sparkles,
+  Brain,
+  MapPin,
+  Calculator,
+  Scale,
+  ArrowRightLeft,
+  Lightbulb,
+  ArrowLeft,
+  ShieldAlert,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CognitivePrimer } from "@/components/learn/cognitive-primer";
+import { QuizArchitectureStrip } from "@/components/learn/quiz/quiz-architecture-strip";
+import type { CognitiveQuizSummary, SupportedLocale } from "@/lib/learning/cognitive-principles";
+import type { QuizReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";
+
+type ReasoningType = QuizReasoningType;
+
+type QuizReasoningPickerProps = {
+  locale: SupportedLocale;
+  quizSummary: CognitiveQuizSummary;
+  onSelectReasoningType: (reasoningType: ReasoningType) => void;
+  onBackToAccessType?: () => void;
+  availableReasoningTypes?: ReasoningType[];
+};
+
+const REASONING_TYPES: Array<{
+  id: ReasoningType;
+  label: Record<SupportedLocale, string>;
+  description: Record<SupportedLocale, string>;
+  tone: string;
+  icon: ReactNode;
+}> = [
+  {
+    id: "idée reçue",
+    label: {
+      fr: "idée reçue",
+      en: "misconception",
+    },
+    description: {
+      fr: "Corriger une croyance fréquente avec une phrase qui paraît plausible au premier regard.",
+      en: "Correct a common misconception with a statement that feels plausible at first glance.",
+    },
+    tone: "bg-amber-100 text-amber-600",
+    icon: <Sparkles size={28} aria-hidden="true" />,
+  },
+  {
+    id: "terrain",
+    label: {
+      fr: "situations terrain",
+      en: "field situations",
+    },
+    description: {
+      fr: "Tester le bon réflexe dans une situation réelle de cleanwalk, de tri ou de sécurité.",
+      en: "Test the right reflex in a real cleanwalk, sorting or safety situation.",
+    },
+    tone: "bg-emerald-100 text-emerald-600",
+    icon: <MapPin size={28} aria-hidden="true" />,
+  },
+  {
+    id: "estimation",
+    label: {
+      fr: "estimations",
+      en: "estimates",
+    },
+    description: {
+      fr: "Lire un ordre de grandeur sans le confondre avec une valeur exacte.",
+      en: "Read an order of magnitude without confusing it with an exact value.",
+    },
+    tone: "bg-blue-100 text-blue-600",
+    icon: <Calculator size={28} aria-hidden="true" />,
+  },
+  {
+    id: "comparaison",
+    label: {
+      fr: "comparaisons",
+      en: "comparisons",
+    },
+    description: {
+      fr: "Comparer deux cas proches pour éviter la réponse automatique.",
+      en: "Compare two close cases to avoid an automatic answer.",
+    },
+    tone: "bg-sky-100 text-sky-600",
+    icon: <Scale size={28} aria-hidden="true" />,
+  },
+  {
+    id: "conséquences indirectes",
+    label: {
+      fr: "conséquences indirectes",
+      en: "indirect consequences",
+    },
+    description: {
+      fr: "Montrer des effets cachés, des chaînes de cause à effet et des impacts moins visibles.",
+      en: "Show hidden effects, chains of cause and effect and less visible impacts.",
+    },
+    tone: "bg-violet-100 text-violet-600",
+    icon: <ArrowRightLeft size={28} aria-hidden="true" />,
+  },
+  {
+    id: "questions contre-intuitives",
+    label: {
+      fr: "questions contre-intuitives",
+      en: "counter-intuitive questions",
+    },
+    description: {
+      fr: "Faire douter avant de répondre quand l'intuition initiale est trompeuse.",
+      en: "Make the learner hesitate before answering when the initial intuition is misleading.",
+    },
+    tone: "bg-rose-100 text-rose-600",
+    icon: <Lightbulb size={28} aria-hidden="true" />,
+  },
+  {
+    id: "cas-limites",
+    label: {
+      fr: "cas limites",
+      en: "edge cases",
+    },
+    description: {
+      fr: "Traiter les zones grises, les consignes ambiguës et les arbitrages imparfaits du terrain.",
+      en: "Handle gray areas, ambiguous instructions and imperfect field trade-offs.",
+    },
+    tone: "bg-slate-100 text-slate-700",
+    icon: <ShieldAlert size={28} aria-hidden="true" />,
+  },
+];
+
+export function QuizReasoningPicker({
+  locale,
+  quizSummary,
+  onSelectReasoningType,
+  onBackToAccessType,
+  availableReasoningTypes,
+}: QuizReasoningPickerProps) {
+  const visibleReasoningTypes = availableReasoningTypes
+    ? REASONING_TYPES.filter((reasoningType) => availableReasoningTypes.includes(reasoningType.id))
+    : REASONING_TYPES;
+
+  return (
+    <div className="space-y-12 py-10">
+      <div className="text-center space-y-4">
+        {onBackToAccessType ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onBackToAccessType}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              Changer de type de quiz
+            </button>
+          </div>
+        ) : null}
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-emerald-100 bg-emerald-50 px-6 py-2">
+          <Brain className="text-emerald-600" size={20} aria-hidden="true" />
+          <span className="text-sm font-black text-emerald-800 uppercase tracking-widest">
+            Parcours Adaptatif
+          </span>
+        </div>
+        <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">
+          Choisissez votre type de raisonnement
+        </h2>
+        <p className="text-lg cmm-text-secondary max-w-2xl mx-auto font-medium">
+          Le but n&apos;est pas de mesurer une performance scolaire mais le type de raisonnement mobilisé.
+        </p>
+      </div>
+
+      <QuizArchitectureStrip locale={locale} summary={quizSummary} className="max-w-6xl mx-auto" />
+
+      <CognitivePrimer
+        locale={locale}
+        summary={quizSummary}
+        highlightRubricId="quiz"
+        className="max-w-6xl mx-auto"
+      />
+
+      <div className="grid grid-cols-1 gap-6 max-w-6xl mx-auto md:grid-cols-2 lg:grid-cols-3">
+        {visibleReasoningTypes.map((reasoningType) => (
+          <button
+            key={reasoningType.id}
+            onClick={() => onSelectReasoningType(reasoningType.id)}
+            className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10"
+          >
+            <div
+              className={cn(
+                "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner",
+                reasoningType.tone,
+              )}
+            >
+              {reasoningType.icon}
+            </div>
+            <h3 className="mb-2 text-xl font-black capitalize cmm-text-primary">
+              {reasoningType.label[locale]}
+            </h3>
+            <p className="text-sm font-medium leading-relaxed cmm-text-secondary">
+              {reasoningType.description[locale]}
+            </p>
+            <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
+              <CheckCircle className="text-emerald-500" size={32} aria-hidden="true" />
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {availableReasoningTypes && visibleReasoningTypes.length === 0 ? (
+        <p className="text-center text-sm font-medium cmm-text-secondary">
+          Aucun type de raisonnement disponible pour ce choix de quiz.
+        </p>
+      ) : null}
+    </div>
+  );
+}

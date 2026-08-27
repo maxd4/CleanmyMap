@@ -3,10 +3,10 @@
 import { LearnPracticeVisualIntro } from "@/components/learn/learn-practice-visual-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
-import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-strip";
+import { QuizArchitectureStrip } from "@/components/learn/quiz/quiz-architecture-strip";
 import { DeferredEnvironmentalQuiz } from "@/components/learn/learn-deferred-panels";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
-import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz-entry-state";
+import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useSearchParams } from "next/navigation";

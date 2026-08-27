@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz-taxonomy";
+import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
 import { awardPointsOnce } from "./points/system";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
