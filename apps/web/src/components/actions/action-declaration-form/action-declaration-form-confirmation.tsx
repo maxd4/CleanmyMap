@@ -1,9 +1,11 @@
 import type { FormState } from "./action-declaration-form.model";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
 } from "../map/actions-map-geometry.utils";
+import { formatKg } from "../action-declaration/utils/harvest-utils";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;
@@ -29,8 +31,7 @@ export function ActionDeclarationFormConfirmation({
 }: ActionDeclarationFormConfirmationProps) {
   const isCleanPlaceMode =
     payload.recordType === "clean_place" || payload.recordType === "spot";
-  const impactCO2 = (payload.wasteKg * 0.5).toFixed(1);
-  const impactPlastic = (payload.wasteKg * 0.3).toFixed(1);
+  const impact = computeActionImpactKpis({ metadata: payload });
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
 
   return (
@@ -156,7 +157,7 @@ export function ActionDeclarationFormConfirmation({
           {/* Déchets collectés */}
           <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] p-6 shadow-sm">
             <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-3">
-              {isCleanPlaceMode ? "Lieu propre" : "Déchets collectés"}
+              {isCleanPlaceMode ? "Lieu propre" : "Mesure déclarée — déchets collectés"}
             </p>
             <p className="text-4xl font-bold text-emerald-950 tracking-tight">
               {isCleanPlaceMode ? "Signalé" : `${payload.wasteKg} kg`}
@@ -213,28 +214,27 @@ export function ActionDeclarationFormConfirmation({
               <div className="flex items-center gap-2 mb-4">
                 <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500" />
                 <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold">
-                  Impact estimé
+                  Proxys d&apos;impact
                 </p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              <p className="mb-4 text-sm leading-relaxed text-emerald-900/70">
+                Ces valeurs sont des estimations calculées à partir des données disponibles. Elles ne remplacent pas les mesures déclarées ci-dessus.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <p className="text-xs text-emerald-700 font-semibold mb-1">Déchets évités</p>
+                  <p className="text-xs text-emerald-700 font-semibold mb-1">CO₂e évité (proxy)</p>
                   <p className="text-xl font-bold text-emerald-950 tracking-tight">
-                    {payload.wasteKg} kg
+                    ~{formatKg(impact.co2AvoidedKg)} kg
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-emerald-700 font-semibold mb-1">CO₂ évité</p>
-                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
-                    ~{impactCO2} kg
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-emerald-700 font-semibold mb-1">Plastique</p>
-                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
-                    ~{impactPlastic} kg
-                  </p>
-                </div>
+                {impact.butts > 0 ? (
+                  <div>
+                    <p className="text-xs text-emerald-700 font-semibold mb-1">Eau protégée (proxy)</p>
+                    <p className="text-xl font-bold text-emerald-950 tracking-tight">
+                      ~{impact.waterSavedLiters.toLocaleString("fr-FR")} L
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
