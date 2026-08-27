@@ -45,7 +45,7 @@ export default function MentionsLegalesPage() {
           badge={<PageHeaderBadge tone="slate">Cadre juridique</PageHeaderBadge>}
           title="Mentions légales"
           subtitle="Point d'entrée unique vers les documents juridiques de CleanMyMap. Les pages détaillées restent séparées pour garder la conformité lisible."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
         />
 
         <section className="grid gap-4 md:grid-cols-2">
@@ -118,20 +118,55 @@ export default function MentionsLegalesPage() {
         </section>
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-bold text-slate-950">Éditeur du site</h2>
+          <h2 className="text-xl font-bold text-slate-950">Édition et publication</h2>
           <div className="space-y-2 text-sm leading-6 text-slate-600">
             <p>
-              <strong>CleanMyMap</strong> est une plateforme citoyenne de
-              dépollution urbaine et d&apos;action écologique.
+              <strong>CleanMyMap</strong> est actuellement édité par{" "}
+              <strong>Maxence Deroome</strong>, personne physique éditant à titre
+              non professionnel dans le cadre d&apos;un projet étudiant. Aucune
+              société, entreprise, association ou autre personne morale
+              n&apos;exploite actuellement le service.
             </p>
             <p>
-              Directeur de publication : Maxence Deroome
+              Directeur de la publication : <strong>Maxence Deroome</strong>,
+              conformément à l&apos;article 93-2 de la loi du 29 juillet 1982.
             </p>
-            <p>
-              Hébergement et services techniques : Vercel, Supabase, Clerk,
-              Resend, PostHog et, si activé, Sentry.
+            <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              Les éléments personnels de l&apos;éditeur ne sont pas publiés ici.
+              La condition permettant de tenir ces éléments à disposition de
+              Vercel au titre de l&apos;article 1-1 II de la LCEN n&apos;est pas vérifiable
+              dans les données de compte disponibles pour ce dépôt.
             </p>
           </div>
+        </section>
+
+        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+          <h2 className="text-xl font-bold text-slate-950">Hébergement</h2>
+          <div className="space-y-2 text-sm leading-6 text-slate-600">
+            <p><strong>Vercel Inc.</strong></p>
+            <p>
+              440 N Barranca Avenue #4133<br />
+              Covina, CA 91723<br />
+              United States
+            </p>
+            <p>
+              Aucun numéro de téléphone général de Vercel n&apos;est publié ici. Le
+              numéro figurant dans la politique DMCA de Vercel n&apos;est pas repris,
+              car il concerne les notifications de copyright et ne constitue pas
+              un contact général vérifié.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
+          <h2 className="text-xl font-bold text-slate-950">Services techniques</h2>
+          <p className="text-sm leading-6 text-slate-600">
+            Supabase (base de données et stockage), Clerk (identité et
+            authentification), Resend (emails), PostHog (analytics avec
+            consentement) et Sentry (observabilité et sécurité lorsqu&apos;activé)
+            sont des prestataires techniques distincts. Ils ne sont pas présentés
+            comme l&apos;hébergeur du site.
+          </p>
         </section>
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">

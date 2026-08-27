@@ -9,17 +9,17 @@ une configuration technique ou une hypothèse en information juridique.
 
 ## 1. Responsable du traitement et point de contact
 
-L'identité juridique, le statut et les coordonnées complètes du responsable du
-traitement ne sont pas publiés dans cette version. Ce bloc dépend de la
-résolution factuelle de LEGAL-02. Aucune forme juridique, adresse, téléphone ou
-fonction dédiée n'est affirmée sans information opérateur explicitement
-confirmée.
+Le responsable du traitement est **Maxence Deroome**, personne physique éditant
+CleanMyMap à titre non professionnel dans le cadre d'un projet étudiant. Aucune
+société, entreprise, association ou autre personne morale n'exploite actuellement
+le service. Le point de contact actuellement configuré pour les questions RGPD,
+le retrait du consentement et l'exercice des droits est :
+`contact@cleanmymap.fr`.
 
-Le point de contact actuellement configuré pour les questions RGPD, le retrait
-du consentement et l'exercice des droits est : `contact@cleanmymap.fr`.
-
-Cette information ne remplace pas le bloc d'identité juridique qui devra être
-complété avant de présenter la documentation comme définitive.
+Le domicile et le téléphone personnels de l'éditeur ne sont pas publiés par
+défaut : la condition permettant de tenir ces éléments à disposition de Vercel
+au titre de l'article 1-1 II de la LCEN n'est pas vérifiable dans les données de
+compte accessibles depuis ce checkout.
 
 ## 2. Données traitées
 
