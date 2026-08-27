@@ -1,4 +1,4 @@
-import type { JoinableActionItem } from "@/lib/actions/group-participation";
+import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 
 export type JoinableActionJoinFilter = "all" | "available" | "joined";
 

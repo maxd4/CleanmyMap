@@ -20,7 +20,7 @@ import type {
   ActionStatus,
 } from "@/lib/actions/types";
 import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit";
-import type { ActionParticipationReviewItem } from "@/lib/actions/group-participation";
+import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { formatScorePercent } from "@/lib/formatters/score";

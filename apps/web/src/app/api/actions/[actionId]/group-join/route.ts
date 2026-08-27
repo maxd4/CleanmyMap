@@ -15,7 +15,7 @@ import {
   appendActionModerationAudit,
   normalizeModerationReason,
 } from "@/lib/actions/moderation-audit";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
+import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
   extractActionMetadataFromNotes,
@@ -28,7 +28,7 @@ import {
   loadActionParticipationReviews,
   reviewActionParticipation,
   searchActionParticipationCandidates,
-} from "@/lib/actions/group-participation";
+} from "@/lib/actions/participation/group-participation";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 export const runtime = "nodejs";
