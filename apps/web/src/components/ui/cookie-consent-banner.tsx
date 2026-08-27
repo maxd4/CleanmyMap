@@ -12,6 +12,9 @@ import {
   type CookieConsentState,
 } from "@/lib/storage/ui-state-storage";
 
+export const COOKIE_CONSENT_ACTION_CLASS_NAME =
+  "min-h-10 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800";
+
 export function CookieConsentBanner() {
   const [isClient] = useState(() => typeof window !== "undefined");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
@@ -83,14 +86,14 @@ export function CookieConsentBanner() {
               <button
                 type="button"
                 onClick={() => handleDecision(true)}
-                className="min-h-10 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                className={COOKIE_CONSENT_ACTION_CLASS_NAME}
               >
                 Tout accepter
               </button>
               <button
                 type="button"
                 onClick={() => handleDecision(false)}
-                className="min-h-10 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                className={COOKIE_CONSENT_ACTION_CLASS_NAME}
               >
                 Tout refuser
               </button>

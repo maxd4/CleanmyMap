@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CookieConsentBanner } from "./cookie-consent-banner";
+import {
+  CookieConsentBanner,
+  COOKIE_CONSENT_ACTION_CLASS_NAME,
+} from "./cookie-consent-banner";
 
 function installMockBrowser() {
   const storage = new Map<string, string>();
@@ -35,8 +38,14 @@ describe("CookieConsentBanner", () => {
     expect(html).not.toContain("Essentiels seulement");
     expect(html).not.toContain("aria-label=\"Fermer\"");
     expect(buttons.every((button) => button.includes('type="button"'))).toBe(true);
-    expect(buttons.every((button) => button.includes("min-h-10"))).toBe(true);
-    expect(buttons.every((button) => button.includes("text-sm"))).toBe(true);
-    expect(buttons.every((button) => button.includes("font-semibold"))).toBe(true);
+
+    const classNames = buttons.map(
+      (button) => button.match(/\bclass="([^"]+)"/)?.[1] ?? null,
+    );
+    expect(classNames).toEqual([
+      COOKIE_CONSENT_ACTION_CLASS_NAME,
+      COOKIE_CONSENT_ACTION_CLASS_NAME,
+    ]);
+    expect(buttons[0]).not.toBe(buttons[1]);
   });
 });
