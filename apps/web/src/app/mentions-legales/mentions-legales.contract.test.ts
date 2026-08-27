@@ -77,8 +77,7 @@ describe("mentions légales contract", () => {
     }
   });
 
-  it("keeps the three legal lots closed across the canonical documentation", () => {
-    expect(legalDocumentation).toContain("LEGAL-01, LEGAL-02 et LEGAL-03 sont clos");
+  it("keeps page documentation completeness statuses aligned", () => {
     expect(institutionalIndex).toContain("LEGAL-01 clos");
     expect(institutionalIndex).toContain("LEGAL-02 clos");
     expect(institutionalIndex).toContain("LEGAL-03 clos");
@@ -90,6 +89,22 @@ describe("mentions légales contract", () => {
       expect(source).not.toContain("données de compte accessibles depuis ce checkout");
       expect(source).not.toContain("sous réserve");
     }
+  });
+
+  it("keeps the legal README as a canonical document index without lot markers", () => {
+    expect(legalDocumentation).toMatch(/source documentaire juridique canonique/iu);
+
+    for (const document of [
+      "conditions-generales-utilisation.md",
+      "politique-confidentialite.md",
+      "politique-cookies.md",
+      "charte-benevole.md",
+      "dsa-signalement-moderation.md",
+    ]) {
+      expect(legalDocumentation).toContain(document);
+    }
+
+    expect(legalDocumentation).not.toMatch(/\bLEGAL-0[123]\b/iu);
   });
 
   it("propagates the confirmed publisher status to the privacy surfaces", () => {
