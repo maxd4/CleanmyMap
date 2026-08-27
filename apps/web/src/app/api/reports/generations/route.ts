@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
-import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   persistReportGeneration,
 } from "@/lib/reports/report-generation-history-store";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
+import { reportGenerationPayloadSchema } from "@/lib/reports/report-generation-payload";
 
 export const runtime = "nodejs";
 
-const periodSchema = z.enum(["six_months", "current_year", "full_history"]);
 const detailLevelSchema = z.enum(["concis", "default", "exhaustif"]);
 const scopeKindSchema = z.enum(["global", "account", "association", "arrondissement"]);
 
@@ -21,21 +21,8 @@ const modulesSchema = z.object({
   detailedFiles: z.boolean(),
 });
 
-const payloadSchema = z.object({
-  title: z.string().trim().min(1).max(240),
-  rubrique: z.literal("reporting"),
-  periode: periodSchema,
-  organizationType: z.string().trim().min(1).max(180),
-  organizationName: z.string().trim().max(180).optional(),
-  data: z
-    .object({
-      generatedAt: z.string().datetime(),
-    })
-    .passthrough(),
-});
-
 const createPayloadSchema = z.object({
-  payload: payloadSchema,
+  payload: reportGenerationPayloadSchema,
   scopeKind: scopeKindSchema,
   scopeValue: z.string().max(180),
   scopeLabel: z.string().trim().min(1).max(180),
@@ -75,7 +62,7 @@ export async function POST(request: Request) {
 
   try {
     const input: ReportGenerationHistoryInput = {
-      payload: parsed.data.payload as PdfReportPayload,
+      payload: parsed.data.payload,
       scopeKind: parsed.data.scopeKind,
       scopeValue: parsed.data.scopeValue,
       scopeLabel: parsed.data.scopeLabel,

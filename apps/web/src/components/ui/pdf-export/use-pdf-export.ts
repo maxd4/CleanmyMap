@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildPdfReportFilename,
-  buildPdfReportLines,
-  buildSimplePdf,
   hasPdfReportData,
   type PdfReportData,
   type PdfReportPayload,
 } from "@/lib/pdf-export/simple-pdf";
-import { buildOfficialReportHtml } from "@/lib/pdf-export/official-report-html";
+import { openOrDownloadReport } from "@/lib/pdf-export/browser-report";
 import { buildExportUiCopy } from "@/lib/reports/export-ui";
 
 export type ExportHistoryEntry = {
@@ -62,34 +60,6 @@ function writeHistoryToStorage(entries: ExportHistoryEntry[]): void {
   }
 }
 
-function downloadPdf(filename: string, lines: string[]): void {
-  const bytes = buildSimplePdf(lines);
-  const blob = new Blob(
-    [(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)],
-    { type: "application/pdf" },
-  );
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
-}
-
-function openPrintableReport(html: string): boolean {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return false;
-
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-
-  return true;
-}
-
 export function usePdfExport(params: UsePdfExportParams) {
   const [state, setState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -137,13 +107,7 @@ export function usePdfExport(params: UsePdfExportParams) {
       if (params.onGenerate) {
         await params.onGenerate(payload);
       } else {
-        const printableHtml = params.buildPrintableHtml
-          ? params.buildPrintableHtml(payload)
-          : buildOfficialReportHtml(payload);
-        const opened = openPrintableReport(printableHtml);
-        if (!opened) {
-          downloadPdf(filename, buildPdfReportLines(payload));
-        }
+        openOrDownloadReport(payload, filename, params.buildPrintableHtml);
       }
 
       await params.onExportSuccess?.(payload);

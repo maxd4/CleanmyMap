@@ -34,6 +34,10 @@ import {
   type SelectedPeriodId,
 } from "@/components/reports/web-document/reports-web-document.shared";
 import { usePdfExport } from "@/components/ui/pdf-export/use-pdf-export";
+import {
+  renderReportWindow,
+  openOrDownloadReport,
+} from "@/lib/pdf-export/browser-report";
 import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
@@ -48,6 +52,9 @@ import {
   isReportGenerationHistoryRow,
   type ReportGenerationHistoryRow,
 } from "@/lib/reports/report-generation-history-contract";
+import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-client";
+import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
+import type { ReportGenerationHistoryActionState } from "./web-document/reports-web-document-delivery";
 
 function toIsoDateKey(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -110,6 +117,9 @@ export function ReportsWebDocument({
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [recentRows, setRecentRows] = useState(initialRecentRows);
+  const [historyActionStateById, setHistoryActionStateById] = useState<
+    Record<string, ReportGenerationHistoryActionState>
+  >({});
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [period, setPeriod] = useState<SelectedPeriodId>("");
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
@@ -187,6 +197,65 @@ export function ReportsWebDocument({
       setHistoryWarning(
         "Le PDF a bien été généré, mais cette génération n'a pas pu être ajoutée à l'historique.",
       );
+    }
+  }
+
+  async function handleHistoricalAction(
+    id: string,
+    action: ReportGenerationHistoryActionState["action"],
+  ): Promise<void> {
+    setHistoryActionStateById((current) => ({
+      ...current,
+      [id]: {
+        action,
+        state: "pending",
+        message: action === "view" ? "Ouverture du rapport historique..." : "Préparation de la réexportation...",
+      },
+    }));
+
+    const reportWindow = action === "view" ? window.open("", "_blank") : null;
+    if (action === "view" && !reportWindow) {
+      setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "error",
+          message: "La fenêtre du rapport a été bloquée. Autorisez les fenêtres contextuelles puis réessayez.",
+        },
+      }));
+      return;
+    }
+
+    try {
+      const generation = await loadHistoricalReportSnapshot(id);
+      replayHistoricalReport(action, generation, {
+        view: (payload) => renderReportWindow(reportWindow!, payload),
+        reexport: (payload, filename) => openOrDownloadReport(payload, filename),
+      });
+
+      setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "success",
+          message:
+            action === "view"
+              ? "Rapport historique ouvert depuis le snapshot enregistré."
+              : "Réexport traité depuis le snapshot historique (" +
+                generation.filename +
+                "). Aucune nouvelle génération n'a été créée.",
+        },
+      }));
+    } catch (error) {
+      reportWindow?.close();
+      setHistoryActionStateById((current) => ({
+        ...current,
+        [id]: {
+          action,
+          state: "error",
+          message: error instanceof Error ? error.message : "Impossible de charger le rapport historique.",
+        },
+      }));
     }
   }
 
@@ -366,6 +435,9 @@ export function ReportsWebDocument({
       <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
         <ReportsWebDocumentDeliveryHistory
           recentRows={recentRows}
+          actionStateById={historyActionStateById}
+          onView={(id) => void handleHistoricalAction(id, "view")}
+          onReexport={(id) => void handleHistoricalAction(id, "reexport")}
         />
       </CmmGridItem>
     </CmmGrid>

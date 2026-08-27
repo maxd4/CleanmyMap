@@ -7,6 +7,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import {
+  getReportGenerationSnapshotById,
+  InvalidReportGenerationIdError,
   listReportGenerationHistory,
   persistReportGeneration,
 } from "./report-generation-history-store";
@@ -38,6 +40,12 @@ const dbRow = {
     detailedFiles: true,
   },
   snapshot: payload,
+};
+const historicalId = "11111111-1111-4111-8111-111111111111";
+const historicalRow = {
+  ...dbRow,
+  id: historicalId,
+  generated_at: payload.data.generatedAt,
 };
 
 describe("report generation history store", () => {
@@ -105,6 +113,50 @@ describe("report generation history store", () => {
         generated_at: payload.data.generatedAt,
         snapshot: payload,
       }),
+    );
+  });
+
+  it("loads only the requested snapshot by validated UUID", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: historicalRow, error: null });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select })),
+    });
+
+    await expect(getReportGenerationSnapshotById(historicalId)).resolves.toMatchObject({
+      id: historicalId,
+      filename: historicalRow.filename,
+      generatedAt: historicalRow.generated_at,
+      snapshot: payload,
+    });
+    expect(select).toHaveBeenCalledWith(
+      "id, filename, generated_at, snapshot, scope_label, detail_level",
+    );
+    expect(eq).toHaveBeenCalledWith("id", historicalId);
+    expect(maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an invalid UUID before querying Supabase", async () => {
+    await expect(getReportGenerationSnapshotById("not-a-uuid")).rejects.toBeInstanceOf(
+      InvalidReportGenerationIdError,
+    );
+    expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a stored snapshot whose generatedAt does not match its metadata", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { ...historicalRow, generated_at: "2026-08-27T11:30:00.000Z" },
+      error: null,
+    });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    getSupabaseAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({ select })),
+    });
+
+    await expect(getReportGenerationSnapshotById(historicalId)).rejects.toThrow(
+      "invalid or incompatible",
     );
   });
 });

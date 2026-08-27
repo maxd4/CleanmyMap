@@ -30,6 +30,15 @@ export type ReportsWebDocumentDeliveryProps = {
 
 export type ReportsWebDocumentDeliveryHistoryProps = {
   recentRows: ReportGenerationHistoryRow[];
+  actionStateById?: Record<string, ReportGenerationHistoryActionState>;
+  onView: (id: string) => void;
+  onReexport: (id: string) => void;
+};
+
+export type ReportGenerationHistoryActionState = {
+  action: "view" | "reexport";
+  state: "pending" | "success" | "error";
+  message: string;
 };
 
 export function ReportsWebDocumentDelivery({
@@ -128,6 +137,9 @@ export function ReportsWebDocumentDelivery({
 
 export function ReportsWebDocumentDeliveryHistory({
   recentRows,
+  actionStateById = {},
+  onView,
+  onReexport,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
     <section id="reports-history" className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
@@ -147,7 +159,7 @@ export function ReportsWebDocumentDeliveryHistory({
           <table className="w-full min-w-full border-separate border-spacing-0 text-left">
             <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
               <tr>
-                {["Rapport", "Période", "Périmètre", "Détail", "Généré le"].map((header) => (
+                {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
                   <th key={header} className="border-b border-slate-200 px-4 py-3 font-black">
                     {header}
                   </th>
@@ -177,6 +189,35 @@ export function ReportsWebDocumentDeliveryHistory({
                   <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
                     {row.generatedAt}
                   </td>
+                  <td className="border-b border-slate-100 px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <HistoryActionButton
+                        label="Voir"
+                        disabled={actionStateById[row.id]?.state === "pending"}
+                        onClick={() => onView(row.id)}
+                      />
+                      <HistoryActionButton
+                        label="Réexporter"
+                        disabled={actionStateById[row.id]?.state === "pending"}
+                        onClick={() => onReexport(row.id)}
+                      />
+                    </div>
+                    {actionStateById[row.id] ? (
+                      <p
+                        role={actionStateById[row.id].state === "error" ? "alert" : "status"}
+                        className={
+                          "mt-2 text-xs leading-5 " +
+                          (actionStateById[row.id].state === "error"
+                            ? "text-red-700"
+                            : actionStateById[row.id].state === "pending"
+                              ? "text-slate-500"
+                              : "text-emerald-700")
+                        }
+                      >
+                        {actionStateById[row.id].message}
+                      </p>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -184,5 +225,26 @@ export function ReportsWebDocumentDeliveryHistory({
         </div>
       )}
     </section>
+  );
+}
+
+function HistoryActionButton({
+  label,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {label}
+    </button>
   );
 }

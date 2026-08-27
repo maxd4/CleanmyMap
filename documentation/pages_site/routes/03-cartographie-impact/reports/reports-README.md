@@ -156,16 +156,21 @@ synthétique n'est créé lorsque la base est vide, auquel cas l'interface affic
 
 La lecture de cette liste ne sélectionne que les métadonnées nécessaires à ces
 colonnes (`id`, `generated_at`, `title`, `period_id`, `scope_label` et
-`detail_level`). Le `snapshot` et les `modules` restent hors de cette requête
-et seront chargés par identifiant uniquement dans le lot 2B pour un éventuel
-rejeu exact.
+`detail_level`). Le `snapshot` et les `modules` restent hors de cette requête.
+Les actions « Voir » et « Réexporter » chargent ensuite le snapshot par son
+identifiant uniquement au clic, via `GET /api/reports/generations/[id]`.
+
+« Voir » rend le payload immuable enregistré, sans relire les données actuelles
+ni recalculer le rapport. « Réexporter » réutilise le renderer existant, garde
+le `generatedAt` et le filename historiques, et ne crée aucune nouvelle ligne
+dans `report_generations`. Un snapshot absent, invalide ou incompatible produit
+une erreur explicite ; il n'est jamais remplacé par un recalcul courant.
 
 Après un export PDF réussi, le payload JSON final, les modules et les
 métadonnées de configuration sont persistés ; le binaire PDF ne l'est pas.
 L'échec de cette persistance conserve le succès du PDF et affiche un
-avertissement non bloquant. Les actions de consultation et de téléchargement
-depuis l'historique restent absentes tant qu'un rejeu exact du snapshot n'est
-pas disponible. Aucune politique de rétention n'est promise par cette page.
+avertissement non bloquant. Aucune politique de rétention n'est promise par
+cette page.
 La génération et la lecture de cet historique sont réservées aux profils
 admin-like via `requireAdminAccess`; la table Supabase n'accorde aucun accès
 direct à `anon` ou `authenticated`.
