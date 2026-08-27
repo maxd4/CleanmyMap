@@ -250,7 +250,7 @@ export function ActionDeclarationFormConfirmation({
         </div>
 
         {/* Actions */}
-        <div className="cmm-modal-footer-sticky flex gap-4 bg-[#F3FBF6]/98 px-8 py-6 rounded-b-[2.5rem]">
+        <div className="cmm-modal-footer-sticky flex flex-col gap-3 bg-[#F3FBF6]/98 px-4 py-5 rounded-b-[2.5rem] sm:flex-row sm:gap-4 sm:px-8 sm:py-6">
           <button
             type="button"
             onClick={onModify}

@@ -361,12 +361,12 @@ export function useActionDeclarationForm({
         {
           field: "associationName",
           message:
-            "Connectez-vous sur ordinateur pour compléter et envoyer ce formulaire.",
+            "Connectez-vous pour compléter et envoyer ce formulaire.",
         },
       ]);
       setHasAttemptedSubmit(true);
       setErrorMessage(
-        "Connectez-vous sur ordinateur pour compléter et envoyer ce formulaire.",
+        "Connectez-vous pour compléter et envoyer ce formulaire.",
       );
       setSubmissionState("error");
       setShowConfirmation(false);

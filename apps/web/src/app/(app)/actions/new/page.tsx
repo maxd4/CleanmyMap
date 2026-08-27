@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ActionDeclarationEntryFlow } from "@/components/actions/action-declaration-entry-flow";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -45,14 +46,32 @@ function resolveSingleSearchParam(
 export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
-  const { userId } = await getSafeAuthSession();
-  const isAuthenticated = Boolean(userId);
-  const identity = isAuthenticated ? await getCurrentUserIdentity() : null;
-  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
-  const fallbackActorName = isAuthenticated ? userId ?? "unknown-user" : "Aperçu public";
+  const returnUrl = buildActionReturnUrl({ fromEventId, actionId });
+  const { userId, clerkReachable } = await getSafeAuthSession();
+
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        authUnavailable={!clerkReachable}
+        mode="disabled"
+        signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
+        signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
+        title="Connexion requise pour déclarer une action"
+        description="Connectez-vous à votre compte CleanMyMap pour remplir et envoyer une déclaration protégée."
+      >
+        <div aria-hidden="true" />
+      </ClerkRequiredGate>
+    );
+  }
+
+  const isAuthenticated = true;
+  const identity = await getCurrentUserIdentity();
+  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
+  const fallbackActorName = userId;
   const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
@@ -61,9 +80,9 @@ export default async function NewActionPage({
   const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
 
   const userMetadata = {
-    userId: userId ?? "public-preview",
+    userId,
     username: identity?.username,
-    displayName: identity?.displayName ?? "Aperçu public",
+    displayName: identity?.displayName ?? fallbackActorName,
     email: undefined,
   };
 
@@ -96,4 +115,22 @@ export default async function NewActionPage({
       />
     </div>
   );
+}
+
+function buildActionReturnUrl({
+  fromEventId,
+  actionId,
+}: {
+  fromEventId?: string;
+  actionId?: string;
+}): string {
+  const returnParams = new URLSearchParams();
+  if (fromEventId) returnParams.set("fromEventId", fromEventId);
+  if (actionId) returnParams.set("actionId", actionId);
+  const query = returnParams.toString();
+  return query ? `/actions/new?${query}` : "/actions/new";
+}
+
+function buildAuthRedirectHref(route: "/sign-in" | "/sign-up", returnUrl: string): string {
+  return `${route}?redirect_url=${encodeURIComponent(returnUrl)}`;
 }
