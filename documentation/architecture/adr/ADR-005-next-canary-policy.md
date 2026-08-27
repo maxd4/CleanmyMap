@@ -1,11 +1,12 @@
-# ADR-005 — Politique Next.js canary
+# ADR-005 — Politique de stabilité Next.js
 
-**Statut : à décider**  
+**Statut : accepté — stable par défaut**
 **Date : 11 juillet 2026**
+**Décision clôturée : 27 août 2026**
 
-## Contexte
+## Contexte historique
 
-Le manifeste web courant utilise :
+Le manifeste web observé lors de la rédaction utilisait :
 
 ```txt
 next: 16.3.0-canary.79
@@ -19,13 +20,13 @@ Une version canary peut contenir :
 - régressions ;
 - changements rapides.
 
-Aucune décision durable ne doit être implicite.
+Aucune décision durable ne devait être implicite.
 
-## Question
+## Question historique
 
-Pourquoi CleanMyMap dépend-il d'une version canary de Next.js ?
+Pourquoi CleanMyMap dépendait-il d'une version canary de Next.js ?
 
-## Options
+## Options examinées
 
 ### Option A — Revenir sur stable
 
@@ -53,24 +54,35 @@ condition de sortie
 responsable de revalidation
 ```
 
-## Recommandation
+## Décision
 
-Par défaut :
+La politique acceptée pour CleanMyMap est :
 
 > utiliser une version stable de Next.js, sauf blocage démontré.
 
-Ne pas faire de downgrade automatique dans le même lot que d'autres corrections importantes.
+Le runtime web actuel suit cette politique :
 
-## Si la canary est conservée
+```txt
+next: 16.3.1
+react: 19.2.8
+typescript: ^7
+```
 
-Ajouter une vérification régulière :
+Cette décision ne modifie pas rétroactivement le contexte canary décrit plus haut.
 
-1. vérifier si le correctif est disponible en stable ;
-2. lire les release notes ;
-3. tester typecheck ;
-4. lancer tests ;
-5. lancer build ;
-6. revenir sur stable lorsque la condition de sortie est remplie.
+## Exception canary
+
+Une version canary ne peut être introduite qu'avec une justification technique précise et documentée. La décision doit alors enregistrer :
+
+```txt
+raison exacte
+issue ou bug bloquant
+fonctionnalité utilisée
+date d'adoption
+version minimale
+condition de sortie
+responsable de revalidation
+```
 
 ## Validation
 
@@ -87,6 +99,4 @@ npm run build
 
 ## Décision finale
 
-À compléter après vérification de la raison historique réelle.
-
-Ne pas marquer cet ADR comme accepté sans preuve.
+La politique « stable par défaut » est acceptée et clôt cet ADR. Toute future exception canary devra être justifiée selon la procédure ci-dessus.

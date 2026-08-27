@@ -33,7 +33,7 @@ Décisions existantes :
 - `ADR-002-service-role-key.md` — usage des clés privilégiées ;
 - `ADR-003-monorepo-structure.md` — structure du dépôt ;
 - `ADR-004-companion-identity.md` — identité de l'application mobile (historique companion) ;
-- `ADR-005-next-canary-policy.md` — usage d'une version canary de Next.js ;
+- `ADR-005-next-canary-policy.md` — politique de stabilité Next.js, stable par défaut (contexte canary historique) ;
 - `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations ;
 - `ADR-007-capability-scoped-authorization.md` — autorisation par capacités et périmètres.
 

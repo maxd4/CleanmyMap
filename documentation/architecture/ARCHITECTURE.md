@@ -33,7 +33,7 @@ Pour la carte :
 
 ```txt
 apps/web/src/app/(app)/actions/map/page.tsx
-apps/web/src/components/actions/actions-map-feed.tsx
+apps/web/src/components/actions/map-feed/actions-map-feed.tsx
 apps/web/src/lib/data/map-records.ts
 ```
 

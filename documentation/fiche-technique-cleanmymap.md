@@ -1,12 +1,12 @@
 # Fiche technique CleanMyMap
 
-Résumé ultra court: monorepo npm avec Next.js 16 / React 19, App Router, Supabase + Clerk, Tailwind CSS v4, design system CMM maison, animations Framer Motion, analytics PostHog + Vercel, monitoring Sentry, emails Resend, paiements Stripe, captures Playwright + Sharp.
+Résumé ultra court: monorepo npm avec Next.js 16.3.1 / React 19.2.8 / TypeScript ^7, App Router, Supabase + Clerk, Tailwind CSS v4, design system CMM maison, animations Framer Motion, analytics PostHog + Vercel, monitoring Sentry, emails Resend, paiements Stripe, captures Playwright + Sharp.
 
 Ce document est un inventaire technique du projet tel qu'il existe dans le workspace. Il ne propose pas de refonte.
 
 ## 1. Stack principale
-- Framework : Next.js 16.2.3 dans [apps/web/package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/package.json), avec App Router dans [apps/web/src/app](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app).
-- Langage : TypeScript 5, React 19.2.4, modules ES (`type: module`) dans [apps/web/package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/package.json).
+- Framework : Next.js 16.3.1 dans [apps/web/package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/package.json), avec App Router dans [apps/web/src/app](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app).
+- Langage : TypeScript ^7, React 19.2.8, modules ES (`type: module`) dans [apps/web/package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/package.json).
 - Build tool : `next build`, configuré dans [apps/web/next.config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/next.config.ts); PostCSS/Tailwind v4 dans [apps/web/postcss.config.mjs](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/postcss.config.mjs).
 - Routing : App Router, route groups `(app)`, routes dynamiques `[profile]` et `[sectionId]`, routes d'auth `[[...sign-in]]` et `[[...sign-up]]`, API routes sous [apps/web/src/app/api](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api).
 - Styling : Tailwind CSS v4 via `@import "tailwindcss";` dans [apps/web/src/app/globals.css](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/globals.css), complété par des tokens CSS et classes utilitaires maison.
@@ -101,7 +101,7 @@ npm run checks
   - cartes accueil dans [apps/web/src/components/accueil/accueil-surface.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil/accueil-surface.ts)
   - cartes génériques dans [apps/web/src/components/ui/cmm-card.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/ui/cmm-card.tsx)
   - cartes de sections dans [apps/web/src/components/ui/cmm-block-accent.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/ui/cmm-block-accent.tsx)
-- Point de vigilance routing : l'accueil contient des liens vers `/methodology` dans [apps/web/src/components/accueil/accueil-impact-summary.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil/accueil-impact-summary.tsx), alors que la route canonique trouvée dans le projet est `/methodologie` via [apps/web/src/app/(app)/methodologie/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/methodologie/page.tsx).
+- Route méthodologie canonique : `/methodologie` via [apps/web/src/app/(app)/methodologie/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/methodologie/page.tsx).
 
 ## 5. Design system actuel
 - Palette utilisée : base dark premium sur `#020617` / `#f8fafc`, accents cyan/emerald, tons bleutés et violets pour les cartes et les CTA.
