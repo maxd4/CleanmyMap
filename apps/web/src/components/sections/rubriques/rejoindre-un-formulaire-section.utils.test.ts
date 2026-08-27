@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { JoinableActionItem } from "@/lib/actions/group-participation";
+import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { filterAndSortJoinableActions } from "./rejoindre-un-formulaire-section.utils";
 
 function makeAction(partial: Partial<JoinableActionItem> & Pick<JoinableActionItem, "id" | "action_date" | "location_label">): JoinableActionItem {

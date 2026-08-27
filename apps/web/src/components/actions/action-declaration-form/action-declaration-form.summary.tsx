@@ -85,7 +85,7 @@ export function FormProgressSummary({
   compact = false,
   showProgress = true,
 }: FormProgressSummaryProps) {
-  const stepLabel = showProgress ? "Formulaire continu" : "Synthèse";
+  const stepLabel = showProgress ? "Déclaration" : "Synthèse";
   const dateLabel = formatActionDate(actionDate);
   const wasteLabel = formatWasteSummary(wasteKg, megotsKg);
 

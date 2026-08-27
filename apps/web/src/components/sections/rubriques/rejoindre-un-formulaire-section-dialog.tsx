@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { JoinableActionItem } from "@/lib/actions/group-participation";
+import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
 type JoinFormConfirmationDialogProps = {

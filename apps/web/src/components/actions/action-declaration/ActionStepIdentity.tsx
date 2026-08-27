@@ -10,7 +10,6 @@ import {
   Calendar,
   Users,
   Clock,
-  Sparkles,
   User,
   Building,
   ChevronDown,
@@ -140,31 +139,6 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
         <div className="space-y-6">
-          <div>
-            <SectionTitle color="bg-emerald-500">Type d&apos;action</SectionTitle>
-            <div className="grid gap-3">
-              <button
-                type="button"
-                onClick={() => updateField("recordType", "action")}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                  form.recordType === "action" ? "border-emerald-300 bg-[#ECF8EF] shadow-sm" : "border-emerald-200/70 bg-[#F3FBF6] hover:border-emerald-300"
-                )}
-              >
-                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                  form.recordType === "action" ? "bg-emerald-500 text-white" : "bg-emerald-100 text-emerald-700"
-                )}>
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-emerald-950">Action terrain</p>
-                  <p className="text-xs text-emerald-900/55">Collecte mesurable</p>
-                </div>
-              </button>
-
-            </div>
-          </div>
-
           <div>
             <SectionTitle color="bg-violet-500">Cadre &amp; calendrier</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

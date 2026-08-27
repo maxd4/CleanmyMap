@@ -16,7 +16,7 @@ apps/web/src/app/(app)/sections/[sectionId]/page.tsx
 apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx
 apps/web/src/app/api/actions/group-join/route.ts
 apps/web/src/app/api/actions/[actionId]/group-join/route.ts
-apps/web/src/lib/actions/group-participation.ts
+apps/web/src/lib/actions/participation/group-participation.ts
 apps/web/src/lib/actions/permissions.ts
 ```
 

@@ -7,7 +7,7 @@ import {
   resolveActionOrganizers,
   resolveActionParticipants,
   resolveDefaultActionOrganizerIds,
-} from "@/lib/actions/organizers";
+} from "@/lib/actions/participation/organizers";
 import { createAction, resolveActionCreationStatus } from "@/lib/actions/store";
 import {
   createSignalement,

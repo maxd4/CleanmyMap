@@ -73,7 +73,7 @@ vi.mock("@/lib/actions/signalement/create-signalement", () => ({
   createSignalement: createSignalementMock,
 }));
 
-vi.mock("@/lib/actions/organizers", () => ({
+vi.mock("@/lib/actions/participation/organizers", () => ({
   resolveActionOrganizers: resolveActionOrganizersMock,
   resolveActionParticipants: resolveActionParticipantsMock,
   resolveDefaultActionOrganizerIds: resolveDefaultActionOrganizerIdsMock,

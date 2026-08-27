@@ -20,7 +20,7 @@ vi.mock("@/lib/actions/query", () => ({
   runSingleActionQuery: runSingleActionQueryMock,
 }));
 
-vi.mock("@/lib/actions/organizers", () => ({
+vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, Users2, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActionPhase } from "@/lib/actions/types";
-import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/group-participation";
+import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 

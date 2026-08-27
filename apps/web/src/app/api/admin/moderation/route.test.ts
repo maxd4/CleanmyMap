@@ -43,7 +43,7 @@ vi.mock("@/lib/events/emit", () => ({
   emitSpotValidated: emitSpotValidatedMock,
 }));
 
-vi.mock("@/lib/actions/organizers", () => ({
+vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
 

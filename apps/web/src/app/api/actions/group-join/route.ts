@@ -7,7 +7,7 @@ import {
   joinActionParticipation,
   loadJoinableActions,
   loadUserParticipationHistory,
-} from "@/lib/actions/group-participation";
+} from "@/lib/actions/participation/group-participation";
 import {
   getCurrentUserIdentity,
   requireAuthenticatedAccess,
