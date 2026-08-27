@@ -3,6 +3,7 @@ import type { RubriqueSpaceId } from "@/lib/sections-registry";
 import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { PROFILE_CTA_CONFIG, type ProfileAction } from "./profiles-cta";
+import roleAliases from "./auth/role-aliases.json";
 export type { ProfileAction, ProfileCtaConfig } from "./profiles-cta";
 
 // Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
@@ -130,47 +131,17 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
 };
 
-const ROLE_ALIASES: Record<string, Role> = {
-  admin: "admin",
-  administrator: "admin",
-  max: "max",
-  imu: "max",
-  owner: "max",
-  superadmin: "max",
-  super_admin: "max",
-  "super-admin": "max",
-  godmode: "max",
-  creator: "max",
-  createur: "max",
-  createur_du_site: "max",
-  "créateur du site": "max",
-  benevole: "benevole",
-  volunteer: "benevole",
-  user: "benevole",
-  member: "benevole",
-  coordinateur: "coordinateur",
-  coordinator: "coordinateur",
-  coordonnateur: "coordinateur",
-  scientifique: "scientifique",
-  scientist: "scientifique",
-  data: "scientifique",
-  analyste: "scientifique",
-  analyst: "scientifique",
-  statisticien: "scientifique",
-  statistician: "scientifique",
-  entreprise: "entreprise",
-  company: "entreprise",
-  business: "entreprise",
-  professionnel: "entreprise",
-  professionnelle: "entreprise",
-  professional: "entreprise",
-  elu: "elu",
-  elue: "elu",
-  decideur: "elu",
-  "décideur": "elu",
-  elected: "elu",
-  mayor: "elu",
-};
+const ROLE_ALIASES = roleAliases as Record<string, Role>;
+
+/**
+ * Legacy values accepted only at the persistence read boundary. New writes
+ * must use the canonical value `max`.
+ */
+export const MAX_ROLE_STORAGE_VALUES = Object.freeze(
+  Object.entries(ROLE_ALIASES)
+    .filter(([, role]) => role === "max")
+    .map(([alias]) => alias),
+);
 
 export function normalizeProfileRole(
   input: string | null | undefined,

@@ -26,10 +26,16 @@ describe("role resolution", () => {
     expect(extractRole({ role: " Admin " })).toBe("admin");
     expect(extractRole({ profile: " Admin " })).toBe("admin");
     expect(extractRole({ role: " Max " })).toBe("max");
-    expect(extractRole({ role: "super_admin" })).toBe("max");
     expect(extractRole({ role: 123 })).toBeNull();
     expect(extractRole(undefined)).toBeNull();
   });
+
+  it.each(["max", "imu", "IMU", "super-admin", "super_admin", "superadmin"])(
+    "extracts %s as max",
+    (alias) => {
+      expect(extractRole({ role: alias })).toBe("max");
+    },
+  );
 
   it("resolves admin and max roles from public or private metadata", () => {
     expect(isAdminRole({ publicMetadata: { role: "admin" } })).toBe(true);

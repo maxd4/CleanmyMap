@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { __authz_testables, isAdminRole } from "./authz";
 
 describe("authz helpers", () => {
@@ -39,6 +39,28 @@ describe("authz helpers", () => {
         privateMetadata: {},
       }),
     ).toBe(true);
+  });
+
+  it("rewrites legacy IMU metadata to canonical max storage", async () => {
+    const updateUser = vi.fn().mockResolvedValue({ id: "user-1" });
+
+    await __authz_testables.normalizeLegacyOwnerMetadata(
+      { users: { updateUser } } as never,
+      {
+        id: "user-1",
+        publicMetadata: { role: "super_admin", badge: "pioneer" },
+        privateMetadata: { profile: "IMU" },
+      } as never,
+    );
+
+    expect(updateUser).toHaveBeenCalledWith("user-1", {
+      publicMetadata: {
+        role: "max",
+        profile: "max",
+        badge: "pioneer",
+      },
+      privateMetadata: { profile: "max", role: "max" },
+    });
   });
 
   it("rejects non admin role", () => {

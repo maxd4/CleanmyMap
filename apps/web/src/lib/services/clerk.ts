@@ -1,7 +1,11 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
-import { parseAdminUserIds, parseMaxUserIds } from "@/lib/auth/role-resolution";
+import {
+  extractRole,
+  parseAdminUserIds,
+  parseMaxUserIds,
+} from "@/lib/auth/role-resolution";
 import { resolveProfile, type AppProfile } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
@@ -21,12 +25,6 @@ export type ClerkUserIdentity = {
 };
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
-
-function extractRole(metadata: ClerkMetadata): string | null {
-  if (!metadata) return null;
-  const role = metadata["role"];
-  return typeof role === "string" ? role.trim().toLowerCase() : null;
-}
 
 function resolveClerkRole(params: {
   id: string;

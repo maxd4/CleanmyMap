@@ -1,5 +1,10 @@
 # Integration Tests, Access Control & Documentation
 
+> Vocabulaire canonique : **IMU = super-admin = rôle interne `max`**. `max`
+> est l'identifiant technique persistant, `IMU` le libellé produit et
+> `super-admin`/`godmode` des alias legacy normalisés à l'entrée ; ils ne
+> définissent pas des niveaux de permission distincts.
+
 ## Completed
 
 ### 1. Integration Tests (route.integration.test.ts)
@@ -28,13 +33,14 @@ export async function checkAdminAccess() {
     .eq('user_id', userId)
     .maybeSingle();
     
-  if (!userRole || (userRole.role !== 'admin' && userRole.role !== 'godmode')) {
+  const role = normalizeProfileRole(userRole?.role);
+  if (!userRole || (role !== 'admin' && role !== 'max')) {
     redirect('/');
   }
 }
 ```
 - Checks Clerk auth (`userId`)
-- Queries `user_roles` table for admin/godmode role
+- Queries `user_roles` and normalizes legacy role values to `admin` or `max`
 - Redirects to `/` if unauthorized
 
 #### Page-Level Protection (/admin/gamification/xp-audit/page.tsx)
@@ -77,7 +83,7 @@ export async function middleware(req: NextRequest) {
 CREATE TABLE user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id TEXT NOT NULL UNIQUE,
-  role TEXT NOT NULL DEFAULT 'user', -- 'user', 'admin', 'godmode'
+  role TEXT NOT NULL DEFAULT 'user', -- 'user', 'admin', 'max' (legacy godmode is normalized)
   created_at TIMESTAMP DEFAULT NOW(),
   FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
@@ -97,8 +103,8 @@ export async function checkAdminAccess() {
   if (!userId) redirect('/auth/signin');
 
   const user = await clerkClient.users.getUser(userId);
-  const isAdmin = user?.publicMetadata?.role === 'admin' || 
-                  user?.publicMetadata?.role === 'godmode';
+  const role = normalizeProfileRole(user?.publicMetadata?.role);
+  const isAdmin = role === 'admin' || role === 'max';
   
   if (!isAdmin) redirect('/');
 }
@@ -138,7 +144,7 @@ Then manually assign admin roles (via SQL or admin UI):
 ```sql
 INSERT INTO user_roles (user_id, role) VALUES
   ('clerk-user-id-1', 'admin'),
-  ('clerk-user-id-2', 'godmode');
+  ('clerk-user-id-2', 'max');
 ```
 
 ## Running Tests

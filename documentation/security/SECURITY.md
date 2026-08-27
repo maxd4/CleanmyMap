@@ -39,6 +39,11 @@ Supabase assure la persistance et l'autorisation au niveau données lorsque le f
 
 Ne pas introduire une seconde identité canonique pour le même utilisateur sans décision d'architecture explicite.
 
+Le rôle privilégié reste unique : **IMU = super-admin = rôle interne `max`**.
+`max` est la valeur technique canonique, `IMU` le libellé produit et
+`super-admin` un alias entrant ; aucune différence de permissions ne doit être
+déduite de ces appellations.
+
 ## Autorisation
 
 Les permissions sont vérifiées côté serveur selon le contrat :

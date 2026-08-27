@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getProfileActions, getProfileLabel, normalizeProfileRole, resolveProfile, PROFILE_ORDER, type AppProfile } from "./profiles";
+import {
+  getProfileActions,
+  getProfileLabel,
+  normalizeProfileRole,
+  resolveProfile,
+  PROFILE_ORDER,
+  isAppProfile,
+  MAX_ROLE_STORAGE_VALUES,
+  type AppProfile,
+} from "./profiles";
 import {
   ADMIN_GODMODE_ROUTE,
   ADMIN_ROUTE,
@@ -23,9 +32,29 @@ describe("profile aliases", () => {
     expect(getProfileLabel("max", "en")).toBe("IMU");
   });
 
+  it.each([
+    "max",
+    "imu",
+    "IMU",
+    "super-admin",
+    "super_admin",
+    "superadmin",
+    "owner",
+    "godmode",
+    "creator",
+  ])("normalizes %s to the canonical top profile", (alias) => {
+    expect(normalizeProfileRole(alias)).toBe("max");
+  });
+
+  it("keeps legacy top-profile values out of the runtime profile union", () => {
+    expect(isAppProfile("imu")).toBe(false);
+    expect(isAppProfile("super_admin")).toBe(false);
+    expect(PROFILE_ORDER).toContain("max");
+    expect(MAX_ROLE_STORAGE_VALUES).toContain("max");
+    expect(MAX_ROLE_STORAGE_VALUES).toContain("imu");
+  });
+
   it("maps IMU metadata back to the internal top profile", () => {
-    expect(normalizeProfileRole("IMU")).toBe("max");
-    expect(normalizeProfileRole("super_admin")).toBe("max");
     expect(
       resolveProfile({
         metadataRole: "imu",

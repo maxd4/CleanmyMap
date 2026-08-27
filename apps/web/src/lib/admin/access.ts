@@ -1,6 +1,7 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeProfileRole } from "@/lib/profiles";
 
 export async function checkAdminAccess() {
   const { userId } = await auth();
@@ -8,18 +9,20 @@ export async function checkAdminAccess() {
 
   try {
     const supabase = getSupabaseServerClient();
-    // Check if user has 'admin' or 'godmode' role via Clerk metadata or custom DB table
     const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
       .maybeSingle();
 
-    if (!userRole || (userRole.role !== 'admin' && userRole.role !== 'godmode')) {
-      redirect('/');
+    const role = normalizeProfileRole(
+      typeof userRole?.role === "string" ? userRole.role : null,
+    );
+    if (!userRole || (role !== "admin" && role !== "max")) {
+      redirect("/");
     }
   } catch {
     // If role check fails, deny access
-    redirect('/');
+    redirect("/");
   }
 }

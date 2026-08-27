@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity } from "@/lib/authz";
+import { MAX_ROLE_STORAGE_VALUES } from "@/lib/profiles";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -345,7 +346,7 @@ async function resolveBugReportRecipientId(
   const { data: maxData, error: maxError } = await supabase
     .from("profiles")
     .select("id")
-    .in("role_label", ["imu", "max"])
+    .in("role_label", MAX_ROLE_STORAGE_VALUES)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle<{ id: string }>();

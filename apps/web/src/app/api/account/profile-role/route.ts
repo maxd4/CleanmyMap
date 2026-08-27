@@ -1,31 +1,24 @@
-import { clerkClient } from"@clerk/nextjs/server";
-import { NextResponse } from"next/server";
-import { z } from"zod";
-import { auth } from"@clerk/nextjs/server";
-import { getCurrentUserRoleLabel, isAdminRole, isMaxRole } from"@/lib/authz";
-import { syncClerkUserToSupabase } from"@/lib/auth/sync";
+import { clerkClient } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { auth } from "@clerk/nextjs/server";
+import { getCurrentUserRoleLabel, isAdminRole, isMaxRole } from "@/lib/authz";
+import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import {
- getProfileEntryPath,
- isSelfServiceProfile,
-} from"@/lib/profiles";
-import type { AppProfile } from"@/lib/profiles";
+  getProfileEntryPath,
+  isSelfServiceProfile,
+  normalizeProfileRole,
+} from "@/lib/profiles";
 
 const requestSchema = z.object({
-  profile: z
-    .enum([
-      "benevole",
-      "coordinateur",
-      "scientifique",
-      "entreprise",
-      "elu",
-      "local_authority",
-      "admin",
-      "imu",
-      "max",
-    ])
-    .transform((value) =>
-      (value === "local_authority" || value === "imu" ? "max" : value) as AppProfile,
-    ),
+  profile: z.string().trim().transform((value, context) => {
+    const normalized = normalizeProfileRole(value);
+    if (!normalized) {
+      context.addIssue({ code: "custom", message: "Invalid profile" });
+      return z.NEVER;
+    }
+    return normalized;
+  }),
 });
 
 export async function POST(request: Request) {
@@ -51,7 +44,7 @@ export async function POST(request: Request) {
 
   const currentRole = await getCurrentUserRoleLabel();
   const targetRole = parsed.data.profile;
-  const persistedRole = targetRole === "max" ? "imu" : targetRole;
+  const persistedRole = targetRole;
 
   // Seuls les admins ou les profils "self-service" peuvent changer de rôle
   const canSwitch =

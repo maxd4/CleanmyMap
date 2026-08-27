@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_PAGE_SIZE = 500;
@@ -14,35 +15,12 @@ const ENV_FILE_CANDIDATES = [
   join(process.cwd(), ".env.local"),
 ];
 
+const ROLE_ALIASES_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../apps/web/src/lib/auth/role-aliases.json",
+);
 const ROLE_ALIASES = new Map(
-  Object.entries({
-    admin: "admin",
-    administrator: "admin",
-    max: "max",
-    imu: "max",
-    owner: "max",
-    superadmin: "max",
-    benevole: "benevole",
-    volunteer: "benevole",
-    user: "benevole",
-    member: "benevole",
-    coordinateur: "coordinateur",
-    coordinator: "coordinateur",
-    coordonnateur: "coordinateur",
-    scientifique: "scientifique",
-    scientist: "scientifique",
-    data: "scientifique",
-    analyste: "scientifique",
-    analyst: "scientifique",
-    statisticien: "scientifique",
-    statistician: "scientifique",
-    elu: "elu",
-    elue: "elu",
-    decideur: "elu",
-    "décideur": "elu",
-    elected: "elu",
-    mayor: "elu",
-  }),
+  Object.entries(JSON.parse(readFileSync(ROLE_ALIASES_PATH, "utf8"))),
 );
 
 function parseArgs(argv) {
@@ -141,7 +119,7 @@ function extractRole(metadata) {
     return null;
   }
   const value = metadata.role ?? metadata.profile;
-  return typeof value === "string" ? value.trim().toLowerCase() : null;
+  return normalizeRole(value);
 }
 
 function extractBadgeIds(metadata) {
@@ -246,7 +224,7 @@ function resolveStoredRoleLabel({
   const isMaxByMetadata = normalizeRole(metadataRole) === "max";
   const isMax = isMaxByAllowlist || isMaxByMetadata;
   if (isMax) {
-    return "imu";
+    return "max";
   }
 
   if (metadataRole === "admin") {
@@ -416,11 +394,7 @@ function buildRowSummary({
         creatorInboxEmail: context.creatorInboxEmail,
       })
     : null;
-  const expectedAppProfile = expectedStoredRoleLabel
-    ? expectedStoredRoleLabel === "imu"
-      ? "max"
-      : expectedStoredRoleLabel
-    : clerkUser
+  const expectedAppProfile = expectedStoredRoleLabel ?? (clerkUser
       ? resolveAppProfile({
           metadataRole,
           isAdmin: metadataRole === "admin",
@@ -430,7 +404,7 @@ function buildRowSummary({
             context.maxUserIds.has(id) ||
             (context.maxUserIds.size === 0 && context.adminUserIds.has(id)),
         })
-      : null;
+      : null);
 
   const roleMatch =
     Boolean(clerkUser && profileRow) &&

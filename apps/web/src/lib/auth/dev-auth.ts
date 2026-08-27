@@ -35,7 +35,7 @@ export function isDevAuthBypassEnabled(hostname: string | null | undefined): boo
 }
 
 export function getDevAuthBypassRole(): string {
-  return readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "imu");
+  return readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
 }
 
 export function getDevAuthBypassUserId(): string {
