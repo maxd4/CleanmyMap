@@ -12,12 +12,12 @@ import {
 import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
-} from "@/lib/actions/pollution-score";
-import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution-score-references";
+} from "@/lib/actions/pollution/pollution-score";
+import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution/pollution-score-references";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   ACTION_POLLUTION_SCORE_REFERENCES_INVALIDATED_EVENT,
-} from "@/lib/actions/pollution-score-references-events";
+} from "@/lib/actions/pollution/pollution-score-references-events";
 
 type ActionPollutionScoreReferencesContextValue = {
   references: PollutionScoreReferences;

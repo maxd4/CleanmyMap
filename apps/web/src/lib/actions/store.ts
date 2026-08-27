@@ -28,8 +28,8 @@ import { logFailure } from "@/lib/logging/failure-log";
 import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
-import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/repollution-prediction-evaluation";
-import { persistRepollutionPredictionEvaluation } from "@/lib/actions/repollution-prediction-evaluation-store";
+import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/pollution/repollution-prediction-evaluation";
+import { persistRepollutionPredictionEvaluation } from "@/lib/actions/pollution/repollution-prediction-evaluation-store";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",

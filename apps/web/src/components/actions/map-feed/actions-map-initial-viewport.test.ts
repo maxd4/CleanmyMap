@@ -10,7 +10,7 @@ import {
   selectNearestActivePollution,
   type InitialPollutionCandidateFetcher,
 } from "./actions-map-initial-viewport";
-import { loadAllInitialPollutionPages } from "@/lib/actions/initial-nearest-pollution-source";
+import { loadAllInitialPollutionPages } from "@/lib/actions/pollution/initial-nearest-pollution-source";
 import { shouldApplyAutomaticViewport } from "./use-actions-map-viewport";
 import { DEFAULT_ACTIONS_MAP_VIEWPORT, NEUTRAL_MAP_CENTER } from "../actions-map-canvas.utils";
 

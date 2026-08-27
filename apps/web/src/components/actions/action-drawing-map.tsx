@@ -13,7 +13,7 @@ import {
  resolveDynamicColor,
 } from"./map-marker-categories";
 import { snapPolylineToStreetNetwork } from"@/lib/geo/osrm-routing";
-import { computePollutionScore } from"@/lib/actions/pollution-score";
+import { computePollutionScore } from"@/lib/actions/pollution/pollution-score";
 import {
  normalizeActionDrawing,
 } from"./map/actions-map-geometry.utils";

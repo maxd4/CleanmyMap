@@ -312,7 +312,7 @@ Supabase concentre les lectures serveur, les exports et les clients RLS. Le risq
 - `apps/web/src/lib/actions/map-route.ts` — Server client, Supabase client
 - `apps/web/src/lib/actions/organizers.ts` — Supabase client
 - `apps/web/src/lib/actions/participant-summaries.ts` — Supabase client
-- `apps/web/src/lib/actions/pollution-score-references.ts` — Supabase client
+- `apps/web/src/lib/actions/pollution/pollution-score-references.ts` — Supabase client
 - `apps/web/src/lib/actions/query.ts` — Supabase client
 - `apps/web/src/lib/actions/store.ts` — Supabase client
 - `apps/web/src/lib/actions/training.ts` — Supabase client

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "./data-contract";
+import { buildActionDataContract } from "../data-contract";
 import {
   CORRIDOR_HISTORY_CONSTANTS,
   groupActionsByCorridor,

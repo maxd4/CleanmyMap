@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionMapItem, ActionMapViewportQuery } from "./types";
+import type { ActionMapItem, ActionMapViewportQuery } from "../types";
 
 const INITIAL_POLLUTION_PAGE_SIZE = 500;
 const CANONICAL_SPOT_SELECT =

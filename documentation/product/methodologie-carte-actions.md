@@ -48,7 +48,7 @@ Il est dérivé des informations disponibles lors de l'action, notamment :
 
 Le runtime combine les contributions déchets et mégots selon le contrat de score courant. La méthode actuellement utilisée doit être lue directement dans :
 
-`apps/web/src/lib/actions/pollution-score.ts`
+`apps/web/src/lib/actions/pollution/pollution-score.ts`
 
 Le score doit être présenté comme :
 
@@ -168,7 +168,7 @@ Le runtime possède une capacité domaine pure qui peut apprendre un `T80` local
 
 Seules les actions `approved` dont `actionPhase` vaut `post_action_complete`, dont la qualité n'est pas bloquante, et qui disposent de coordonnées, d'une date observée et d'un libellé exploitable sont candidates. Les points et polygones sont traités ; les polylines/parcours sont exclus de ce premier apprentissage afin de ne pas transformer un long itinéraire en un seul lieu.
 
-La distance spatiale est le critère principal. Les seuils sont centralisés dans `apps/web/src/lib/actions/local-repollution-calibration.ts` :
+La distance spatiale est le critère principal. Les seuils sont centralisés dans `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` :
 
 - à au plus `nearDistanceMeters` (valeur runtime actuelle : 20 m), le rapprochement ne dépend pas du libellé ;
 - au-delà et jusqu'à `labelRequiredDistanceMeters` (60 m actuellement), les libellés normalisés doivent être compatibles ;
@@ -377,12 +377,12 @@ Les constantes de projection doivent être centralisées dans le code afin d'év
 
 Sources de vérité techniques principales :
 
-- `apps/web/src/lib/actions/pollution-score.ts` ;
-- `apps/web/src/lib/actions/revisit-priority.ts` — projection, constantes et hook de calibration ;
-- `apps/web/src/lib/actions/local-repollution-calibration.ts` — rapprochement dérivé, intervalles, médiane, confiance et garde de complétude ;
-- `apps/web/src/lib/actions/current-place-state.ts` — état courant déterministe par lieu, priorité observation/projection/historique et seam Trash Spotter quantifié ;
-- `apps/web/src/lib/actions/repollution-prediction-evaluation.ts` — évaluation prospective sans fuite temporelle et agrégat descriptif ;
-- `apps/web/src/lib/actions/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
+- `apps/web/src/lib/actions/pollution/pollution-score.ts` ;
+- `apps/web/src/lib/actions/pollution/revisit-priority.ts` — projection, constantes et hook de calibration ;
+- `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` — rapprochement dérivé, intervalles, médiane, confiance et garde de complétude ;
+- `apps/web/src/lib/actions/pollution/current-place-state.ts` — état courant déterministe par lieu, priorité observation/projection/historique et seam Trash Spotter quantifié ;
+- `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts` — évaluation prospective sans fuite temporelle et agrégat descriptif ;
+- `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
 - `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champs post-action et futur score Trash Spotter optionnels ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;

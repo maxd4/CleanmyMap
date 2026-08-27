@@ -8,11 +8,11 @@ import {
 } from "@/components/actions/map-marker-categories";
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
-} from "@/lib/actions/local-repollution-calibration";
-import { PROJECTION_CONFIDENCE_CONSTANTS } from "@/lib/actions/projection-confidence";
+} from "@/lib/actions/pollution/local-repollution-calibration";
+import { PROJECTION_CONFIDENCE_CONSTANTS } from "@/lib/actions/pollution/projection-confidence";
 import {
   buildActionPollutionProjectionMethodology,
-} from "@/lib/actions/revisit-priority";
+} from "@/lib/actions/pollution/revisit-priority";
 
 export type OpenSourceDoc = {
   id: string;

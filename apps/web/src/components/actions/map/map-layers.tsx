@@ -23,12 +23,12 @@ import {
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
 import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
   CurrentPlaceStateViews,
-} from "@/lib/actions/current-place-state";
+} from "@/lib/actions/pollution/current-place-state";
 import {
   resolveInfrastructureEmoji,
   CLEAN_PLACE_COLOR,
@@ -36,12 +36,12 @@ import {
   resolveDynamicColor,
   resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
-import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
-import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
+import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/pollution/projection-confidence";
 import {
   findCorridorHistoryForAction,
   groupActionsByCorridor,
-} from "@/lib/actions/corridor-history";
+} from "@/lib/actions/pollution/corridor-history";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import { ActionPopupContent } from "./action-popup-content";
 import {

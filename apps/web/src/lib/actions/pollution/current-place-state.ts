@@ -1,8 +1,8 @@
 import type { PollutionScoreReferences } from "./pollution-score";
-import type { ActionDataContract } from "./contract-model";
+import type { ActionDataContract } from "../contract-model";
 import {
   auditActionContract,
-} from "./data-quality";
+} from "../data-quality";
 import {
   canMergeDerivedPlaceObservations,
   deriveLocalRepollutionHistories,

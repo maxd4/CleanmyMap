@@ -5,7 +5,7 @@ import type {
 } from "@/lib/actions/types";
 import {
   dispatchActionPollutionScoreReferencesInvalidated,
-} from "@/lib/actions/pollution-score-references-events";
+} from "@/lib/actions/pollution/pollution-score-references-events";
 
 export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";

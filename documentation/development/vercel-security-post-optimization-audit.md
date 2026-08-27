@@ -30,7 +30,7 @@ Sur les surfaces modifiées par la réduction Vercel, je n'ai pas identifié de 
 - [apps/web/src/proxy.ts](../../apps/web/src/proxy.ts)
 - [apps/web/src/app/layout.tsx](../../apps/web/src/app/layout.tsx)
 - [apps/web/src/components/actions/map/action-pollution-score-references-context.tsx](../../apps/web/src/components/actions/map/action-pollution-score-references-context.tsx)
-- [apps/web/src/lib/actions/pollution-score-references.ts](../../apps/web/src/lib/actions/pollution-score-references.ts)
+- [apps/web/src/lib/actions/pollution/pollution-score-references.ts](../../apps/web/src/lib/actions/pollution/pollution-score-references.ts)
 - [apps/web/src/lib/supabase/client.ts](../../apps/web/src/lib/supabase/client.ts)
 - [apps/web/src/lib/gamification/api.ts](../../apps/web/src/lib/gamification/api.ts)
 - [apps/web/src/lib/gamification/quiz-progress-storage.ts](../../apps/web/src/lib/gamification/quiz-progress-storage.ts)

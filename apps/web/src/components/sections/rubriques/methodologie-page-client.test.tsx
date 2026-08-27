@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { ACTION_POLLUTION_COLOR_STOPS } from "@/components/actions/map-marker-categories";
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
-} from "@/lib/actions/local-repollution-calibration";
-import { buildActionPollutionProjectionMethodology } from "@/lib/actions/revisit-priority";
+} from "@/lib/actions/pollution/local-repollution-calibration";
+import { buildActionPollutionProjectionMethodology } from "@/lib/actions/pollution/revisit-priority";
 import { ActionMapMethodologySection } from "./methodologie-page-client";
 
 describe("ActionMapMethodologySection", () => {

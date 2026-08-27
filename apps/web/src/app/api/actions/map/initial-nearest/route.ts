@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { handleApiError } from "@/lib/http/api-errors";
-import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution-score-references";
+import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution/pollution-score-references";
 import {
   deriveReferenceFromBounds,
   INITIAL_MAP_SEARCH_RADII_KM,
   selectNearestActivePollution,
-} from "@/lib/actions/initial-nearest-pollution";
-import { loadInitialPollutionItems } from "@/lib/actions/initial-nearest-pollution-source";
+} from "@/lib/actions/pollution/initial-nearest-pollution";
+import { loadInitialPollutionItems } from "@/lib/actions/pollution/initial-nearest-pollution-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";

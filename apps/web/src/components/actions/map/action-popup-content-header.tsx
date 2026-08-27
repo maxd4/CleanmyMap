@@ -5,13 +5,13 @@ import {
   getGeometryTone,
   type ScoreReading,
 } from "./action-popup-content.helpers";
-import type { ActionPollutionProjectionPresentation } from "@/lib/actions/revisit-priority";
-import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
+import type { ActionPollutionProjectionPresentation } from "@/lib/actions/pollution/revisit-priority";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/pollution/projection-confidence";
 import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
 import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
-} from "@/lib/actions/current-place-state";
+} from "@/lib/actions/pollution/current-place-state";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;

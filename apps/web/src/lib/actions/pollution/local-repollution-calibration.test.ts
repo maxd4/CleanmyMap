@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "./data-contract";
-import type { ActionDrawing } from "./types";
+import { buildActionDataContract } from "../data-contract";
+import type { ActionDrawing } from "../types";
 import {
   ACTION_POLLUTION_PROJECTION_CONSTANTS,
   projectedPollutionScore,

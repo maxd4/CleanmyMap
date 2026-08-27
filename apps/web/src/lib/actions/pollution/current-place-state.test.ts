@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "./data-contract";
+import { buildActionDataContract } from "../data-contract";
 import {
   resolveCurrentPlaceStates,
   resolveCurrentPlaceStateForRecord,
   resolveCurrentPlaceStateViews,
   type CurrentPlaceState,
 } from "./current-place-state";
-import type { ActionDrawing } from "./types";
+import type { ActionDrawing } from "../types";
 
 function dateAt(day: number): string {
   return new Date(Date.UTC(2026, 0, 1 + day)).toISOString();

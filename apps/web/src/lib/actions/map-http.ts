@@ -18,11 +18,11 @@ import { AppError } from "@/lib/errors/app-errors";
 import { buildActionInsights } from "./insights";
 import { parseDrawingFromNotes } from "./geometry/drawing";
 import { extractActionMetadataFromNotes } from "./metadata";
-import { fetchActionPollutionScoreReferences } from "./pollution-score-references";
+import { fetchActionPollutionScoreReferences } from "./pollution/pollution-score-references";
 import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
-} from "./pollution-score";
+} from "./pollution/pollution-score";
 import type { ActionDataContract, ActionEntityType } from "./contract-model";
 import { buildActionDataContract } from "./data-contract";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";

@@ -15,8 +15,8 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import type {
   CurrentPlaceStateMode,
   CurrentPlaceStateViews,
-} from "@/lib/actions/current-place-state";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
+} from "@/lib/actions/pollution/current-place-state";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";

@@ -12,8 +12,8 @@ import {
   type ActionPollutionProjectionPresentation,
   type ProjectedPollutionScoreOptions,
 } from "./revisit-priority";
-import { auditActionContract } from "./data-quality";
-import type { ActionDataContract } from "./contract-model";
+import { auditActionContract } from "../data-quality";
+import type { ActionDataContract } from "../contract-model";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SCORE_EPSILON = 1e-9;

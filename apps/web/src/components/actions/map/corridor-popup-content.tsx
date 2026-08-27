@@ -6,16 +6,16 @@ import type { ActionMapItem } from "@/lib/actions/types";
 import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
-} from "@/lib/actions/current-place-state";
-import type { CorridorHistory } from "@/lib/actions/corridor-history";
-import { summarizeCorridorHistory } from "@/lib/actions/corridor-history";
+} from "@/lib/actions/pollution/current-place-state";
+import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
+import { summarizeCorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { mapItemObservedAt } from "@/lib/actions/data-contract";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import {
   formatNumber,
   formatObservedDate,
 } from "./action-popup-content.helpers";
-import { formatProjectionConfidenceLabel } from "@/lib/actions/projection-confidence";
+import { formatProjectionConfidenceLabel } from "@/lib/actions/pollution/projection-confidence";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type CorridorPopupContentProps = {

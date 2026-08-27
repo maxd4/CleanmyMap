@@ -12,7 +12,7 @@ import { toGeoJsonString, isRenderableDrawing } from "./geometry/derived-geometr
 import {
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,
-} from "./pollution-score";
+} from "./pollution/pollution-score";
 
 type ActionInsightsLike = {
   qualityScore: number;

@@ -3,8 +3,8 @@ import {
   computePollutionScores,
   computePollutionScoresRelativeToReferences,
 } from "./pollution-score";
-import type { ActionDataContract } from "./contract-model";
-import { auditActionContract } from "./data-quality";
+import type { ActionDataContract } from "../contract-model";
+import { auditActionContract } from "../data-quality";
 import { presentActionPollutionProjection } from "./revisit-priority";
 import type { ProjectionConfidence } from "./projection-confidence";
 

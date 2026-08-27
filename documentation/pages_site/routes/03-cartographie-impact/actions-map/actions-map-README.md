@@ -18,7 +18,7 @@ apps/web/src/components/actions/map-feed/actions-map-feed.tsx
 apps/web/src/components/actions/actions-map-table.tsx
 apps/web/src/components/actions/map/use-actions-map-filters.ts
 apps/web/src/components/actions/map/action-pollution-score-references-context.tsx
-apps/web/src/lib/actions/revisit-priority.ts
+apps/web/src/lib/actions/pollution/revisit-priority.ts
 ```
 
 ## Objectif utilisateur
@@ -91,7 +91,7 @@ Ce score est une pollution constatée avant l'action, pas une pollution actuelle
 La couleur d'une action repose sur une projection non linéaire, calculée dans :
 
 ```txt
-apps/web/src/lib/actions/revisit-priority.ts
+apps/web/src/lib/actions/pollution/revisit-priority.ts
 ```
 
 Le score historique `S` et le nombre de jours `t` restent séparés :
