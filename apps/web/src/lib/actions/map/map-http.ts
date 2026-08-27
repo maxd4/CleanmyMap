@@ -15,18 +15,18 @@ import {
 } from "@/lib/reports/scope";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AppError } from "@/lib/errors/app-errors";
-import { buildActionInsights } from "./insights";
-import { parseDrawingFromNotes } from "./geometry/drawing";
-import { extractActionMetadataFromNotes } from "./metadata";
-import { fetchActionPollutionScoreReferences } from "./pollution/pollution-score-references";
+import { buildActionInsights } from "../insights";
+import { parseDrawingFromNotes } from "../geometry/drawing";
+import { extractActionMetadataFromNotes } from "../metadata";
+import { fetchActionPollutionScoreReferences } from "../pollution/pollution-score-references";
 import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
-} from "./pollution/pollution-score";
-import type { ActionDataContract, ActionEntityType } from "./contracts/contract-model";
-import { buildActionDataContract } from "./data-contract";
+} from "../pollution/pollution-score";
+import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
+import { buildActionDataContract } from "../data-contract";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
-import { mapItemCoordinates, toActionMapItem } from "./contracts/contract-mappers";
+import { mapItemCoordinates, toActionMapItem } from "../contracts/contract-mappers";
 import {
   clampInteger,
   normalizeQualityMin,

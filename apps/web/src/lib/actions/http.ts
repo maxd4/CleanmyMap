@@ -11,7 +11,7 @@ import type {
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
 import { toContractCreatePayload } from "./data-contract";
 
-export { buildMapActionsQueryString, fetchMapActions } from "./map-http";
+export { buildMapActionsQueryString, fetchMapActions } from "./map/map-http";
 
 type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 

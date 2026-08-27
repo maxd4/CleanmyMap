@@ -97,7 +97,7 @@
     "apps/web/src/components/sections/rubriques/recycling-section.tsx",
     "apps/web/src/components/sections/rubriques/use-weather-data.ts",
     "apps/web/src/lib/actions/http.ts",
-    "apps/web/src/lib/actions/map-http.ts",
+    "apps/web/src/lib/actions/map/map-http.ts",
     "apps/web/src/lib/actions/operation-audit.ts"
   ],
   "externalFetches": [

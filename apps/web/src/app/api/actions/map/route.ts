@@ -3,7 +3,7 @@ import {
   buildMapActionsRouteResult,
   filterPublicMapResponse,
   parseMapActionsParams,
-} from "@/lib/actions/map-route";
+} from "@/lib/actions/map/map-route";
 import { buildActionInsights } from "@/lib/actions/insights";
 import { toActionMapItem } from "@/lib/actions/data-contract";
 import { fetchUnifiedActionContracts, parseEntityTypesParam } from "@/lib/actions/unified-source";
