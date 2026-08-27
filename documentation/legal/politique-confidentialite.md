@@ -196,6 +196,11 @@ Utilisez le formulaire RGPD de `/contact` ou celui de la page publique de cette
 politique. Une vérification raisonnable de l'identité peut être demandée si
 elle est nécessaire pour protéger les données d'autrui.
 
+Pour une notification de contenu potentiellement illicite, utilisez la page
+publique `/signaler-contenu-illicite`. Ce formulaire possède sa propre finalité
+et sa propre persistance dans `legal_content_reports`; il ne remplace pas le
+formulaire d'exercice des droits RGPD.
+
 La réponse intervient dans un délai d'un mois à compter de la réception. Ce
 délai peut être prolongé de deux mois lorsque la complexité ou le nombre de
 demandes le justifie ; la personne en est informée dans le premier mois.

@@ -14,13 +14,19 @@ Ce dossier contient l'ensemble des documents juridiques de CleanMyMap.
 
 ## Accès rapide
 
-Ces documents sont également accessibles directement depuis la plateforme CleanMyMap via la section "Informations Juridiques" (page /mentions-légales ou similaire).
+Ces documents sont accessibles directement depuis la plateforme CleanMyMap via
+la section juridique, la page `/mentions-legales`, les CGU, la politique de
+confidentialité et le formulaire `/signaler-contenu-illicite`.
 
 ## Mise à jour
 
-Ces documents sont régulièrement mis à jour pour refléter les changements dans nos services et la réglementation applicables.
+Ces documents sont régulièrement mis à jour pour refléter les changements dans
+nos services et la réglementation applicable.
 
-Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, le cycle de consentement analytics de 6 mois, les traitements Sentry d'observabilité et les critères de rétention réellement implémentés.
+Les dernières mises à jour couvrent notamment le parrainage, l'alignement des
+cookies de consentement et des préférences, le cycle de consentement analytics
+de 6 mois, les traitements Sentry d'observabilité, les critères de rétention
+réellement implémentés et le dispositif DSA-01 de notification électronique.
 
 **Dernière mise à jour juridique :** 27 août 2026
 

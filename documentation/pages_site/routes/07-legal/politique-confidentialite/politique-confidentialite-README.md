@@ -51,6 +51,8 @@
 - La politique décrit les catégories réellement traitées, les bases légales, les destinataires, les transferts non vérifiés comme tels, les critères de rétention et le délai d'exercice des droits.
 - Sentry est documenté comme observabilité/sécurité hors analytics ; aucun masquage ou anonymisation spécifique non configuré n'est promis.
 - Les demandes RGPD sont persistées dans `contact_requests`, couvertes par le nettoyage générique lorsqu'il est exécuté ; ses archives ne recopient pas les données personnelles.
+- Les notifications de contenu sont persistées dans `legal_content_reports` avec l'URL, le motif et les identifiants facultatifs ; elles sont visibles uniquement en lecture dans le creator inbox et ne copient pas le contenu tiers.
+- La page renvoie vers `/signaler-contenu-illicite`, sans qualifier CleanMyMap de fournisseur d'hébergement au sens du DSA.
 
 ## Références legacy
 
