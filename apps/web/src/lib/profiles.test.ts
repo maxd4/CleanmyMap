@@ -52,6 +52,17 @@ describe("profile aliases", () => {
     expect(PROFILE_ORDER).toContain("max");
     expect(MAX_ROLE_STORAGE_VALUES).toContain("max");
     expect(MAX_ROLE_STORAGE_VALUES).toContain("imu");
+    expect(
+      MAX_ROLE_STORAGE_VALUES.every(
+        (storageValue) => normalizeProfileRole(storageValue) === "max",
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps local authority compatible with the elu role", () => {
+    expect(normalizeProfileRole("local_authority")).toBe("elu");
+    expect(normalizeProfileRole("local_authority")).not.toBe("max");
+    expect(MAX_ROLE_STORAGE_VALUES).not.toContain("local_authority");
   });
 
   it("maps IMU metadata back to the internal top profile", () => {
