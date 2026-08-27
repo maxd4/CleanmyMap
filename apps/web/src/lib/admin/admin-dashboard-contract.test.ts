@@ -263,6 +263,7 @@ describe("/admin data availability contract", () => {
     );
     expect(blocks.find((item) => item.id === "agir")?.href).toBe("/actions/history");
     expect(blocks.find((item) => item.id === "accueil-pilotage")).toMatchObject({
+      label: "Audit & supervision",
       href: "#workflow-administration",
       ctaLabel: "Voir le journal",
     });
