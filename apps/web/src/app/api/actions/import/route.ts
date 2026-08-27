@@ -64,6 +64,8 @@ type PreparedImport = {
   dataQuality: ActionDataQualitySummary;
 };
 
+type ImportStage = "preparation" | "item_write" | "audit_finalize";
+
 function extractProofFromRequest(
   parsed: z.infer<typeof importPayloadSchema>,
   request: Request,
@@ -182,6 +184,13 @@ export async function POST(request: Request) {
   const operationId = newOperationId();
   const bp = acquireBackpressure("import", operationId);
   let dryRun = false;
+  let attemptedCount = 0;
+  let importedCount = 0;
+  let currentItemIndex: number | null = null;
+  let totalCount = 0;
+  let stage: ImportStage = "preparation";
+  let stats: ReturnType<typeof buildImportStats> | undefined;
+  let finalAuditAttempted = false;
   if (!bp.allowed) {
     return adminErrorResponse({
       status: 429,
@@ -238,9 +247,11 @@ export async function POST(request: Request) {
     }
 
     const preparedItems = parsed.data.items.map(prepareImportItem);
+    totalCount = preparedItems.length;
     const normalizedPayload = { items: parsed.data.items };
     const payloadHash = hashImportPayload(normalizedPayload);
-    const stats = buildImportStats(preparedItems);
+    const preparedStats = buildImportStats(preparedItems);
+    stats = preparedStats;
     const proofToken = extractProofFromRequest(parsed.data, request);
     const confirmationPhrase = extractConfirmationPhrase(parsed.data, request);
 
@@ -344,14 +355,14 @@ export async function POST(request: Request) {
       });
     }
 
-    if (stats.blockingAnomalies > 0) {
+    if (preparedStats.blockingAnomalies > 0) {
       await appendAdminOperationAudit({
         operationId,
         at: new Date().toISOString(),
         actorUserId: access.userId,
         operationType: "import_confirm",
         outcome: "error",
-        details: { code: "data_quality_blocking", stats },
+        details: { code: "data_quality_blocking", stats: preparedStats },
       });
       return adminErrorResponse({
         status: 422,
@@ -359,14 +370,16 @@ export async function POST(request: Request) {
         message: "L'import contient des anomalies bloquantes.",
         hint: "Corrige les dates, mesures ou geolocalisations partielles/invalides puis relance le dry-run.",
         operationId,
-        details: stats,
+        details: preparedStats,
       });
     }
 
     const supabase = getSupabaseServerClient();
     const organizer = adminImportOrganizer(access.userId);
-    let importedCount = 0;
-    for (const item of preparedItems) {
+    stage = "item_write";
+    for (const [index, item] of preparedItems.entries()) {
+      currentItemIndex = index;
+      attemptedCount = index + 1;
       await createAction(supabase, {
         userId: access.userId,
         payload: item.payload,
@@ -376,31 +389,53 @@ export async function POST(request: Request) {
       importedCount += 1;
     }
 
+    stage = "audit_finalize";
+    finalAuditAttempted = true;
     await appendAdminOperationAudit({
       operationId,
       at: new Date().toISOString(),
       actorUserId: access.userId,
       operationType: "import_confirm",
       outcome: "success",
-      details: { count: importedCount, stats },
+      details: {
+        count: importedCount,
+        attemptedCount,
+        importedCount,
+        currentItemIndex,
+        totalCount,
+        stage,
+        stats,
+      },
     });
 
     return adminSuccessResponse({
       status: 201,
       operationId,
-      payload: { status: "imported", count: importedCount, stats },
+      payload: { status: "imported", count: importedCount, stats: preparedStats },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Admin Import] Import failed", { operationId, message });
-    await appendAdminOperationAudit({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId: access.userId,
-      operationType: dryRun ? "import_dry_run" : "import_confirm",
-      outcome: "error",
-      details: { code: "server_error" },
-    });
+    if (!dryRun && !finalAuditAttempted) {
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: access.userId,
+        operationType: "import_confirm",
+        outcome: "error",
+        details: {
+          code: "server_error",
+          attemptedCount,
+          importedCount,
+          currentItemIndex,
+          failedItemIndex: currentItemIndex,
+          totalCount,
+          stage,
+          partialMutation: importedCount > 0,
+          ...(stats ? { stats } : {}),
+        },
+      });
+    }
     return adminErrorResponse({
       status: 500,
       code: "server_error",
