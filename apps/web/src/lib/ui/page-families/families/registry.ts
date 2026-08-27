@@ -247,9 +247,9 @@ export const EXPLORER_SOMMAIRE_FAMILY: PageFamilyDefinition = {
 export const METHODOLOGIE_FAMILY: PageFamilyDefinition = {
   id: "cartographie-impact",
   label: "Méthodologie Impact",
-  backdropToneKey: "sky",
-  hero: darkHero("sky"),
-  card: CARTO_IMPACT_SKY_CARD,
+  backdropToneKey: "red",
+  hero: darkHero("red"),
+  card: CARTO_IMPACT_RED_CARD,
 };
 
 /** Exception documentée : pages rapports/impact gardées dans le bloc 03. */

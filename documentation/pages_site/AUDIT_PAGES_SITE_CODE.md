@@ -549,47 +549,31 @@ Action :
 
 ---
 
-## 5.2 `/methodologie` est documentée rouge mais le runtime la résout sky
+## 5.2 `/methodologie` : variante rouge alignée
 
-Documentation actuelle :
+Documentation et rendu attendus :
 
 ```txt
-Palette attendue : red
-Couleurs détectées : red
+Palette : red
+Couleurs : red / rose
 Incohérence : aucune
-Terminée : oui
+Statut : aligné
 ```
 
 Runtime :
 
 ```txt
 METHODOLOGIE_FAMILY
-backdropToneKey: sky
-hero: sky
-card: CARTO_IMPACT_SKY_CARD
+backdropToneKey: red
+hero: red
+card: CARTO_IMPACT_RED_CARD
 ```
 
 Verdict :
 
 ```txt
-fiche directement fausse
+variante rouge appliquée dans le resolver, l’exception, les tests et les index documentaires
 ```
-
-À corriger :
-
-```txt
-documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md
-documentation/pages_site/INDEX.md
-```
-
-Puis décider si :
-
-```txt
-A. le code sky est voulu
-B. la doc red est la cible et le code doit changer
-```
-
-Ne pas marquer « terminé » tant que cette décision n'est pas résolue.
 
 ---
 

@@ -6,7 +6,7 @@
 - **Accès runtime** : `public-visible`
 - **Famille** : Cartographie & Impact
 - **Exception page-family** : `methodologie-impact`
-- **Palette runtime actuelle** : sky
+- **Palette runtime actuelle** : red
 - **Revalidation** : `3600 s`
 - **Source principale** : `apps/web/src/app/(app)/methodologie/page.tsx`
 - **Source du contenu** : `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx`
@@ -51,27 +51,16 @@ prévues ; cette indisponibilité ne doit pas rendre la page entière inutilisab
 
 ## Palette
 
-La documentation historique annonçait `red`.
-
-Le runtime actuel résout explicitement :
+Le runtime actuel résout explicitement la variante rouge :
 
 ```txt
 METHODOLOGIE_FAMILY
-backdropToneKey = sky
-hero = sky
-card = CARTO_IMPACT_SKY_CARD
+backdropToneKey = red
+hero = red
+card = CARTO_IMPACT_RED_CARD
 ```
 
-Le présent fichier suit le code actuel.
-
-Toute volonté de revenir au rouge doit modifier ensemble :
-
-```txt
-runtime
-test page-family
-INDEX.md
-fiche Méthodologie
-```
+Le présent fichier suit le code actuel et le rendu rouge de la page.
 
 ## Point d'entrée
 
