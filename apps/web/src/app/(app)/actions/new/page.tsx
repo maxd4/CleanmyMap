@@ -9,7 +9,7 @@ import { isAdminLikeProfile } from "@/lib/profiles";
 export const metadata: Metadata = {
   title: "Déclarer une action - CleanMyMap",
   description:
-    "Déclarez votre action de nettoyage urbain et累计 votre impact environnemental. Signalez les déchets collectés, calcul automatique CO2 et eau préservée.",
+    "Déclarez une action de nettoyage urbain, renseignez les résultats terrain et consultez les estimations d’impact sur le CO₂ évité et l’eau préservée.",
   keywords: [
     "déclarer action",
     "déclaration nettoyage",

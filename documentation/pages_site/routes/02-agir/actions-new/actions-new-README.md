@@ -9,15 +9,15 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
-- **Action principale attendue** : Choisir entre un parcours de déclaration après action et un parcours de préparation avant action, puis compléter le formulaire adapté.
+- **Objectif utilisateur principal** : Préparer une action à venir ou déclarer les résultats terrain d'une action réalisée.
+- **Action principale attendue** : Choisir directement entre la préparation avant action, avec inscriptions éventuelles, et la déclaration après action, avec les résultats terrain.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
 - **Règle de modération** : un profil `admin`, `elu` ou `max` peut auto-valider sa propre action, mais un formulaire de groupe normal reste soumis au flux habituel et n'est jamais considéré comme une collecte validée tant que la déclaration finale n'est pas complétée.
 - **Pré-formulaire avant action** : titre de l'action, description courte, commune ou zone, point de rendez-vous précis avec localisation si disponible, zone cible prévue, date prévue, heure de rendez-vous, heure de départ prévue, durée estimée, type d'action prévue, type de zone, nombre de bénévoles attendus, difficulté estimée, accessibilité, message pour les participants, consignes de sécurité, matériel conseillé, commentaire logistique, checklist avant départ, organisateur ou référent, membres ajoutés manuellement via `participantAccounts`, autorisation de rejoindre le groupe, lien de partage du formulaire de groupe et statut du formulaire.
 - **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Formulaire de groupe. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : point d'entrée nettoyé, métier des formulaires conservé
+- **Terminée** : oui pour le contrat du point d'entrée
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
@@ -47,11 +47,11 @@
 
 ## États à documenter
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
+- **loading** : fond `slate`, skeletons sobres, loader discret uniquement pendant l'hydratation d'un `actionId` ou le handoff après une vraie écriture.
 - **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
 - **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **choice initial** : deux cartes de parcours, lecture rapide, retour au choix possible.
-- **success** : parcours sélectionné, affichage du formulaire avant ou après action, puis possibilité de basculer vers le formulaire complet.
+- **choice initial** : deux cartes de parcours, lecture rapide, retour au choix possible; la sélection affiche directement le parcours choisi.
+- **success** : affichage direct de la préparation avant action ou de la déclaration des résultats terrain après action, puis passage possible vers les résultats terrain après la préparation.
 - **error** : panneau compact avec retour au choix.
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
@@ -67,6 +67,8 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Le point d'entrée commence par le choix entre déclaration après action et préparation avant action.
+- Choisir un parcours ne crée encore aucune action.
+- Le parcours sélectionné s'affiche directement; un état de chargement est réservé à l'hydratation d'un enregistrement ou au handoff après une vraie écriture.
 - Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe uniquement s'il est explicitement publié.
 - Les membres ajoutés avant publication sont conservés dans `participantAccounts` puis synchronisés en tant que participations `manual_add`.
 - Les champs de récolte, de validation finale et les calculs d'impact restent réservés au formulaire après action.
