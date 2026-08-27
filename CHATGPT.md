@@ -260,7 +260,7 @@ apps/web/src/app/          pages, layouts et routes API
 apps/web/src/components/   UI
 apps/web/src/lib/          domaine, services et contrats
 apps/web/supabase/         configuration Supabase active
-companion-app/             application mobile séparée
+apps/mobile/               application mobile du même monorepo
 scripts/                   garde-fous et maintenance Node
 maintenance/python/        maintenance Python hors runtime web
 documentation/             sources documentaires structurées
@@ -395,9 +395,15 @@ Une lecture propriétaire reste distincte d'une lecture publique, même si les d
 
 Une vue de modération ne doit pas réutiliser aveuglément un cache ou snapshot conçu pour une surface publique.
 
-## 13. Application compagnon
+## 13. Application mobile
 
-`companion-app/` est une surface séparée du workspace web.
+`apps/web/` et `apps/mobile/` sont deux applications déployables distinctes du
+même produit et du même monorepo. `apps/mobile/` est issue de l'ancien
+`companion-app/` et sert de base à la future application mobile complète.
+
+Les deux applications peuvent partager Clerk, Supabase et les contrats métier
+nécessaires, sans être présentées comme une copie ou comme un projet
+indépendant.
 
 Ne pas :
 

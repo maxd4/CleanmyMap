@@ -60,6 +60,29 @@ describe("action declaration payload helpers", () => {
     expect(payload.organizerAccounts).toEqual(["alice", "bob"]);
   });
 
+  it("forwards the authenticated user metadata unchanged", () => {
+    const form = buildBaseForm();
+    const userMetadata = {
+      userId: "user-test-123",
+      username: "alice",
+      displayName: "Alice Test",
+      email: "alice@example.com",
+    };
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+      userMetadata,
+    });
+
+    expect(payload.userMetadata).toEqual(userMetadata);
+  });
+
  it("validates drawing minima by kind", () => {
  const polyline: ActionDrawing = {
  kind:"polyline",
