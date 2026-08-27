@@ -676,6 +676,20 @@ backups/
 
 Ne jamais annoncer qu'une commande a réussi si elle n'a pas été exécutée.
 
+### Audits GitNexus
+
+Tout audit GitNexus doit passer par l'un des scripts npm canoniques :
+
+```txt
+npm run audit:gitnexus
+npm run audit:gitnexus:cycles
+```
+
+Ces commandes utilisent exclusivement le mode `analyze --index-only`, puis
+`status` et, pour la seconde, le contrôle JSON des cycles. Ne jamais appeler
+directement le mode `node .gitnexus/run.cjs analyze` standard : il peut générer
+ou injecter des fichiers de gouvernance dans le dépôt.
+
 ### Validation ciblée
 
 ```bash

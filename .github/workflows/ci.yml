@@ -96,6 +96,9 @@ jobs:
       - name: Root file hygiene
         run: npm run check:root-files
 
+      - name: GitNexus hygiene
+        run: npm run check:gitnexus-hygiene
+
       - name: Documentation governance
         run: npm run check:doc-governance
 
