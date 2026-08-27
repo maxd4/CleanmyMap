@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/supabase/clerk-rls", () => ({
   getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
+}));
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
@@ -19,8 +23,7 @@ const OPTION_YES = "33333333-3333-4333-8333-333333333333";
 const OPTION_NO = "44444444-4444-4444-8444-444444444444";
 const OTHER_OPTION = "55555555-5555-4555-8555-555555555555";
 
-function buildSupabaseMock() {
-  let currentUserId = "user-1";
+function buildSupabaseMock({ visible = true }: { visible?: boolean } = {}) {
   const votes = new Map<string, string>();
   const options = [
     { id: OPTION_YES, position: 1, label: "Oui", message_id: MESSAGE_ID },
@@ -31,7 +34,9 @@ function buildSupabaseMock() {
     select: vi.fn(() => appMessageQuery),
     eq: vi.fn(() => appMessageQuery),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: { id: MESSAGE_ID, message_kind: "poll", channel_type: "community" },
+      data: visible
+        ? { id: MESSAGE_ID, message_kind: "poll", channel_type: "community" }
+        : null,
       error: null,
     }),
   };
@@ -56,16 +61,10 @@ function buildSupabaseMock() {
     }),
   };
 
-  const supabase = {
-    from: vi.fn((table: string) => {
-      if (table === "app_messages") return appMessageQuery;
-      if (table === "chat_poll_options") return optionsQuery;
-      if (table === "chat_poll_votes") return voteTable;
-      throw new Error(`Unexpected table: ${table}`);
-    }),
-    rpc: vi.fn().mockImplementation(async (_name: string, args: { p_message_ids: string[] }) => {
+  const summaryRpc = vi.fn().mockImplementation(
+    async (_name: string, args: { p_message_ids: string[]; p_user_id: string }) => {
       const messageId = args.p_message_ids[0];
-      const selected = votes.get(`${currentUserId}:${messageId}`) ?? null;
+      const selected = votes.get(`${args.p_user_id}:${messageId}`) ?? null;
       return {
         data: options.map((option) => ({
           message_id: messageId,
@@ -76,15 +75,29 @@ function buildSupabaseMock() {
         })),
         error: null,
       };
+    },
+  );
+
+  const serviceSupabase = {
+    rpc: summaryRpc,
+  };
+
+  const supabase = {
+    from: vi.fn((table: string) => {
+      if (table === "app_messages") return appMessageQuery;
+      if (table === "chat_poll_options") return optionsQuery;
+      if (table === "chat_poll_votes") return voteTable;
+      throw new Error(`Unexpected table: ${table}`);
     }),
   };
 
   return {
     supabase,
+    serviceSupabase,
+    summaryRpc,
     options,
     votes,
     setCurrentUserId: (userId: string) => {
-      currentUserId = userId;
       authMock.mockResolvedValue({ userId });
     },
     appMessageQuery,
@@ -109,6 +122,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   it("creates a first vote and returns aggregate counts plus the current selection", async () => {
     const mock = buildSupabaseMock();
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT } = await import("./route");
 
     const response = await PUT(
@@ -133,11 +147,16 @@ describe("/api/chat/polls/[messageId]/vote", () => {
       { message_id: MESSAGE_ID, option_id: OPTION_YES, user_id: "user-1" },
       { onConflict: "message_id,user_id" },
     );
+    expect(mock.summaryRpc).toHaveBeenCalledWith(
+      "get_my_chat_poll_vote_summaries",
+      { p_message_ids: [MESSAGE_ID], p_user_id: "user-1" },
+    );
   });
 
   it("changes and removes the current user's vote idempotently", async () => {
     const mock = buildSupabaseMock();
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT, DELETE } = await import("./route");
 
     await PUT(
@@ -175,6 +194,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   it("rejects an option belonging to another poll before writing", async () => {
     const mock = buildSupabaseMock();
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT } = await import("./route");
 
     const response = await PUT(
@@ -192,6 +212,7 @@ describe("/api/chat/polls/[messageId]/vote", () => {
   it("never returns individual voter identities and scopes the selected option to the current user", async () => {
     const mock = buildSupabaseMock();
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT } = await import("./route");
 
     await PUT(
@@ -216,5 +237,24 @@ describe("/api/chat/polls/[messageId]/vote", () => {
     expect(JSON.stringify(body)).not.toContain("user-1");
     expect(JSON.stringify(body)).not.toContain("user-2");
     expect(JSON.stringify(body)).not.toContain("voter");
+  });
+
+  it("does not aggregate or write an invisible poll", async () => {
+    const mock = buildSupabaseMock({ visible: false });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    const { PUT } = await import("./route");
+
+    const response = await PUT(
+      new Request("http://localhost/api/chat/polls/111/vote", {
+        method: "PUT",
+        body: JSON.stringify({ optionId: OPTION_YES }),
+      }),
+      { params: Promise.resolve({ messageId: MESSAGE_ID }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(mock.voteTable.upsert).not.toHaveBeenCalled();
+    expect(mock.summaryRpc).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });
