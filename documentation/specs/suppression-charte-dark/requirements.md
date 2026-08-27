@@ -1,17 +1,40 @@
 # Requirements Document
 
+> **État de la spécification — 27 août 2026 :** proposition non exécutée et à
+> revalider. La charte dark reste active dans `apps/web/src/app/globals.css` et
+> les modes d'affichage sont documentés dans
+> `documentation/design-system/display-modes-chartes.md`. Ce document décrit
+> une cible éventuelle ; il ne constitue pas une autorisation de modifier le
+> code.
+
 ## Introduction
 
-Ce document spécifie les exigences pour la suppression complète de la charte dark obsolète du projet CleanMyMap. La charte dark actuelle est devenue obsolète et doit être entièrement supprimée tout en préservant la fonctionnalité du mode clair et en maintenant la cohérence du système de design.
+Ce document spécifie les exigences proposées pour évaluer une éventuelle
+suppression de la charte dark du projet CleanMyMap. Le dépôt conserve
+actuellement des styles dark fonctionnels ; toute suppression devra donc être
+précédée d'une décision explicite et d'une mise à jour cohérente du système de
+design, des modes d'affichage et des composants concernés.
 
 ## Glossary
 
-- **Charte_Dark**: L'ensemble des styles CSS, variables et composants dédiés au mode sombre obsolète
+- **Charte_Dark**: L'ensemble des styles CSS, variables et composants dédiés au mode sombre actuellement présents
 - **Mode_Clair**: Le mode d'affichage principal utilisant les couleurs claires
 - **Système_Design**: L'ensemble cohérent des tokens, variables et styles CSS du projet
 - **Scripts_Migration**: Les fichiers JavaScript dans `/scripts/` contenant des références aux classes dark
 - **Plugin_Figma**: Le générateur de templates Figma contenant des tokens dark
 - **Globals_CSS**: Le fichier principal `apps/web/src/app/globals.css` contenant les styles globaux
+
+## État vérifié
+
+- `apps/web/src/app/globals.css` contient encore la variante Tailwind dark, les
+  variables `data-theme="dark"` et des variantes de composants ;
+- `documentation/design-system/display-modes-chartes.md` et
+  `documentation/design-system/theme-visibility-rules.md` décrivent des
+  comportements clair/sombre encore utilisés comme références ;
+- les scripts de migration et le plugin Figma ciblés existent, mais leur
+  présence ne prouve pas qu'une suppression globale est souhaitable ;
+- aucune modification de code ni validation de suppression n'est couverte par
+  cette migration documentaire.
 
 ## Requirements
 
