@@ -117,6 +117,9 @@ Activation:
 - `NEXT_PUBLIC_POSTHOG_TOKEN` encore accepté mais déprécié
 - `NEXT_PUBLIC_POSTHOG_HOST` ou `NEXT_PUBLIC_POSTHOG_REGION`
 - consentement analytics côté client
+- décision acceptée ou refusée conservée 6 mois ; aucune initialisation du SDK avant consentement
+- retrait : arrêt explicite de la capture, reset de l'identité et de la persistance utile
+- reconsentement : opt-in explicite de l'instance existante ou initialisation contrôlée
 
 Code clé:
 
@@ -124,6 +127,8 @@ Code clé:
 - [apps/web/src/lib/posthog/client.ts](../../apps/web/src/lib/posthog/client.ts)
 - [apps/web/src/lib/posthog/server.ts](../../apps/web/src/lib/posthog/server.ts)
 - [apps/web/src/components/ui/conditional-analytics.tsx](../../apps/web/src/components/ui/conditional-analytics.tsx)
+
+Vercel Analytics et Vercel Speed Insights sont rendus par `conditional-analytics` uniquement lorsque la décision analytique est acceptée. Le contrôle permanent **Gérer mes cookies** du footer réémet l'événement d'ouverture de la bannière ; il ne demande pas de supprimer manuellement le stockage navigateur.
 
 Logs:
 

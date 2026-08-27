@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : consentement cookies et analytics — LEGAL-01
+- **Terminée** : oui pour le périmètre LEGAL-01
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -41,6 +41,15 @@
 - tableaux légaux
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
+
+## Comportement fonctionnel vérifié
+
+- La première visite affiche une bannière avec deux actions de même niveau : **Tout accepter** et **Tout refuser**. Il n'y a pas de fermeture implicite par une icône ni d'option « Essentiels seulement » distincte.
+- Les services essentiels restent actifs dans les deux cas. PostHog, Vercel Analytics et Vercel Speed Insights ne sont activés qu'après acceptation explicite.
+- L'acceptation comme le refus sont mémorisés pendant 6 mois dans `localStorage` (`cleanmymap_cookie_consent`) et dans `cleanmymap_analytics_consent` avec `Max-Age=15552000`.
+- Une décision locale expirée est supprimée automatiquement et la bannière est reproposée.
+- Le contrôle permanent **Gérer mes cookies**, présent dans le footer, rouvre les choix sans suppression manuelle du stockage navigateur.
+- Après un retrait, PostHog arrête explicitement la capture, réinitialise son identité et sa persistance utile ; un nouveau consentement peut le réactiver.
 
 ## Références legacy
 
