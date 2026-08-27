@@ -12,7 +12,7 @@ import type {
   UnifiedContractOrigin,
 } from "./contracts";
 import { toActionContract, toCanonicalSpotContract } from "./contracts";
-import type { StoredAction } from "@/lib/actions/store";
+import type { ActionRow } from "@/types/database";
 
 const TEST_MARKERS = [
   "seed de test",
@@ -110,7 +110,7 @@ function withDataQuality(contract: ActionDataContract): ActionDataContract {
 }
 
 export function buildUnifiedActionContracts(
-  remoteRows: StoredAction[],
+  remoteRows: ActionRow[],
   remoteSpots: TrashSpotterSpotRow[],
   localContracts: ActionDataContract[],
   types: ActionEntityType[] | null,

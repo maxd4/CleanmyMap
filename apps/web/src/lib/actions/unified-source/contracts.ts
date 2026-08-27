@@ -21,7 +21,7 @@ import type {
   ActionSourceName,
   ActionStatus,
 } from "@/lib/actions/types";
-import type { StoredAction } from "@/lib/actions/store";
+import type { ActionRow } from "@/types/database";
 
 export type UnifiedActionContractsParams = {
   limit: number;
@@ -56,7 +56,7 @@ export type TrashSpotterSpotRow = {
 };
 
 export type UnifiedActionSourceLoadResult = {
-  remoteRows: StoredAction[];
+  remoteRows: ActionRow[];
   remoteSpots: TrashSpotterSpotRow[];
   localContracts: ActionDataContract[];
   failedSources: ActionSourceName[];
@@ -125,7 +125,7 @@ function mapCanonicalSpotTypeToEntityType(
     : "clean_place";
 }
 
-function toActionContractFromRow(row: StoredAction): ActionDataContract {
+function toActionContractFromRow(row: ActionRow): ActionDataContract {
   const parsedNotes = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedNotes.cleanNotes);
   const contract = buildActionDataContract({
@@ -229,7 +229,7 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
   };
 }
 
-export function toActionContract(row: StoredAction): ActionDataContract {
+export function toActionContract(row: ActionRow): ActionDataContract {
   return toActionContractFromRow(row);
 }
 

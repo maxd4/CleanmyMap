@@ -4,8 +4,8 @@ import {
   ACTION_QUALITY_WEIGHTS,
   toActionQualityGrade,
 } from "./quality-rules";
-
-export type ActionQualityGrade = "A" | "B" | "C";
+import type { ActionQualityGrade } from "./quality-rules";
+export type { ActionQualityGrade } from "./quality-rules";
 
 export type ActionQualityBreakdown = {
   completeness: number;

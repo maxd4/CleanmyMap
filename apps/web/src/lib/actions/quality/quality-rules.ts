@@ -1,6 +1,6 @@
-import type { ActionQualityGrade } from "./quality";
-
 export const ACTION_QUALITY_RULESET_VERSION = "quality-2026.04-v1";
+
+export type ActionQualityGrade = "A" | "B" | "C";
 
 export const ACTION_QUALITY_WEIGHTS = {
   completeness: 0.3,

@@ -13,7 +13,8 @@ export type ActionMapViewportQuery = {
 export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
 export type ActionSourceName = "actions" | "spots" | "local";
 
-import type { ActionDataQualitySummary } from "./quality/data-quality";
+import type { ActionDataQualitySummary } from "./quality/data-quality-types";
+import type { ActionQualityGrade } from "./quality/quality-rules";
 import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
@@ -31,7 +32,7 @@ export type ActionPhase =
   | "pre_action"
   | "post_action_draft"
   | "post_action_complete";
-export type ActionQualityGrade = "A" | "B" | "C";
+export type { ActionQualityGrade } from "./quality/quality-rules";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
 export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
 export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
