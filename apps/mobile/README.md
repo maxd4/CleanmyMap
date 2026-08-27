@@ -18,6 +18,8 @@ ni publication store ne doit être engagée dans l'état actuel.
 
 Références :
 
+- [Architecture GPS companion](./architecture_gps_companion.md)
+
 ```txt
 documentation/architecture/adr/ADR-004-companion-identity.md
 documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md

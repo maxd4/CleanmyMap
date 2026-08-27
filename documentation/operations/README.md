@@ -45,12 +45,9 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 - `CHANGELOG.md`
 
 ### Import de données
-- `data-import/`
-  - `pipeline-import.md`
-  - `schema-normalisation.md`
-  - `mapping-colonnes.md`
-  - `regles-nettoyage-et-cas-limites.md`
-- `clerk-supabase-audit.sql`
+- [Point d'entrée local](data-import/README.md)
+- `clerk-supabase-audit.sql` — script d'audit Supabase associé, hors du
+  parcours d'import documenté dans ce sous-dossier.
 
 ---
 
@@ -67,9 +64,7 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 3. Documenter l'incident dans `CHANGELOG.md`
 
 ### Import de données
-1. Consulter `data-import/pipeline-import.md`
-2. Respecter `data-import/schema-normalisation.md`
-3. Appliquer `data-import/regles-nettoyage-et-cas-limites.md`
+1. Consulter [le point d'entrée local](data-import/README.md)
 
 ---
 
