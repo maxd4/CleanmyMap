@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { Settings, Trash2, Shield, Mail, AlertTriangle } from "lucide-react";
-import { resolvePublicContactEmail } from "@/lib/email-config";
+import Link from "next/link";
 
 export function AccountSettingsSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10">
@@ -55,7 +54,9 @@ export function AccountSettingsSection() {
               <h3 className="font-bold text-slate-900">Suppression du compte</h3>
             </div>
             <p className="text-sm text-slate-700 mb-3 leading-relaxed">
-              Vous pouvez supprimer votre compte à tout moment. Cette action est irréversible.
+              Vous pouvez demander l&apos;effacement de votre compte. Votre demande RGPD
+              sera examinée et traitée selon les données concernées et les
+              obligations applicables.
             </p>
 
             {!showDeleteConfirm ? (
@@ -64,23 +65,25 @@ export function AccountSettingsSection() {
                 className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-white px-3 py-1.5 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100"
               >
                 <Trash2 size={13} />
-                Supprimer mon compte
+                Demander la suppression de mon compte
               </button>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-100 p-3">
                   <AlertTriangle size={15} className="text-rose-600 shrink-0 mt-0.5" />
                   <p className="text-sm text-rose-900 leading-relaxed">
-                    Cette action supprimera définitivement toutes vos données. Vos actions déclarées seront anonymisées.
+                    Il s&apos;agit d&apos;une demande, et non d&apos;une suppression immédiate.
+                    Certaines données peuvent devoir être conservées ou
+                    anonymisées lorsque le service ou la loi le justifie.
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href={`mailto:${contactEmail}?subject=Demande%20RGPD%20-%20Suppression%20de%20compte`}
+                  <Link
+                    href="/contact"
                     className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700"
                   >
-                    Envoyer la demande
-                  </a>
+                    Demander la suppression de mon compte
+                  </Link>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-amber-100"
@@ -94,7 +97,8 @@ export function AccountSettingsSection() {
         </div>
 
         <p className="text-xs text-slate-500 mt-5">
-          Pour toute question sur vos données, contactez : {contactEmail}
+          Pour toute question sur vos données, utilisez le formulaire RGPD de la
+          page Contact.
         </p>
       </div>
     </section>

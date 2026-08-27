@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : consentement cookies et analytics — LEGAL-01
-- **Terminée** : oui pour le périmètre LEGAL-01
+- **Scope** : politique RGPD et réconciliation avec les traitements runtime — LEGAL-03 ; identité juridique dépendante de LEGAL-02
+- **Terminée** : partielle : doctrine runtime alignée ; identité juridique non résolue factuellement
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -48,6 +48,9 @@
 - La décision est stockée dans `cleanmymap_cookie_consent` et synchronisée dans `cleanmymap_analytics_consent` ; une décision locale expirée est nettoyée et redevient absente.
 - Le retrait désactive le rendu Vercel Analytics / Speed Insights et arrête une instance PostHog déjà initialisée avant de réautoriser une nouvelle capture.
 - **Gérer mes cookies** est accessible en permanence depuis le footer et rouvre la bannière de choix.
+- La politique décrit les catégories réellement traitées, les bases légales, les destinataires, les transferts non vérifiés comme tels, les critères de rétention et le délai d'exercice des droits.
+- Sentry est documenté comme observabilité/sécurité hors analytics ; aucun masquage ou anonymisation spécifique non configuré n'est promis.
+- Les demandes RGPD sont persistées dans `contact_requests`, couvertes par le nettoyage générique lorsqu'il est exécuté ; ses archives ne recopient pas les données personnelles.
 
 ## Références legacy
 
