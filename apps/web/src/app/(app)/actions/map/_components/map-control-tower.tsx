@@ -15,7 +15,7 @@ import {
 } from "@/components/actions/map-marker-categories";
 import { MapLegend } from "./map-legend";
 import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 
 type MapControlTowerProps = {
   filters: ActionsMapFilters;

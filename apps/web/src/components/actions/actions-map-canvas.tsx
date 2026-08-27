@@ -35,7 +35,7 @@ import {
   createActionsMapViewport,
   getActionsMapCenter,
 } from "./actions-map-canvas.utils";
-import type { MapViewportState } from "./map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
   toggleVisibleMapLayer,

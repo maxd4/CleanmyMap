@@ -5,7 +5,7 @@ import type {
   ActionStatus,
 } from "@/lib/actions/types";
 import { buildDateFloor } from "@/lib/pilotage/overview.utils";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { ReportScopeKind } from "@/lib/reports/scope";
 import {
   DEFAULT_REPORT_SCOPE,

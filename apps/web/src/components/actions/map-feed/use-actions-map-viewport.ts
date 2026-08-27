@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
   DEFAULT_ACTIONS_MAP_VIEWPORT,
   createActionsMapViewport,

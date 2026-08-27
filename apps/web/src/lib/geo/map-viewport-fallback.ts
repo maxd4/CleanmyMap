@@ -1,6 +1,6 @@
 import { buildTerritoryNominatimSearchUrlWithLimit, parseTerritoryCoordinates } from "./territory";
 import type { TerritoryLocationPreference } from "@/lib/user-location-preference";
-import type { MapViewportState } from "@/components/actions/map/map-export.types";
+import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
   getArrondissementCityCenter,
   type ArrondissementCity,
