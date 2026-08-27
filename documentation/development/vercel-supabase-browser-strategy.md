@@ -238,7 +238,7 @@ Les autres flux d'images et de PDF déclenchés par l'utilisateur peuvent rester
 - [apps/web/src/components/actions/map/actions-map-export-button.tsx](../../apps/web/src/components/actions/map/actions-map-export-button.tsx) déclenche des exports visuels à la demande, sans route serveur dédiée pour l'image;
 - [apps/web/src/components/profil/impact-profile-page.tsx](../../apps/web/src/components/profil/impact-profile-page.tsx) produit une image de partage seulement quand l'utilisateur l'initie;
 - [apps/web/src/components/reports/reports-web-document.tsx](../../apps/web/src/components/reports/reports-web-document.tsx) construit le document au moment où l'utilisateur lance l'aperçu ou l'export;
-- [apps/web/src/components/actions/action-declaration/export-form-media.ts](../../apps/web/src/components/actions/action-declaration/export-form-media.ts) prépare des médias de sortie en réaction à une action explicite, pas en continu.
+- [apps/web/src/lib/actions/exports/export-form-media.ts](../../apps/web/src/lib/actions/exports/export-form-media.ts) prépare des médias de sortie en réaction à une action explicite, pas en continu.
 
 Règle d'audit:
 

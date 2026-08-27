@@ -8,7 +8,7 @@ import {
   ActionDrawing,
 } from "./types";
 import { ActionDataContract, ActionEntityType } from "./contract-model";
-import { toGeoJsonString, isRenderableDrawing } from "./derived-geometry";
+import { toGeoJsonString, isRenderableDrawing } from "./geometry/derived-geometry";
 import {
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,

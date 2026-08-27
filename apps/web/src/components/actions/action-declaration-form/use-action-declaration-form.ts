@@ -28,7 +28,7 @@ import {
 } from "../action-declaration/draft-storage";
 import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
-import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
+import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";

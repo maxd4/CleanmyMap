@@ -137,7 +137,7 @@ Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un
 6. `apps/web/src/components/actions/map/use-actions-map-filters.ts`
 7. `apps/web/src/components/actions/map/actions-map-geometry.utils.ts`
 8. `apps/web/src/lib/geo/greater-paris.ts`
-9. `apps/web/src/lib/actions/route-geometry.ts`
+9. `apps/web/src/lib/actions/geometry/route-geometry.ts`
 
 ### 3.2 Flux De Données
 - `page.tsx` pilote les filtres globaux, les KPI, le journal et le rail latéral.

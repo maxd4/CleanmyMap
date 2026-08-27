@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { parseDrawingFromNotes } from "@/lib/actions/drawing";
+import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import {
   buildPersistedNotes,
   loadActionById,

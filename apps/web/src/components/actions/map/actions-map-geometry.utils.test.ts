@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import type { ActionMapItem } from "@/lib/actions/types";
-import { getGeometryPresentation } from "@/lib/actions/geometry-presentation";
+import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import {
   buildDrawingLeafletPositions,
   formatGeometryConfidenceLabel,

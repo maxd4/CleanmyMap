@@ -20,8 +20,8 @@ import {
   toNumber,
 } from "./lib/sheet-ingestion-core.mjs";
 import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
-import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
-import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
+import { normalizeLabel } from "../src/lib/actions/geometry/geometry-core.ts";
+import { resolveBestGeometry } from "../src/lib/actions/geometry/geometry-resolution.ts";
 
 const DEFAULT_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv&gid=0";

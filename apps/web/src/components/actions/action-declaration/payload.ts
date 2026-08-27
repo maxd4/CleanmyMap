@@ -4,7 +4,7 @@ import {
  buildEntrepriseAssociationName,
 } from"../../../lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"../../../lib/actions/place-type-options";
-import { deriveAutoDrawingFromLocation } from"@/lib/actions/route-geometry";
+import { deriveAutoDrawingFromLocation } from"@/lib/actions/geometry/route-geometry";
 import type {
  ActionDrawing,
  ActionPhotoAsset,

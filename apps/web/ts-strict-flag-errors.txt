@@ -247,11 +247,11 @@ src/lib/accueil/data.ts(212,5): error TS2322: Type '{ id: string; actor: string;
     Types of property 'tone' are incompatible.
       Type '"emerald" | "blue" | "amber" | "cyan" | undefined' is not assignable to type '"emerald" | "blue" | "amber" | "cyan"'.
         Type 'undefined' is not assignable to type '"emerald" | "blue" | "amber" | "cyan"'.
-src/lib/actions/derived-geometry.ts(243,11): error TS2532: Object is possibly 'undefined'.
-src/lib/actions/derived-geometry.ts(243,33): error TS2532: Object is possibly 'undefined'.
-src/lib/actions/derived-geometry.ts(244,11): error TS2532: Object is possibly 'undefined'.
-src/lib/actions/derived-geometry.ts(244,33): error TS2532: Object is possibly 'undefined'.
-src/lib/actions/drawing.ts(67,5): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/derived-geometry.ts(243,11): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/derived-geometry.ts(243,33): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/derived-geometry.ts(244,11): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/derived-geometry.ts(244,33): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/drawing.ts(67,5): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/event-link.ts(29,5): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
   Type 'undefined' is not assignable to type 'string | null'.
 src/lib/actions/http.ts(111,24): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
@@ -261,7 +261,7 @@ src/lib/actions/http.ts(113,54): error TS4111: Property 'referenceCode' comes fr
 src/lib/actions/http.ts(116,13): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
 src/lib/actions/http.ts(116,36): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
 src/lib/actions/http.ts(117,17): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
-src/lib/actions/route-geometry.ts(157,12): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/geometry/route-geometry.ts(157,12): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(268,15): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(269,15): error TS2532: Object is possibly 'undefined'.
 src/lib/actions/vision.ts(270,15): error TS2532: Object is possibly 'undefined'.

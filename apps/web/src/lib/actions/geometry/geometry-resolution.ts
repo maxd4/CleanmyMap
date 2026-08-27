@@ -1,5 +1,5 @@
-import type { ActionDrawing, ActionGeometryKind } from "./types.ts";
-import { findMatchingGeometry } from "../geo/geometry-reference.ts";
+import type { ActionDrawing, ActionGeometryKind } from "../types.ts";
+import { findMatchingGeometry } from "../../geo/geometry-reference.ts";
 import {
   GEOMETRY_CONFIDENCE,
   buildEllipsePolygon,

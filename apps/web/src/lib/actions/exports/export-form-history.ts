@@ -1,5 +1,5 @@
 import type { FormState } from "@/components/actions/action-declaration-form/action-declaration-form.model";
-import type { ActionDeclarationExportBundleId, ActionDeclarationExportPresetId } from "@/lib/actions/export-form-media";
+import type { ActionDeclarationExportBundleId, ActionDeclarationExportPresetId } from "@/lib/actions/exports/export-form-media";
 
 export type ActionDeclarationExportHistoryTargetId = "pdf" | ActionDeclarationExportPresetId;
 

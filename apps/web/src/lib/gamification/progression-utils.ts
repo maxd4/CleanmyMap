@@ -1,5 +1,5 @@
-import { parseDrawingFromNotes } from "@/lib/actions/drawing";
-import { parseDrawingFromGeoJson } from "@/lib/actions/derived-geometry";
+import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
+import { parseDrawingFromGeoJson } from "@/lib/actions/geometry/derived-geometry";
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality";
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
 import type { ActionRow, ProgressionEventType } from "./progression-types";

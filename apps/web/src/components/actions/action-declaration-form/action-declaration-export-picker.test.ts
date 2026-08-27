@@ -6,14 +6,14 @@ import {
   buildActionDeclarationExportFilename,
   buildActionDeclarationShareText,
   getActionDeclarationExportTargets,
-} from "@/lib/actions/export-form-media";
+} from "@/lib/actions/exports/export-form-media";
 import {
   createActionDeclarationExportHistoryEntry,
   mergeActionDeclarationExportHistory,
-} from "@/lib/actions/export-form-history";
+} from "@/lib/actions/exports/export-form-history";
 import {
   getActionDeclarationExportBundleImageTargets,
-} from "@/lib/actions/export-form-bundle";
+} from "@/lib/actions/exports/export-form-bundle";
 import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
 
 describe("ActionDeclarationExportPicker", () => {

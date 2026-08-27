@@ -1,12 +1,12 @@
 import type { ActionDrawing } from "@/lib/actions/types";
 import { buildPedestrianRoute } from "./geometry-core";
-import { findMatchingGeometry } from "../geo/geometry-reference";
-import { snapPolylineToStreetNetwork } from "../geo/osrm-routing";
+import { findMatchingGeometry } from "../../geo/geometry-reference";
+import { snapPolylineToStreetNetwork } from "../../geo/osrm-routing";
 import {
   buildTerritoryNominatimSearchUrl,
   isWithinTerritoryBounds,
   parseTerritoryCoordinates,
-} from "../geo/territory";
+} from "../../geo/territory";
 
 type GeoPoint = {
   latitude: number;
