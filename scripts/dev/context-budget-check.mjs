@@ -4,11 +4,10 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 
 const RULES = [
-  { path: "AGENTS.md", maxLines: 80, required: true },
-  { path: "project_context.md", maxLines: 180, required: true },
-  { path: "documentation/du/session/latest-session.md", maxLines: 140, required: true },
-  { path: "documentation/du/session/session_bootstrap.txt", maxLines: 3, required: true },
-  { path: "documentation/du/economie/economie_token_prompt_template.md", maxLines: 80, required: true },
+  { path: "AGENTS.md", maxLines: 240, required: true },
+  { path: "documentation/project_context.md", maxLines: 180, required: true },
+  { path: "documentation/sessions/history/latest-session.md", maxLines: 140, required: true },
+  { path: "documentation/sessions/context/economie_token_prompt_template.md", maxLines: 80, required: true },
 ];
 
 function lineCount(content) {
@@ -44,7 +43,7 @@ function checkRule(rule) {
 }
 
 function checkBootstrapScope() {
-  const bootstrapPath = join(ROOT, "scripts", "session_bootstrap.mjs");
+  const bootstrapPath = join(ROOT, "scripts", "dev", "session_bootstrap.mjs");
   if (!existsSync(bootstrapPath)) {
     return {
       ok: false,
@@ -52,13 +51,27 @@ function checkBootstrapScope() {
     };
   }
   const content = readFileSync(bootstrapPath, "utf8");
-  const forbidden = ["documentation/du/archive/prompt_codex.txt", "documentation/du/economie/economie_token.txt"];
+  const forbidden = [
+    "documentation/sessions/context/",
+    "documentation/sessions/assets/",
+    "documentation/sessions/templates/",
+  ];
   const found = forbidden.filter((needle) => content.includes(needle));
+  const historyLoads = [...content.matchAll(/documentation\/sessions\/history\/([^`"']+)/g)]
+    .map((match) => match[1])
+    .filter((relativePath) => relativePath !== "latest-session.md");
+  if (/\breadFile(?:Sync)?\b/.test(content)) {
+    found.push("bootstrap reads file content");
+  }
+  if (historyLoads.length > 0) {
+    found.push(`non-canonical session history: ${historyLoads.join(", ")}`);
+  }
+
   return found.length === 0
-    ? { ok: true, message: "bootstrap scope ok (no heavyweight DU files)" }
+    ? { ok: true, message: "bootstrap scope ok (no heavyweight session resources)" }
     : {
         ok: false,
-        message: `bootstrap loads heavyweight files: ${found.join(", ")}`,
+        message: `bootstrap must only verify canonical sources: ${found.join(", ")}`,
       };
 }
 

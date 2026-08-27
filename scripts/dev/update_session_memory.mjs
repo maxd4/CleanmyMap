@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const TARGET = join(ROOT, "documentation", "du", "session", "latest-session.md");
+const TARGET = join(ROOT, "documentation", "sessions", "history", "latest-session.md");
 const SECTIONS = ["Done", "In Progress", "Next", "Risks"];
 const DEFAULT_MAX_LINES = 140;
 const MAX_ITEMS_PER_SECTION = 8;

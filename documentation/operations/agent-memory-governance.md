@@ -4,8 +4,8 @@
 ```mermaid
 flowchart LR
   A[AGENTS.md] --> C[Session bootstrap]
-  B[project_context.md] --> C
-  D[latest-session.md] --> C
+  B[documentation/project_context.md] --> C
+  D[documentation/sessions/history/latest-session.md] --> C
   C --> E[Execution session]
   E --> F[Session close update]
   F --> D
@@ -64,7 +64,7 @@ Cette couche formalise la boucle de travail attendue pour les tâches non trivia
 - Global operating rules and response style.
 - Update rarely (only when process changes).
 
-2. `project_context.md` (semi-stable project context)
+2. `documentation/project_context.md` (semi-stable project context)
 - Architecture, stack, critical files, and validation commands.
 - Update when architecture or workflows change.
 
@@ -74,7 +74,7 @@ Cette couche formalise la boucle de travail attendue pour les tâches non trivia
 
 ## Update cadence
 - `AGENTS.md`: monthly or by explicit process decision.
-- `project_context.md`: when runtime topology or conventions change.
+- `documentation/project_context.md`: when runtime topology or conventions change.
 - `documentation/sessions/history/latest-session.md`: every session close.
 
 ## Session protocol
@@ -91,4 +91,4 @@ Close:
 - Do not duplicate stable rules in `latest-session.md`.
 - Do not store volatile TODO lists in `AGENTS.md`.
 - Keep each section concise and deduplicated.
-- Keep `documentation/sessions/history/latest-session.md` below line budget (default cap: 140 lines, 8 items/section).
+- Keep `documentation/sessions/history/latest-session.md` below line budget (140 lines, 8 items/section).
