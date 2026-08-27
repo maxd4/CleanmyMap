@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
-import { MapSidebarAid } from "./_components/map-sidebar-aid";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
 import { useActionsMapViewport } from "@/components/actions/map-feed/use-actions-map-viewport";
 import {
@@ -239,7 +238,7 @@ function ActionsMapPageContent() {
                   <div className="space-y-1">
                     <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
                       <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-                      Lecture terrain
+                      Analyse &amp; journal
                     </p>
                     <p className="text-sm font-medium leading-relaxed text-slate-600">
                       Flux terrain et répartition par période.
@@ -309,8 +308,6 @@ function ActionsMapPageContent() {
               <section className={cn(surfaceCard, "p-5 sm:p-6")}>
                 <ActionStoriesCarousel items={filteredMapItems} onOpenAction={handleSelectAction} compact />
               </section>
-
-              <MapSidebarAid />
             </aside>
           </div>
         </div>
