@@ -4,19 +4,22 @@ import { listCommunityBugReports } from "@/lib/community/bug-reports-store";
 import {
   buildEventInboxItem,
   buildFeedbackInboxItem,
+  buildLegalContentReportInboxItem,
   buildPartnerInboxItem,
   buildPromotionInboxItem,
   type CreatorInboxItem,
 } from "@/lib/community/creator-inbox";
 import { listPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
+import { listLegalContentReports } from "@/lib/legal-content-report/legal-content-report-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getClerkService } from "@/lib/services/clerk";
 
 export async function loadCreatorInboxItems(): Promise<CreatorInboxItem[]> {
-  const [feedback, promotion, partner, events] = await Promise.all([
+  const [feedback, promotion, partner, legalContentReports, events] = await Promise.all([
     listCommunityBugReports(200),
     listPromotionRequests(200),
     listPartnerOnboardingRequests(200),
+    listLegalContentReports(200),
     loadCreatorInboxEvents(),
   ]);
 
@@ -24,6 +27,7 @@ export async function loadCreatorInboxItems(): Promise<CreatorInboxItem[]> {
     ...feedback.map((item) => buildFeedbackInboxItem(item)),
     ...promotion.map((item) => buildPromotionInboxItem(item)),
     ...partner.map((item) => buildPartnerInboxItem(item)),
+    ...legalContentReports.map((item) => buildLegalContentReportInboxItem(item)),
     ...events,
   ];
 

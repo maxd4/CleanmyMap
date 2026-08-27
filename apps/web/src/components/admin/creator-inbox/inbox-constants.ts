@@ -6,6 +6,7 @@ export const SOURCE_FILTERS: Array<{ value: "all" | CreatorInboxSource; label: s
   { value: "promotion", label: "Promotion" },
   { value: "partner", label: "Partenariat" },
   { value: "event", label: "Événement" },
+  { value: "legal_content_report", label: "Notification de contenu illicite" },
 ];
 
 export const STATUS_FILTERS: Array<{ value: "all" | CreatorInboxStatus; label: string }> = [

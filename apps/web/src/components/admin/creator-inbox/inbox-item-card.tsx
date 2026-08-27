@@ -112,7 +112,7 @@ export function InboxItemCard({
           {copiedKey === item.id ? copy.states.copied : copy.states.copySummary}
         </button>
 
-        {item.source !== "event" ? (
+        {item.source !== "event" && item.source !== "legal_content_report" ? (
           <label className="mt-2 basis-full space-y-1">
             <span className="cmm-text-caption font-semibold cmm-text-secondary">
               {locale === "fr" ? "Motif de traitement" : "Processing reason"}
@@ -240,7 +240,7 @@ export function InboxItemCard({
           </>
         ) : null}
 
-        {item.source !== "event" ? (
+        {item.source !== "event" && item.source !== "legal_content_report" ? (
           <>
             <button
               type="button"

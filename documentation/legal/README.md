@@ -10,6 +10,7 @@ Ce dossier contient l'ensemble des documents juridiques de CleanMyMap.
 | [Politique de Confidentialité](politique-confidentialite.md) | RGPD - Protection des données personnelles |
 | [Politique des Cookies](politique-cookies.md) | Gestion des cookies et traceurs |
 | [Charte du Bénévole](charte-benevole.md) | Droits et devoirs des bénévoles |
+| [Notification de contenu illicite](../pages_site/routes/07-legal/signaler-contenu-illicite/signaler-contenu-illicite-README.md) | Formulaire électronique de notification circonstanciée |
 
 ## Accès rapide
 
@@ -25,6 +26,24 @@ Les dernières mises à jour couvrent notamment le parrainage, l'alignement des 
 
 Les lots LEGAL-01, LEGAL-02 et LEGAL-03 sont clos sur la base du runtime
 actuellement déployé et des confirmations opérateur disponibles.
+
+## Notification de contenu potentiellement illicite
+
+Le formulaire public `/signaler-contenu-illicite` recueille une URL exacte, un
+motif circonstancié, les identifiants techniques facultatifs, l'identité du
+déclarant lorsqu'elle est requise et une confirmation de bonne foi. Une
+exception permet de ne pas fournir identité et email lorsque le déclarant
+indique que les faits sont susceptibles de relever des articles 3 à 7 de la
+directive 2011/93/UE ; la qualification juridique complète n'est pas exigée.
+
+Les notifications sont persistées dans le domaine dédié
+`legal_content_reports`, sans copie brute du contenu tiers. Elles ne sont pas
+lisibles publiquement et apparaissent en lecture seule dans le creator inbox
+existant. L'accusé de réception est envoyé si un email a été fourni après la
+persistance ; une panne d'email ne supprime pas la notification. Le dispositif
+est conçu pour recevoir une notification électronique compatible avec l'article
+16 du DSA, sans présenter CleanMyMap comme un fournisseur d'hébergement au sens
+du DSA.
 
 ## Clôture LEGAL-01 à LEGAL-03
 

@@ -49,6 +49,11 @@ utilisés par l'application web :
   sont persistées dans `contact_requests` avec l'email, le type de demande, le
   message, la page d'origine, l'identifiant de compte lorsqu'il est disponible,
   la date et l'état de notification.
+- **Notifications de contenu** (`legal_content_reports`) : URL exacte du
+  contenu, motif circonstancié, type et identifiant technique facultatifs,
+  nom/email lorsqu'ils sont fournis, motif facultatif de l'exception d'identité,
+  identifiant de suivi, date et états de traitement. Le contenu tiers lui-même
+  n'est pas copié.
 - **Newsletter** (`newsletter_subscriptions`) : email, état d'inscription,
   source, consentement et dates associées. L'inscription exige un consentement
   explicite dans le parcours actuel.
@@ -76,6 +81,7 @@ parrainage. Elles sont utilisées pour la fonctionnalité concernée.
 | Compte, profil et authentification | Créer le compte, authentifier la personne et fournir les fonctionnalités | Exécution du service ou mesures précontractuelles lorsque pertinentes ; intérêt légitime de sécurité | Les données nécessaires au compte et à l'authentification sont obligatoires pour l'utiliser ; les compléments de profil sont facultatifs lorsqu'ils ne sont pas requis |
 | Actions, lieux, événements et messagerie | Enregistrer les contributions et fournir les fonctions communautaires choisies | Exécution du service | Les champs requis par chaque formulaire sont nécessaires à la fonctionnalité choisie ; les champs facultatifs sont signalés dans le parcours |
 | Support et demandes RGPD | Répondre aux messages, instruire les droits et suivre les demandes | Intérêt légitime pour le support ; obligation légale pour les demandes de droits | L'email et les éléments nécessaires à l'instruction sont requis par le formulaire concerné |
+| Notifications de contenu | Recevoir, examiner et suivre les notifications électroniques concernant un contenu potentiellement illicite | Intérêt légitime ; obligation légale lorsque le traitement concerné l'impose | URL et motif circonstancié obligatoires ; identité/email requis sauf exception déclarée |
 | Newsletter | Envoyer les communications demandées | Consentement | Facultatif et distinct de la création du compte |
 | Analytics et mesure d'audience | Mesurer les parcours et la performance après accord | Consentement | Facultatif ; le refus ne bloque pas le service essentiel |
 | Sentry | Détecter, diagnostiquer et prévenir les erreurs, abus et incidents | Intérêt légitime | Hors analytics soumis au consentement cookies ; activé uniquement lorsqu'une DSN est configurée |
@@ -150,6 +156,10 @@ est indiqué :
   `promotion_requests`, `partner_onboarding_requests`, `contact_requests` et
   les objets des buckets explicitement configurés par le script. Le seuil est
   configurable par l'opérateur.
+- **`legal_content_reports`** : aucun nettoyage automatique spécifique n'est
+  identifié dans ce dépôt ; les signalements sont conservés selon le suivi
+  nécessaire de la notification, les obligations applicables et l'examen d'une
+  demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.
 - **Profils, actions, lieux, médias de signalement, rapports, notifications,
   progression et audit** : aucun mécanisme générique de suppression périodique
   n'est identifié dans ce dépôt. La conservation suit le fonctionnement du

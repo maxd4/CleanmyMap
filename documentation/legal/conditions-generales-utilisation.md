@@ -133,7 +133,13 @@ En cas de non-respect des CGU, CleanMyMap peut :
 - Signaler aux autorités tout comportement illégal
 
 ### 8.3 Signalements
-Les utilisateurs peuvent signaler tout contenu litigieux via le bouton "Signaler" présent sur chaque contenu.
+Les utilisateurs peuvent transmettre une notification électronique concernant un
+contenu potentiellement illicite depuis la page publique
+`/signaler-contenu-illicite`. La notification demande l'URL exacte et un motif
+circonstancié ; elle est traitée dans la file créateur dédiée et n'est pas
+publiée. Ce dispositif ne demande pas à l'utilisateur de qualifier
+juridiquement parfaitement les faits et ne préjuge pas de la qualification
+juridique de CleanMyMap au regard du DSA.
 
 ---
 

@@ -159,6 +159,7 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | `/mentions-legales` | [Mentions légales](./routes/07-legal/mentions-legales/mentions-legales-README.md) | `legal-public` | `apps/web/src/app/mentions-legales/page.tsx` |
 | `/politique-confidentialite` | [Politique de confidentialité](./routes/07-legal/politique-confidentialite/politique-confidentialite-README.md) | `legal-public` | `apps/web/src/app/politique-confidentialite/page.tsx` |
 | `/politique-cookies` | [Politique cookies](./routes/07-legal/politique-cookies/politique-cookies-README.md) | `legal-public` | `apps/web/src/app/politique-cookies/page.tsx` |
+| `/signaler-contenu-illicite` | [Notification de contenu illicite](./routes/07-legal/signaler-contenu-illicite/signaler-contenu-illicite-README.md) | `legal-public` | `apps/web/src/app/signaler-contenu-illicite/page.tsx` |
 
 ### Alias légaux
 

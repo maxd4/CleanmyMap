@@ -23,7 +23,7 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
             {inbox.items.length} {inbox.copy.panel.itemCountSuffix}
           </p>
           <p className="text-[9px] font-medium text-slate-600 italic">
-            F: {inbox.summary.feedback} · P: {inbox.summary.promotion} · S: {inbox.summary.partner}
+            F: {inbox.summary.feedback} · P: {inbox.summary.promotion} · S: {inbox.summary.partner} · L: {inbox.summary.legalContentReport}
           </p>
         </div>
       }

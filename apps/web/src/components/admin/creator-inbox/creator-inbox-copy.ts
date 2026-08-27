@@ -67,7 +67,7 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       badge: "Inbox créateur",
       title: "File de traitement unifiée",
       description:
-        "Feedback, promotion, partenariat et événements arrivent dans le même espace, avec les bons contacts, les bonnes dates et les bons statuts.",
+        "Feedback, promotion, partenariat, événements et notifications de contenu arrivent dans le même espace, avec les bons contacts, les bonnes dates et les bons statuts.",
       itemCountSuffix: "élément(s)",
       feedbackLabel: "Feedback",
       promotionLabel: "Promo",
@@ -125,7 +125,7 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       badge: "Creator inbox",
       title: "Unified processing queue",
       description:
-        "Feedback, promotion, partnerships and events arrive in one space with the right contacts, dates and statuses.",
+        "Feedback, promotion, partnerships, events and content notifications arrive in one space with the right contacts, dates and statuses.",
       itemCountSuffix: "item(s)",
       feedbackLabel: "Feedback",
       promotionLabel: "Promo",
