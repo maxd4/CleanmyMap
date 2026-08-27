@@ -1,8 +1,18 @@
 # Implementation Plan: Suppression Charte Dark
 
+> **État de suivi — 27 août 2026 :** plan historique non exécuté comme un
+> chantier autonome. Les marqueurs ci-dessous décrivent le plan Kiro d'origine
+> et ne constituent pas une preuve de réalisation. La charte dark reste active
+> dans `apps/web/src/app/globals.css` ; réévaluer ce plan avant toute
+> implémentation et obtenir une décision explicite.
+
 ## Overview
 
-Ce plan d'implémentation détaille les étapes pour supprimer complètement la charte dark obsolète du projet CleanMyMap. L'approche est conservative et préserve intégralement le mode clair existant tout en éliminant systématiquement tous les éléments liés au mode sombre.
+Ce plan d'implémentation propose les étapes pour évaluer puis, si la décision
+est confirmée, supprimer la charte dark du projet CleanMyMap. L'approche est
+conservative et doit préserver le mode clair existant ainsi que la cohérence
+des trois modes d'affichage documentés. Aucun nettoyage n'est déduit de ce
+plan seul.
 
 ## Tasks
 

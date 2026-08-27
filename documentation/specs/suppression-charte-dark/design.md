@@ -1,10 +1,21 @@
 # Design Document
 
+> **État de conception — 27 août 2026 :** proposition non exécutée. La
+> charte dark est toujours active dans `apps/web/src/app/globals.css` et le
+> design system documente encore des surfaces sombres ainsi que les modes
+> d'affichage existants. Ce document est une base de discussion à revalider,
+> pas une description de l'architecture actuelle.
+
 ## Overview
 
-Cette spécification de design détaille l'approche technique pour supprimer complètement la charte dark obsolète du projet CleanMyMap. L'objectif est d'éliminer tous les styles, variables et références liés au mode sombre tout en préservant intégralement la fonctionnalité du mode clair et la cohérence du système de design existant.
+Cette spécification de design détaille une approche technique proposée pour
+évaluer la suppression de la charte dark du projet CleanMyMap. L'objectif
+éventuel serait d'éliminer les styles, variables et références liés au mode
+sombre tout en préservant le mode clair, les modes d'affichage maintenus et la
+cohérence du système de design existant.
 
-La suppression sera effectuée de manière systématique sur trois axes principaux :
+Si la décision est confirmée, la suppression serait effectuée de manière
+systématique sur trois axes principaux :
 1. **Nettoyage CSS** : Suppression de la section `html[data-theme="dark"]` et de toutes les classes utilitaires dark
 2. **Nettoyage des scripts** : Élimination des références dark dans les scripts de migration
 3. **Nettoyage du plugin Figma** : Suppression des tokens et composants dark
@@ -31,6 +42,14 @@ La suppression suivra une approche **conservative** :
 - **Suppression ciblée** uniquement des éléments dark
 - **Validation continue** de la non-régression
 - **Documentation complète** des changements
+
+### Précondition de décision
+
+Avant toute implémentation, confronter cette proposition aux sources canoniques
+du design system et au code actuel. La présence de règles `data-theme="dark"`
+et de surfaces sombres dans `globals.css` est actuellement vérifiée ; aucune
+suppression ne doit être déduite de ce document sans décision explicite,
+validation de l'impact UX/UI et plan de migration des modes d'affichage.
 
 ## Components and Interfaces
 
