@@ -1,4 +1,4 @@
-import type { ActionEntityType } from "@/lib/actions/contract-model";
+import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
 import type { ActionStatus } from "@/lib/actions/types";
 
 export type TerritorialInput = {

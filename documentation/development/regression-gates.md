@@ -13,7 +13,7 @@ Eviter les regressions quand des chantiers sont menes en parallele sur:
 4. Supprimer l'ancien code seulement apres validation stable.
 
 ## Gates CI minimales
-- `npm run test -w apps/web -- src/lib/actions/contract-regression-gates.test.ts`
+- `npm run test -w apps/web -- src/lib/actions/contracts/contract-regression-gates.test.ts`
 - `npm run test -w apps/web -- src/lib/sections-registry.invariants.test.ts`
 - `npm run test -w apps/web -- src/lib/navigation.registry-consistency.test.ts`
 - `npm run test -w apps/web -- src/proxy.protected-routes.test.ts`

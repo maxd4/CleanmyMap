@@ -383,7 +383,7 @@ Sources de vérité techniques principales :
 - `apps/web/src/lib/actions/pollution/current-place-state.ts` — état courant déterministe par lieu, priorité observation/projection/historique et seam Trash Spotter quantifié ;
 - `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts` — évaluation prospective sans fuite temporelle et agrégat descriptif ;
 - `apps/web/src/lib/actions/pollution/repollution-prediction-evaluation-store.ts` — écriture serveur idempotente du ledger append-only ;
-- `apps/web/src/lib/actions/contract-model.ts` et `apps/web/src/lib/actions/contract-mappers.ts` — champs post-action et futur score Trash Spotter optionnels ;
+- `apps/web/src/lib/actions/contracts/contract-model.ts` et `apps/web/src/lib/actions/contracts/contract-mappers.ts` — champs post-action et futur score Trash Spotter optionnels ;
 - `apps/web/src/components/actions/map-marker-categories.ts` ;
 - `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` ;
 - `apps/web/src/components/actions/map/map-layers.tsx` ;

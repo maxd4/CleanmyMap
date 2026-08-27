@@ -6,13 +6,13 @@ import {
   ActionQualityBreakdown,
   ActionImpactLevel,
   ActionDrawing,
-} from "./types";
+} from "../types";
 import { ActionDataContract, ActionEntityType } from "./contract-model";
-import { toGeoJsonString, isRenderableDrawing } from "./geometry/derived-geometry";
+import { toGeoJsonString, isRenderableDrawing } from "../geometry/derived-geometry";
 import {
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,
-} from "./pollution/pollution-score";
+} from "../pollution/pollution-score";
 
 type ActionInsightsLike = {
   qualityScore: number;

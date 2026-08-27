@@ -1,5 +1,5 @@
 import type { ActionMapItem, ActionMapViewportQuery } from "@/lib/actions/types";
-import { mapItemCoordinates } from "@/lib/actions/contract-mappers";
+import { mapItemCoordinates } from "@/lib/actions/contracts/contract-mappers";
 import { fetchInitialNearestPollution } from "@/lib/actions/pollution/initial-nearest-pollution-http";
 import type {
   InitialPollutionCandidateFetcher,

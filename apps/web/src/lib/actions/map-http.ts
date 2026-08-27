@@ -23,10 +23,10 @@ import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "./pollution/pollution-score";
-import type { ActionDataContract, ActionEntityType } from "./contract-model";
+import type { ActionDataContract, ActionEntityType } from "./contracts/contract-model";
 import { buildActionDataContract } from "./data-contract";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
-import { mapItemCoordinates, toActionMapItem } from "./contract-mappers";
+import { mapItemCoordinates, toActionMapItem } from "./contracts/contract-mappers";
 import {
   clampInteger,
   normalizeQualityMin,

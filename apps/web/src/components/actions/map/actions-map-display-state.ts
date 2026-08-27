@@ -1,4 +1,4 @@
-import type { ActionDataContract } from "@/lib/actions/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   resolveCurrentPlaceStateForRecord,
   resolveCurrentPlaceStateViews,

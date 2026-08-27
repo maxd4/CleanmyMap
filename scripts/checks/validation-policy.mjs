@@ -32,7 +32,7 @@ export const VITEST_GROUPS = Object.freeze({
     "src/app/api/chat/route.test.ts",
   ]),
   regression: Object.freeze([
-    "src/lib/actions/contract-regression-gates.test.ts",
+    "src/lib/actions/contracts/contract-regression-gates.test.ts",
     "src/lib/sections-registry.invariants.test.ts",
     "src/lib/navigation.registry-consistency.test.ts",
     "src/lib/vercel-regression-gates.test.ts",

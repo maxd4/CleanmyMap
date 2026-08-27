@@ -7,7 +7,7 @@ import {
   isTrashSpotterSpotRecord,
   toTrashSpotterActionableCandidate,
 } from "./trash-spotter-actionable-candidates";
-import { toActionMapItem } from "./contract-mappers";
+import { toActionMapItem } from "./contracts/contract-mappers";
 
 function buildContract(
   overrides: Partial<Parameters<typeof buildActionDataContract>[0]> = {},
