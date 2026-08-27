@@ -13,6 +13,16 @@ Ces règles concernent la configuration et les migrations du workspace web.
 - garder la migration et le code consommateur cohérents : schéma, types,
   routes, RPC, UI et tests doivent évoluer ensemble lorsque nécessaire.
 
+## Requêtes et contrats de données
+
+- les changements SQL passent par une migration versionnée ;
+- vérifier les erreurs de chaque opération Supabase ;
+- régénérer ou réaligner les types lorsqu'un schéma change ;
+- avant une requête coûteuse, consulter
+  `documentation/development/supabase-query-optimization-playbook.md` ;
+- vérifier les permissions pour les chemins propriétaire/non-propriétaire,
+  connecté/anonyme et privilégié.
+
 ## Sécurité des changements SQL
 
 Toute création ou modification d'une table exposée doit auditer :

@@ -14,8 +14,18 @@ sous-dossiers.
 - créer un nouveau document uniquement lorsqu'aucun emplacement canonique
   existant ne convient.
 
-Pour un sujet mixte, garder le résumé fonctionnel dans la documentation de
-page et le détail technique dans le dossier spécialisé approprié.
+Lorsqu'un dossier porte une responsabilité, un point d'entrée ou une procédure
+durable, son README peut orienter vers les documents canoniques, sans recopier
+leur contenu. Après une réorganisation significative, vérifier les README
+concernés et les références actives. Pour un sujet mixte, garder le résumé
+fonctionnel dans la fiche de page et le détail technique dans le dossier
+spécialisé approprié.
+
+`documentation/pages_site/README.md` est le point d'entrée local du registre
+route-first et porte les conventions spécifiques de ses routes ;
+`documentation/pages_site/INDEX.md` en est l'inventaire maître. Ne pas créer
+une seconde hiérarchie locale tant que ces conventions sont correctement
+portées par ce README.
 
 ## États et historique
 
@@ -44,3 +54,8 @@ uniquement pour moderniser leurs chemins.
 Avant clôture, vérifier le document contre le code ou le contrat actuel
 lorsqu'il décrit le présent, contrôler les liens actifs et exécuter les checks
 documentaires pertinents.
+
+Tous les deux ou trois prompts consacrés à un même chantier, réévaluer la
+documentation canonique si le comportement, une décision, une validation ou
+une limite a changé ; ne pas produire de modification documentaire
+artificielle lorsqu'aucune information n'a changé.
