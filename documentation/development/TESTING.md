@@ -203,8 +203,8 @@ Minimum obligatoire :
 npm run typecheck -w apps/mobile
 ```
 
-Les contrats Clerk, RLS et `compute_mission_distance` sont finalisés puis
-gelés. Avant toute reprise fonctionnelle ou validation de production mobile,
+Les contrats Clerk, RLS et la finalisation des métriques par trigger invoker
+sont finalisés puis gelés. Avant toute reprise fonctionnelle ou validation de production mobile,
 ajouter des tests ciblés couvrant :
 
 - restauration d'une mission active ;

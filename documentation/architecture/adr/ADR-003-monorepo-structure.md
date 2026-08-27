@@ -46,8 +46,8 @@ apps/
 `apps/web/supabase/` reste la source actuelle des migrations conformément à
 ADR-006 ; sa relocalisation éventuelle relève d'un autre chantier.
 
-L'identité Clerk et le contrat de calcul de distance `compute_mission_distance`
-sont finalisés puis gelés. Les limites encore ouvertes sont le traitement
+L'identité Clerk et le contrat de finalisation des métriques par trigger
+`SECURITY INVOKER` sont finalisés puis gelés. Les limites encore ouvertes sont le traitement
 background headless, `mission_actions`, la validation opérationnelle et la
 future évolution produit de l'application mobile.
 

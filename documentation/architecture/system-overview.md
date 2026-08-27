@@ -66,7 +66,7 @@ flowchart LR
 CleanMyMap est un seul produit et un seul monorepo avec deux applications
 déployables distinctes sous `apps/`. Le web et le mobile partagent Clerk,
 Supabase et les contrats métier nécessaires. L'identité Clerk et la
-finalisation de `compute_mission_distance` sont désormais finalisées puis
+finalisation des métriques par trigger invoker sont désormais finalisées puis
 gelées ; elles ne constituent plus des lots de conception.
 
 Les limites encore ouvertes sont :
@@ -80,7 +80,8 @@ Les invariants de sécurité restent :
 
 - Clerk est l'identité principale du projet ;
 - une identité Supabase anonyme ne doit pas être assimilée implicitement à un profil Clerk ;
-- `compute_mission_distance` ne doit pas être appelée directement par un client si son droit d'exécution reste réservé à `service_role`.
+- la finalisation mobile doit passer par l'UPDATE propriétaire vers `completed` ;
+  aucun client ne doit écrire directement `distance_m` ou `duration_s`.
 
 Voir `ADR-004` et `ADR-006`.
 

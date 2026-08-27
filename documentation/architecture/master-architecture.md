@@ -93,8 +93,8 @@ CleanMyMap/
 
 L'application mobile est issue de l'ancien `companion-app` ; cette mention est
 historique et ne désigne pas un projet séparé. Elle est actuellement gelée
-fonctionnellement. L'identité Clerk et `compute_mission_distance` sont
-finalisés puis gelés ; les sujets encore ouverts sont le background headless,
+fonctionnellement. L'identité Clerk et la finalisation des métriques par
+trigger invoker sont finalisées puis gelées ; les sujets encore ouverts sont le background headless,
 `mission_actions`, la validation opérationnelle et la future évolution produit.
 
 ## Application web

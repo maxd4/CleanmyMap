@@ -112,11 +112,16 @@ L'application mobile n'est toujours pas prête pour la production : la
 synchronisation headless, `mission_actions` et l'usage opérationnel réel restent
 non validés.
 
-## Finalisation propriétaire — LOT 2B réalisé
+## Finalisation propriétaire — LOT 2B historique, corrigé par SEC-01
+
+Le contrat RPC décrit ci-dessous est conservé comme historique du LOT 2B. Il a
+été remplacé par SEC-01 : la finalisation est maintenant effectuée par un
+trigger `BEFORE UPDATE` `SECURITY INVOKER` lors du passage à `completed`, et le
+RPC `compute_mission_distance` est supprimé.
 
 La migration additive
 `apps/web/supabase/migrations/20260826080000_clerk_compute_mission_distance.sql`
-rend `compute_mission_distance(uuid)` exécutable par `authenticated` et
+avait rendu `compute_mission_distance(uuid)` exécutable par `authenticated` et
 `service_role`, sans grant `anon` ou `public`.
 
 Pour un utilisateur `authenticated`, la fonction :
@@ -130,11 +135,18 @@ Pour un utilisateur `authenticated`, la fonction :
 - ne renseigne `duration_s` que lorsque `started_at` et `ended_at` sont
   exploitables et dans un ordre cohérent.
 
-La fonction utilise `SECURITY DEFINER` avec `search_path = pg_catalog` afin de
+La fonction historique utilisait `SECURITY DEFINER` avec `search_path = pg_catalog` afin de
 mettre à jour les colonnes dérivées sans réélargir les grants UPDATE mobiles.
 Le chemin `service_role` reste technique et opérationnel. `stopTracking` vérifie
 l'erreur RPC et ne déclare pas une finalisation complètement réussie lorsque
 le calcul serveur échoue.
+
+Le contrat courant est défini par
+`apps/web/supabase/migrations/20260827100000_clerk_mission_completion_metrics_trigger.sql`.
+Le mobile vide son buffer GPS avant l'UPDATE `completed`; le trigger invoker
+calcule `distance_m` et `duration_s` dans `NEW`, et la ligne finalisée est
+retournée par le même UPDATE. Les grants mobiles restent limités à
+`status`, `started_at` et `ended_at`.
 
 Le renouvellement fiable d'un token Clerk en réveil `TaskManager` headless n'est
 pas résolu : sans token valide, le buffer local reste la seule issue et aucune
@@ -207,8 +219,9 @@ Inconvénients :
 ## Clôture et suite hors application mobile
 
 Le LOT 2B a traité l'appel client à `compute_mission_distance` et a gelé
-l'application mobile. La reprise dépend d'une décision explicite de dégel et
-d'une validation opérationnelle réelle.
+l'application mobile ; ce passage est historique et a été corrigé par SEC-01.
+La reprise dépend d'une décision explicite de dégel et d'une validation
+opérationnelle réelle.
 
 Le contrat ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
 hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
@@ -228,9 +241,10 @@ Le LOT 2A a réalisé la bascule RLS additive :
 5. conserver le buffer offline lorsque le token n'est pas disponible.
 
 Le LOT 2B a ajouté la migration additive de finalisation propriétaire et le
-contrôle d'erreur RPC dans le tracking service. La validation de production
-reste exclue : aucune application distante de migration ni usage opérationnel
-réel n'est déclaré ici.
+contrôle d'erreur RPC dans le tracking service. SEC-01 remplace ce chemin par
+une finalisation déclenchée par l'UPDATE et supprime la surface RPC. La
+validation de production reste exclue : aucune application distante de
+migration ni usage opérationnel réel n'est déclaré ici.
 
 ## Tests requis
 
@@ -240,10 +254,11 @@ utilisateur A ne modifie pas mission B
 app et web résolvent le même profil
 sub Clerk absent refusé
 champs sensibles mission non modifiables par authenticated
-propriétaire seul peut exécuter compute_mission_distance
-tiers et sub absent refusés par la fonction
-anon sans EXECUTE
-erreur RPC propagée par stopTracking
+propriétaire seul peut finaliser une mission
+tiers et sub absent refusés par les RLS
+anon sans droit de mise à jour
+écriture directe des colonnes dérivées refusée
+la ligne finalisée est retournée par stopTracking
 service_role absente du bundle
 ```
 
