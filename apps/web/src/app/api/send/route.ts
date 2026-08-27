@@ -3,9 +3,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import {
+  appendEmailTestAudit,
+  createEmailTestAuditOperationId,
+} from "@/lib/admin/email-test-audit";
 import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
-import { sendEmail } from "@/lib/services/email";
+import {
+  isEmailQuotaExceededError,
+  sendEmail,
+} from "@/lib/services/email";
 
 export const runtime = "nodejs";
 
@@ -36,19 +43,35 @@ function hasValidLocalTestToken(request: Request): boolean {
 
 export async function POST(request: Request) {
   const tokenAuthorized = hasValidLocalTestToken(request);
-  const { userId: actorUserId } = await auth();
+  const { userId: authenticatedUserId } = await auth();
+  let adminActorUserId: string | null = null;
 
   if (!tokenAuthorized) {
     const access = await requireAdminAccess();
     if (!access.ok) {
       return adminAccessErrorJsonResponse(access);
     }
+    adminActorUserId = access.userId;
   }
+
+  const actorUserId = adminActorUserId ?? authenticatedUserId;
+  const operationId = adminActorUserId
+    ? createEmailTestAuditOperationId("send")
+    : null;
 
   const from = resolveEmailFrom();
   const replyTo = resolveContactEmail();
 
   if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
+    if (adminActorUserId && operationId) {
+      await appendEmailTestAudit({
+        operationId,
+        actorUserId: adminActorUserId,
+        route: "send",
+        stage: "configuration",
+        code: "email_not_configured",
+      });
+    }
     return NextResponse.json(
       { error: "Resend not configured" },
       { status: 503 },
@@ -63,6 +86,15 @@ export async function POST(request: Request) {
       rawPayload = await request.json();
     }
   } catch {
+    if (adminActorUserId && operationId) {
+      await appendEmailTestAudit({
+        operationId,
+        actorUserId: adminActorUserId,
+        route: "send",
+        stage: "validation",
+        code: "invalid_json",
+      });
+    }
     return NextResponse.json(
       { error: "Invalid JSON payload" },
       { status: 400 },
@@ -72,6 +104,15 @@ export async function POST(request: Request) {
   const parsed = sendSchema.safeParse(rawPayload);
 
   if (!parsed.success) {
+    if (adminActorUserId && operationId) {
+      await appendEmailTestAudit({
+        operationId,
+        actorUserId: adminActorUserId,
+        route: "send",
+        stage: "validation",
+        code: "invalid_payload",
+      });
+    }
     return NextResponse.json(
       {
         error: "Invalid payload",
@@ -96,6 +137,17 @@ export async function POST(request: Request) {
       replyTo,
     });
 
+    if (adminActorUserId && operationId) {
+      await appendEmailTestAudit({
+        operationId,
+        actorUserId: adminActorUserId,
+        route: "send",
+        stage: "send",
+        recipientCount: Array.isArray(to) ? to.length : 1,
+        deliveryStatus: result.status,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       status: result.status,
@@ -103,17 +155,31 @@ export async function POST(request: Request) {
       to,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown Resend error";
+    const quotaExceeded = isEmailQuotaExceededError(error);
+    const recipientCount = Array.isArray(to) ? to.length : 1;
+
+    if (adminActorUserId && operationId) {
+      await appendEmailTestAudit({
+        operationId,
+        actorUserId: adminActorUserId,
+        route: "send",
+        stage: "send",
+        recipientCount,
+        code: quotaExceeded ? "email_quota_exceeded" : "send_failed",
+      });
+    }
 
     console.error("[Resend test] send failed", {
-      recipientCount: Array.isArray(to) ? to.length : 1,
-      error: message,
+      recipientCount,
+      code: quotaExceeded ? "email_quota_exceeded" : "send_failed",
     });
 
     return NextResponse.json(
-      { error: "Resend send failed", details: "Unavailable" },
-      { status: 502 },
+      {
+        error: quotaExceeded ? "Email quota exceeded" : "Resend send failed",
+        details: "Unavailable",
+      },
+      { status: quotaExceeded ? 429 : 502 },
     );
   }
 }
