@@ -44,6 +44,23 @@ export type StorageUsageReport = {
   cron: StorageUsageCronStatus;
 };
 
+export type StorageUsageCaptureStage = "capture" | "post_write";
+
+export class StorageUsageCaptureError extends Error {
+  readonly stage: StorageUsageCaptureStage;
+  readonly partialMutation: boolean;
+
+  constructor(params: {
+    stage: StorageUsageCaptureStage;
+    partialMutation: boolean;
+  }) {
+    super("Storage usage capture failed.");
+    this.name = "StorageUsageCaptureError";
+    this.stage = params.stage;
+    this.partialMutation = params.partialMutation;
+  }
+}
+
 type StorageUsageSnapshotRow = StorageUsageSnapshotRecord & {
   business_contributions: unknown;
 };
@@ -154,62 +171,80 @@ async function buildStorageUsageReport(params: {
     business_contributions: businessContributionsReport,
   };
 
-  const snapshotError = params.persistSnapshot
-    ? (
+  let snapshotError: unknown = null;
+  let snapshotPersisted = false;
+  if (params.persistSnapshot) {
+    try {
+      snapshotError = (
         await supabase.from("supabase_storage_usage_snapshots").upsert(snapshotPayload, {
           onConflict: "snapshot_month",
         })
-      ).error
-    : null;
-  const historyRecords = params.persistSnapshot
+      ).error;
+      snapshotPersisted = !snapshotError;
+    } catch {
+      throw new StorageUsageCaptureError({
+        stage: "capture",
+        partialMutation: false,
+      });
+    }
+  }
+
+  try {
+    const historyRecords = params.persistSnapshot
     ? await readStorageUsageSnapshotRecords(supabase, historyLimit)
     : historyRecordsForMetrics;
-  const historyRecordsByMonth = new Map(
-    historyRecords.map((record) => [record.snapshot_month, record] as const),
-  );
-  const previousRecord = historyRecords.find(
-    (record) => record.snapshot_month !== currentSnapshot.snapshotMonth,
-  );
-  const previousSnapshot = previousRecord
-    ? toStorageUsageSnapshot(previousRecord, quotaInfo.source)
-    : null;
-  const history = buildStorageUsageHistory(historyRecords);
+    const historyRecordsByMonth = new Map(
+      historyRecords.map((record) => [record.snapshot_month, record] as const),
+    );
+    const previousRecord = historyRecords.find(
+      (record) => record.snapshot_month !== currentSnapshot.snapshotMonth,
+    );
+    const previousSnapshot = previousRecord
+      ? toStorageUsageSnapshot(previousRecord, quotaInfo.source)
+      : null;
+    const history = buildStorageUsageHistory(historyRecords);
 
-  const comparison = buildStorageUsageComparison(
-    currentSnapshot,
-    previousSnapshot,
-  );
+    const comparison = buildStorageUsageComparison(
+      currentSnapshot,
+      previousSnapshot,
+    );
 
-  return {
-    current: currentSnapshot,
-    businessContributions: businessContributionsReport,
-    history: history.map((point) => {
-      const record = historyRecordsByMonth.get(point.snapshotMonth);
-      return {
-        ...point,
-        bucketBreakdown: Array.isArray(record?.bucket_breakdown)
-          ? (record.bucket_breakdown as unknown[])
-          : [],
-        extensionBreakdown: Array.isArray(record?.extension_breakdown)
-          ? (record.extension_breakdown as unknown[])
-          : [],
-        businessBreakdown: Array.isArray(record?.business_breakdown)
-          ? (record.business_breakdown as unknown[])
-          : [],
-      };
-    }),
-    comparison,
-    warnings: [
-      ...currentSnapshot.warnings,
-      ...(snapshotError
-        ? ["Impossible d'enregistrer l'historique mensuel du stockage."]
-        : []),
-    ],
-    timestamp: generatedAt,
-    snapshotMonth,
-    snapshotPersisted: params.persistSnapshot ? !snapshotError : false,
-    cron,
-  };
+    return {
+      current: currentSnapshot,
+      businessContributions: businessContributionsReport,
+      history: history.map((point) => {
+        const record = historyRecordsByMonth.get(point.snapshotMonth);
+        return {
+          ...point,
+          bucketBreakdown: Array.isArray(record?.bucket_breakdown)
+            ? (record.bucket_breakdown as unknown[])
+            : [],
+          extensionBreakdown: Array.isArray(record?.extension_breakdown)
+            ? (record.extension_breakdown as unknown[])
+            : [],
+          businessBreakdown: Array.isArray(record?.business_breakdown)
+            ? (record.business_breakdown as unknown[])
+            : [],
+        };
+      }),
+      comparison,
+      warnings: [
+        ...currentSnapshot.warnings,
+        ...(snapshotError
+          ? ["Impossible d'enregistrer l'historique mensuel du stockage."]
+          : []),
+      ],
+      timestamp: generatedAt,
+      snapshotMonth,
+      snapshotPersisted,
+      cron,
+    };
+  } catch {
+    throw new StorageUsageCaptureError({
+      stage: snapshotPersisted ? "post_write" : "capture",
+      partialMutation: snapshotPersisted,
+    });
+  }
 }
 
 export async function captureStorageUsageReport(): Promise<StorageUsageReport> {

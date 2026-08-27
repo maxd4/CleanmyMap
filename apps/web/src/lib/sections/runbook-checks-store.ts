@@ -28,7 +28,24 @@ export type RunbookCheckResult = {
   notes: string[];
 };
 
-type RunbookStore = {
+export type RunbookCheckPersistenceStage = "persistence" | "post_write";
+
+export class RunbookCheckPersistenceError extends Error {
+  readonly stage: RunbookCheckPersistenceStage;
+  readonly partialMutation: boolean;
+
+  constructor(params: {
+    stage: RunbookCheckPersistenceStage;
+    partialMutation: boolean;
+  }) {
+    super("Runbook check persistence failed.");
+    this.name = "RunbookCheckPersistenceError";
+    this.stage = params.stage;
+    this.partialMutation = params.partialMutation;
+  }
+}
+
+export type RunbookStore = {
   version: string;
   checks: RunbookCheckResult[];
 };
@@ -75,8 +92,11 @@ async function writeStore(store: RunbookStore): Promise<void> {
   await writeFile(STORE_FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
-export async function listRunbookChecks(): Promise<RunbookStore> {
+export async function listRunbookChecks(options?: {
+  allowFallback?: boolean;
+}): Promise<RunbookStore> {
   assertPersistenceAvailable("runbook_checks");
+  const fallbackAllowed = options?.allowFallback ?? allowLocalFileStoreFallback();
 
   if (canUseSupabaseServerPersistence()) {
     try {
@@ -108,11 +128,11 @@ export async function listRunbookChecks(): Promise<RunbookStore> {
         return { version: RUNBOOK_VERSION, checks };
       }
 
-      if (!allowLocalFileStoreFallback()) {
+      if (!fallbackAllowed) {
         throw new Error(result.error.message);
       }
     } catch (error) {
-      if (!allowLocalFileStoreFallback()) {
+      if (!fallbackAllowed) {
         throw error;
       }
     }
@@ -156,15 +176,31 @@ export async function upsertRunbookCheck(input: {
         .single();
 
       if (!result.error) {
-        return listRunbookChecks();
+        try {
+          return await listRunbookChecks({ allowFallback: false });
+        } catch {
+          throw new RunbookCheckPersistenceError({
+            stage: "post_write",
+            partialMutation: true,
+          });
+        }
       }
 
       if (!allowLocalFileStoreFallback()) {
-        throw new Error(result.error.message);
+        throw new RunbookCheckPersistenceError({
+          stage: "persistence",
+          partialMutation: false,
+        });
       }
     } catch (error) {
-      if (!allowLocalFileStoreFallback()) {
+      if (error instanceof RunbookCheckPersistenceError) {
         throw error;
+      }
+      if (!allowLocalFileStoreFallback()) {
+        throw new RunbookCheckPersistenceError({
+          stage: "persistence",
+          partialMutation: false,
+        });
       }
     }
   }
@@ -182,6 +218,13 @@ export async function upsertRunbookCheck(input: {
     version: RUNBOOK_VERSION,
     checks: store.checks,
   };
-  await writeStore(output);
+  try {
+    await writeStore(output);
+  } catch {
+    throw new RunbookCheckPersistenceError({
+      stage: "persistence",
+      partialMutation: false,
+    });
+  }
   return output;
 }
