@@ -11,7 +11,8 @@
 <p align="center">
   <a href="https://cleanmymap.vercel.app">Démo</a> ·
   <a href="https://github.com/maxd4/CleanMyMap/issues">Issues</a> ·
-  <a href="./documentation/README.md">Documentation</a>
+  <a href="./documentation/README.md">Documentation</a> ·
+  <a href="https://cleanmymap.fr/mentions-legales">Mentions légales</a>
 </p>
 
 <p align="center">
@@ -184,6 +185,23 @@ Voir :
 - `documentation/architecture/adr/ADR-004-companion-identity.md`
 - `documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md`
 
+## Cadre juridique
+
+CleanMyMap est un projet étudiant édité à titre non professionnel.
+
+- Éditeur : **Maxence Deroome**, personne physique ;
+- Directeur de la publication : **Maxence Deroome** ;
+- Hébergement web : **Vercel Inc.**
+
+Documents publics :
+
+- [Mentions légales](https://cleanmymap.fr/mentions-legales)
+- [Politique de confidentialité](https://cleanmymap.fr/politique-confidentialite)
+- [Politique des cookies](https://cleanmymap.fr/politique-cookies)
+- [Conditions générales d'utilisation](https://cleanmymap.fr/conditions-generales-utilisation)
+- [Documentation juridique](documentation/legal/README.md)
+- [Signalement de vulnérabilité](SECURITY.md)
+
 ## Origine
 
 CleanMyMap a été initié et conçu par **Maxence Deroome**.
@@ -195,8 +213,9 @@ Références :
 
 ## Licence
 
-Le code source est publiquement visible ; aucune licence de réutilisation
-définitive n'est publiée à ce jour.
+Le code source est publiquement consultable, mais aucune licence de
+réutilisation définitive n'est publiée à ce jour.
 
-Tant qu'aucun fichier `LICENSE` explicite n'est publié, aucune licence open
-source particulière ne doit être déduite.
+En l'absence de fichier `LICENSE`, aucune licence open source définitive ni
+aucun droit général de réutilisation n'est accordé. Aucune licence open source
+particulière ne doit être déduite.
