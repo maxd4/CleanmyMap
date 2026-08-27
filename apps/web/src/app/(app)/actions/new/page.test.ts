@@ -59,6 +59,11 @@ describe("action creation entry point", () => {
     expect(source).not.toContain('initialRecordType={initialRecordType}');
   });
 
+  it("keeps the action metadata in French", () => {
+    expect(source).not.toContain("累计");
+    expect(source).toContain("estimations d’impact");
+  });
+
   it("shows the existing auth state instead of an editable form for anonymous users", async () => {
     const html = renderToStaticMarkup(
       await NewActionPage({

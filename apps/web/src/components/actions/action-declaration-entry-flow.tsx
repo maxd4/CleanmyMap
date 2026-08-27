@@ -3,7 +3,6 @@
 import {
   type ComponentProps,
   type ElementType,
-  useEffect,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +14,6 @@ import {
   ClipboardList,
   Loader2,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-before-declaration-form";
 import { ActionDeclarationForm } from "./action-declaration-form";
@@ -99,14 +97,10 @@ function ChoiceCard({
 }
 
 function TransitionPanel({
-  path,
   onCancel,
 }: {
-  path: EntryPath | null;
   onCancel: () => void;
 }) {
-  const label = path === "before" ? "Déclarer avant l'action" : "Déclarer après l'action";
-
   return (
     <div className="mx-auto flex min-h-[40vh] w-full max-w-7xl items-center justify-center px-4 py-8 md:px-6 lg:px-8">
       <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl border-emerald-200/80 bg-white/95">
@@ -119,15 +113,11 @@ function TransitionPanel({
               Chargement
             </CmmPill>
             <h1 className="text-3xl font-black tracking-tight text-emerald-950">
-              Préparation du parcours
+              Passage vers les résultats terrain
             </h1>
             <p className="mx-auto max-w-xl text-sm leading-6 text-emerald-900/70">
-              Nous préparons {label.toLowerCase()} sans modifier le fonctionnement du formulaire actuel.
+              Nous récupérons les informations préparées avant l&apos;action pour ouvrir la déclaration des résultats.
             </p>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-[#F3FBF6] px-3 py-1.5 text-xs font-semibold text-emerald-950">
-            <Sparkles size={13} className="text-emerald-600" />
-            Le bloc Agir reste prioritaire
           </div>
           <div className="flex justify-center">
             <CmmButton tone="tertiary" variant="pill" onClick={onCancel} size="md">
@@ -187,49 +177,25 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
   const [handoffActionId, setHandoffActionId] = useState<string | null>(
     props.initialActionId ?? null,
   );
-  const [loadingMode, setLoadingMode] = useState<"choice" | "handoff" | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const actClasses = getBlockClasses("act");
-
-  useEffect(() => {
-    if (screen !== "loading" || loadingMode !== "choice") {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (!selection) {
-        setErrorMessage("Le parcours demandé n'a pas pu être préparé.");
-        setLoadingMode(null);
-        setScreen("error");
-        return;
-      }
-
-      setLoadingMode(null);
-      setScreen("success");
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [loadingMode, screen, selection]);
 
   const startChoice = (path: EntryPath) => {
     setErrorMessage(null);
     setHandoffActionId(null);
     setSelection(path);
-    setLoadingMode("choice");
-    setScreen("loading");
+    setScreen("success");
   };
 
   const transitionToComplete = async (actionId: string) => {
     setErrorMessage(null);
     setSelection("after");
-    setLoadingMode("handoff");
     setScreen("loading");
     try {
       await updateAction(actionId, { actionPhase: "post_action_draft" });
       setHandoffActionId(actionId);
       router.replace(`/actions/new?actionId=${encodeURIComponent(actionId)}`);
-      setLoadingMode(null);
       setScreen("success");
     } catch (error) {
       setErrorMessage(
@@ -238,7 +204,6 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           : "Impossible de préparer le formulaire complet pour le moment.",
       );
       setSelection(null);
-      setLoadingMode(null);
       setScreen("error");
     }
   };
@@ -247,7 +212,6 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
     setErrorMessage(null);
     setSelection(null);
     setHandoffActionId(null);
-    setLoadingMode(null);
     setScreen("choice");
     router.replace("/actions/new");
     if (typeof window !== "undefined") {
@@ -273,15 +237,12 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
                 Choisissez votre parcours
               </h1>
               <p className="max-w-3xl text-sm leading-6 text-emerald-900/72 md:text-[0.98rem]">
-                La page commence par ce choix. Le parcours après l&apos;action conserve le formulaire actuel. Le parcours avant l&apos;action ouvrira ensuite un formulaire de pré-déclaration de groupe.
+                Choisissez entre la préparation d&apos;une action à venir et la déclaration des résultats terrain d&apos;une action réalisée.
               </p>
             </div>
 
             <div className="max-w-sm rounded-[1.75rem] border border-emerald-200/80 bg-[#F3FBF6] px-4 py-3 text-sm leading-6 text-emerald-900/76 shadow-sm">
-              <p className="font-bold text-emerald-950">Point de contrôle</p>
-              <p className="mt-1">
-                Ce choix n&apos;envoie rien et ne valide aucune collecte incomplète.
-              </p>
+              <p>Choisir un parcours ne crée encore aucune action.</p>
             </div>
           </div>
         </CmmCard>
@@ -290,11 +251,11 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           <ChoiceCard
             icon={ClipboardList}
             title="Déclarer avant l'action"
-            description="Préparer une action de groupe avant le départ. Les données de récolte seront ajoutées plus tard dans le formulaire complet."
+            description="Préparer une action avant le départ et inscrire les participants nécessaires."
             features={[
-              "Pensé pour les actions à venir ou à organiser.",
-              "Les données de collecte finale restent absentes.",
-              "Sert de point d'entrée pour le formulaire de groupe.",
+              "Organiser les étapes et les informations utiles.",
+              "Ajouter des participants si nécessaire.",
+              "Partager le formulaire de groupe lorsque c'est utile.",
             ]}
             onSelect={() => startChoice("before")}
             cta="Préparer ce parcours"
@@ -303,14 +264,14 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
           <ChoiceCard
             icon={CheckCircle2}
             title="Déclarer après l'action"
-            description="Ouvrir le formulaire complet actuel pour déclarer une collecte déjà réalisée."
+            description="Déclarer les résultats terrain d'une action déjà réalisée."
             features={[
-              "Conserve le formulaire bénévole complet.",
-              "Garde les validations, erreurs et succès existants.",
-              "Permet de continuer immédiatement sans rupture de parcours.",
+              "Renseigner les données de collecte et de preuve.",
+              "Décrire la localisation et les résultats obtenus.",
+              "Consulter les estimations d'impact de l'action.",
             ]}
             onSelect={() => startChoice("after")}
-            cta="Ouvrir le formulaire actuel"
+            cta="Saisir les résultats terrain"
           />
         </div>
       </div>
@@ -318,7 +279,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
   );
 
   if (screen === "loading") {
-    return <TransitionPanel path={selection} onCancel={backToChoice} />;
+    return <TransitionPanel onCancel={backToChoice} />;
   }
 
   if (screen === "error") {
@@ -353,7 +314,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
               <p className="text-sm font-bold text-emerald-950">Déclarer après l&apos;action</p>
             </div>
             <p className="text-sm leading-6 text-emerald-900/70">
-              Le formulaire actuel s&apos;ouvre sans changement de fonctionnement.
+              La déclaration des résultats terrain est prête à être complétée.
             </p>
           </div>
           <CmmButton tone="tertiary" variant="pill" onClick={backToChoice} size="md" className="shrink-0">
