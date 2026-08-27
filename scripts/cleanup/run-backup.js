@@ -1,6 +1,6 @@
 /**
  * Script de sauvegarde JavaScript (version exécutable sans TypeScript).
- * Copie les fichiers cibles dans apps/artifacts/dark-cleanup-backup/
+ * Copie les fichiers cibles dans artifacts/backups/dark-cleanup/
  * et génère un manifeste JSON.
  *
  * Usage : node scripts/cleanup/run-backup.js
@@ -13,7 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const BACKUP_DIR = path.join(PROJECT_ROOT, 'apps', 'artifacts', 'dark-cleanup-backup');
+const BACKUP_DIR = path.join(PROJECT_ROOT, 'artifacts', 'backups', 'dark-cleanup');
 
 const TARGET_FILES = [
   'apps/web/src/app/globals.css',
@@ -39,7 +39,7 @@ function backupFile(relativePath) {
   const sizeBytes = Buffer.byteLength(content, 'utf-8');
 
   // Préserver la structure de répertoires dans le backup
-  const backupRelativePath = path.join('apps', 'artifacts', 'dark-cleanup-backup', relativePath);
+  const backupRelativePath = path.join('artifacts', 'backups', 'dark-cleanup', relativePath);
   const absoluteDest = path.join(PROJECT_ROOT, backupRelativePath);
 
   fs.mkdirSync(path.dirname(absoluteDest), { recursive: true });
@@ -64,7 +64,7 @@ function runBackup() {
   console.log('║  CleanMyMap — Sauvegarde avant nettoyage dark            ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
   console.log('');
-  console.log(`Répertoire de backup : apps/artifacts/dark-cleanup-backup/`);
+  console.log(`Répertoire de backup : artifacts/backups/dark-cleanup/`);
   console.log(`Fichiers à sauvegarder : ${TARGET_FILES.length}`);
   console.log('');
 
@@ -87,7 +87,7 @@ function runBackup() {
   const manifest = {
     version: '1.0',
     createdAt: new Date().toISOString(),
-    backupDir: 'apps/artifacts/dark-cleanup-backup',
+    backupDir: 'artifacts/backups/dark-cleanup',
     entries,
   };
 
@@ -96,7 +96,7 @@ function runBackup() {
 
   console.log('');
   console.log('─────────────────────────────────────────────────────────');
-  console.log(`Manifeste écrit : apps/artifacts/dark-cleanup-backup/manifest.json`);
+  console.log(`Manifeste écrit : artifacts/backups/dark-cleanup/manifest.json`);
   console.log(`Fichiers sauvegardés : ${entries.length} / ${TARGET_FILES.length}`);
 
   if (errors.length > 0) {

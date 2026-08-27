@@ -41,10 +41,10 @@ Ces chemins ont une commande de régénération explicite dans le dépôt et peu
 
 | Chemin | Commande de régénération | Notes |
 |---|---|---|
-| `artifacts/clerk-users.csv` | `npm run data:export:clerk` | Export Clerk local reproductible |
-| `artifacts/clerk-users.json` | `npm run data:export:clerk` | Export Clerk local reproductible |
-| `artifacts/clerk-supabase-audit.csv` | `npm run data:audit:clerk-supabase` | Audit Clerk/Supabase reproductible |
-| `artifacts/clerk-supabase-audit.json` | `npm run data:audit:clerk-supabase` | Audit Clerk/Supabase reproductible |
+| `artifacts/exports/clerk-users.csv` | `npm run data:export:clerk` | Export Clerk local reproductible |
+| `artifacts/exports/clerk-users.json` | `npm run data:export:clerk` | Export Clerk local reproductible |
+| `artifacts/audits/clerk-supabase-audit.csv` | `npm run data:audit:clerk-supabase` | Audit Clerk/Supabase reproductible |
+| `artifacts/audits/clerk-supabase-audit.json` | `npm run data:audit:clerk-supabase` | Audit Clerk/Supabase reproductible |
 | `artifacts/supabase/quota-audit/` | `npm run backend:supabase:quota-audit -w apps/web` | Rapport d’audit Supabase archivé |
 
 ## Commandes

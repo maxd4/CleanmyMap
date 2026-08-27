@@ -15,7 +15,7 @@ npm run screenshots:screen
 - attend le chargement, fait un auto-scroll et laisse la page se stabiliser
 - exécute les actions de pré-capture déclarées dans la configuration
 - capture un PNG desktop full page
-- écrit l'image dans `documentation/pages_site/screen/<family>/<slug>/desktop.png`
+- écrit l'image dans `artifacts/screenshots/pages-site/<family>/<slug>/desktop.png`
 
 ## Contrôle sémantique complémentaire
 
@@ -56,4 +56,4 @@ Pour capturer des pages protégées en local, utilisez soit :
 
 - les captures sont desktop uniquement
 - le format de sortie est PNG uniquement
-- les captures legacy dans `documentation/liberte-UX-UI/` restent historiques tant que leur pipeline n'est pas migré
+- les captures legacy sont écrites dans `artifacts/screenshots/legacy/`; les éventuels fichiers historiques de `documentation/liberte-UX-UI/` ne sont pas réécrits

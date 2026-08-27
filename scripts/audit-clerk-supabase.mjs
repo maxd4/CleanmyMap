@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_PAGE_SIZE = 500;
-const DEFAULT_OUTPUT_BASE = join("artifacts", "clerk-supabase-audit");
+const DEFAULT_OUTPUT_BASE = join("artifacts", "audits", "clerk-supabase-audit");
 const CLERK_API_BASE = "https://api.clerk.com/v1";
 const ENV_FILE_CANDIDATES = [
   join(process.cwd(), "apps", "web", ".env.local"),

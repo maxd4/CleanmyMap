@@ -1,7 +1,7 @@
 /**
  * Script de sauvegarde des fichiers originaux avant nettoyage.
  *
- * Copie les fichiers cibles dans apps/artifacts/dark-cleanup-backup/
+ * Copie les fichiers cibles dans artifacts/backups/dark-cleanup/
  * et génère un manifeste JSON pour traçabilité et rollback.
  *
  * Usage :
@@ -20,7 +20,7 @@ import type { BackupEntry, BackupManifest } from './types';
 // ============================================================
 
 /** Répertoire de destination des sauvegardes (relatif à la racine) */
-const BACKUP_DIR = 'apps/artifacts/dark-cleanup-backup';
+const BACKUP_DIR = 'artifacts/backups/dark-cleanup';
 
 /** Fichiers cibles à sauvegarder avant toute modification */
 const TARGET_FILES: string[] = [
@@ -51,7 +51,7 @@ function backupFile(relativePath: string): BackupEntry {
   const sizeBytes = Buffer.byteLength(content, 'utf-8');
 
   // Construire le chemin de destination en préservant la structure
-  // ex: apps/web/src/app/globals.css → apps/artifacts/dark-cleanup-backup/apps/web/src/app/globals.css
+  // ex: apps/web/src/app/globals.css → artifacts/backups/dark-cleanup/apps/web/src/app/globals.css
   const backupRelativePath = path.join(BACKUP_DIR, relativePath).replace(/\\/g, '/');
   const absoluteDest = path.join(PROJECT_ROOT, backupRelativePath);
 

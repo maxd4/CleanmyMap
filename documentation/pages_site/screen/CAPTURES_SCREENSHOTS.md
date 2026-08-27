@@ -2,15 +2,15 @@
 
 ## Organisation des captures
 
-Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l'inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d'écran alimente le dossier `documentation/pages_site/screen/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles tant que la migration n'est pas terminée.
+Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l'inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d'écran alimente `artifacts/screenshots/pages-site/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles sans être réécrits.
 
 ### Règle impérative
 
-- Les captures écran canoniques du nouveau pipeline doivent être enregistrées dans `documentation/pages_site/screen/<family>/<slug>/desktop.png`.
+- Les captures écran canoniques du nouveau pipeline doivent être enregistrées dans `artifacts/screenshots/pages-site/<family>/<slug>/desktop.png`.
 - Le format de sortie est PNG uniquement.
 - Les captures route-first historiques en `photo/` restent documentées pour compatibilité tant que le pipeline n'est pas totalement migré.
-- Les captures legacy peuvent rester en miroir dans `documentation/liberte-UX-UI/...` tant que les scripts historiques existent.
-- Ne pas déposer de captures écran en dehors de `documentation/pages_site/screen/`.
+- Les captures legacy générées sont enregistrées dans `artifacts/screenshots/legacy/...`; les fichiers historiques de `documentation/liberte-UX-UI/...` restent inchangés.
+- Ne pas déposer de captures écran en dehors de `artifacts/screenshots/`.
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures officielles.
 - Les fiches route continuent de documenter la capture attendue, même lorsque le dossier `screen/` ou `photo/` est encore vide.
 
@@ -29,7 +29,7 @@ documentation/pages_site/
 │   ├── README.md
 │   ├── capture-pages.mjs
 │   ├── capture-routes.mjs
-│   └── <family>/<slug>/desktop.png
+│   └── ...
 └── routes/
     ├── 00-homepage/
     │   └── root/
@@ -37,14 +37,19 @@ documentation/pages_site/
     │       └── photo/
     └── ...
 
+artifacts/screenshots/
+├── canonical/routes/<route>/
+├── legacy/<section>/
+└── pages-site/<family>/<slug>/desktop.png
+
 documentation/liberte-UX-UI/
-└── [miroir legacy des captures, conservé le temps de la migration]
+└── [captures historiques, non réécrites par les pipelines]
 ```
 
 ### Formats générés
 
 **Captures écran officielles** :
-- `screen/<family>/<slug>/desktop.png` (1440x1200, PNG, full page)
+- `artifacts/screenshots/pages-site/<family>/<slug>/desktop.png` (1440x1200, PNG, full page)
 - les captures `mobile` sont suspendues jusqu'à nouvel ordre
 
 ## Utilisation

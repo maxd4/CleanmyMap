@@ -5,7 +5,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_LIMIT = 100;
-const DEFAULT_OUTPUT_BASE = path.join("artifacts", "clerk-users");
+const DEFAULT_OUTPUT_BASE = path.join("artifacts", "exports", "clerk-users");
 const CLERK_API_BASE = "https://api.clerk.com/v1";
 const ENV_FILE_CANDIDATES = [
   path.join(process.cwd(), "apps", "web", ".env.local"),

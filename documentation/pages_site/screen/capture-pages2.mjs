@@ -18,7 +18,7 @@ const captureConfig = [
     route: "/",
     type: "page",
     section: "homepage",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "homepage",
     generateContext: true // Génère aussi une version contexte
   },
@@ -26,7 +26,7 @@ const captureConfig = [
     route: "/agir",
     type: "page",
     section: "agir", 
-    outputDir: "documentation/liberte-UX-UI/03-BLOC-AGIR",
+    outputDir: "artifacts/screenshots/legacy/03-BLOC-AGIR",
     filename: "agir-page",
     generateContext: true
   },
@@ -34,7 +34,7 @@ const captureConfig = [
     route: "/visualiser",
     type: "page",
     section: "visualiser",
-    outputDir: "documentation/liberte-UX-UI/04-BLOC-VISUALISER",
+    outputDir: "artifacts/screenshots/legacy/04-BLOC-VISUALISER",
     filename: "visualiser-page",
     generateContext: true
   },
@@ -42,7 +42,7 @@ const captureConfig = [
     route: "/profil-impact",
     type: "page",
     section: "profil-impact",
-    outputDir: "documentation/liberte-UX-UI/05-BLOC-IMPACT",
+    outputDir: "artifacts/screenshots/legacy/05-BLOC-IMPACT",
     filename: "profil-impact-page",
     generateContext: true
   },
@@ -50,35 +50,35 @@ const captureConfig = [
     route: "/reseau",
     type: "page",
     section: "reseau",
-    outputDir: "documentation/liberte-UX-UI/06-BLOC-RESEAU",
+    outputDir: "artifacts/screenshots/legacy/06-BLOC-RESEAU",
     filename: "reseau-page"
   },
   {
     route: "/annuaire-partenaires",
     type: "page",
     section: "annuaire",
-    outputDir: "documentation/liberte-UX-UI/06-BLOC-RESEAU",
+    outputDir: "artifacts/screenshots/legacy/06-BLOC-RESEAU",
     filename: "annuaire-partenaires"
   },
   {
     route: "/operations-collectives",
     type: "page",
     section: "operations",
-    outputDir: "documentation/liberte-UX-UI/06-BLOC-RESEAU",
+    outputDir: "artifacts/screenshots/legacy/06-BLOC-RESEAU",
     filename: "operations-collectives"
   },
   {
     route: "/messagerie-pro",
     type: "page",
     section: "messagerie",
-    outputDir: "documentation/liberte-UX-UI/07-BLOC-ECHANGES",
+    outputDir: "artifacts/screenshots/legacy/07-BLOC-ECHANGES",
     filename: "messagerie-pro"
   },
   {
     route: "/reglages",
     type: "page",
     section: "reglages",
-    outputDir: "documentation/liberte-UX-UI/10-PAGES-STANDALONE/roles/profil",
+    outputDir: "artifacts/screenshots/legacy/10-PAGES-STANDALONE/roles/profil",
     filename: "reglages"
   },
   
@@ -88,7 +88,7 @@ const captureConfig = [
     type: "block",
     section: "hero",
     selector: "[data-section='hero'], .hero-section, header.hero",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "hero"
   },
   {
@@ -96,7 +96,7 @@ const captureConfig = [
     type: "block",
     section: "benefits",
     selector: "[data-section='benefits'], .benefits-section",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "benefits"
   },
   {
@@ -104,7 +104,7 @@ const captureConfig = [
     type: "block",
     section: "pillars",
     selector: "[data-section='pillars'], .pillars-section",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "pillars"
   },
   {
@@ -112,7 +112,7 @@ const captureConfig = [
     type: "block",
     section: "impact-summary",
     selector: "[data-section='impact-summary'], .impact-summary-section",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "impact-summary"
   },
   {
@@ -120,7 +120,7 @@ const captureConfig = [
     type: "block",
     section: "community-activity",
     selector: "[data-section='community-activity'], .community-activity-section",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "community-activity"
   },
   {
@@ -128,7 +128,7 @@ const captureConfig = [
     type: "block",
     section: "credibility-footer",
     selector: "[data-section='credibility-footer'], .credibility-footer-section, footer",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
+    outputDir: "artifacts/screenshots/legacy/01-ACCUEIL",
     filename: "credibility-footer"
   }
 ];
@@ -282,7 +282,7 @@ async function captureElement(page, config, viewport) {
   await fs.mkdir(pngDir, { recursive: true });
   await fs.mkdir(webpDir, { recursive: true });
 
-  const screenshotsDir = path.resolve("screenshots");
+  const screenshotsDir = path.resolve("artifacts/screenshots/legacy/context");
   await fs.mkdir(screenshotsDir, { recursive: true });
   
   const fileName = `${config.filename}.${viewport.name}.png`;
@@ -381,8 +381,8 @@ async function main() {
   };
   
   console.log(`🚀 Starting captures with base URL: ${BASE_URL}`);
-  console.log(`📁 Output will be organized in documentation/liberte-UX-UI/`);
-  console.log(`📐 Context versions (≤${MAX_CONTEXT_SIZE}px) will be saved in screenshots/`);
+  console.log(`📁 Output will be organized in artifacts/screenshots/legacy/`);
+  console.log(`📐 Context versions (≤${MAX_CONTEXT_SIZE}px) will be saved in artifacts/screenshots/legacy/context/`);
   console.log("");
   
   for (const viewport of viewports) {
@@ -456,8 +456,8 @@ async function main() {
   }
   
   console.log("\n🎯 Next steps:");
-  console.log("  1. Review captured images in documentation/liberte-UX-UI/");
-  console.log("  2. Use context versions from screenshots/ for VS Code/Codex");
+  console.log("  1. Review captured images in artifacts/screenshots/legacy/");
+  console.log("  2. Use context versions from artifacts/screenshots/legacy/context/ for VS Code/Codex");
   console.log("  3. Add missing data-section attributes for block captures");
   console.log("  4. Re-run: npm run screenshots");
 }

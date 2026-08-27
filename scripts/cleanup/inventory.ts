@@ -35,7 +35,7 @@ const TARGET_FILES: Array<{ path: string; type: 'CSS' | 'JS' | 'FIGMA' }> = [
 ];
 
 /** Répertoire de sortie du rapport */
-const REPORT_DIR = 'apps/artifacts/dark-cleanup-backup';
+const REPORT_DIR = 'artifacts/audits/dark-cleanup';
 
 export function escapeMarkdownTableCell(value: string): string {
   return String(value ?? '')
