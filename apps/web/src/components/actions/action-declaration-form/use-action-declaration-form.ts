@@ -27,16 +27,16 @@ import {
   subscribeToDraftChanges,
 } from "../action-declaration/draft-storage";
 import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
-import { computeActionDataQuality } from "../action-declaration-form.quality";
+import { computeActionDataQuality } from "./action-declaration-form.quality";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
-import { useActionDeclarationSmartAssist } from "../action-declaration-form.smart-assist";
+import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import type {
   FormState,
   PostActionRetentionLoop,
   ValidationIssue,
-} from "../action-declaration-form.model";
+} from "./action-declaration-form.model";
 
 type UseActionDeclarationFormProps = {
   actorNameOptions: string[];

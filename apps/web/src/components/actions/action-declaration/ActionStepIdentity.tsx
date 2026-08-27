@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ASSOCIATION_SELECTION_OPTIONS, buildEntrepriseAssociationName } from "@/lib/actions/association-options";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload";
-import type { FormState } from "../action-declaration-form.model";
+import type { FormState } from "../action-declaration-form/action-declaration-form.model";
 import { ActionParticipantPicker } from "../action-participant-picker";
 
 const PLACE_TYPE_TILE_OPTIONS = [

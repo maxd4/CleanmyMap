@@ -96,7 +96,7 @@ Tableau de bord de l'avancement de la modularisation du projet CleanMyMap.
 - **Priorité** : 🟡 MOYENNE
 - **Estimation** : 60-90 min
 
-### 9. ⏸️ `src/components/actions/action-declaration-form.tsx` (17072 octets)
+### 9. ⏸️ `src/components/actions/action-declaration-form/action-declaration-form.tsx` (27245 octets)
 - **Statut** : Planifié (partiellement modularisé)
 - **Priorité** : 🟡 MOYENNE
 - **Estimation** : 45-60 min

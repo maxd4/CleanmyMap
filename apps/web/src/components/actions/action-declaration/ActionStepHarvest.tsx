@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormState } from "../action-declaration-form.model";
+import type { FormState } from "../action-declaration-form/action-declaration-form.model";
 import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
