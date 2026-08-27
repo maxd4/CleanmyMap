@@ -7,9 +7,35 @@ import {
   type ReportGenerationHistoryRow,
 } from "./report-generation-history-contract";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import {
+  InvalidReportGenerationSnapshotError,
+  parseReportGenerationPayload,
+} from "./report-generation-payload";
 
 const REPORT_GENERATION_HISTORY_METADATA_SELECT =
   "id, generated_at, title, period_id, scope_label, detail_level";
+const REPORT_GENERATION_SNAPSHOT_SELECT =
+  "id, filename, generated_at, snapshot, scope_label, detail_level";
+
+export type ReportGenerationSnapshotRecord = {
+  id: string;
+  filename: string;
+  generatedAt: string;
+  scopeLabel: string;
+  detailLevel: ReportGenerationHistoryInput["detailLevel"];
+  snapshot: ReportGenerationHistoryInput["payload"];
+};
+
+export class InvalidReportGenerationIdError extends Error {
+  constructor() {
+    super("Report generation id must be a valid UUID.");
+    this.name = "InvalidReportGenerationIdError";
+  }
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 type ReportGenerationDbMetadataRow = {
   id: string;
@@ -62,6 +88,51 @@ export async function listReportGenerationHistory(
   return ((data ?? []) as ReportGenerationDbMetadataRow[])
     .map(toHistoryRow)
     .filter((row): row is ReportGenerationHistoryRow => Boolean(row));
+}
+
+export async function getReportGenerationSnapshotById(
+  id: string,
+): Promise<ReportGenerationSnapshotRecord | null> {
+  if (!isUuid(id)) {
+    throw new InvalidReportGenerationIdError();
+  }
+
+  const { data, error } = await getSupabaseAdminClient()
+    .from("report_generations")
+    .select(REPORT_GENERATION_SNAPSHOT_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  let snapshot;
+  try {
+    snapshot = parseReportGenerationPayload(data.snapshot);
+  } catch (error) {
+    if (error instanceof InvalidReportGenerationSnapshotError) {
+      throw error;
+    }
+    throw new InvalidReportGenerationSnapshotError();
+  }
+
+  if (snapshot.data.generatedAt !== data.generated_at) {
+    throw new InvalidReportGenerationSnapshotError();
+  }
+
+  return {
+    id: data.id,
+    filename: data.filename,
+    generatedAt: data.generated_at,
+    scopeLabel: data.scope_label,
+    detailLevel: data.detail_level as ReportGenerationSnapshotRecord["detailLevel"],
+    snapshot,
+  };
 }
 
 export async function persistReportGeneration(params: {

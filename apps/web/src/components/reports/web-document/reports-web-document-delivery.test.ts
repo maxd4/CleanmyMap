@@ -130,10 +130,12 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it("renders persisted history fields without replay or download actions", () => {
+  it("renders persisted history fields with explicit replay actions", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentDeliveryHistory, {
         recentRows: historyRows,
+        onView: vi.fn(),
+        onReexport: vi.fn(),
       }),
     );
 
@@ -144,13 +146,19 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("Global");
     expect(markup).toContain("Par défaut (12 à 16 pages)");
     expect(markup).toContain("01/08/2026 12:00");
-    expect(markup).not.toContain("Actions");
+    expect(markup).toContain("Actions");
+    expect(markup).toContain("Voir");
+    expect(markup).toContain("Réexporter");
     expect(markup).not.toContain("Télécharger");
   });
 
   it("renders the real empty state without synthetic rows", () => {
     const markup = renderToStaticMarkup(
-      React.createElement(ReportsWebDocumentDeliveryHistory, { recentRows: [] }),
+      React.createElement(ReportsWebDocumentDeliveryHistory, {
+        recentRows: [],
+        onView: vi.fn(),
+        onReexport: vi.fn(),
+      }),
     );
 
     expect(markup).toContain("Aucun rapport généré");

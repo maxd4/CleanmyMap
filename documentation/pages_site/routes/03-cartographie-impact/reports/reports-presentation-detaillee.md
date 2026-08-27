@@ -45,11 +45,14 @@
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
   et les modules sont stockés sans binaire PDF ; une erreur de persistance est
-  non bloquante après un export réussi. Les actions Voir/télécharger sont
-  neutralisées jusqu'à l'existence d'un rejeu exact, et aucune durée de
-  conservation n'est annoncée.
+  non bloquante après un export réussi. Les actions « Voir » et « Réexporter »
+  chargent le snapshot par ID à la demande. Elles rendent/réexportent ce
+  payload immuable sans données actuelles, en conservant son `generatedAt` et
+  son filename ; le réexport ne crée pas de nouvelle génération et aucune
+  durée de conservation n'est annoncée.
 
   La requête de liste ne charge que les métadonnées nécessaires à l'affichage :
   `id`, `generated_at`, `title`, `period_id`, `scope_label` et `detail_level`.
-  Le snapshot et les modules ne sont pas lus dans cette liste ; leur lecture
-  par identifiant relève du lot 2B.
+  Le snapshot et les modules ne sont pas lus dans cette liste ; la route
+  `GET /api/reports/generations/[id]` les charge uniquement pour l'action
+  historique demandée par l'utilisateur.
