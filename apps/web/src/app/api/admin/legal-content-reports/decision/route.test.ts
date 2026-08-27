@@ -216,7 +216,7 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(sendAuthorMock).not.toHaveBeenCalled();
   });
 
-  it("marks a projection failure as failed without projecting the creator state", async () => {
+  it("keeps the measure applied when report projection fails and returns a partial result", async () => {
     updateLegalContentReportStateMock.mockResolvedValueOnce(null);
     applyCanonicalLegalContentMutationMock.mockResolvedValueOnce({
       supported: true,
@@ -230,18 +230,37 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
       request(validBody({ action: "content_restricted", legalBasis: "Article 16 DSA" })),
     );
 
-    expect(response.status).toBe(500);
-    expect(updateDecisionStatesMock).toHaveBeenNthCalledWith(
-      1,
+    expect(response.status).toBe(207);
+    expect(updateDecisionStatesMock).toHaveBeenCalledTimes(1);
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
       expect.objectContaining({ executionStatus: "applied" }),
     );
-    expect(updateDecisionStatesMock).toHaveBeenLastCalledWith(
+    expect(updateDecisionStatesMock).not.toHaveBeenCalledWith(
       expect.objectContaining({
         executionStatus: "failed",
         executionErrorCode: "projection_failed",
       }),
     );
-    expect(sendAuthorMock).not.toHaveBeenCalled();
+    expect(updateLegalContentReportStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ creatorState: "content_restricted" }),
+    );
+    expect(sendAuthorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ authorEmail: "author@example.com" }),
+    );
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: expect.objectContaining({
+          stage: "report_projection",
+          executionStatus: "applied",
+          executionErrorCode: null,
+        }),
+      }),
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      status: "partial",
+      item: { status: "new", executionStatus: "applied" },
+    });
   });
 
   it("marks successful mutation as applied and then notifies the author", async () => {

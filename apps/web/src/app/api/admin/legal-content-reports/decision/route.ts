@@ -270,6 +270,8 @@ export async function POST(request: Request) {
   let beforeState = beforeReportState;
   let afterState = beforeReportState;
   let authorEmail: string | null = null;
+  let decisionProjectionFailed = false;
+  let reportProjectionFailed = false;
   try {
     decision = await appendLegalContentReportDecision({
       reportId: report.id,
@@ -400,30 +402,28 @@ export async function POST(request: Request) {
         afterState,
       });
       decision = appliedState.decision;
+      decisionProjectionFailed = !appliedState.persisted;
 
-      if (!appliedState.persisted) {
-        await markExecutionFailed("projection_failed");
-      } else {
-        try {
-          const updatedReport = await updateLegalContentReportState({
-            reportId: report.id,
-            creatorState: decisionInput.action,
-          });
-          if (!updatedReport) throw new Error("Legal report state projection did not persist");
-          report = { ...updatedReport, latestDecision: decision };
-        } catch {
-          await markExecutionFailed("projection_failed");
-        }
+      try {
+        const updatedReport = await updateLegalContentReportState({
+          reportId: report.id,
+          creatorState: decisionInput.action,
+        });
+        if (!updatedReport) throw new Error("Legal report state projection did not persist");
+        report = { ...updatedReport, latestDecision: decision };
+      } catch {
+        reportProjectionFailed = true;
       }
     }
 
     report = { ...report, latestDecision: decision };
     const executionFailed = decision.executionStatus !== "applied";
+    const projectionFailed = decisionProjectionFailed || reportProjectionFailed;
     const auditSucceeded = await appendDecisionAudit({
       operationId,
       actorUserId: identity.userId,
       reportId: report.id,
-      outcome: executionFailed ? "error" : "success",
+      outcome: executionFailed || projectionFailed ? "error" : "success",
       details: auditDetails({
         action: contentMutationAction,
         origin: decisionInput.origin,
@@ -437,7 +437,13 @@ export async function POST(request: Request) {
         afterState,
         executionStatus: decision.executionStatus,
         executionErrorCode: decision.executionErrorCode,
-        stage: executionFailed ? "execution" : undefined,
+        stage: executionFailed
+          ? "execution"
+          : reportProjectionFailed
+            ? "report_projection"
+            : decisionProjectionFailed
+              ? "decision_projection"
+              : undefined,
         partialMutation: mutationApplied,
       }),
     });
@@ -512,11 +518,24 @@ export async function POST(request: Request) {
         notificationError: notificationErrors.join(","),
       }),
     });
+  }
+
+  const partialWarnings: string[] = [];
+  if (reportProjectionFailed) {
+    partialWarnings.push("The content measure was applied but the report projection failed.");
+  }
+  if (decisionProjectionFailed) {
+    partialWarnings.push("The content measure was applied but its execution state projection failed.");
+  }
+  if (notificationErrors.length > 0) {
+    partialWarnings.push("Decision recorded; at least one notification failed.");
+  }
+  if (partialWarnings.length > 0) {
     return NextResponse.json(
       {
         status: "partial",
         operationId,
-        warning: "Decision recorded; at least one notification failed.",
+        warning: partialWarnings.join(" "),
         item: buildLegalContentReportInboxItem(report),
       },
       { status: 207 },
