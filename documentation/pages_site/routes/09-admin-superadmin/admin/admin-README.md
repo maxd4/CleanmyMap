@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
 - **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : à corriger
+- **Scope** : cockpit de supervision et files de modération
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -28,6 +28,11 @@
 - rappels de contexte
 - textes non essentiels
 - Le bloc `max` caché est intégré en fin de page et ne doit pas apparaître comme une surface autonome.
+- Le cockpit charge indépendamment les actions pending, les demandes de participation pending, les signalements pending, l’inbox créateur, les publications partenaires et le journal d’audit. Chaque source expose un état disponible ou indisponible ; une erreur n’est jamais convertie en zéro métier.
+- Les quatre indicateurs opérationnels sont : `Agir à traiter` (actions + participations), `Signalements à traiter` (spots / lieux propres), `Réseau à traiter` (inbox créateur + publications pending_admin_review) et `Incidents récents` (audit outcome=error). Une dépendance indisponible est affichée comme `Partiel` ou `Indisponible`.
+- L’alerte principale suit l’ordre indisponibilité des sources, incidents d’audit, backlog réel, puis absence d’urgence lorsque toutes les lectures ont réussi et que les files sont vides.
+- Les blocs de modération conservés sont `Réseau & Discussions`, `Cartographie & Impact`, `Agir` et `Accueil & Pilotage`. Le journal utilise le deep-link `#workflow-administration`; Cartographie & Impact conserve `/admin?moderation=signalements#workflow-administration`.
+- Les blocs fictifs `Apprendre` et `Classement global` ne font pas partie de cette surface.
 - **Bulles / cartes / contextes trop nombreux** : Les vues d'administration concentrent des panneaux, tables et actions à forte densité.
 - **Composants UI concernés** :
 - Dashboards admin
