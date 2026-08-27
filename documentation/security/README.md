@@ -16,8 +16,9 @@ Lire cette page avant toute modification concernant API, auth, données, CI, sec
 10. `CODEX_SECURITY_PLAYBOOK.md`
 11. `supabase-review-checklist.md`
 12. `github-audit-backlog.md`
-13. `dependency-advisory-governance.md` pour les acceptations de risque de
-    dépendances bornées par advisory et par date
+13. `dependency-advisory-governance.md` pour l'état courant de la mitigation
+    par backport local versionné `image-size@2.0.3`, couvrant les advisories
+    documentées, sans expiration ni renouvellement périodique
 
 ## Principes non négociables
 
