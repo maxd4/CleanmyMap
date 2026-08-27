@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
+import type { ActionEntityType } from "@/lib/actions/data-contract";
 
 const fetchActionsMock = vi.hoisted(() => vi.fn());
 const loadLocalActionContractsMock = vi.hoisted(() => vi.fn());
@@ -32,7 +33,7 @@ type TestParams = {
   status: "pending" | "approved" | "rejected" | null;
   floorDate: string | null;
   requireCoordinates: boolean;
-  types: null;
+  types: ActionEntityType[] | null;
 };
 
 function params(overrides: Partial<TestParams> = {}): TestParams {
@@ -257,5 +258,37 @@ describe("unified action source", () => {
       availableSources: ["actions", "spots", "local"],
       warnings: [],
     });
+  });
+
+  it("does not query Trash Spotter when only actions are requested", async () => {
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const supabase = createSupabase([]);
+
+    const result = await fetchUnifiedActionContracts(
+      supabase as never,
+      params({ types: ["action"] }),
+    );
+
+    expect(supabase.from).not.toHaveBeenCalledWith("trash_spotter_spots");
+    expect(result.sourceHealth).toEqual({
+      partial: false,
+      failedSources: [],
+      availableSources: ["actions", "local"],
+      warnings: [],
+    });
+  });
+
+  it("does not query action sources when only spots are requested", async () => {
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const supabase = createSupabase([canonicalSpot()]);
+
+    const result = await fetchUnifiedActionContracts(
+      supabase as never,
+      params({ types: ["spot"] }),
+    );
+
+    expect(fetchActionsMock).not.toHaveBeenCalled();
+    expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
+    expect(result.sourceHealth.availableSources).toEqual(["spots"]);
   });
 });

@@ -54,54 +54,71 @@ export async function loadUnifiedActionSourceData(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
 ): Promise<UnifiedActionSourceLoadResult> {
+  const wantsActions =
+    !params.types || params.types.length === 0 || params.types.includes("action");
+  const wantsSpots =
+    !params.types ||
+    params.types.length === 0 ||
+    params.types.includes("spot") ||
+    params.types.includes("clean_place");
+
   const [remoteRowsResult, remoteSpotsResult, localContracts] =
     await Promise.allSettled([
-      fetchActions(supabase, {
-        limit: params.limit + 1,
-        status: params.status,
-        floorDate: params.floorDate ?? undefined,
-        requireCoordinates: params.requireCoordinates,
-        viewport: params.viewport,
-      }),
-      loadCanonicalSpots(supabase, params),
-      loadLocalActionContracts({
-        status: params.status,
-        floorDate: params.floorDate,
-        limit: params.limit + 1,
-        requireCoordinates: params.requireCoordinates,
-      }),
+      wantsActions
+        ? fetchActions(supabase, {
+            limit: params.limit + 1,
+            status: params.status,
+            floorDate: params.floorDate ?? undefined,
+            requireCoordinates: params.requireCoordinates,
+            viewport: params.viewport,
+          })
+        : Promise.resolve([]),
+      wantsSpots ? loadCanonicalSpots(supabase, params) : Promise.resolve([]),
+      wantsActions
+        ? loadLocalActionContracts({
+            status: params.status,
+            floorDate: params.floorDate,
+            limit: params.limit + 1,
+            requireCoordinates: params.requireCoordinates,
+          })
+        : Promise.resolve([]),
     ]);
 
   const failedSources: UnifiedActionSourceLoadResult["failedSources"] = [];
   const availableSources: UnifiedActionSourceLoadResult["availableSources"] = [];
 
-  if (remoteRowsResult.status === "rejected") {
+  if (wantsActions && remoteRowsResult.status === "rejected") {
     failedSources.push("actions");
     logFailure("UnifiedSource", "Actions fetch failed", remoteRowsResult.reason, {
       source: "actions",
     });
-  } else {
+  } else if (wantsActions) {
     availableSources.push("actions");
   }
 
-  if (remoteSpotsResult.status === "rejected") {
+  if (wantsSpots && remoteSpotsResult.status === "rejected") {
     failedSources.push("spots");
     logFailure("UnifiedSource", "Trash spotter fetch failed", remoteSpotsResult.reason, {
       source: "trash_spotter_spots",
     });
-  } else {
+  } else if (wantsSpots) {
     availableSources.push("spots");
   }
 
-  if (localContracts.status === "rejected") {
+  if (wantsActions && localContracts.status === "rejected") {
     throw localContracts.reason;
   }
-  availableSources.push("local");
+  if (wantsActions) {
+    availableSources.push("local");
+  }
+
+  const localContractsValue =
+    localContracts.status === "fulfilled" ? localContracts.value : [];
 
   return {
     remoteRows: remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [],
     remoteSpots: remoteSpotsResult.status === "fulfilled" ? remoteSpotsResult.value : [],
-    localContracts: localContracts.value,
+    localContracts: localContractsValue,
     failedSources,
     availableSources,
   };
