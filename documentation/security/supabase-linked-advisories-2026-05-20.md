@@ -67,6 +67,13 @@ La migration est préparée dans le dépôt ; son dry-run, son application et la
 vérification de la disparition effective des trois findings restent à exécuter
 avec une session CLI disposant des droits sur le projet `drm`.
 
+Le garde-fou `backend:supabase:advisors:linked` interroge désormais les
+advisors SECURITY au niveau `info` en JSON. Il filtre explicitement les
+violations RLS (`rls_disabled_in_public`, `rls_enabled_no_policy`,
+`policy_exists_rls_disabled` et équivalents clairement identifiables) et échoue
+sur ces catégories uniquement ; les findings INFO indépendants ne sont pas
+transformés globalement en erreurs.
+
 L'alerte « Table publiquement accessible » visible dans la capture fournie
 correspond donc à un finding qui n'est plus retourné par le contrôle lié
 actuel. Les warnings restants concernent `pg_trgm` installé dans `public` et
