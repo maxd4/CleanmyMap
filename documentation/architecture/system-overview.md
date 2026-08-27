@@ -11,7 +11,8 @@ flowchart LR
   API --> DOMAIN[Services métier]
   AUTHZ --> DOMAIN
   DOMAIN --> SB[(Supabase)]
-  MOBILE[Companion Expo] --> SB
+  MOBILE[Application mobile Expo / React Native] --> CLERK
+  MOBILE --> SB
 ```
 
 ## Responsabilités
@@ -21,7 +22,7 @@ flowchart LR
 | `apps/web/src/app/` | pages et handlers API |
 | `apps/web/src/components/` | rendu UI |
 | `apps/web/src/lib/` | logique métier, auth, data, services |
-| Clerk | identité web principale |
+| Clerk | identité partagée web et mobile, principale pour le produit |
 | Supabase | PostgreSQL, RLS, Storage, RPC |
 | Vercel | hébergement et Functions |
 | `apps/mobile/` | suivi GPS natif |
@@ -53,16 +54,29 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  APP[Companion Expo] --> AUTH[Session mobile]
+  APP[Application mobile Expo / React Native] --> AUTH[Session Clerk]
   AUTH --> SB[(Supabase)]
   APP --> M[missions]
   APP --> GPS[gps_points]
   APP --> ACT[mission_actions]
 ```
 
-### Limite actuelle
+### État actuel et limites
 
-L'identité mobile et la finalisation de distance doivent être stabilisées avant production :
+CleanMyMap est un seul produit et un seul monorepo avec deux applications
+déployables distinctes sous `apps/`. Le web et le mobile partagent Clerk,
+Supabase et les contrats métier nécessaires. L'identité Clerk et la
+finalisation de `compute_mission_distance` sont désormais finalisées puis
+gelées ; elles ne constituent plus des lots de conception.
+
+Les limites encore ouvertes sont :
+
+- le traitement background headless ;
+- la gestion complète de `mission_actions` ;
+- la validation opérationnelle ;
+- la future évolution produit de l'application mobile.
+
+Les invariants de sécurité restent :
 
 - Clerk est l'identité principale du projet ;
 - une identité Supabase anonyme ne doit pas être assimilée implicitement à un profil Clerk ;

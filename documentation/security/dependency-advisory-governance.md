@@ -44,7 +44,7 @@ exécution de Metro.
 Le vendor et les overrides ne pourront être retirés que lorsqu'une release
 upstream `image-size` contenant les deux correctifs sera publiée et validée ;
 la version upstream devra être une version contenant les deux correctifs
-dans le graphe Expo/React Native/Metro du companion. À ce moment seulement,
+dans le graphe Expo/React Native/Metro de l'application mobile. À ce moment seulement,
 le dépôt devra revenir à cette release officielle, régénérer le lockfile et
 supprimer le backport local après validation ciblée.
 

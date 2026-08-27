@@ -19,7 +19,7 @@ Le projet distingue :
 npm install
 ```
 
-Pour l'application compagnon :
+Pour l'application mobile :
 
 ```bash
 npm install -w apps/mobile
@@ -80,7 +80,7 @@ La validation complète couvre notamment :
 - tests de régression ;
 - audit Vercel CI ;
 - build de production ;
-- typecheck de l'application compagnon ;
+- typecheck de l'application mobile ;
 - tests Node déterministes des scripts de maintenance ;
 - maintenance Python lorsque l'environnement la permet.
 
@@ -103,7 +103,7 @@ npm run test:security
 npm run test:regression-gates
 npm run build
 
-npm run companion:typecheck
+npm run typecheck -w apps/mobile
 ```
 
 ## E2E
@@ -195,7 +195,7 @@ npm run build:clean -w apps/web
 
 Ne jamais fabriquer manuellement un fichier interne `.next`.
 
-## Application compagnon
+## Application mobile
 
 Minimum obligatoire :
 
@@ -203,7 +203,9 @@ Minimum obligatoire :
 npm run typecheck -w apps/mobile
 ```
 
-Avant production mobile, ajouter des tests ciblés couvrant :
+Les contrats Clerk, RLS et `compute_mission_distance` sont finalisés puis
+gelés. Avant toute reprise fonctionnelle ou validation de production mobile,
+ajouter des tests ciblés couvrant :
 
 - restauration d'une mission active ;
 - buffer offline ;

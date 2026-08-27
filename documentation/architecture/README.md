@@ -32,7 +32,7 @@ Décisions existantes :
 - `ADR-001-clerk-auth.md` — Clerk comme identité principale ;
 - `ADR-002-service-role-key.md` — usage des clés privilégiées ;
 - `ADR-003-monorepo-structure.md` — structure du dépôt ;
-- `ADR-004-companion-identity.md` — identité de l'application compagnon ;
+- `ADR-004-companion-identity.md` — identité de l'application mobile (historique companion) ;
 - `ADR-005-next-canary-policy.md` — usage d'une version canary de Next.js ;
 - `ADR-006-supabase-migrations-source-of-truth.md` — arbre canonique des migrations ;
 - `ADR-007-capability-scoped-authorization.md` — autorisation par capacités et périmètres.
@@ -70,7 +70,7 @@ Avant une décision d'architecture :
 - routes publiques/protégées/admin ;
 - migrations Supabase ;
 - quotas Vercel/Supabase ;
-- app compagnon et géolocalisation.
+- application mobile et géolocalisation.
 
 Pour les permissions et périmètres :
 

@@ -252,7 +252,7 @@ propriétaire porté par `missions.volunteer_id` et aux profils `admin`/`max`,
 après AuthN puis décision d'AuthZ côté serveur. Les profils `elu` et les autres
 profils ordinaires ne sont pas autorisés par analogie avec les actions.
 
-Pour le companion, la migration
+Pour l'application mobile, la migration
 `apps/web/supabase/migrations/20260826070000_clerk_missions_gps_rls.sql`
 réalise le contrat Clerk Third-Party Auth : `missions` est lisible et
 modifiable par `authenticated` uniquement lorsque `volunteer_id` correspond au
@@ -287,10 +287,10 @@ Aucun partage public de mission ou de GPS n'est autorisé dans ce contrat. Toute
 future surface publique devra reposer sur une vue sanitizée explicite et un
 contrat distinct.
 
-## Application compagnon
+## Application mobile
 
 Le LOT 1 de l'ADR-004 a supprimé l'identité Supabase Auth anonyme et établi
-Clerk comme identité canonique du companion. Le LOT 2A a aligné les RLS de
+Clerk comme identité canonique de l'application mobile. Le LOT 2A a aligné les RLS de
 `missions` et `gps_points` sur le claim Clerk `sub` et a borné les grants
 UPDATE mobiles.
 
@@ -298,7 +298,7 @@ Restent explicitement hors production :
 
 - RLS et contrat de synchronisation de `mission_actions` ;
 - renouvellement fiable du token Clerk lors d'un réveil background headless ;
-- usage opérationnel réel de l'application web et du companion ;
+- usage opérationnel réel de l'application web et de l'application mobile ;
 - l'application mobile est gelée à long terme jusqu'à une décision explicite de
   dégel.
 

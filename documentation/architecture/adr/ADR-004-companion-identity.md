@@ -1,15 +1,20 @@
-# ADR-004 — Identité de l'application compagnon
+# ADR-004 — Identité de l'application mobile (historique companion)
 
-**Statut : finalisé pour les LOTS 1, 2A et 2B — companion-app gelé**
+**Statut : finalisé pour les LOTS 1, 2A et 2B — application mobile gelée**
 **Date : 26 août 2026**
 
 ## Contexte
+
+CleanMyMap est un seul produit et un seul monorepo avec deux applications
+déployables : `apps/web` et `apps/mobile`. L'application mobile est issue de
+l'ancien `companion-app`, nom conservé pour l'historique et les identifiants
+techniques.
 
 L'application web CleanMyMap utilise Clerk comme fournisseur d'identité principal.
 
 Les profils sont représentés dans Supabase pour les jointures et règles métier.
 
-Avant le LOT 1, l'application compagnon utilisait le client Supabase Auth
+Avant le LOT 1, l'application mobile utilisait le client Supabase Auth
 directement et proposait une identité anonyme.
 
 Les migrations de missions utilisent cependant des relations vers `public.profiles(id)` et des policies fondées sur :
@@ -41,9 +46,9 @@ Cela menace :
 ## Décision acceptée — LOT 1
 
 Clerk est l'unique identité canonique de l'utilisateur CleanMyMap, sur le web
-comme dans le companion-app.
+comme dans l'application mobile.
 
-Le companion utilise l'intégration native Clerk → Supabase Third-Party Auth.
+L'application mobile utilise l'intégration native Clerk → Supabase Third-Party Auth.
 Supabase est le data plane : le client mobile utilise la clé publique anon et
 transmet le token de session Clerk courant via l'option `accessToken` de
 `@supabase/supabase-js`.
@@ -77,9 +82,10 @@ Les invariants suivants sont désormais portés par le code :
 - l'absence de token ne déclenche aucun fallback d'authentification et laisse
   les points GPS dans le buffer offline.
 
-Cette implémentation ne constitue pas encore une validation de production des
-RLS : le contrat mobile Clerk est traité au LOT 2A, mais la finalisation et le
-comportement background restent ouverts.
+Cette implémentation ne constitue pas une validation opérationnelle de
+production. Le contrat Clerk, les RLS et la finalisation de distance sont
+réalisés puis gelés ; le comportement background headless, `mission_actions` et
+l'usage opérationnel réel restent ouverts.
 
 ## Contrat RLS Clerk — LOT 2A réalisé
 
@@ -99,10 +105,12 @@ Le contrat effectif est le suivant :
   appartient au même `sub` Clerk ; connaître un `mission_id` ne suffit pas ;
 - l'absence de `sub` refuse l'accès et aucun grant client `anon` n'est conservé ;
 - `service_role` reste réservé aux opérations serveur et conserve ses
-  privilèges opérationnels ; il ne constitue pas l'identité du companion.
+  privilèges opérationnels ; il ne constitue pas l'identité de l'application
+  mobile.
 
-Le companion n'est toujours pas prêt pour la production : la synchronisation
-headless, `mission_actions` et l'usage opérationnel réel restent non validés.
+L'application mobile n'est toujours pas prête pour la production : la
+synchronisation headless, `mission_actions` et l'usage opérationnel réel restent
+non validés.
 
 ## Finalisation propriétaire — LOT 2B réalisé
 
@@ -132,19 +140,22 @@ Le renouvellement fiable d'un token Clerk en réveil `TaskManager` headless n'es
 pas résolu : sans token valide, le buffer local reste la seule issue et aucune
 identité anonyme n'est utilisée.
 
-## Gel du companion-app
+## Gel de l'application mobile
 
-L'ADR-004 est fermée pour la roadmap mobile actuelle. Le companion-app est gelé
-à long terme jusqu'à la finalisation et à l'utilisation réelle de l'application
-web. Aucune nouvelle UI, capacité GPS, photo, action ou publication store ne
-doit être engagée dans ce périmètre. `mission_actions` et les autres capacités
-expérimentales restent hors production.
+L'ADR-004 est fermée pour la roadmap mobile actuelle. L'application mobile est
+gelée à long terme jusqu'à une décision explicite de dégel et à une validation
+opérationnelle réelle. Aucune nouvelle UI, capacité GPS, photo, action ou
+publication store ne doit être engagée dans ce périmètre. `mission_actions` et
+les autres capacités expérimentales restent hors production.
+
+Les identifiants techniques historiques `cleanmymap-companion` et
+`fr.cleanmymap.companion` restent inchangés ; leur renommage est hors périmètre.
 
 ## Options
 
 ### Option A — Clerk vers Supabase — retenue
 
-Le companion obtient le token de session Clerk courant et le transmet à
+L'application mobile obtient le token de session Clerk courant et le transmet à
 Supabase via Third-Party Auth.
 
 Avantages :
@@ -193,18 +204,18 @@ Inconvénients :
 - coût Vercel ;
 - gestion des tokens.
 
-## Clôture et suite hors companion
+## Clôture et suite hors application mobile
 
-Le LOT 2B a traité l'appel client à `compute_mission_distance` et a gelé le
-companion-app jusqu'à la finalisation et à l'utilisation réelle de l'application
-web.
+Le LOT 2B a traité l'appel client à `compute_mission_distance` et a gelé
+l'application mobile. La reprise dépend d'une décision explicite de dégel et
+d'une validation opérationnelle réelle.
 
 Le contrat ne doit pas supposer qu'un token Clerk peut toujours être renouvelé
 hors d'un contexte Clerk entièrement initialisé : en son absence, le buffer
 offline reste l'état attendu.
 
-La roadmap revient désormais aux fonctionnalités web. Aucun nouveau lot
-companion n'est recommandé avant une décision explicite de dégel.
+La roadmap revient désormais aux fonctionnalités web. Aucun nouveau lot mobile
+n'est recommandé avant une décision explicite de dégel.
 
 ## Migration et validation
 
@@ -238,7 +249,7 @@ service_role absente du bundle
 
 ## Conséquences
 
-La décision d'identité, de RLS et de finalisation est formalisée, mais l'app
-compagnon ne doit pas être qualifiée de prête pour la production. Elle est
-gelée à long terme jusqu'à la finalisation et à l'utilisation réelle de
-l'application web.
+La décision d'identité, de RLS et de finalisation est formalisée, mais
+l'application mobile ne doit pas être qualifiée de prête pour la production.
+Elle reste gelée ; le background headless, `mission_actions`, la validation
+opérationnelle et la future évolution produit restent ouverts.

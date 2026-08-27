@@ -58,7 +58,7 @@ Les corrections attendues dans l'ancien backlog sont déjà présentes dans `.gi
 - `check:stack-doc-drift` est exécuté en CI ;
 - `check:agent-skills` est exécuté en CI ;
 - le build de production web s'exécute pour les changements non documentaires ;
-- le typecheck du companion s'exécute lorsque son code ou le workflow CI change.
+- le typecheck de l'application mobile s'exécute lorsque son code ou le workflow CI change.
 
 **Conclusion :** ne pas créer un nouveau chantier de réécriture de `ci.yml`. Vérifier seulement l'absence de régression dans `GHA-030`.
 
@@ -391,7 +391,7 @@ Confirmer dans le workflow courant :
 - `npm ci` seulement pour les changements code ;
 - typecheck, lint, tests et build web sur changements code ;
 - `test:security` dans un job dédié ;
-- typecheck du companion lorsque `apps/mobile/*` ou `ci.yml` change.
+- typecheck de l'application mobile lorsque `apps/mobile/*` ou `ci.yml` change.
 
 ### CodeQL
 

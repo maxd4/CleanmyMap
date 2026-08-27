@@ -150,7 +150,7 @@ Ces usages ne sont pas théoriques : ils correspondent déjà à des routes et c
 
 - interface client : Next.js 16, React 19, Tailwind, Leaflet, Recharts, Framer Motion
 - serveur/API : routes API Next.js
-- Auth : Clerk côté web, Supabase Auth côté app compagnon
+- Auth : Clerk côté web et côté application mobile, Supabase comme plan de données partagé
 - Base de données : Supabase, migrations SQL, scripts d'import/sync
 - mesure d'audience : PostHog, Vercel mesure d'audience, Speed Insights
 - Observabilité : Sentry
@@ -385,7 +385,7 @@ Pour l'instant, l'abonnement Codex est auto-financé et la plupart des services 
 
 ### Envisagez-vous une version mobile Android et iOS après le site web ?
 
-Oui, mais seulement une fois le site web stabilisé et utile au quotidien. Une application mobile serait plus pratique pour les bénévoles, surtout pour le formulaire, la discussion et les notifications. Une companion-app de suivi GPS pourrait aussi être utile pour certains usages de terrain, mais elle ajouterait des contraintes techniques, de vie privée et surtout de coût. Il faut aussi compter le coût des comptes développeur: Apple facture l'Apple Developer Program à **99 USD par an**, tandis que Google Play Console demande une **inscription unique de 25 USD** pour publier sur Android. [Apple Developer Program](https://developer.apple.com/help/account/membership/program-enrollment) ; [Google Play Console Help](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en-EN). Le projet aurait donc un budget plus élevé que la simple version web, avec des abonnements, de la maintenance et possiblement des frais supplémentaires pour les services mobiles et de géolocalisation.
+Oui, mais seulement une fois le site web stabilisé et utile au quotidien. CleanMyMap contient désormais une application mobile destinée aux bénévoles, notamment pour le formulaire, la discussion, les notifications et certains usages de terrain. Cette application issue de l'ancien `companion-app` est actuellement gelée fonctionnellement ; son évolution produit reste à valider. Il faut aussi compter le coût des comptes développeur : Apple facture l'Apple Developer Program à **99 USD par an**, tandis que Google Play Console demande une **inscription unique de 25 USD** pour publier sur Android. [Apple Developer Program](https://developer.apple.com/help/account/membership/program-enrollment) ; [Google Play Console Help](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en-EN). Le projet aurait donc un budget plus élevé que la simple version web, avec des abonnements, de la maintenance et possiblement des frais supplémentaires pour les services mobiles et de géolocalisation.
 
 ### Comment comptez-vous faire connaître l'outil et le faire utiliser par des partenaires ?
 
