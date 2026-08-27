@@ -46,7 +46,7 @@ apps/web/src/lib/domain-language.ts
 | Signalement `spot` / `clean_place` | `public.trash_spotter_spots` | `SignalementModerationSource`, contrats unifiés |
 | Spot legacy | `public.spots` | archive historique en extinction, sans lecture/écriture runtime |
 | Profil | `public.profiles` | modèle Profile |
-| Mission GPS | `public.missions` | types de `companion-app/types/mission.ts` |
+| Mission GPS | `public.missions` | types de `apps/mobile/types/mission.ts` |
 | Point GPS | `public.gps_points` | types mission/location |
 
 ## Cycle de vie des actions
@@ -299,7 +299,7 @@ Restent explicitement hors production :
 - RLS et contrat de synchronisation de `mission_actions` ;
 - renouvellement fiable du token Clerk lors d'un réveil background headless ;
 - usage opérationnel réel de l'application web et du companion ;
-- le companion-app est gelé à long terme jusqu'à une décision explicite de
+- l'application mobile est gelée à long terme jusqu'à une décision explicite de
   dégel.
 
 Voir :

@@ -24,7 +24,7 @@ flowchart LR
 | Clerk | identité web principale |
 | Supabase | PostgreSQL, RLS, Storage, RPC |
 | Vercel | hébergement et Functions |
-| `companion-app/` | suivi GPS natif |
+| `apps/mobile/` | suivi GPS natif |
 | `maintenance/python/` | maintenance hors runtime principal |
 
 ## Flux web

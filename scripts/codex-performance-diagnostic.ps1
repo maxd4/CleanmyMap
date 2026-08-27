@@ -335,7 +335,7 @@ try {
     $folderCandidates = @(
         "node_modules",
         "apps/web/.next",
-        "companion-app/node_modules",
+        "apps/mobile/node_modules",
         "dist",
         "out",
         "coverage",

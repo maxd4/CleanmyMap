@@ -35,7 +35,7 @@ doit tenir compte de la politique actuelle de publication directe sur `main`.
 
 ## Dépendances
 
-L’override `companion-app` de `tar` est passé de `7.5.16` à `7.5.22`, ce qui
+L’override du workspace mobile pour `tar` est passé de `7.5.16` à `7.5.22`, ce qui
 supprime localement l’alerte critique `tar`. Le reste de l’audit npm implique
 notamment des mises à niveau majeures d’Expo/React Native et doit faire l’objet
 d’un lot séparé avec validation mobile.

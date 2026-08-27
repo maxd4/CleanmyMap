@@ -22,7 +22,7 @@ jobs:
       contents: read
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
-      companion_code_relevant: ${{ steps.scope.outputs.companion_code_relevant }}
+      mobile_code_relevant: ${{ steps.scope.outputs.mobile_code_relevant }}
 
     steps:
       - name: Checkout
@@ -57,7 +57,7 @@ jobs:
 
           changed_files="$(git diff --name-only "$base" "$head")"
           docs_only=true
-          companion_code_relevant=false
+          mobile_code_relevant=false
 
           while IFS= read -r file; do
             [[ -z "$file" ]] && continue
@@ -71,16 +71,16 @@ jobs:
             esac
 
             case "$file" in
-              companion-app/*.md)
+              apps/mobile/*.md)
                 ;;
-              companion-app/*|.github/workflows/ci.yml)
-                companion_code_relevant=true
+              apps/mobile/*|.github/workflows/ci.yml)
+                mobile_code_relevant=true
                 ;;
             esac
           done <<< "$changed_files"
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "companion_code_relevant=$companion_code_relevant" >> "$GITHUB_OUTPUT"
+          echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -152,9 +152,9 @@ jobs:
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
         run: npm run build
 
-  companion-checks:
+  mobile-checks:
     needs: fast-checks
-    if: needs.fast-checks.outputs.companion_code_relevant == 'true'
+    if: needs.fast-checks.outputs.mobile_code_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -172,10 +172,10 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: companion-app/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install companion dependencies
-        run: npm ci --prefix companion-app
+      - name: Install mobile dependencies
+        run: npm ci
 
-      - name: Companion typecheck
-        run: npm --prefix companion-app run typecheck
+      - name: Mobile typecheck
+        run: npm run typecheck -w apps/mobile

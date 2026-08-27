@@ -21,7 +21,7 @@ function main() {
     existsSync(resolve(ROOT, path)),
   );
   const rootLockfile = "package-lock.json";
-  const allowedNestedLockfiles = new Set(["companion-app/package-lock.json"]);
+  const allowedNestedLockfiles = new Set();
   const trackedLockfiles = tracked.filter(
     (path) => path.endsWith("/package-lock.json") || path === rootLockfile,
   );

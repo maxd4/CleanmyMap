@@ -55,7 +55,7 @@ Repères actuels :
 | --- | --- |
 | `apps/web/` | Application Next.js de production, routes API et composants |
 | `apps/web/supabase/` | Configuration et migrations Supabase du workspace web |
-| `companion-app/` | Application mobile de suivi GPS, encore à stabiliser sur l'identité et la finalisation des missions |
+| `apps/mobile/` | Application mobile de suivi GPS, encore à stabiliser sur l'identité et la finalisation des missions |
 | `documentation/` | Architecture, produit, sécurité, design system, opérations et pages |
 | `scripts/` | Garde-fous, audits et maintenance Node |
 | `maintenance/python/` | Outils Python de maintenance hors runtime principal |
@@ -162,7 +162,7 @@ Ne jamais exposer une clé `service_role` dans un client web ou mobile.
 
 ## Application compagnon
 
-`companion-app/` assure le suivi GPS natif.
+`apps/mobile/` assure le suivi GPS natif.
 
 Deux points doivent être stabilisés avant de la considérer comme prête pour la production :
 

@@ -10,19 +10,37 @@ const packagePath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../vendor/image-size/dist/index.js",
 );
-const companionRoot = path.resolve(
+const mobileRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
 
 test("routes both Metro copies to the hardened local package", () => {
-  for (const metroPath of [
-    path.join(companionRoot, "node_modules/metro"),
-    path.join(companionRoot, "node_modules/@expo/metro/node_modules/metro"),
-  ]) {
+  const metroPaths = [
+    require.resolve("metro/package.json", {
+      paths: [
+        path.dirname(
+          require.resolve("@expo/metro/package.json", { paths: [mobileRoot] }),
+        ),
+      ],
+    }),
+    require.resolve("metro/package.json", {
+      paths: [
+        path.dirname(
+          require.resolve("@react-native/community-cli-plugin/package.json", {
+            paths: [mobileRoot],
+          }),
+        ),
+      ],
+    }),
+  ];
+
+  for (const metroPackagePath of metroPaths) {
     assert.equal(
-      require.resolve("image-size/package.json", { paths: [metroPath] }),
-      path.join(companionRoot, "vendor/image-size/package.json"),
+      require.resolve("image-size/package.json", {
+        paths: [path.dirname(metroPackagePath)],
+      }),
+      path.join(mobileRoot, "vendor/image-size/package.json"),
     );
   }
 });

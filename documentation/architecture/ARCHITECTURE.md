@@ -10,7 +10,7 @@ apps/web/src/app/               pages et routes API
 apps/web/src/components/        UI
 apps/web/src/lib/               logique métier, auth, services et data
 apps/web/supabase/              configuration et migrations du workspace web
-companion-app/                  application mobile GPS
+apps/mobile/                  application mobile GPS
 scripts/                        garde-fous et maintenance Node
 maintenance/python/             maintenance Python hors runtime principal
 documentation/                  architecture, produit, sécurité et opérations
@@ -59,7 +59,7 @@ Règles :
 
 ## Application compagnon
 
-`companion-app/` partage le projet Supabase mais son modèle d'identité doit être aligné avec Clerk avant production.
+`apps/mobile/` partage le projet Supabase mais son modèle d'identité doit être aligné avec Clerk avant production.
 
 Ne pas considérer comme valide un flux où :
 

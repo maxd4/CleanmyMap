@@ -217,7 +217,7 @@ Repères actuels :
 - Clerk pour l'identité principale ;
 - Supabase/PostgreSQL pour les données ;
 - Vercel pour le déploiement web ;
-- Expo/React Native pour `companion-app`.
+- Expo/React Native pour `apps/mobile`.
 
 Ne jamais recopier une version précise dans plusieurs documents sans nécessité. Quand la précision importe, lire le manifeste.
 
@@ -232,7 +232,7 @@ apps/web/src/lib/domain-language.ts       Role, SessionRole, Parcours
 apps/web/src/lib/sections-registry/config.ts registre des rubriques
 apps/web/supabase/                        configuration Supabase active du workspace web
 apps/web/supabase/migrations/             migrations utilisées par le CLI du workspace web
-companion-app/                            application mobile expérimentale
+apps/mobile/                            application mobile expérimentale
 scripts/                                  garde-fous et maintenance Node
 maintenance/python/                       maintenance Python hors runtime principal
 documentation/                            documentation structurée

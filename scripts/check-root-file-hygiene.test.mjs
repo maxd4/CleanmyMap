@@ -11,14 +11,15 @@ import {
   trackedTransitionalRootDirectories,
 } from "./check-root-file-hygiene.mjs";
 
-test("root directory contract accepts canonical and transitional directories", () => {
+test("root directory contract accepts canonical directories", () => {
   assert.deepEqual(findForbiddenRootDirectories(trackedCanonicalRootDirectories), []);
   assert.deepEqual(
     findForbiddenRootDirectories(trackedTransitionalRootDirectories),
     [],
   );
   assert.ok(allowedRootDirectories.includes(".artifacts"));
-  assert.ok(allowedRootDirectories.includes("companion-app"));
+  assert.ok(allowedRootDirectories.includes("apps"));
+  assert.equal(allowedRootDirectories.includes("companion-app"), false);
 });
 
 test("root directory contract accepts local-only directories when untracked", () => {

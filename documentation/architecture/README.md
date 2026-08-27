@@ -46,7 +46,7 @@ apps/web/              application web principale
 apps/web/src/app/      pages et API routes
 apps/web/src/lib/      domaine, services, sécurité, data
 apps/web/supabase/     configuration Supabase active du workspace
-companion-app/         application mobile GPS
+apps/mobile/           application mobile GPS
 scripts/               garde-fous et maintenance
 maintenance/python/    maintenance Python hors runtime principal
 documentation/         documentation structurée

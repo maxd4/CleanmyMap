@@ -66,7 +66,7 @@ Le site et l'app partagent le même projet Supabase.
 Le web utilise Clerk comme fournisseur d'identité principal.
 
 Le LOT 1 de l'ADR-004 est accepté et implémenté : Clerk est l'unique identité
-utilisateur du companion-app. L'interface utilise l'authentification hébergée
+utilisateur de l'application mobile. L'interface utilise l'authentification hébergée
 Clerk (Account Portal), avec les méthodes activées dans le compte Clerk.
 
 Le `ClerkProvider` utilise le cache de token sécurisé Expo. Le client Supabase
@@ -105,13 +105,13 @@ distance ni la durée lui-même.
 Créer :
 
 ```txt
-companion-app/.env
+apps/mobile/.env
 ```
 
 à partir de :
 
 ```txt
-companion-app/.env.example
+apps/mobile/.env.example
 ```
 
 Variables publiques attendues :
@@ -133,7 +133,7 @@ dans l'app mobile.
 ## Installation
 
 ```bash
-cd companion-app
+cd apps/mobile
 npm install
 npm run typecheck
 npm start
@@ -169,7 +169,7 @@ hors production et motive le gel long terme.
 ## Structure
 
 ```txt
-companion-app/
+apps/mobile/
 ├── App.tsx
 ├── index.ts
 ├── app.json

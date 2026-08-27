@@ -41,7 +41,7 @@ flowchart TD
     STORAGE[Supabase Storage]
   end
 
-  subgraph Mobile[companion-app]
+  subgraph Mobile[apps/mobile]
     EXPO[Expo / React Native]
   end
 
@@ -74,7 +74,7 @@ CleanMyMap/
 │       │   ├── components/
 │       │   └── lib/
 │       └── supabase/
-├── companion-app/
+├── apps/mobile/
 ├── documentation/
 ├── scripts/
 ├── maintenance/
@@ -181,7 +181,7 @@ Ne pas réactiver un ancien import sans vérifier le contrat courant.
 
 ## Application compagnon
 
-`companion-app/` assure le suivi GPS natif.
+`apps/mobile/` assure le suivi GPS natif.
 
 Statut architectural :
 

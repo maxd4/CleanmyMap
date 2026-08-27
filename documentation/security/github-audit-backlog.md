@@ -391,7 +391,7 @@ Confirmer dans le workflow courant :
 - `npm ci` seulement pour les changements code ;
 - typecheck, lint, tests et build web sur changements code ;
 - `test:security` dans un job dédié ;
-- typecheck du companion lorsque `companion-app/*` ou `ci.yml` change.
+- typecheck du companion lorsque `apps/mobile/*` ou `ci.yml` change.
 
 ### CodeQL
 
@@ -494,7 +494,7 @@ Ne pas créer ou modifier un ruleset, une protection de branche ou un réglage G
 Le dépôt possède actuellement trois blocs hebdomadaires :
 
 - npm workspace racine ;
-- npm `companion-app` ;
+- npm workspace `apps/mobile` ;
 - GitHub Actions.
 
 Ne pas dupliquer un bloc `apps/web` : le lockfile racine couvre déjà le workspace web.

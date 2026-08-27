@@ -3,13 +3,13 @@
 ## Périmètre
 
 Cette gouvernance couvre les deux advisories `image-size` présentes dans le
-graphe du `companion-app`. Elle ne constitue pas une exception globale de
+graphe de `apps/mobile`. Elle ne constitue pas une exception globale de
 package, de niveau de sévérité ou de scanner.
 
-| Advisory | CVE | Package utilisé dans le companion | Chemin transitif | Correctif couvert |
+| Advisory | CVE | Package utilisé dans `apps/mobile` | Chemin transitif | Correctif couvert |
 | --- | --- | --- | --- | --- |
-| [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `companion-app/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
-| [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `companion-app/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
+| [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `apps/mobile/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
+| [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `apps/mobile/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
 
 ## Mitigation effectivement versionnée
 
@@ -19,14 +19,14 @@ package, de niveau de sévérité ou de scanner.
 d'advisories.
 
 Les deux correctifs sont documentés dans
-`companion-app/vendor/image-size/SECURITY-PATCH.md` et vérifiés par
-`companion-app/security/image-size-security.test.mjs`. Le lockfile résout le
+`apps/mobile/vendor/image-size/SECURITY-PATCH.md` et vérifiés par
+`apps/mobile/security/image-size-security.test.mjs`. Le lockfile résout le
 package local `vendor/image-size` en version `2.0.3`.
 
-Les overrides Metro de `companion-app/package.json` redirigent les deux
-résolutions utilisées par le companion :
+Les overrides Metro de `package.json` redirigent les deux résolutions utilisées
+par l'application mobile :
 
-- `metro@0.84.4` vers le package local `vendor/image-size` ;
+- `metro@0.84.5` vers le package local `vendor/image-size` ;
 - `metro@0.87.0` vers le package local `vendor/image-size`.
 
 Cette mitigation remplace l'ancienne acceptation de risque. Il n'y a donc plus

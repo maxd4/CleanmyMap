@@ -4,7 +4,8 @@
   "description": "Monorepo de la plateforme CleanMyMap.fr",
   "private": true,
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "apps/mobile"
   ],
   "scripts": {
     "dev": "node scripts/dev-with-fallback-port.mjs",
@@ -69,7 +70,7 @@
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test",
     "test:e2e:list": "playwright test --list",
-    "companion:typecheck": "npm --prefix companion-app run typecheck",
+    "companion:typecheck": "npm run typecheck -w apps/mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/pre_push_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install_git_hooks.ps1",
@@ -120,6 +121,12 @@
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3"
   },
   "overrides": {
+    "metro@0.84.5": {
+      "image-size": "file:apps/mobile/vendor/image-size"
+    },
+    "metro@0.87.0": {
+      "image-size": "file:apps/mobile/vendor/image-size"
+    },
     "@babel/core": "7.29.7",
     "dompurify": "3.4.13",
     "fast-uri": "3.1.5",
@@ -138,9 +145,21 @@
     "vitest": "4.1.10",
     "ws": "8.21.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "@xmldom/xmldom": "0.8.13",
+    "@expo/cli": {
+      "tar": "7.5.22",
+      "undici": "6.27.0"
+    },
+    "@expo/xcpretty": {
+      "js-yaml": "4.3.1"
+    },
+    "@istanbuljs/load-nyc-config": {
+      "js-yaml": "3.15.0"
+    }
   },
   "dependencies": {
+    "image-size": "file:apps/mobile/vendor/image-size",
     "posthog-js": "^1.418.5",
     "posthog-node": "^5.49.1"
   }
