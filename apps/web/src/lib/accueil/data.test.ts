@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 import {
   buildHomeCommunityActivity,
+  buildLandingSummaryFromContracts,
   computeLandingCounters,
   formatLandingOverviewErrorMessage,
 } from "./data";
@@ -145,5 +146,24 @@ describe("accueil data", () => {
     expect(formatLandingOverviewErrorMessage("boom")).toBe(
       "Supabase est momentanément indisponible. Réessaie dans un instant.",
     );
+  });
+
+  it("keeps the landing summary equivalent to the legacy contract projection", () => {
+    const contracts = [
+      makeContract("recent", "approved", 10),
+      makeContract("older", "approved", 4),
+      makeContract("pending", "pending", 99),
+    ];
+    const floorDate = "2026-01-01";
+
+    const summary = buildLandingSummaryFromContracts(contracts, floorDate);
+
+    expect(summary.counters).toEqual(
+      computeLandingCounters(contracts, floorDate),
+    );
+    expect(summary.activity).toEqual(
+      buildHomeCommunityActivity(contracts, floorDate),
+    );
+    expect(summary.dataAvailability.status).toBe("available");
   });
 });

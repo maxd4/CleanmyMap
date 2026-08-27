@@ -4,10 +4,8 @@ import {
   HomeCommunityCredibility,
 } from "@/components/accueil";
 import {
-  buildHomeCommunityActivity,
-  computeLandingCounters,
   formatLandingOverviewErrorMessage,
-  loadLandingOverview,
+  loadLandingSummary,
 } from "@/lib/accueil/data";
 import { HOME_ROUTE } from "@/lib/home-routes";
 import {
@@ -99,19 +97,16 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  let overview = null;
+  let landingSummary = null;
   let overviewLoadError: string | null = null;
   try {
-    overview = await loadLandingOverview();
+    landingSummary = await loadLandingSummary();
   } catch (error) {
     overviewLoadError = formatLandingOverviewErrorMessage(error);
   }
-  const floor = new Date();
-  floor.setUTCDate(floor.getUTCDate() - 365);
-  const floorDate = floor.toISOString().slice(0, 10);
 
-  const counters: HomeCounters = overview
-    ? computeLandingCounters(overview.contracts, floorDate)
+  const counters: HomeCounters = landingSummary
+    ? landingSummary.counters
     : {
         wasteKg: 0,
         butts: 0,
@@ -121,12 +116,13 @@ export default async function HomePage() {
         euroSaved: 0,
       };
 
-  const hasOverviewData = Boolean(overview);
+  const hasOverviewData = Boolean(landingSummary);
   const metrics = buildHomeMetrics(counters, hasOverviewData);
-  const communityActivity = buildHomeCommunityActivity(
-    overview?.contracts ?? [],
-    floorDate,
-  );
+  const communityActivity = landingSummary?.activity ?? {
+    visibleActions: 0,
+    distinctLocations: 0,
+    items: [],
+  };
   return (
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
