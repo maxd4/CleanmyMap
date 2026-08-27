@@ -1,8 +1,8 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import {
-  getGeometryPresentation,
   mapItemCoordinates,
 } from "@/lib/actions/data-contract";
+import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 
 export type ActionsMapGeoQuality = {
   total: number;

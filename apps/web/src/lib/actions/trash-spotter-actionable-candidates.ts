@@ -1,4 +1,4 @@
-import type { ActionDataContract } from "@/lib/actions/data-contract";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { ActionMapItem } from "@/lib/actions/types";
 import {
   getWasteCategory,

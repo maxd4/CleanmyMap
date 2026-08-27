@@ -4,7 +4,7 @@ import {
 import type {
   ActionDataContract,
   ActionEntityType,
-} from "@/lib/actions/data-contract";
+} from "@/lib/actions/contracts/contract-model";
 import type { ActionMapViewportQuery } from "@/lib/actions/types";
 import type {
   TrashSpotterSpotRow,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildActionDataContract } from "@/lib/actions/data-contract";
-import type { ActionEntityType } from "@/lib/actions/data-contract";
+import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
+import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
 
 const fetchActionsMock = vi.hoisted(() => vi.fn());
 const loadLocalActionContractsMock = vi.hoisted(() => vi.fn());

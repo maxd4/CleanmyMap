@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "./data-contract";
+import { buildActionDataContract } from "./contracts/contract-model";
 import { buildActionInsights } from "./insights";
 
 describe("buildActionInsights", () => {

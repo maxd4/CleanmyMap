@@ -1,13 +1,13 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import {
-  getActionOperationalContext,
   mapItemCigaretteButts,
   mapItemCoordinates,
   mapItemLocationLabel,
   mapItemObservedAt,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import { getActionOperationalContext } from "@/lib/actions/operational-context";
 import {
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,

@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { ActionEntityType } from "@/lib/actions/data-contract";
+import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
 import type { ActionStatus } from "@/lib/actions/types";
 import {
   fetchUnifiedActionContracts,

@@ -9,7 +9,7 @@ import type {
   CreateActionPayload,
 } from "@/lib/actions/types";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
-import { toContractCreatePayload } from "./data-contract";
+import { toContractCreatePayload } from "./contracts/contract-builders";
 
 export { buildMapActionsQueryString, fetchMapActions } from "./map/map-http";
 

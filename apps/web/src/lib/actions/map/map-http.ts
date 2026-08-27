@@ -24,7 +24,7 @@ import {
   type PollutionScoreReferences,
 } from "../pollution/pollution-score";
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
-import { buildActionDataContract } from "../data-contract";
+import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
 import { mapItemCoordinates, toActionMapItem } from "../contracts/contract-mappers";
 import {

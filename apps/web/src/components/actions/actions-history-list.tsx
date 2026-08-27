@@ -9,10 +9,10 @@ import { fetchActionOperationAudit } from "@/lib/actions/operation-audit";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { isAdminLikeProfile, normalizeProfileRole } from "@/lib/profiles";
 import {
-  getActionOperationalContext,
   mapItemCigaretteButts,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import { getActionOperationalContext } from "@/lib/actions/operational-context";
 import type {
   ActionListItem,
   ActionMapItem,

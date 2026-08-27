@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildActionDataContract,
   toActionListItem,
   toActionMapItem,
-} from "@/lib/actions/data-contract";
+} from "./contract-mappers";
+import { buildActionDataContract } from "./contract-model";
 import { parseEntityTypesParam } from "@/lib/actions/unified-source";
 
 describe("actions contract regression gates", () => {

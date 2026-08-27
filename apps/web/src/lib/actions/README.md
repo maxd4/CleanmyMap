@@ -41,6 +41,22 @@ partagés avec d'autres domaines restent dans leur propriétaire canonique ; un
 type ne doit pas être déplacé dans `components/actions` parce qu'il est
 consommé par le formulaire.
 
+`data-contract.ts` est l'entrée publique étroite du contrat Actions. Il expose
+explicitement le modèle de contrat, ses mappers, les builders de création et
+`ACTION_ENTITY_TYPES`. Il ne constitue pas un barrel de tout le domaine : les
+types généraux, les calculs d'impact, la géométrie, le contexte opérationnel et
+les modules de pollution restent dans leurs modules propriétaires.
+
+Les modules internes de `lib/actions/**` importent directement ces propriétaires
+(`contracts/contract-model`, `contracts/contract-mappers`,
+`contracts/contract-builders`, `types` ou le sous-domaine concerné). Les
+consommateurs hors du domaine peuvent utiliser la surface publique explicite de
+`data-contract.ts`.
+
+`unified-source.ts` reste la façade publique de la capacité de normalisation
+multi-source. Son implémentation sous `unified-source/` est interne à ce
+sous-domaine et ne doit pas devenir un chemin public concurrent.
+
 ## Règles de placement
 
 - Placer ici une règle ou un contrat réutilisable indépendamment du rendu.

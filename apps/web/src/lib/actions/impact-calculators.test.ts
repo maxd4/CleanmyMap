@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "./data-contract";
+import { buildActionDataContract } from "./contracts/contract-model";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
