@@ -13,7 +13,7 @@
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
 - **Scope** : consentement cookies et analytics — LEGAL-01
-- **Terminée** : oui pour le périmètre LEGAL-01
+- **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.

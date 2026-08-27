@@ -21,9 +21,24 @@ Ces documents sont régulièrement mis à jour pour refléter les changements da
 
 Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, le cycle de consentement analytics de 6 mois, les traitements Sentry d'observabilité et les critères de rétention réellement implémentés.
 
-**Dernière mise à jour du périmètre cookies et analytics :** 27 août 2026
+**Dernière mise à jour juridique :** 27 août 2026
 
-## LEGAL-02 — Gate factuel résolu
+Les lots LEGAL-01, LEGAL-02 et LEGAL-03 sont clos sur la base du runtime
+actuellement déployé et des confirmations opérateur disponibles.
+
+## Clôture LEGAL-01 à LEGAL-03
+
+### LEGAL-01 — Consentement cookies et analytics
+
+Le premier niveau propose uniquement **Tout accepter** et **Tout refuser**, avec
+un traitement visuel et un nombre de clics équivalents. Chaque décision, y
+compris le refus, est conservée pendant six mois dans le stockage local et dans
+le cookie de consentement analytics. Une décision expirée est nettoyée et le
+choix est reproposé. Le footer permet en permanence de gérer les préférences.
+Après retrait, les intégrations Vercel conditionnelles ne sont plus rendues et
+PostHog est arrêté explicitement avant toute nouvelle capture.
+
+### LEGAL-02 — Identité et mentions légales
 
 La confirmation opérateur établit que CleanMyMap est actuellement édité par
 **Maxence Deroome**, personne physique éditant à titre non professionnel dans le
@@ -40,12 +55,21 @@ La page /mentions-legales sépare désormais :
 - les services techniques distincts : Supabase, Clerk, Resend, PostHog et
   Sentry.
 
-La condition d'anonymat de l'article 1-1 II de la LCEN — communication préalable
-à Vercel des éléments personnels nécessaires à l'identification — n'est pas
-vérifiable dans les données de compte accessibles depuis ce checkout. Le
-domicile et le téléphone personnels de l'éditeur ne sont donc pas publiés par
-défaut. Aucun numéro de téléphone général Vercel n'est inventé et le numéro
-réservé aux notifications DMCA n'est pas réutilisé.
+Le régime d'anonymat de l'article 1-1 II de la LCEN est appliqué : les éléments
+d'identification personnelle nécessaires ont été communiqués à Vercel et restent
+à sa disposition. Le domicile et le téléphone personnels de l'éditeur ne sont
+donc pas publiés. Aucun numéro de téléphone général Vercel n'est inventé et le
+numéro réservé aux notifications DMCA n'est pas réutilisé.
+
+### LEGAL-03 — Politique RGPD
+
+La page publique et la doctrine documentaire décrivent les traitements réellement
+identifiés, leurs finalités et bases légales, les catégories de destinataires,
+les transferts non vérifiables comme tels, les critères de conservation, les
+droits, le retrait du consentement, la CNIL et les délais de réponse. Sentry est
+documenté comme observabilité et sécurité hors analytics. Les demandes
+contact_requests et le comportement réel du nettoyage sont explicitement
+couverts, sans durée historique non prouvée ni promesse de suppression globale.
 
 Références vérifiées le 27 août 2026 :
 

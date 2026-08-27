@@ -16,10 +16,10 @@ le service. Le point de contact actuellement configuré pour les questions RGPD,
 le retrait du consentement et l'exercice des droits est :
 `contact@cleanmymap.fr`.
 
-Le domicile et le téléphone personnels de l'éditeur ne sont pas publiés par
-défaut : la condition permettant de tenir ces éléments à disposition de Vercel
-au titre de l'article 1-1 II de la LCEN n'est pas vérifiable dans les données de
-compte accessibles depuis ce checkout.
+Le domicile et le téléphone personnels de l'éditeur ne sont pas publiés :
+le régime d'anonymat prévu à l'article 1-1 II de la LCEN est appliqué, les
+éléments d'identification personnelle nécessaires ayant été communiqués à Vercel
+et restant à sa disposition.
 
 ## 2. Données traitées
 
