@@ -1,7 +1,7 @@
 import {
   ACTION_QUALITY_RULESET_VERSION,
   ACTION_QUALITY_WEIGHTS,
-} from "@/lib/actions/quality-rules";
+} from "@/lib/actions/quality/quality-rules";
 import type {
   ActionRow,
   PersonalImpactMethodology,

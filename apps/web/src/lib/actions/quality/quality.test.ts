@@ -4,7 +4,7 @@ import {
   ACTION_QUALITY_RULESET_VERSION,
   ACTION_QUALITY_WEIGHTS,
 } from "./quality-rules";
-import type { ActionListItem } from "./types";
+import type { ActionListItem } from "../types";
 
 function buildItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
   return {

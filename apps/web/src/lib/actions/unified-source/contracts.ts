@@ -5,7 +5,7 @@ import {
 } from "@/lib/actions/data-contract";
 import {
   auditActionData,
-} from "@/lib/actions/data-quality";
+} from "@/lib/actions/quality/data-quality";
 import {
   parseWasteCategoriesFromNotes,
   stripWasteCategoryMarkersFromNotes,

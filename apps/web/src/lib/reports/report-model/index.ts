@@ -2,7 +2,7 @@ import {
   mapItemLocationLabel,
   mapItemType,
 } from "@/lib/actions/data-contract";
-import { evaluateActionQuality } from "@/lib/actions/quality";
+import { evaluateActionQuality } from "@/lib/actions/quality/quality";
 import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
 import {
   computeActionImpactKpis,

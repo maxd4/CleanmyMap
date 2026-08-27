@@ -5,7 +5,7 @@ import {
  type TerritorialBenchmarkRow,
 } from"@/lib/analytics/territorial-benchmark";
 import { toActionListItem } from"@/lib/actions/data-contract";
-import { evaluateActionQuality } from"@/lib/actions/quality";
+import { evaluateActionQuality } from"@/lib/actions/quality/quality";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import type { UnifiedSourceHealth } from"@/lib/actions/unified-source";
 import {

@@ -3,8 +3,8 @@ import {
   type ActionDataContract,
 } from "../actions/data-contract";
 import { computeActionImpactKpis } from "../actions/impact-calculators";
-import { evaluateActionQuality } from "../actions/quality";
-import { auditActionContract } from "../actions/data-quality";
+import { evaluateActionQuality } from "../actions/quality/quality";
+import { auditActionContract } from "../actions/quality/data-quality";
 import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

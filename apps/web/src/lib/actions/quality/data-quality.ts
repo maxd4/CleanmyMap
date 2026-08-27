@@ -1,9 +1,9 @@
-import type { ActionDataContract } from "./contracts/contract-model";
+import type { ActionDataContract } from "../contracts/contract-model";
 import type {
   ActionGeometryOrigin,
   ActionStatus,
   ActionVisionEstimate,
-} from "./types";
+} from "../types";
 
 export const ACTION_DATA_QUALITY_VERSION = "action-data-quality-2026.08-v1";
 

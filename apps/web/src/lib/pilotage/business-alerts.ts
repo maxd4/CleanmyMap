@@ -1,4 +1,4 @@
-import { evaluateActionQuality } from "../actions/quality";
+import { evaluateActionQuality } from "../actions/quality/quality";
 import { mapItemType } from "../actions/data-contract";
 import { computeActionImpactKpis } from "../actions/impact-calculators";
 import type { ActionMapItem, ActionListItem } from "../actions/types";

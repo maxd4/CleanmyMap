@@ -89,7 +89,7 @@ vi.mock("@/lib/gamification/progression-impact", () => ({
   buildPersonalImpactMethodology: buildPersonalImpactMethodologyMock,
 }));
 
-vi.mock("@/lib/actions/quality", () => ({
+vi.mock("@/lib/actions/quality/quality", () => ({
   evaluateActionQuality: evaluateActionQualityMock,
 }));
 

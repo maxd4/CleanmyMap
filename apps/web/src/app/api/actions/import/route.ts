@@ -4,7 +4,7 @@ import { createAction } from "@/lib/actions/store";
 import type { ResolvedActionOrganizer } from "@/lib/actions/participation/organizers";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { isValidAssociationName } from "@/lib/actions/association-options";
-import type { ActionDataQualitySummary } from "@/lib/actions/data-quality";
+import type { ActionDataQualitySummary } from "@/lib/actions/quality/data-quality";
 import { normalizeExternalActionImport } from "@/lib/actions/unified-source";
 import { requireAdminAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";

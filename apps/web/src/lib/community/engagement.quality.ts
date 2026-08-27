@@ -1,4 +1,4 @@
-import { evaluateActionQuality } from "../actions/quality";
+import { evaluateActionQuality } from "../actions/quality/quality";
 import type { ActionListItem } from "../actions/types";
 import {
   badgeFromQuality,
