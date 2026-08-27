@@ -6,7 +6,7 @@ import { VolumeSliderWidget } from "../ui/VolumeSliderWidget";
 import { TrashBinGauge } from "../ui/harvest-gauges";
 import { formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
-import type { FormState } from "../../action-declaration-form.model";
+import type { FormState } from "../../action-declaration-form/action-declaration-form.model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import type { WasteCategorySlug } from "@/lib/waste";
 

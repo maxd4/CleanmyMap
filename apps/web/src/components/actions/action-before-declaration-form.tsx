@@ -28,7 +28,7 @@ import {
   normalizeParticipantAccounts,
 } from "./action-declaration/payload";
 import { saveDraft, loadDraftSnapshot } from "./action-declaration/draft-storage";
-import type { FormState } from "./action-declaration-form.model";
+import type { FormState } from "./action-declaration-form/action-declaration-form.model";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";

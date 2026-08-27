@@ -1,7 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { initialState } from "../action-declaration-form.model";
+import { initialState } from "./action-declaration-form.model";
 import {
   buildActionDeclarationExportFilename,
   buildActionDeclarationShareText,

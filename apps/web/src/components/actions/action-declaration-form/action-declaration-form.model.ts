@@ -3,7 +3,7 @@ import {
  ASSOCIATION_SELECTION_OPTIONS,
 } from"@/lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
-import { normalizeActionDrawing } from"./map/actions-map-geometry.utils";
+import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
 
 export type FormState = {

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatScorePercent, SCORE_SCALE } from "@/lib/formatters/score";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import type { ActionDataQualityResult } from "../action-declaration-form.quality";
+import type { ActionDataQualityResult } from "../action-declaration-form/action-declaration-form.quality";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,

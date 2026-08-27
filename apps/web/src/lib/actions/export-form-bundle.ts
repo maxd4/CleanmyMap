@@ -1,4 +1,4 @@
-import type { FormState } from "@/components/actions/action-declaration-form.model";
+import type { FormState } from "@/components/actions/action-declaration-form/action-declaration-form.model";
 import {
   downloadActionDeclarationExportImage,
   getActionDeclarationExportBundle,

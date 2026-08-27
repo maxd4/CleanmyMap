@@ -3,7 +3,7 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "./map/actions-map-geometry.utils";
+} from "../map/actions-map-geometry.utils";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;

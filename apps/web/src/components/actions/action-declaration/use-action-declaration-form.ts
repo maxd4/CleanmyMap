@@ -15,13 +15,13 @@ import {
   isDrawingValid,
   prepareCreateActionPayload,
 } from "./payload";
-import { computeActionDataQuality } from "../action-declaration-form.quality";
-import { useActionDeclarationSmartAssist } from "../action-declaration-form.smart-assist";
+import { computeActionDataQuality } from "../action-declaration-form/action-declaration-form.quality";
+import { useActionDeclarationSmartAssist } from "../action-declaration-form/action-declaration-form.smart-assist";
 import { loadDraft } from "./draft-storage";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
-import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form.model";
+import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form/action-declaration-form.model";
 
 type DeclarationMode = "complete";
 type SubmissionState = "idle" | "pending" | "success" | "error";
