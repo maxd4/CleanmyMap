@@ -1,6 +1,6 @@
 # Notification et modération des contenus
 
-**Dernière mise à jour : 27 août 2026**
+**Dernière mise à jour : 28 août 2026**
 
 Ce document décrit le mécanisme CleanMyMap de notification électronique et de
 modération. Il est conçu pour répondre aux exigences applicables aux
@@ -77,12 +77,20 @@ Les actions administratives disponibles sont :
 
 Une action sur un compte n'est pas annoncée comme disponible par ce mécanisme.
 
-Pour une décision sans mutation, l'état d'exécution est `not_applicable`. Pour
-une restriction ou un retrait, la décision est d'abord `pending`, puis devient
-`applied` uniquement lorsque la mutation et la projection de l'état ont réussi.
-Une ressource absente, une capacité indisponible, une exception de mutation ou
-une projection échouée produit `failed` avec un code d'erreur borné. Un état
-`failed` ne projette pas le contenu comme restreint ou retiré.
+Une décision sans mutation a l'état d'exécution `not_applicable`. Une
+restriction ou un retrait est persisté avec l'état `pending` avant toute
+tentative. Une mutation absente, une capacité indisponible, un contenu
+introuvable ou une exception de mutation produit `failed` avec un code d'erreur
+borné ; dans ce cas, le contenu n'est pas projeté comme restreint ou retiré.
+
+L'état d'exécution décrit uniquement l'exécution réelle de la mesure sur le
+contenu. Dès que la mutation canonique du contenu a réussi, l'état devient
+`applied` et ne repasse jamais à `failed` en raison d'une projection ultérieure
+du signalement dans `legal_content_reports`. Si cette projection échoue, il
+s'agit d'un état partiel distinct, audité avec `stage=report_projection` ; la
+projection de `creatorState` peut rester inchangée. L'auteur peut néanmoins
+être notifié, car la mesure réelle a été appliquée. L'API répond alors avec
+l'état HTTP `207` (`partial`).
 
 ## 5. Motivation et notifications
 
@@ -114,9 +122,11 @@ Le mécanisme est porté par :
 - le service email existant pour les accusés et décisions.
 
 La réception persistée et le cycle de décision nécessitent que les tables
-correspondantes soient disponibles dans l'environnement exécuté. Si ce schéma
-n'est pas disponible, le formulaire ou la décision ne doivent pas être
-présentés comme effectivement opérationnels dans cet environnement.
+correspondantes soient disponibles dans l'environnement exécuté. La présence
+des migrations dans le dépôt ne prouve pas la disponibilité des tables
+Supabase distantes. Tant que cette présence effective n'est pas vérifiée en
+production, le formulaire et la décision ne doivent pas être présentés comme
+pleinement opérationnels en production.
 
 ## 7. Données et contact
 
