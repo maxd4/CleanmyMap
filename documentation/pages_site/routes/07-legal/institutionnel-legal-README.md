@@ -6,7 +6,7 @@ Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre el
 
 | Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
 |---|---|---|---|---|:---:|---|---|
-| `/conditions-generales-utilisation` | [CGU](./conditions-generales-utilisation/conditions-generales-utilisation-README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/conditions-generales-utilisation/page.tsx |
+| `/conditions-generales-utilisation` | [CGU](./conditions-generales-utilisation/conditions-generales-utilisation-README.md) | légale | légal | LEGAL-04 clos — CGU alignées sur le produit réel et DSA-01/02 | non | moyenne | apps/web/src/app/conditions-generales-utilisation/page.tsx |
 | `/contact` | [Contact](./contact/contact-README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/contact/page.tsx |
 | `/mentions-legales` | [Mentions légales](./mentions-legales/mentions-legales-README.md) | légale | légal | LEGAL-02 clos — personne physique non professionnelle avec anonymat LCEN | non | moyenne | apps/web/src/app/mentions-legales/page.tsx |
 | `/politique-confidentialite` | [Politique de confidentialité](./politique-confidentialite/politique-confidentialite-README.md) | légale | légal | LEGAL-03 clos | non | moyenne | apps/web/src/app/politique-confidentialite/page.tsx |

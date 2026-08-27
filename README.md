@@ -195,6 +195,8 @@ Références :
 
 ## Licence
 
-Le code est publiquement visible, mais la licence définitive reste à arbitrer.
+Le code source est publiquement visible ; aucune licence de réutilisation
+définitive n'est publiée à ce jour.
 
-Tant qu'aucun fichier `LICENSE` explicite n'est publié, ne pas présenter ISC ou une autre licence comme décision définitive du projet.
+Tant qu'aucun fichier `LICENSE` explicite n'est publié, aucune licence open
+source particulière ne doit être déduite.

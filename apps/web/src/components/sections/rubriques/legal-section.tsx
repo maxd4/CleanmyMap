@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, ArrowRight, Sparkles, ExternalLink } from "lucide-react";
+import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, ArrowRight, Sparkles, ExternalLink } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
@@ -12,7 +12,7 @@ type LegalCard = {
   icon: LucideIcon;
   title: string;
   summary: string;
-  href?: string;
+  href: string;
   cta?: string;
   color: "blue" | "violet" | "emerald" | "amber" | "rose" | "slate";
 };
@@ -54,20 +54,6 @@ const LEGAL_CARDS: LegalCard[] = [
     cta: "Gérer les cookies",
     color: "amber",
   },
-  {
-    id: "benevoles",
-    icon: Users,
-    title: "Charte du bénévole",
-    summary: "Engagements terrain, sécurité, bonne conduite et cadre de participation aux actions.",
-    color: "rose",
-  },
-  {
-    id: "responsabilite",
-    icon: AlertTriangle,
-    title: "Clause de responsabilité",
-    summary: "Les informations sont fournies en l'état et les statistiques restent des estimations.",
-    color: "slate",
-  },
 ];
 
 export function LegalSection() {
@@ -92,7 +78,7 @@ export function LegalSection() {
               </div>
               <div className="space-y-1">
                  <h4 className="text-sm font-black text-white uppercase tracking-widest">Conformité RGPD</h4>
-                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dernière mise à jour : 01 Mai 2024</p>
+                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dernière mise à jour : 27 août 2026</p>
               </div>
            </div>
            <p className="relative z-10 text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
@@ -115,7 +101,7 @@ export function LegalSection() {
                 withTopBar={false}
                 className={cn(
                   "p-8 group transition-all flex flex-col justify-between h-full min-h-[320px]",
-                  card.href ? "hover:bg-white/5" : "cursor-default"
+                  "hover:bg-white/5"
                 )}
               >
                 <div className="space-y-6 relative z-10">
@@ -138,28 +124,18 @@ export function LegalSection() {
                 </div>
 
                 <div className="relative z-10">
-                  {card.href ? (
-                    <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
-                       {card.cta || "Consulter"}
-                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  ) : (
-                    <div className="mt-8 p-4 rounded-xl border border-dashed border-white/10 text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] text-center">
-                       En cours de rédaction
-                    </div>
-                  )}
+                  <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
+                     {card.cta || "Consulter"}
+                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
               </RubriqueCard>
             );
 
-            return card.href ? (
+            return (
               <Link key={card.id} href={card.href} className="block h-full">
                 {cardContent}
               </Link>
-            ) : (
-              <div key={card.id} className="block h-full">
-                {cardContent}
-              </div>
             );
           })}
         </div>

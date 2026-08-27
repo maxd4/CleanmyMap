@@ -6,10 +6,11 @@ Ce dossier contient l'ensemble des documents juridiques de CleanMyMap.
 
 | Document | Description |
 |----------|-------------|
+| [Mentions légales](../pages_site/routes/07-legal/mentions-legales/mentions-legales-README.md) | Éditeur, publication, hébergement et services techniques |
 | [Conditions Générales d'Utilisation](conditions-generales-utilisation.md) | CGU - Règles d'utilisation de la plateforme |
 | [Politique de Confidentialité](politique-confidentialite.md) | RGPD - Protection des données personnelles |
 | [Politique des Cookies](politique-cookies.md) | Gestion des cookies et traceurs |
-| [Charte du Bénévole](charte-benevole.md) | Droits et devoirs des bénévoles |
+| [Charte de sécurité et de comportement](charte-benevole.md) | Sécurité, comportement et participation aux actions terrain |
 | [Notification de contenu illicite](../pages_site/routes/07-legal/signaler-contenu-illicite/signaler-contenu-illicite-README.md) | Formulaire électronique de notification circonstanciée |
 
 ## Accès rapide
@@ -46,7 +47,7 @@ directive 2011/93/UE ; la qualification juridique complète n'est pas exigée.
 Les notifications sont persistées dans le domaine dédié
 `legal_content_reports`, sans copie brute du contenu tiers. Elles ne sont pas
 lisibles publiquement et apparaissent dans le creator inbox existant, où un
-administrateur autorisé peut enregistrer une décision parmi la mise en examen,
+administrateur autorisé peut enregistrer une décision parmi la revue,
 l'absence d'action, la restriction ou le retrait lorsque la capacité canonique
 du type de contenu existe, ou la clôture. Chaque décision conserve l'acteur
 administrateur, la date, l'origine, le motif, le fondement applicable, l'usage
@@ -71,7 +72,7 @@ canonique ne permet d'identifier et de muter le contenu. Aucun mécanisme intern
 de recours, médiateur ou organisme extrajudiciaire non implémenté n'est promis ;
 les emails renvoient uniquement au contact réellement disponible.
 
-## Clôture LEGAL-01 à LEGAL-03
+## Clôture LEGAL-01 à LEGAL-04
 
 ### LEGAL-01 — Consentement cookies et analytics
 
@@ -124,18 +125,24 @@ Références vérifiées le 27 août 2026 :
 - [Vercel Privacy Notice](https://vercel.com/legal/privacy-notice) ;
 - [Vercel DMCA Policy](https://vercel.com/legal/dmca-policy).
 
-## Licence du projet
+### LEGAL-04 — CGU et charte de sécurité
 
-Le projet reste distribué en open source, mais le choix précis de licence est encore en cours d'arbitrage.
+Les CGU et la charte de sécurité et de comportement ont été réécrites le
+27 août 2026 pour décrire le produit réellement disponible. Elles distinguent
+les actions créées par des utilisateurs ou des organisateurs tiers d'une
+éventuelle organisation future par CleanMyMap, conservent la propriété des
+contributions à leurs auteurs et limitent la licence accordée aux besoins
+techniques du service. Les anciennes promesses d'assurance, de matériel,
+d'encadrement, de statut associatif, de compte unique, de fusion de comptes et
+de licence open source ont été retirées.
 
-Les pistes actuellement envisagées pour conserver un cadre communautaire et bénévole sont:
+## Code du projet
 
-- AGPLv3
-- GPLv3
-- MPL 2.0
-- Apache 2.0
+Le code source est publiquement visible. Aucune licence de réutilisation
+définitive n'est publiée à ce jour.
 
-La décision finale doit être validée après avis de personnes compétentes. Cette note sert de trace interne pour la gouvernance du projet.
+L'absence de fichier `LICENSE` signifie qu'aucune licence open source
+particulière (AGPL, GPL, MPL, Apache ou autre) ne doit être déduite.
 
 ## Contact
 
