@@ -12,8 +12,8 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : LEGAL-02 — régime de personne physique éditant à titre non professionnel
-- **Terminée** : oui, sous réserve de la condition d'anonymat Vercel non vérifiable localement
+- **Scope** : LEGAL-02 — régime de personne physique éditant à titre non professionnel avec anonymat LCEN
+- **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible : la palette doit rester slate / gris clair / blanc, sans gradients visibles ni effets marketing.
@@ -64,10 +64,10 @@ La page sépare explicitement l'édition et la publication, l'hébergement par
 Vercel Inc. et les services techniques fournis par Supabase, Clerk, Resend,
 PostHog et Sentry. Ces derniers ne sont pas présentés comme l'hébergeur du site.
 
-La page ne publie ni domicile ni téléphone personnels : la condition d'anonymat
-de l'article 1-1 II de la LCEN, qui suppose la communication préalable à Vercel
-des éléments personnels nécessaires à l'identification, n'est pas vérifiable
-dans les données de compte accessibles depuis ce checkout. Aucun téléphone
-général de Vercel ni numéro réservé aux notifications DMCA n'est repris.
+La page ne publie ni domicile ni téléphone personnels : le régime d'anonymat de
+l'article 1-1 II de la LCEN est appliqué, les éléments personnels nécessaires à
+l'identification ayant été communiqués à Vercel et restant à sa disposition.
+Aucun téléphone général de Vercel ni numéro réservé aux notifications DMCA
+n'est repris.
 Le diagnostic et les sources sont centralisés dans
 [documentation/legal/README.md](../../../../legal/README.md).

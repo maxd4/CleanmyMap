@@ -21,6 +21,27 @@ const privacyDocumentation = readFileSync(
   new URL("../../../../../documentation/legal/politique-confidentialite.md", import.meta.url),
   "utf8",
 );
+const institutionalIndex = readFileSync(
+  new URL(
+    "../../../../../documentation/pages_site/routes/07-legal/institutionnel-legal-README.md",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const privacySheet = readFileSync(
+  new URL(
+    "../../../../../documentation/pages_site/routes/07-legal/politique-confidentialite/politique-confidentialite-README.md",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const cookieSheet = readFileSync(
+  new URL(
+    "../../../../../documentation/pages_site/routes/07-legal/politique-cookies/politique-cookies-README.md",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 const legalSurfaces = [publicPage, legalDocumentation, pageSheet];
 
@@ -42,6 +63,8 @@ describe("mentions légales contract", () => {
     expect(publicPage).toContain("Services techniques");
     expect(publicPage).toContain("Directeur de la publication");
     expect(publicPage).toContain("article 93-2");
+    expect(publicPage).toContain("régime d&apos;anonymat");
+    expect(publicPage).toContain("communiqués à Vercel");
     expect(publicPage).toContain("Vercel Inc.");
     expect(publicPage).toContain("440 N Barranca Avenue #4133");
     expect(publicPage).toContain("Covina, CA 91723");
@@ -51,6 +74,21 @@ describe("mentions légales contract", () => {
 
     for (const service of ["Supabase", "Clerk", "Resend", "PostHog", "Sentry"]) {
       expect(publicPage).toContain(service);
+    }
+  });
+
+  it("keeps the three legal lots closed across the canonical documentation", () => {
+    expect(legalDocumentation).toContain("LEGAL-01, LEGAL-02 et LEGAL-03 sont clos");
+    expect(institutionalIndex).toContain("LEGAL-01 clos");
+    expect(institutionalIndex).toContain("LEGAL-02 clos");
+    expect(institutionalIndex).toContain("LEGAL-03 clos");
+    expect(cookieSheet).toContain("**Terminée** : oui");
+    expect(privacySheet).toContain("**Terminée** : oui");
+    expect(pageSheet).toContain("**Terminée** : oui");
+
+    for (const source of [publicPage, legalDocumentation, pageSheet, privacyDocumentation]) {
+      expect(source).not.toContain("données de compte accessibles depuis ce checkout");
+      expect(source).not.toContain("sous réserve");
     }
   });
 

@@ -133,9 +133,9 @@ export default function MentionsLegalesPage() {
             </p>
             <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
               Les éléments personnels de l&apos;éditeur ne sont pas publiés ici.
-              La condition permettant de tenir ces éléments à disposition de
-              Vercel au titre de l&apos;article 1-1 II de la LCEN n&apos;est pas vérifiable
-              dans les données de compte disponibles pour ce dépôt.
+              Le régime d&apos;anonymat prévu à l&apos;article 1-1 II de la LCEN est
+              appliqué : les éléments d&apos;identification personnelle nécessaires
+              ont été communiqués à Vercel et restent à sa disposition.
             </p>
           </div>
         </section>

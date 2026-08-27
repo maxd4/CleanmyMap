@@ -8,9 +8,9 @@ Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre el
 |---|---|---|---|---|:---:|---|---|
 | `/conditions-generales-utilisation` | [CGU](./conditions-generales-utilisation/conditions-generales-utilisation-README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/conditions-generales-utilisation/page.tsx |
 | `/contact` | [Contact](./contact/contact-README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/contact/page.tsx |
-| `/mentions-legales` | [Mentions légales](./mentions-legales/mentions-legales-README.md) | légale | légal | LEGAL-02 — personne physique non professionnelle | non | moyenne | apps/web/src/app/mentions-legales/page.tsx |
-| `/politique-confidentialite` | [Politique de confidentialité](./politique-confidentialite/politique-confidentialite-README.md) | légale | légal | LEGAL-01 terminé | non | moyenne | apps/web/src/app/politique-confidentialite/page.tsx |
-| `/politique-cookies` | [Politique cookies](./politique-cookies/politique-cookies-README.md) | légale | légal | LEGAL-01 terminé | non | moyenne | apps/web/src/app/politique-cookies/page.tsx |
+| `/mentions-legales` | [Mentions légales](./mentions-legales/mentions-legales-README.md) | légale | légal | LEGAL-02 clos — personne physique non professionnelle avec anonymat LCEN | non | moyenne | apps/web/src/app/mentions-legales/page.tsx |
+| `/politique-confidentialite` | [Politique de confidentialité](./politique-confidentialite/politique-confidentialite-README.md) | légale | légal | LEGAL-03 clos | non | moyenne | apps/web/src/app/politique-confidentialite/page.tsx |
+| `/politique-cookies` | [Politique cookies](./politique-cookies/politique-cookies-README.md) | légale | légal | LEGAL-01 clos | non | moyenne | apps/web/src/app/politique-cookies/page.tsx |
 
 ## Redirections et alias
 
