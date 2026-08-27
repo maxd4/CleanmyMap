@@ -45,7 +45,7 @@ export function AdminCreatorConsole({
             <>
               <PageHeaderBadge family={pageFamily}>
                 <ShieldHalf size={12} className="mr-2 inline-block align-[-2px]" />
-                Accès max
+                Accès IMU
               </PageHeaderBadge>
               <PageHeaderBadge family={pageFamily} muted>
                 Rôle normalisé: max
@@ -114,7 +114,7 @@ export function AdminCreatorConsole({
                       <p className="font-bold text-white transition-colors group-hover:text-slate-200">
                         {displayName}
                       </p>
-                      <p className="mt-1 text-[10px] italic text-slate-500">Compte super-admin</p>
+                      <p className="mt-1 text-[10px] italic text-slate-500">Compte IMU (super-admin)</p>
                     </td>
                     <td className="px-6 py-6">
                       <span className="rounded-full border border-slate-400/20 bg-slate-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">

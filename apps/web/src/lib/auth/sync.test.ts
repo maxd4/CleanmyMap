@@ -211,7 +211,7 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it("stores IMU as the Supabase role label for the owner", async () => {
+  it("stores max as the canonical Supabase role label for IMU", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,
     });
@@ -233,7 +233,7 @@ describe("syncClerkUserToSupabase", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        role_label: "imu",
+        role_label: "max",
         display_name: "Max Owner",
         display_name_mode: "full_name",
       }),

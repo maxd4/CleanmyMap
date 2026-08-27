@@ -7,6 +7,10 @@ Le contrat canonique d'autorisation est défini dans
 reste un guide compact de compatibilité pour les surfaces et helpers existants
 et ne doit pas maintenir une seconde matrice de permissions.
 
+Règle de vocabulaire : **IMU = super-admin = rôle interne `max`**. `max` est
+l'identifiant technique canonique, `IMU` le libellé produit et `super-admin` un
+alias entrant ; les trois termes ont strictement les mêmes permissions.
+
 ## 1. Glossaire Technique
 
 | Terme | Définition |

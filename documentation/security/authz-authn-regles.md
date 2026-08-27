@@ -66,6 +66,13 @@ Scope
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
 
+Le vocabulaire du rôle privilégié est unifié : **IMU = super-admin = rôle
+interne `max`**. `max` est la valeur technique canonique, `IMU` le libellé
+produit, et `super-admin` (ainsi que `super_admin` et `superadmin`) un alias
+entrant normalisé vers `max`. Aucun de ces termes ne représente un niveau de
+permission différent. Les alias historiques `owner`, `godmode` et `creator`
+restent limités à la compatibilité d'entrée.
+
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
 ## Règles durables pour les tests authentifiés

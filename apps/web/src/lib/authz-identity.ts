@@ -2,6 +2,7 @@ import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { env } from "./env";
 import {
+  normalizeProfileRole,
   resolveProfile,
   type AppProfile,
   type DisplayNameMode,
@@ -176,17 +177,30 @@ export async function normalizeLegacyOwnerMetadata(
   if (publicRole !== "max" && privateRole !== "max") {
     return user;
   }
+
+  const hasLegacyMaxValue = (metadata: ClerkMetadata): boolean =>
+    [metadata?.["role"], metadata?.["profile"]].some(
+      (value) =>
+        typeof value === "string" &&
+        normalizeProfileRole(value) === "max" &&
+        value.trim().toLowerCase() !== "max",
+    );
+
+  if (!hasLegacyMaxValue(user.publicMetadata) && !hasLegacyMaxValue(user.privateMetadata)) {
+    return user;
+  }
+
   try {
     return await client.users.updateUser(user.id, {
       publicMetadata: {
         ...(user.publicMetadata as Record<string, unknown>),
-        role: "imu",
-        profile: "imu",
+        role: "max",
+        profile: "max",
       },
       privateMetadata: {
         ...(user.privateMetadata as Record<string, unknown>),
-        role: "imu",
-        profile: "imu",
+        role: "max",
+        profile: "max",
       },
     });
   } catch (error) {
@@ -212,7 +226,7 @@ export async function getDevAuthBypassSession() {
 
   const bypassRole =
     isLocalhostHost(host) && !process.env["CMM_DEV_AUTH_BYPASS_ROLE"]?.trim()
-      ? "super_admin"
+      ? "max"
       : getDevAuthBypassRole();
 
   return {

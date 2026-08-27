@@ -80,6 +80,25 @@ Override    = dérogation privilégiée hors parcours normal
 
 Un `Parcours` ne constitue jamais une permission serveur.
 
+### Identité canonique du rôle IMU
+
+La règle de nommage est : **IMU = super-admin = rôle interne `max`**.
+
+- `max` est l'identifiant technique canonique utilisé par le code et les
+  données ;
+- `IMU` est l'appellation produit officielle affichée dans l'interface ;
+- `super-admin`, `super_admin` et `superadmin` sont des alias entrants
+  acceptés et normalisés vers `max` ;
+- ces trois termes désignent strictement le même rôle et ne créent aucune
+  différence de permissions ;
+- `owner`, `godmode` et `creator` restent uniquement des alias de
+  compatibilité lorsqu'une donnée legacy les fournit, jamais des rôles ou des
+  libellés canoniques.
+
+Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont
+conservés pour compatibilité documentaire et de navigation. Leur nom ne définit
+pas un rôle distinct.
+
 ## 3. Pas de hiérarchie linéaire des rôles
 
 Ne pas raisonner comme :

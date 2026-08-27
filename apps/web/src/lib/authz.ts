@@ -206,4 +206,5 @@ export const __authz_testables = {
   resolveActorNameFromClerk,
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
+  normalizeLegacyOwnerMetadata,
 };

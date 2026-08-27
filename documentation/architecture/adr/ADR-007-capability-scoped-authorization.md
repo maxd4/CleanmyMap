@@ -18,6 +18,12 @@ admin
 max
 ```
 
+Le rôle interne `max` est l'unique rôle privilégié correspondant au libellé
+produit **IMU**. `super-admin`, `super_admin`, `superadmin` et les alias
+legacy nécessaires (`owner`, `godmode`, `creator`) sont normalisés vers
+`max` à l'entrée ; aucune de ces appellations ne crée un niveau de permission
+distinct.
+
 Ces rôles représentent des responsabilités différentes, mais le code historique contient plusieurs formes d'AuthZ :
 
 - comparaisons directes de rôles ;
@@ -57,7 +63,7 @@ Scientifique  → sanitized analytics
 Entreprise    → organization
 Élu           → territory
 Admin         → global moderation
-Max           → platform administration
+IMU (`max`)   → platform administration
 ```
 
 Les scopes `organization` et `territory` exigent une relation canonique persistée et vérifiable côté serveur.

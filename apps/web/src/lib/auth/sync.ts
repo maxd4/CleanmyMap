@@ -11,6 +11,7 @@ import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
   resolveProfile,
+  type AppProfile,
   type DisplayNameMode,
 } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
@@ -317,8 +318,8 @@ function resolveDisplayNameModeForUser(
   );
 }
 
-function resolvePersistedProfileLabel(profile: string): string {
-  return profile === "max" ? "imu" : profile;
+function resolvePersistedProfileLabel(profile: AppProfile): AppProfile {
+  return profile;
 }
 
 function resolveDisplayNameForUser(

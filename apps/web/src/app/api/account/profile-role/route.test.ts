@@ -121,7 +121,7 @@ describe("POST /api/account/profile-role", () => {
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalled();
   });
 
-  it("stores IMU in Clerk metadata while keeping the internal owner role", async () => {
+  it("stores the canonical max value for the IMU profile", async () => {
     getCurrentUserRoleLabelMock.mockResolvedValue("admin");
     const getUser = vi.fn().mockResolvedValue({
       id: "user-1",
@@ -130,8 +130,8 @@ describe("POST /api/account/profile-role", () => {
     });
     const updateUser = vi.fn().mockResolvedValue({
       id: "user-1",
-      publicMetadata: { role: "imu", profile: "imu", badge: "pioneer" },
-      privateMetadata: { role: "imu", profile: "imu" },
+      publicMetadata: { role: "max", profile: "max", badge: "pioneer" },
+      privateMetadata: { role: "max", profile: "max" },
     });
     clerkClientMock.mockResolvedValue({
       users: { getUser, updateUser },
@@ -155,8 +155,8 @@ describe("POST /api/account/profile-role", () => {
     expect(body.role).toBe("max");
     expect(body.profilePath).toBe("/profil/max");
     expect(updateUser).toHaveBeenCalledWith("user-1", {
-      publicMetadata: { role: "imu", profile: "imu", badge: "pioneer" },
-      privateMetadata: { role: "imu", profile: "imu" },
+        publicMetadata: { role: "max", profile: "max", badge: "pioneer" },
+        privateMetadata: { role: "max", profile: "max" },
     });
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
   });

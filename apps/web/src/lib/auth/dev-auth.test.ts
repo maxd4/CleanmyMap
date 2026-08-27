@@ -32,9 +32,9 @@ describe("dev auth bypass helpers", () => {
     expect(getDevAuthBypassRole()).toBe("admin");
   });
 
-  it("defaults the bypass role to IMU", () => {
+  it("defaults the bypass role to the canonical max value", () => {
     vi.stubEnv("NODE_ENV", "development");
 
-    expect(getDevAuthBypassRole()).toBe("imu");
+    expect(getDevAuthBypassRole()).toBe("max");
   });
 });
