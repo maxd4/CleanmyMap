@@ -36,7 +36,7 @@ export function HarvestPhotoSection({
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">Photo de preuve</p>
-              <p className="text-xs text-slate-400">Optionnelle — améliore la fiabilité</p>
+              <p className="text-xs text-slate-400">Optionnelle — documente la collecte</p>
             </div>
           </div>
           {hasPhotos && (
@@ -123,7 +123,7 @@ export function HarvestPhotoSection({
                   <Sparkles size={13} className="text-violet-500" />
                   <p className="text-xs font-semibold text-violet-800">Estimation IA</p>
                   <span className="ml-auto text-[10px] font-bold text-violet-600">
-                    {Math.round(visionEstimate.wasteKg.confidence * 100)}% confiance
+                    {Math.round(visionEstimate.wasteKg.confidence * 100)}% confiance du modèle
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

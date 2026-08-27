@@ -518,7 +518,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   <SectionDivider
                     icon={ClipboardCheck}
                     title="Validation"
-                    subtitle="La vérification finale avant confirmation, avec le score, les alertes et le récapitulatif d’envoi."
+                    subtitle="La vérification finale avant confirmation, avec les points d’attention et le récapitulatif d’envoi."
                   />
                   <div className="space-y-4">
                     <ActionStepReview
