@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { chromium } from "playwright";
 
 const rootDir = path.resolve("documentation/pages_site");
+const captureOutputRoot = path.resolve("artifacts/screenshots/canonical");
 const indexPath = path.join(rootDir, "README.md");
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const stagingRoot = path.join(os.tmpdir(), "cmm-pages-site-captures");
@@ -150,7 +151,7 @@ async function captureRoute(page, entry) {
 
 async function copyStagedCaptureTree() {
   const stagedRoutesDir = path.join(stagingRoot, "routes");
-  const destinationRoutesDir = path.join(rootDir, "routes");
+  const destinationRoutesDir = path.join(captureOutputRoot, "routes");
   await ensureDir(destinationRoutesDir);
   await fs.cp(stagedRoutesDir, destinationRoutesDir, { recursive: true, force: true });
 }

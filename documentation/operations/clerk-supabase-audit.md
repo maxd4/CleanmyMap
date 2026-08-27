@@ -40,8 +40,8 @@ Le script lit automatiquement les variables d'environnement dans l'ordre suivant
 
 Il génère ensuite :
 
-- `artifacts/clerk-supabase-audit.json`
-- `artifacts/clerk-supabase-audit.csv`
+- `artifacts/audits/clerk-supabase-audit.json`
+- `artifacts/audits/clerk-supabase-audit.csv`
 
 Le rapport te montre :
 
@@ -98,8 +98,8 @@ npm run data:export:clerk
 
 Le script écrit alors :
 
-- `artifacts/clerk-users.json`
-- `artifacts/clerk-users.csv`
+- `artifacts/exports/clerk-users.json`
+- `artifacts/exports/clerk-users.csv`
 
 ## Résultat attendu
 

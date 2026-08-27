@@ -1,7 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -46,7 +48,7 @@ async function main() {
   const actions = await fetchAllActions();
   const now = new Date().toISOString().replace(/[:]/g, "-");
 
-  const backupDir = join(process.cwd(), "backups");
+  const backupDir = join(REPO_ROOT, "artifacts", "backups", "actions");
   await mkdir(backupDir, { recursive: true });
 
   const outPath = join(backupDir, `actions-backup-${now}.json`);

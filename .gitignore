@@ -15,6 +15,7 @@ env/
 .coverage
 coverage.xml
 htmlcov/
+# Generated outputs are centralized below artifacts/; keep legacy locations ignored as a safety net.
 playwright-report/
 test-results/
 node_modules/
@@ -24,6 +25,8 @@ node_modules/
 cache/
 tmp/
 output/
+# CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
+/artifacts/
 **/artifacts/
 **/backups/
 **/scratch/

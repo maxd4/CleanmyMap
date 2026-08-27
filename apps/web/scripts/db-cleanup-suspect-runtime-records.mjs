@@ -323,7 +323,7 @@ async function main() {
     mode: args.apply ? "apply" : "dry-run",
   });
 
-  const backupDir = join(APP_DIR, "backups");
+  const backupDir = join(APP_DIR, "..", "..", "artifacts", "backups", "supabase-cleanup");
   await mkdir(backupDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:]/g, "-");
   const reportPath = join(

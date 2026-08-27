@@ -2,7 +2,7 @@ import path from "node:path";
 import { entries } from "../generate-canonical-pages.mjs";
 import { closeCookieBanner } from "./capture-actions.mjs";
 
-const screenRoot = path.resolve("documentation/pages_site/screen");
+const screenRoot = path.resolve("artifacts/screenshots/pages-site");
 
 const DEFAULT_ACTIONS = [closeCookieBanner("pre")];
 

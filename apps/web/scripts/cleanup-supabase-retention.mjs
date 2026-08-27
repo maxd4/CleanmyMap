@@ -1,7 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -200,10 +202,9 @@ async function main() {
   const { days, dryRun, outDir } = parseArgs();
   const cutoff = buildCutoff(days);
   const timestamp = new Date().toISOString().replace(/[:]/g, "-");
-  const baseDir = resolve(
-    process.cwd(),
-    outDir || join("backups", "supabase-retention", timestamp),
-  );
+  const baseDir = outDir
+    ? resolve(process.cwd(), outDir)
+    : join(REPO_ROOT, "artifacts", "backups", "supabase-retention", timestamp);
 
   await mkdir(baseDir, { recursive: true });
 

@@ -1,9 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const PAGE_SIZE = 1000;
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 export const ARCHIVE_TABLES = [
   { table: "actions", orderColumn: "created_at", role: "runtime" },
@@ -141,10 +142,9 @@ async function main() {
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   const { outDir } = parseArgs();
   const timestamp = new Date().toISOString().replace(/[:]/g, "-");
-  const baseDir = resolve(
-    process.cwd(),
-    outDir || join("backups", "supabase-archive", timestamp),
-  );
+  const baseDir = outDir
+    ? resolve(process.cwd(), outDir)
+    : join(REPO_ROOT, "artifacts", "backups", "supabase-archive", timestamp);
 
   await mkdir(baseDir, { recursive: true });
 

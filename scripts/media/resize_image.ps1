@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Drawing
 
 $inputPath = "C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main\documentation\liberte-UX-UI\01-HOMEPAGE\homepage-backup.png"
-$outputPath = "C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main\documentation\liberte-UX-UI\01-HOMEPAGE\homepage sonnet 4.5.png"
+$outputPath = "C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main\artifacts\screenshots\legacy\homepage sonnet 4.5.png"
 
 $originalImage = [System.Drawing.Image]::FromFile($inputPath)
 $maxDimension = 3000
@@ -13,6 +13,8 @@ $newHeight = [int]($originalImage.Height * $ratio)
 
 Write-Host "Original: $($originalImage.Width) x $($originalImage.Height)"
 Write-Host "Resized: $newWidth x $newHeight"
+
+New-Item -ItemType Directory -Path (Split-Path -Parent $outputPath) -Force | Out-Null
 
 $resizedImage = New-Object System.Drawing.Bitmap($newWidth, $newHeight)
 $graphics = [System.Drawing.Graphics]::FromImage($resizedImage)
