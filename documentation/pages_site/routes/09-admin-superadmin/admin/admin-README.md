@@ -35,7 +35,7 @@
 - Le cockpit charge indépendamment les actions pending, les demandes de participation pending, les signalements pending, l’inbox créateur, les publications partenaires et le journal d’audit. Chaque source expose un état disponible ou indisponible ; une erreur n’est jamais convertie en zéro métier.
 - Les quatre indicateurs opérationnels sont : `Agir à traiter` (actions + participations), `Signalements à traiter` (spots / lieux propres), `Réseau à traiter` (inbox créateur + publications pending_admin_review) et `Incidents récents` (audit outcome=error). Une dépendance indisponible est affichée comme `Partiel` ou `Indisponible`.
 - L’alerte principale suit l’ordre indisponibilité des sources, incidents d’audit, backlog réel, puis absence d’urgence lorsque toutes les lectures ont réussi et que les files sont vides.
-- Les blocs de modération conservés sont `Réseau & Discussions`, `Cartographie & Impact`, `Agir` et `Accueil & Pilotage`. Le journal utilise le deep-link `#workflow-administration`; Cartographie & Impact conserve `/admin?moderation=signalements#workflow-administration`.
+- Les quatre files visibles sont `Agir`, `Cartographie & Impact`, `Réseau & Discussions` et `Audit & supervision`. La file d’audit conserve l’id interne `accueil-pilotage` pour préserver le contrat existant. Le journal utilise le deep-link `#workflow-administration`; Cartographie & Impact conserve `/admin?moderation=signalements#workflow-administration`.
 - Les blocs fictifs `Apprendre` et `Classement global` ne font pas partie de cette surface.
 - **Bulles / cartes / contextes trop nombreux** : la hiérarchie du cockpit a été resserrée dans ce lot ; les écrans détaillés de services, godmode et workflow restent volontairement denses.
 - **Composants UI concernés** :

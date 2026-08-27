@@ -421,11 +421,11 @@ export function buildModerationBlockSummaries(
     {
       id: "accueil-pilotage",
       number: 1,
-      label: "Accueil & Pilotage",
+      label: "Audit & supervision",
       count: pendingAuditErrors?.length ?? null,
       availability: sources.audit.status,
       description:
-        "Les incidents d’audit récents et les signaux de supervision restent visibles en dernier niveau de bloc.",
+        "Le journal d’audit et les signaux de supervision restent regroupés ici pour relire les incidents.",
       href: "#workflow-administration",
       ctaLabel: "Voir le journal",
       accent: "rose",
