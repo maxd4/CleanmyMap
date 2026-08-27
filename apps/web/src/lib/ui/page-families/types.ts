@@ -1,4 +1,4 @@
-import type { BackdropToneKey } from "@/lib/ui/backdrop-tone";
+import type { BackdropToneKey } from "@/lib/ui/backdrop-types";
 import type { RubriqueTheme } from "@/components/ui/rubrique-card";
 
 /** Identifiants alignés sur `documentation/pages_site/routes/`. */

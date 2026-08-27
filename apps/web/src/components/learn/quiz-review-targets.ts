@@ -1,11 +1,8 @@
 import { getQuizAccessType, type QuizAccessTypeId } from "./quiz-access-types.ts";
 import type { QuizReasoningType } from "./quiz-reasoning-types.ts";
+import type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 
-export type QuizQuestionCategory =
-  | "tri-recyclage"
-  | "action-terrain"
-  | "climat-biodiversite"
-  | "impact-methodologie";
+export type { QuizQuestionCategory } from "@/lib/learning/quiz-question-categories";
 
 export const QUIZ_CATEGORY_LABELS: Record<QuizQuestionCategory, string> = {
   "tri-recyclage": "Tri & Recyclage",

@@ -15,7 +15,7 @@ export type ActionSourceName = "actions" | "spots" | "local";
 
 import type { ActionDataQualitySummary } from "./quality/data-quality-types";
 import type { ActionQualityGrade } from "./quality/quality-rules";
-import type { WasteCategorySlug } from "@/lib/waste";
+import type { WasteCategorySlug } from "@/lib/waste/types";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";

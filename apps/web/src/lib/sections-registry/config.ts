@@ -1,4 +1,4 @@
-import type { RubriqueCategory, RubriqueDefinition } from "./types";
+import type { RubriqueCategory, RubriqueDefinition } from "./base-types";
 import {
   ADMIN_GODMODE_ROUTE,
   ADMIN_ROUTE,
