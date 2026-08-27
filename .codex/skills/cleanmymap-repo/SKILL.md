@@ -33,7 +33,7 @@ Current major baselines:
 
 - Next.js 16 App Router;
 - React 19;
-- TypeScript 6;
+- TypeScript 7;
 - Tailwind CSS 4;
 - Clerk;
 - Supabase/PostgreSQL;
@@ -78,14 +78,14 @@ The active workspace CLI configuration is under:
 apps/web/supabase/
 ```
 
-Before changing migrations, inspect both existing migration trees until ADR-006 is fully applied:
+The only editable and canonical migration tree is:
 
 ```txt
 apps/web/supabase/migrations/
-supabase/migrations/
 ```
 
-Never update only one tree blindly.
+Inspect and modify only this tree. Do not maintain or synchronize a second
+root-level migration tree.
 
 ## Documentation routing
 
@@ -155,7 +155,7 @@ and compares all files, not only `SKILL.md`:
 
 ```bash
 npm run check:agent-skills
-node scripts/check-agent-skill-mirrors.mjs --sync
+node scripts/checks/check-agent-skill-mirrors.mjs --sync
 ```
 
 Use `--sync` only after reviewing the canonical `.agents/skills/` tree. Do not

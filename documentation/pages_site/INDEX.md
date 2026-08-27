@@ -67,10 +67,14 @@ npm run check:pages-site-drift
 | `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
 | `/actions/new` | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-un-formulaire` | [Formulaire de groupe](./routes/02-agir/formulaire-de-groupe/formulaire-de-groupe-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `dynamic` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
+| `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
 | `/sections/weather` | [Organiser une action](./routes/02-agir/weather/weather-README.md) | `public-visible` | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `protected` | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
+
+`/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
+de l'App Router. Cette propriété décrit la forme de la route et ne remplace
+pas son contrôle d'accès, qui est `protected`.
 
 ### Alias et redirections Agir
 
