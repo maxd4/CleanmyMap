@@ -238,9 +238,10 @@ maintenance/python/                       maintenance Python hors runtime princi
 documentation/                            documentation structurée
 ```
 
-`apps/web/supabase/migrations/` est l'unique arbre de migrations éditable.
-Ne pas créer ou réintroduire `supabase/migrations/`; le garde-fou
-`npm run audit:supabase-migration-trees` bloque ce second arbre.
+Les règles propres aux frontières applicatives sont précisées dans les
+`AGENTS.md` locaux : `apps/web/AGENTS.md`,
+`apps/web/src/app/api/AGENTS.md`, `apps/web/supabase/AGENTS.md`,
+`apps/web/scripts/AGENTS.md` et `apps/mobile/AGENTS.md`.
 
 ## Suppression et dead-code
 
@@ -420,18 +421,9 @@ Avant une requête coûteuse :
 documentation/development/supabase-query-optimization-playbook.md
 ```
 
-### Cycle de modification Supabase
-
-1. identifier schéma, RLS, RPC, trigger, fonction, Storage, seed ou type concerné ;
-2. inspecter les migrations actuelles ;
-3. créer une migration versionnée ;
-4. tester localement quand possible ;
-5. vérifier la reconstruction ;
-6. vérifier les types ;
-7. vérifier les appels Next.js ou mobile ;
-8. vérifier les permissions ;
-9. ne jamais utiliser `service_role` comme contournement client ;
-10. appliquer à distance seulement après validation appropriée.
+Les détails de mise en œuvre propres à `apps/web/supabase/` sont définis dans
+son `AGENTS.md` local ; les invariants de sécurité et de versionnement
+ci-dessus restent applicables à tout le dépôt.
 
 ### Authentification et profils
 
@@ -465,19 +457,6 @@ Référence :
 documentation/security/authz-authn-regles.md
 ```
 
-### Client et serveur
-
-- Garder les Client Components minces.
-- Préférer Server Components, Server Actions ou services existants lorsque cohérent.
-- Ne pas déplacer de logique sensible vers le client.
-- Ne pas ajouter `"use client"` sans nécessité précise.
-
-### Leaflet et SSR
-
-Charger les composants Leaflet avec `next/dynamic` et `{ ssr: false }`.
-
-Ne jamais accéder à `window`, `document`, `navigator` ou une API navigateur pendant le SSR.
-
 ### Texte public
 
 Tout texte visible par l'utilisateur est en français, sauf surface explicitement localisée.
@@ -492,17 +471,6 @@ le helper commun `apps/web/src/lib/formatters/score.ts` et maintenir le garde
 anti-régression associé. La règle complète et ses exceptions pour les formules
 techniques sont documentées dans
 `documentation/development/ui-score-formatting.md`.
-
-### Homepage, header et footer
-
-Ne pas modifier sans demande explicite :
-
-```txt
-apps/web/src/app/page.tsx
-apps/web/src/components/accueil/
-```
-
-Ne pas modifier le header global ni le footer global sans demande explicite.
 
 ---
 
@@ -768,12 +736,9 @@ Il est interdit de :
 
 - créer un dépôt parallèle ou worktree sans autorisation ;
 - créer des fichiers racine non justifiés ;
-- modifier la homepage, le header ou le footer sans demande ;
 - utiliser `service_role` côté client ;
 - désactiver RLS pour débloquer un flux ;
 - utiliser du SQL brut dans le code applicatif ;
-- accéder aux APIs navigateur pendant le SSR ;
-- charger Leaflet côté SSR ;
 - inventer des sources ou chiffres ;
 - laisser des placeholders ou routes cassées après une modification ;
 - prétendre avoir testé sans validation réelle ;
