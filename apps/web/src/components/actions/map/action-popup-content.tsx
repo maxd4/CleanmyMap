@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  getActionOperationalContext,
-  getGeometryPresentation,
   mapItemCigaretteButts,
   mapItemCoordinates,
   mapItemLocationLabel,
@@ -10,6 +8,8 @@ import {
   mapItemPostActionPollutionScore,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import { getActionOperationalContext } from "@/lib/actions/operational-context";
+import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { formatActionSourceLabel } from "@/lib/actions/source-presentation";
 import { ActionMapItem } from "@/lib/actions/types";
 import type {

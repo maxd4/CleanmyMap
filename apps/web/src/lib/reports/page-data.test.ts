@@ -12,9 +12,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/actions/data-contract", () => ({
-  getActionOperationalContext: mocks.getActionOperationalContext,
   toActionListItem: mocks.toActionListItem,
   toActionMapItem: mocks.toActionMapItem,
+}));
+
+vi.mock("@/lib/actions/operational-context", () => ({
+  getActionOperationalContext: mocks.getActionOperationalContext,
 }));
 
 vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({

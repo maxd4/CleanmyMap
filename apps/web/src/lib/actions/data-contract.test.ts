@@ -1,13 +1,13 @@
 import { expect, it } from "vitest";
 import {
   buildActionDataContract,
-  getActionOperationalContext,
   mapItemDrawing,
   mapItemShouldRenderPoint,
   normalizeCreatePayload,
   toActionMapItem,
   toContractCreatePayload,
 } from "./data-contract";
+import { getActionOperationalContext } from "./operational-context";
 
 it("maps polygon geometry to map payload without breaking point fields", () => {
   const contract = buildActionDataContract({

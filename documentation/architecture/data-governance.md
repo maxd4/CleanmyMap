@@ -38,6 +38,12 @@ apps/web/src/lib/actions/data-contract.ts
 apps/web/src/lib/domain-language.ts
 ```
 
+`apps/web/src/lib/actions/data-contract.ts` est une entrée publique étroite :
+elle expose explicitement le contrat Actions, ses mappers et ses builders, sans
+réexporter les types généraux ni les sous-domaines d'impact, de géométrie, de
+contexte opérationnel ou de pollution. Les modules internes Actions importent
+directement leur module propriétaire.
+
 ## Entités principales
 
 | Entité | Table principale | Contrat |
@@ -211,6 +217,11 @@ apps/web/src/lib/actions/unified-source.ts
 ```
 
 est un point central de normalisation des actions.
+
+Ce fichier racine est la façade publique de la capacité unifiée. Le dossier
+`apps/web/src/lib/actions/unified-source/` contient son implémentation interne :
+les consommateurs hors de ce sous-domaine utilisent `unified-source.ts` et ne
+doivent pas créer un second chemin public vers `unified-source/index.ts`.
 
 Toute ingestion externe, y compris l'import administrateur, doit appeler la
 normalisation de ce module avant l'ecriture dans `actions`, puis utiliser le store

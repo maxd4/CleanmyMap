@@ -1,6 +1,6 @@
-import type { ActionDataContract } from "./data-contract";
+import type { ActionDataContract } from "./contracts/contract-model";
 import { evaluateActionQuality } from "./quality/quality";
-import { toActionListItem } from "./data-contract";
+import { toActionListItem } from "./contracts/contract-mappers";
 import type { ActionImpactLevel, ActionQualityGrade } from "./types";
 
 export type ActionInsights = {

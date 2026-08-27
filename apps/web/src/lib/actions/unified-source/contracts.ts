@@ -2,7 +2,7 @@ import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/geometry/d
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import {
   buildActionDataContract,
-} from "@/lib/actions/data-contract";
+} from "@/lib/actions/contracts/contract-model";
 import {
   auditActionData,
 } from "@/lib/actions/quality/data-quality";
@@ -15,7 +15,7 @@ import { normalizeCreatePayload } from "@/lib/actions/contracts/contract-builder
 import type {
   ActionDataContract,
   ActionEntityType,
-} from "@/lib/actions/data-contract";
+} from "@/lib/actions/contracts/contract-model";
 import type {
   ActionMapViewportQuery,
   ActionSourceName,

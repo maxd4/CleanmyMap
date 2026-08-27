@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildActionDataContract } from "@/lib/actions/data-contract";
+import { buildActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   buildTrashSpotterActionableCandidates,
   classifyTrashSpotterSafety,

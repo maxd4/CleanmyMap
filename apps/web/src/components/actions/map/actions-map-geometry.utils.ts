@@ -1,11 +1,11 @@
 import type { LatLngTuple } from "leaflet";
 import type { ActionDrawing, ActionGeometryKind, ActionMapItem } from "@/lib/actions/types";
 import {
-  getGeometryPresentation,
   mapItemCoordinates,
   mapItemDrawing,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
+import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import type { GeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { isRenderableDrawing } from "@/lib/actions/geometry/derived-geometry";
 

@@ -1,4 +1,6 @@
-import { getActionOperationalContext, toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
+import { toActionListItem, toActionMapItem } from "@/lib/actions/data-contract";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
+import { getActionOperationalContext } from "@/lib/actions/operational-context";
 import { loadCachedReportCommunityEvents } from "@/lib/community/report-events";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { filterContractsToWindow } from "@/lib/pilotage/metrics";

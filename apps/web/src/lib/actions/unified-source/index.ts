@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ACTION_ENTITY_TYPES } from "@/lib/actions/data-contract";
-import type { ActionEntityType } from "@/lib/actions/data-contract";
+import { ACTION_ENTITY_TYPES } from "@/lib/actions/types";
+import type {
+  ActionDataContract,
+  ActionEntityType,
+} from "@/lib/actions/contracts/contract-model";
 import {
   type UnifiedActionContractsParams,
   type UnifiedSourceHealth,
@@ -47,7 +50,7 @@ export async function fetchUnifiedActionContracts(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
 ): Promise<{
-  items: import("@/lib/actions/data-contract").ActionDataContract[];
+  items: ActionDataContract[];
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
 }> {
