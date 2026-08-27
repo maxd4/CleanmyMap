@@ -5,9 +5,9 @@ import {
  buildMonthRows,
  buildExecutiveNarrative,
  buildRouteSteps,
- computeReportModel,
- computeCommunityEngagementMetrics,
-} from "@/lib/reports/report-model";
+} from "@/lib/reports/report-model/builders";
+import { computeCommunityEngagementMetrics } from "@/lib/reports/report-model/metrics";
+import { computeReportModel } from "@/lib/reports/report-model/compute-report-model";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 
 function makeListItem(overrides: Partial<ActionListItem> = {}): ActionListItem {

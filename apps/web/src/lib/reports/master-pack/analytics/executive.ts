@@ -1,9 +1,9 @@
+import { average } from "@/lib/reports/report-model/math";
 import {
-  average,
   toFrNumber,
   toFrInt,
   toFrOptionalNumber,
-} from "@/lib/reports/report-model";
+} from "@/lib/reports/report-model/formatters";
 import type {
   ReportExecutiveNarrative,
   ReportModel,

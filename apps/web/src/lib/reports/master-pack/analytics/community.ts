@@ -1,6 +1,6 @@
 import type { ActionListItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
-import { computeCommunityEngagementMetrics } from "@/lib/reports/report-model";
+import { computeCommunityEngagementMetrics } from "@/lib/reports/report-model/metrics";
 
 export function computeCommunityMetrics(actions: ActionListItem[], events: CommunityEventItem[]) {
   const rsvp = events.reduce(

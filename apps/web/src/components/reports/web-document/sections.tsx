@@ -8,7 +8,7 @@ import {
   toFrNumber,
   toFrOptionalInt,
   toFrOptionalNumber,
-} from "@/lib/reports/report-model";
+} from "@/lib/reports/report-model/formatters";
 import { GeoCoverageRing, InsightBox, MetricCard, MonthlyBars, ReportPage, ReportTable } from "./ui";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";

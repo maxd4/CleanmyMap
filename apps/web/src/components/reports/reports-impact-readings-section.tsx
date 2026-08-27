@@ -2,7 +2,7 @@ import { ArrowRight, CalendarDays, Eye, FileText, Map, ShieldCheck, Sparkles } f
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { ReportModel } from "@/lib/reports/report-model/types";
-import { toFrInt, toFrNumber } from "@/lib/reports/report-model";
+import { toFrInt, toFrNumber } from "@/lib/reports/report-model/formatters";
 import { SectionHeader } from "@/components/ui/page-structure";
 
 type ReportsImpactReadingsSectionProps = {

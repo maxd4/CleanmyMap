@@ -7,7 +7,7 @@ import {
   toFrDate,
   toFrOptionalInt,
   toFrOptionalNumber,
-} from "@/lib/reports/report-model";
+} from "@/lib/reports/report-model/formatters";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { buildPdfChapterHeader, buildPdfPrintStyles } from "./generate-pdf-html.templates";
 
