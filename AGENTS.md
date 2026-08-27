@@ -68,6 +68,10 @@ intermédiaires ne doivent pas commencer par ce canari.
   explicite ; ne jamais pousser avec `--force` ni réécrire l'historique publié ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes et l'égalité des SHAs `main`/`origin/main`.
+- lorsqu'une vérification effective du site web est demandée, comparer le
+  déploiement actif avec le `main` actuel ; si le déploiement est obsolète,
+  redéployer Vercel depuis ce `main` avant de vérifier le site et ne pas tirer
+  de conclusion à partir d'une version plus ancienne.
 
 Un agent externe peut lire et préparer une analyse ou des fichiers, mais ne
 doit pas écrire sans autorisation. L'intégrateur local vérifie la cohérence du
