@@ -11,4 +11,12 @@ describe("actions map freshness utils", () => {
     expect(formatMapFreshnessLabel(null)).toBeNull();
     expect(formatMapFreshnessLabel(Number.NaN)).toBeNull();
   });
+
+  it("describes data refresh time rather than terrain pollution", () => {
+    const label = formatMapFreshnessLabel(Date.parse("2026-08-27T14:32:00.000Z"));
+
+    expect(label).toMatch(/^Dernière actualisation /);
+    expect(label).not.toContain("pollution");
+    expect(label).not.toContain("terrain");
+  });
 });
