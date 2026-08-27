@@ -40,7 +40,6 @@ describe("actions map filters utils", () => {
     const filters = buildDefaultActionsMapFilters(120);
     expect(filters.days).toBe(120);
     expect(filters.dateScope).toBe("current_year");
-    expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
     expect(filters.zoneQuery).toBe("");
@@ -51,7 +50,6 @@ describe("actions map filters utils", () => {
     const filters = normalizeActionsMapFilters(
       {
         days: 99999,
-        statusFilter: "archived",
         impactFilter: "massif",
         qualityMin: -40,
         zoneQuery: "  République   ",
@@ -62,7 +60,6 @@ describe("actions map filters utils", () => {
 
     expect(filters.days).toBe(90);
     expect(filters.dateScope).toBe("all_time");
-    expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
     expect(filters.zoneQuery).toBe("République");
@@ -86,14 +83,14 @@ describe("actions map filters utils", () => {
     expect(currentYear.days).toBe(90);
   });
 
-  it("normalizes legacy all or rejected status filters to approved", () => {
-    expect(
-      normalizeActionsMapFilters({ statusFilter: "all" }, 90).statusFilter,
-    ).toBe("approved");
-    expect(
-      normalizeActionsMapFilters({ statusFilter: "rejected" }, 90)
-        .statusFilter,
-    ).toBe("approved");
+  it("ignores legacy persisted status filters", () => {
+    const filters = normalizeActionsMapFilters(
+      { statusFilter: "all", impactFilter: "critique" },
+      90,
+    );
+
+    expect(filters).not.toHaveProperty("statusFilter");
+    expect(filters.impactFilter).toBe("critique");
   });
 
   it("reads defaults when storage is empty or invalid", () => {
@@ -112,7 +109,6 @@ describe("actions map filters utils", () => {
       {
         days: 3650,
         dateScope: "all_time",
-        statusFilter: "pending",
         impactFilter: "critique",
         qualityMin: 70,
         zoneQuery: "  Canal Saint-Martin  ",

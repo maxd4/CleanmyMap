@@ -30,7 +30,6 @@ type MapControlTowerProps = {
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onZoneQueryChange: (zoneQuery: string) => void;
   onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
-  onStatusChange: (status: ActionsMapFilters["statusFilter"]) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
 };
@@ -46,7 +45,6 @@ export function MapControlTower({
   mapExportTargetRef,
   onZoneQueryChange,
   onDateScopeChange,
-  onStatusChange,
   onCategoryToggle,
   onReset,
 }: MapControlTowerProps) {
@@ -118,7 +116,6 @@ export function MapControlTower({
         categoryCounts={categoryCounts}
         onZoneQueryChange={onZoneQueryChange}
         onDateScopeChange={onDateScopeChange}
-        onStatusChange={onStatusChange}
         onCategoryToggle={onCategoryToggle}
         onReset={onReset}
       />

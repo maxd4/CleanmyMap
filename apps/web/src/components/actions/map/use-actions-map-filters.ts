@@ -9,7 +9,6 @@ import {
   writeActionsMapFiltersToStorage,
   type ActionsMapFilters,
   type ActionsMapDateScope,
-  type ActionsMapStatusFilter,
 } from "./actions-map-filters.utils";
 
 export function useActionsMapFilters(initialDays: number) {
@@ -32,8 +31,6 @@ export function useActionsMapFilters(initialDays: number) {
       setFilters((current) => ({ ...current, days })),
     setDateScope: (dateScope: ActionsMapDateScope) =>
       setFilters((current) => ({ ...current, dateScope })),
-    setStatusFilter: (statusFilter: ActionsMapStatusFilter) =>
-      setFilters((current) => ({ ...current, statusFilter })),
     setImpactFilter: (impactFilter: ActionImpactLevel | "all") =>
       setFilters((current) => ({ ...current, impactFilter })),
     setQualityMin: (qualityMin: number) =>

@@ -5,13 +5,7 @@ import type { MarkerCategory } from "@/components/actions/map-marker-categories"
 import type {
   ActionsMapFilters,
   ActionsMapDateScope,
-  ActionsMapStatusFilter,
 } from "./actions-map-filters.utils";
-
-const STATUS_OPTIONS: Array<{ value: ActionsMapStatusFilter; label: string }> = [
-  { value: "all", label: "Toutes les actions" },
-  { value: "approved", label: "Actions validées" },
-];
 
 const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
   { value: "blue", label: "Faible" },
@@ -30,7 +24,6 @@ type ActionsMapFilterControlsProps = {
   categoryCounts: Record<MarkerCategory, number>;
   onZoneQueryChange: (zoneQuery: string) => void;
   onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
-  onStatusChange: (status: ActionsMapStatusFilter) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
 };
@@ -40,7 +33,6 @@ export function ActionsMapFilterControls({
   categoryCounts,
   onZoneQueryChange,
   onDateScopeChange,
-  onStatusChange,
   onCategoryToggle,
   onReset,
 }: ActionsMapFilterControlsProps) {
@@ -78,7 +70,7 @@ export function ActionsMapFilterControls({
         </p>
       </label>
 
-      <div className="min-w-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_auto]">
+      <div className="min-w-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1fr)_auto]">
         <label className="min-w-0 flex flex-col gap-1">
           <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
             Période
@@ -92,25 +84,6 @@ export function ActionsMapFilterControls({
           >
             <option value="current_year">Année en cours</option>
             <option value="all_time">Depuis la création</option>
-          </select>
-        </label>
-
-        <label className="min-w-0 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-            Statut
-          </span>
-          <select
-            value={filters.statusFilter}
-            onChange={(event) =>
-              onStatusChange(event.target.value as ActionsMapStatusFilter)
-            }
-            className="h-11 w-full min-w-0 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12 focus-visible:ring-4 focus-visible:ring-sky-400/20"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
           </select>
         </label>
 
