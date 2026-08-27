@@ -22,12 +22,15 @@ const TABLES = [
   { table: "community_bug_reports", createdColumn: "created_at" },
   { table: "promotion_requests", createdColumn: "created_at" },
   { table: "partner_onboarding_requests", createdColumn: "created_at" },
+  // RGPD requests are personal data and must follow the same explicit cleanup path.
+  { table: "contact_requests", createdColumn: "created_at" },
 ];
 
 const LOCAL_STORE_FILES = [
   "community_bug_reports.json",
   "promotion_requests.json",
   "partner_onboarding_requests.json",
+  "contact_requests.json",
 ];
 
 const STORAGE_BUCKETS = ["action-photos", "chat-attachments"];
@@ -186,11 +189,13 @@ async function pruneLocalStore(fileName, cutoff, outDir) {
     const expired = records.filter((record) => isOlderThan(record?.createdAt, cutoff));
     const kept = records.filter((record) => !isOlderThan(record?.createdAt, cutoff));
 
+    // Retention archives are operational count manifests, never a second copy
+    // of personal data submitted through the local store.
     await exportJson(outDir, join("archives", "local-db", fileName), {
       exportedAt: new Date().toISOString(),
       source: fileName,
+      cutoff: cutoff.toISOString(),
       count: expired.length,
-      items: expired,
     });
     return { expired: expired.length, kept: kept.length };
   } catch {
@@ -218,7 +223,7 @@ async function main() {
 
   for (const { table, createdColumn, deleteUsing } of TABLES) {
     try {
-      const { count, rows } = await deleteTableRows(
+      const { count } = await deleteTableRows(
         table,
         deleteUsing ?? createdColumn,
         cutoff,
@@ -227,8 +232,8 @@ async function main() {
       await exportJson(baseDir, join("archives", "tables", `${table}.json`), {
         exportedAt: new Date().toISOString(),
         table,
+        cutoff: cutoff.toISOString(),
         count,
-        items: rows,
       });
       summary.tables.push({ table, deleted: dryRun ? 0 : count, archived: count });
     } catch (error) {
@@ -245,8 +250,8 @@ async function main() {
       await exportJson(baseDir, join("archives", "storage", `${bucket}.json`), {
         exportedAt: new Date().toISOString(),
         bucket,
+        cutoff: cutoff.toISOString(),
         count: paths.length,
-        items: paths,
       });
       summary.buckets.push({ bucket, deleted: dryRun ? 0 : paths.length, archived: paths.length });
       if (!dryRun && paths.length > 0) {

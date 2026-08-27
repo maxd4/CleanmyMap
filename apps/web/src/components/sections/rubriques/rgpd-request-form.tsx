@@ -352,7 +352,7 @@ export function RgpdRequestForm() {
         <div className="flex items-center justify-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-500">
            <div className="flex items-center gap-1.5"><Shield size={12} /> {fr ? "Conformité RGPD" : "GDPR Compliant"}</div>
            <div className="h-1 w-1 rounded-full bg-slate-300" />
-           <span>{fr ? "Délai : 1 mois" : "Response : 1 month"}</span>
+            <span>{fr ? "Réponse : 1 mois, prolongeable de 2 mois si nécessaire" : "Response: 1 month, extendable by 2 months when necessary"}</span>
         </div>
       </div>
     </motion.form>

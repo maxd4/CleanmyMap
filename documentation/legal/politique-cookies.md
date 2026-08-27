@@ -44,43 +44,43 @@ Ces cookies sont nécessaires au fonctionnement du site. Vous ne pouvez pas les 
 
 Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont également synchronisées via cookies `SameSite=Lax` lorsqu'elles sont actives. Le mode d'affichage en attente de synchronisation reste en `localStorage` (`cleanmymap.display_mode_pending_sync`).
 
-### 3.2 Cookies Analytiques (Consentement Requis)
+### 3.2 Services soumis au consentement analytics
 
 Ces cookies permettent d'analyser la navigation pour améliorer le service.
 
 | Service | Description | Consentement |
 |---------|-------------|---------------|
-| **PostHog** | Analytics open-source, données UE | Requis |
+| **PostHog** | Analytics et mesure d'audience | Requis |
 | **Vercel Analytics** | Mesure de performance et Core Web Vitals | Requis |
 | **Vercel Speed Insights** | Analyse des temps de chargement | Requis |
-| **Sentry** | Suivi des erreurs techniques | Intérêt légitime (sécurité) |
+
+Sentry n'est pas un service analytics soumis au consentement. Lorsqu'il est
+activé par une DSN, il est utilisé pour l'observabilité, la sécurité et le
+diagnostic sur la base de l'intérêt légitime.
 
 ---
 
 ## 4. Détail des Outils Analytiques
 
 ### PostHog
-- **Type** : Analytics open-source auto-hébergé
-- **Location** : Union Européenne (Autriche)
-- **Données** : Événements de navigation anonymisés
+- **Type** : Analytics et mesure d'audience
+- **Configuration** : l'hôte UE est la valeur par défaut du projet, mais l'hôte est configurable.
+- **Données** : événements de parcours envoyés après consentement ; aucune anonymisation supplémentaire n'est déclarée ici comme garantie.
 - **Consentement** : Requis - désactivé si pas de consentement
 - **Note** : le parrainage et les liens d'invitation ne reposent pas sur un cookie dédié ; ils sont suivis en base de données via le profil utilisateur.
 
 ### Vercel Analytics
 - **Type** : Mesure de performance web
-- **Location** : USA (Vercel)
 - **Données** : Métriques de performance (FCP, LCP, CLS)
 - **Consentement** : Requis - désactivé si pas de consentement
 
 ### Vercel Speed Insights
 - **Type** : Analyse des temps de chargement
-- **Location** : USA (Vercel)
 - **Données** : Métriques de vitesse et performances
 - **Consentement** : Requis - désactivé si pas de consentement
 
 ### Sentry
 - **Type** : Monitoring et error tracking
-- **Location** : USA
 - **Données** : Erreurs techniques, stack traces, contexte utilisateur
 - **Consentement** : Intérêt légitime (sécurité) - activé sans consentement explicite
 - **Base légale** : Article 6.1.f RGPD - intérêt légitime pour la sécurité du service
@@ -131,7 +131,7 @@ Nous n'avons pas de contrôle sur ces cookies tiers. Veuillez consulter leurs po
 | Cookies essentiels | Session |
 | Cookies analytiques configurés par CleanMyMap | 6 mois |
 | Consentement | 6 mois |
-| Logs techniques | 12 mois |
+| Journaux techniques | Période nécessaire à la sécurité et au diagnostic ; aucune durée fixe n'est configurée par ce dépôt |
 
 ---
 
@@ -146,7 +146,7 @@ En cas de modification substantielle, une notification sera affichée sur le sit
 ## 9. Contact
 
 Pour toute question concernant cette politique de cookies :
-- **Email** : maxence.drm@gmail.com
+- **Point de contact actuellement configuré** : contact@cleanmymap.fr
 
 ---
 

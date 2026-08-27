@@ -7,7 +7,7 @@ Ce dossier contient l'ensemble des documents juridiques de CleanMyMap.
 | Document | Description |
 |----------|-------------|
 | [Conditions Générales d'Utilisation](conditions-generales-utilisation.md) | CGU - Règles d'utilisation de la plateforme |
-| [Politique de Confidentialité](politique-confidentialité.md) | RGPD - Protection des données personnelles |
+| [Politique de Confidentialité](politique-confidentialite.md) | RGPD - Protection des données personnelles |
 | [Politique des Cookies](politique-cookies.md) | Gestion des cookies et traceurs |
 | [Charte du Bénévole](charte-benevole.md) | Droits et devoirs des bénévoles |
 
@@ -19,7 +19,7 @@ Ces documents sont également accessibles directement depuis la plateforme Clean
 
 Ces documents sont régulièrement mis à jour pour refléter les changements dans nos services et la réglementation applicables.
 
-Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, le cycle de consentement analytics de 6 mois, ainsi que les évolutions des fonctionnalités communautaires.
+Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, le cycle de consentement analytics de 6 mois, les traitements Sentry d'observabilité et les critères de rétention réellement implémentés.
 
 **Dernière mise à jour du périmètre cookies et analytics :** 27 août 2026
 
@@ -56,7 +56,9 @@ restent des services techniques distincts et ne sont pas présentés comme
 l'hébergeur du site.
 
 La reprise de LEGAL-02 devra fournir ces informations avant toute modification
-de la page, de la documentation juridique ou l'ajout du test statique demandé.
+de `/mentions-legales` ou insertion du bloc d'identité dans les documents qui en
+dépendent. Les autres documents juridiques peuvent être réconciliés avec les
+traitements runtime sans déduire ces informations manquantes.
 
 Références vérifiées le 27 août 2026 :
 
@@ -80,7 +82,7 @@ La décision finale doit être validée après avis de personnes compétentes. C
 ## Contact
 
 Pour toute question juridique :
-- **Email** : maxence.drm@gmail.com
+- **Point de contact actuellement configuré** : contact@cleanmymap.fr
 
 ---
 
