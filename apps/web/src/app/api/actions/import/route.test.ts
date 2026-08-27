@@ -7,6 +7,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const verifyDryRunProofMock = vi.hoisted(() => vi.fn());
 const createDryRunProofMock = vi.hoisted(() => vi.fn());
 const hashImportPayloadMock = vi.hoisted(() => vi.fn());
+const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -21,7 +22,7 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 vi.mock("@/lib/admin/operation-audit", () => ({
-  appendAdminOperationAudit: vi.fn().mockResolvedValue(undefined),
+  appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
 vi.mock("@/lib/admin/dry-run-proof", () => ({
   createDryRunProof: createDryRunProofMock,
@@ -67,6 +68,15 @@ function payload(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function payloadWithItems(count: number) {
+  return {
+    items: Array.from({ length: count }, (_, index) => ({
+      ...payload().items[0],
+      actionDate: `2026-08-${String(index + 4).padStart(2, "0")}`,
+    })),
+  };
+}
+
 describe("POST /api/actions/import", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,6 +85,7 @@ describe("POST /api/actions/import", () => {
     createDryRunProofMock.mockReturnValue("proof-token-123456789012345678");
     verifyDryRunProofMock.mockReturnValue({ ok: true });
     getSupabaseServerClientMock.mockReturnValue({});
+    appendAdminOperationAuditMock.mockResolvedValue(undefined);
     normalizeExternalActionImportMock.mockImplementation((input) => ({
       payload: {
         actionDate: input.dates.observedAt,
@@ -108,6 +119,13 @@ describe("POST /api/actions/import", () => {
       stats: { withCoordinates: 1, blockingAnomalies: 0 },
     });
     expect(normalizeExternalActionImportMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: "import_dry_run",
+        outcome: "success",
+        details: expect.objectContaining({ count: 1, payloadHash: "payload-hash" }),
+      }),
+    );
   });
 
   it("does not let a dry-run query parameter select the write path", async () => {
@@ -222,6 +240,104 @@ describe("POST /api/actions/import", () => {
         payload: expect.objectContaining({ recordType: "action" }),
         organizers: [expect.objectContaining({ userId: "admin-1", isPrimary: true })],
       }),
+    );
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: "import_confirm",
+        outcome: "success",
+        details: expect.objectContaining({
+          count: 1,
+          attemptedCount: 1,
+          importedCount: 1,
+          currentItemIndex: 0,
+          totalCount: 1,
+          stage: "audit_finalize",
+        }),
+      }),
+    );
+  });
+
+  it("audits a first item write failure without partial mutation", async () => {
+    const externalError = "supabase item payload leaked";
+    createActionMock.mockRejectedValue(new Error(externalError));
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/import", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payloadWithItems(1),
+          dryRunProof: "proof-token-123456789012345678",
+          confirmPhrase: "CONFIRMER IMPORT",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: "import_confirm",
+        outcome: "error",
+        details: expect.objectContaining({
+          attemptedCount: 1,
+          importedCount: 0,
+          currentItemIndex: 0,
+          failedItemIndex: 0,
+          totalCount: 1,
+          stage: "item_write",
+          partialMutation: false,
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0])).not.toContain(
+      externalError,
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0])).not.toContain(
+      "Quai de test",
+    );
+  });
+
+  it("audits exact counters and partial mutation after an intermediate item failure", async () => {
+    const externalError = "third-party database detail";
+    createActionMock
+      .mockResolvedValueOnce({ id: "action-1" })
+      .mockResolvedValueOnce({ id: "action-2" })
+      .mockRejectedValueOnce(new Error(externalError));
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/import", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payloadWithItems(3),
+          dryRunProof: "proof-token-123456789012345678",
+          confirmPhrase: "CONFIRMER IMPORT",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(createActionMock).toHaveBeenCalledTimes(3);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: "import_confirm",
+        outcome: "error",
+        details: expect.objectContaining({
+          attemptedCount: 3,
+          importedCount: 2,
+          currentItemIndex: 2,
+          failedItemIndex: 2,
+          totalCount: 3,
+          stage: "item_write",
+          partialMutation: true,
+        }),
+      }),
+    );
+    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0])).not.toContain(
+      externalError,
     );
   });
 });
