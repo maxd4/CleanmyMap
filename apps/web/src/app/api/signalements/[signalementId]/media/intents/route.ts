@@ -5,7 +5,7 @@ import { requireAuthenticatedAccess } from "@/lib/authz";
 import {
   createSignalementMediaUploadIntent,
   SignalementMediaError,
-} from "@/lib/actions/signalement-media";
+} from "@/lib/actions/signalement/signalement-media";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse, forbiddenJsonResponse } from "@/lib/http/auth-responses";
 

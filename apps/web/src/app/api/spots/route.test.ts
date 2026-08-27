@@ -15,7 +15,7 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
-vi.mock("@/lib/actions/create-signalement", () => ({
+vi.mock("@/lib/actions/signalement/create-signalement", () => ({
   createSignalement: createSignalementMock,
 }));
 vi.mock("@/lib/analytics-consent", () => ({

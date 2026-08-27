@@ -7,7 +7,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
-vi.mock("@/lib/actions/my-observations", () => ({
+vi.mock("@/lib/actions/signalement/my-observations", () => ({
   clampMyObservationsLimit: (value: number | undefined) =>
     value === undefined ? 20 : Math.min(50, Math.max(1, Math.trunc(value))),
   listMyObservations: listMyObservationsMock,

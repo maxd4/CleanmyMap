@@ -7,7 +7,7 @@ import {
   createSignalementEvidenceUploadItem,
   uploadSignalementEvidence,
   type SignalementEvidenceUploadItem,
-} from "@/lib/actions/signalement-media-client";
+} from "@/lib/actions/signalement/signalement-media-client";
 import Link from "next/link";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -18,7 +18,7 @@ import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/was
 import {
   buildQuickSignalementPayload,
   type QuickSignalementRecordType,
-} from "@/lib/actions/quick-signalement";
+} from "@/lib/actions/signalement/quick-signalement";
 
 export type TrashSpotterObservationFormProps = {
   initialLocation?: { lat: number; lng: number } | null;
