@@ -18,7 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
-import { getEntryTrustState } from "@/components/sections/rubriques/annuaire-helpers";
+import { getEntryTrustState } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";

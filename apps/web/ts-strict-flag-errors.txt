@@ -184,17 +184,17 @@ src/components/reports/web-document/sections.tsx(357,3): error TS2322: Type '{ c
     Type 'string | undefined' is not assignable to type 'string'.
       Type 'undefined' is not assignable to type 'string'.
 src/components/reports/web-document/use-reports-web-document-model.ts(120,16): error TS2532: Object is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(41,28): error TS18048: 'n1' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(41,59): error TS18048: 'n2' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(45,20): error TS18048: 'n1' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(45,29): error TS18048: 'n2' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(46,17): error TS18048: 'n1' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(47,17): error TS18048: 'n1' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(48,17): error TS18048: 'n2' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(49,17): error TS18048: 'n2' is possibly 'undefined'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(140,115): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(41,28): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(41,59): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(45,20): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(45,29): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(46,17): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(47,17): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(48,17): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(49,17): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(140,115): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
-src/components/sections/rubriques/annuaire-network-graph.tsx(149,91): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx(149,91): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
 src/components/sections/rubriques/climate-section.tsx(141,35): error TS18048: 'priorityIndicator' is possibly 'undefined'.
 src/components/sections/rubriques/community/campaigns-section.tsx(129,12): error TS2532: Object is possibly 'undefined'.

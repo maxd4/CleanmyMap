@@ -154,7 +154,7 @@ Bonnes pratiques:
 
 Exemples:
 - [apps/web/src/components/actions/actions-map-canvas.tsx](../../apps/web/src/components/actions/actions-map-canvas.tsx)
-- [apps/web/src/components/sections/rubriques/annuaire-map-canvas.tsx](../../apps/web/src/components/sections/rubriques/annuaire-map-canvas.tsx)
+- [apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx](../../apps/web/src/components/sections/rubriques/annuaire/annuaire-map-canvas.tsx)
 - [apps/web/src/components/actions/map/map-layers.tsx](../../apps/web/src/components/actions/map/map-layers.tsx)
 
 ## Rapports PDF

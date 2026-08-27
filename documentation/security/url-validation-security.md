@@ -102,7 +102,7 @@ function isAbsoluteHttpsUrl(url: string): boolean {
 | `lib/supabase/server.ts` | `startsWith("https://")` | `hasHttpsProtocol()` helper |
 | `lib/supabase/client.ts` | `startsWith("https://")` | `hasHttpsProtocol()` helper |
 | `lib/persistence/runtime-store.ts` | `startsWith("https://")` | `hasHttpsProtocol()` helper |
-| `components/sections/rubriques/academie-climat-workshops.test.ts` | `startsWith("https://www...")` | `new URL().hostname` |
+| `components/sections/rubriques/annuaire/academie-climat-workshops.test.ts` | `startsWith("https://www...")` | `new URL().hostname` |
 
 ### Checklist pour les revues de code
 

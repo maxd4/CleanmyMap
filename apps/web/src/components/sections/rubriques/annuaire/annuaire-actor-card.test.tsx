@@ -1,7 +1,7 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./seed-index";
 
 vi.mock("@/components/ui/site-preferences-provider", () => ({
   useSitePreferences: () => ({ locale: "fr" }),

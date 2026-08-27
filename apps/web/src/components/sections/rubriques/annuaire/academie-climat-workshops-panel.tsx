@@ -2,7 +2,7 @@
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { formatFrDate } from "./community/helpers";
+import { formatFrDate } from "../community/helpers";
 import {
   getTotalUpcomingAcademieClimatWorkshops,
   getVisibleAcademieClimatWorkshops,

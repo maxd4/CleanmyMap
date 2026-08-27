@@ -69,10 +69,10 @@ Corriger les routes et les helpers qui servent plusieurs écrans, surtout quand 
 - `apps/web/src/components/actions/action-declaration-form/action-declaration-form.tsx`
 - `apps/web/src/components/admin/quiz-bank-admin-view.tsx`
 - `apps/web/src/components/reports/analytics-cockpit.tsx`
-- `apps/web/src/components/sections/rubriques/academie-climat-workshops-panel.tsx`
-- `apps/web/src/components/sections/rubriques/annuaire-governance-panel.tsx`
-- `apps/web/src/components/sections/rubriques/annuaire-sidebar.tsx`
-- `apps/web/src/components/sections/rubriques/annuaire-thematic-exploration.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire/academie-climat-workshops-panel.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire/annuaire-governance-panel.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire/annuaire-sidebar.tsx`
+- `apps/web/src/components/sections/rubriques/annuaire/annuaire-thematic-exploration.tsx`
 - `apps/web/src/components/sections/rubriques/discussion-badges-panel.tsx`
 - `apps/web/src/components/sections/rubriques/legal-section.tsx`
 - `apps/web/src/lib/chat/channels.ts`
