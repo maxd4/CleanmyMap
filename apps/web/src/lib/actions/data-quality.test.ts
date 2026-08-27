@@ -3,7 +3,7 @@ import {
   auditActionData,
   buildMonthlyActionDataQualityReview,
 } from "./data-quality";
-import { buildActionDataContract } from "./contract-model";
+import { buildActionDataContract } from "./contracts/contract-model";
 
 function buildContract(overrides: {
   id: string;

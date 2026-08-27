@@ -1,4 +1,4 @@
-import type { ActionDataContract } from "./contract-model";
+import type { ActionDataContract } from "./contracts/contract-model";
 import type {
   ActionGeometryOrigin,
   ActionStatus,

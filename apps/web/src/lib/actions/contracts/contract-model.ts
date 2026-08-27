@@ -11,11 +11,11 @@ import {
   ActionGeometryKind,
   ActionGeometrySource,
   ActionGeometryOrigin,
-} from "./types";
+} from "../types";
 import {
   buildPersistedGeometryFromStoredFields,
   type PersistedDerivedGeometry,
-} from "./geometry/derived-geometry";
+} from "../geometry/derived-geometry";
 import type { WasteCategorySlug } from "@/lib/waste";
 
 export type ActionEntityType = ActionRecordType;
@@ -83,7 +83,7 @@ export type ActionDataContract = {
   geometry: ActionDataGeometry;
   dates: ActionDataDates;
   metadata: ActionDataMetadata;
-  dataQuality?: import("./data-quality").ActionDataQualitySummary;
+  dataQuality?: import("../data-quality").ActionDataQualitySummary;
 };
 
 export type BuildActionContractParams = {

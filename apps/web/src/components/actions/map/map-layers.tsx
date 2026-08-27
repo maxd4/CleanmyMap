@@ -14,7 +14,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import { divIcon, type Map as LeafletMap } from "leaflet";
 import { Info } from "lucide-react";
 import { ActionMapItem } from "@/lib/actions/types";
-import type { ActionDataContract } from "@/lib/actions/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   mapItemCoordinates,
   mapItemObservedAt,

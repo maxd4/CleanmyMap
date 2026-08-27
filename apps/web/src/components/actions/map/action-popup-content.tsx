@@ -16,7 +16,7 @@ import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
-import type { ActionDataContract } from "@/lib/actions/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {

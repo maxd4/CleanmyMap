@@ -2,7 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
-import type { ActionDataContract } from "@/lib/actions/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
   groupActionsByCorridor,
   type CorridorHistory,

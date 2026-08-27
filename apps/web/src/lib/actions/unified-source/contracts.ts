@@ -10,8 +10,8 @@ import {
   parseWasteCategoriesFromNotes,
   stripWasteCategoryMarkersFromNotes,
 } from "@/lib/waste";
-import type { ActionContractCreatePayload } from "@/lib/actions/contract-builders";
-import { normalizeCreatePayload } from "@/lib/actions/contract-builders";
+import type { ActionContractCreatePayload } from "@/lib/actions/contracts/contract-builders";
+import { normalizeCreatePayload } from "@/lib/actions/contracts/contract-builders";
 import type {
   ActionDataContract,
   ActionEntityType,

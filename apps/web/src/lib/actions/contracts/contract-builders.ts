@@ -7,7 +7,7 @@ import {
   ActionPhotoAsset,
   ActionVisionEstimate,
   CreateActionPayload,
-} from "./types";
+} from "../types";
 
 export type ActionContractCreatePayload = {
   type: ActionRecordType;

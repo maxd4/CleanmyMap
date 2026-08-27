@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ActionDataContract } from "@/lib/actions/contract-model";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import { buildRecyclingBreakdown } from "./breakdown";
 
 function buildContract(overrides: Partial<ActionDataContract>): ActionDataContract {
