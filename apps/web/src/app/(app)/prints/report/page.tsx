@@ -6,7 +6,7 @@ import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
-import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source-cache";
+import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";

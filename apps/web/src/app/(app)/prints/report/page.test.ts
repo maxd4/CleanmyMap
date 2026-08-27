@@ -55,7 +55,7 @@ vi.mock("@/lib/pilotage/overview", () => ({
   loadPilotageOverview: () => Promise.resolve(mockOverview),
 }));
 
-vi.mock("@/lib/actions/unified-source-cache", () => ({
+vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: () =>
     Promise.resolve({
       items: [{ id: "contract-1" }, { id: "contract-2" }],

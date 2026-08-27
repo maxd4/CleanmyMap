@@ -5,7 +5,7 @@ const fetchCachedUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const rpcMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/actions/unified-source-cache", () => ({
+vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: fetchCachedUnifiedActionContractsMock,
 }));
 vi.mock("@/lib/public-surface-snapshot-service", () => ({

@@ -55,7 +55,7 @@ export async function loadReportsAnalysisData(now = new Date()) {
 
 export async function loadReportsGenerationData() {
   const [contractsResult, communityEventsResult] = await Promise.all([
-    import("@/lib/actions/unified-source-cache").then(
+    import("@/lib/actions/unified-source/unified-source-cache").then(
       ({ fetchCachedUnifiedActionContracts }) =>
         fetchCachedUnifiedActionContracts({
           limit: REPORT_DATA_BUDGET.generation.approvedContractLimit,

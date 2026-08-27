@@ -1,7 +1,7 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source-cache";
+import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
