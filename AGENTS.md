@@ -234,7 +234,7 @@ apps/web/supabase/                        configuration Supabase active du works
 apps/web/supabase/migrations/             migrations utilisées par le CLI du workspace web
 apps/mobile/                            application mobile expérimentale
 scripts/                                  garde-fous et maintenance Node
-maintenance/python/                       maintenance Python hors runtime principal
+maintenance/python/                       maintenance Python
 documentation/                            documentation structurée
 ```
 
@@ -390,15 +390,8 @@ Règles de sûreté structurelle :
   non nécessaire. Si la frontière est sensible, signaler la dette et préparer
   le lot structurel séparé.
 
-Le fichier `scripts/heavy-files-baseline.json` est un inventaire temporaire de
-dette historique, pas une autorisation permanente de dépasser les seuils. Ne
-pas y ajouter un nouveau fichier pour contourner le garde-fou, sauf exception
-explicitement justifiée et mesurée dans le lot concerné. Lorsqu'un fichier
-baseline est refactoré sous les seuils, retirer son entrée. Lorsqu'il est
-significativement modifié, réévaluer sa cohésion et profiter du chantier pour
-réduire sa dette si cela reste sûr et pertinent. Le garde-fou en mode
-`--enforce` doit signaler les entrées baseline devenues obsolètes afin que ce
-ratchet reste vérifiable.
+Les règles propres aux scripts et à leur inventaire de dette sont définies dans
+`scripts/AGENTS.md`.
 
 ---
 
@@ -528,68 +521,10 @@ Toute surface modifiée gère lorsque pertinent :
 
 ## 6. Documentation et pages
 
-### Gouvernance documentaire
-
-`documentation/pages_site/` est la source de vérité fonctionnelle du point de vue utilisateur pour :
-
-- rôle de la page ;
-- contenu ;
-- parcours ;
-- comportement ;
-- UX/UI ;
-- états ;
-- captures ;
-- améliorations propres à la page.
-
-### README de dossier
-
-Lorsqu'un dossier porte une responsabilité identifiable, une convention
-particulière, un point d'entrée, une procédure de validation ou une frontière
-d'architecture, ajouter ou mettre à jour son `README.md` dès que c'est
-pertinent. Le README doit expliquer le rôle du dossier, les fichiers ou sous-
-dossiers importants, les règles d'organisation et les commandes utiles, sans
-dupliquer une documentation canonique déjà présente. Après toute
-réorganisation significative, vérifier que les README concernés restent
-exacts ; créer un README uniquement lorsqu'il apporte une orientation durable,
-pas pour réduire artificiellement la taille d'un autre document.
-
-Les sujets techniques transversaux restent dans les dossiers techniques adaptés.
-
-Pour un sujet mixte :
-
-- résumé fonctionnel dans la fiche de page ;
-- détail technique dans le dossier technique ;
-- lien entre les deux ;
-- aucune duplication.
-
-- Tous les 2 à 3 prompts consacrés à un même chantier, réévaluer la
-  documentation canonique et la mettre à jour dès qu’elle ne reflète plus
-  le comportement, les décisions, les validations ou les limites réelles.
-  Ne pas créer de modification documentaire artificielle lorsqu’aucune
-  information n’a changé.
-
-### Quarto
-
-Ne pas numéroter manuellement les titres destinés à Quarto.
-
-Écrire :
-
-```md
-# Titre
-## Sous-titre
-### Section
-```
-
-Ne pas écrire :
-
-```md
-# 1. Titre
-## 2. Sous-titre
-```
-
-### Sources
-
-Ne jamais inventer une source, une mesure, un chiffre ou une référence.
+La sélection, le classement et la maintenance de la documentation spécialisée
+sont définis dans `documentation/AGENTS.md`. Les invariants de sécurité, de
+validation et de périmètre de ce fichier restent applicables aux changements
+documentaires.
 
 ---
 
