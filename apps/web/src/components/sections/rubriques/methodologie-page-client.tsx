@@ -6,9 +6,7 @@ import {
   BookOpen,
   Brain,
   Info,
-  Layers,
   MapPin,
-  Palette,
   Heart,
   Scaling,
   ShieldCheck,
@@ -18,8 +16,6 @@ import {
 } from "lucide-react";
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
-import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -137,172 +133,70 @@ function MethodologyCard({
   );
 }
 
-const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
-  {
-    id: "impact",
-    title: {
-      fr: "Audit d'Impact & Modèle de Calcul",
-      en: "Impact Audit & Calculation Model",
-    },
-    desc: {
-      fr: "Découvrez le calcul runtime des KPI d’impact, la distinction entre valeurs déclarées et estimées, les sources configurées et les limites de chaque proxy.",
-      en: "Explore the runtime impact KPI calculation, the distinction between declared and estimated values, configured sources, and the limits of each proxy.",
-    },
-    href: "/docs/plans/rapport_impact/impact_IA.md",
-    icon: <Scaling className="h-6 w-6" />,
-    isPdf: false,
+const IMPACT_DOC: OpenSourceDoc = {
+  id: "impact",
+  title: {
+    fr: "Calcul des indicateurs d’impact",
+    en: "Impact indicator calculations",
   },
-  {
-    id: "master-arch",
-    title: {
-      fr: "Architecture Système Complète",
-      en: "Complete System Architecture",
-    },
-    desc: {
-      fr: "Plongez dans l’architecture complète du projet : diagrammes détaillés des flux de données, description des services gérés, stratégie de découpage du monorepo, ainsi que les choix technologiques clés, pour vous permettre de comprendre et contribuer efficacement au code.",
-      en: "Dive into the full project architecture: detailed data‑flow diagrams, managed service descriptions, monorepo split strategy, and key technology choices, enabling you to grasp and contribute to the codebase effectively.",
-    },
-    href: "/docs/architecture/master-architecture.md",
-    icon: <Layers className="h-6 w-6" />,
-    isPdf: false,
+  desc: {
+    fr: "Formules runtime, distinction entre valeurs déclarées et estimées, sources configurées et limites des proxys utilisés.",
+    en: "Runtime formulas, the distinction between declared and estimated values, configured sources, and the limits of the proxies used.",
   },
-  {
-    id: "scientific-protocol",
-    title: {
-      fr: "Protocole Scientifique",
-      en: "Scientific Protocol",
-    },
-    desc: {
-      fr: "Accédez au protocole de calcul : hypothèses, formules effectivement exécutées, critères de validation et limites d’interprétation.",
-      en: "Access the calculation protocol: assumptions, formulas actually executed, validation criteria, and interpretation limits.",
-    },
-    href: "/docs/product/SCIENTIFIC_PROTOCOL.md",
-    icon: <Beaker className="h-6 w-6" />,
-    isPdf: false,
+  href: "/docs/plans/rapport_impact/impact_IA.md",
+  icon: <Scaling className="h-6 w-6" />,
+  isPdf: false,
+};
+
+const QUOTA_SERVICES_DOC: OpenSourceDoc = {
+  id: "quota-free-services",
+  title: {
+    fr: "Impact numérique des services suivis",
+    en: "Digital impact of tracked services",
   },
-  {
-    id: "gamification",
-    title: {
-      fr: "Gamification Non-Compétitive",
-      en: "Non-Competitive Gamification",
-    },
-    desc: {
-      fr: "Explorez notre approche de gamification non‑compétitive : mécanismes de récompense motivants, progression structurée, études d’impact utilisateur, et comment ces éléments favorisent l’engagement citoyen sans créer de compétition néfaste.",
-      en: "Explore our non‑competitive gamification approach: motivating reward mechanisms, structured progression, user impact studies, and how these elements foster citizen engagement without harmful competition.",
-    },
-    href: "/docs/product/gamification-non-competitive.md",
-    icon: <Heart className="h-6 w-6" />,
-    isPdf: false,
+  desc: {
+    fr: "Services d’infrastructure suivis, limites de plan et estimation d’impact associée.",
+    en: "Tracked infrastructure services, plan limits, and the associated impact estimate.",
   },
-  {
-    id: "design-system",
-    title: {
-      fr: "Design System & Charte Premium",
-      en: "Design System & Premium Charter",
-    },
-    desc: {
-      fr: "Découvrez notre charte visuelle premium : palette de couleurs multi‑teintes par bloc, typographies élégantes, icônes cohérentes, règles d’accessibilité avancées et guides UI, assurant une expérience esthétique, homogène et inclusive.",
-      en: "Discover our premium visual charter: multi‑tone color palette per block, elegant typography, consistent icons, advanced accessibility rules and UI guidelines, delivering an aesthetic, cohesive and inclusive experience.",
-    },
-    href: "/docs/BLOC_COLOR_SYSTEM_PREMIUM.md",
-    icon: <Palette className="h-6 w-6" />,
-    isPdf: false,
-  },
-  {
-    id: "tech",
-    title: {
-      fr: "Fiche Technique Complète",
-      en: "Full Technical Sheet",
-    },
-    desc: {
-      fr: "Consultez la fiche technique détaillée : architecture technique du projet, choix de stack (Next.js, Supabase), mesures de sécurité, diagrammes d’infrastructure, bonnes pratiques de développement, pour les développeurs souhaitant approfondir le fonctionnement interne.",
-      en: "Review the detailed technical sheet: project technical architecture, stack choices (Next.js, Supabase), security measures, infrastructure diagrams, development best practices, for developers seeking deep insight into the internal workings.",
-    },
-    href: "/docs/fiche-technique-cleanmymap.md",
-    icon: <Brain className="h-6 w-6" />,
-    isPdf: false,
-  },
-  {
-    id: "site-methodology",
-    title: {
-      fr: "Fonctionnement du site",
-      en: "Site Operation",
-    },
-    desc: {
-      fr: "Fiche de méthodologie technique qui explique l'architecture du site, le rôle de Leaflet, le lien GitHub/Vercel, Supabase, Codex, PostHog, Sentry, Resend et le domaine LWS.",
-      en: "Technical methodology sheet that explains the site architecture, Leaflet, the GitHub/Vercel link, Supabase, Codex, PostHog, Sentry, Resend, and the LWS domain.",
-    },
-    href: "/docs/architecture/methodologie-fonctionnement-site.md",
-    icon: <Layers className="h-6 w-6" />,
-    isPdf: false,
-  },
-  {
-    id: "quota-free-services",
-    title: {
-      fr: "Impact numérique des services suivis",
-      en: "Digital impact of tracked services",
-    },
-    desc: {
-      fr: "Bloc de pilotage des services suivis, avec accès au texte d'appui et à la vue détaillée intégrée au site.",
-      en: "Control block for tracked services, with access to supporting text and the detailed inline view on the site.",
-    },
-    href: "/docs/plans/journal_impact_DU.md",
-    icon: <Sparkles className="h-6 w-6" />,
-    isPdf: false,
-    secondaryAction: {
-      href: "#impact-services",
-      label: {
-        fr: "Voir le bloc",
-        en: "View block",
-      },
+  href: "/docs/plans/journal_impact_DU.md",
+  icon: <Sparkles className="h-6 w-6" />,
+  isPdf: false,
+  secondaryAction: {
+    href: "#impact-services",
+    label: {
+      fr: "Voir le bloc",
+      en: "View block",
     },
   },
-  {
-    id: "gov",
-    title: {
-      fr: "Gouvernance des Publications",
-      en: "Publication Governance",
-    },
-    desc: {
-      fr: "Lisez les règles de gouvernance des contenus : workflow complet de création, validation, publication et audit des pages, garantissant qualité, conformité et traçabilité des informations diffusées.",
-      en: "Read the content governance rules: complete workflow for creation, validation, publishing and auditing of pages, ensuring quality, compliance and traceability of disseminated information.",
-    },
-    href: "/docs/publication-governance.md",
-    icon: <ShieldCheck className="h-6 w-6" />,
-    isPdf: false,
+};
+
+const ACTION_MAP_DOC: OpenSourceDoc = {
+  id: "action-map-methodology",
+  title: {
+    fr: "Méthodologie de la carte d'actions",
+    en: "Action map methodology",
   },
-  {
-    id: "action-map-methodology",
-    title: {
-      fr: "Méthodologie de la carte d'actions",
-      en: "Action Map Methodology",
-    },
-    desc: {
-      fr: "Comprenez la distinction entre mémoire des actions, pollution constatée, pollution projetée et signalements Trash Spotter actuellement observés.",
-      en: "Understand the distinction between action history, observed pollution, projected pollution, and currently observed Trash Spotter reports.",
-    },
-    href: "/docs/product/methodologie-carte-actions.md",
-    icon: <MapPin className="h-6 w-6" />,
-    isPdf: false,
-    secondaryAction: {
-      href: "#methodologie-carte-actions",
-      label: {
-        fr: "Voir la section sur cette page",
-        en: "View this page section",
-      },
+  desc: {
+    fr: "Distinction entre mémoire des actions, pollution constatée, pollution projetée et signalements Trash Spotter observés.",
+    en: "Distinction between action history, observed pollution, projected pollution, and observed Trash Spotter reports.",
+  },
+  href: "/docs/product/methodologie-carte-actions.md",
+  icon: <MapPin className="h-6 w-6" />,
+  isPdf: false,
+  secondaryAction: {
+    href: "#methodologie-carte-actions",
+    label: {
+      fr: "Voir la section sur cette page",
+      en: "View this page section",
     },
   },
-];
+};
 
 export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean }) {
-  const actionMapDoc = OPEN_SOURCE_DOCS.find(
-    (doc) => doc.id === "action-map-methodology",
-  );
-
   return (
     <ActionMapMethodologySectionImpl
       isFrench={isFrench}
-      actionMapDoc={actionMapDoc}
+      actionMapDoc={ACTION_MAP_DOC}
     />
   );
 }
@@ -356,16 +250,6 @@ export function MethodologiePageClient({
           </p>
         </header>
 
-        <NationalStatsSection />
-
-        <TerritoryMapComparisonCards
-          title="Deux lectures de la cartographie"
-          subtitle="La carte de base garde une lecture précise et opérationnelle. La carte Terraink ajoute une lecture plus pédagogique et plus éditoriale. On garde les deux pour comparer la clarté et l'intérêt visuel dans le contexte méthodologique."
-          locationLabel="Périmètre de référence"
-          tone="rose"
-          note="Ici, la double carte sert d'outil d'explication. La version brute montre la donnée; la version Terraink montre la mise en scène possible pour un rapport ou une page de présentation."
-        />
-
         <ActionMapMethodologySection isFrench={isFrench} />
 
         <div
@@ -383,10 +267,10 @@ export function MethodologiePageClient({
             <div className="space-y-8">
               <h2 className="flex items-center gap-4 text-3xl font-black tracking-tight text-white md:text-4xl">
                 <Brain className="text-red-400" />
-                <span>Transparence Algorithmique</span>
+                <span>Méthode de calcul</span>
               </h2>
               <p className="max-w-md text-lg font-medium leading-relaxed text-red-100/40">
-                Les KPI terrain suivent le calcul runtime versionné. Les valeurs déclarées et les estimations sont distinguées, puis les proxys sont appliqués à la masse ou aux mégots retenus. Périmètre : {methodology.scope}
+                Les KPI terrain utilisent le calcul runtime versionné. Les valeurs déclarées et estimées sont distinguées avant l’application des proxys à la masse ou aux mégots retenus. Périmètre : {methodology.scope}
               </p>
               <div className="flex gap-4">
                 <div className="rounded-xl bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400/60">
@@ -426,9 +310,9 @@ export function MethodologiePageClient({
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {[
-            { icon: <MapPin className="text-red-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
-            { icon: <Zap className="text-red-400" />, title: "Calcul Instantané", desc: "Application des proxys versionnés" },
-            { icon: <ShieldCheck className="text-red-400" />, title: isFrench ? "Impact documenté" : "Documented impact", desc: isFrench ? "Lecture des KPI et de leurs limites" : "Reading KPIs and their limits" },
+            { icon: <MapPin className="text-red-400" />, title: "Données terrain", desc: "Coordonnées et volumes issus des déclarations" },
+            { icon: <Zap className="text-red-400" />, title: "Calcul des proxys", desc: "Application des formules versionnées" },
+            { icon: <ShieldCheck className="text-red-400" />, title: isFrench ? "Résultats et limites" : "Results and limits", desc: isFrench ? "Lecture des KPI et de leurs limites" : "Reading KPIs and their limits" },
           ].map((step, index) => (
             <div
               key={index}
@@ -466,7 +350,7 @@ export function MethodologiePageClient({
 
           <div className="grid gap-8 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
             <ReferenceDocCard
-              doc={OPEN_SOURCE_DOCS[6]}
+              doc={QUOTA_SERVICES_DOC}
               schemaLabel={{ fr: "Schéma: onglet 1", en: "Schema: tab 1" }}
               schemaHref="#quota-services"
               isFrench={isFrench}
@@ -557,47 +441,26 @@ export function MethodologiePageClient({
           />
         </section>
 
-        {/* Compromis Rigueur Scientifique vs Expérience Utilisateur (Formulaire Bénévole) */}
+        {/* Limites de la déclaration terrain */}
         <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
           <div className="flex items-center gap-4 text-red-400">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400/5 shadow-inner">
               <Scaling size={20} />
             </div>
             <h3 className="text-2xl font-black tracking-tight text-white">
-              {isFrench ? "Compromis Rigueur Scientifique & UX du Formulaire Bénévole" : "Scientific Rigor & UX Compromise on the Volunteer Form"}
+              {isFrench ? "Limites de la déclaration terrain" : "Limits of field declarations"}
             </h3>
           </div>
           <div className="grid gap-6 md:grid-cols-2 text-red-100/50 leading-relaxed font-medium text-sm">
             <p>
               {isFrench
-                ? "Afin d'encourager l'action citoyenne et de simplifier le geste de déclaration sur le terrain, notre formulaire bénévole a été conçu pour être le plus fluide possible. Exiger de chaque participant qu'il pèse ou caractérise précisément chaque type de déchet découragerait la majorité des utilisateurs."
-                : "To encourage citizen action and simplify reporting on the ground, our volunteer form was designed to be as fluid as possible. Requiring every participant to weigh or categorize each type of waste precisely would discourage most users."}
+                ? "Les déclarations terrain ne requièrent pas la pesée ni la caractérisation exhaustive de chaque déchet. Les valeurs disponibles dépendent donc des informations saisies dans le contrat de déclaration."
+                : "Field declarations do not require weighing or exhaustively categorizing every item. Available values therefore depend on the information entered in the declaration contract."}
             </p>
             <p>
               {isFrench
-                ? "C'est pourquoi certains indicateurs sont des proxys versionnés : ils donnent un ordre de grandeur reproductible, mais ne constituent ni une mesure instrumentale ni une certification scientifique."
-                : "This is why some indicators are versioned proxies: they provide a reproducible order of magnitude, but are neither instrument measurements nor scientific certification."}
-            </p>
-          </div>
-        </div>
-
-        {/* Gamification Logic */}
-        <div className="space-y-10 pt-10 border-t border-white/10">
-          <div className="text-center space-y-4">
-            <h2 className="text-4xl font-black tracking-tight text-white">
-              {isFrench
-                ? "Logique de Gamification (En cours)"
-                : "Gamification Logic (Work in progress)"}
-            </h2>
-            <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
-              {isFrench
-                ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
-                : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
-            </p>
-            <p className="text-sm text-red-200/60">
-              {isFrench
-                ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !"
-                : "🚧 Work in progress – stay tuned for upcoming features!"}
+                ? "Les indicateurs concernés restent des proxys versionnés : ils donnent un ordre de grandeur reproductible, mais ne constituent ni une mesure instrumentale ni une certification scientifique."
+                : "The affected indicators remain versioned proxies: they provide a reproducible order of magnitude, but are neither instrument measurements nor scientific certification."}
             </p>
           </div>
         </div>
@@ -619,7 +482,7 @@ export function MethodologiePageClient({
 
           <div className="grid gap-8 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
             <ReferenceDocCard
-              doc={OPEN_SOURCE_DOCS[0]}
+              doc={IMPACT_DOC}
               schemaLabel={{ fr: "Schéma: onglet 2", en: "Schema: tab 2" }}
               schemaHref="#impact-services"
               isFrench={isFrench}
@@ -702,13 +565,9 @@ export function MethodologiePageClient({
               CleanMyMap Engine v{version}
             </p>
             <p className="max-w-md text-xs font-bold leading-relaxed text-red-100/70">
-              Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.
+              Les formules, sources et limites sont documentées dans les références associées à cette page.
             </p>
           </div>
-          <div
-            className="rounded-2xl border border-white/10 bg-red-950/35 px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-red-100/60 shadow-sm backdrop-blur-sm"
-            dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
-          />
         </footer>
       </div>
     </div>

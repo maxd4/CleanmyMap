@@ -9,16 +9,22 @@
 - **Palette runtime actuelle** : sky
 - **Revalidation** : `3600 s`
 - **Source principale** : `apps/web/src/app/(app)/methodologie/page.tsx`
+- **Source du contenu** : `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx`
 
-## Objectif utilisateur
+## Contenu public
 
-Expliquer :
+La page publique présente :
 
 - comment CleanMyMap mesure son impact ;
 - quelles données sont utilisées ;
 - quels coefficients et proxys sont appliqués ;
 - comment les coûts techniques et quotas sont suivis ;
-- quelles limites accompagnent les chiffres.
+- quelles limites accompagnent les chiffres ;
+- comment lire la carte d’actions, sa pollution constatée, sa pollution projetée et ses sources.
+
+La page ne présente pas de comparaison cartographique expérimentale, de fonctionnalité en cours
+de développement ni de promesse de fonctionnalité future. Les textes affichés décrivent uniquement
+les calculs, les sources, les limites et l’infrastructure effectivement suivis.
 
 La documentation de la page doit également orienter vers la méthodologie spécifique de la carte d'actions :
 
@@ -106,5 +112,5 @@ impact environnemental des actions terrain
 
 ```txt
 Page publique fonctionnelle.
-Documentation couleur réalignée sur le resolver runtime.
+Contenu limité aux méthodes, sources, limites, carte d’actions, quotas et empreinte technique.
 ```
