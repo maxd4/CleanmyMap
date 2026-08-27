@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from"react";
 import { useMemo, useState } from"react";
 import { estimateWasteKg } from"./action-declaration-form.estimation";
 import type { ActionVisionEstimate } from"@/lib/actions/types";
-import type { FormState } from"./action-declaration-form.model";
+import type { FormState } from"./model";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import {
  resolveWasteSuggestion,

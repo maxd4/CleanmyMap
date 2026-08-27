@@ -19,14 +19,14 @@ import {
   isDrawingValid,
   OTHER_VOLUNTEER_ASSOCIATION_VALUE,
   prepareCreateActionPayload,
-} from "../action-declaration/payload";
+} from "../payload";
 import {
   clearDraft,
   loadDraftSnapshot,
   saveDraft,
   subscribeToDraftChanges,
-} from "../action-declaration/draft-storage";
-import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
+} from "../draft-storage";
+import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
@@ -36,7 +36,7 @@ import type {
   FormState,
   PostActionRetentionLoop,
   ValidationIssue,
-} from "./action-declaration-form.model";
+} from "./model";
 
 type UseActionDeclarationFormProps = {
   actorNameOptions: string[];

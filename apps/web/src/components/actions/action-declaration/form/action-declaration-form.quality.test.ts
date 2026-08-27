@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionPhotoAsset } from "@/lib/actions/types";
-import { createInitialFormState } from "../action-declaration/payload";
+import { createInitialFormState } from "../payload";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
 
 const proofPhoto = {

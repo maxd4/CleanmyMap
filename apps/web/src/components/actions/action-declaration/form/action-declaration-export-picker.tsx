@@ -38,7 +38,7 @@ import {
   type ActionDeclarationExportHistoryEntry,
 } from "@/lib/actions/exports/export-form-history";
 import { cn } from "@/lib/utils";
-import type { FormState } from "./action-declaration-form.model";
+import type { FormState } from "./model";
 
 type ActionDeclarationExportPickerProps = {
   isOpen: boolean;

@@ -3,7 +3,7 @@ import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
-import type { FormState } from "./action-declaration-form.model";
+import type { FormState } from "./model";
 import { ActionDeclarationPhotoSection } from "./action-declaration-form.photo-section";
 import { ActionDeclarationVisionFields } from "./action-declaration-form.vision-fields";
 

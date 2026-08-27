@@ -3,8 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { formatKg } from "../action-declaration/utils/harvest-utils";
-import { createInitialFormState } from "../action-declaration/payload";
+import { formatKg } from "../utils/harvest-utils";
+import { createInitialFormState } from "../payload";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 
 function makePayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {

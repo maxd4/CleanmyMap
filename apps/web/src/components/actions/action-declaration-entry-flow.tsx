@@ -16,7 +16,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-before-declaration-form";
-import { ActionDeclarationForm } from "./action-declaration-form";
+import { ActionDeclarationForm } from "./action-declaration/form";
 import { updateAction } from "@/lib/actions/http";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";

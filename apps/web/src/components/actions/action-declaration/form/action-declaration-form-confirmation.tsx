@@ -1,11 +1,11 @@
-import type { FormState } from "./action-declaration-form.model";
+import type { FormState } from "./model";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../map/actions-map-geometry.utils";
-import { formatKg } from "../action-declaration/utils/harvest-utils";
+} from "../../map/actions-map-geometry.utils";
+import { formatKg } from "../utils/harvest-utils";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;

@@ -1,4 +1,4 @@
-import type { FormState } from"./action-declaration-form.model";
+import type { FormState } from"./model";
 
 type ActionDeclarationSummarySectionProps = {
  form: FormState;

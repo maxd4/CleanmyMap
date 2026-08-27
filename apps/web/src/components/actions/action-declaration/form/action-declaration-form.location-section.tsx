@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import type { ActionDrawing } from "@/lib/actions/types";
-import type { FormState } from "./action-declaration-form.model";
-import { toRequiredNumber } from "./action-declaration-form.model";
+import type { FormState } from "./model";
+import { toRequiredNumber } from "./model";
 import { ActionDeclarationLocationAssist } from "./action-declaration-form.smart-assist";
 import type { GpsStatus } from "./action-declaration-form.smart-assist";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";

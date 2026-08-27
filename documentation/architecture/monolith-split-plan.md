@@ -21,7 +21,7 @@ Règle : **un lot structurel par cible principale**, **API publique inchangée**
 | 🟠 HAUTE | 935 lignes | `components/actions/action-before-declaration-form.tsx` | À découper |
 | 🟠 HAUTE | 927 lignes | `components/admin/free-plan-services-visual.tsx` | À découper |
 | 🟠 HAUTE | 923 lignes | `components/sections/rubriques/partners-network-section.tsx` | À découper |
-| 🟠 HAUTE | 861 lignes | `components/actions/action-declaration-form/action-declaration-export-picker.tsx` | À découper |
+| 🟠 HAUTE | 861 lignes | `components/actions/action-declaration/form/action-declaration-export-picker.tsx` | À découper |
 | 🟠 HAUTE | 860 lignes | `components/learn/quiz-session-panel.tsx` | Revalider le statut du découpage |
 | 🟠 HAUTE | 838 lignes | `components/admin/free-plan-services-panel.tsx` | À découper |
 | 🟠 HAUTE | 838 lignes | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | À découper |

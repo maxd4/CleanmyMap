@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
+import { ActionDeclarationForm } from "@/components/actions/action-declaration/form";
 
 export const metadata: Metadata = {
   title: "Aperçu du formulaire bénévole - CleanMyMap",

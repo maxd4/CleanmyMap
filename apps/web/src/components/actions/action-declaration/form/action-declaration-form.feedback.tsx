@@ -13,7 +13,7 @@ import type {
   PostActionRetentionLoop,
   SubmissionState,
   ValidationIssue,
-} from "./action-declaration-form.model";
+} from "./model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildPostActionSummary } from "@/lib/actions/post-action-summary";
 import { formatScorePercent } from "@/lib/formatters/score";

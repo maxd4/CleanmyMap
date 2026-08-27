@@ -18,12 +18,12 @@ import {
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import type { ActionDataQualityResult } from "../action-declaration-form/action-declaration-form.quality";
-import { estimateWasteKg } from "../action-declaration-form/action-declaration-form.estimation";
+import type { ActionDataQualityResult } from "../form/action-declaration-form.quality";
+import { estimateWasteKg } from "../form/action-declaration-form.estimation";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
-} from "../map/actions-map-geometry.utils";
+} from "../../map/actions-map-geometry.utils";
 
 interface ActionStepReviewProps {
   payload: CreateActionPayload;

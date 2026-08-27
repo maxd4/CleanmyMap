@@ -1,16 +1,16 @@
 "use client";
 
-import type { FormState } from "../action-declaration-form/action-declaration-form.model";
+import type { FormState } from "../form/model";
 import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
-import type { UpdateFormField } from "./types";
-import { useHarvestLogic } from "./hooks/use-harvest-logic";
-import { HarvestCleanPlaceSection } from "./sections/harvest-clean-place";
-import { HarvestMegotsSection } from "./sections/harvest-megots-section";
-import { HarvestPhotoSection } from "./sections/harvest-photo-section";
-import { HarvestWasteSection } from "./sections/harvest-waste-section";
+import type { UpdateFormField } from "../types";
+import { useHarvestLogic } from "../hooks/use-harvest-logic";
+import { HarvestCleanPlaceSection } from "../sections/harvest-clean-place";
+import { HarvestMegotsSection } from "../sections/harvest-megots-section";
+import { HarvestPhotoSection } from "../sections/harvest-photo-section";
+import { HarvestWasteSection } from "../sections/harvest-waste-section";
 
 interface ActionStepHarvestProps {
   form: FormState;

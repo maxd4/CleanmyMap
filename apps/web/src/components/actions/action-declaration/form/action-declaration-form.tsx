@@ -18,11 +18,11 @@ import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
 import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
-import { createInitialFormState } from "../action-declaration/payload";
-import { ActionStepHarvest } from "../action-declaration/ActionStepHarvest";
-import { ActionStepIdentity } from "../action-declaration/ActionStepIdentity";
-import { ActionStepLocation } from "../action-declaration/ActionStepLocation";
-import { ActionStepReview } from "../action-declaration/ActionStepReview";
+import { createInitialFormState } from "../payload";
+import { ActionStepHarvest } from "../steps/ActionStepHarvest";
+import { ActionStepIdentity } from "../steps/ActionStepIdentity";
+import { ActionStepLocation } from "../steps/ActionStepLocation";
+import { ActionStepReview } from "../steps/ActionStepReview";
 import {
   formatDraftDate,
 } from "./action-declaration-form.summary";
