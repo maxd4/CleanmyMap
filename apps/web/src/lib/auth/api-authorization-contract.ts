@@ -259,6 +259,18 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["requireCreatorAccess", "appendDecisionAudit"],
     },
   },
+  "admin/legal-content-reports/decision": {
+    POST: {
+      expected: "Décision de modération réservée à un admin canonique et auditée",
+      dimensions: ["admin/creator role", "audit"],
+      actual: "requireAdminAccess + getCurrentUserIdentity + appendDecisionAudit",
+      evidence: [
+        "requireAdminAccess",
+        "getCurrentUserIdentity",
+        "appendDecisionAudit",
+      ],
+    },
+  },
   "admin/environmental-impact": {
     POST: {
       expected: "Admin-like role",
