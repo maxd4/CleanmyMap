@@ -41,7 +41,7 @@
     "audit:vercel:ci": "node scripts/audits/audit-vercel-ci.mjs",
     "typecheck": "npm run typecheck -w apps/web",
     "check:doc-visuals": "node scripts/checks/check-doc-visuals.mjs",
-    "check:doc-governance": "node scripts/checks/check-documentation-governance.mjs",
+    "check:doc-governance": "node scripts/checks/check-documentation-governance.mjs && node scripts/checks/check-agent-governance.mjs",
     "check:utf8-fr": "node scripts/checks/check-utf8-fr-files.mjs",
     "check:lockfile-policy": "node scripts/checks/check-lockfile-policy.mjs",
     "check:stack-doc-drift": "node scripts/checks/check-stack-doc-drift.mjs",

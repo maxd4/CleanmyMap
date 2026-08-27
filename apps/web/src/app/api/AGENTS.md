@@ -28,6 +28,12 @@ les consommateurs, les tests et les intégrations de la route concernée.
 - auditer les opérations admin sensibles avant et après l'effet métier selon
   `apps/web/src/lib/admin/audit/operation-audit.ts`.
 
+Un rôle privilégié ne doit pas modifier silencieusement le parcours normal :
+une dérogation admin doit être explicite, autorisée côté serveur, motivée et
+tracée. Un admin qui rejoint normalement l'action d'un tiers suit la file
+normale. La règle détaillée est documentée dans
+`documentation/security/authz-authn-regles.md`.
+
 ## Tests de frontière
 
 Maintenir les tests AuthZ, de validation, d'erreur, de rate limiting et de
