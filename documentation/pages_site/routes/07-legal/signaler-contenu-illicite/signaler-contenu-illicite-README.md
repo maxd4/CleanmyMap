@@ -13,7 +13,7 @@
 - **Objectif utilisateur principal** : transmettre une notification électronique suffisamment circonstanciée à partir de l'URL exacte d'un contenu.
 - **Action principale attendue** : envoyer la notification et conserver l'identifiant de suivi.
 - **Palette attendue** : slate / gris clair, avec accent amber pour l'accès depuis les surfaces juridiques.
-- **Scope** : DSA-01 — domaine dédié `legal-content-report` intégré en lecture au creator inbox.
+- **Scope** : DSA-01/DSA-02 — domaine dédié `legal-content-report` intégré au creator inbox pour réception et décision administrative tracée.
 
 ## Parcours et règles
 
@@ -24,7 +24,9 @@
 - Aucun compte CleanMyMap, document d'identité ou fichier joint n'est requis.
 - BotID, rate limit, validation Zod et honeypot protègent l'envoi.
 - Le signalement est persisté avant toute tentative d'email. Un email fourni déclenche un accusé de réception ; le signalement reste conservé si l'email échoue.
-- La notification est visible uniquement dans le creator inbox authentifié, en lecture seule, et n'est jamais publiée avec le contenu signalé.
+- La notification est visible uniquement dans le creator inbox authentifié et n'est jamais publiée avec le contenu signalé. Un administrateur autorisé peut y enregistrer une décision : mise en examen, aucune action, restriction, retrait lorsque la capacité canonique existe, ou clôture.
+- Chaque décision conserve l'acteur admin canonique, la date, l'action, l'origine, le motif, l'usage de moyens automatisés, le fondement légal ou CGU lorsque pertinent, l'URL/identifiant et des snapshots bornés avant/après.
+- La mutation éventuelle précède l'audit puis les notifications. Une panne de notification est enregistrée comme erreur partielle et ne défait pas silencieusement la décision ou la mutation.
 
 ## Position juridique publique
 
@@ -37,5 +39,5 @@ déclarant de qualifier juridiquement parfaitement les faits.
 
 - tests de contrat de la route POST et de la validation du formulaire ;
 - tests de persistance avant notification et de tolérance à une panne email ;
-- tests de lecture creator inbox et d'absence de mutation publique ;
+- tests de lecture creator inbox, de décision admin, d'audit et d'absence de mutation publique ;
 - migration Supabase avec RLS service-only et audit de sécurité.

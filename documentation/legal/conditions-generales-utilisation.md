@@ -141,6 +141,15 @@ publiée. Ce dispositif ne demande pas à l'utilisateur de qualifier
 juridiquement parfaitement les faits et ne préjuge pas de la qualification
 juridique de CleanMyMap au regard du DSA.
 
+Lorsqu'une notification est reçue, elle peut faire l'objet d'une décision
+administrative tracée : mise en examen, absence d'action, restriction ou retrait
+du contenu lorsque la capacité canonique correspondante existe, ou clôture. La
+décision est motivée et auditée. Une mesure de contenu n'est pas exécutée si le
+type ou l'identifiant ne peut pas être traité par une capacité de modération
+existante. Les possibilités de réexamen communiquées sont limitées aux contacts
+réellement disponibles ; aucun médiateur ou organisme extrajudiciaire spécifique
+n'est présenté lorsqu'il n'est pas configuré.
+
 ---
 
 ## 9. Responsabilité

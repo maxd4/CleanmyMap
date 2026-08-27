@@ -55,7 +55,7 @@ describe("InboxItemCard state actions", () => {
     expect((markup.match(/disabled=""/g) ?? []).length).toBe(4);
   });
 
-  it("keeps legal content notifications read-only in the shared inbox", () => {
+  it("keeps generic inbox mutations out of legal content notifications", () => {
     const markup = renderToStaticMarkup(
       <InboxItemCard
         item={{
@@ -88,5 +88,49 @@ describe("InboxItemCard state actions", () => {
 
     expect(markup).not.toContain("Motif de traitement");
     expect(markup).not.toContain("Marquer traité");
+  });
+
+  it("renders the traceable legal decision controls in the shared inbox", () => {
+    const markup = renderToStaticMarkup(
+      <InboxItemCard
+        item={{
+          ...feedbackItem,
+          id: "legal-report-2",
+          source: "legal_content_report",
+          sourceLabel: "Notification de contenu illicite",
+          title: "Notification de contenu potentiellement illicite",
+          context: "Motif circonstancié",
+          canDelete: false,
+          canReview: true,
+        }}
+        locale="fr"
+        copy={getCreatorInboxCopy("fr")}
+        copiedKey={null}
+        promotionReason=""
+        onPromotionReasonChange={vi.fn()}
+        partnerReason=""
+        onPartnerReasonChange={vi.fn()}
+        actionReason=""
+        onActionReasonChange={vi.fn()}
+        actionBusy={() => false}
+        onCopySummary={vi.fn()}
+        onAcceptPromotion={vi.fn()}
+        onRejectPromotion={vi.fn()}
+        onAcceptPartner={vi.fn()}
+        onRejectPartner={vi.fn()}
+        onApplyInboxAction={vi.fn()}
+        onLegalDecision={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Décision administrative tracée");
+    expect(markup).toContain("value=\"reviewing\"");
+    expect(markup).toContain("value=\"content_restricted\"");
+    expect(markup).toContain("value=\"content_removed\"");
+    expect(markup).toContain("Motif de la décision");
+    expect(markup).toContain("Fondement légal");
+    expect(markup).toContain("Fondement CGU");
+    expect(markup).not.toContain("Marquer traité");
+    expect(markup).not.toContain("Supprimer");
   });
 });

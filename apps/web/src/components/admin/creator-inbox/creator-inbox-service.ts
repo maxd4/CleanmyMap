@@ -1,4 +1,8 @@
 import type { CreatorInboxItem, CreatorInboxSource } from "@/lib/community/creator-inbox";
+import type {
+  LegalContentReportDecisionAction,
+  LegalContentReportDecisionOrigin,
+} from "@/lib/legal-content-report/legal-content-report";
 
 type ApiErrorPayload = {
   error?: string;
@@ -59,6 +63,27 @@ export async function applyCreatorInboxAction(params: {
   }
   const payload = await readJson<{ item?: CreatorInboxItem; deletedId?: string }>(response);
   return payload ?? {};
+}
+
+export async function decideLegalContentReport(params: {
+  reportId: string;
+  action: LegalContentReportDecisionAction;
+  origin: LegalContentReportDecisionOrigin;
+  reason: string;
+  automatedMeansUsed: boolean;
+  legalBasis?: string;
+  termsBasis?: string;
+}): Promise<{ item?: CreatorInboxItem; status?: string; warning?: string }> {
+  return postJson(
+    "/api/admin/legal-content-reports/decision",
+    {
+      ...params,
+      reason: params.reason.trim(),
+      legalBasis: params.legalBasis?.trim() || undefined,
+      termsBasis: params.termsBasis?.trim() || undefined,
+    },
+    "Decision failed.",
+  );
 }
 
 export async function acceptPromotionRequest(params: {

@@ -160,6 +160,12 @@ est indiqué :
   identifié dans ce dépôt ; les signalements sont conservés selon le suivi
   nécessaire de la notification, les obligations applicables et l'examen d'une
   demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.
+- **`legal_content_report_decisions`** : l'historique des décisions
+  administratives, de leur audit et de leurs états avant/après est conservé
+  avec le signalement pour assurer la traçabilité de l'examen. Aucune durée
+  fixe supplémentaire n'est configurée dans le dépôt ; l'effacement ou la
+  limitation sont examinés au regard des obligations de preuve, des droits des
+  tiers et de la nécessité du suivi.
 - **Profils, actions, lieux, médias de signalement, rapports, notifications,
   progression et audit** : aucun mécanisme générique de suppression périodique
   n'est identifié dans ce dépôt. La conservation suit le fonctionnement du
@@ -200,6 +206,16 @@ Pour une notification de contenu potentiellement illicite, utilisez la page
 publique `/signaler-contenu-illicite`. Ce formulaire possède sa propre finalité
 et sa propre persistance dans `legal_content_reports`; il ne remplace pas le
 formulaire d'exercice des droits RGPD.
+
+Les décisions administratives liées à ces notifications sont enregistrées dans
+`legal_content_report_decisions` avec l'identifiant de l'administrateur
+autorisé, la date, l'action, l'origine (notification reçue ou initiative
+interne), le motif, l'usage éventuel de moyens automatisés, le fondement légal
+ou CGU applicable, l'URL/identifiant du contenu et des états avant/après bornés.
+L'audit exclut les emails, noms et motifs bruts du déclarant ainsi que les
+payloads tiers. Une notification email de décision est tentée après l'audit ;
+son échec est enregistré comme erreur partielle et n'annule pas une mutation
+déjà réalisée.
 
 La réponse intervient dans un délai d'un mois à compter de la réception. Ce
 délai peut être prolongé de deux mois lorsque la complexité ou le nombre de
