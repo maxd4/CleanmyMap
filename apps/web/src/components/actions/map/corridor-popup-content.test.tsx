@@ -6,7 +6,7 @@ import type { ActionDataContract } from "@/lib/actions/contract-model";
 import {
   groupActionsByCorridor,
   type CorridorHistory,
-} from "@/lib/actions/corridor-history";
+} from "@/lib/actions/pollution/corridor-history";
 import { CorridorPopupContent } from "./corridor-popup-content";
 
 function dateAt(day: number): string {

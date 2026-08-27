@@ -8,7 +8,7 @@ import {
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
-import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
+import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>

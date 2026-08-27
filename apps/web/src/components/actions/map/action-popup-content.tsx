@@ -15,9 +15,9 @@ import { ActionMapItem } from "@/lib/actions/types";
 import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
-} from "@/lib/actions/current-place-state";
+} from "@/lib/actions/pollution/current-place-state";
 import type { ActionDataContract } from "@/lib/actions/contract-model";
-import type { CorridorHistory } from "@/lib/actions/corridor-history";
+import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
   formatObservedDate,
@@ -31,7 +31,7 @@ import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { CorridorPopupContent } from "./corridor-popup-content";
 import { useActionPopupScores } from "./use-action-popup-scores";
-import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
+import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 import {
   formatGeometryModeLabel,
   formatGeometryPointCount,

@@ -17,7 +17,7 @@ import {
   type LocalRepollutionScoreResolver,
   type RepollutionDatasetCompleteness,
 } from "./local-repollution-calibration";
-import type { ActionDataContract } from "./contract-model";
+import type { ActionDataContract } from "../contract-model";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

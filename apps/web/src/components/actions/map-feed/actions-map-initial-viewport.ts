@@ -1,18 +1,18 @@
 import type { ActionMapItem, ActionMapViewportQuery } from "@/lib/actions/types";
 import { mapItemCoordinates } from "@/lib/actions/contract-mappers";
-import { fetchInitialNearestPollution } from "@/lib/actions/initial-nearest-pollution-http";
+import { fetchInitialNearestPollution } from "@/lib/actions/pollution/initial-nearest-pollution-http";
 import type {
   InitialPollutionCandidateFetcher,
   MapReferencePoint,
-} from "@/lib/actions/initial-nearest-pollution";
+} from "@/lib/actions/pollution/initial-nearest-pollution";
 import {
   INITIAL_MAP_SEARCH_RADII_KM,
   isWithinRadialSearch,
-} from "@/lib/actions/initial-nearest-pollution";
+} from "@/lib/actions/pollution/initial-nearest-pollution";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
 import { createActionsMapViewport } from "@/components/actions/actions-map-canvas.utils";
 
-export type { InitialPollutionCandidateFetcher, MapReferencePoint } from "@/lib/actions/initial-nearest-pollution";
+export type { InitialPollutionCandidateFetcher, MapReferencePoint } from "@/lib/actions/pollution/initial-nearest-pollution";
 export {
   DISTANCE_TIE_EPSILON_KM,
   INITIAL_MAP_SEARCH_RADII_KM,
@@ -21,7 +21,7 @@ export {
   isActivePollutionItem,
   isWithinRadialSearch,
   selectNearestActivePollution,
-} from "@/lib/actions/initial-nearest-pollution";
+} from "@/lib/actions/pollution/initial-nearest-pollution";
 
 export function selectMapReferencePoint(
   gpsReference: MapReferencePoint | null | undefined,

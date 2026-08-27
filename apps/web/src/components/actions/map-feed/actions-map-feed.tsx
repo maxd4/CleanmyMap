@@ -11,7 +11,7 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;

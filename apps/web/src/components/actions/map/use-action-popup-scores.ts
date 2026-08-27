@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import {
   computePollutionScores,
   computePollutionScoresRelativeToReferences,
-} from "@/lib/actions/pollution-score";
+} from "@/lib/actions/pollution/pollution-score";
 import { getScoreReading, type ScoreReading } from "./action-popup-content.helpers";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 

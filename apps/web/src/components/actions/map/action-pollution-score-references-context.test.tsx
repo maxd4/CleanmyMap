@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
-import { DEFAULT_POLLUTION_SCORE_REFERENCES } from "@/lib/actions/pollution-score";
+import { DEFAULT_POLLUTION_SCORE_REFERENCES } from "@/lib/actions/pollution/pollution-score";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 
 function HookConsumer() {

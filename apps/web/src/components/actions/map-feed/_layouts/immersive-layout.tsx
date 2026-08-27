@@ -5,7 +5,7 @@ import type { ActionsMapCanvasComponent } from "../map-feed.types";
 import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),

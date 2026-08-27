@@ -9,7 +9,7 @@ import type { MarkerCategory } from "@/components/actions/map-marker-categories"
 import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-filters.utils";
 import type { MapViewportState } from "@/components/actions/map/map-export.types";
 import type { RefObject } from "react";
-import type { RepollutionDatasetCompleteness } from "@/lib/actions/local-repollution-calibration";
+import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 
 export type ActionsMapCanvasComponent = ComponentType<{
   items: ActionMapItem[];

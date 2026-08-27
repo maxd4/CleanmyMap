@@ -10,7 +10,7 @@ vi.mock("@/lib/supabase/client", () => ({
   getSupabaseBrowserClient: mocks.getSupabaseBrowserClientMock,
 }));
 
-vi.mock("./pollution-score-references", () => ({
+vi.mock("./pollution/pollution-score-references", () => ({
   fetchActionPollutionScoreReferences: mocks.fetchActionPollutionScoreReferencesMock,
 }));
 

@@ -1,5 +1,5 @@
-import type { ActionMapItem, ActionMapViewportQuery } from "./types";
-import { mapItemCoordinates, mapItemType } from "./contract-mappers";
+import type { ActionMapItem, ActionMapViewportQuery } from "../types";
+import { mapItemCoordinates, mapItemType } from "../contract-mappers";
 import type { PollutionScoreReferences } from "./pollution-score";
 import { resolveItemPollutionScores } from "@/components/actions/map-marker-categories";
 

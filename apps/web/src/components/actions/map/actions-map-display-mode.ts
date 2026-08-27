@@ -1,4 +1,4 @@
-import type { CurrentPlaceStateMode } from "@/lib/actions/current-place-state";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 export const ACTIONS_MAP_DISPLAY_MODE_OPTIONS: readonly {
   value: CurrentPlaceStateMode;

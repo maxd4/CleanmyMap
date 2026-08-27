@@ -1,7 +1,7 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
 import { resolveItemPollutionScores } from "@/components/actions/map-marker-categories";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 export function formatNumber(value: number, suffix = ""): string {

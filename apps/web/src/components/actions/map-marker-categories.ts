@@ -11,8 +11,8 @@ import {
   computeButtsContributionScore,
   computeWasteContributionScore,
  type PollutionScoreReferences,
-} from"@/lib/actions/pollution-score";
-import { presentActionPollutionProjection } from "@/lib/actions/revisit-priority";
+} from"@/lib/actions/pollution/pollution-score";
+import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 
 export type MarkerCategory =
  |"orange"

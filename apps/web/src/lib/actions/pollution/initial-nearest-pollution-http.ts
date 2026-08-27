@@ -1,4 +1,4 @@
-import type { ActionMapItem, ActionMapViewportQuery } from "./types";
+import type { ActionMapItem, ActionMapViewportQuery } from "../types";
 
 export async function fetchInitialNearestPollution(params: {
   radiusKm: number;

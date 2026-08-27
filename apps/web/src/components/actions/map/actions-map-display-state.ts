@@ -5,12 +5,12 @@ import {
   type CurrentPlaceState,
   type CurrentPlaceStateMode,
   type CurrentPlaceStateViews,
-} from "@/lib/actions/current-place-state";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
+} from "@/lib/actions/pollution/current-place-state";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import type {
   LocalRepollutionScoreResolver,
   RepollutionDatasetCompleteness,
-} from "@/lib/actions/local-repollution-calibration";
+} from "@/lib/actions/pollution/local-repollution-calibration";
 import type { ActionMapItem } from "@/lib/actions/types";
 
 export function resolveMapSourceContracts(
