@@ -32,6 +32,8 @@ import { invalidatePublicSurfaceSnapshotsByRoute } from"@/lib/public-surface-sna
 import { recordRepollutionPredictionEvaluationForAction } from"@/lib/actions/store";
 import {
  moderateSignalement,
+ readSignalementForModeration,
+ type ModeratableSignalement,
 } from"@/lib/admin/signalement-moderation";
 
 export const runtime ="nodejs";
@@ -278,6 +280,38 @@ function canonicalTargetUserId(value: unknown): string | undefined {
  }
  const normalized = value.trim();
  return normalized && normalized !== "unknown" ? normalized : undefined;
+}
+
+type ModerationErrorStage = "lookup" | "update" | "post_update" | "local_sync";
+
+type CleanPlaceAuditSnapshot = {
+ status: string;
+ spotType: string | null;
+ labelChanged: boolean;
+ coordinatesChanged: boolean;
+ notesChanged: boolean;
+};
+
+function toCleanPlaceAuditSnapshot(
+ signalement: ModeratableSignalement | null,
+ comparison: ModeratableSignalement | null,
+): CleanPlaceAuditSnapshot {
+ return {
+  status: signalement?.status ?? "unknown",
+  spotType: signalement?.spot_type ?? null,
+  labelChanged: Boolean(
+   signalement && comparison && signalement.label !== comparison.label,
+  ),
+  coordinatesChanged: Boolean(
+   signalement &&
+    comparison &&
+    (signalement.latitude !== comparison.latitude ||
+     signalement.longitude !== comparison.longitude),
+  ),
+  notesChanged: Boolean(
+   signalement && comparison && signalement.notes !== comparison.notes,
+  ),
+ };
 }
 
 async function loadActionImpactValues(
@@ -542,17 +576,30 @@ export async function POST(request: Request) {
  }
 
  const supabase = getSupabaseAdminClient();
+ let auditRecorded = false;
+ let errorStage: ModerationErrorStage = "lookup";
+ const appendAuditOnce = async (
+  entry: Parameters<typeof appendAdminOperationAudit>[0],
+ ): Promise<void> => {
+  if (auditRecorded) {
+   return;
+  }
+  auditRecorded = true;
+  await appendAdminOperationAudit(entry);
+ };
 
  try {
  if (parsed.data.entityType ==="action") {
+  errorStage = "lookup";
   const shouldRefreshImpact = hasSensitiveImpactEdit(parsed.data.edits);
   const previousActionAuditState = await tryLoadActionAuditState(
    supabase,
    parsed.data.id,
   );
   const previousImpactValue = shouldRefreshImpact
-  ? await loadActionImpactValues(supabase, parsed.data.id)
- : null;
+   ? await loadActionImpactValues(supabase, parsed.data.id)
+  : null;
+  errorStage = "update";
  const statusUpdate = await updateActionStatus(
  supabase,
  parsed.data.id,
@@ -568,14 +615,20 @@ export async function POST(request: Request) {
  })
  : null;
  if (!statusUpdate.found) {
- await appendAdminOperationAudit({
+  await appendAuditOnce({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,
  operationType:"moderation",
  outcome:"error",
  targetId: parsed.data.id,
- details: { code:"not_found", entityType: parsed.data.entityType },
+  details: {
+   code:"not_found",
+   entityType: parsed.data.entityType,
+   stage:"lookup",
+   ...(requiredReasonOperation ? { operation: requiredReasonOperation } : {}),
+   ...(reason ? { reason } : {}),
+  },
  });
 
  return adminErrorResponse({
@@ -586,25 +639,28 @@ export async function POST(request: Request) {
  operationId,
  });
  }
- if (parsed.data.status ==="approved" && statusUpdate.source ==="actions") {
+  errorStage = "post_update";
+  if (parsed.data.status ==="approved" && statusUpdate.source ==="actions") {
   await recordRepollutionPredictionEvaluationForAction(
    supabase,
    parsed.data.id,
   );
  }
  if (visibilityUpdate && !visibilityUpdate.found) {
- await appendAdminOperationAudit({
+  await appendAuditOnce({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,
  operationType:"moderation",
  outcome:"error",
  targetId: parsed.data.id,
- details: {
-  code:"not_found",
-  entityType: parsed.data.entityType,
-  operation: requiredReasonOperation,
- },
+  details: {
+   code:"not_found",
+   entityType: parsed.data.entityType,
+   stage:"post_update",
+   operation: requiredReasonOperation,
+   ...(reason ? { reason } : {}),
+  },
  });
 
  return adminErrorResponse({
@@ -616,7 +672,7 @@ export async function POST(request: Request) {
  });
  }
 
-let copied = false;
+ let copied = false;
  let newImpactValue: ActionImpactValues | null = null;
  let refreshedProgressionUserIds: string[] = [];
  if (shouldRefreshImpact) {
@@ -627,10 +683,11 @@ let copied = false;
     newImpactValue?.createdByClerkId ?? previousImpactValue?.createdByClerkId ?? null,
   });
  }
-  if (
+ if (
     parsed.data.status ==="approved" &&
     requiredReasonOperation !== "restore_after_sanction"
   ) {
+    errorStage = "local_sync";
     const syncResult = await copyValidatedActionToLocalStore(
       supabase,
       parsed.data.id,
@@ -638,6 +695,7 @@ let copied = false;
     );
     copied = syncResult.copied;
 
+    errorStage = "post_update";
     const actionDetails = await runSingleActionQuery<{
       created_by_clerk_id: string | null;
     }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", parsed.data.id).maybeSingle());
@@ -648,6 +706,7 @@ let copied = false;
       moderatorId: access.userId,
     });
   } else if (parsed.data.status ==="rejected") {
+    errorStage = "post_update";
     const actionDetails = await runSingleActionQuery<{
       created_by_clerk_id: string | null;
     }>(supabase, (query) => query.select("created_by_clerk_id").eq("id", parsed.data.id).maybeSingle());
@@ -676,7 +735,7 @@ let copied = false;
     newActionAuditState?.createdByClerkId,
   );
 
- await appendAdminOperationAudit({
+ await appendAuditOnce({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,
@@ -712,20 +771,66 @@ let copied = false;
  });
  }
 
+ errorStage = "lookup";
+ const previousSignalement = await readSignalementForModeration(
+  supabase,
+  parsed.data.id,
+ );
+ if (!previousSignalement) {
+  const emptySnapshot = toCleanPlaceAuditSnapshot(null, null);
+  await appendAuditOnce({
+   operationId,
+   at: new Date().toISOString(),
+   actorUserId: access.userId,
+   operationType:"moderation",
+   outcome:"error",
+   targetId: parsed.data.id,
+   details: {
+    code:"not_found",
+    entityType: parsed.data.entityType,
+    stage:"lookup",
+    ...(reason ? { reason } : {}),
+    previousValue: emptySnapshot,
+    newValue: emptySnapshot,
+   },
+  });
+
+  return adminErrorResponse({
+   status: 404,
+   code:"not_found",
+   message:"Clean place not found",
+   hint:"Verifier l'identifiant spot avant de relancer la moderation.",
+   operationId,
+  });
+ }
+
+ errorStage = "update";
  const signalementUpdate = await moderateSignalement(supabase, {
-  id: parsed.data.id,
-  status: parsed.data.status,
-  edits: parsed.data.edits,
+   id: parsed.data.id,
+   status: parsed.data.status,
+   edits: parsed.data.edits,
  });
  if (!signalementUpdate.found || !signalementUpdate.signalement) {
- await appendAdminOperationAudit({
+ const previousValue = toCleanPlaceAuditSnapshot(
+  previousSignalement,
+  previousSignalement,
+ );
+ const newValue = toCleanPlaceAuditSnapshot(null, previousSignalement);
+ await appendAuditOnce({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,
  operationType:"moderation",
  outcome:"error",
  targetId: parsed.data.id,
- details: { code:"not_found", entityType: parsed.data.entityType },
+ details: {
+  code:"not_found",
+  entityType: parsed.data.entityType,
+  stage:"update",
+  ...(reason ? { reason } : {}),
+  previousValue,
+  newValue,
+ },
  });
 
  return adminErrorResponse({
@@ -742,12 +847,14 @@ let copied = false;
   parsed.data.status ==="validated" ||
   parsed.data.status ==="cleaned"
   ) {
+    errorStage = "local_sync";
     copied = await copyValidatedSpotToLocalStore(
       supabase,
       parsed.data.id,
       access.userId,
     );
 
+    errorStage = "post_update";
     emitSpotValidated({
       spotId: parsed.data.id,
       userId: signalementUpdate.signalement.created_by_clerk_id || "",
@@ -755,12 +862,17 @@ let copied = false;
 });
   }
 
+  errorStage = "post_update";
   await invalidatePublicSurfaceSnapshotsByRoute([
     "api/actions",
     "api/actions/map",
   ]);
 
-  await appendAdminOperationAudit({
+  const updatedSignalement = signalementUpdate.signalement;
+  const targetUserId = canonicalTargetUserId(
+   previousSignalement.created_by_clerk_id ?? updatedSignalement.created_by_clerk_id,
+  );
+  await appendAuditOnce({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,
@@ -769,11 +881,18 @@ let copied = false;
  targetId: parsed.data.id,
  details: {
  entityType: parsed.data.entityType,
- targetStatus: parsed.data.status,
+ ...(targetUserId ? { targetUserId } : {}),
  ...(reason ? { reason } : {}),
  sourceTable: signalementUpdate.sourceTable,
  copiedToLocalValidatedStore: copied,
- editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
+ previousValue: toCleanPlaceAuditSnapshot(
+  previousSignalement,
+  updatedSignalement,
+ ),
+ newValue: toCleanPlaceAuditSnapshot(
+  updatedSignalement,
+  previousSignalement,
+ ),
  },
  });
 
@@ -787,20 +906,26 @@ let copied = false;
  copiedToLocalValidatedStore: copied,
  },
  });
- } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- console.error("[Admin Moderation] Operation failed", {
-  operationId,
-  message,
- });
+ } catch {
+  console.error("[Admin Moderation] Operation failed", {
+   operationId,
+   stage: errorStage,
+  });
 
- await appendAdminOperationAudit({
+ await appendAuditOnce({
   operationId,
   at: new Date().toISOString(),
   actorUserId: access.userId,
   operationType:"moderation",
   outcome:"error",
-  details: { code:"server_error" },
+  targetId: parsed.data.id,
+  details: {
+   code:"server_error",
+   entityType: parsed.data.entityType,
+   stage: errorStage,
+   ...(requiredReasonOperation ? { operation: requiredReasonOperation } : {}),
+   ...(reason ? { reason } : {}),
+  },
  });
 
  return adminErrorResponse({
