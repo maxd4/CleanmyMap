@@ -83,7 +83,7 @@ export type ActionDataContract = {
   geometry: ActionDataGeometry;
   dates: ActionDataDates;
   metadata: ActionDataMetadata;
-  dataQuality?: import("../quality/data-quality").ActionDataQualitySummary;
+  dataQuality?: import("../quality/data-quality-types").ActionDataQualitySummary;
 };
 
 export type BuildActionContractParams = {

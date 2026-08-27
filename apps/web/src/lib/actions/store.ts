@@ -95,7 +95,7 @@ function isMissingActionColumnError(error: unknown): boolean {
   );
 }
 
-function normalizeStoredAction(row: StoredAction): StoredAction {
+function normalizeStoredAction(row: ActionRow): ActionRow {
   return {
     ...row,
     waste_kg: Number(row.waste_kg ?? 0),
@@ -103,7 +103,7 @@ function normalizeStoredAction(row: StoredAction): StoredAction {
     volunteers_count: Number(row.volunteers_count ?? 0),
     duration_minutes: Number(row.duration_minutes ?? 0),
     action_phase: row.action_phase ?? "post_action_complete",
-    preparation_data: (row.preparation_data ?? {}) as StoredAction["preparation_data"],
+    preparation_data: (row.preparation_data ?? {}) as ActionRow["preparation_data"],
   };
 }
 
@@ -156,9 +156,9 @@ async function fetchActionRows(
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
   },
-): Promise<StoredAction[]> {
+): Promise<ActionRow[]> {
   try {
-    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
     );
     return rows.map(normalizeStoredAction);
@@ -167,7 +167,7 @@ async function fetchActionRows(
       throw error;
     }
 
-    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       buildActionListQuery(query, params, ACTION_SELECT_FIELDS_LEGACY),
     );
     return rows.map(normalizeStoredAction);
@@ -177,9 +177,9 @@ async function fetchActionRows(
 async function fetchActionRowById(
   supabase: SupabaseClient,
   actionId: string,
-): Promise<StoredAction | null> {
+): Promise<ActionRow | null> {
   try {
-    const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
+    const row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
       query
         .select(ACTION_SELECT_FIELDS_WITH_PHASE)
         .eq("id", actionId)
@@ -196,7 +196,7 @@ async function fetchActionRowById(
       throw error;
     }
 
-    const row = await runSingleActionQuery<StoredAction>(supabase, (query) =>
+    const row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
       query.select(ACTION_SELECT_FIELDS_LEGACY).eq("id", actionId).maybeSingle(),
     );
 
@@ -207,9 +207,6 @@ async function fetchActionRowById(
     return normalizeStoredAction(row);
   }
 }
-
-/** @deprecated Use ActionRow from @/types/database */
-export type StoredAction = ActionRow;
 
 type PersistedActionNotesPayload = Pick<
   CreateActionPayload,
@@ -296,16 +293,16 @@ export async function fetchActions(
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
   },
-): Promise<StoredAction[]> {
+): Promise<ActionRow[]> {
   return fetchActionRows(supabase, params);
 }
 
 export async function fetchRecentActionsByUser(
   supabase: SupabaseClient,
   params: { userId: string; limit: number },
-): Promise<StoredAction[]> {
+): Promise<ActionRow[]> {
   try {
-    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       query
         .select(ACTION_SELECT_FIELDS_WITH_PHASE)
         .eq("created_by_clerk_id", params.userId)
@@ -318,7 +315,7 @@ export async function fetchRecentActionsByUser(
       throw error;
     }
 
-    const rows = await runActionQuery<StoredAction>(supabase, (query) =>
+    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       query
         .select(ACTION_SELECT_FIELDS_LEGACY)
         .eq("created_by_clerk_id", params.userId)
@@ -332,7 +329,7 @@ export async function fetchRecentActionsByUser(
 export async function loadActionById(
   supabase: SupabaseClient,
   actionId: string,
-): Promise<StoredAction | null> {
+): Promise<ActionRow | null> {
   return fetchActionRowById(supabase, actionId);
 }
 
