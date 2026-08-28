@@ -56,6 +56,7 @@ export async function sendLegalContentReportCreatorNotification(
   return sendCreatorInboxEmail({
     actorUserId: record.submittedByUserId,
     quotaPolicy: "none",
+    meta: { source: "legal_content_report", notification: "creator_inbox" },
     replyTo: record.notifierEmail ?? undefined,
     subject: `[CleanMyMap] Notification de contenu - ${record.id}`,
     title: "Nouvelle notification de contenu illicite",

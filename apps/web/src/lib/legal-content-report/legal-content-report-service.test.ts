@@ -73,7 +73,11 @@ describe("legal content report transactional emails", () => {
       }),
     );
     expect(sendCreatorInboxEmailMock).toHaveBeenCalledWith(
-      expect.objectContaining({ actorUserId: "user_123", quotaPolicy: "none" }),
+      expect.objectContaining({
+        actorUserId: "user_123",
+        quotaPolicy: "none",
+        meta: { source: "legal_content_report", notification: "creator_inbox" },
+      }),
     );
   });
 
