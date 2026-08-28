@@ -165,6 +165,7 @@ Invoke-ParallelSteps @(
     [pscustomobject]@{ Label = "check:stack-doc-drift"; Command = "npm run check:stack-doc-drift" },
     [pscustomobject]@{ Label = "check:agent-skills"; Command = "npm run check:agent-skills" },
     [pscustomobject]@{ Label = "check:github-actions"; Command = "npm run check:github-actions" },
+    [pscustomobject]@{ Label = "check:9c-public-facades"; Command = "npm run check:9c-public-facades" },
     [pscustomobject]@{ Label = "check:doc-visuals"; Command = "npm run check:doc-visuals" }
 ) 3
 

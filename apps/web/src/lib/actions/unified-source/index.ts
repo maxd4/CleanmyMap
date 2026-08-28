@@ -11,7 +11,20 @@ import {
 import { loadUnifiedActionSourceData } from "./load";
 import { buildUnifiedActionContracts, filterContractsByViewport } from "./merge";
 
-export * from "./contracts";
+export type {
+  UnifiedActionContractsParams,
+  UnifiedSourceHealth,
+  TrashSpotterSpotRow,
+  UnifiedActionSourceLoadResult,
+  UnifiedContractOrigin,
+  UnifiedContractCandidate,
+} from "./contracts";
+export {
+  normalizeExternalActionImport,
+  mapActionStatusToSpotStatuses,
+  toActionContract,
+  toCanonicalSpotContract,
+} from "./contracts";
 
 export function parseEntityTypesParam(
   raw: string | null,
@@ -76,5 +89,4 @@ export async function fetchUnifiedActionContracts(
   };
 }
 
-export type { UnifiedActionContractsParams };
 export { buildUnifiedActionContracts, filterContractsByViewport } from "./merge";

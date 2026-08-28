@@ -38,7 +38,7 @@ vi.mock("@/lib/botid/server", () => ({
   requireBotIdHuman: requireBotIdHumanMock,
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
   createServerRateLimitResponse: createServerRateLimitResponseMock,
 }));

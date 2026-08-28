@@ -48,7 +48,6 @@ API Route
 
 ```
 src/lib/events/
-├── index.ts        # Exports
 ├── types.ts        # Event types and payloads
 ├── bus.ts          # Event bus implementation
 ├── emit.ts         # Helper functions to emit events

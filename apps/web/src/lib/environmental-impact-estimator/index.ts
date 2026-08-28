@@ -77,7 +77,7 @@ export type {
 export {
   buildEnvironmentalImpactEstimatorMethodology,
   computeEnvironmentalImpactEstimate,
-} from "./service";
+} from "./services/core";
 export { buildElectricityEstimate, calculateElectricityCo2e } from "./services/electricity";
 export { buildWaterEstimate, calculateIndirectElectricityWater } from "./services/water";
 export {

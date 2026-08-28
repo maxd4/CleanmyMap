@@ -36,6 +36,7 @@ try {
 
     Invoke-GuardStep "root file hygiene" { npm run check:root-files }
     Invoke-GuardStep "GitNexus hygiene" { npm run check:gitnexus-hygiene }
+    Invoke-GuardStep "9C public facades" { npm run check:9c-public-facades }
     Invoke-GuardStep "documentation governance" { npm run check:doc-governance }
     Invoke-GuardStep "vercel quota audit" { npm run audit:vercel-quota }
     Invoke-GuardStep "vercel regression gates" { npm run test:regression-gates }

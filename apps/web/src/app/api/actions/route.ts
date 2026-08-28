@@ -30,7 +30,10 @@ import {
 } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { resolveReportQuery } from "@/lib/reports/csv";
-import { verifyRateLimit, createServerRateLimitResponse } from "@/lib/rate-limit";
+import {
+  verifyRateLimit,
+  createServerRateLimitResponse,
+} from "@/lib/rate-limit/server";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
