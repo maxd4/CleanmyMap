@@ -61,6 +61,18 @@ CleanmyMap-sync/
 /apps/web/CLAUDE.md
 
 documentation/pages_site/routes/04-reseau-discussions/partners-network/partnerships/
+# Page captures and image assets under documentation routes stay local-only.
+documentation/pages_site/routes/**/*.png
+documentation/pages_site/routes/**/*.jpg
+documentation/pages_site/routes/**/*.jpeg
+documentation/pages_site/routes/**/*.webp
+documentation/pages_site/routes/**/*.gif
+documentation/pages_site/routes/**/*.svg
+documentation/pages_site/routes/**/*.avif
+documentation/pages_site/routes/**/*.ico
+documentation/pages_site/routes/**/*.bmp
+documentation/pages_site/routes/**/*.tif
+documentation/pages_site/routes/**/*.tiff
 
 .vercel/
 .playwright-mcp/

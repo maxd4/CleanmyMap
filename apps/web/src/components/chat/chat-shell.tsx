@@ -53,12 +53,7 @@ import {
   normalizeChatPollVoteResponse,
 } from "@/lib/chat/poll-votes";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
-import { ChatMessageItem } from "./ui/chat-message-item";
-import {
-  ChatDegradedState,
-  ChatEmptyState,
-  ChatLoadingState,
-} from "./ui/chat-feed-states";
+import { ChatMessageFeed } from "./ui/chat-message-feed";
 import {
   CHANNEL_VISUALS,
   getChannelPlaceholder,
@@ -1127,64 +1122,29 @@ export function ChatShell({
             </div>
           ) : (
             <>
-              <div
-                ref={scrollRef}
-                className={`min-h-0 flex-1 overflow-y-auto space-y-4 p-4 custom-scrollbar sm:p-6 ${isLight ? "bg-transparent" : ""}`}
-              >
-                {hasMoreMessages ? (
-                  <div className="flex flex-col items-center gap-2 pb-1">
-                    <button
-                      type="button"
-                      onClick={() => void handleLoadPreviousMessages()}
-                      disabled={isLoadingPrevious}
-                      className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 disabled:cursor-wait disabled:opacity-60"
-                    >
-                      {isLoadingPrevious
-                        ? "Chargement…"
-                        : loadPreviousError
-                          ? "Réessayer les messages précédents"
-                          : "Charger les messages précédents"}
-                    </button>
-                    {loadPreviousError ? (
-                      <p className="text-center text-xs text-rose-700" role="alert">
-                        {loadPreviousError}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                {targetStatus === "unavailable" && targetMessageId ? (
-                  <p className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-center text-xs text-slate-500" role="status">
-                    Le message demandé n’est plus disponible dans ce fil.
-                  </p>
-                ) : null}
-                {feedState === "loading" && <ChatLoadingState tone={isLight ? "light" : "dark"} />}
-                {feedState === "degraded" && (
-                  <ChatDegradedState error={messagesError} tone={isLight ? "light" : "dark"} />
-                )}
-                {feedState === "empty" && (
-                  <ChatEmptyState
-                    emptyState={discussionGuidance}
-                    locale={locale}
-                    activeChannelType={activeChannelType}
-                    selectedRecipientId={selectedRecipient?.id}
-                    onStarterPrompt={handleStarterPrompt}
-                    onOpenRecipientPicker={() => setIsRecipientPickerOpen(true)}
-                    tone={isLight ? "light" : "dark"}
-                  />
-                )}
-                {messages.map((msg) => (
-                  <ChatMessageItem
-                    key={msg.id}
-                    message={msg}
-                    userId={userId}
-                    tone={isLight ? "light" : "dark"}
-                    onPollVote={handlePollVote}
-                    pollVotePending={pollVoteStates[msg.id]?.pending}
-                    pollVoteError={pollVoteStates[msg.id]?.error}
-                    isHighlighted={highlightedMessageId === msg.id}
-                  />
-                ))}
-              </div>
+              <ChatMessageFeed
+                scrollRef={scrollRef}
+                hasMoreMessages={hasMoreMessages}
+                isLoadingPrevious={isLoadingPrevious}
+                loadPreviousError={loadPreviousError}
+                onLoadPreviousMessages={() => void handleLoadPreviousMessages()}
+                targetMessageId={targetMessageId}
+                targetStatus={targetStatus}
+                feedState={feedState}
+                messagesError={messagesError}
+                messages={messages}
+                userId={userId}
+                tone={isLight ? "light" : "dark"}
+                onPollVote={handlePollVote}
+                pollVoteStates={pollVoteStates}
+                highlightedMessageId={highlightedMessageId}
+                emptyState={discussionGuidance}
+                locale={locale}
+                activeChannelType={activeChannelType}
+                selectedRecipientId={selectedRecipient?.id}
+                onStarterPrompt={handleStarterPrompt}
+                onOpenRecipientPicker={() => setIsRecipientPickerOpen(true)}
+              />
 
               <ChatComposer
                 activeChannelType={activeChannelType}

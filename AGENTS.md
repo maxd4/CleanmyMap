@@ -101,6 +101,9 @@ committe/pousse lorsque la demande l'autorise.
 - ne pas créer de fichier racine sans justification explicite ; placer les
   temporaires, captures, logs, exports et artefacts dans leur emplacement
   canonique (`artifacts/`, `documentation/`, `backups/` ou sous-dossier dédié) ;
+- les images et captures placées sous `documentation/pages_site/routes/` sont
+  des assets locaux uniquement : elles doivent rester ignorées par Git et ne
+  doivent jamais être ajoutées à l'index ou commitées ;
 - les skills CleanMyMap versionnés utilisent `.agents/skills/` comme source
   canonique et `.codex/skills/` comme miroir gouverné ; les skills tiers vont
   dans l'installation utilisateur globale, jamais dans le checkout ;
