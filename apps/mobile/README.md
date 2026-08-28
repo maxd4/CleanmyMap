@@ -143,7 +143,7 @@ dans l'app mobile.
 
 ```bash
 npm install
-npm run typecheck -w apps/mobile
+npm run mobile:typecheck
 npm start -w apps/mobile
 ```
 
@@ -229,7 +229,7 @@ Les migrations sont maintenues uniquement dans `apps/web/supabase/`. Voir
 ## Validation actuelle
 
 ```bash
-npm run typecheck
+npm run mobile:typecheck
 ```
 
 Le prochain niveau recommandé est d'ajouter des tests unitaires pour :

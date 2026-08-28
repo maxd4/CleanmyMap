@@ -8,7 +8,7 @@
     "build:clean": "node ../../scripts/dev/clean-dev-cache.mjs && npm run build",
     "start": "next start",
     "lint": "eslint src",
-    "typecheck": "npx tsc --noEmit --pretty false --skipLibCheck",
+    "typecheck": "tsc --pretty false",
     "test": "vitest run",
     "test:security": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups security",
     "test:regression-gates": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups regression",
@@ -41,7 +41,6 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@sentry/nextjs": "^10.70.0",
     "@supabase/supabase-js": "^2.112.3",
-    "@types/react-big-calendar": "^1.16.3",
     "@upstash/qstash": "^2.11.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.2",
@@ -76,6 +75,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/react-big-calendar": "^1.16.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
     "@types/leaflet": "^1.9.22",
@@ -88,11 +88,5 @@
     "tailwindcss": "^4",
     "typescript": "^7",
     "vitest": "^4.1.11"
-  },
-  "overrides": {
-    "@babel/core": "7.29.7",
-    "js-yaml": "4.3.1",
-    "postcss": "8.5.23",
-    "ws": "8.21.0"
   }
 }

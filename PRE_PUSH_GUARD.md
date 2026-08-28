@@ -18,15 +18,34 @@ npm run hooks:install
 
 Ensuite :
 
-- `pre-commit` exécute `npm run precommit:guard`
-- `pre-push` exécute `npm run prepush:guard`
+- `.githooks/pre-commit` (hook extensionless, shell, LF) exécute
+  `npm run precommit:guard`
+- `.githooks/pre-push` (hook extensionless, shell, LF) exécute
+  `npm run prepush:guard`
 
-Cette commande exécute dans l'ordre:
+Les deux scripts CI résolvent la racine du dépôt depuis
+`$PSScriptRoot/../..`, puis exécutent le garde-fou depuis cette racine.
+La détection Vercel porte donc sur les chemins relatifs à la racine réelle :
+`.vercel/project.json` et `apps/web/.vercel/project.json`.
 
-1. `npm run lint`
-2. `npm run typecheck`
-3. `npm run build`
-4. `npx vercel build --yes` si le repo est lié à Vercel via `.vercel/project.json` ou `apps/web/.vercel/project.json`
+Le garde-fou exécute actuellement, dans l'ordre:
+
+1. `npm run check:root-files`
+2. `npm run check:gitnexus-hygiene`
+3. `npm run check:9c-public-facades`
+4. `npm run check:doc-governance`
+5. `npm run audit:vercel-quota`
+6. `npm run test:regression-gates`
+7. `npm run lint`
+8. `npm run typecheck`
+9. `npm run build`
+10. `npx vercel build --yes` si au moins un fichier de liaison Vercel est présent
+
+L'étape Vercel peut être explicitement ignorée pour un contrôle local avec :
+
+```powershell
+npm run prepush:guard -- -SkipVercel
+```
 
 Si une étape échoue, le push doit être bloqué.
 
@@ -54,7 +73,8 @@ git push
 
 ## Cas Vercel
 
-Le repo est considéré comme lié à Vercel si au moins un de ces fichiers existe:
+Le repo est considéré comme lié à Vercel si au moins un de ces fichiers existe
+à partir de la racine résolue par le script:
 
 - `.vercel/project.json`
 - `apps/web/.vercel/project.json`
