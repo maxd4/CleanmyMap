@@ -69,23 +69,17 @@ résultat du helper est disponible, les headers `X-RateLimit-Limit`,
 
 ## Couche BotID anti-automation
 
-Vercel BotID Basic protège les POST effectivement déclenchés par les appels
-navigateur CleanMyMap. `initBotId()` est initialisé dans
+Vercel BotID Basic protège les POST anonymes effectivement déclenchés par les
+appels navigateur CleanMyMap. `initBotId()` est initialisé dans
 `apps/web/instrumentation-client.ts`, et `checkBotId()` est appelé au début de
 chaque handler serveur concerné, avant `request.json()`, Clerk, Supabase,
 Resend, l'IA ou les autres traitements métier.
 
 Les routes protégées sont :
 
-- `/api/chat` ;
 - `/api/contact` ;
 - `/api/newsletter/subscribe` ;
-- `/api/community/bug-reports` ;
-- `/api/community/promotion-requests` ;
-- `/api/partners/onboarding-requests` ;
 - `/api/gamification/quiz/pedagogical-metrics` ;
-- `/api/actions` ;
-- `/api/community/events`.
 
 Un bot détecté reçoit la réponse stable HTTP `403` avec le code
 `BOT_DETECTED`. L'ordre d'exécution est `BotID → rate-limit Upstash (ou
@@ -93,8 +87,10 @@ fallback local) → logique métier` : un rejet BotID ne déclenche pas Redis et
 un rejet `429` ne déclenche aucun service métier. BotID est un filtre
 anti-automation navigateur, pas un quota distribué.
 
-L'audit des appelants du dépôt ne trouve pas de webhook, script de
-maintenance ou client machine pour ces neuf POST. Les chemins voisins
+Les écritures déjà authentifiées et l'exception d'écriture publique DSA ne sont
+pas bloquées par BotID dans le runtime actuel. L'audit des appelants du dépôt
+ne trouve pas de webhook, script de maintenance ou client machine pour ces
+trois POST. Les chemins voisins
 `/api/community/events/ops` et `/api/actions/map` ne sont pas déclarés dans la
 configuration BotID : ils restent hors de cette protection navigateur et ne
 sont pas concernés par ce lot.

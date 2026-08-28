@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
-const botIdMock = vi.hoisted(() => vi.fn());
 const appendMock = vi.hoisted(() => vi.fn());
 const acknowledgementMock = vi.hoisted(() => vi.fn());
 const creatorNotificationMock = vi.hoisted(() => vi.fn());
@@ -13,7 +12,6 @@ const hasRecentSubmissionMock = vi.hoisted(() => vi.fn());
 const logWarningMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
-vi.mock("@/lib/botid/server", () => ({ requireBotIdHuman: botIdMock }));
 vi.mock("@/lib/legal-content-report/legal-content-report-store", () => ({
   appendLegalContentReport: appendMock,
 }));
@@ -75,7 +73,6 @@ describe("POST /api/legal-content-reports", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user_123" });
-    botIdMock.mockResolvedValue(null);
     verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: null });
     createServerRateLimitResponseMock.mockReturnValue(null);
     hasHoneypotSignalMock.mockReturnValue(false);
@@ -154,16 +151,30 @@ describe("POST /api/legal-content-reports", () => {
     expect(logWarningMock).toHaveBeenCalledTimes(2);
   });
 
-  it("applies BotID and rate limiting before persistence", async () => {
-    botIdMock.mockResolvedValueOnce(new Response("bot", { status: 403 }));
+  it("keeps the honeypot and recent-submission delay guardrails", async () => {
     const { POST } = await import("./route");
-    expect((await POST(request({}))).status).toBe(403);
+
+    hasHoneypotSignalMock.mockReturnValueOnce(true);
+    expect((await POST(request({}))).status).toBe(429);
     expect(appendMock).not.toHaveBeenCalled();
 
-    botIdMock.mockResolvedValue(null);
+    hasHoneypotSignalMock.mockReturnValue(false);
+    hasRecentSubmissionMock.mockReturnValueOnce(true);
+    expect((await POST(request({}))).status).toBe(429);
+    expect(appendMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the DSA submission public while applying rate limiting before persistence", async () => {
+    const { POST } = await import("./route");
     verifyRateLimitMock.mockResolvedValueOnce({ allowed: false, retryAfter: 20 });
     createServerRateLimitResponseMock.mockReturnValueOnce(new Response("limited", { status: 429 }));
     expect((await POST(request({}))).status).toBe(429);
     expect(appendMock).not.toHaveBeenCalled();
+
+    verifyRateLimitMock.mockResolvedValueOnce({ allowed: true, retryAfter: null });
+    createServerRateLimitResponseMock.mockReturnValue(null);
+    authMock.mockResolvedValueOnce({ userId: null });
+    expect((await POST(request({}))).status).toBe(201);
+    expect(appendMock).toHaveBeenCalledWith(expect.objectContaining({ submittedByUserId: null }));
   });
 });

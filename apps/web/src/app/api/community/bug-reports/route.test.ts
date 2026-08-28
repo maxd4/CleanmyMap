@@ -198,4 +198,18 @@ describe("POST /api/community/bug-reports", () => {
     expect(appendCommunityBugReportMock).toHaveBeenCalled();
     expect(sendCreatorInboxEmailMock).toHaveBeenCalled();
   });
+
+  it("requires the server session without consulting BotID", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/community/bug-reports", {
+        method: "POST",
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(appendCommunityBugReportMock).not.toHaveBeenCalled();
+  });
 });

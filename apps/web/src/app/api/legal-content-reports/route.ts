@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireBotIdHuman } from "@/lib/botid/server";
 import {
   LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH,
   LEGAL_CONTENT_REPORT_MAX_REASON_LENGTH,
@@ -87,9 +86,6 @@ function badPayloadResponse(error: { flatten: () => { fieldErrors: Record<string
 }
 
 export async function POST(request: Request) {
-  const botIdResponse = await requireBotIdHuman();
-  if (botIdResponse) return botIdResponse;
-
   const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
   const rateLimitResponse = createServerRateLimitResponse(
     writeRateLimit.allowed,

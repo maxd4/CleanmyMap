@@ -22,7 +22,6 @@ import {
  hasRecentSubmission,
 } from"@/lib/security/validation";
 import { logWarning } from "@/lib/logging/failure-log";
-import { requireBotIdHuman } from "@/lib/botid/server";
 
 export const runtime ="nodejs";
 
@@ -73,9 +72,6 @@ function canonicalTargetUserId(value: unknown): string | undefined {
 }
 
 export async function POST(request: Request) {
- const botIdResponse = await requireBotIdHuman();
- if (botIdResponse) return botIdResponse;
-
  const writeRateLimit = await verifyRateLimit(request, { limit: 4, window: 300 });
  const writeRateLimitResponse = createServerRateLimitResponse(
   writeRateLimit.allowed,
