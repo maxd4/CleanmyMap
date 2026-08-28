@@ -20,6 +20,13 @@ informations disponibles, des droits des personnes concernées, de la règle
 applicable et de la capacité technique réellement disponible pour agir sur le
 contenu.
 
+La notification de contenu illicite est une `public_write_exception`. Le
+mécanisme doit rester public et utilisable sans compte : aucune création de
+compte ne doit être imposée comme condition générale pour déposer une
+notification. Les contrôles anti-abus doivent rester proportionnés et ne pas
+empêcher un humain légitime d'utiliser le mécanisme. La notification n'accorde
+aucun accès aux données privées ni aux surfaces d'administration.
+
 ## 2. Déposer une notification
 
 Le formulaire public est accessible à
@@ -127,6 +134,33 @@ des migrations dans le dépôt ne prouve pas la disponibilité des tables
 Supabase distantes. Tant que cette présence effective n'est pas vérifiée en
 production, le formulaire et la décision ne doivent pas être présentés comme
 pleinement opérationnels en production.
+
+### Critères durables de validation du commissioning production
+
+Les points suivants sont des critères de validation durables, et non un résultat
+actuel de commissioning.
+
+**DSA-01 — réception d'une notification**
+
+- une soumission utilisateur légitime est acceptée ;
+- la réponse HTTP réussit et fournit un `trackingId` ;
+- la notification est réellement persistée dans `legal_content_reports` ;
+- un accusé de réception est effectivement envoyé lorsqu'un email est fourni ;
+- la notification interne est effectivement déclenchée.
+
+**DSA-02 — décision de modération**
+
+- la décision est effectuée via la session admin canonique ;
+- elle est réellement persistée dans `legal_content_report_decisions` ;
+- la projection du report reste cohérente ;
+- l'état d'exécution correspond à l'action effectuée ;
+- la notification au déclarant est effectivement déclarée envoyée lorsqu'elle
+  est requise ;
+- une décision non mutative comme `reviewing` n'entraîne aucune mutation du
+  contenu.
+
+Le commissioning production ne doit pas être déclaré terminé tant que ces
+preuves réelles n'ont pas été vérifiées dans l'environnement concerné.
 
 ## 7. Données et contact
 

@@ -7,6 +7,12 @@ Le contrat canonique d'autorisation est défini dans
 reste un guide compact de compatibilité pour les surfaces et helpers existants
 et ne doit pas maintenir une seconde matrice de permissions.
 
+Règle de visibilité : une page est publique par défaut lorsque les données
+exposées sont `public-safe`; l'interaction est ensuite protégée au niveau
+approprié selon la classification canonique. Une page publique peut donc
+présenter un CTA qui demande une connexion au moment où l'action nécessite une
+identité, une donnée privée ou une mutation.
+
 Règle de vocabulaire : **IMU = super-admin = rôle interne `max`**. `max` est
 l'identifiant technique canonique, `IMU` le libellé produit et `super-admin` un
 alias entrant ; les trois termes ont strictement les mêmes permissions.
@@ -41,6 +47,13 @@ Les droits effectifs sont vérifiés directement dans les APIs via les helpers
 de domaine, par exemple `canUseAdminOverride`, `canManageAction` et
 `canReviewActionParticipants`. Le proxy et le parcours UX ne remplacent pas
 cette décision serveur.
+
+Le proxy n'est pas l'autorité finale d'autorisation : toute API ou tout service
+serveur doit revérifier l'identité, la capacité, l'ownership ou le scope et
+l'état métier. La classification détaillée des surfaces (`public_read`,
+`authenticated_write`, `private_read`, `privileged` et
+`public_write_exception`) est maintenue uniquement dans
+[`authorization-capabilities.md`](./authorization-capabilities.md).
 
 ## 3. Parcours Utilisateur (UX)
 
