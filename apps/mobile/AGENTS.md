@@ -38,5 +38,5 @@ fichier.
 Validation mobile ciblée :
 
 ```bash
-npm run companion:typecheck
+npm run mobile:typecheck
 ```

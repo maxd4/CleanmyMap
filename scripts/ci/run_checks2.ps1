@@ -210,8 +210,8 @@ if ($webRelevant) {
 
     if ($mobileRelevant) {
         $staticWebSteps += [pscustomobject]@{
-            Label = "companion:typecheck"
-            Command = "npm run typecheck -w apps/mobile"
+            Label = "mobile:typecheck"
+            Command = "npm run mobile:typecheck"
         }
     }
 
@@ -248,7 +248,7 @@ if ($webRelevant) {
 }
 
 if ($mobileRelevant -and -not $webRelevant) {
-    Invoke-Step { npm run typecheck -w apps/mobile } "companion:typecheck"
+    Invoke-Step { npm run mobile:typecheck } "mobile:typecheck"
 }
 
 if ($pythonRelevant) {

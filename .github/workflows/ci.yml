@@ -181,4 +181,4 @@ jobs:
         run: npm ci
 
       - name: Mobile typecheck
-        run: npm run typecheck -w apps/mobile
+        run: npm run mobile:typecheck

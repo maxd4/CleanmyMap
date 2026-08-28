@@ -77,7 +77,7 @@
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test",
     "test:e2e:list": "playwright test --list",
-    "companion:typecheck": "npm run typecheck -w apps/mobile",
+    "mobile:typecheck": "npm run typecheck -w apps/mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",
@@ -166,8 +166,6 @@
     }
   },
   "dependencies": {
-    "image-size": "file:apps/mobile/vendor/image-size",
-    "posthog-js": "^1.418.5",
-    "posthog-node": "^5.49.1"
+    "image-size": "file:apps/mobile/vendor/image-size"
   }
 }
