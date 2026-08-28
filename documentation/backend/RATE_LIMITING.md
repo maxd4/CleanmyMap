@@ -121,6 +121,32 @@ Les `GET` de `/api/chat` et `/api/community/events` ne passent pas par
 ailleurs de contrôles métier distincts, notamment le quota Supabase des
 discussions ; ces contrôles ne sont pas le store rate-limit local décrit ici.
 
+## Politique cible de convergence
+
+Cette section décrit la direction documentaire future ; elle ne réécrit pas la
+description factuelle du runtime actuel ci-dessus.
+
+- le rate limiting est un contrôle de fréquence ;
+- l'AuthN et l'AuthZ contrôlent respectivement l'identité et la permission ;
+- BotID est un signal et une protection anti-automation complémentaire ;
+- ces trois mécanismes ne sont pas interchangeables.
+
+BotID ne doit plus devenir automatiquement un hard gate sur toute écriture
+authentifiée. Une écriture déjà attribuée à une session Clerk doit d'abord
+reposer sur ses contrôles d'AuthN, d'AuthZ, d'ownership ou de scope, de
+validation et de fréquence ; une défense anti-automation additionnelle doit
+rester proportionnée au risque.
+
+Les écritures publiques exceptionnelles doivent combiner les contrôles
+anti-abus appropriés — validation stricte, rate limit, honeypot ou délai lorsque
+pertinent, et anti-automation éventuelle — sans rendre le parcours inaccessible
+aux humains légitimes.
+
+Des faux positifs humains observés avec une défense anti-automation constituent
+une justification architecturale générale pour cette séparation des contrôles.
+Cette documentation ne conserve aucun identifiant, horodatage, adresse IP,
+SHA ou état temporaire de commissioning relatif à un cas individuel.
+
 ## Middleware et wrappers
 
 `rateLimitMiddleware()`, `withRateLimit()`, `withApiRateLimit()` et

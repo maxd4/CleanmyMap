@@ -46,6 +46,74 @@ elu
 → refusé par défaut
 ```
 
+## Classification canonique des surfaces
+
+Cette classification constitue la politique cible documentaire de CleanMyMap.
+Elle guide la convergence future sans prétendre décrire un runtime déjà
+convergé : le comportement effectivement implémenté sur `main` reste défini
+par le code et les tests.
+
+| Classe | Règle cible |
+|---|---|
+| `public_read` | lecture publique de données `public-safe`, sans session obligatoire |
+| `authenticated_write` | mutation après session Clerk, avec AuthZ, ownership/scope, validation et rate limit côté serveur |
+| `private_read` | lecture après session Clerk, avec contrôle d'ownership, de scope et d'AuthZ |
+| `privileged` | surface d'administration ou de modération avec AuthN, AuthZ forte, audit et garde-fous adaptés au risque |
+| `public_write_exception` | écriture publique explicitement justifiée, sans compte obligatoire, avec contrôles anti-abus proportionnés |
+
+La visibilité d'une page ne vaut pas autorisation d'exécuter ses actions. Une
+page peut rester publique tout en présentant des CTA qui demandent ensuite une
+connexion au moment où l'interaction nécessite une identité, une donnée privée
+ou une mutation. Le proxy peut contribuer à la navigation et au premier
+filtrage, mais il n'est pas l'autorité finale : l'handler ou le service serveur
+doit reprendre la décision.
+
+Toute mutation liée à un compte doit être attribuée à l'identité Clerk
+courante. Toute lecture privée doit contrôler l'ownership, le scope et
+l'AuthZ applicables. Une session authentifiée ne remplace jamais l'AuthZ.
+
+BotID est une défense anti-automation complémentaire ; ce n'est ni une
+primitive d'AuthN ni une primitive d'AuthZ. Il ne doit pas être imposé comme
+hard gate par défaut aux écritures déjà authentifiées. Un CAPTCHA ou un
+challenge présenté à l'authentification ne remplace ni le rate limit, ni
+l'AuthZ, ni les contrôles métier après connexion.
+
+Les exceptions d'écriture publique doivent rester rares, explicitement
+justifiées et documentées. Elles combinent les contrôles strictement
+nécessaires — validation, honeypot ou délai lorsque pertinent, rate limit et
+anti-automation éventuelle — sans rendre le parcours inaccessible aux humains
+légitimes.
+
+Exemples de classification cible :
+
+- carte, méthodologie, apprentissage et données validées publiques : `public_read` ;
+- créer, rejoindre ou modifier une action, envoyer un feedback attribué et
+  envoyer des messages : `authenticated_write` ;
+- profil, historique personnel et messages privés : `private_read` ;
+- administration et modération : `privileged` ;
+- contact, newsletter et notification de contenu illicite lorsque leur
+  contrat l'exige : `public_write_exception`.
+
+## Vérification transverse des surfaces interactives
+
+Toute surface interactive doit pouvoir être vérifiée à trois niveaux :
+
+```txt
+PAGE_OK
+→ page et navigation utilisables
+
+INTERACTION_OK
+→ action utilisateur produit l'état UI attendu
+
+END_TO_END_OK
+→ effet réel vérifié côté persistence, email, audit, redirection ou état métier selon le cas
+```
+
+Ces niveaux constituent un invariant de validation cible pour les formulaires,
+écritures, feedbacks, emails, liens et redirections, participations, messages,
+exports et autres effets métier. Ils ne constituent pas un résultat de
+commissioning actuel.
+
 ## 2. Vocabulaire canonique
 
 Les rôles métier sont définis dans :
