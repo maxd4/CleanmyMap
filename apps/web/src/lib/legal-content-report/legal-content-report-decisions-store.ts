@@ -2,11 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  allowLocalFileStoreFallback,
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
-import { upsertSupabaseMirror } from "@/lib/supabase/mirror";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   isLegalContentReportDecisionAction,
@@ -32,6 +30,8 @@ const STORE_FILE = join(
   "local-db",
   "legal_content_report_decisions.json",
 );
+const SUPABASE_DECISION_COLUMNS =
+  "id, report_id, created_at, actor_admin_user_id, action, decision_origin, reason, automated_means_used, legal_basis, terms_basis, content_url, content_id, before_state, after_state, execution_status, execution_error_code, audit_operation_id, notifier_notification_status, author_notification_status, notification_error";
 
 type StorePayload = {
   updatedAt: string;
@@ -222,29 +222,41 @@ function toSupabaseRow(record: LegalContentReportDecisionRecord): Record<string,
   };
 }
 
+async function getSupabaseDecisionById(
+  decisionId: string,
+): Promise<LegalContentReportDecisionRecord | null> {
+  const result = await getSupabaseServerClient()
+    .from("legal_content_report_decisions")
+    .select(SUPABASE_DECISION_COLUMNS)
+    .eq("id", decisionId)
+    .maybeSingle();
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  return result.data
+    ? fromSupabaseRow(result.data as Record<string, unknown>)
+    : null;
+}
+
 export async function listLegalContentReportDecisions(
   reportId?: string,
 ): Promise<LegalContentReportDecisionRecord[]> {
   assertPersistenceAvailable("legal_content_report_decisions");
 
   if (canUseSupabaseServerPersistence()) {
-    try {
-      let query = getSupabaseServerClient()
-        .from("legal_content_report_decisions")
-        .select("id, report_id, created_at, actor_admin_user_id, action, decision_origin, reason, automated_means_used, legal_basis, terms_basis, content_url, content_id, before_state, after_state, execution_status, execution_error_code, audit_operation_id, notifier_notification_status, author_notification_status, notification_error")
-        .order("created_at", { ascending: false })
-        .limit(8000);
-      if (reportId) query = query.eq("report_id", reportId);
-      const result = await query;
-      if (!result.error) {
-        return (result.data ?? [])
-          .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-          .filter((record): record is LegalContentReportDecisionRecord => Boolean(record));
-      }
-      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
-    } catch (error) {
-      if (!allowLocalFileStoreFallback()) throw error;
+    let query = getSupabaseServerClient()
+      .from("legal_content_report_decisions")
+      .select(SUPABASE_DECISION_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(8000);
+    if (reportId) query = query.eq("report_id", reportId);
+    const result = await query;
+    if (result.error) {
+      throw new Error(result.error.message);
     }
+    return (result.data ?? [])
+      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+      .filter((record): record is LegalContentReportDecisionRecord => Boolean(record));
   }
 
   const store = await readStore();
@@ -271,15 +283,28 @@ export async function appendLegalContentReportDecision(
     authorNotificationStatus: "not_requested",
     notificationError: null,
   };
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("legal_content_report_decisions")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_DECISION_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid legal content report decision.");
+    }
+    return persisted;
+  }
+
   const store = await readStore();
   await writeStore({
     updatedAt: new Date().toISOString(),
     records: [record, ...store.records].slice(0, 8000),
   });
-  await upsertSupabaseMirror(
-    "legal_content_report_decisions",
-    toSupabaseRow(record),
-  ).catch((error) => console.warn("Legal content report decision Supabase sync failed", error));
   return record;
 }
 
@@ -290,6 +315,41 @@ export async function updateLegalContentReportDecisionNotifications(params: {
   notificationError?: string | null;
 }): Promise<LegalContentReportDecisionRecord | null> {
   assertPersistenceAvailable("legal_content_report_decisions");
+
+  if (canUseSupabaseServerPersistence()) {
+    const current = await getSupabaseDecisionById(params.decisionId);
+    if (!current) return null;
+    const updated: LegalContentReportDecisionRecord = {
+      ...current,
+      ...(params.notifierNotificationStatus
+        ? { notifierNotificationStatus: params.notifierNotificationStatus }
+        : {}),
+      ...(params.authorNotificationStatus
+        ? { authorNotificationStatus: params.authorNotificationStatus }
+        : {}),
+      ...(params.notificationError !== undefined
+        ? {
+            notificationError: normalizeOptionalReportText(
+              params.notificationError,
+              LEGAL_CONTENT_REPORT_DECISION_MAX_ERROR_LENGTH,
+            ),
+          }
+        : {}),
+    };
+    const result = await getSupabaseServerClient()
+      .from("legal_content_report_decisions")
+      .update(toSupabaseRow(updated))
+      .eq("id", params.decisionId)
+      .select(SUPABASE_DECISION_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.decisionId);
   if (index < 0) return null;
@@ -315,10 +375,6 @@ export async function updateLegalContentReportDecisionNotifications(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror(
-    "legal_content_report_decisions",
-    toSupabaseRow(updated),
-  ).catch((error) => console.warn("Legal content report decision notification sync failed", error));
   return updated;
 }
 
@@ -330,6 +386,41 @@ export async function updateLegalContentReportDecisionStates(params: {
   executionErrorCode?: LegalContentReportDecisionExecutionErrorCode | null;
 }): Promise<LegalContentReportDecisionRecord | null> {
   assertPersistenceAvailable("legal_content_report_decisions");
+
+  if (canUseSupabaseServerPersistence()) {
+    const current = await getSupabaseDecisionById(params.decisionId);
+    if (!current) return null;
+    const executionStatus = params.executionStatus ?? current.executionStatus;
+    const updated = {
+      ...current,
+      beforeState:
+        params.beforeState === undefined
+          ? current.beforeState
+          : normalizeSnapshot(params.beforeState),
+      afterState:
+        params.afterState === undefined
+          ? current.afterState
+          : normalizeSnapshot(params.afterState),
+      executionStatus,
+      executionErrorCode:
+        executionStatus === "failed"
+          ? params.executionErrorCode ?? current.executionErrorCode
+          : null,
+    } satisfies LegalContentReportDecisionRecord;
+    const result = await getSupabaseServerClient()
+      .from("legal_content_report_decisions")
+      .update(toSupabaseRow(updated))
+      .eq("id", params.decisionId)
+      .select(SUPABASE_DECISION_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.decisionId);
   if (index < 0) return null;
@@ -354,9 +445,5 @@ export async function updateLegalContentReportDecisionStates(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror(
-    "legal_content_report_decisions",
-    toSupabaseRow(updated),
-  ).catch((error) => console.warn("Legal content report decision state sync failed", error));
   return updated;
 }

@@ -2,11 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  allowLocalFileStoreFallback,
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
-import { deleteSupabaseMirror, upsertSupabaseMirror } from "@/lib/supabase/mirror";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   LEGAL_CONTENT_REPORT_MAX_IDENTITY_EXCEPTION_REASON_LENGTH,
@@ -24,6 +22,8 @@ const STORE_FILE = join(
   "local-db",
   "legal_content_reports.json",
 );
+const SUPABASE_REPORT_COLUMNS =
+  "id, created_at, submitted_by_user_id, notifier_name, notifier_email, identity_exception_reason, content_url, content_type, content_id, allegation_reason, good_faith_confirmed, status, creator_state";
 
 type StorePayload = {
   updatedAt: string;
@@ -174,16 +174,28 @@ export async function appendLegalContentReport(
     status: "open",
     creatorState: "new",
   };
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("legal_content_reports")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_REPORT_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid legal content report.");
+    }
+    return persisted;
+  }
+
   const store = await readStore();
   await writeStore({
     updatedAt: new Date().toISOString(),
     records: [record, ...store.records].slice(0, 4000),
   });
-  await upsertSupabaseMirror("legal_content_reports", toSupabaseRow(record)).catch(
-    (error) => {
-      console.warn("Legal content report Supabase sync failed", error);
-    },
-  );
   return record;
 }
 
@@ -192,27 +204,23 @@ export async function listLegalContentReports(limit = 200): Promise<LegalContent
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    try {
-      const result = await getSupabaseServerClient()
-        .from("legal_content_reports")
-        .select("id, created_at, submitted_by_user_id, notifier_name, notifier_email, identity_exception_reason, content_url, content_type, content_id, allegation_reason, good_faith_confirmed, status, creator_state")
-        .order("created_at", { ascending: false })
-        .limit(normalizedLimit);
-      if (!result.error) {
-        return Promise.all(
-          (result.data ?? [])
-            .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-            .filter((record): record is LegalContentReportRecord => Boolean(record))
-            .map(async (record) => ({
-              ...record,
-              latestDecision: await getLatestLegalContentReportDecision(record.id),
-            })),
-        );
-      }
-      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
-    } catch (error) {
-      if (!allowLocalFileStoreFallback()) throw error;
+    const result = await getSupabaseServerClient()
+      .from("legal_content_reports")
+      .select(SUPABASE_REPORT_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(normalizedLimit);
+    if (result.error) {
+      throw new Error(result.error.message);
     }
+    return Promise.all(
+      (result.data ?? [])
+        .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+        .filter((record): record is LegalContentReportRecord => Boolean(record))
+        .map(async (record) => ({
+          ...record,
+          latestDecision: await getLatestLegalContentReportDecision(record.id),
+        })),
+    );
   }
 
   const store = await readStore();
@@ -230,24 +238,20 @@ export async function getLegalContentReportById(
   assertPersistenceAvailable("legal_content_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    try {
-      const result = await getSupabaseServerClient()
-        .from("legal_content_reports")
-        .select("id, created_at, submitted_by_user_id, notifier_name, notifier_email, identity_exception_reason, content_url, content_type, content_id, allegation_reason, good_faith_confirmed, status, creator_state")
-        .eq("id", reportId)
-        .maybeSingle();
-      if (!result.error) {
-        const record = result.data
-          ? fromSupabaseRow(result.data as Record<string, unknown>)
-          : null;
-        return record
-          ? { ...record, latestDecision: await getLatestLegalContentReportDecision(record.id) }
-          : null;
-      }
-      if (!allowLocalFileStoreFallback()) throw new Error(result.error.message);
-    } catch (error) {
-      if (!allowLocalFileStoreFallback()) throw error;
+    const result = await getSupabaseServerClient()
+      .from("legal_content_reports")
+      .select(SUPABASE_REPORT_COLUMNS)
+      .eq("id", reportId)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
     }
+    const record = result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+    return record
+      ? { ...record, latestDecision: await getLatestLegalContentReportDecision(record.id) }
+      : null;
   }
 
   const store = await readStore();
@@ -264,6 +268,37 @@ export async function updateLegalContentReportState(params: {
   creatorState: LegalContentReportRecord["creatorState"];
 }): Promise<LegalContentReportRecord | null> {
   assertPersistenceAvailable("legal_content_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const updatedStatus =
+      params.creatorState === "treated" ||
+      params.creatorState === "no_action" ||
+      params.creatorState === "content_restricted" ||
+      params.creatorState === "content_removed"
+        ? "treated"
+        : params.creatorState === "archived" || params.creatorState === "closed"
+          ? "archived"
+          : null;
+    const update = updatedStatus
+      ? { creator_state: params.creatorState, status: updatedStatus }
+      : { creator_state: params.creatorState };
+    const result = await getSupabaseServerClient()
+      .from("legal_content_reports")
+      .update(update)
+      .eq("id", params.reportId)
+      .select(SUPABASE_REPORT_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const updated = result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+    return updated
+      ? { ...updated, latestDecision: await getLatestLegalContentReportDecision(updated.id) }
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.reportId);
   if (index < 0) return null;
@@ -285,20 +320,27 @@ export async function updateLegalContentReportState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("legal_content_reports", toSupabaseRow(updated)).catch(
-    (error) => console.warn("Legal content report Supabase sync failed", error),
-  );
   return updated;
 }
 
 export async function deleteLegalContentReport(reportId: string): Promise<boolean> {
   assertPersistenceAvailable("legal_content_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("legal_content_reports")
+      .delete()
+      .eq("id", reportId)
+      .select("id");
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? []).length > 0;
+  }
+
   const store = await readStore();
   const records = store.records.filter((record) => record.id !== reportId);
   if (records.length === store.records.length) return false;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await deleteSupabaseMirror("legal_content_reports", reportId).catch((error) =>
-    console.warn("Legal content report Supabase delete sync failed", error),
-  );
   return true;
 }
