@@ -26,7 +26,7 @@ describe("legal content report public contracts", () => {
     expect(form).toContain('name="allegationReason"');
     expect(form).toContain('name="goodFaithConfirmed"');
     expect(form).toMatch(/articles\s+3 à 7 de la directive\s+2011\/93\/UE/);
-    expect(page).toContain("Aucun compte n&apos;est nécessaire");
+    expect(page).toContain("Indiquez l’URL exacte du contenu et décrivez les faits. Aucun compte n’est nécessaire.");
     expect(form).not.toContain("type=\"file\"");
   });
 

@@ -15,10 +15,16 @@ export default function SignalerContenuIllicitePage() {
       <div className="space-y-8 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">Notification électronique</PageHeaderBadge>}
+          badges={
+            <>
+              <PageHeaderBadge tone="slate">Notification électronique</PageHeaderBadge>
+              <PageHeaderBadge tone="slate" muted>
+                Mis à jour le 27 août 2026
+              </PageHeaderBadge>
+            </>
+          }
           title="Signaler un contenu potentiellement illicite"
-          subtitle="Transmettez une notification suffisamment circonstanciée à partir de l'URL exacte du contenu concerné."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
+          subtitle="Indiquez l’URL exacte du contenu et décrivez les faits. Aucun compte n’est nécessaire."
         />
         <section className="space-y-3 text-sm leading-6 text-slate-600">
           <p>
