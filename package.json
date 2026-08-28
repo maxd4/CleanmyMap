@@ -78,7 +78,7 @@
     "test:e2e": "playwright test",
     "test:e2e:list": "playwright test --list",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",
-    "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
+    "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",
     "checks:changed:quick": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1",
