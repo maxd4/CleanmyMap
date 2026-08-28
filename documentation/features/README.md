@@ -16,6 +16,10 @@ Documentation des fonctionnalités pour agents IA.
   - Leaderboard
   - Récompenses
 
+### Rapports
+- **master-pack.md** - Référence courante vérifiée du Master Pack et liens vers
+  les modules canoniques
+
 ### Quiz & Apprentissage
 - **quiz-authoring-guide.md** - Règles d'écriture des questions du quiz
   - Sept portes d'entrée: mixte, terrain, données scientifiques, sensibilisation, habitudes de vie, ordres de grandeur, tri & sécurité
@@ -89,5 +93,4 @@ Documentation des fonctionnalités pour agents IA.
 
 ---
 
-**Optimisé pour** : Agents IA  
-**Dernière mise à jour** : 2025-01-XX
+**Optimisé pour** : Agents IA

@@ -1,3 +1,6 @@
+> HISTORIQUE — Cette procédure est conservée pour son contexte et ne décrit
+> pas l'architecture runtime actuelle. Le code courant fait autorité.
+
 How to run the lightweight WebSocket relay
 
 1. Start relay locally:

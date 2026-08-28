@@ -1,3 +1,6 @@
+> HISTORIQUE — Cet exemple est conservé pour son contexte et ne décrit pas
+> l'architecture runtime actuelle. Le code courant fait autorité.
+
 Server listener (Node.js) example using pg
 
 Node.js example with native pg client to listen to Postgres NOTIFY:

@@ -42,6 +42,21 @@ const forbiddenReferences = [
   "maintenance/python/data/cleanmymap.db",
 ];
 
+const allowedReferencesByFile = new Map([
+  [
+    path.join(docsRoot, "gamification", "README.md"),
+    new Set(["sessions/", "sessions\\"]),
+  ],
+  [
+    path.join(docsRoot, "features", "master-pack.md"),
+    new Set(["sessions/", "sessions\\"]),
+  ],
+  [
+    path.join(docsRoot, "gamification", "BADGE_CATALOG.md"),
+    new Set(["sessions/", "sessions\\"]),
+  ],
+]);
+
 const dependencyAdvisoryGovernancePath = path.join(
   docsRoot,
   "security",
@@ -125,7 +140,8 @@ for (const filePath of walk(docsRoot)) {
   }
 
   const content = fs.readFileSync(filePath, "utf8");
-  for (const pattern of forbiddenReferences) {
+  const allowedReferences = allowedReferencesByFile.get(filePath) ?? new Set();
+  for (const pattern of forbiddenReferences.filter((candidate) => !allowedReferences.has(candidate))) {
     const matches = lineSnippets(content, pattern);
     for (const match of matches) {
       violations.push({

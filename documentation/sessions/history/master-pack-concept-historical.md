@@ -1,3 +1,7 @@
+> HISTORIQUE — Document conceptuel conservé pour son contexte. Il ne décrit
+> pas nécessairement le comportement runtime courant ; le code actuel fait
+> autorité.
+
 # Documentation du Master Pack (Rapport d'Impact Exhaustif)
 
 ## 1. Vision
