@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
+import {
+  isProtectedRoutePath,
+  PROTECTED_ROUTE_PATTERNS,
+} from "@/lib/auth/protected-routes";
 import {
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
@@ -76,5 +79,13 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/manifest(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
+  });
+
+  it("provides Clerk context to the public legal report route without protecting it", () => {
+    expect(CLERK_CONTEXT_API_ROUTE_PREFIXES).toContain("/api/legal-content-reports");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/api/legal-content-reports(.*)");
+    expect(config.matcher).toContain("/api/legal-content-reports(.*)");
+    expect(PROTECTED_ROUTE_PATTERNS).not.toContain("/api/legal-content-reports(.*)");
+    expect(isProtectedRoutePath("/api/legal-content-reports")).toBe(false);
   });
 });
