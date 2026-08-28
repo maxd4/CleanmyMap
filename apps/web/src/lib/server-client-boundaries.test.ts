@@ -122,7 +122,15 @@ describe("Server/Client boundaries", () => {
 
     expect(source).not.toMatch(USE_CLIENT_PATTERN);
     const reportUsage = source.match(/<ActionsReportPanel[\s\S]*?\/>/);
-    expect(reportUsage?.[0]).toBe("<ActionsReportPanel />");
+    expect(reportUsage?.[0]).toBeDefined();
+    const reportAttributeNames = (reportUsage?.[0] ?? "")
+      .split(/\r?\n/)
+      .map((line) => line.match(/^\s+([a-z][A-Za-z0-9]*)=\{/u)?.[1])
+      .filter((name): name is string => Boolean(name));
+    expect(reportAttributeNames).toEqual([
+      "initialRecordTypeFilter",
+      "initialStatus",
+    ]);
     expect(reportUsage?.[0]).not.toMatch(/\bon[A-Z][A-Za-z]*\s*=/);
   });
 

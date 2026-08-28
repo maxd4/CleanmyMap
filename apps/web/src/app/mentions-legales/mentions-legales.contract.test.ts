@@ -17,6 +17,7 @@ const privacyPage = readFileSync(
   new URL("../politique-confidentialite/page.tsx", import.meta.url),
   "utf8",
 );
+const contactPage = readFileSync(new URL("../contact/page.tsx", import.meta.url), "utf8");
 const privacyDocumentation = readFileSync(
   new URL("../../../../../documentation/legal/politique-confidentialite.md", import.meta.url),
   "utf8",
@@ -75,6 +76,23 @@ describe("mentions légales contract", () => {
     for (const service of ["Supabase", "Clerk", "Resend", "PostHog", "Sentry"]) {
       expect(publicPage).toContain(service);
     }
+  });
+
+  it("routes legal contact requests through the canonical contact surface", () => {
+    const canonicalContact = legalDocumentation.match(
+      /Le point de contact juridique et RGPD actuellement configuré est\s+<([^>\s]+)>/iu,
+    )?.[1];
+
+    expect(canonicalContact).toBe("contact@cleanmymap.fr");
+    expect(publicPage).toMatch(
+      /href="\/contact"[\s\S]*?hover:border-emerald-300 hover:bg-emerald-50\/70[\s\S]*?Demandes juridiques[\s\S]*?Accéder à la page de contact pour une demande RGPD, une question juridique ou un besoin de support\./u,
+    );
+    expect(publicPage).not.toContain("mailto:");
+    expect(publicPage).toContain('href="/signaler-contenu-illicite"');
+    expect(publicPage).toContain("border-amber-200 bg-amber-50");
+    expect(contactPage).toContain(
+      `resolvePublicContactEmail() ?? "${canonicalContact}"`,
+    );
   });
 
   it("keeps page documentation completeness statuses aligned", () => {

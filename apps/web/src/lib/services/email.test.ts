@@ -5,6 +5,8 @@ const countServiceEmailRecipientsForActorSinceMock = vi.hoisted(() => vi.fn());
 const getResendClientMock = vi.hoisted(() => vi.fn());
 const resolveEmailFromMock = vi.hoisted(() => vi.fn());
 const resolveEmailReplyToMock = vi.hoisted(() => vi.fn());
+const logFailureMock = vi.hoisted(() => vi.fn());
+const logWarningMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/environmental-impact-estimator/service-email-events-store", () => ({
   appendServiceEmailEvent: appendServiceEmailEventMock,
@@ -18,6 +20,11 @@ vi.mock("@/lib/email-config", () => ({
 
 vi.mock("./resend", () => ({
   getResendClient: getResendClientMock,
+}));
+
+vi.mock("@/lib/logging/failure-log", () => ({
+  logFailure: logFailureMock,
+  logWarning: logWarningMock,
 }));
 
 describe("email service", () => {
@@ -104,5 +111,56 @@ describe("email service", () => {
     expect(appendServiceEmailEventMock.mock.calls[0][0]).toMatchObject({
       at: expect.any(String),
     });
+  });
+
+  it("records a bounded diagnostic for a non-Error provider failure", async () => {
+    const providerError = {
+      name: "validation_error",
+      message: "Invalid sender; Authorization: Bearer secret-token; apiKey=secret-key",
+      statusCode: 422,
+      status: "error",
+      code: "invalid_from",
+      headers: { authorization: "secret-header" },
+      payload: { html: "private payload" },
+    };
+    getResendClientMock.mockReturnValue({
+      emails: {
+        send: vi.fn().mockResolvedValue({ data: null, error: providerError }),
+      },
+    });
+
+    const { sendEmail } = await import("./email");
+    await expect(
+      sendEmail({
+        to: "recipient@example.com",
+        subject: "Provider diagnostic",
+        html: "<p>Test</p>",
+      }),
+    ).rejects.toBe(providerError);
+
+    const event = appendServiceEmailEventMock.mock.calls[0]?.[0];
+    expect(event).toMatchObject({
+      provider: "resend",
+      status: "error",
+      messageId: null,
+      meta: {
+        error:
+          "name=validation_error; message=Invalid sender; Authorization: [redacted]; apiKey=[redacted]; statusCode=422; status=error; code=invalid_from",
+      },
+    });
+    expect(JSON.stringify(event)).not.toContain("secret-token");
+    expect(JSON.stringify(event)).not.toContain("secret-key");
+    expect(JSON.stringify(event)).not.toContain("secret-header");
+    expect(JSON.stringify(event)).not.toContain("private payload");
+    expect(logFailureMock).toHaveBeenCalledWith(
+      "EmailService",
+      "Send failed",
+      undefined,
+      expect.objectContaining({
+        reason: expect.stringContaining("validation_error"),
+      }),
+    );
+    expect(JSON.stringify(logFailureMock.mock.calls)).not.toContain("secret-token");
+    expect(JSON.stringify(logFailureMock.mock.calls)).not.toContain("private payload");
   });
 });
