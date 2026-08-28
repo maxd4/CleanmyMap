@@ -323,6 +323,16 @@ export async function POST(request: Request) {
         creatorState: decisionInput.action,
       });
       if (!updatedReport) throw new Error("Legal report state projection did not persist");
+      afterState = reportSnapshot(updatedReport);
+      const projectedDecision = await persistExecutionState({
+        decision,
+        executionStatus: "not_applicable",
+        executionErrorCode: null,
+        beforeState,
+        afterState,
+      });
+      decision = projectedDecision.decision;
+      decisionProjectionFailed = !projectedDecision.persisted;
       report = { ...updatedReport, latestDecision: decision };
     } catch {
       await appendDecisionAudit({
@@ -348,6 +358,32 @@ export async function POST(request: Request) {
         }),
       });
       return errorResponse("Decision recorded but report projection is incomplete.", 500, operationId);
+    }
+
+    const auditSucceeded = await appendDecisionAudit({
+      operationId,
+      actorUserId: identity.userId,
+      reportId: report.id,
+      outcome: decisionProjectionFailed ? "error" : "success",
+      details: auditDetails({
+        action: decisionInput.action,
+        origin: decisionInput.origin,
+        reason: decisionInput.reason,
+        automatedMeansUsed: decisionInput.automatedMeansUsed,
+        legalBasis: decisionInput.legalBasis ?? null,
+        termsBasis: decisionInput.termsBasis ?? null,
+        contentUrl: report.contentUrl,
+        contentId: report.contentId,
+        beforeState,
+        afterState,
+        executionStatus: "not_applicable",
+        executionErrorCode: null,
+        stage: decisionProjectionFailed ? "decision_projection" : undefined,
+        partialMutation: false,
+      }),
+    });
+    if (!auditSucceeded) {
+      return errorResponse("Decision recorded but audit is incomplete.", 500, operationId);
     }
   } else {
     let mutation: Awaited<ReturnType<typeof applyCanonicalLegalContentMutation>> | null = null;
@@ -525,7 +561,11 @@ export async function POST(request: Request) {
     partialWarnings.push("The content measure was applied but the report projection failed.");
   }
   if (decisionProjectionFailed) {
-    partialWarnings.push("The content measure was applied but its execution state projection failed.");
+    partialWarnings.push(
+      isContentMutation
+        ? "The content measure was applied but its execution state projection failed."
+        : "The report was projected but its decision state projection failed.",
+    );
   }
   if (notificationErrors.length > 0) {
     partialWarnings.push("Decision recorded; at least one notification failed.");

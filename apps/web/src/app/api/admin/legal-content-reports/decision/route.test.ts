@@ -158,21 +158,103 @@ describe("POST /api/admin/legal-content-reports/decision", () => {
     expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
   });
 
-  it("marks a decision without mutation as not_applicable", async () => {
-    const response = await POST(
-      request(validBody({ action: "no_action", termsBasis: "Aucune clause des CGU ne justifie une mesure." })),
-    );
+  it("audits a non-mutative decision with the projected report state", async () => {
+    const response = await POST(request(validBody()));
 
     expect(response.status).toBe(200);
     expect(appendDecisionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "no_action",
+        action: "reviewing",
         executionStatus: "not_applicable",
         executionErrorCode: null,
       }),
     );
-    expect(updateDecisionStatesMock).not.toHaveBeenCalled();
+    expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
+    expect(updateLegalContentReportStateMock).toHaveBeenCalledWith({
+      reportId: "report-1",
+      creatorState: "reviewing",
+    });
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith({
+      decisionId: "decision-1",
+      beforeState: expect.objectContaining({ creatorState: "new" }),
+      afterState: expect.objectContaining({ creatorState: "reviewing" }),
+      executionStatus: "not_applicable",
+      executionErrorCode: null,
+    });
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: expect.any(String),
+        actorUserId: "admin-1",
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "report-1",
+        details: expect.objectContaining({
+          action: "reviewing",
+          origin: "received_notification",
+          automatedMeansUsed: false,
+          beforeState: expect.objectContaining({ creatorState: "new" }),
+          afterState: expect.objectContaining({ creatorState: "reviewing" }),
+          executionStatus: "not_applicable",
+          executionErrorCode: null,
+          partialMutation: false,
+        }),
+      }),
+    );
+    expect(sendNotifierMock).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: "admin-1" }));
     expect(sendAuthorMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a partial result when decision state projection fails after report projection", async () => {
+    updateDecisionStatesMock.mockRejectedValueOnce(new Error("decision projection unavailable"));
+
+    const response = await POST(request(validBody()));
+
+    expect(response.status).toBe(207);
+    expect(applyCanonicalLegalContentMutationMock).not.toHaveBeenCalled();
+    expect(updateLegalContentReportStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ creatorState: "reviewing" }),
+    );
+    expect(updateDecisionStatesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        beforeState: expect.objectContaining({ creatorState: "new" }),
+        afterState: expect.objectContaining({ creatorState: "reviewing" }),
+        executionStatus: "not_applicable",
+        executionErrorCode: null,
+      }),
+    );
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        targetId: "report-1",
+        details: expect.objectContaining({
+          stage: "decision_projection",
+          beforeState: expect.objectContaining({ creatorState: "new" }),
+          afterState: expect.objectContaining({ creatorState: "reviewing" }),
+          executionStatus: "not_applicable",
+          executionErrorCode: null,
+          partialMutation: false,
+        }),
+      }),
+    );
+    expect(sendNotifierMock).toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      status: "partial",
+      item: { status: "reviewing", executionStatus: "not_applicable" },
+    });
+  });
+
+  it("fails explicitly when the non-mutative decision audit cannot be persisted", async () => {
+    appendAdminOperationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+
+    const response = await POST(request(validBody()));
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(sendNotifierMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Decision recorded but audit is incomplete.",
+    });
   });
 
   it("marks a missing action as failed and keeps the report state unchanged", async () => {
