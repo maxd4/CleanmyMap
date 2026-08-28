@@ -23,7 +23,7 @@ vi.mock("./project-signals", () => ({
   loadEnvironmentalImpactProjectSignals: loadEnvironmentalImpactProjectSignalsMock,
 }));
 
-vi.mock("./service", () => ({
+vi.mock("./services/core", () => ({
   computeEnvironmentalImpactEstimate: computeEnvironmentalImpactEstimateMock,
 }));
 

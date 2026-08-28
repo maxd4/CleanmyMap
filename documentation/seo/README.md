@@ -23,9 +23,9 @@ export const metadata: Metadata = {
 };
 ```
 
-2. **Schema JSON-LD** - Importer et utiliser un schema depuis `@/components/seo/structured-data`:
+2. **Schema JSON-LD** - Importer et utiliser un schema depuis son module spécialisé sous `@/components/seo/structured-data/`:
 ```typescript
-import { FAQJsonLd } from "@/components/seo/structured-data";
+import { FAQJsonLd } from "@/components/seo/structured-data/content-data";
 
 export default function MaPage() {
   return (

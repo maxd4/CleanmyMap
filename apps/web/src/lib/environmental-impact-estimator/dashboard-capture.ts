@@ -1,4 +1,4 @@
-import { computeEnvironmentalImpactEstimate } from "./service";
+import { computeEnvironmentalImpactEstimate } from "./services/core";
 import { loadEnvironmentalImpactProjectSignals } from "./project-signals";
 import {
   getEnvironmentalImpactSnapshotDate,

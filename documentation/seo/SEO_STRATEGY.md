@@ -55,27 +55,31 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 
 ```typescript
 // Organization - Trust signals
-import { OrganizationJsonLd } from "@/components/seo/structured-data";
+import { OrganizationJsonLd } from "@/components/seo/structured-data/organization-data";
 
 // WebSite - Search action
-import { WebSiteJsonLd } from "@/components/seo/structured-data";
+import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
 
 // HowTo - Guides pas à pas
-import { HowToDeclareActionJsonLd } from "@/components/seo/structured-data";
-import { HowToSignalPollutionJsonLd } from "@/components/seo/structured-data";
-import { HowToJoinCleanwalkJsonLd } from "@/components/seo/structured-data";
-import { HowToJoinCommunityJsonLd } from "@/components/seo/structured-data";
+import {
+  HowToDeclareActionJsonLd,
+  HowToSignalPollutionJsonLd,
+  HowToJoinCleanwalkJsonLd,
+  HowToJoinCommunityJsonLd,
+} from "@/components/seo/structured-data/how-to-data";
 
 // FAQ - Questions fréquentes
-import { FAQJsonLd } from "@/components/seo/structured-data";
+import { FAQJsonLd } from "@/components/seo/structured-data/content-data";
 
 // Trust signals
-import { ReviewJsonLd } from "@/components/seo/structured-data";
+import { ReviewJsonLd } from "@/components/seo/structured-data/content-data";
 
 // Navigation
-import { BreadcrumbJsonLd } from "@/components/seo/structured-data";
-import { WebPageJsonLd } from "@/components/seo/structured-data";
-import { SiteNavigationJsonLd } from "@/components/seo/structured-data";
+import {
+  BreadcrumbJsonLd,
+  WebPageJsonLd,
+  SiteNavigationJsonLd,
+} from "@/components/seo/structured-data/navigation-data";
 ```
 
 ## Maintenance SEO
