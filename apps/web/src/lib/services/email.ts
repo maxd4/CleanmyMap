@@ -31,6 +31,7 @@ export type EmailPayload = {
   from?: string;
   replyTo?: string;
   actorUserId?: string | null;
+  quotaPolicy?: "actor_daily" | "none";
   meta?: Record<string, unknown>;
 };
 
@@ -233,7 +234,7 @@ export async function sendEmail(payload: EmailPayload) {
   const actorUserId = payload.actorUserId?.trim() || null;
   const recipientCount = getRecipientCount(payload.to);
 
-  if (actorUserId) {
+  if (actorUserId && payload.quotaPolicy !== "none") {
     await ensureEmailQuotaAvailable(actorUserId);
   }
 
