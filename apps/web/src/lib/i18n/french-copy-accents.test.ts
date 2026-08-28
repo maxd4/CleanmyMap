@@ -29,7 +29,7 @@ const COPY_FILES = [
   "src/components/reports/web-document/constants.ts",
   "src/components/reports/web-document/ui.tsx",
   "src/components/reports/web-document/sections.tsx",
-  "src/components/reports/web-document/analytics/index.ts",
+  "src/lib/reports/report-model/compute-report-model.ts",
 ] as const;
 
 const BANNED_UNACCENTED_FORMS = [

@@ -5,6 +5,10 @@ import process from "node:process";
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const reportModelRoot = path.join(repositoryRoot, "apps/web/src/lib/reports/report-model");
 const indexPath = path.join(reportModelRoot, "index.ts");
+const removedLegacyPaths = [
+  path.join(repositoryRoot, "apps/web/src/components/reports/web-document/analytics"),
+  path.join(repositoryRoot, "apps/web/src/components/reports/web-document/types.ts"),
+];
 const expectedPublicIndex = `export { computeReportModel } from "./compute-report-model";
 
 export type {
@@ -29,6 +33,14 @@ function collectSourceFiles(directory) {
 }
 
 const violations = [];
+for (const legacyPath of removedLegacyPaths) {
+  if (fs.existsSync(legacyPath)) {
+    violations.push(
+      `${path.relative(repositoryRoot, legacyPath)} is a removed Report Model legacy path and must not return`,
+    );
+  }
+}
+
 const indexSource = fs.readFileSync(indexPath, "utf8");
 if (normalizeWhitespace(indexSource) !== normalizeWhitespace(expectedPublicIndex)) {
   violations.push(
