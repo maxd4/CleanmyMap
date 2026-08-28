@@ -41,9 +41,12 @@ export function LegalContentReportForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const body = (await response.json()) as { trackingId?: string; error?: string };
-      if (!response.ok || !body.trackingId) {
-        throw new Error(body.error ?? "Impossible d'envoyer la notification.");
+      const body = (await response.json().catch(() => null)) as {
+        trackingId?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !body?.trackingId) {
+        throw new Error(body?.error ?? "Impossible d'envoyer la notification.");
       }
       setTrackingId(body.trackingId);
       setState("success");
