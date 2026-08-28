@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -9,6 +9,11 @@ export function LegalContentReportForm() {
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identityException, setIdentityException] = useState(false);
+  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    setFormStartedAt(Date.now());
+  }, []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,7 +32,7 @@ export function LegalContentReportForm() {
       allegationReason: String(form.get("allegationReason") ?? ""),
       goodFaithConfirmed: form.get("goodFaithConfirmed") === "on",
       honeypot: String(form.get("website") ?? ""),
-      submittedAt: Date.now(),
+      submittedAt: formStartedAt ?? Date.now(),
     };
 
     try {
@@ -64,7 +69,10 @@ export function LegalContentReportForm() {
         </p>
         <button
           type="button"
-          onClick={() => setState("idle")}
+          onClick={() => {
+            setState("idle");
+            setFormStartedAt(Date.now());
+          }}
           className="font-semibold text-emerald-700 underline"
         >
           Envoyer une autre notification
