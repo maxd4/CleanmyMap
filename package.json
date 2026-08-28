@@ -123,7 +123,7 @@
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.5",
-    "@rollup/rollup-linux-x64-gnu": "4.62.4",
+    "@rollup/rollup-linux-x64-gnu": "4.62.5",
     "@sentry/cli-linux-x64": "3.6.2",
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3"
   },
