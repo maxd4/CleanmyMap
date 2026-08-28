@@ -7,6 +7,8 @@ const SOURCE_ROOTS = [
   resolve(__dirname, "../../app/(app)"),
 ];
 const LEGACY_SCORE_DISPLAY = /(?:\/\s*100(?!\d)|\bsur\s+100\b)/i;
+const TECHNICAL_SCORE_FORMULA =
+  /^\s*const offset = circumference - \(safeValue \/ 100\) \* circumference;\s*$/;
 
 function collectSourceFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
@@ -34,7 +36,11 @@ describe("score display guard", () => {
         readFileSync(file, "utf8")
           .split(/\r?\n/)
           .map((line, index) => ({ file, line, lineNumber: index + 1 }))
-          .filter(({ line }) => LEGACY_SCORE_DISPLAY.test(line)),
+          .filter(
+            ({ line }) =>
+              LEGACY_SCORE_DISPLAY.test(line) &&
+              !TECHNICAL_SCORE_FORMULA.test(line),
+          ),
       ),
     );
 

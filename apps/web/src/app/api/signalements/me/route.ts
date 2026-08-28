@@ -6,6 +6,7 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
+// Vercel justification: cette lecture authentifiée est spécifique à l’utilisateur et doit rester dynamique.
 export const dynamic = "force-dynamic";
 
 function parseLimit(request: Request): number {
@@ -31,6 +32,7 @@ export async function GET(request: Request) {
       { status: "ok", items },
       {
         headers: {
+          // Cache/no-store justification: ces observations sont privées et propres à la session ; aucune réponse partagée ne doit être mise en cache.
           "Cache-Control": "private, no-store",
         },
       },

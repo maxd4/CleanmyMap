@@ -24,6 +24,7 @@ const markReadSchema = z.object({
   peerId: z.string().trim().min(1).max(256),
 });
 
+// Cache/no-store justification: l’inbox DM et son état de lecture sont privés, spécifiques à l’utilisateur et mutables.
 const PRIVATE_NO_STORE_HEADERS = {
   "Cache-Control": "private, no-store",
 };

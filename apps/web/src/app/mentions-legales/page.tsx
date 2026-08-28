@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
-import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
   title: "Mentions Légales - CleanMyMap",
@@ -24,8 +23,6 @@ export const metadata: Metadata = {
 };
 
 export default function MentionsLegalesPage() {
-  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
-
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       {/* Navigation de retour */}
@@ -97,7 +94,10 @@ export default function MentionsLegalesPage() {
             </p>
           </Link>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <Link
+            href="/contact"
+            className="rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:border-emerald-300 hover:bg-emerald-50/70"
+          >
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
               Contact
             </p>
@@ -105,16 +105,9 @@ export default function MentionsLegalesPage() {
               Demandes juridiques
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Pour toute demande RGPD ou question juridique, contactez{" "}
-              <a
-                href={`mailto:${contactEmail}`}
-                className="font-medium text-emerald-700 hover:underline"
-              >
-                {contactEmail}
-              </a>
-              .
+              Accéder à la page de contact pour une demande RGPD, une question juridique ou un besoin de support.
             </p>
-          </div>
+          </Link>
 
           <Link
             href="/signaler-contenu-illicite"

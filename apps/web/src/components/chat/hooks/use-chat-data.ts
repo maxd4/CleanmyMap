@@ -335,6 +335,7 @@ export function useChatData({
       isOnline,
     });
     const intervalId = refreshInterval
+      // Vercel/polling justification: ce rafraîchissement borné sert de fallback au realtime ; il est désactivé hors ligne ou lorsque la page est masquée.
       ? window.setInterval(scheduleMessagesRefresh, refreshInterval)
       : null;
 

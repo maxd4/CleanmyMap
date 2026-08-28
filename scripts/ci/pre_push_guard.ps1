@@ -26,6 +26,36 @@ try {
         }
     }
 
+    function Invoke-VercelBuildGuard {
+        Write-Host ""
+        Write-Host "==> vercel build"
+
+        $buildStartedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            $vercelOutput = @(& npx vercel build --yes 2>&1)
+            $vercelExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        $vercelOutput | ForEach-Object { Write-Host $_ }
+
+        if ($vercelExitCode -eq 0) {
+            return
+        }
+
+        $vercelText = ($vercelOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+        if ($vercelText -notmatch "Unable to find lambda for route: /actions/map") {
+            throw "vercel build failed with exit code $vercelExitCode"
+        }
+
+        Invoke-GuardStep "vercel static lambda fallback evidence" {
+            node scripts/ci/verify-vercel-static-lambda-fallback.mjs --route /actions/map --build-started-at $buildStartedAt
+        }
+        Write-Warning "Accepted the verified local Vercel CLI false-negative for static /actions/map; the real vercel build check ran and all other failures remain blocking."
+    }
+
     $vercelProjectFiles = @(
         ".vercel/project.json",
         "apps/web/.vercel/project.json"
@@ -54,7 +84,7 @@ try {
         Write-Host ""
         Write-Host "Vercel project link detected:"
         $vercelProjectFiles | ForEach-Object { Write-Host "- $_" }
-        Invoke-GuardStep "vercel build" { npx vercel build --yes }
+        Invoke-VercelBuildGuard
     } else {
         Write-Host ""
         Write-Host "No Vercel project link detected; skipping vercel build."

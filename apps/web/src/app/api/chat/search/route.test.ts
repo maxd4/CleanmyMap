@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GET } from "./route";
 
 type SearchRow = {
   id: string;
@@ -149,7 +150,6 @@ describe("GET /api/chat/search", () => {
   it("requires an authenticated current user before resolving a search client", async () => {
     authMock.mockResolvedValueOnce({ userId: null });
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=community&q=message"),
     );
@@ -160,7 +160,6 @@ describe("GET /api/chat/search", () => {
   });
 
   it("rejects short, overlong and malformed cursors before querying messages", async () => {
-    const { GET } = await import("./route");
     const shortResponse = await GET(new Request("http://localhost/api/chat/search?channelType=community&q=a"));
     expect(shortResponse.status).toBe(400);
     expect(rlsClientMock).not.toHaveBeenCalled();
@@ -185,7 +184,6 @@ describe("GET /api/chat/search", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=community&topicId=relais_associatif&q=important"),
     );
@@ -213,7 +211,6 @@ describe("GET /api/chat/search", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=dm&recipientId=user-2&q=plan"),
     );
@@ -251,7 +248,6 @@ describe("GET /api/chat/search", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=bug_report&q=signalement"),
     );
@@ -269,7 +265,6 @@ describe("GET /api/chat/search", () => {
     const supabaseMock = buildSupabaseMock({ rows: [] });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request("http://localhost/api/chat/search?channelType=admin_elu&q=secret"),
     );
@@ -296,7 +291,6 @@ describe("GET /api/chat/search", () => {
     });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const response = await GET(
       new Request(
         "http://localhost/api/chat/search?channelType=territory&zoneName=Paris%201er%20arrondissement&arrondissementId=1&q=Besoin",
@@ -334,7 +328,6 @@ describe("GET /api/chat/search", () => {
     const supabaseMock = buildSupabaseMock({ rows, arrondissement: 11 });
     rlsClientMock.mockResolvedValue(supabaseMock.supabase);
 
-    const { GET } = await import("./route");
     const firstResponse = await GET(
       new Request("http://localhost/api/chat/search?channelType=territory&q=local"),
     );

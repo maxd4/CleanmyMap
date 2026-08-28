@@ -38,6 +38,54 @@ function getRecipientCount(to: string | string[]): number {
   return Array.isArray(to) ? to.length : 1;
 }
 
+const PROVIDER_ERROR_FIELD_MAX_LENGTH = 240;
+const PROVIDER_ERROR_MAX_LENGTH = 960;
+
+function redactProviderErrorText(value: string): string {
+  return value
+    .replace(/\b(bearer|basic)\s+[^\s,;]+/giu, "$1 [redacted]")
+    .replace(
+      /\b(api[_ -]?key|authorization|cookie|password|secret|token)\b(\s*[:=]\s*)(?:(?:bearer|basic)\s+)?[^\s,;}]+/giu,
+      "$1$2[redacted]",
+    )
+    .slice(0, PROVIDER_ERROR_FIELD_MAX_LENGTH);
+}
+
+function safeProviderErrorField(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  if (typeof value === "number" && !Number.isFinite(value)) return undefined;
+  const normalized = String(value).trim();
+  return normalized ? redactProviderErrorText(normalized) : undefined;
+}
+
+function readProviderErrorField(error: object, field: string): unknown {
+  try {
+    return (error as Record<string, unknown>)[field];
+  } catch {
+    return undefined;
+  }
+}
+
+function describeProviderError(error: unknown): string {
+  if (typeof error === "string") {
+    return redactProviderErrorText(error) || "Unknown Resend error";
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const details = ["name", "message", "statusCode", "status", "code"]
+      .map((field) => {
+        const value = safeProviderErrorField(readProviderErrorField(error, field));
+        return value ? `${field}=${value}` : null;
+      })
+      .filter((value): value is string => value !== null)
+      .join("; ");
+
+    if (details) return details.slice(0, PROVIDER_ERROR_MAX_LENGTH);
+  }
+
+  return safeProviderErrorField(error) ?? "Unknown Resend error";
+}
+
 export function isEmailQuotaExceededError(error: unknown): error is EmailQuotaExceededError {
   return error instanceof EmailQuotaExceededError;
 }
@@ -213,11 +261,9 @@ export async function sendEmail(payload: EmailPayload) {
       meta: payload.meta,
     });
   } catch (error) {
-    logFailure("EmailService", "Send failed", error, {
-      to: payload.to,
-      subject: payload.subject,
-      from,
-      replyTo,
+    const errorDiagnostic = describeProviderError(error);
+    logFailure("EmailService", "Send failed", undefined, {
+      reason: errorDiagnostic,
     });
     await recordEmailEvent({
       actorUserId,
@@ -228,7 +274,7 @@ export async function sendEmail(payload: EmailPayload) {
       messageId: null,
       meta: {
         ...(payload.meta ?? {}),
-        error: error instanceof Error ? error.message : String(error),
+        error: errorDiagnostic,
       },
     });
     throw error;
