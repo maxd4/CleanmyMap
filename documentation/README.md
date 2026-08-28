@@ -23,6 +23,8 @@ Avant toute modification ciblant le dépôt :
 | Développement | `development/README.md` |
 | Affichage des scores UI | `development/ui-score-formatting.md` |
 | Produit | `product/README.md` |
+| Fonctionnalités | `features/README.md` |
+| Gamification | `gamification/README.md` |
 | Design system | `design-system/README.md` |
 | Pages et routes | `pages_site/INDEX.md` |
 | Exploitation | `operations/README.md` |
@@ -76,16 +78,20 @@ documentation/
 ├── design-system/
 ├── development/
 ├── features/
+├── gamification/
 ├── operations/
 ├── pages_site/
 │   ├── INDEX.md
 │   └── routes/
 ├── product/
 ├── security/
+├── sessions
 └── specs/
 ```
 
-Les dossiers historiques, de session ou personnels ne doivent pas devenir des sources de vérité concurrentes.
+Les documents courants sont les sources de vérité. Les documents historiques
+et de session conservent le contexte sans
+devenir une architecture ou une spécification concurrente.
 
 ## Lecture par type de tâche
 

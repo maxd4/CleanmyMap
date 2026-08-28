@@ -1,3 +1,6 @@
+> HISTORIQUE — Ce guide décrit une conception passée et ne décrit pas
+> l'architecture runtime actuelle. Le code courant fait autorité.
+
 # Badge Implementation Guide
 
 ## Overview

@@ -13,6 +13,15 @@ contexte projet canonique.
   canonique de clôture et troisième source lue au démarrage ;
 - **quality-audit-snapshot.md** — ressource de contexte, à consulter si le
   chantier le nécessite.
+- Les documents conceptuels historisés du Master Pack et de la gamification
+  portent le suffixe `-historical.md` et ne décrivent pas l’architecture runtime
+  actuelle.
+- Documents archivés actuels :
+  - `master-pack-concept-historical.md` ;
+  - `badge-implementation-guide-historical.md` ;
+  - `badge-notify-ws-guide-historical.md` ;
+  - `gamification-notify-listener-historical.md` ;
+  - `gamification-ws-integration-historical.md`.
 
 ### context/ — ressources à consulter seulement lorsque nécessaires
 - **fiche_projet.txt** - Fiche projet complète

@@ -585,8 +585,8 @@ Pour ajouter une nouvelle famille de badges, suivre cette checklist :
 
 ## Références
 
-- Guide d implémentation des badges : `documentation/BADGE_IMPLEMENTATION_GUIDE.md`
-- Guide notifications & WebSocket : `documentation/gamification/BADGE_NOTIFY_WS_GUIDE.md`
+- Guide d implémentation historique des badges : `documentation/sessions/history/badge-implementation-guide-historical.md`
+- Guide historique notifications & WebSocket : `documentation/sessions/history/badge-notify-ws-guide-historical.md`
 - Tests de contrôle d accès : `documentation/gamification/TESTING_ACCESS_CONTROL.md`
 - Route API : `apps/web/src/app/api/gamification/badges/list/route.ts`
 - Exemples de composants : `apps/web/src/components/gamification/`

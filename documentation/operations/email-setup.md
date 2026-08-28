@@ -25,6 +25,10 @@ RESEND_FROM_EMAIL=...
 RESEND_REPLY_TO=...
 ```
 
+Le code accepte aussi `CREATOR_INBOX_EMAIL` comme solution de repli pour
+l'adresse de contact serveur. Les valeurs ci-dessus sont des exemples de
+configuration ; aucune clé réelle ne doit être commitée.
+
 Le projet lit d'abord `EMAIL_FROM` et `CONTACT_EMAIL`.
 Les composants client qui affichent ou ouvrent un `mailto:` lisent aussi `NEXT_PUBLIC_CONTACT_EMAIL` pour éviter les valeurs codées en dur.
 

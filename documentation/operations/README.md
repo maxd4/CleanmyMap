@@ -34,6 +34,7 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 - contexte courant du projet
 
 ### Sécurité publication et config
+- [Configuration email](email-setup.md) - variables et procédure de configuration
 - `pre-release-security-check.md`
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
 - `github-governance.md` - garde-fous GitHub et reproductibilité locale des workflows
