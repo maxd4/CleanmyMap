@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearRateLimitStore } from "@/lib/rate-limit/store";
 
+const authMock = vi.hoisted(() =>
+  vi.fn(async (): Promise<{ userId: string | null }> => ({ userId: "user-1" })),
+);
 const verifyRateLimitMock = vi.hoisted(() => vi.fn(async () => ({
   allowed: true,
   limit: 1,
@@ -23,7 +26,7 @@ const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async () => ({
 })));
 
 vi.mock("@clerk/nextjs/server", () => ({
-  auth: vi.fn(async () => ({ userId: "user-1" })),
+  auth: authMock,
 }));
 
 vi.mock("@/lib/authz", () => ({
@@ -165,5 +168,27 @@ describe("public form security guardrails", () => {
       kind: "validation",
       status: "rate_limited",
     });
+  });
+
+  it("keeps partner onboarding and promotion requests server-authenticated", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+    const onboarding = await import("./partners/onboarding-requests/route");
+    const onboardingResponse = await onboarding.POST(
+      new Request("http://localhost/api/partners/onboarding-requests", {
+        method: "POST",
+        body: "{}",
+      }),
+    );
+    expect(onboardingResponse.status).toBe(401);
+
+    authMock.mockResolvedValueOnce({ userId: null });
+    const promotion = await import("./community/promotion-requests/route");
+    const promotionResponse = await promotion.POST(
+      new Request("http://localhost/api/community/promotion-requests", {
+        method: "POST",
+        body: "{}",
+      }),
+    );
+    expect(promotionResponse.status).toBe(401);
   });
 });

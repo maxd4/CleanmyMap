@@ -12,7 +12,6 @@ const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const createChatNotificationsForMessageMock = vi.hoisted(() => vi.fn());
-const requireBotIdHumanMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -44,10 +43,6 @@ vi.mock("@/lib/chat/chat-notifications", () => ({
   createChatNotificationsForMessage: createChatNotificationsForMessageMock,
 }));
 
-vi.mock("@/lib/botid/server", () => ({
-  requireBotIdHuman: requireBotIdHumanMock,
-}));
-
 describe("GET /api/chat and POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -65,7 +60,6 @@ describe("GET /api/chat and POST /api/chat", () => {
     createServerRateLimitResponseMock.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
     createChatNotificationsForMessageMock.mockResolvedValue(undefined);
-    requireBotIdHumanMock.mockResolvedValue(null);
   });
 
   it("returns chat messages in ascending order for GET /api/chat", async () => {
@@ -884,29 +878,20 @@ describe("GET /api/chat and POST /api/chat", () => {
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
-  it("returns 403 before auth, parsing, rate limiting, or business calls for a bot", async () => {
-    requireBotIdHumanMock.mockResolvedValue(
-      new Response(JSON.stringify({ error: "Access denied", code: "BOT_DETECTED" }), {
-        status: 403,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-
+  it("requires the server session without consulting BotID", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
     const { POST } = await import("./route");
     const response = await POST(
       new Request("http://localhost/api/chat", {
         method: "POST",
-        body: "not-json-and-never-parsed",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ channelType: "community", content: "Bonjour" }),
       }),
     );
 
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      error: "Access denied",
-      code: "BOT_DETECTED",
-    });
-    expect(authMock).not.toHaveBeenCalled();
-    expect(verifyRateLimitMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    expect(authMock).toHaveBeenCalledOnce();
+    expect(verifyRateLimitMock).toHaveBeenCalledOnce();
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
     expect(reserveDiscussionMessageSlotMock).not.toHaveBeenCalled();

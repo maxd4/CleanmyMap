@@ -55,10 +55,6 @@ vi.mock("@/lib/logging/failure-log", () => ({
   logWarning: vi.fn(),
 }));
 
-vi.mock("@/lib/botid/server", () => ({
-  requireBotIdHuman: vi.fn(),
-}));
-
 const report = {
   id: "report-1",
   createdAt: "2026-08-27T09:00:00.000Z",

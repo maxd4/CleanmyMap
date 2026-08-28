@@ -10,15 +10,21 @@ const decisionsMigration = readFileSync(new URL("../../../supabase/migrations/20
 const decisionRoute = readFileSync(new URL("../../app/api/admin/legal-content-reports/decision/route.ts", import.meta.url), "utf8");
 
 describe("legal content report public contracts", () => {
-  it("keeps the public surface as a POST-only, protected submission", () => {
+  it("keeps the public surface as a POST-only submission without a BotID hard gate", () => {
     expect(route).toContain("export async function POST");
     expect(route).not.toContain("export async function GET");
-    expect(route).toContain("requireBotIdHuman");
+    expect(route).not.toContain("requireBotIdHuman");
+    expect(route).toContain("const { userId } = await auth()");
+    expect(route).toContain("submittedByUserId: userId ?? null");
     expect(route).toContain("verifyRateLimit");
     expect(route).toContain("hasHoneypotSignal");
+    expect(route).toContain("hasRecentSubmission");
+    expect(route).toContain("submittedAt");
     expect(route).toContain("appendLegalContentReport");
     expect(route).toContain("sendLegalContentReportAcknowledgement");
     expect(route).toContain("sendLegalContentReportCreatorNotification");
+    expect(route).toContain("status: 201");
+    expect(route).toContain("trackingId: created.id");
   });
 
   it("keeps the required form fields and the identity exception explicit", () => {

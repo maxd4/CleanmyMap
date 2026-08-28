@@ -49,7 +49,6 @@ import {
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
-import { requireBotIdHuman } from "@/lib/botid/server";
 import {
   CHAT_PAGE_SIZE,
   buildChatHistoryCursor,
@@ -432,9 +431,6 @@ function buildZoneContext(
 }
 
 export async function POST(request: Request) {
-  const botIdResponse = await requireBotIdHuman();
-  if (botIdResponse) return botIdResponse;
-
   const writeRateLimit = await verifyRateLimit(request, { limit: 20, window: 60 });
   const writeRateLimitResponse = createServerRateLimitResponse(
     writeRateLimit.allowed,

@@ -28,7 +28,6 @@ import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
-import { requireBotIdHuman } from "@/lib/botid/server";
 
 const COMMUNITY_EVENTS_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
@@ -225,9 +224,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const botIdResponse = await requireBotIdHuman();
- if (botIdResponse) return botIdResponse;
-
  const writeRateLimit = await verifyRateLimit(request, { limit: 6, window: 60 });
  const writeRateLimitResponse = createServerRateLimitResponse(
   writeRateLimit.allowed,
