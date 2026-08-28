@@ -18,7 +18,7 @@ Règle : **un lot structurel par cible principale**, **API publique inchangée**
 |----------|-----------------|---------|----------------|
 | 🟠 HAUTE | 996 lignes | `components/sections/rubriques/free-plan-services-methodology-visual.tsx` | À découper |
 | 🟠 HAUTE | 983 lignes | `app/api/actions/group-join/route.test.ts` | À découper par helpers métier |
-| 🟠 HAUTE | 935 lignes | `components/actions/action-before-declaration-form.tsx` | À découper |
+| 🟠 HAUTE | 935 lignes | `components/actions/action-declaration/before/form.tsx` | Découpé dans `model.ts`, `use-before-action-form.ts`, `sections.tsx` et `ui.tsx` |
 | 🟠 HAUTE | 927 lignes | `components/admin/free-plan-services-visual.tsx` | À découper |
 | 🟠 HAUTE | 923 lignes | `components/sections/rubriques/partners-network-section.tsx` | À découper |
 | 🟠 HAUTE | 861 lignes | `components/actions/action-declaration/form/action-declaration-export-picker.tsx` | À découper |

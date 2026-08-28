@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
-import { ActionBeforeDeclarationForm } from "./action-before-declaration-form";
+import { ActionBeforeDeclarationForm } from "./form";
 
 describe("ActionBeforeDeclarationForm", () => {
   it("renders the lightweight pre-action form", () => {

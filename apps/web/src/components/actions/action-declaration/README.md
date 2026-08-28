@@ -9,6 +9,7 @@ compose les étapes React et conserve les comportements d'interface associés
 
 ```text
 action-declaration/
+├── before/      parcours pré-action, avant le formulaire complet
 ├── form/       orchestration du formulaire, champs, revue et aides
 ├── steps/      étapes React du parcours de déclaration
 ├── hooks/      hooks d'interface partagés par le parcours
@@ -23,13 +24,16 @@ Les tests restent à côté du module vérifié. Le dossier `form/` peut conteni
 les helpers de validation et de présentation strictement liés au formulaire ;
 une règle métier réutilisable par d'autres surfaces doit être réévaluée pour
 un placement dans `apps/web/src/lib/actions/`.
+Le dossier `before/` regroupe le modèle déterministe, le hook d'orchestration
+et les sections contrôlées du parcours pré-action. Il ne contient ni champ de
+récolte finale ni copie des contrats métier canoniques.
 
 ## Dépendances
 
 ```text
 components/actions/action-declaration
         ↓
-components/actions/action-declaration/{steps,sections,ui}
+components/actions/action-declaration/{before,steps,sections,ui}
         ↓
 lib/actions/{contracts,geometry,quality,signalement,...}
 ```
@@ -45,6 +49,9 @@ doit pas être recréé.
   parcours.
 - Ajouter une section de collecte ou de résultats dans `sections/`.
 - Ajouter une brique de présentation sans orchestration dans `ui/`.
+- Garder le parcours pré-action dans `before/` : `form.tsx` compose le hook,
+  les sections et les briques UI ; aucune section ne doit gérer le réseau ou
+  la persistance.
 - Garder `payload.ts`, `draft-storage.ts` et `types.ts` à la racine lorsqu'ils
   sont partagés par plusieurs parties de la capacité.
 - Garder les tests avec leur capacité et ne pas créer un dossier par fichier.
