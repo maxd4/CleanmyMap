@@ -67,6 +67,9 @@ describe("email service", () => {
 
     expect(getResendClientMock).not.toHaveBeenCalled();
     expect(appendServiceEmailEventMock).not.toHaveBeenCalled();
+    expect(countServiceEmailRecipientsForActorSinceMock).toHaveBeenCalledWith(
+      expect.objectContaining({ actorUserId: "user_123", statuses: ["sent"] }),
+    );
   });
 
   it("records a sent email event when resend succeeds", async () => {
@@ -111,6 +114,40 @@ describe("email service", () => {
     expect(appendServiceEmailEventMock.mock.calls[0][0]).toMatchObject({
       at: expect.any(String),
     });
+    expect(countServiceEmailRecipientsForActorSinceMock).toHaveBeenCalledWith(
+      expect.objectContaining({ actorUserId: "user_123", statuses: ["sent"] }),
+    );
+  });
+
+  it("skips the actor quota only for an explicitly exempt transactional email", async () => {
+    countServiceEmailRecipientsForActorSinceMock.mockResolvedValue(2);
+    const sendMock = vi.fn().mockResolvedValue({
+      data: { id: "email_transactional_123" },
+      error: null,
+    });
+    getResendClientMock.mockReturnValue({ emails: { send: sendMock } });
+
+    const { sendEmail } = await import("./email");
+    await expect(
+      sendEmail({
+        actorUserId: "user_123",
+        quotaPolicy: "none",
+        to: "creator@cleanmymap.fr",
+        subject: "DSA notification",
+        html: "<p>Notification</p>",
+        meta: { source: "legal_content_report", notification: "creator_inbox" },
+      }),
+    ).resolves.toEqual({ id: "email_transactional_123", status: "sent" });
+
+    expect(countServiceEmailRecipientsForActorSinceMock).not.toHaveBeenCalled();
+    expect(appendServiceEmailEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "user_123",
+        status: "sent",
+        messageId: "email_transactional_123",
+        meta: { source: "legal_content_report", notification: "creator_inbox" },
+      }),
+    );
   });
 
   it("records a bounded diagnostic for a non-Error provider failure", async () => {

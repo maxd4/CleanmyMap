@@ -4,7 +4,7 @@ import {
   resolveEmailFrom,
   resolveEmailReplyTo,
 } from "@/lib/email-config";
-import { sendEmail } from "@/lib/services/email";
+import { sendEmail, type EmailPayload } from "@/lib/services/email";
 
 function escapeHtml(value: string): string {
   return value
@@ -39,6 +39,7 @@ export async function sendCreatorInboxEmail(params: {
   footer?: string;
   extraRecipients?: string[];
   actorUserId?: string | null;
+  quotaPolicy?: EmailPayload["quotaPolicy"];
   replyTo?: string;
   meta?: Record<string, unknown>;
 }): Promise<boolean> {
@@ -67,6 +68,7 @@ export async function sendCreatorInboxEmail(params: {
     subject: params.subject,
     html,
     actorUserId: params.actorUserId ?? null,
+    quotaPolicy: params.quotaPolicy,
     meta: params.meta ?? {},
   });
   return true;
