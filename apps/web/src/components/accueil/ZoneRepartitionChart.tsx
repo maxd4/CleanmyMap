@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { toFrNumber, toFrInt } from '../reports/web-document/analytics';
+import { toFrNumber, toFrInt } from "@/lib/reports/report-model/formatters";
 import type { NameType, ValueType } from"recharts/types/component/DefaultTooltipContent";
 
 type MetricKey = "actions" | "kg" | "butts" | "volunteers";
