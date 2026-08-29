@@ -8,6 +8,7 @@ Applied hardening:
 
 - reject ICNS entries shorter than their 8-byte header or extending beyond the declared/input length, which prevents zero-length and non-advancing entry loops;
 - retain the upstream `findBox` forward-progress guard for zero-sized JXL/HEIF boxes.
+- read TIFF metadata by opening the file first, calling `fstatSync` on that same descriptor, and closing it in `finally` so the size/read pair cannot race and descriptors are not leaked on read errors.
 
 Advisories covered:
 

@@ -46,6 +46,12 @@ function resolveOutputBasePath(value) {
     throw new Error("Invalid --out value: output must stay within the current workspace.");
   }
 
+  const artifactsRoot = path.join(workspaceRoot, "artifacts");
+  const artifactsRelative = path.relative(artifactsRoot, resolved);
+  if (artifactsRelative.startsWith("..") || path.isAbsolute(artifactsRelative)) {
+    throw new Error("Invalid --out value: output must stay under artifacts/.");
+  }
+
   return resolved;
 }
 
@@ -222,7 +228,7 @@ async function main() {
 
   const outputBase = resolveOutputBasePath(DEFAULT_OUTPUT_BASE);
   const outputDir = path.dirname(outputBase);
-  await mkdir(outputDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true, mode: 0o700 });
 
   const users = [];
   let offset = 0;
@@ -251,8 +257,12 @@ async function main() {
 
   const jsonPath = `${outputBase}.json`;
   const csvPath = `${outputBase}.csv`;
-  await writeFile(jsonPath, JSON.stringify({ totalCount, count: users.length, users }, null, 2), "utf8");
-  await writeFile(csvPath, toCsv(users), "utf8");
+  await writeFile(
+    jsonPath,
+    JSON.stringify({ totalCount, count: users.length, users }, null, 2),
+    { encoding: "utf8", mode: 0o600 },
+  );
+  await writeFile(csvPath, toCsv(users), { encoding: "utf8", mode: 0o600 });
 
   console.log(`Exported ${users.length} Clerk users.`);
   if (typeof totalCount === "number") {

@@ -140,7 +140,6 @@ let rawH1Count = 0;
 for (const sourcePath of collectSourceFiles(webSourceRoot)) {
   const relative = relativePath(sourcePath);
   const source = fs.readFileSync(sourcePath, "utf8");
-  const lines = source.split(/\r?\n/);
 
   for (const match of source.matchAll(/<PageHeader\b/g)) {
     pageHeaderCount += 1;
