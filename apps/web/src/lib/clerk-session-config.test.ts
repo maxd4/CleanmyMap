@@ -5,7 +5,7 @@ const mockEnv = {
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`,
   CLERK_SECRET_KEY: "sk_test_local_dev_secret",
   NEXT_PUBLIC_CLERK_PROXY_URL: "/__clerk",
-  CLERK_DOMAIN: "cleanmymap.fr",
+  CLERK_DOMAIN: undefined as string | undefined,
   CLERK_IS_SATELLITE: undefined,
   CLERK_SATELLITE_AUTO_SYNC: undefined,
   CLERK_ALLOWED_PARTIES: undefined,
@@ -26,7 +26,7 @@ afterEach(() => {
   mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`;
   mockEnv.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
   mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "/__clerk";
-  mockEnv.CLERK_DOMAIN = "cleanmymap.fr";
+  mockEnv.CLERK_DOMAIN = undefined;
   mockEnv.CLERK_IS_SATELLITE = undefined;
   mockEnv.CLERK_SATELLITE_AUTO_SYNC = undefined;
   mockEnv.CLERK_ALLOWED_PARTIES = undefined;
@@ -40,6 +40,7 @@ describe("getClerkRuntimeConfig", () => {
     expect(getClerkRuntimeConfig().publishableKey).toBe(
       mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     );
+    expect(getClerkRuntimeConfig().domain).toBeUndefined();
   });
 
   it("fails fast when the local Clerk pair is missing", async () => {
@@ -92,6 +93,7 @@ describe("getClerkRuntimeConfig", () => {
   });
 
   it("fails fast when a production Clerk domain is configured without a proxy", async () => {
+    mockEnv.CLERK_DOMAIN = "clerk.cleanmymap.fr";
     mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "";
 
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");

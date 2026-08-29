@@ -8,8 +8,8 @@ Date: 2026-04-08
 
 1. **Domains**
    - Verify the app URL host is `cleanmymap.fr`.
-   - Verify the Clerk production domain is `cleanmymap.fr`.
-   - Verify the Clerk frontend API domain is `cleanmymap.fr`.
+   - Verify the Clerk production/FAPI domain is `clerk.cleanmymap.fr`.
+   - Keep the application URL separate: `cleanmymap.fr` is the web app domain, not the Clerk FAPI domain.
    - Only use a proxy path (`/__clerk`) if the app intentionally routes Clerk through the site domain.
 
 2. **Session lifetime**
