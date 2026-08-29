@@ -1,8 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
-import { fetchActionPollutionScoreReferences } from "./pollution-score-references";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  fetchActionPollutionScoreReferences,
+  invalidateActionPollutionScoreReferencesCache,
+} from "./pollution-score-references";
 import { DEFAULT_POLLUTION_SCORE_REFERENCES } from "./pollution-score";
 
 describe("fetchActionPollutionScoreReferences", () => {
+  beforeEach(() => {
+    invalidateActionPollutionScoreReferencesCache();
+  });
+
   it("calls the RPC and normalizes the returned values", async () => {
     const rpc = vi.fn(async () => ({
       data: [{ waste_per_volunteer: 12, butts_per_volunteer: 345 }],
@@ -41,5 +48,29 @@ describe("fetchActionPollutionScoreReferences", () => {
     await expect(fetchActionPollutionScoreReferences(supabase)).resolves.toEqual(
       DEFAULT_POLLUTION_SCORE_REFERENCES,
     );
+  });
+
+  it("coalesces concurrent server reads of the public reference", async () => {
+    let resolveRpc!: (value: { data: unknown; error: null }) => void;
+    const rpc = vi.fn(
+      () =>
+        new Promise<{ data: unknown; error: null }>((resolve) => {
+          resolveRpc = resolve;
+        }),
+    );
+    const supabase = { rpc } as never;
+
+    const first = fetchActionPollutionScoreReferences(supabase);
+    const second = fetchActionPollutionScoreReferences(supabase);
+    resolveRpc({
+      data: [{ waste_per_volunteer: 12, butts_per_volunteer: 345 }],
+      error: null,
+    });
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { wastePerVolunteer: 12, buttsPerVolunteer: 345 },
+      { wastePerVolunteer: 12, buttsPerVolunteer: 345 },
+    ]);
+    expect(rpc).toHaveBeenCalledOnce();
   });
 });
