@@ -29,6 +29,8 @@ type EntryScreen = "choice" | "loading" | "success" | "error";
 
 type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationForm> & {
   initialActionId?: string | null;
+  signInHref?: string;
+  signUpHref?: string;
 };
 
 function EntryFeature({ children }: { children: string }) {
