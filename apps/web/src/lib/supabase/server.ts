@@ -2,13 +2,19 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
 /**
- * Validates URL has https protocol (CodeQL-safe alternative to startsWith checks)
+ * Production Supabase URLs must use HTTPS. The official local CLI exposes
+ * localhost over HTTP, which is accepted only for non-production local runs.
  */
-function hasHttpsProtocol(url: string | undefined): boolean {
+function hasAllowedProtocol(url: string | undefined, allowLocalHttp: boolean): boolean {
   if (!url || typeof url !== "string") return false;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "https:";
+    if (parsed.protocol === "https:") return true;
+    return (
+      allowLocalHttp &&
+      parsed.protocol === "http:" &&
+      (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost")
+    );
   } catch {
     return false;
   }
@@ -19,7 +25,7 @@ function hasHttpsProtocol(url: string | undefined): boolean {
  */
 export function isSupabaseConfigured(): boolean {
   return (
-    hasHttpsProtocol(env.NEXT_PUBLIC_SUPABASE_URL) &&
+    hasAllowedProtocol(env.NEXT_PUBLIC_SUPABASE_URL, process.env.NODE_ENV !== "production") &&
     !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 20
   );
@@ -50,7 +56,7 @@ export function getSupabaseServerClient(useServiceRole = true) {
       },
     });
 
-  if (!hasHttpsProtocol(url)) {
+  if (!hasAllowedProtocol(url, !isProd)) {
     const errorMsg = "CRITICAL: NEXT_PUBLIC_SUPABASE_URL is missing or invalid.";
     if (isProd) throw new Error(errorMsg);
 
