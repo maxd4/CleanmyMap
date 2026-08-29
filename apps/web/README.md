@@ -2,7 +2,7 @@
 
 ## Pré-requis
 
-- Node.js 20+ ;
+- Node.js 24.x ; utilisez `apps/web/.nvmrc` depuis la racine du monorepo ;
 - npm ;
 - Supabase CLI via `npx supabase` ;
 - Vercel CLI si nécessaire ;

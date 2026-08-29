@@ -5,7 +5,7 @@ Tout d'abord, merci de considérer d'apporter votre contribution à CleanMyMap !
 ## 1. Pour Commencer
 Avant de démarrer :
 - Consultez le [README.md](./README.md) pour les instructions de démarrage rapide.
-- Vérifiez d'avoir installé Node.js 20+ et npm 9+.
+- Vérifiez d'avoir installé Node.js 24.x et npm 9+ ; le contrat est défini par `apps/web/.nvmrc`.
 - Pour bien comprendre notre architecture et nos conventions, veuillez impérativement lire le [Documentation Hub](../README.md).
 
 ## 2. Configuration de l'Environnement
