@@ -12,6 +12,7 @@ describe("buildQuickSignalementPayload", () => {
     });
 
     expect(payload.recordType).toBe("spot");
+    expect(payload.associationName).toBe("Action spontanée");
     expect(payload.preparationData).toEqual({
       expectedWasteCategories: ["plastic", "broken_glass"],
     });

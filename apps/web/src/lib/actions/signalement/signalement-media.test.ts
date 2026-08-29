@@ -188,6 +188,12 @@ describe("signalement media contract", () => {
       clientUploadId: "client-not-a-path",
     });
     expect(intent).toMatchObject({ bucket: SIGNALEMENT_EVIDENCE_BUCKET, uploadState: "pending" });
+    const insertPayload = supabase.__queries.mediaQuery.insert.mock.calls[0]?.[0] as {
+      id?: string;
+      storage_path?: string;
+    };
+    expect(insertPayload.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(insertPayload.storage_path).toBe(`signalement-1/${insertPayload.id}.jpg`);
     expect(supabase.from).toHaveBeenCalledWith("trash_spotter_spots");
     expect(supabase.from).toHaveBeenCalledWith("signalement_media");
   });

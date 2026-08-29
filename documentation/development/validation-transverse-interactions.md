@@ -13,6 +13,62 @@ Les colonnes ne constituent pas un feu vert :
 - `END_TO_END` exige la vérification de l’effet réel : donnée persistée, email effectivement remis, redirection atteinte, état métier modifié, fichier généré/téléchargé ou upload finalisé. Aucun `END_TO_END_OK` n’est attribué sans preuve identifiée dans le registre de campagne ci-dessous.
 - Un toast, un état React ou une réponse HTTP isolée ne suffit pas pour `END_TO_END`.
 
+## Politique d’exécution locale — Docker/Supabase strictement on-demand
+
+Depuis la campagne n°2, Docker et Supabase local ne font pas partie des
+pré-requis généraux de validation. Toute validation qui ne nécessite pas une
+écriture ou une relecture locale réelle doit être exécutée sans démarrer ces
+services : tests unitaires, contrats API, typecheck, lint, pages publiques,
+navigation et exports dont la source de données est déjà disponible sans
+persistence locale.
+
+Les E2E avec persistence, Storage ou contrôle d’ownership sont regroupés en
+campagnes ponctuelles. Le cycle canonique est :
+
+1. effectuer les pré-contrôles sans Docker/Supabase ;
+2. démarrer Docker uniquement si le runner en a besoin, puis démarrer une seule
+   instance Supabase locale depuis `apps/web/supabase` et ses migrations/seed
+   canoniques ;
+3. exécuter dans une seule invocation Playwright tous les scénarios de la
+   campagne concernée ;
+4. laisser chaque campagne exécuter son teardown déterministe et relire
+   l’absence des données E2E ;
+5. arrêter Supabase puis Docker uniquement si le runner les a lui-même démarrés
+   et qu’aucun conteneur préexistant ne risque d’être interrompu.
+
+Le runner ponctuel de la campagne n°2 est
+`node e2e/run-campaign-2-local.mjs`. Il regroupe Gate A (signalement sans média),
+Gate B (Storage média, relecture propriétaire et AuthZ négatif) et le cleanup
+dans une seule session Playwright. Les clés restent uniquement dans
+l’environnement du processus ; aucune sortie de statut Supabase n’est
+recopiée dans les logs. Si Docker ou Supabase sont déjà actifs avant le
+lancement, le runner les conserve afin de ne pas interrompre un autre chantier
+local ; cet état doit être signalé comme environnement préexistant, pas comme
+un démarrage/arrêt possédé par la campagne.
+
+La commande générique `npm run test:e2e` ne doit pas être utilisée comme
+validation courante implicite : elle peut sélectionner des projets nécessitant
+Clerk et Supabase. Les validations publiques et sans persistence doivent être
+appelées explicitement ; les mutations locales doivent passer par leur runner
+de campagne avec acquisition et restitution contrôlées de l’environnement.
+
+### Candidats de déplacement vers GitHub Actions
+
+| E2E ou famille | dépendance | cible CI | condition de déplacement |
+|---|---|---|---|
+| smoke public, routes publiques et contrôles de navigation | serveur Next ; pas de mutation | PR/push, sans Docker | exécuter avec une source de lecture déterministe ou des réponses de test ; ne jamais dépendre d’une base distante de production |
+| exports CSV/GeoJSON/PNG de `/actions/map` | navigateur, génération de fichiers, données publiques de test | PR/push, sans Docker si la source est embarquée/isolée | comparer contenu, format, MIME et taille comme dans `E2E-1B-EXPORTS` |
+| campagne n°1D — group join, idempotence, leave, relecture | Supabase local, fixture, Clerk Testing | workflow E2E ponctuel ou nightly | runner Linux avec Supabase disposable, seed canonique, utilisateur Development dédié, secrets CI et teardown vérifiable |
+| campagne n°2 — signalement, Storage, owner readback, AuthZ | Supabase local, Storage, Clerk Testing, fixture image | workflow E2E ponctuel ou nightly | même stack isolée, bucket éphémère, fixture marker, vérification objet/metadata et suppression déterministe |
+| déclaration complète et médias `/actions/new` | Supabase, Storage, géométrie, Clerk, éventuellement services externes | workflow E2E lourd/nightly | compléter d’abord le scénario et les preuves locales ; aucune écriture distante depuis le workflow sans environnement disposable |
+| messagerie, communauté, rapports/admin | multi-utilisateurs, RLS, Storage, rôles, audit | workflows E2E dédiés/nightly | harness multi-session, fixtures par rôle, isolation de données et assertions d’audit avant activation CI |
+
+Les E2E authentifiés et persistants sont donc de bons candidats CI, mais ne sont
+pas déclarés « déplacés » tant que GitHub Actions ne fournit pas réellement la
+paire Clerk Development, Supabase disposable, les fixtures et le teardown. La
+présence d’un workflow vert ou d’un build ne constitue pas une preuve de
+persistence métier.
+
 ## Matrice canonique
 
 | surface | route | acteur | interaction | auth attendue | effet réel | PAGE | INTERACTION | END_TO_END | dépendances | anomalie |
@@ -47,8 +103,9 @@ Les colonnes ne constituent pas un feu vert :
 | Déclaration complète | `/actions/new` | connecté après formulaire public éventuel | champs, tri, date, quantité, géométrie, aide intelligente, confirmation | auth au submit ; contrôles serveur ownership/state | action créée dans la base, état et lien de partage retournés | Présente | Contrat POST + câblage | NON PROUVÉ | `/api/actions`, géocodage, vision, Supabase | Prioritaire ; la réponse positive UI n’est pas la persistance. |
 | Exports et partage de déclaration | `/actions/new` après création | anonyme/connecté | CSV/PDF/image/bundle local, copier lien/texte, partage natif, replay | aucune pour l’export local ; auth si replay d’historique privé | fichier/clipboard/share réellement disponible et lien pointe sur la bonne action | Présente | Câblage source | NON PROUVÉ | `action-declaration-export-picker`, Blob, Web Share | Vérifier contenu, nom, encodage et fallback clipboard/share. |
 | Médias de déclaration | `/actions/new`, `/signalement` | connecté | sélectionner/retirer photos, traitement vision, submit | auth au submit et upload ; serveur vérifie action/propriétaire | médias intentés, uploadés puis finalisés, rattachement à l’action | Présente | Contrats media + câblage | NON PROUVÉ | `/api/signalements/[id]/media/intents`, Supabase Storage, finalize | Prioritaire : chaîne en quatre étapes à vérifier, y compris retry partiel. |
-| Signalement terrain | `/signalement` | anonyme puis connecté | choisir spot/lieu propre, géolocaliser, photos, envoyer | permission géoloc à l’usage ; auth au submit certifié | observation créée, géométrie et photos persistées, visible dans “mes observations” | PAGE_OK | INTERACTION_OK | NON PROUVÉ | `TrashSpotterOwnerLoop`, `/api/actions`, `/api/signalements/me` | Préparation publique, position, catégorie, POST protégé au submit et restauration du brouillon après Clerk sont prouvés ; aucune observation complète avec médias n’est persistée dans cette campagne. Preuve partielle : `E2E-1D-SIGNALEMENT-DRAFT`. |
-| Preuves photo d’une observation | `/signalement`, dashboard | connecté propriétaire | cliquer “voir les preuves”, recharger, retry | auth + ownership au clic de lecture | médias privés chargés depuis l’API/signature et affichés | Présente | Contrat GET + câblage | NON PROUVÉ | `/api/signalements/[id]/media`, Storage | Le clic explicite doit rester la frontière de chargement des preuves. |
+| Signalement terrain | `/signalement` | anonyme puis connecté | choisir spot/lieu propre, géolocaliser, photos, envoyer | permission géoloc à l’usage ; auth au submit certifié | observation créée, géométrie et photos persistées, visible dans “mes observations” | PAGE_OK | INTERACTION_OK | NON PROUVÉ | `TrashSpotterOwnerLoop`, `/api/actions`, `/api/signalements/me` | La persistence sans média est prouvée par `E2E-2-SIGNALEMENT-PERSISTENCE`; la chaîne média reste non prouvée et empêche le statut global `END_TO_END_OK`. |
+| Signalement — persistence sans média | `/signalement` | anonyme puis connecté | saisir publiquement, authentifier au submit, envoyer sans photo, relire | auth Clerk au submit certifié uniquement | ligne d’observation persistée avec propriétaire, géométrie, catégorie et état métier, puis relecture exacte | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `TrashSpotterOwnerLoop`, `/api/actions`, `/api/signalements/me` | Gate A consolidée : double clic synthétique → un seul POST `201`, ligne `trash_spotter_spots` relue, `/api/signalements/me` `200`, reload propriétaire. Preuve : `E2E-2-SIGNALEMENT-PERSISTENCE`, `artifacts/playwright/authenticated-campaign-2/evidence.json`. |
+| Preuves photo d’une observation | `/signalement`, dashboard | connecté propriétaire | joindre, provoquer un échec contrôlé, retry, cliquer “voir les preuves”, recharger, finaliser à nouveau | auth + ownership au submit, au finalize et à la lecture | intent, signed upload, objet Storage privé, metadata `ready`, relecture propriétaire et idempotence | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `/api/signalements/[id]/media/intents`, `/api/signalements/[id]/media/[mediaId]/finalize`, Storage `signalement-evidence` | Gate B consolidée : `intent 201 → upload HTTP 500 contrôlé → retry → finalize 200 → metadata ready → owner readback 200`; fichier JPEG réel `269365` octets, bucket/path vérifiés, second finalize idempotent ; anonyme `403` médias et `401` observations. Preuve : `E2E-2-SIGNALEMENT-MEDIA`, `artifacts/playwright/authenticated-campaign-2/evidence.json`. |
 | Historique actions | `/actions/history` | connecté, propriétaire/organisateur/admin selon sous-action | filtres, sélectionner une ligne, charger plus, corriger, audit, export PDF | auth à l’accès car historique privé ; autorisation par action à chaque mutation | donnée relue, correction persistée et audit consultable | Présente | Contrats GET/PATCH/audit | NON PROUVÉ | `/api/actions`, `/api/actions/[id]`, audit, export | Mur probablement légitime pour données personnelles ; vérifier les scopes séparément. |
 | Fiche mission/action | `/missions/[id]` | connecté autorisé | ouvrir fiche, consommer les actions/contextes associés | auth/ownership au chargement | bonne fiche et état métier affichés, navigation cohérente | Présente | Câblage source | NON PROUVÉ | page mission, action store | Le lien de partage communautaire vers `/missions/[id]` doit être vérifié : risque de route sémantiquement inadéquate. |
 | Messagerie, lecture | `/sections/messagerie`, `/messagerie` | connecté | discussions/DM, recherche, pagination, sélection canal | auth avant chargement de données privées | messages/inbox réellement relus avec RLS/capability | Présente | Contrats GET | NON PROUVÉ | `/api/chat`, `/api/chat/inbox`, `/api/chat/search/users` | Mur blur légitime pour données privées ; ne pas confondre aperçu visuel et accès. |
@@ -254,6 +311,36 @@ Les journaux contiennent encore des erreurs de lecture des notifications locales
 non bloquantes (`NotificationBell`) et un avertissement Node de nettoyage Windows
 lié au runner ; ils ne sont pas utilisés comme preuve métier.
 
+## Campagne E2E n°2 — signalement complet et preuves photo
+
+Les deux gates ont été exécutées avec le harness Clerk officiel et
+`CMM_DISABLE_DEV_AUTH_BYPASS=1`, depuis Supabase local. La préparation anonyme,
+l’authentification au moment du submit, la persistence sans média, le pipeline
+Storage complet, la relecture propriétaire et le contrôle négatif anonyme sont
+prouvés. Les exports des campagnes précédentes n’ont pas été rejoués.
+
+| statut | preuve | portée |
+|---|---|---|
+| `END_TO_END_OK` | `E2E-2-SIGNALEMENT-PERSISTENCE` : session Clerk réelle ; préparation publique avec catégorie/coordonnées ; un double clic synthétique n’a produit qu’un `POST /api/actions` ; réponse `201` ; ligne relue dans `trash_spotter_spots` avec propriétaire Clerk, `spot_type=spot`, coordonnées `48.8566/2.3522`, état `new` et marqueur métier `cmm-waste:` ; `/api/signalements/me` répond `200` avec la même observation ; reload de `/signalement` retrouve le libellé. | Gate A sans média |
+| `END_TO_END_OK` | `E2E-2-SIGNALEMENT-MEDIA` : session Clerk réelle ; intent `201`, premier upload signé échoué volontairement en `500`, retry réussi, finalize `200`, ligne `signalement_media` en `ready`, objet téléchargé depuis le bucket privé avec MIME `image/jpeg`, signature JPEG et taille concordante `269365` octets ; relecture propriétaire API/UI ; second finalize `alreadyReady=true`. | Gate B médias |
+| `AUTHZ_NEGATIVE` | La même preuve vérifie depuis un contexte anonyme : lecture médias `403` et `/api/signalements/me` `401`. Aucun bypass AuthN/AuthZ n’est utilisé. | accès propriétaire/non-propriétaire des médias |
+| `CLEANUP` | Teardown déterministe sur les deux identifiants exacts : suppression de l’objet Storage média, suppression du parent, puis relecture locale `parent=null` et `mediaReadbackCount=0`. Le marker `E2E_CAMPAIGN_2_PHOTO` est porté par la fixture média. | données locales créées par les Gates A/B |
+
+### Problèmes rencontrés et solutions n°2
+
+| problème | cause identifiée | solution appliquée | résultat |
+|---|---|---|---|
+| Le premier submit signalement répondait `422` malgré une saisie UI complète. | Le payload de `buildQuickSignalementPayload` omettait `associationName`, champ requis par le contrat `/api/actions`. | Ajout ciblé de `associationName: "Action spontanée"` et assertion unitaire associée. | Gate A passe et la ligne est persistée/retrouvée. |
+| Le contrôle de double-submit Playwright produisait parfois plusieurs POST ou expirait sur un bouton instable. | Deux `locator.click()` concurrents entraient en concurrence avec le rendu React et la libération du verrou après une erreur rapide. | Attente de l’état enabled puis deux `button.click()` DOM dans la même tâche ; le verrou applicatif reste inchangé. | Un seul POST observé dans `E2E-2-SIGNALEMENT-PERSISTENCE`. |
+| La Gate B restait anonyme et ne pouvait donc pas atteindre la mutation. | Le test ne rétablissait pas la session Clerk sur sa page initiale. | Appel explicite à `clerk.signIn` avant navigation vers `/signalement`, sans bypass. | La session Clerk réelle atteint la création et l’upload ; Gate B est validée. |
+| L’abandon réseau brut laissait l’état « préparation des photos » en attente. | `route.abort("failed")` provoquait une attente/retry du client Storage. | Réponse HTTP `500` contrôlée au premier upload, puis poursuite normale au retry. | Le cas d’échec et son retry sont déterministes ; la chaîne média finale est prouvée. |
+| Le succès après retry n’était pas observé dans le délai par défaut. | Compression/finalisation locale dépassait parfois cinq secondes. | Attentes ciblées portées à `30 s`, sans modifier les délais métier. | Le retry et le finalize sont observés dans la Gate B validée. |
+| Le serveur Next ne démarrait plus après des installations npm concurrentes. | Des processus `npm ci/install` parallèles ont supprimé ou laissé partiellement extraits `next`, `playwright` et `@tailwindcss/postcss`. | Aucun kill ni contournement ; les installations ont été laissées se terminer, puis une reconstruction canonique depuis le lockfile a été menée à terme et le cache `.next` généré a été nettoyé par le script canonique. | Next/Playwright ont redémarré ; Gate A+B passe `5/5`. |
+| Docker Desktop refusait de démarrer avant la campagne finale. | Les tentatives précédentes avaient laissé des reparse points AF_UNIX runtime dans `Docker\\run` et `docker-secrets-engine`; les logs confirmaient successivement Ingest, Inference, OTel puis Secrets. | Déplacement réversible des seuls répertoires runtime hors du chemin actif, recréation des dossiers vides et redémarrage Docker ; aucune image, donnée, volume, cache ou VHDX n’a été supprimé. | Docker `29.7.2` et Supabase local ont redémarré ; la campagne A+B a passé `5/5`. |
+| Le premier finalize média rejetait le chemin de preuve. | Le code générait un UUID de chemin distinct de l’`id` généré par PostgreSQL ; le contrôle serveur recalculait donc correctement un autre chemin. | Persistance de l’UUID généré dans la colonne `id`, avec test unitaire vérifiant `storage_path = signalement_id/id.extension`. | Gate B passe avec objet Storage téléchargé et metadata `ready`. |
+| Le clic propriétaire après reload était intercepté par le bandeau cookies. | Le contexte Playwright n’avait pas encore persisté de choix de consentement. | Fermeture UI explicite par “Tout refuser” avant le clic métier, sans manipulation directe de l’ACL. | Relecture photo UI réussie. |
+| Le contrôle négatif exécutait `fetch` depuis `about:blank`. | Le nouveau contexte anonyme n’avait pas d’origine pour résoudre l’URL relative. | Navigation vers `/` avant les appels `fetch`, sans session. | Médias `403`, observations `401`. |
+
 ## Historique — problèmes rencontrés pendant la campagne E2E n°1
 
 Le tableau ci-dessous distingue les erreurs effectivement rencontrées, leur cause vérifiée, la solution appliquée dans le périmètre de la campagne et le résultat obtenu. Une correction de garde d’accès ou un test HTTP réussi ne constitue pas une preuve de l’effet métier final.
@@ -296,7 +383,7 @@ Après résolution de la configuration Clerk locale et ajout de fixtures réelle
 
 1. Carte publique et annuaire : lecture anonyme, filtres, export, puis relecture de l’annuaire après publication admin.
 2. Rejoindre une action : liste anonyme, auth au clic, join/leave, relecture de l’état et revue organisateur.
-3. Déclaration complète et signalement : préparation publique si autorisée, submit authentifié, création, upload/finalize des médias, relecture propriétaire.
+3. Déclaration complète et ses médias : préparation publique si autorisée, submit authentifié, création, upload/finalize, relecture propriétaire et contrôle inter-session.
 4. Contact, newsletter et signalement illicite : persistance réelle, idempotence, états d’échec email et absence de faux succès.
 5. Messagerie : canal/DM, message, pièce jointe, poll vote, read state et contrôle RLS entre deux utilisateurs.
 6. Communauté : lecture, RSVP, création, partage et relecture depuis la liste publique/compte.

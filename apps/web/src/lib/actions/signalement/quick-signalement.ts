@@ -18,6 +18,7 @@ export function buildQuickSignalementPayload(params: {
     : "Lieu propre constaté via Signalement Rapide";
 
   return {
+    associationName: "Action spontanée",
     actionDate: params.actionDate,
     locationLabel: isSpot
       ? `Signalement Rapide (${params.categories.join(", ")})`
