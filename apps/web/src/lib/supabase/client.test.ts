@@ -69,4 +69,13 @@ describe("getSupabaseBrowserClient", () => {
       template: "clerk-supabase",
     });
   });
+
+  it("accepts the official local Supabase HTTP endpoint outside production", async () => {
+    process.env["NEXT_PUBLIC_SUPABASE_URL"] = "http://127.0.0.1:54321";
+    createClientMock.mockReturnValue({});
+
+    const { getSupabaseBrowserClient } = await import("./client");
+
+    expect(getSupabaseBrowserClient()).toEqual({});
+  });
 });

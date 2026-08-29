@@ -6,6 +6,7 @@ import {
   syncAnalyticsConsentCookie,
 } from "@/lib/analytics-consent";
 import {
+  COOKIE_CONSENT_CHANGE_EVENT,
   COOKIE_CONSENT_MANAGE_EVENT,
   cookieConsentStorage,
   notifyCookieConsentChanged,
@@ -18,6 +19,7 @@ export const COOKIE_CONSENT_ACTION_CLASS_NAME =
 export function CookieConsentBanner() {
   const [isClient] = useState(() => typeof window !== "undefined");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [, setConsentRevision] = useState(0);
 
   useEffect(() => {
     if (!isClient) {
@@ -25,9 +27,13 @@ export function CookieConsentBanner() {
     }
 
     const handleManageCookies = () => setIsPreferencesOpen(true);
+    const handleConsentChange = () => setConsentRevision((revision) => revision + 1);
     window.addEventListener(COOKIE_CONSENT_MANAGE_EVENT, handleManageCookies);
-    return () =>
+    window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, handleConsentChange);
+    return () => {
       window.removeEventListener(COOKIE_CONSENT_MANAGE_EVENT, handleManageCookies);
+      window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, handleConsentChange);
+    };
   }, [isClient]);
 
   const consent: CookieConsentState = isClient

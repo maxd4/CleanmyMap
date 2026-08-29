@@ -63,7 +63,7 @@ function ChoiceCard({
       tone="emerald"
       variant="glass"
       size="lg"
-      className="group h-full border-emerald-300/50 bg-white/92 transition-transform duration-200 hover:-translate-y-0.5"
+      className="group h-full"
     >
       <div className="flex h-full flex-col gap-5">
         <div className="flex items-start gap-4">
@@ -103,7 +103,7 @@ function TransitionPanel({
 }) {
   return (
     <div className="mx-auto flex min-h-[40vh] w-full max-w-7xl items-center justify-center px-4 py-8 md:px-6 lg:px-8">
-      <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl border-emerald-200/80 bg-white/95">
+      <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl">
         <div className="space-y-5 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl border border-emerald-200/80 bg-[#ECF8EF] text-emerald-700 shadow-sm">
             <Loader2 size={22} className="animate-spin" />
@@ -140,7 +140,7 @@ function ErrorPanel({
 }) {
   return (
     <div className="mx-auto flex min-h-[40vh] w-full max-w-7xl items-center justify-center px-4 py-8 md:px-6 lg:px-8">
-      <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl border-rose-200/70 bg-white/96">
+      <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl">
         <div className="space-y-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-200/80 bg-rose-50 text-rose-600 shadow-sm">
             <AlertTriangle size={20} />
@@ -227,7 +227,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl space-y-6">
-        <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/94">
+        <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <CmmPill tone="emerald" size="sm" className="tracking-[0.18em]">
@@ -298,6 +298,8 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         initialRecordType={props.initialRecordType}
         onReturnToChoice={backToChoice}
         onPassToComplete={(actionId) => transitionToComplete(actionId)}
+        signInHref={props.signInHref}
+        signUpHref={props.signUpHref}
       />
     );
   }

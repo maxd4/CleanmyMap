@@ -82,6 +82,7 @@
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "test:e2e": "playwright test",
     "test:e2e:list": "playwright test --list",
+    "test:e2e:authenticated:local": "node e2e/run-local-authenticated.mjs",
     "mobile:typecheck": "npm run typecheck -w apps/mobile",
     "precommit:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_commit_guard.ps1",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
@@ -122,9 +123,11 @@
   },
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
+    "@clerk/testing": "^2.2.31",
     "@playwright/test": "^1.62.1",
     "playwright": "^1.59.1",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "supabase": "^2.116.0"
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.2.5",
