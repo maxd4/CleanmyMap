@@ -288,6 +288,7 @@ export async function createSignalementMediaUploadIntent(
     const insertResult = await supabase
       .from("signalement_media")
       .insert({
+        id: mediaId,
         signalement_id: params.signalementId,
         created_by_clerk_id: params.userId,
         client_upload_id: params.clientUploadId.trim(),
