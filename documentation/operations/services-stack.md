@@ -81,7 +81,7 @@ Activation:
 - `CLERK_SECRET_KEY`
 - éventuels réglages de domaine et d'utilisateurs admin.
 
-- `CLERK_DOMAIN=cleanmymap.fr`
+- `CLERK_DOMAIN` absent from Vercel; leave it empty for local non-proxy development
 - `NEXT_PUBLIC_CLERK_PROXY_URL` vide
 
 Si `NEXT_PUBLIC_CLERK_PROXY_URL=/__clerk` est utilisé volontairement, le proxy Frontend API est géré par `apps/web/src/proxy.ts` via `frontendApiProxy` et le code résout ensuite ce chemin par rapport à `NEXT_PUBLIC_APP_URL` pour fournir à Clerk une URL absolue.
