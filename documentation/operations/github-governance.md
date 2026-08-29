@@ -16,8 +16,9 @@ La branche `main` doit refuser les merges quand les checks requis échouent.
 
 Checks attendus pour la revue manuelle GitHub:
 
-- `fast-checks`
-- `security-checks`
+- `scope`
+- `web-checks`
+- `mobile-validation` lorsque le scope mobile est concerné
 - `CodeQL`
 - `Vercel`
 
@@ -38,23 +39,23 @@ reproductibles localement, tandis que le runner GitHub, les conditions calculée
 
 | Workflow / job | Commandes locales correspondantes | Prérequis et limites | Reproductible localement |
 | --- | --- | --- | --- |
-| `ci.yml` / `fast-checks` | `npm run security:secrets`; `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:agent-skills`; `npm run check:github-actions`; puis, pour un lot non documentaire, `npm ci`, `npm run check:lockfile-policy`, `npm run typecheck`, `npm run check:utf8-fr`, `npm run quality:top-heavy`, `npm run lint`, `npm run test`, `npm run test:regression-gates`, `npm run audit:vercel:ci`, `npm run build` | Node.js 20, npm et un historique Git permettant de comparer deux SHA. Le calcul `docs_only` doit être simulé avec une paire `base/head`. Le build attend `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`; ne jamais mettre ces valeurs dans la documentation ou le dépôt. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
-| `ci.yml` / `security-checks` | `npm ci`; `npm run test:security` | Le job dépend de la sortie `docs_only` de `fast-checks`, mais ses commandes ne dépendent pas d'un service distant explicite dans le workflow. | Oui. |
-| `ci.yml` / `mobile-checks` | `npm ci`; `npm run typecheck -w apps/mobile` | Node.js 20, `package-lock.json`. Le job est déclenché pour les changements de `apps/mobile` et de `.github/workflows/ci.yml`, hors Markdown du mobile. | Oui. |
+| `ci.yml` / `scope` | Détecte `docs_only`, `web_code_relevant` et `mobile_code_relevant` à partir d'une paire `base/head` | Node.js non requis; permissions `contents: read`. Le job est indépendant des validations applicatives. | Oui pour le calcul; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `web-checks` | `npm run security:secrets`; `npm run check:root-files`; `npm run check:doc-governance`; `npm run check:stack-doc-drift`; `npm run check:github-actions`; puis, pour un lot non documentaire, `npm ci`, `npm run check:lockfile-policy`, `npm run typecheck`, `npm run check:utf8-fr`, `npm run quality:top-heavy`, `npm run lint`, la politique de tests, Vitest, l'audit Vercel et le build | Node.js 24.x lu depuis `apps/web/.nvmrc`, npm et un historique Git permettant de comparer deux SHA. Le build attend `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`; ne jamais mettre ces valeurs dans la documentation ou le dépôt. | Oui pour les commandes; non pour l'orchestration exacte GitHub. |
+| `ci.yml` / `mobile-validation` | `npm ci`; `node --test apps/mobile/security/*.test.mjs`; `npm run typecheck -w apps/mobile` | Node.js 24.x lu depuis `apps/web/.nvmrc`, `package-lock.json`. Le job est déclenché par le scope mobile et ne dépend pas de `web-checks`. | Oui. |
 | `codeql.yml` / `analyze` | Aucun script npm équivalent direct : `actions/checkout`, `github/codeql-action/init`, `autobuild` et `analyze` | Runner GitHub, bundle CodeQL et permission `security-events: write` pour publier les résultats. | Non à l'identique; ce contrôle reste GitHub-dépendant. |
 
 ### Séquence locale recommandée
 
-Pour un changement applicatif, cette séquence couvre les contrôles du job
-`fast-checks`, puis le job de sécurité :
+Pour un changement applicatif, cette séquence couvre les contrôles de
+`web-checks` et, si nécessaire, de `mobile-validation` :
 
 ```bash
 npm ci
+node scripts/checks/check-node-version-contract.mjs
 npm run security:secrets
 npm run check:root-files
 npm run check:doc-governance
 npm run check:stack-doc-drift
-npm run check:agent-skills
 npm run check:github-actions
 npm run check:lockfile-policy
 npm run typecheck

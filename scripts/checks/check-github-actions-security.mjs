@@ -38,6 +38,16 @@ export function auditWorkflowContent(content, filePath = "workflow") {
     if (!ACTION_SHA_PATTERN.test(actionReference)) {
       issues.push(`${filePath}:${index + 1}: action must be pinned to a full commit SHA: ${actionReference}`);
     }
+
+    if (actionReference.startsWith("actions/checkout@")) {
+      const checkoutBlock = content
+        .split(/\r?\n/)
+        .slice(index, index + 12)
+        .join("\n");
+      if (!/^\s+persist-credentials:\s*false\s*$/m.test(checkoutBlock)) {
+        issues.push(`${filePath}:${index + 1}: read-only checkout must set persist-credentials: false`);
+      }
+    }
   }
 
   return issues;

@@ -83,7 +83,7 @@ Documentation principale :
 
 Pré-requis :
 
-- Node.js 20 ou plus récent ;
+- Node.js 24.x (contrat versionné dans `apps/web/.nvmrc`) ;
 - dépendances npm installées.
 
 ```bash

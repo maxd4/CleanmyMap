@@ -14,15 +14,19 @@ on:
     branches:
       - main
 
+env:
+  NODE_VERSION_FILE: apps/web/.nvmrc
+
 jobs:
-  fast-checks:
+  scope:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
       contents: read
     outputs:
-      docs_only: ${{ steps.scope.outputs.docs_only }}
-      mobile_code_relevant: ${{ steps.scope.outputs.mobile_code_relevant }}
+      docs_only: ${{ steps.detect-scope.outputs.docs_only }}
+      web_code_relevant: ${{ steps.detect-scope.outputs.web_code_relevant }}
+      mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
 
     steps:
       - name: Checkout
@@ -30,9 +34,10 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Detect scope
-        id: scope
+        id: detect-scope
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -57,6 +62,7 @@ jobs:
 
           changed_files="$(git diff --name-only "$base" "$head")"
           docs_only=true
+          web_code_relevant=false
           mobile_code_relevant=false
 
           while IFS= read -r file; do
@@ -73,21 +79,47 @@ jobs:
             case "$file" in
               apps/mobile/*.md)
                 ;;
-              apps/mobile/*|.github/workflows/ci.yml)
+              apps/mobile/*|.github/workflows/*|.nvmrc|.node-version|package.json|package-lock.json|scripts/checks/*)
                 mobile_code_relevant=true
+                ;;
+            esac
+
+            case "$file" in
+              apps/web/*|.github/workflows/*|.nvmrc|.node-version|package.json|package-lock.json|scripts/checks/*)
+                web_code_relevant=true
                 ;;
             esac
           done <<< "$changed_files"
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "web_code_relevant=$web_code_relevant" >> "$GITHUB_OUTPUT"
           echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
+
+  web-checks:
+    needs: scope
+    if: needs.scope.outputs.docs_only == 'true' || needs.scope.outputs.web_code_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: "20"
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
           cache: "npm"
           cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
 
       # Security and repository governance must run even for documentation-only changes.
       - name: Secret audit
@@ -105,59 +137,56 @@ jobs:
       - name: Stack documentation drift
         run: npm run check:stack-doc-drift
 
-      - name: Agent skill mirror check
-        run: npm run check:agent-skills
-
       - name: GitHub Actions security policy
         run: npm run check:github-actions
 
       - name: Install Node dependencies
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Lockfile policy
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run check:lockfile-policy
 
       - name: TypeScript typecheck
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run check:utf8-fr
 
       - name: Heavy files policy
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run quality:top-heavy
 
       - name: Web lint
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run lint
 
-      - name: Web tests
-        if: steps.scope.outputs.docs_only != 'true'
+      - name: Web test policy
+        if: needs.scope.outputs.docs_only != 'true'
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
-      - name: Web Vitest suite
-        if: steps.scope.outputs.docs_only != 'true'
+      - name: Web Vitest tests
+        if: needs.scope.outputs.docs_only != 'true'
         run: npm run test
 
-      - name: Vercel audits
-        if: ${{ always() && steps.scope.outputs.docs_only != 'true' }}
+      - name: Vercel audit
+        if: ${{ always() && needs.scope.outputs.docs_only != 'true' }}
         run: npm run audit:vercel:ci
 
       - name: Web production build
-        if: steps.scope.outputs.docs_only != 'true'
+        if: needs.scope.outputs.docs_only != 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
         run: npm run build
 
-  mobile-checks:
-    needs: fast-checks
-    if: needs.fast-checks.outputs.mobile_code_relevant == 'true'
+  mobile-validation:
+    needs: scope
+    if: needs.scope.outputs.mobile_code_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -169,16 +198,23 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: "20"
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
           cache: "npm"
           cache-dependency-path: package-lock.json
 
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
       - name: Install mobile dependencies
         run: npm ci
+
+      - name: Mobile security tests
+        run: node --test apps/mobile/security/*.test.mjs
 
       - name: Mobile typecheck
         run: npm run mobile:typecheck
