@@ -71,9 +71,7 @@ export async function loadOrRefreshPublicSurfaceSnapshot<TPayload>(
     try {
       return await refresh;
     } finally {
-      if (inFlightRefreshes.get(refreshKey) === refresh) {
-        inFlightRefreshes.delete(refreshKey);
-      }
+      inFlightRefreshes.delete(refreshKey);
     }
   } catch (error) {
     if (existing && existing.version === params.version) {
