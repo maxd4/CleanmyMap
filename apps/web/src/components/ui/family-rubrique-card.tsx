@@ -2,15 +2,12 @@
 
 import type { ComponentProps } from "react";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
-import { cn } from "@/lib/utils";
 import { usePageFamily } from "@/lib/ui/page-families/use-page-family";
 import type { ResolvedPageFamily } from "@/lib/ui/page-families/types";
 
-type FamilyRubriqueCardProps = Omit<ComponentProps<typeof RubriqueCard>, "themeColor"> & {
+type FamilyRubriqueCardProps = Omit<ComponentProps<typeof RubriqueCard>, "themeColor" | "surfaceKind"> & {
   /** Si omis, résolu via le pathname courant. */
   family?: ResolvedPageFamily;
-  /** true = n'applique pas le shell famille (escape hatch). */
-  disableFamilyShell?: boolean;
 };
 
 /**
@@ -19,9 +16,7 @@ type FamilyRubriqueCardProps = Omit<ComponentProps<typeof RubriqueCard>, "themeC
  */
 export function FamilyRubriqueCard({
   family: familyProp,
-  disableFamilyShell = false,
   className,
-  withHover = true,
   ...props
 }: FamilyRubriqueCardProps) {
   const resolvedFamily = usePageFamily();
@@ -31,17 +26,8 @@ export function FamilyRubriqueCard({
   return (
     <RubriqueCard
       themeColor={card.rubriqueTheme}
-      className={cn(
-        !disableFamilyShell && [
-          card.shell,
-          withHover && card.shellHover,
-          "p-8",
-        ],
-        disableFamilyShell &&
-          "rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl p-8 shadow-2xl",
-        className,
-      )}
-      withHover={withHover && !disableFamilyShell}
+      surfaceKind={card.surfaceKind}
+      className={className}
       {...props}
     />
   );

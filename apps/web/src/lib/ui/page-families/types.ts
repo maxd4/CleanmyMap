@@ -29,12 +29,7 @@ export type PageFamilyHeroTokens = {
 /** Cartes rubrique / grands blocs (RubriqueCard, FamilyRubriqueCard). */
 export type PageFamilyCardTokens = {
   rubriqueTheme: RubriqueTheme;
-  shell: string;
-  shellHover?: string;
-  topBarAccent: RubriqueTheme;
-  titleOnCard: string;
-  textOnCard: string;
-  textMutedOnCard: string;
+  surfaceKind: "themed" | "neutral";
 };
 
 export type PageFamilyDefinition = {

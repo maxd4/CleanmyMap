@@ -13,6 +13,17 @@
 - Texte réellement conçu comme noir = noir exact `#000000` / `text-black`; une teinte `slate` ou `stone` reste autorisée lorsqu'elle constitue intentionnellement une couleur de famille et non un substitut au noir
 - Bordures cartes = `border-[accent]-200/18`, hover `border-[accent]-200/38`
 
+## Surfaces & cards
+
+Le contrat runtime unique des cartes, panels, états interactifs, modes
+d'affichage et exceptions est [`SURFACES_CARDS.md`](./SURFACES_CARDS.md).
+`CmmCard` porte le shell standard, `CmmBlockCard` y compose un accent issu de
+`BLOCK_ACCENT_MAP`, et `RubriqueCard` reste la primitive distincte des grands
+blocs thématiques. Ce document gouverne uniquement la relation entre familles
+visuelles et couleurs ; il ne duplique pas la matrice des surfaces.
+
+Le garde-fou associé est `npm run check:surfaces`.
+
 **⚠️ NOUVELLE STRUCTURE (5 blocs homepage) :**
 - Certains blocs ont **plusieurs teintes directrices** selon le type de page
 - Exemple : "Cartographie & Impact" = sky (carto) + red/rose (impact)
