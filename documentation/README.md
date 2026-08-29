@@ -16,6 +16,7 @@ Avant toute modification ciblant le dépôt :
 | Besoin | Référence |
 |---|---|
 | Architecture globale | `architecture/master-architecture.md` |
+| Inventaire technique | `architecture/technical-inventory.md` |
 | Vue système rapide | `architecture/system-overview.md` |
 | Décisions majeures | `architecture/adr/` |
 | Sécurité | `security/README.md` |
@@ -76,6 +77,7 @@ documentation/
 │   └── ...
 ├── database/
 ├── design-system/
+│   └── generated/board/
 ├── development/
 ├── features/
 ├── gamification/
@@ -85,7 +87,6 @@ documentation/
 │   └── routes/
 ├── product/
 ├── security/
-├── sessions
 └── specs/
 ```
 
@@ -93,42 +94,37 @@ Les documents courants sont les sources de vérité. Les documents historiques
 et de session conservent le contexte sans
 devenir une architecture ou une spécification concurrente.
 
-## Lecture par type de tâche
+## Orientation par objectif
 
-### UI
+### Construire une fonctionnalité
 
-Lire :
+Lire l'architecture globale, la vue système, les frontières front/back, les
+modules concernés, puis les règles de régression et de qualité :
+`architecture/master-architecture.md`, `architecture/system-overview.md`,
+`architecture/frontend-backend-boundaries.md`,
+`architecture/modules-cles-et-dependances.md`,
+`development/regression-gates.md` et `development/QUALITY_GUIDE.md`.
 
-1. `design-system/README.md` ;
-2. `design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` ;
-3. `pages_site/INDEX.md` ;
-4. fiche canonique de la page.
+### Vérifier le produit
 
-### Sécurité, API, données ou auth
+Partir de `product/vision-et-objectifs.md`, puis consulter
+`product/parcours-utilisateurs.md`, `product/matrice-rubriques.md`,
+`product/coherence-mobile-first.md`, `product/SCIENTIFIC_PROTOCOL.md` et
+`product/roadmap-priorisee.md`.
 
-Lire :
+### Publier et maintenir
 
-1. `security/README.md` ;
-2. `architecture/system-overview.md` ;
-3. ADR pertinent ;
-4. fichiers de code réellement concernés.
+Consulter `operations/checklist-push-deploy.md`,
+`operations/incidents-frequents-et-reprise.md`,
+`architecture/traceability-matrix.md` et le runbook de session approprié.
 
-### Architecture
+### UI, sécurité et zones sensibles
 
-Lire :
-
-1. `architecture/master-architecture.md` ;
-2. `architecture/system-overview.md` ;
-3. ADR concernés ;
-4. document de domaine.
-
-### Produit
-
-Lire :
-
-1. `product/vision-et-objectifs.md` ;
-2. `product/roadmap-priorisee.md` ;
-3. fiche de page ou fonctionnalité concernée.
+Pour l'UI, lire `design-system/README.md`,
+`design-system/BLOC_COLOR_SYSTEM_PREMIUM.md`, `pages_site/INDEX.md` et la fiche
+canonique de la page. Pour les routes, permissions, exports ou données, lire
+`security/api-vigilance.md`, `security/authz-authn-regles.md` et
+`operations/pre-release-security-check.md`, en plus du document de domaine.
 
 ## Captures UX/UI
 

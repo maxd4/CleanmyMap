@@ -208,7 +208,6 @@ CleanMyMap a été initié et conçu par **Maxence Deroome**.
 
 Références :
 
-- `documentation/origin-about.md`
 - `AUTHORS.md`
 
 ## Licence

@@ -8,6 +8,10 @@ contexte projet canonique.
 
 ## 📁 Structure
 
+### project_context.md
+- **project_context.md** — contexte semi-stable du projet, à lire avec les
+  règles du dépôt et la dernière session ; il ne remplace pas ces sources.
+
 ### history/
 - **latest-session.md** — mémoire volatile de la dernière session ; source
   canonique de clôture et troisième source lue au démarrage ;
@@ -56,7 +60,7 @@ contexte projet canonique.
 Lire uniquement ces trois sources avant de commencer une session :
 
 1. `AGENTS.md` ;
-2. `documentation/project_context.md` ;
+2. `documentation/sessions/project_context.md` ;
 3. `documentation/sessions/history/latest-session.md`.
 
 Le bootstrap vérifie leur présence sans charger automatiquement les autres

@@ -52,9 +52,9 @@ Documentation optimisée pour les agents IA qui développent ce projet.
 
 ### 🎨 Planche Design System
 
-1. **[design-system-board.dynamic.html](../design-system-board.dynamic.html)**
+1. **[design-system-board.dynamic.html](../design-system/generated/board/design-system-board.dynamic.html)**
    - Référence dynamique à utiliser en priorité
-2. **[design-system-board.html](../design-system-board.html)**
+2. **[design-system-board.html](../design-system/generated/board/design-system-board.html)**
    - Snapshot figé de comparaison / archive visuelle
 
 ### 🔧 Modularisation

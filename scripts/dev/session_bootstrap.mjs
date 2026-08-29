@@ -4,7 +4,7 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const REQUIRED = [
   "AGENTS.md",
-  "documentation/project_context.md",
+  "documentation/sessions/project_context.md",
   "documentation/sessions/history/latest-session.md",
 ];
 

@@ -14,7 +14,7 @@ flowchart LR
 
 ## Classement
 
-1. [documentation/index-par-objectif.md](../index-par-objectif.md) - table d'orientation generale
+1. [documentation/README.md](../README.md) - table d'orientation générale
 2. [documentation/product/vision-et-objectifs.md](./vision-et-objectifs.md) - vision produit
 3. [documentation/product/matrice-rubriques.md](./matrice-rubriques.md) - correspondance rubriques / sections
 4. [documentation/product/parcours-utilisateurs.md](./parcours-utilisateurs.md) - parcours et persona

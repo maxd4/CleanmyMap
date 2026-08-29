@@ -5,7 +5,6 @@ import path from "node:path";
 const ROOT = process.cwd();
 
 const FIXED_PRIORITY_DOCS = [
-  "documentation/index-par-objectif.md",
   "documentation/architecture/system-overview.md",
   "documentation/architecture/modules-cles-et-dependances.md",
   "documentation/security/authz-authn-regles.md",
