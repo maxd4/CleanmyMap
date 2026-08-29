@@ -18,6 +18,29 @@ Status:
 - After pushing the corrective migrations, the linked project no longer returns security advisories for this repo state.
 - The wrapper now returns an empty result set on the linked project.
 
+## Verdict final du chantier Security Advisor — 29 août 2026
+
+La vérification distante finale distingue les niveaux de sévérité et accepte
+explicitement les deux informations liées aux tables server-only :
+
+- **WARN : 0** ;
+- **ERROR : 0** ;
+- **INFO accepté : 2** :
+  - `rls_enabled_no_policy` sur `public.legal_content_reports` ;
+  - `rls_enabled_no_policy` sur `public.legal_content_report_decisions`.
+
+Ces deux INFO sont intentionnels. Les deux tables ont RLS activée, aucun
+privilège de table `SELECT` pour `anon` ou `authenticated`, et des privilèges
+réservés à `service_role` pour les opérations serveur. L’absence de policy est
+donc la frontière d’accès attendue, et non une policy manquante à compléter.
+
+Ne pas créer de policy artificielle pour faire disparaître ces INFO. Toute
+évolution du modèle d’accès doit d’abord établir un besoin fonctionnel et
+repasser par une migration versionnée, une revue RLS/grants et un nouvel audit.
+
+Le résultat attendu et accepté pour ce chantier est donc : **0 WARN, 0 ERROR,
+2 INFO documentés**.
+
 ## Mise à jour du 27 août 2026 — SEC-01, SEC-02 et PERF-01
 
 La mention des fonctions `compute_mission_distance` et
