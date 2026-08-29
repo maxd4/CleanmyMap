@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildOptimisticChatMessage } from "./use-chat-submit";
 
@@ -56,5 +58,18 @@ describe("buildOptimisticChatMessage", () => {
     expect(message.message_kind).toBe("message");
     expect(message.related_event_id).toBeNull();
     expect(message.related_event).toBeNull();
+  });
+});
+
+describe("useChatSubmit retry wiring", () => {
+  it("keeps retry callbacks outside the submit callback self-reference", () => {
+    const source = readFileSync(
+      fileURLToPath(new URL("./use-chat-submit.ts", import.meta.url)),
+      "utf8",
+    );
+
+    expect(source).toContain("submitChatMessageRef");
+    expect(source).toContain("onRetry: retrySubmitChatMessage");
+    expect(source).not.toContain("onRetry: () => void submitChatMessage()");
   });
 });

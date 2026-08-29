@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { useUser } from "@clerk/nextjs";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
@@ -118,6 +118,11 @@ export function useChatSubmit({
   setShowMentions,
   setPollOptions,
 }: UseChatSubmitParams) {
+  const submitChatMessageRef = useRef<(() => Promise<void>) | null>(null);
+  const retrySubmitChatMessage = useCallback(() => {
+    void submitChatMessageRef.current?.();
+  }, []);
+
   const submitChatMessage = useCallback(async () => {
     if (submitLockRef.current) {
       setSendError("Un envoi est déjà en cours. Réessayez dans un instant.");
@@ -221,7 +226,7 @@ export function useChatSubmit({
             title: "Pièce jointe indisponible",
             message: appError.message,
             retryLabel: "Réessayer l'upload",
-            onRetry: () => void submitChatMessage(),
+            onRetry: retrySubmitChatMessage,
             refreshLabel: "Rafraîchir",
             onRefresh: () => window.location.reload(),
           });
@@ -296,7 +301,7 @@ export function useChatSubmit({
           title: "Connexion perdue",
           message: appError.message,
           retryLabel: "Réessayer maintenant",
-          onRetry: () => void submitChatMessage(),
+          onRetry: retrySubmitChatMessage,
           refreshLabel: "Rafraîchir",
           onRefresh: () => window.location.reload(),
         });
@@ -332,7 +337,18 @@ export function useChatSubmit({
     senderHandle,
     user,
     userId,
+    retrySubmitChatMessage,
   ]);
+
+  useEffect(() => {
+    submitChatMessageRef.current = submitChatMessage;
+
+    return () => {
+      if (submitChatMessageRef.current === submitChatMessage) {
+        submitChatMessageRef.current = null;
+      }
+    };
+  }, [submitChatMessage]);
 
   const handleSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
