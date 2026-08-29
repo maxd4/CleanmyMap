@@ -35,7 +35,7 @@
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
 - `apps/web` and `apps/mobile` are the two deployable applications; `maintenance/python/` remains outside runtime scope.
 - Mobile identity, missions/GPS RLS and metric finalization are finalized and frozen. Open topics are only background headless, `mission_actions`, operational validation and future evolution after explicit unfreeze.
-- Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/sessions/history/latest-session.md`).
+- Session memory protocol is mandatory (`AGENTS.md` + `documentation/sessions/project_context.md` + `documentation/sessions/history/latest-session.md`).
 
 ## Sensitive zones
 - Auth and permissions:

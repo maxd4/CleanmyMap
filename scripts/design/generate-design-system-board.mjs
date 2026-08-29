@@ -8,15 +8,17 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "../..");
 const DOCS_DIR = path.join(ROOT_DIR, "documentation");
+const BOARD_DIR = path.join(DOCS_DIR, "design-system", "generated", "board");
 
-const STATIC_BOARD_HTML = path.join(DOCS_DIR, "design-system-board.html");
-const DYNAMIC_BOARD_HTML = path.join(DOCS_DIR, "design-system-board.dynamic.html");
-const BOARD_DATA_JSON = path.join(DOCS_DIR, "design-system-board.data.json");
+const STATIC_BOARD_HTML = path.join(BOARD_DIR, "design-system-board.html");
+const DYNAMIC_BOARD_HTML = path.join(BOARD_DIR, "design-system-board.dynamic.html");
+const BOARD_DATA_JSON = path.join(BOARD_DIR, "design-system-board.data.json");
 
 const SOURCE_FILES = {
   globalsCss: path.join(ROOT_DIR, "apps/web/src/app/globals.css"),
   blockAccents: path.join(ROOT_DIR, "apps/web/src/lib/ui/block-accents.ts"),
   navigation: path.join(ROOT_DIR, "apps/web/src/lib/navigation.ts"),
+  accueilPilotageRoutes: path.join(ROOT_DIR, "apps/web/src/lib/accueil-pilotage-routes.ts"),
   sectionsConfig: path.join(ROOT_DIR, "apps/web/src/lib/sections-registry/config.ts"),
   uiComponentsDir: path.join(ROOT_DIR, "apps/web/src/components/ui"),
   navigationComponentsDir: path.join(ROOT_DIR, "apps/web/src/components/navigation"),
@@ -107,11 +109,20 @@ function extractLiteral(source, marker, openChar) {
   return source.slice(openIndex, closeIndex + 1);
 }
 
-function parseLiteral(source, marker, openChar) {
+function parseLiteral(source, marker, openChar, context = {}) {
   const literal = extractLiteral(source, marker, openChar);
   // The extracted blocks are plain object/array literals with comments, so
   // evaluating them in a Function is sufficient and keeps the parser simple.
-  return Function(`"use strict"; return (${literal});`)();
+  const names = Object.keys(context);
+  const values = Object.values(context);
+  return Function(...names, `"use strict"; return (${literal});`)(...values);
+}
+
+function parseExportedStringConstants(source) {
+  return Object.fromEntries(
+    [...source.matchAll(/export const ([A-Z][A-Z0-9_]*)\s*=\s*["']([^"']+)["'];/g)]
+      .map((match) => [match[1], match[2]])
+  );
 }
 
 function extractCssVars(source, selector) {
@@ -294,6 +305,7 @@ async function buildData() {
     globalsCss,
     blockAccentsSource,
     navigationSource,
+    accueilPilotageRoutesSource,
     sectionsConfigSource,
     uiFiles,
     navigationFiles,
@@ -301,6 +313,7 @@ async function buildData() {
     readText(SOURCE_FILES.globalsCss),
     readText(SOURCE_FILES.blockAccents),
     readText(SOURCE_FILES.navigation),
+    readText(SOURCE_FILES.accueilPilotageRoutes),
     readText(SOURCE_FILES.sectionsConfig),
     listComponentFiles(SOURCE_FILES.uiComponentsDir),
     listComponentFiles(SOURCE_FILES.navigationComponentsDir),
@@ -327,7 +340,13 @@ async function buildData() {
   const parcoursSpaceMap = parseLiteral(navigationSource, "const PARCOURS_SPACE_PAGE_MAP", "{");
 
   const rubriqueCategories = parseLiteral(sectionsConfigSource, "export const RUBRIQUE_CATEGORIES", "[");
-  const rubriqueRegistry = parseLiteral(sectionsConfigSource, "export const RUBRIQUE_REGISTRY", "[");
+  const routeConstants = parseExportedStringConstants(accueilPilotageRoutesSource);
+  const rubriqueRegistry = parseLiteral(
+    sectionsConfigSource,
+    "export const RUBRIQUE_REGISTRY",
+    "[",
+    routeConstants,
+  );
 
   const rubriqueById = new Map(rubriqueRegistry.map((item) => [item.id, item]));
   const categoryById = new Map(rubriqueCategories.map((item) => [item.id, item]));
@@ -644,7 +663,7 @@ ${renderScript(data)}
 
 async function generate() {
   const data = await buildData();
-  await fs.mkdir(DOCS_DIR, { recursive: true });
+  await fs.mkdir(BOARD_DIR, { recursive: true });
   await writeText(BOARD_DATA_JSON, `${JSON.stringify(data, null, 2)}\n`);
 
   const templateHtml = await readText(STATIC_BOARD_HTML);

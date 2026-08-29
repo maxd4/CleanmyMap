@@ -5,7 +5,7 @@ const ROOT = process.cwd();
 
 const RULES = [
   { path: "AGENTS.md", maxLines: 240, required: true },
-  { path: "documentation/project_context.md", maxLines: 180, required: true },
+  { path: "documentation/sessions/project_context.md", maxLines: 180, required: true },
   { path: "documentation/sessions/history/latest-session.md", maxLines: 140, required: true },
   { path: "documentation/sessions/context/economie_token_prompt_template.md", maxLines: 80, required: true },
 ];

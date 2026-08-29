@@ -21,15 +21,15 @@ Prompt à exécuter: Crée AGENTS.md à la racine avec des règles globales cour
 
 Bloc 2 — Créer la mémoire projet persistante
 But: Centraliser architecture, conventions, décisions, limites connues.
-Zone de code probable: project_context.md (à créer).
+Zone de code probable: documentation/sessions/project_context.md (à créer).
 Risque principal: Fichier vite obsolète si non maintenu.
-Prompt à exécuter: Crée project_context.md avec sections fixes: stack, architecture active, conventions, décisions ADR, zones sensibles, commandes de validation.
+Prompt à exécuter: Crée documentation/sessions/project_context.md avec sections fixes: stack, architecture active, conventions, décisions ADR, zones sensibles, commandes de validation.
 
 Bloc 3 — Définir le protocole d'ouverture de session
 But: Forcer la relecture de contexte au début de chaque session.
 Zone de code probable: documentation/du/archive/prompt_codex.txt ou nouveau documentation/du/session/session_bootstrap.txt.
 Risque principal: Protocole ignoré en pratique.
-Prompt à exécuter: Ajoute un bootstrap de 3 lignes maximum: "Lis AGENTS.md + project_context.md, confirme contraintes, propose plan en 5 blocs max".
+Prompt à exécuter: Ajoute un bootstrap de 3 lignes maximum: "Lis AGENTS.md + documentation/sessions/project_context.md, confirme contraintes, propose plan en 5 blocs max".
 
 Bloc 4 — Standardiser un template de prompt court
 But: Éviter la réécriture manuelle des règles à chaque demande.
@@ -44,10 +44,10 @@ Risque principal: Inflation de taille et bruit inutile.
 Prompt à exécuter: Crée latest-session.md structuré (done/in-progress/next/risks) et un script qui tronque à N lignes et met à jour uniquement ces sections.
 
 Bloc 6 — Définir les règles de maintenance mémoire
-But: Empêcher la dérive et les doublons entre AGENTS / project_context / latest-session.
+But: Empêcher la dérive et les doublons entre AGENTS / documentation/sessions/project_context.md / latest-session.
 Zone de code probable: documentation/repo-docs/ops/codex-memory-governance.md (à créer).
 Risque principal: Triple source de vérité contradictoire.
-Prompt à exécuter: Rédige la gouvernance: AGENTS=stable, project_context=semi-stable, latest-session=volatile, avec fréquence de mise à jour.
+Prompt à exécuter: Rédige la gouvernance: AGENTS=stable, documentation/sessions/project_context.md=semi-stable, latest-session=volatile, avec fréquence de mise à jour.
 
 Bloc 7 — Intégrer dans les scripts de travail
 But: Rendre le workflow exécutable en une commande.
@@ -153,7 +153,6 @@ Execution
 - PARTIE 1: executee, voir `documentation/du/economie/economie_token_partie1_execution.md`.
 - PARTIE 2: executee, voir `documentation/du/economie/economie_token_partie2_execution.md`.
 - PARTIE 3: executee, voir `documentation/du/economie/economie_token_partie3_execution.md`.
-
 
 
 

@@ -4,7 +4,7 @@
 ```mermaid
 flowchart LR
   A[AGENTS.md] --> C[Session bootstrap]
-  B[documentation/project_context.md] --> C
+  B[documentation/sessions/project_context.md] --> C
   D[documentation/sessions/history/latest-session.md] --> C
   C --> E[Execution session]
   E --> F[Session close update]
@@ -64,7 +64,7 @@ Cette couche formalise la boucle de travail attendue pour les tâches non trivia
 - Global operating rules and response style.
 - Update rarely (only when process changes).
 
-2. `documentation/project_context.md` (semi-stable project context)
+2. `documentation/sessions/project_context.md` (semi-stable project context)
 - Architecture, stack, critical files, and validation commands.
 - Update when architecture or workflows change.
 
@@ -74,7 +74,7 @@ Cette couche formalise la boucle de travail attendue pour les tâches non trivia
 
 ## Update cadence
 - `AGENTS.md`: monthly or by explicit process decision.
-- `documentation/project_context.md`: when runtime topology or conventions change.
+- `documentation/sessions/project_context.md`: when runtime topology or conventions change.
 - `documentation/sessions/history/latest-session.md`: every session close.
 
 ## Session protocol

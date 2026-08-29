@@ -228,5 +228,5 @@ Cette méthodologie doit rester alignée avec les règles du dépôt :
 - [Architecture globale](./master-architecture.md)
 - [Vue système](./system-overview.md)
 - [Services web stack](../operations/services-stack.md)
-- [Fiche technique](../fiche-technique-cleanmymap.md)
+- [Inventaire technique](./technical-inventory.md)
 - [Gouvernance des données](./data-governance.md)

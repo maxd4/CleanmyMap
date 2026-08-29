@@ -229,6 +229,25 @@ Lorsque `data-display-mode="sobre"` est présent sur `<html>`, les tokens globau
 fait hériter toute l’UI de la police système sans modifier les métriques
 typographiques ni charger de webfont dédiée.
 
+### Contrat surfaces & cards
+
+Le contrat détaillé des surfaces est centralisé dans
+[`SURFACES_CARDS.md`](./SURFACES_CARDS.md). Les valeurs runtime communes sont
+portées par les tokens `--cmm-surface-*` et consommées par `CmmCard`,
+`CmmBlockCard` et `RubriqueCard` :
+
+- `exhaustif` conserve `blur(10px)`, les ombres soft/elevated, les textures
+  autorisées et le hover `translateY(-2px) scale(1.01)` ;
+- `minimaliste` supprime le blur et les textures, n'emploie aucune ombre pour
+  une carte standard, limite l'elevated à `var(--shadow-soft)` et supprime les
+  transforms ;
+- `sobre` supprime blur, ombres, textures, gradients et transforms, avec une
+  transition à `0ms` et une bordure renforcée.
+
+Les états interactifs, le focus et la règle `prefers-reduced-motion` restent
+communs aux composants ; aucune branche React ne choisit une autre surface ou
+une autre fonctionnalité selon le mode.
+
 ---
 
 ## 6. Règles d’activation et de persistance
@@ -383,7 +402,7 @@ documentation/design-system/PAGE_HEADER.md
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 documentation/design-system/UI_EXCEPTION_PAGES.md
 documentation/ai-guides/SOBRIETY_RULES.md
-documentation/fiche-technique-cleanmymap.md
+documentation/architecture/technical-inventory.md
 ```
 
 La règle doit converger dans ces sources sans créer plusieurs documents contradictoires.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T15:31:46.425Z",
+  "generatedAt": "2026-08-29T01:55:44.028Z",
   "stats": {
     "tokens": 8,
     "blocks": 5,
@@ -14,8 +14,7 @@
     ],
     "hiddenBlockIds": [
       "impact",
-      "connect",
-      "pilot"
+      "connect"
     ]
   },
   "sources": {
@@ -28,10 +27,12 @@
       "components/navigation"
     ],
     "uiFiles": [
+      "admin-access-state.tsx",
       "clerk-required-gate.tsx",
       "cmm-block-accent.tsx",
       "cmm-button.tsx",
       "cmm-card.tsx",
+      "cmm-grid.tsx",
       "cmm-pill.tsx",
       "cmm-section.tsx",
       "cmm-skeleton.tsx",
@@ -41,12 +42,16 @@
       "display-mode-onboarding-gate.tsx",
       "error-boundary.tsx",
       "error-message.tsx",
+      "family-rubrique-card.tsx",
+      "hub-page-backdrop.tsx",
       "identity-badge.tsx",
       "identity-profile-banner.tsx",
       "inline-field-error.tsx",
       "navigation-grid.tsx",
       "network-toast.tsx",
+      "page-header.tsx",
       "page-reading-template.tsx",
+      "page-structure.tsx",
       "page-transition.tsx",
       "permission-error-state.tsx",
       "punchy-slogan.tsx",
@@ -58,11 +63,18 @@
       "site-preferences-controls.tsx",
       "site-preferences-provider.tsx",
       "site-tooltips.tsx",
+      "system-state-retry-button.tsx",
+      "system-state.tsx",
+      "vibrant-background-no-ssr.tsx",
       "vibrant-background.tsx",
       "weather-warning-bar.tsx"
     ],
     "navigationFiles": [
       "app-breadcrumb.tsx",
+      "app-navigation-block-dropdown-act.tsx",
+      "app-navigation-block-dropdown-home.tsx",
+      "app-navigation-block-dropdown-learn.tsx",
+      "app-navigation-block-dropdown-network.tsx",
       "app-navigation-block-dropdown.tsx",
       "app-navigation-ribbon.tsx",
       "app-navigation-tree-menu.tsx",
@@ -70,6 +82,8 @@
       "app-sidebar.tsx",
       "block-switcher.tsx",
       "global-search.tsx",
+      "navigation-dropdown-help-text.tsx",
+      "navigation-dropdown-item-card.tsx",
       "notification-bell.tsx",
       "role-primary-actions.tsx"
     ],
@@ -169,10 +183,10 @@
       "surface": "bg-white/95",
       "surfaceMuted": "bg-amber-50",
       "borderStrong": "border-amber-300",
-      "summary": "Tableau de bord, Sommaire, Profil, Feedback",
+      "summary": "Mon espace, Sommaire",
       "items": [
         {
-          "label": "Tableau de bord",
+          "label": "Mon espace",
           "route": "/dashboard",
           "sourceCategory": "Accueil & Pilotage",
           "exposedBlock": "Accueil & Pilotage",
@@ -184,20 +198,6 @@
           "sourceCategory": "Guide & Outils",
           "exposedBlock": "Accueil & Pilotage",
           "meta": "Guide & Outils / Accueil & Pilotage"
-        },
-        {
-          "label": "Profil",
-          "route": "/profil",
-          "sourceCategory": "Accueil & Pilotage",
-          "exposedBlock": "Accueil & Pilotage",
-          "meta": "Accueil & Pilotage"
-        },
-        {
-          "label": "Feedback",
-          "route": "/sections/feedback",
-          "sourceCategory": "Accueil & Pilotage",
-          "exposedBlock": "Accueil & Pilotage",
-          "meta": "Accueil & Pilotage"
         }
       ]
     },
@@ -212,7 +212,7 @@
       "surface": "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
       "surfaceMuted": "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
       "borderStrong": "border-emerald-300/80",
-      "summary": "Déclarer une action, Itinéraire prioritaire, Météo terrain, Mode d'emploi",
+      "summary": "Déclarer une action, Rejoindre un formulaire, Où agir ?, Organiser une action",
       "items": [
         {
           "label": "Déclarer une action",
@@ -222,28 +222,28 @@
           "meta": "Actions Terrain / Agir"
         },
         {
-          "label": "Itinéraire prioritaire",
+          "label": "Rejoindre un formulaire",
+          "route": "/sections/rejoindre-un-formulaire",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Où agir ?",
           "route": "/sections/route",
           "sourceCategory": "Actions Terrain",
           "exposedBlock": "Agir",
           "meta": "Actions Terrain / Agir"
         },
         {
-          "label": "Météo terrain",
+          "label": "Organiser une action",
           "route": "/sections/weather",
           "sourceCategory": "Actions Terrain",
           "exposedBlock": "Agir",
           "meta": "Actions Terrain / Agir"
         },
         {
-          "label": "Mode d'emploi",
-          "route": "/sections/guide",
-          "sourceCategory": "Actions Terrain",
-          "exposedBlock": "Agir",
-          "meta": "Actions Terrain / Agir"
-        },
-        {
-          "label": "Signalement de déchets",
+          "label": "Signaler un déchet",
           "route": "/sections/trash-spotter",
           "sourceCategory": "Communauté",
           "exposedBlock": "Agir",
@@ -262,7 +262,7 @@
       "surface": "bg-[rgba(0,18,32,0.78)] backdrop-blur-xl",
       "surfaceMuted": "bg-[rgba(0,12,22,0.55)] backdrop-blur-md",
       "borderStrong": "border-sky-400/38",
-      "summary": "Carte des actions, Carte d'entraînement, Rapports d'impact, Progression et badges",
+      "summary": "Carte des actions, Méthodologie, Rapports d'impact, Progression et badges",
       "items": [
         {
           "label": "Carte des actions",
@@ -272,18 +272,18 @@
           "meta": "Actions Terrain / Cartographie & Impact"
         },
         {
-          "label": "Carte d'entraînement",
-          "route": "/sections/sandbox",
-          "sourceCategory": "Actions Terrain",
+          "label": "Méthodologie",
+          "route": "/methodologie",
+          "sourceCategory": "Analyse & Contexte",
           "exposedBlock": "Cartographie & Impact",
-          "meta": "Actions Terrain / Cartographie & Impact"
+          "meta": "Analyse & Contexte / Cartographie & Impact"
         },
         {
           "label": "Rapports d'impact",
           "route": "/reports",
-          "sourceCategory": "Accueil & Pilotage",
+          "sourceCategory": "Analyse & Contexte",
           "exposedBlock": "Cartographie & Impact",
-          "meta": "Accueil & Pilotage / Cartographie & Impact"
+          "meta": "Analyse & Contexte / Cartographie & Impact"
         },
         {
           "label": "Progression et badges",
@@ -300,33 +300,47 @@
       "code": "network",
       "icon": "🤝",
       "rgb": "99 102 241",
-      "gradient": "linear-gradient(180deg, #04020f, #08041e 58%, #0e082e)",
-      "gradientDeep": "from-[#04020f] via-[#08041e] to-[#0e082e]",
-      "surface": "bg-[rgba(8,4,24,0.78)] backdrop-blur-xl",
-      "surfaceMuted": "bg-[rgba(5,2,16,0.55)] backdrop-blur-md",
-      "borderStrong": "border-indigo-400/38",
-      "summary": "Vie de la communauté, Canaux de Discussion, Observatoire Public",
+      "gradient": "linear-gradient(180deg, #060210, #10062a 58%, #18073a)",
+      "gradientDeep": "from-[#060210] via-[#10062a] to-[#18073a]",
+      "surface": "bg-[rgba(10,4,28,0.78)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(7,2,20,0.55)] backdrop-blur-md",
+      "borderStrong": "border-violet-400/38",
+      "summary": "Communauté (alias partenaires), Communauté, Idées et problèmes, Groupes de discussion",
       "items": [
         {
-          "label": "Vie de la communauté",
+          "label": "Communauté (alias partenaires)",
+          "route": "/partners/network",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Communauté",
           "route": "/sections/community",
           "sourceCategory": "Communauté",
           "exposedBlock": "Réseau & Discussions",
           "meta": "Communauté / Réseau & Discussions"
         },
         {
-          "label": "Canaux de Discussion",
+          "label": "Idées et problèmes",
+          "route": "/sections/feedback",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Groupes de discussion",
           "route": "/sections/messagerie",
           "sourceCategory": "Communauté",
           "exposedBlock": "Réseau & Discussions",
           "meta": "Communauté / Réseau & Discussions"
         },
         {
-          "label": "Observatoire Public",
+          "label": "Données publiques",
           "route": "/sections/open-data",
-          "sourceCategory": "Communauté",
+          "sourceCategory": "Analyse & Contexte",
           "exposedBlock": "Réseau & Discussions",
-          "meta": "Communauté / Réseau & Discussions"
+          "meta": "Analyse & Contexte / Réseau & Discussions"
         }
       ]
     },
@@ -336,22 +350,15 @@
       "code": "learn",
       "icon": "📚",
       "rgb": "234 179 8",
-      "gradient": "linear-gradient(180deg, #0c0b00, #181500 58%, #241f00)",
-      "gradientDeep": "from-[#0c0b00] via-[#181500] to-[#241f00]",
-      "surface": "bg-[rgba(20,18,0,0.78)] backdrop-blur-xl",
-      "surfaceMuted": "bg-[rgba(14,12,0,0.55)] backdrop-blur-md",
-      "borderStrong": "border-yellow-400/38",
-      "summary": "Hub éducatif, Ordres de grandeur, S'entraîner, Bonnes pratiques",
+      "gradient": "linear-gradient(180deg, #fff8d8, #fde68a 58%, #fdba74)",
+      "gradientDeep": "from-[#fff8d8] via-[#fde68a] to-[#fdba74]",
+      "surface": "bg-[rgba(255,249,217,0.94)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(255,238,188,0.84)] backdrop-blur-md",
+      "borderStrong": "border-amber-300",
+      "summary": "Vulgarisation, S'entraîner, Bonnes pratiques",
       "items": [
         {
-          "label": "Hub éducatif",
-          "route": "/learn/hub",
-          "sourceCategory": "Guide & Outils",
-          "exposedBlock": "Apprendre",
-          "meta": "Guide & Outils / Apprendre"
-        },
-        {
-          "label": "Ordres de grandeur",
+          "label": "Vulgarisation",
           "route": "/learn/comprendre",
           "sourceCategory": "Analyse & Contexte",
           "exposedBlock": "Apprendre",
@@ -367,13 +374,6 @@
         {
           "label": "Bonnes pratiques",
           "route": "/learn/bonnes-pratiques",
-          "sourceCategory": "Guide & Outils",
-          "exposedBlock": "Apprendre",
-          "meta": "Guide & Outils / Apprendre"
-        },
-        {
-          "label": "Ressources et kits",
-          "route": "/learn/ressources",
           "sourceCategory": "Guide & Outils",
           "exposedBlock": "Apprendre",
           "meta": "Guide & Outils / Apprendre"
