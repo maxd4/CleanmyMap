@@ -8,3 +8,5 @@
 **/*.quarto_ipynb
 
 /.quarto/
+
+/PERSO/
