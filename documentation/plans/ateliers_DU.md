@@ -5,8 +5,8 @@ NOTE D'USAGE
 Ce document sert de backlog actif unique des messages et lots encore actionnables.
 Le cadre d'analyse DU, les apprentissages et les justifications IA ont ete migres vers :
 
-- `documentation/plans-perso/rapport_impact/impact_IA.md` pour la gouvernance IA, la sobriete et les arbitrages ;
-- `documentation/plans-perso/journal_impact_DU.md` pour le narratif DU et la trace d'apprentissage ;
+- `documentation/plans/rapport_impact/impact_IA.md` pour la gouvernance IA, la sobriete et les arbitrages ;
+- `documentation/plans/journal_impact_DU.md` pour le narratif DU et la trace d'apprentissage ;
 - `documentation/product/*` pour la vision produit, les publics et la feuille de route ;
 - le runbook interne de validation des lots pour les regles de validation de lots.
 
@@ -16,7 +16,7 @@ Le cadre d'analyse DU, les apprentissages et les justifications IA ont ete migre
 - Registre de rubriques/sections operationnel.
 - APIs metier principales en production (actions, spots, community, reports, moderation, health/services).
 - Base de securisation initiale (middleware, env centralisee, RLS de base).
-- Audit d'Impact IA normalise (`documentation/plans-perso/rapport_impact/impact_IA.md`) et valide.
+- Audit d'Impact IA normalise (`documentation/plans/rapport_impact/impact_IA.md`) et valide.
 - Automatisation des metriques de documentation (`update-audit-stats.mjs`).
 - Premiers livrables PDF/exports disponibles.
 
@@ -60,7 +60,7 @@ Messages fermes / absorbes
 - Convergence exports serveur/UI : absorbee par les helpers communs de headers et de messages, avec tests associes.
 - Tracabilite documentaire : absorbee par `documentation/architecture/traceability-matrix.md`.
 - Strategie de sortie technique : absorbee au niveau socle par `documentation/operations/vendor-exit-strategy.md`.
-- Dossier de validation institutionnelle : conserve dans `documentation/plans-perso/dossier_validation_institutionnelle.md`.
+- Dossier de validation institutionnelle : conserve dans le reliquat local de `documentation/PERSO/`.
 
 Backlog actif unique
 

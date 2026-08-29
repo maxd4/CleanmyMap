@@ -41,8 +41,9 @@ pour chaque lot de code, test ou documentation.
   et une fiche existante.
 - Un alias ou une redirection doit indiquer explicitement sa cible. Une route
   supprimée ne doit plus être présentée comme canonique dans une matrice.
-- Ne pas référencer un fichier absent. Les plans actifs sont ceux qui existent
-  dans `documentation/plans-perso/` et leur statut doit rester lisible.
+- Ne pas référencer un fichier absent. Les plans actifs restent dans un espace
+  documentaire interne distinct des documents publics et leur statut doit
+  rester lisible.
 - Une règle technique transversale vit dans un document canonique, puis est
   liée depuis les index ; elle n'est pas copiée dans plusieurs backlogs.
 
