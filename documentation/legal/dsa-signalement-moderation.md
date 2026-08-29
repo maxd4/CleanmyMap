@@ -1,6 +1,6 @@
 # Notification et modération des contenus
 
-**Dernière mise à jour : 28 août 2026**
+**Dernière mise à jour : 29 août 2026**
 
 Ce document décrit le mécanisme CleanMyMap de notification électronique et de
 modération. Il est conçu pour répondre aux exigences applicables aux
@@ -128,17 +128,27 @@ Le mécanisme est porté par :
 - l'audit administratif canonique ;
 - le service email existant pour les accusés et décisions.
 
-La réception persistée et le cycle de décision nécessitent que les tables
-correspondantes soient disponibles dans l'environnement exécuté. La présence
-des migrations dans le dépôt ne prouve pas la disponibilité des tables
-Supabase distantes. Tant que cette présence effective n'est pas vérifiée en
-production, le formulaire et la décision ne doivent pas être présentés comme
-pleinement opérationnels en production.
+La présence d'une migration dans Git ne prouve jamais son application en
+production.
+
+Le mécanisme a fait l'objet d'une validation production effective couvrant :
+
+- la soumission publique sans compte obligatoire ;
+- la persistance dans `legal_content_reports` ;
+- l'accusé de réception au déclarant ;
+- la notification interne ;
+- la décision administrateur ;
+- la persistance dans `legal_content_report_decisions` ;
+- la projection d'état `new` → `reviewing` ;
+- l'audit administratif ;
+- `execution_status=not_applicable` pour `reviewing` ;
+- la notification de décision au déclarant ;
+- l'absence de mutation de contenu pour cette décision non mutative.
 
 ### Critères durables de validation du commissioning production
 
-Les points suivants sont des critères de validation durables, et non un résultat
-actuel de commissioning.
+Les points suivants restent les critères durables de non-régression pour les
+prochains contrôles production.
 
 **DSA-01 — réception d'une notification**
 
@@ -158,9 +168,6 @@ actuel de commissioning.
   est requise ;
 - une décision non mutative comme `reviewing` n'entraîne aucune mutation du
   contenu.
-
-Le commissioning production ne doit pas être déclaré terminé tant que ces
-preuves réelles n'ont pas été vérifiées dans l'environnement concerné.
 
 ## 7. Données et contact
 
