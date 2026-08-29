@@ -30,6 +30,18 @@ describe("recovered Supabase migrations", () => {
     expect(migration).not.toMatch(/auth\.role\(\)\s*=\s*'service_role'/i);
   });
 
+  it("removes only the broad avatar read policy and relocates pg_trgm", () => {
+    const migration = readMigration("20260829000000_harden_avatar_read_and_pgtrgm_schema.sql");
+
+    expect(migration).toContain('drop policy if exists "avatars public read" on storage.objects;');
+    expect(migration).not.toMatch(/(?:insert into|update)\s+storage\.buckets/i);
+    expect(migration).not.toMatch(/avatars owner (?:insert|update|delete)/i);
+    expect(migration).toContain("create schema if not exists extensions;");
+    expect(migration).toMatch(/alter\s+extension\s+pg_trgm\s+set\s+schema\s+extensions/i);
+    expect(migration).not.toMatch(/drop\s+extension\s+pg_trgm/i);
+    expect(migration).not.toMatch(/drop\s+index/i);
+  });
+
   it("keeps reports private and server-only", () => {
     const migration = readMigration("20260626000002_create_reports_bucket.sql");
 
