@@ -51,10 +51,15 @@ function absolutePath(repoRoot, relativePath) {
 
 function readText(repoRoot, relativePath) {
   const filePath = absolutePath(repoRoot, relativePath);
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-    return null;
+  try {
+    return fs.readFileSync(filePath, "utf8");
+  } catch (error) {
+    const code = error && typeof error === "object" ? error.code : undefined;
+    if (code === "ENOENT" || code === "ENOTDIR" || code === "EISDIR") {
+      return null;
+    }
+    throw error;
   }
-  return fs.readFileSync(filePath, "utf8");
 }
 
 function readJson(repoRoot, relativePath) {

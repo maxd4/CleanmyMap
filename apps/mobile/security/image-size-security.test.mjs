@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const require = createRequire(import.meta.url);
@@ -92,4 +94,31 @@ test("keeps valid ICNS dimension detection", () => {
 
   const imageSize = require(packagePath);
   assert.deepEqual(imageSize(input), { width: 128, height: 128, type: "ic07" });
+});
+
+test("keeps valid TIFF dimension detection after descriptor hardening", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-tiff-"));
+  const filepath = path.join(directory, "sample.tiff");
+  const input = Buffer.alloc(64);
+
+  input.write("II", 0, "ascii");
+  input.writeUInt16LE(42, 2);
+  input.writeUInt32LE(8, 4);
+  input.writeUInt16LE(2, 8);
+  input.writeUInt16LE(256, 10);
+  input.writeUInt16LE(3, 12);
+  input.writeUInt32LE(1, 14);
+  input.writeUInt16LE(128, 18);
+  input.writeUInt16LE(257, 22);
+  input.writeUInt16LE(3, 24);
+  input.writeUInt32LE(1, 26);
+  input.writeUInt16LE(96, 30);
+  fs.writeFileSync(filepath, input);
+
+  try {
+    const imageSize = require(packagePath);
+    assert.deepEqual(imageSize(filepath), { width: 128, height: 96, type: "tiff" });
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });

@@ -38,6 +38,16 @@ assert.throws(
   /within the current workspace/,
 );
 
+assert.throws(
+  () => resolveOutputBasePath("tmp/clerk-users"),
+  /under artifacts/,
+);
+
+assert.throws(
+  () => resolveOutputBasePath("https://example.com/export"),
+  /local filesystem path/,
+);
+
 const csv = toCsv([user]);
 assert.match(csv, /publicMetadata/);
 assert.doesNotMatch(csv, /privateMetadata|unsafeMetadata|emailAddresses/);

@@ -28,7 +28,6 @@ const publicLegalSurfaces = [cguPage, cguDocumentation, volunteerCharter, legalD
 describe("contrat documentaire LEGAL-04", () => {
   it("rejette les engagements juridiques et URLs historiques", () => {
     const obsoletePatterns = [
-      /cleanmymap\.com/iu,
       /association loi 1901/iu,
       /privacy shield/iu,
       /responsabilité civile professionnelle de l'association/iu,
@@ -38,6 +37,7 @@ describe("contrat documentaire LEGAL-04", () => {
     ];
 
     for (const source of publicLegalSurfaces) {
+      expect(source.toLowerCase()).not.toContain("cleanmymap.com");
       for (const pattern of obsoletePatterns) {
         expect(source).not.toMatch(pattern);
       }
