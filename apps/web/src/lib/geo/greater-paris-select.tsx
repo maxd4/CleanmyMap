@@ -355,7 +355,7 @@ export function TerritoryLocationSelector({
 
       <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
         <label className="block space-y-2">
-          <span className="cmm-text-small font-medium text-white/90">Pays</span>
+          <span className="cmm-text-small font-medium text-white">Pays</span>
           <select
             value="France"
             onChange={() => {
@@ -368,7 +368,7 @@ export function TerritoryLocationSelector({
         </label>
 
         <fieldset className="space-y-2">
-          <legend className="cmm-text-small font-medium text-white/90">
+          <legend className="cmm-text-small font-medium text-white">
             Niveau de territoire
           </legend>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -406,7 +406,7 @@ export function TerritoryLocationSelector({
         <div className="space-y-3">
           <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
             <label className="block space-y-2">
-              <span className="cmm-text-small font-medium text-white/90">
+              <span className="cmm-text-small font-medium text-white">
                 Ville
               </span>
               <select
@@ -439,7 +439,7 @@ export function TerritoryLocationSelector({
             </label>
 
             <label className="block space-y-2">
-              <span className="cmm-text-small font-medium text-white/90">
+              <span className="cmm-text-small font-medium text-white">
                 Arrondissement
               </span>
               <select

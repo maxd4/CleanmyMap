@@ -6,10 +6,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 
 1. `BLOC_COLOR_SYSTEM_PREMIUM.md`
 2. `PAGE_HEADER.md`
-3. `charte-ui-pro-moderne-futuriste.md`
-4. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-5. `UI_EXCEPTION_PAGES.md`
-6. fiche canonique de la page dans `documentation/pages_site/`
+3. `LAYOUT_SPACING.md`
+4. `charte-ui-pro-moderne-futuriste.md`
+5. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+6. `UI_EXCEPTION_PAGES.md`
+7. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 
@@ -23,9 +24,15 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 ```
 
-Pour un titre de page visible, `PageHeader` est la référence par défaut.
+Pour tout titre principal de page visible, `PageHeader` est la référence canonique.
 
-`PageHero` reste un alias de compatibilité pour les pages héritées.
+`PageHeader` est l'unique composant runtime pour les titres principaux de page ; aucun alias de hero ne doit être utilisé.
+
+Pour le shell de contenu et le rythme vertical des pages classiques, utiliser
+`CmmPageLayout` et `CmmSectionGroup` selon
+[`LAYOUT_SPACING.md`](./LAYOUT_SPACING.md). Les pages ne choisissent pas de
+largeur, de gutters ou de rythme structurel local ; les exceptions sont
+documentées dans `UI_EXCEPTION_PAGES.md`.
 
 ## Couleurs par famille
 
@@ -85,7 +92,7 @@ Ne pas leur appliquer automatiquement une palette de bloc :
 - éviter un style isolé si une primitive existe ;
 - ne pas importer un composant externe redondant sans besoin.
 
-### Typographie
+### Typographie générale
 
 Éviter les tailles arbitraires quand une classe canonique existe.
 
@@ -111,16 +118,41 @@ text-primary
 
 quand les tokens CleanMyMap couvrent le besoin.
 
-### Titres
+### Titre et sous-titre de page
 
-Éviter les retours à la ligne décoratifs.
+`PAGE_HEADER.md` est l'unique source de vérité pour la géométrie et la typographie du titre principal et de son sous-titre.
 
-Ordre de correction :
+Règle de cohérence :
 
-1. taille ;
-2. tracking ;
-3. largeur ;
-4. adaptation mobile.
+```txt
+même taille
+même graisse
+même line-height
+même tracking
+même largeur typographique
+même comportement responsive
+même rythme titre / sous-titre
+```
+
+Les seules variations visuelles autorisées entre pages sont :
+
+```txt
+couleur   -> family / tone / contrast
+position  -> align="left" ou align="center"
+```
+
+En conséquence :
+
+- ne pas créer de H1 de page à la main lorsqu'un `PageHeader` convient ;
+- ne pas ajouter de `text-*`, `font-*`, `leading-*`, `tracking-*` ou `max-w-*` local au titre ou au sous-titre ;
+- ne pas utiliser de `<br>` manuel pour composer un titre ;
+- ne pas corriger une page isolée en réduisant sa taille ou son tracking ;
+- si un titre est trop long, raccourcir d'abord le libellé ;
+- si plusieurs pages rencontrent le même problème, corriger `PageHeader` globalement ;
+- un alignement centré doit être documenté dans la fiche canonique de page ou dans `UI_EXCEPTION_PAGES.md` ;
+- les anciennes props `eyebrow`, `badge` et `badges` ont été supprimées du contrat runtime après migration des consommateurs internes.
+
+La couleur est gouvernée par la famille visuelle ; elle ne justifie jamais une variante de taille ou de graisse.
 
 ### Pages métier
 
@@ -203,7 +235,10 @@ Un visuel doit :
 □ Fiche canonique de page lue
 □ Palette canonique vérifiée
 □ Composants existants réutilisés
-□ PageHeader utilisé si pertinent
+□ PageHeader utilisé pour tout H1 de page concerné
+□ Typographie PageHeader non surchargée localement
+□ Seules couleur et position varient pour le couple titre / sous-titre
+□ Pas de <br> décoratif dans title / subtitle
 □ Pas de règle couleur contradictoire
 □ États async traités
 □ Mobile pris en compte

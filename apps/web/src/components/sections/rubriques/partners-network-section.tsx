@@ -20,6 +20,7 @@ import {
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { getEntryTrustState } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { cn } from "@/lib/utils";
@@ -426,22 +427,20 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
     <div className="space-y-8 text-slate-950">
       <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-violet-500 shadow-sm">
-            <Handshake className="h-4 w-4" aria-hidden="true" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em]">
-              {fr ? "Réseau & collaboration" : "Network & collaboration"}
-            </span>
-          </div>
-
           <div className="space-y-4">
-            <h1 className="text-[clamp(2.6rem,5vw,4.8rem)] font-black leading-[0.9] tracking-[-0.05em] text-slate-950">
-              {fr ? "Partenaires" : "Partners"}
-            </h1>
-            <p className="max-w-2xl text-[1.02rem] leading-[1.7] text-slate-600">
-              {fr
-                ? "Un réseau solide pour décupler notre impact."
-                : "A solid network to multiply our impact."}
-            </p>
+            <PageHeader
+              title={
+                <span className="inline-flex items-center gap-3">
+                  <Handshake className="h-6 w-6" aria-hidden="true" />
+                  <span>{fr ? "Partenaires" : "Partners"}</span>
+                </span>
+              }
+              subtitle={
+                fr
+                  ? "Un réseau solide pour décupler notre impact."
+                  : "A solid network to multiply our impact."
+              }
+            />
             <p className="max-w-3xl text-[1.02rem] leading-[1.75] text-slate-600">
               {fr
                 ? "Découvrez les organisations, entreprises et institutions qui agissent à nos côtés pour des territoires plus propres et des données fiables."
@@ -717,7 +716,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
 
         <div className="space-y-6">
           <aside className="rounded-[2rem] border border-violet-200 bg-[linear-gradient(180deg,#29245f_0%,#1c173f_100%)] p-6 text-white shadow-[0_24px_72px_-50px_rgba(37,34,110,0.55)]">
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.2em] text-white/80">
+            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.2em] text-white">
               {fr ? "Types de partenaires" : "Partner types"}
             </h2>
             <div className="mt-6 space-y-4">
@@ -725,12 +724,12 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                 const Icon = item.icon;
                 return (
                   <div key={item.title.fr} className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/90">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white">
                       <Icon size={18} />
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-black text-white">{localize(fr ? "fr" : "en", item.title)}</p>
-                      <p className="text-[0.86rem] leading-relaxed text-white/70">
+                      <p className="text-[0.86rem] leading-relaxed text-white">
                         {localize(fr ? "fr" : "en", item.description)}
                       </p>
                     </div>
@@ -887,7 +886,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               <h2 className="text-[1.2rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.35rem]">
                 {fr ? "Vous représentez une structure engagée ?" : "Do you represent an engaged organization?"}
               </h2>
-              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white/90">
+              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
                 {fr
                   ? "Rejoignez CleanMyMap et construisons ensemble des territoires plus propres, des données plus fiables et un impact réel."
                   : "Join CleanMyMap and build cleaner territories, more reliable data and real impact together."}

@@ -1,6 +1,3 @@
 {
-  "allowed": [
-    "apps/web/src/components/chat/chat-shell.tsx",
-    "apps/web/src/app/api/admin/moderation/route.test.ts"
-  ]
+  "allowed": []
 }

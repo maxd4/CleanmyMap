@@ -172,7 +172,7 @@ export function MissionZeroSection() {
         >
            <div className="relative z-10 space-y-4 text-center lg:text-left">
               <h3 className="text-4xl font-black text-white tracking-tighter leading-tight">Prêt pour la labellisation ?</h3>
-              <p className="text-lg font-bold text-white/80 max-w-xl">
+              <p className="text-lg font-bold text-white max-w-xl">
                  Demandez un audit de territoire gratuit pour évaluer votre maturité sur les 5 piliers de la Mission Zéro Déchet.
               </p>
            </div>

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
   title: "Mentions Légales - CleanMyMap",
@@ -24,9 +25,10 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <main>
+      <CmmPageLayout>
       {/* Navigation de retour */}
-      <div className="mb-8">
+      <div>
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
@@ -36,10 +38,10 @@ export default function MentionsLegalesPage() {
         </Link>
       </div>
 
-      <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+        <CmmSectionGroup>
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">Cadre juridique</PageHeaderBadge>}
           title="Mentions légales"
           subtitle="Point d'entrée unique vers les documents juridiques de CleanMyMap. Les pages détaillées restent séparées pour garder la conformité lisible."
           action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
@@ -188,7 +190,9 @@ export default function MentionsLegalesPage() {
             normal du service doit être autorisée.
           </p>
         </section>
+        </CmmSectionGroup>
       </div>
+      </CmmPageLayout>
     </main>
   );
 }

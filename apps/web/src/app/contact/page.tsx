@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, Mail, MessageSquare, Shield } from "lucide-react";
 import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-form";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -19,12 +20,13 @@ export default function ContactPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <main className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <main className="relative">
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-16 top-10 h-72 w-72 rounded-full bg-slate-300/15 blur-3xl" />
         <div className="absolute right-0 top-24 h-80 w-80 rounded-full bg-sky-300/12 blur-3xl" />
       </div>
-      <div className="mb-8">
+      <CmmPageLayout>
+      <div>
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-950"
@@ -34,10 +36,10 @@ export default function ContactPage() {
         </Link>
       </div>
 
-      <div className="space-y-10 rounded-[2.5rem] border border-slate-200/70 bg-white/82 p-6 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.35)] backdrop-blur-2xl sm:p-10">
+      <div className="rounded-[2.5rem] border border-slate-200/70 bg-white/82 p-6 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.35)] backdrop-blur-2xl sm:p-10">
+      <CmmSectionGroup>
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">Contact</PageHeaderBadge>}
           title="Contactez CleanMyMap"
           subtitle="Pour les demandes générales, juridiques ou RGPD, utilisez l'adresse officielle ou le formulaire ci-dessous."
         />
@@ -111,7 +113,9 @@ export default function ContactPage() {
           </p>
           <RgpdRequestForm />
         </section>
+      </CmmSectionGroup>
       </div>
+      </CmmPageLayout>
     </main>
   );
 }

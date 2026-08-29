@@ -1,11 +1,9 @@
 import { 
-  TrendingUp, 
   Euro, 
   Users, 
   Leaf, 
   Map as MapIcon,
   Download,
-  ShieldCheck,
   Zap,
   ArrowRight,
   Activity
@@ -16,7 +14,8 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
 import {
   PilotageInsightCard,
   PilotageMetricGrid,
@@ -70,10 +69,6 @@ export default async function SponsorPortalPage() {
     return null;
   });
   const factors = IMPACT_PROXY_CONFIG.factors;
-  const observedUntil = new Date();
-  const observedFrom = new Date(observedUntil);
-  observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
-  const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
   const pageFamily = getPageFamilyById("accueil-pilotage");
 
   // Calculs ROI
@@ -88,7 +83,7 @@ export default async function SponsorPortalPage() {
   const observedZones = overview?.zones.slice(0, 3) ?? [];
 
   const page = (
-    <div className="w-full max-w-[1600px] mx-auto space-y-24 pb-24">
+    <CmmPageLayout>
       {/* Premium Cockpit Header */}
       <header className="relative space-y-12 pt-16">
         <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -96,22 +91,8 @@ export default async function SponsorPortalPage() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
           <PageHeader
             family={pageFamily}
-            eyebrow="Gouvernance & impact"
             title="ROI stratégique"
             subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
-            badges={
-              <>
-                <PageHeaderBadge family={pageFamily}>
-                  <TrendingUp size={12} className="mr-2 inline-block align-[-2px] text-amber-500" />
-                  Gouvernance & impact
-                </PageHeaderBadge>
-                <PageHeaderBadge family={pageFamily} muted>
-                  <ShieldCheck size={12} className="mr-2 inline-block align-[-2px] text-amber-500/80" />
-                  {observationWindowLabel}
-                </PageHeaderBadge>
-              </>
-            }
-            className="space-y-6"
           />
           
           <CmmButton tone="primary" variant="pill" className="group flex items-center gap-4 rounded-[2rem] px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black transition-all active:scale-95 shadow-2xl shadow-white/10">
@@ -266,7 +247,7 @@ export default async function SponsorPortalPage() {
           </div>
         </div>
       </section>
-    </div>
+    </CmmPageLayout>
   );
 
   return (

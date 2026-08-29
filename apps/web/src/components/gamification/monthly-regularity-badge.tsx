@@ -93,7 +93,7 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
       progressClassName={`${palette.progress} ${isCelebrating ? "cmm-gamification-progress" : ""}`}
       celebrating={isCelebrating}
       eyebrow={
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
           <CalendarDays size={13} />
           Régularité mensuelle
         </div>

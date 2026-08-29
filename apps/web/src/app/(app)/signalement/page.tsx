@@ -1,6 +1,6 @@
 import { TrashSpotterOwnerLoop } from "@/components/actions/trash-spotter-owner-loop";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { cn } from "@/lib/utils";
 import { MapPin, Zap } from "lucide-react";
@@ -91,20 +91,8 @@ export default async function SignalementPage({
           <div className="space-y-12 pt-8">
             <PageHeader
               family={pageFamily}
-              eyebrow="Agir sur le terrain"
               title="Mettre à jour l’état du lieu"
               subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."
-              badges={
-                <>
-                  <PageHeaderBadge family={pageFamily}>
-                    Déclaration certifiée
-                  </PageHeaderBadge>
-                  <PageHeaderBadge family={pageFamily} muted>
-                    Analyse immédiate
-                  </PageHeaderBadge>
-                </>
-              }
-              className="max-w-4xl"
             />
 
             {/* Certification Status */}

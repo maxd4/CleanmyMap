@@ -277,7 +277,7 @@ export function FreePlanServicesPanel() {
             void freePlan.mutate();
             void servicesHealth.mutate();
           }}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10"
+          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
         >
           <RefreshCcw size={12} />
           {isRefreshing ? "Rafraîchissement" : "Rafraîchir"}
@@ -498,7 +498,7 @@ export function FreePlanServicesPanel() {
                   <p className="mt-2 text-3xl font-black text-white">
                     {servicePressureLeader.label}
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-white/75">
+                  <p className="mt-2 text-sm font-semibold text-white">
                     {formatNumber(servicePressureLeader.currentKgCo2eProxy, 2)} kg CO2e proxy / mois
                   </p>
                   <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
@@ -532,16 +532,16 @@ export function FreePlanServicesPanel() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                 Faible {serviceRiskCounts.faible}
               </span>
-              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                 Surveiller {serviceRiskCounts.surveiller}
               </span>
-              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                 Alerte {serviceRiskCounts.alerte}
               </span>
-              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+              <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                 Critique {serviceRiskCounts.critique}
               </span>
             </div>
@@ -597,7 +597,7 @@ export function FreePlanServicesPanel() {
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
                           Seuil
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white/90">
+                        <p className="mt-1 text-sm font-semibold text-white">
                           {alert.thresholdLabel}
                         </p>
                       </div>
@@ -605,7 +605,7 @@ export function FreePlanServicesPanel() {
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
                           De combien
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white/90">
+                        <p className="mt-1 text-sm font-semibold text-white">
                           {alert.details}
                         </p>
                       </div>
@@ -613,7 +613,7 @@ export function FreePlanServicesPanel() {
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
                           Depuis quand
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white/90">
+                        <p className="mt-1 text-sm font-semibold text-white">
                           Depuis {alert.sinceLabel}
                         </p>
                       </div>
@@ -621,7 +621,7 @@ export function FreePlanServicesPanel() {
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
                           Action recommandée
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-white/90">
+                        <p className="mt-1 text-sm font-semibold text-white">
                           {alert.recommendedAction}
                         </p>
                       </div>

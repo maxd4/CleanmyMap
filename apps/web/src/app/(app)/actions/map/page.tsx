@@ -10,7 +10,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
@@ -175,11 +175,9 @@ function ActionsMapPageContent() {
 
           <PageHeader
             family={pageFamily}
-            eyebrow="Visualiser / cartographie"
             title="Cartographie des actions"
             subtitle="Les couleurs représentent une pollution projetée à partir de la dernière action ; elles ne constituent pas une mesure actuelle du terrain. La pollution constatée avant l’action et le temps écoulé alimentent cette estimation."
-            badges={<PageHeaderBadge family={pageFamily}>Lecture terrain</PageHeaderBadge>}
-            className="max-w-4xl"
+            className="w-full"
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

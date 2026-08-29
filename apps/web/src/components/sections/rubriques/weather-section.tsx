@@ -23,7 +23,7 @@ import type { ReactNode } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
-import { PageHero } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   SystemStateAction,
   SystemStateDescription,
@@ -731,7 +731,7 @@ export function WeatherSection() {
     >
       <div className="space-y-10 pt-12 text-slate-900">
         <div className="space-y-6">
-          <PageHero
+          <PageHeader
             family={pageFamily}
             align="center"
             title={fr ? "Organiser une action" : "Organize an action"}
@@ -740,7 +740,6 @@ export function WeatherSection() {
                 ? "Consultez la météo réelle du lieu puis préparez le terrain pour décider du bon créneau d’action."
                 : "Check the real weather for the location, then prepare the field to choose the right action slot."
             }
-            className="max-w-xl"
           />
 
           <div className="max-w-xl text-center">

@@ -257,7 +257,7 @@ function TerrainkPreviewFrame({
           </div>
         </div>
 
-        <div className="pointer-events-none absolute right-4 top-4 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.24em] text-white/80 backdrop-blur">
+        <div className="pointer-events-none absolute right-4 top-4 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.24em] text-white backdrop-blur">
           Poster imprimable
         </div>
 
@@ -284,16 +284,16 @@ function TerrainkPreviewFrame({
           </div>
         </div>
 
-        <div className="pointer-events-none absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-white/80 backdrop-blur">
+        <div className="pointer-events-none absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-white backdrop-blur">
           <Compass size={12} />
           {zoom}x
           <LocateFixed size={12} />
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-white/20 bg-black/20 px-4 py-3 text-[10px] font-semibold text-white/80 backdrop-blur">
+      <div className="flex items-center justify-between gap-3 border-t border-white/20 bg-black/20 px-4 py-3 text-[10px] font-semibold text-white backdrop-blur">
         <span className="font-black uppercase tracking-[0.22em] text-white">Carte stylisée</span>
-        <span className="text-white/70">TerraInk / Cartogram</span>
+        <span className="text-white">TerraInk / Cartogram</span>
       </div>
     </div>
   );

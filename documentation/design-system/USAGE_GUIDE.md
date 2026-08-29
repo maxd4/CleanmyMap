@@ -77,8 +77,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 
 export default function ExamplePage() {
   return (
-    <CmmPageLayout maxWidth="2xl" padding="lg">
-      <CmmSectionGroup spacing="lg">
+    <CmmPageLayout>
+      <CmmSectionGroup>
         
         {/* Header de page */}
         <CmmSection 
@@ -190,7 +190,7 @@ export function SectionShell(props: SectionShellProps) {
   
   return (
     <CmmPageLayout>
-      <CmmSectionGroup spacing="lg">
+      <CmmSectionGroup>
         
         {/* Header */}
         <CmmSection 

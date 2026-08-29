@@ -52,7 +52,7 @@ function createMarkerIcon(point: CompostPoint) {
   return L.divIcon({
     className: "cmm-compost-marker",
     html: `
-      <div class="flex items-center justify-center rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-md transition-transform hover:scale-110" style="width: 32px; height: 32px; background: ${color}cc; color: white;">
+      <div class="flex items-center justify-center rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-md transition-transform hover:scale-110" style="width: 32px; height: 32px; background: ${color}cc; color: #FFFFFF;">
         <span style="font-size: 14px; font-weight: 900; line-height: 1;">C</span>
       </div>
     `,

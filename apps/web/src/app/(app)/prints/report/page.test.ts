@@ -22,8 +22,6 @@ vi.mock("next/image", () => ({
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({ title }: { title: React.ReactNode }) =>
     React.createElement("header", { "data-testid": "page-header" }, title),
-  PageHeaderBadge: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("span", null, children),
 }));
 
 vi.mock("@/components/ui/clerk-required-gate", () => ({

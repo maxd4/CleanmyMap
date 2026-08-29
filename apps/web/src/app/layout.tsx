@@ -11,6 +11,7 @@ import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { getServerDisplayModePreference } from "@/lib/server-preferences";
 
 export const metadata: Metadata = appMetadata;
 
@@ -18,11 +19,13 @@ export const revalidate = 3600; // 1 hour Cache for public landing page
 const clerkRuntime = getClerkRuntimeConfig();
 const useClerkProxy = Boolean(clerkRuntime.proxyUrl);
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const displayModePreference = await getServerDisplayModePreference();
+
   return (
     <html className="h-full antialiased" suppressHydrationWarning data-theme="mixed">
       <head>
@@ -31,7 +34,10 @@ export default function RootLayout({
         <FAQJsonLd />
       </head>
       <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">
-        <SitePreferencesProvider>
+        <SitePreferencesProvider
+          initialDisplayMode={displayModePreference.displayMode}
+          initialDisplayModeExplicit={displayModePreference.isExplicit}
+        >
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
             signUpUrl="/sign-up"

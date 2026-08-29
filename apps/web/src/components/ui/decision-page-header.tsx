@@ -33,10 +33,9 @@ export function DecisionPageHeader({
       <PageHeader
         align="left"
         tone="emerald"
-        eyebrow={isFrench ? "Pourquoi" : "Why"}
         title={title}
         subtitle={objective}
-        badge={<CmmPill tone="slate" size="sm">{context}</CmmPill>}
+        action={<CmmPill tone="slate" size="sm">{context}</CmmPill>}
       />
 
       <CmmPillGroup className="mt-4">

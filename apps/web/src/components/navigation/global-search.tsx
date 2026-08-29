@@ -113,7 +113,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       <button
         type="button"
         onClick={toggle}
-        className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-white/10 bg-white/8 px-3.5 text-white/90 shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+        className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-white/10 bg-white/8 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
         title={locale === "fr" ? "Rechercher (Ctrl+K)" : "Search (Ctrl+K)"}
         aria-label={locale === "fr" ? "Rechercher" : "Search"}
       >

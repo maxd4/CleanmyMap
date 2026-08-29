@@ -1,11 +1,11 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PAGE_COPY, buildAccessLinks } from "../access-screen-constants";
 import type { PilotageLocale } from "../access-screen-constants";
 import type { AppProfile } from "@/lib/profiles";
-import { getProfileLabel, getProfileSubtitle } from "@/lib/profiles";
+import { getProfileLabel } from "@/lib/profiles";
 import { NavigationGrid } from "@/components/ui/navigation-grid";
-import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import {
   DASHBOARD_ROUTE,
@@ -21,7 +21,6 @@ export function PilotageRestrictedPage({
 }) {
   const copy = PAGE_COPY[locale];
   const profileLabel = getProfileLabel(profile, locale);
-  const profileSubtitle = getProfileSubtitle(profile, locale);
   const links = buildAccessLinks(profile, locale).slice(0, 3);
   const pageFamily = getPageFamilyById("accueil-pilotage");
 
@@ -29,24 +28,10 @@ export function PilotageRestrictedPage({
     <section className="w-full space-y-6 p-4 md:p-8">
       <div className="space-y-8 md:p-2">
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <PageHero
+          <PageHeader
             family={pageFamily}
             title={copy.title}
             subtitle={copy.description}
-            badges={
-              <>
-                <PageHeroBadge family={pageFamily}>
-                  <Sparkles size={14} aria-hidden="true" />
-                  {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
-                </PageHeroBadge>
-                <PageHeroBadge family={pageFamily} muted>
-                  {profileLabel}
-                </PageHeroBadge>
-                <PageHeroBadge family={pageFamily} muted>
-                  {profileSubtitle}
-                </PageHeroBadge>
-              </>
-            }
           />
 
           <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.82)] p-5">
@@ -64,7 +49,7 @@ export function PilotageRestrictedPage({
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-orange-100/70">
                   {locale === "fr" ? "Lecture autorisée" : "Allowed reading"}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-white/82">
+                <p className="mt-2 text-sm leading-relaxed text-white">
                   {locale === "fr"
                     ? "Le cockpit complet reste réservé aux profils Coordination, IMU et arbitrage final."
                     : "The full cockpit remains reserved for Coordination, IMU and final arbitration profiles."}

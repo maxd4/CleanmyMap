@@ -98,7 +98,7 @@ export const ConnectTabs = memo(function ConnectTabs({
               <span
                 className={cn(
                   "mt-0.5 hidden text-[9px] font-black uppercase tracking-[0.2em] sm:block",
-                  isActive ? "text-white/80" : cn("text-slate-400", tone.subtitle),
+                  isActive ? "text-white" : cn("text-slate-400", tone.subtitle),
                 )}
               >
                 {fr ? tab.desc.fr : tab.desc.en}

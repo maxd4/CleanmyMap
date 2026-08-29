@@ -105,7 +105,7 @@ function getQuotaStateTone(state: "ok" | "attention" | "proche limite" | "dépas
     case "ok":
       return "border-emerald-500/20 bg-emerald-500/10 text-emerald-100";
     default:
-      return "border-white/10 bg-black/10 text-white/70";
+      return "border-white/10 bg-black/10 text-white";
   }
 }
 
@@ -165,7 +165,7 @@ export function EnvironmentalImpactCapturePanel() {
           onClick={triggerCapture}
           disabled={isPending}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60",
+            "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
           <RefreshCcw size={12} className={cn(isPending && "animate-spin")} />
@@ -179,7 +179,7 @@ export function EnvironmentalImpactCapturePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Déclenchement
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Lance une capture serveur et enregistre un snapshot daté dans Supabase.
             </p>
           </article>
@@ -187,7 +187,7 @@ export function EnvironmentalImpactCapturePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Protection
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Route réservée aux comptes admin et max via `requireAdminAccess`.
             </p>
           </article>
@@ -195,7 +195,7 @@ export function EnvironmentalImpactCapturePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Historique
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Alimente l&apos;historique utilisé par la courbe hebdomadaire.
             </p>
           </article>

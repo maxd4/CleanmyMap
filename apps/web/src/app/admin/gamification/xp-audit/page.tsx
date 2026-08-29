@@ -1,6 +1,6 @@
 import { checkAdminAccess } from "@/lib/admin/access";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 
 type XpAuditEntry = {
   id: string;
@@ -79,7 +79,6 @@ export default async function Page({
     <div style={{ padding: 20 }}>
       <PageHeader
         tone="slate"
-        badge={<PageHeaderBadge tone="slate">Admin</PageHeaderBadge>}
         title="XP Audit"
         subtitle="Journal technique des variations d'expérience."
       />

@@ -36,16 +36,16 @@ const INFO_VARIANT_CLASSES = {
 
 const INFO_VARIANT_TEXT_CLASSES = {
   muted: {
-    eyebrow: "text-white/78",
+    eyebrow: "text-white",
     title: "text-white",
-    description: "text-white/84",
-    chip: "border-white/12 bg-white/10 text-white/90",
+    description: "text-white",
+    chip: "border-white/12 bg-white/10 text-white",
   },
   warm: {
     eyebrow: "text-amber-100/78",
     title: "text-white",
-    description: "text-white/84",
-    chip: "border-white/12 bg-white/10 text-white/90",
+    description: "text-white",
+    chip: "border-white/12 bg-white/10 text-white",
   },
   light: {
     eyebrow: "text-stone-800/78",
@@ -120,17 +120,17 @@ export function AdminHeroStrip({
             <Icon size={22} className="text-amber-100" />
           </div>
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/82">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white">
               {eyebrow}
             </p>
-            <p className="mt-1 text-sm font-medium text-white/84">
+            <p className="mt-1 text-sm font-medium text-white">
               {description}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/92">
+          <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white">
             {accessLabel}
           </span>
           {action}
@@ -157,7 +157,7 @@ export function AdminPillLink({
       className={cn(
         "inline-flex h-11 items-center justify-center rounded-full border px-4 text-[11px] font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
         subdued
-          ? "border-white/12 bg-white/10 text-white/92 hover:border-white/20 hover:bg-white/14"
+          ? "border-white/12 bg-white/10 text-white hover:border-white/20 hover:bg-white/14"
           : "border-stone-200/80 bg-white text-stone-900 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.35)] hover:border-amber-300/60",
         className,
       )}
@@ -553,7 +553,7 @@ export function AdminProfileSwitchStrip({
                   "inline-flex items-center rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
                   isActive
                     ? "border-amber-100/50 bg-amber-100/32 text-white shadow-[0_8px_18px_-12px_rgba(0,0,0,0.32)]"
-                    : "border-white/10 bg-white/8 text-white/78 hover:border-white/20 hover:bg-white/12 hover:text-white",
+                    : "border-white/10 bg-white/8 text-white hover:border-white/20 hover:bg-white/12 hover:text-white",
                 )}
               >
                 {getProfileLabel(item, locale)}
@@ -562,7 +562,7 @@ export function AdminProfileSwitchStrip({
           })}
         </div>
 
-        <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
+        <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white">
           {label}
         </span>
       </div>

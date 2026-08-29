@@ -80,7 +80,7 @@ const VARIANT_CARD_STYLES: Record<
     label: "text-white/40",
     value: "text-white",
     accent: "bg-amber-300",
-    chip: "border-white/10 bg-white/10 text-white/90",
+    chip: "border-white/10 bg-white/10 text-white",
     secondary: "text-white/72",
   },
   governance: {
@@ -150,8 +150,8 @@ export function PilotageMetricGrid({
           metric.interpretation === "positive"
             ? "bg-emerald-500/10 text-emerald-300"
             : metric.interpretation === "negative"
-              ? "bg-rose-500/10 text-rose-300"
-              : "bg-white/10 text-white/80";
+                ? "bg-rose-500/10 text-rose-300"
+              : "bg-white/10 text-white";
 
         return (
           <article

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   ActionCard,
   FilterField,
@@ -166,16 +167,14 @@ export function JoinFormSection() {
                 <span>{fr ? "Formulaire de groupe" : "Group form"}</span>
               </div>
 
-              <div className="space-y-3">
-                <h1 className="max-w-3xl text-[2.2rem] font-black tracking-tight text-emerald-950 md:text-[2.95rem]">
-                  {fr ? "Rejoindre un formulaire de groupe" : "Join a group form"}
-                </h1>
-                <p className="max-w-2xl text-sm leading-relaxed text-slate-600 md:text-[1.02rem]">
-                  {fr
+              <PageHeader
+                title={fr ? "Rejoindre un formulaire de groupe" : "Join a group form"}
+                subtitle={
+                  fr
                     ? "Participez à des pré-formulaires ouverts et consultez séparément les déclarations terminées."
-                    : "Join open pre-forms and keep completed declarations separate."}
-                </p>
-              </div>
+                    : "Join open pre-forms and keep completed declarations separate."
+                }
+              />
 
               <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/75 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 shadow-sm">
                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">

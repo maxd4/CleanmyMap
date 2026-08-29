@@ -17,10 +17,10 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
         </p>
         <div className="mt-3 space-y-3">
           <p className="text-sm font-semibold text-white">{data.proactiveAssistant.actNow}</p>
-          <p className="text-sm leading-relaxed text-white/76">
+          <p className="text-sm leading-relaxed text-white">
             {data.proactiveAssistant.criticalNearby}
           </p>
-          <p className="text-sm leading-relaxed text-white/76">
+          <p className="text-sm leading-relaxed text-white">
             {data.proactiveAssistant.mostUsefulAction}
           </p>
         </div>
@@ -30,7 +30,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-100/64">
                 {fr ? "Zones à surveiller" : "Zones to watch"}
               </p>
-              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white/74">
+              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
                 {data.proactiveAssistant.predictedDirtyZones.slice(0, 2).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -42,7 +42,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-100/64">
                 {fr ? "Événements à anticiper" : "Events to anticipate"}
               </p>
-              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white/74">
+              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
                 {data.proactiveAssistant.eventAnticipation.slice(0, 2).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -74,7 +74,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
                     </p>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-white/72">
+                <p className="mt-2 text-sm leading-relaxed text-white">
                   {fr
                     ? `Actions récentes: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Pression événement: ${hotspot.eventPressure.toFixed(1)}`
                     : `Recent actions: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Event pressure: ${hotspot.eventPressure.toFixed(1)}`}

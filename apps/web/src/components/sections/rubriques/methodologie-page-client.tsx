@@ -19,6 +19,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { PageHeader } from "@/components/ui/page-header";
 import type {
   EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactWaterEstimate,
@@ -235,20 +236,18 @@ export function MethodologiePageClient({
       />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-col space-y-16 px-4 sm:px-6 lg:px-8">
-        <header className="space-y-6 text-center">
-          <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2">
-            <Beaker size={14} className="animate-pulse text-red-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400/60">
-              {t("header_suptitle")}
+        <PageHeader
+          align="center"
+          tone="red"
+          contrast="inverse"
+          title={
+            <span className="inline-flex items-center gap-3">
+              <Beaker size={24} aria-hidden="true" />
+              <span>{t("header_title")}</span>
             </span>
-          </div>
-          <h1 className="text-6xl font-black tracking-tighter text-white md:text-7xl">
-            {t("header_title")}
-          </h1>
-          <p className="mx-auto max-w-3xl text-xl font-medium leading-relaxed text-red-100/40">
-            {t("header_desc")}
-          </p>
-        </header>
+          }
+          subtitle={t("header_desc")}
+        />
 
         <ActionMapMethodologySection isFrench={isFrench} />
 

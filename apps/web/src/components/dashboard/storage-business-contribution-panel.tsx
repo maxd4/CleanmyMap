@@ -214,7 +214,7 @@ export function StorageBusinessContributionPanel({
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                     {formatPercent(item.currentSharePercent)}% du total
                   </span>
                   <span
@@ -224,7 +224,7 @@ export function StorageBusinessContributionPanel({
                         ? "border-rose-500/20 bg-rose-500/10 text-rose-100"
                         : item.deltaBytes < 0
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100"
-                          : "border-white/10 bg-white/5 text-white/70",
+                          : "border-white/10 bg-white/5 text-white",
                     )}
                   >
                     {formatSignedBytes(item.deltaBytes)} sur le mois
@@ -236,20 +236,20 @@ export function StorageBusinessContributionPanel({
                         ? "border-rose-500/20 bg-rose-500/10 text-rose-100"
                         : item.deltaCount < 0
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100"
-                          : "border-white/10 bg-white/5 text-white/70",
+                          : "border-white/10 bg-white/5 text-white",
                     )}
                   >
                     {formatSignedCount(item.deltaCount)} sur le mois
                   </span>
-                  <span className={cn("rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]", trendTone === "text-rose-300" ? "border-rose-500/20 bg-rose-500/10 text-rose-100" : trendTone === "text-emerald-300" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-white/10 bg-white/5 text-white/70")}>
+                  <span className={cn("rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]", trendTone === "text-rose-300" ? "border-rose-500/20 bg-rose-500/10 text-rose-100" : trendTone === "text-emerald-300" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100" : "border-white/10 bg-white/5 text-white")}>
                     {item.deltaPercent === null
                       ? "Base absente"
                       : `${formatSignedPercent(item.deltaPercent)}%`}
                   </span>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                     3 mois: {formatStorageBytes(item.cumulative3MonthBytes)}
                   </span>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/70">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
                     Accélération: {formatStorageBytes(item.accelerationBytes)}
                   </span>
                   {item.alerts[0] ? (
@@ -292,7 +292,7 @@ export function StorageBusinessContributionPanel({
                       {item.history.slice(0, 3).map((point) => (
                         <li
                           key={`${item.id}-${point.snapshotMonth}`}
-                          className="rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-xs text-white/70"
+                          className="rounded-2xl border border-white/5 bg-white/5 px-3 py-2 text-xs text-white"
                         >
                           {formatTrendLine(point)}
                           <span className="ml-2 text-white/30">

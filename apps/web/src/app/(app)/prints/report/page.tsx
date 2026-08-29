@@ -4,7 +4,7 @@ import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -54,17 +54,8 @@ export default async function PrintReportPage() {
         <div className="print:hidden">
           <PageHeader
             family={pageFamily}
-            eyebrow="Impression & export"
             title="Rapport d'impact imprimable"
             subtitle="Synthèse documentaire, export visuel et lecture d'impact pour l'audit."
-            badges={
-              <>
-              <PageHeaderBadge family={pageFamily}>Impression</PageHeaderBadge>
-              <PageHeaderBadge family={pageFamily} muted>
-                Export
-              </PageHeaderBadge>
-              </>
-            }
           />
         </div>
 
@@ -128,17 +119,8 @@ export default async function PrintReportPage() {
       <div className="print:hidden">
           <PageHeader
             family={pageFamily}
-            eyebrow="Impression & export"
           title="Rapport d'impact imprimable"
           subtitle="Synthèse documentaire, export visuel et lecture d'impact pour l'audit."
-          badges={
-            <>
-              <PageHeaderBadge family={pageFamily}>Impression</PageHeaderBadge>
-              <PageHeaderBadge family={pageFamily} muted>
-                Document
-              </PageHeaderBadge>
-            </>
-          }
         />
       </div>
 

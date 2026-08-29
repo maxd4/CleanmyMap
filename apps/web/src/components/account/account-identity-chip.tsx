@@ -180,7 +180,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               aria-haspopup="menu"
               aria-expanded={isRoleMenuOpen}
               aria-controls="account-role-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white/88 transition hover:border-cyan-200/32 hover:bg-white/14 active:scale-95 [&::-webkit-details-marker]:hidden"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 active:scale-95 [&::-webkit-details-marker]:hidden"
           >
             <IdentityBadge
               icon={roleBadge.icon}
@@ -244,7 +244,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                         )}
                       >
                         <span className="flex min-w-0 items-start gap-2">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[9px] font-black uppercase leading-none text-white/80">
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[9px] font-black uppercase leading-none text-white">
                             i
                           </span>
                           <span className="min-w-0">
@@ -332,7 +332,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
           <summary
             aria-expanded={isBadgeMenuOpen}
             aria-controls="account-badges-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white/82 transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95 [&::-webkit-details-marker]:hidden"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95 [&::-webkit-details-marker]:hidden"
           >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
             <span className="hidden sm:inline">

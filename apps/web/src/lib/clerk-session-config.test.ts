@@ -2,9 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockEnv = {
   NEXT_PUBLIC_APP_URL: "http://localhost:3000",
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_123",
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`,
+  CLERK_SECRET_KEY: "sk_test_local_dev_secret",
   NEXT_PUBLIC_CLERK_PROXY_URL: "/__clerk",
-  CLERK_DOMAIN: "auth.cleanmymap.fr",
+  CLERK_DOMAIN: "cleanmymap.fr",
   CLERK_IS_SATELLITE: undefined,
   CLERK_SATELLITE_AUTO_SYNC: undefined,
   CLERK_ALLOWED_PARTIES: undefined,
@@ -22,9 +23,10 @@ vi.mock("@/lib/env", async (importOriginal) => {
 
 afterEach(() => {
   mockEnv.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
-  mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_123";
+  mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`;
+  mockEnv.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
   mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "/__clerk";
-  mockEnv.CLERK_DOMAIN = "auth.cleanmymap.fr";
+  mockEnv.CLERK_DOMAIN = "cleanmymap.fr";
   mockEnv.CLERK_IS_SATELLITE = undefined;
   mockEnv.CLERK_SATELLITE_AUTO_SYNC = undefined;
   mockEnv.CLERK_ALLOWED_PARTIES = undefined;
@@ -32,12 +34,54 @@ afterEach(() => {
 });
 
 describe("getClerkRuntimeConfig", () => {
-  it("falls back to the local development publishable key on localhost when a live key is present", async () => {
+  it("uses the configured development key pair on localhost", async () => {
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");
 
-    expect(getClerkRuntimeConfig().publishableKey).toMatch(/^pk_test_/);
-    expect(getClerkRuntimeConfig().publishableKey).not.toBe(
+    expect(getClerkRuntimeConfig().publishableKey).toBe(
       mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    );
+  });
+
+  it("fails fast when the local Clerk pair is missing", async () => {
+    mockEnv.CLERK_SECRET_KEY = "";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "localhost requires NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_* and CLERK_SECRET_KEY=sk_test_*",
+    );
+  });
+
+  it("rejects production Clerk keys on localhost instead of falling back", async () => {
+    mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_production";
+    mockEnv.CLERK_SECRET_KEY = "sk_live_production";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "production keys are not allowed",
+    );
+  });
+
+  it("rejects a configured domain that does not match the development key", async () => {
+    mockEnv.CLERK_DOMAIN = "other-instance.clerk.accounts.dev";
+    mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "CLERK_DOMAIN does not match",
+    );
+  });
+
+  it("rejects an invalid configured Clerk domain on localhost", async () => {
+    mockEnv.CLERK_DOMAIN = "not a host";
+    mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "CLERK_DOMAIN is not a valid Clerk host",
     );
   });
 
@@ -47,19 +91,31 @@ describe("getClerkRuntimeConfig", () => {
     expect(getClerkRuntimeConfig().proxyUrl).toBe("/__clerk");
   });
 
-  it("drops the production Clerk domain on localhost when no proxy URL is configured", async () => {
+  it("fails fast when a production Clerk domain is configured without a proxy", async () => {
     mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "";
 
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");
 
-    expect(getClerkRuntimeConfig().domain).toBeUndefined();
+    expect(() => getClerkRuntimeConfig()).toThrow(
+      "CLERK_DOMAIN does not match",
+    );
   });
 
   it("preserves absolute proxy URLs", async () => {
-    mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "https://auth.cleanmymap.fr/__clerk";
+    mockEnv.NEXT_PUBLIC_CLERK_PROXY_URL = "https://cleanmymap.fr/__clerk";
 
     const { getClerkRuntimeConfig } = await import("./clerk-session-config");
 
-    expect(getClerkRuntimeConfig().proxyUrl).toBe("https://auth.cleanmymap.fr/__clerk");
+    expect(getClerkRuntimeConfig().proxyUrl).toBe("https://cleanmymap.fr/__clerk");
+  });
+
+  it("allows live keys outside localhost", async () => {
+    mockEnv.NEXT_PUBLIC_APP_URL = "https://cleanmymap.fr";
+    mockEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_production";
+    mockEnv.CLERK_SECRET_KEY = "sk_live_production";
+
+    const { getClerkRuntimeConfig } = await import("./clerk-session-config");
+
+    expect(getClerkRuntimeConfig().publishableKey).toBe("pk_live_production");
   });
 });

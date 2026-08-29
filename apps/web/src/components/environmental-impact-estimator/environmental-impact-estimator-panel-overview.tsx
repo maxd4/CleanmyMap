@@ -473,11 +473,11 @@ export function EnvironmentalImpactEstimatorPanelOverview({
                     </p>
                     <p className="mt-1 text-sm font-black text-white">{note.title}</p>
                   </div>
-                  <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                  <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white">
                     {note.severity}
                   </span>
                 </div>
-                <p className="mt-3 text-xs leading-relaxed text-white/80">{note.detail}</p>
+                <p className="mt-3 text-xs leading-relaxed text-white">{note.detail}</p>
               </article>
             ))}
           </div>

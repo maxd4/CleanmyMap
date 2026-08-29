@@ -226,7 +226,7 @@ export function NotificationBell() {
                   <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/50">
                     <Check size={24} />
                   </div>
-                  <p className="font-bold uppercase tracking-tighter cmm-text-caption text-white/70">
+                  <p className="font-bold uppercase tracking-tighter cmm-text-caption text-white">
                     {locale === "fr" ? "Aucune notification active" : "No active notifications"}
                   </p>
                   <p className="cmm-text-caption text-white/54">

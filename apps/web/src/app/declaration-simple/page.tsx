@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { ArrowRight, CheckCircle2, ClipboardList, Gauge, LayoutGrid, ShieldCheck } from "lucide-react";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
   title: "Déclaration simple - CleanMyMap",
@@ -30,18 +31,17 @@ const comparisonRows = [
 
 export default function DeclarationSimplePage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(220,252,231,0.68)_0%,_rgba(248,250,252,0.98)_46%,_rgba(241,245,249,1)_100%)] py-8 text-stone-950">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(220,252,231,0.68)_0%,_rgba(248,250,252,0.98)_46%,_rgba(241,245,249,1)_100%)] text-stone-950">
+      <CmmPageLayout>
         <PageHeader
           tone="emerald"
           align="center"
-          badge={<PageHeaderBadge tone="emerald">Outil système</PageHeaderBadge>}
           title="Déclaration simple"
           subtitle="Point d’entrée autonome pour vérifier un parcours de déclaration allégé, sans mélanger cette vue avec le formulaire complet."
-          className="mx-auto max-w-4xl"
         />
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <CmmSectionGroup>
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <CmmCard tone="emerald" variant="elevated" size="lg" className="space-y-6">
             <div className="flex items-start gap-4">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
@@ -163,7 +163,8 @@ export default function DeclarationSimplePage() {
             </CmmCard>
           </div>
         </div>
-      </div>
+        </CmmSectionGroup>
+      </CmmPageLayout>
     </main>
   );
 }

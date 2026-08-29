@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Image as ImageIcon, LoaderCircle, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -14,6 +15,8 @@ type SignalementMediaProofsProps = {
   signalementId: string;
   variant?: SignalementMediaProofsVariant;
 };
+
+const passthroughImageLoader = ({ src }: { src: string }) => src;
 
 function shellClassName(variant: SignalementMediaProofsVariant): string {
   return variant === "panel"
@@ -177,11 +180,13 @@ export function SignalementMediaProofsView({
                     : "4 / 3",
                 }}
               >
-                <img
+                <Image
                   src={item.signedUrl}
+                  loader={passthroughImageLoader}
                   alt={`Preuve photo ${index + 1} du signalement`}
-                  width={item.width ?? undefined}
-                  height={item.height ?? undefined}
+                  width={item.width ?? 1200}
+                  height={item.height ?? 900}
+                  unoptimized
                   loading="lazy"
                   decoding="async"
                   className="h-full w-full object-cover transition group-hover:scale-[1.03]"

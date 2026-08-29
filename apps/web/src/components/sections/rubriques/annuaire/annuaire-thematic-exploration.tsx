@@ -116,7 +116,7 @@ export function AnnuaireThematicExploration({
                 </h4>
                 <p className={cn(
                   "text-[10px] font-bold leading-relaxed transition-opacity line-clamp-2",
-                  isActive ? "text-white/80" : "text-slate-600 opacity-0 group-hover:opacity-100"
+                  isActive ? "text-white" : "text-slate-600 opacity-0 group-hover:opacity-100"
                 )}>
                   {theme.desc}
                 </p>

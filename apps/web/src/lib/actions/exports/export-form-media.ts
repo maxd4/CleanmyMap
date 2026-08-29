@@ -339,7 +339,7 @@ export function buildActionDeclarationSocialSvg(params: {
         <g transform="translate(${x}, ${y})">
           <rect x="0" y="0" width="${metricWidth}" height="${metricHeight}" rx="28" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.18)"/>
           <rect x="0" y="0" width="12" height="${metricHeight}" rx="6" fill="${metric.accent}" opacity="0.95"/>
-          <text x="28" y="36" fill="rgba(255,255,255,0.72)" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em" text-transform="uppercase">${escapeXml(metric.label)}</text>
+          <text x="28" y="36" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em" text-transform="uppercase">${escapeXml(metric.label)}</text>
           <text x="28" y="78" fill="#ffffff" font-size="${bodyFontSize}" font-weight="800">
             ${textWrap
               .map((line, lineIndex) => `<tspan x="28" dy="${lineIndex === 0 ? 0 : bodyFontSize + 8}">${escapeXml(line)}</tspan>`)
@@ -354,7 +354,7 @@ export function buildActionDeclarationSocialSvg(params: {
     ? `
       <g transform="translate(${padding}, ${preset.height - padding - (notesSnippet.length * (bodyFontSize + 8) + 70)})">
         <rect x="0" y="0" width="${contentWidth}" height="${notesSnippet.length * (bodyFontSize + 8) + 70}" rx="28" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.14)" />
-        <text x="28" y="34" fill="rgba(255,255,255,0.72)" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.16em">NOTE</text>
+        <text x="28" y="34" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.16em">NOTE</text>
         <text x="28" y="${34 + bodyFontSize + 12}" fill="#ffffff" font-size="${bodyFontSize}" font-weight="600">
           ${notesSnippet
             .map((line, index) => `<tspan x="28" dy="${index === 0 ? 0 : bodyFontSize + 8}">${escapeXml(line)}</tspan>`)
@@ -387,14 +387,14 @@ export function buildActionDeclarationSocialSvg(params: {
     <rect x="${padding}" y="${padding}" width="${contentWidth}" height="${preset.height - padding * 2}" rx="${isPortrait ? 40 : 44}" fill="rgba(7,17,16,0.32)" stroke="rgba(255,255,255,0.1)" filter="url(#shadow)"/>
 
     <g transform="translate(${padding}, ${padding})">
-      <text x="0" y="34" fill="rgba(255,255,255,0.72)" font-size="${smallFontSize}" font-weight="800" letter-spacing="0.22em">CLEANMYMAP</text>
+      <text x="0" y="34" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="800" letter-spacing="0.22em">CLEANMYMAP</text>
       <rect x="0" y="48" width="${Math.min(contentWidth, 220)}" height="8" rx="4" fill="url(#accent)"/>
       <text x="0" y="${Math.max(120, titleFontSize + 64)}" fill="#ffffff" font-size="${titleFontSize}" font-weight="900">
         ${titleLines
           .map((line, index) => `<tspan x="0" dy="${index === 0 ? 0 : titleFontSize + 14}">${escapeXml(line)}</tspan>`)
           .join("")}
       </text>
-      <text x="0" y="${Math.max(210, titleFontSize + 144)}" fill="rgba(255,255,255,0.86)" font-size="${bodyFontSize}" font-weight="600">
+      <text x="0" y="${Math.max(210, titleFontSize + 144)}" fill="#FFFFFF" font-size="${bodyFontSize}" font-weight="600">
         <tspan x="0" dy="0">${escapeXml(narrativeLines.length > 0 ? narrativeLines[0] : "Prêt à partager")}</tspan>
         ${narrativeLines
           .slice(1)
@@ -403,11 +403,11 @@ export function buildActionDeclarationSocialSvg(params: {
       </text>
 
       <rect x="0" y="${isPortrait ? 250 : 250}" width="${isPortrait ? contentWidth : Math.floor(contentWidth * 0.72)}" height="88" rx="24" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.14)"/>
-      <text x="24" y="${isPortrait ? 290 : 286}" fill="rgba(255,255,255,0.68)" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em">POINT CLÉ</text>
+      <text x="24" y="${isPortrait ? 290 : 286}" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em">POINT CLÉ</text>
       <text x="24" y="${isPortrait ? 326 : 322}" fill="#ffffff" font-size="${bodyFontSize}" font-weight="800">
         <tspan x="24" dy="0">${escapeXml(locationLabel)}</tspan>
       </text>
-      <text x="${isPortrait ? 24 : Math.floor(contentWidth * 0.76)}" y="${isPortrait ? 290 : 290}" fill="rgba(255,255,255,0.68)" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em">ORGANISATION</text>
+      <text x="${isPortrait ? 24 : Math.floor(contentWidth * 0.76)}" y="${isPortrait ? 290 : 290}" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.18em">ORGANISATION</text>
       <text x="${isPortrait ? 24 : Math.floor(contentWidth * 0.76)}" y="${isPortrait ? 326 : 322}" fill="#ffffff" font-size="${bodyFontSize}" font-weight="800">
         <tspan x="${isPortrait ? 24 : Math.floor(contentWidth * 0.76)}" dy="0">${escapeXml(form.associationName || actorName || "CleanMyMap")}</tspan>
       </text>
@@ -418,9 +418,9 @@ export function buildActionDeclarationSocialSvg(params: {
     </g>
 
     <g transform="translate(${padding}, ${preset.height - padding - 86})">
-      <text x="0" y="0" fill="rgba(255,255,255,0.72)" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.16em">AUTEUR</text>
+      <text x="0" y="0" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="700" letter-spacing="0.16em">AUTEUR</text>
       <text x="0" y="${smallFontSize + 20}" fill="#ffffff" font-size="${bodyFontSize}" font-weight="700">${escapeXml(actorName || "Bénévole")}</text>
-      <text x="${contentWidth}" y="${smallFontSize + 20}" text-anchor="end" fill="rgba(255,255,255,0.72)" font-size="${smallFontSize}" font-weight="600">${escapeXml(formatDateLabel(form.actionDate))}</text>
+      <text x="${contentWidth}" y="${smallFontSize + 20}" text-anchor="end" fill="#FFFFFF" font-size="${smallFontSize}" font-weight="600">${escapeXml(formatDateLabel(form.actionDate))}</text>
     </g>
 
     ${notesBlock}

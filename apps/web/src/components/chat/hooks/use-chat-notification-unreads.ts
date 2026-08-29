@@ -3,7 +3,6 @@
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChatChannelType } from "@/lib/chat/channels";
 import {
   createEmptyChatNotificationUnreadCounts,
   normalizeChatNotificationUnreadCounts,

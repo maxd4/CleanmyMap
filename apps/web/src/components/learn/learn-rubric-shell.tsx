@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { usePageFamily } from "@/lib/ui/page-families";
 
@@ -20,7 +21,6 @@ type LearnRubricShellProps = {
     label: { fr: string; en: string };
   };
   showVisualPanel?: boolean;
-  showHeaderBadges?: boolean;
   children: ReactNode;
 };
 
@@ -42,7 +42,6 @@ export function LearnRubricShell({
   accent,
   cta,
   showVisualPanel = true,
-  showHeaderBadges = true,
   children,
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
@@ -51,7 +50,7 @@ export function LearnRubricShell({
   const isLightOrange = accent === "orange" || accent === "yellow";
 
   return (
-    <div className="w-full space-y-8 p-4 md:p-8">
+    <CmmPageLayout>
       <section
         className={
         isLightOrange
@@ -96,36 +95,15 @@ export function LearnRubricShell({
 
             <PageHeader
               family={pageFamily}
-              eyebrow={isFrench ? "Page dédiée" : "Dedicated page"}
               title={title[locale]}
               subtitle={subtitle[locale]}
-              badges={
-                showHeaderBadges ? (
-                <>
-                  <PageHeaderBadge family={pageFamily}>
-                    {isFrench ? "Parcours pédagogique" : "Learning path"}
-                  </PageHeaderBadge>
-                  <PageHeaderBadge family={pageFamily} muted>
-                    {isFrench ? "Index + reprise" : "Index + resume"}
-                  </PageHeaderBadge>
-                  <PageHeaderBadge family={pageFamily} muted>
-                    {isFrench ? "Lecture courte" : "Short read"}
-                  </PageHeaderBadge>
-                  {highlights?.map((item) => (
-                    <PageHeaderBadge key={item[locale]} family={pageFamily} muted>
-                      {item[locale]}
-                    </PageHeaderBadge>
-                  ))}
-                </>
-                ) : undefined
-              }
             />
 
             <p
               className={
                 isLightOrange
                   ? "max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg"
-                  : "max-w-3xl text-base leading-relaxed text-white/82 md:text-lg"
+                  : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
               }
               >
               {description[locale]}
@@ -146,7 +124,7 @@ export function LearnRubricShell({
                     className={
                       isLightOrange
                         ? "text-[11px] font-black uppercase tracking-[0.22em] text-amber-700"
-                        : "text-[11px] font-black uppercase tracking-[0.22em] text-white/72"
+                        : "text-[11px] font-black uppercase tracking-[0.22em] text-white"
                     }
                   >
                     {isFrench ? "Lecture visuelle" : "Visual read"}
@@ -218,7 +196,7 @@ export function LearnRubricShell({
                     className={
                       isLightOrange
                         ? "mt-3 text-sm font-semibold text-slate-700"
-                        : "mt-3 text-sm font-semibold text-white/88"
+                        : "mt-3 text-sm font-semibold text-white"
                     }
                   >
                     {subtitle[locale]}
@@ -259,7 +237,7 @@ export function LearnRubricShell({
                         className={
                           isLightOrange
                             ? "inline-flex items-center rounded-2xl border border-amber-200 bg-orange-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-amber-900"
-                            : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/88"
+                            : "inline-flex items-center rounded-2xl border border-white/14 bg-white/10 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white"
                         }
                       >
                         {item[locale]}
@@ -270,7 +248,7 @@ export function LearnRubricShell({
                     className={
                       isLightOrange
                         ? "mt-3 text-sm font-semibold text-slate-700"
-                        : "mt-3 text-sm font-semibold text-white/88"
+                        : "mt-3 text-sm font-semibold text-white"
                     }
                   >
                     {description[locale]}
@@ -321,7 +299,7 @@ export function LearnRubricShell({
                     className={
                       isLightOrange
                         ? "mt-3 text-sm font-semibold text-slate-700"
-                        : "mt-3 text-sm font-semibold text-white/88"
+                        : "mt-3 text-sm font-semibold text-white"
                     }
                   >
                     {cta ? cta.label[locale] : isFrench ? "Continuer" : "Continue"}
@@ -333,7 +311,7 @@ export function LearnRubricShell({
         </div>
       </section>
 
-      {children}
-    </div>
+      <CmmSectionGroup>{children}</CmmSectionGroup>
+    </CmmPageLayout>
   );
 }

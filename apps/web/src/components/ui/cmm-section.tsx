@@ -98,63 +98,36 @@ export function CmmSection({
 export interface CmmSectionGroupProps {
  children: ReactNode;
  className?: string;
- /** Espacement entre les sections */
- spacing?:"sm" |"md" |"lg";
 }
 
 export function CmmSectionGroup({
  children,
  className,
- spacing ="md",
 }: CmmSectionGroupProps) {
- const spacingClasses = {
- sm:"space-y-4",
- md:"space-y-6",
- lg:"space-y-8",
- }[spacing];
-
  return (
- <div className={cn(spacingClasses, className)}>
+ <div className={cn("cmm-section-group", className)}>
  {children}
  </div>
  );
 }
 
 /**
- * CmmPageLayout - Layout de page avec sections
+ * CmmPageLayout - Shell canonique du contenu de page.
+ *
+ * La largeur, les gutters, le padding vertical et le rythme principal sont
+ * définis dans globals.css. Les pages ne choisissent pas de variante locale.
  */
 export interface CmmPageLayoutProps {
  children: ReactNode;
  className?: string;
- /** Largeur maximale */
- maxWidth?:"sm" |"md" |"lg" |"xl" |"2xl" |"full";
- /** Padding */
- padding?:"sm" |"md" |"lg";
 }
 
 export function CmmPageLayout({
  children,
  className,
- maxWidth ="2xl",
- padding ="md",
 }: CmmPageLayoutProps) {
- const maxWidthClasses = {
- sm:"max-w-sm",
- md:"max-w-md",
- lg:"max-w-lg",
- xl:"max-w-xl",
-"2xl":"max-w-2xl",
- full:"max-w-full",
- }[maxWidth];
-
- const paddingClasses = {
- sm:"p-4",
- md:"p-6",
- lg:"p-8",
- }[padding];
-
  return (
- <div className={cn("mx-auto", maxWidthClasses, paddingClasses, className)}>
+ <div className={cn("cmm-page-layout", className)}>
  {children}
  </div>
  );

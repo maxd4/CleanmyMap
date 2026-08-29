@@ -17,6 +17,7 @@ import useSWR from "swr";
 import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
+import { PageHeader } from "@/components/ui/page-header";
 import { fetchMapActions } from "@/lib/actions/http";
 import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import type { HomeMetric } from "@/lib/accueil/config";
@@ -96,20 +97,12 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             <div className="relative z-10 grid h-full gap-0 lg:grid-cols-2 lg:items-center">
               <div className="flex h-full min-w-0 flex-col justify-center gap-6 px-7 py-7 sm:px-9 sm:py-9 lg:px-11 lg:py-10">
                 <div className="space-y-6">
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-[clamp(2.95rem,4.15vw,4.4rem)] font-black leading-[0.9] tracking-[-0.07em] text-white drop-shadow-[0_14px_34px_rgba(2,6,23,0.42)] lg:whitespace-nowrap">
-                        Clean My Map
-                      </h1>
-                      <div className="ml-2">
-                        <SitePreferencesControls variant="locale" />
-                      </div>
-                    </div>
-                    <p className="max-w-2xl text-[1.08rem] leading-[1.7] text-white sm:text-[1.12rem]">
-                      Cultivons l&apos;entraide pour dépolluer, cartographier et
-                      transformer chaque action terrain en preuve utile.
-                    </p>
-                  </div>
+                  <PageHeader
+                    contrast="inverse"
+                    title="Clean My Map"
+                    subtitle="Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile."
+                    action={<SitePreferencesControls variant="locale" />}
+                  />
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
@@ -171,7 +164,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
               <section className="relative min-h-[430px] min-w-0 self-stretch overflow-hidden bg-[linear-gradient(180deg,rgba(4,59,38,0.94)_0%,rgba(8,83,52,0.96)_52%,rgba(6,96,59,0.98)_100%)]">
                 <div className="absolute inset-0">
                   {mapError ? (
-                    <div className="flex h-full w-full items-center justify-center px-5 text-center text-sm text-white/72">
+                    <div className="flex h-full w-full items-center justify-center px-5 text-center text-sm text-white">
                       Impossible de charger la carte pour le moment.
                     </div>
                   ) : (
@@ -230,7 +223,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                           <span className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${s.bubble}`}>
                             <MetricIcon size={22} strokeWidth={2.2} />
                           </span>
-                          <span className="inline-flex rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/72">
+                          <span className="inline-flex rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white">
                             2026
                           </span>
                         </div>

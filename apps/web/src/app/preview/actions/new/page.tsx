@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ActionDeclarationForm } from "@/components/actions/action-declaration/form";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
   title: "Aperçu du formulaire bénévole - CleanMyMap",
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
 
 export default function PreviewActionsNewPage() {
   return (
-    <div className="space-y-6">
-      <section className="mx-auto max-w-7xl px-4 pt-6 md:px-6 lg:px-8">
+    <CmmPageLayout>
+      <CmmSectionGroup>
+      <section>
         <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-500/10 px-5 py-4 text-emerald-50 shadow-sm">
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-100/70">
             Aperçu public
@@ -38,6 +40,7 @@ export default function PreviewActionsNewPage() {
         isAuthenticated={false}
         isAutoApprovedSubmission={false}
       />
-    </div>
+      </CmmSectionGroup>
+    </CmmPageLayout>
   );
 }

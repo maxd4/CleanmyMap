@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CmmPageShell } from "@/components/ui/cmm-card";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CTAGroup } from "@/components/ui/page-structure";
 import { PageHeader } from "@/components/ui/page-header";
@@ -28,7 +28,9 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
  const pageFamily = usePageFamily();
 
  return (
-  <CmmPageShell className="space-y-8" data-rubrique-report-root>
+  <div data-rubrique-report-root>
+   <CmmPageLayout>
+    <CmmSectionGroup>
    {/* Analysis */}
    <section className="space-y-4">
     <div className="space-y-4">{props.analysis}</div>
@@ -38,9 +40,9 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
    <header className="border-t border-[color:var(--border-default)] pt-5">
     <PageHeader
      family={pageFamily}
-     eyebrow={props.context}
      title={props.title}
      subtitle={props.objective}
+     action={props.context ? <span className="text-sm font-medium text-slate-600">{props.context}</span> : undefined}
     />
    </header>
 
@@ -57,6 +59,8 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
      ) : null}
     </CTAGroup>
    </section>
-  </CmmPageShell>
+    </CmmSectionGroup>
+   </CmmPageLayout>
+  </div>
  );
 }

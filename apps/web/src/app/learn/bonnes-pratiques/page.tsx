@@ -50,7 +50,6 @@ export default function LearnBonnesPratiquesPage() {
       backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
       accent="yellow"
       showVisualPanel={false}
-      showHeaderBadges={false}
     >
       <LearnPageVisitTracker pageId="bonnes-pratiques" />
       <div className="space-y-6">

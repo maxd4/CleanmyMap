@@ -47,9 +47,13 @@ export function buildPersonalizationSnapshot(
         ? fr
           ? "Charte premium complète active"
           : "Full premium experience active"
-        : fr
-          ? "Modes légers à venir"
-          : "Light modes coming soon",
+        : normalizedDisplayMode === "sobre"
+          ? fr
+            ? "Police système locale active"
+            : "Local system font active"
+          : fr
+            ? "Affichage simplifié actif"
+            : "Simplified display active",
   };
 }
 

@@ -124,7 +124,7 @@ export function CommunitySection() {
               <p
                 className={[
                   "mt-2 text-sm font-semibold",
-                  isPartnersTab ? "text-slate-600" : "text-white/70",
+                  isPartnersTab ? "text-slate-600" : "text-white",
                 ].join(" ")}
               >
                 {surfaceTab === "community"

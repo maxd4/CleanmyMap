@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
 import { AdminAccessState } from "@/components/ui/admin-access-state";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import {
   AdminActionGrid,
   AdminInfoBanner,
@@ -151,21 +152,15 @@ export default async function AdminPage({
   return (
     <AccountCompletionGate state={accountCompletion}>
       <main className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f7efe6_52%,#efe4d8_100%)] text-stone-950">
-        <div className="relative mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <CmmPageLayout className="relative z-10">
           <PageHeader
             family={pageFamily}
-            eyebrow="Administration"
             title="Cockpit opérationnel"
             subtitle="Supervision des files, du workflow et de l’état des services."
-            badge={
-              <PageHeaderBadge family={pageFamily}>
-                Accès administration · rôle : {role}
-              </PageHeaderBadge>
-            }
             action={<AdminPillLink href={profileLink}>Voir profil</AdminPillLink>}
-            className="w-full"
           />
 
+          <CmmSectionGroup>
           <AdminInfoBanner
             eyebrow="Alerte"
             title={adminAlert.title}
@@ -180,16 +175,15 @@ export default async function AdminPage({
                 </AdminPillLink>
               ) : undefined
             }
-            className="mt-6"
           />
 
-          <AdminOperationalMetricGrid items={metricItems} className="mt-6 gap-4" />
+          <AdminOperationalMetricGrid items={metricItems} className="gap-4" />
 
-          <div id="moderation-par-bloc" className="mt-10">
+          <div id="moderation-par-bloc">
             <ModerationByBlockPanel blocks={moderationBlocks} />
           </div>
 
-          <section className="mt-10" id="workflow-administration">
+          <section id="workflow-administration">
             <ActionsReportPanel
               initialRecordTypeFilter={
                 moderationPreset === "signalements" ? "signalements" : undefined
@@ -198,7 +192,7 @@ export default async function AdminPage({
             />
           </section>
 
-          <section className="mt-10">
+          <section>
             <AdminSectionHeader
               eyebrow="Outils d’administration"
               description="Accès directs aux fonctions propres à la supervision."
@@ -213,7 +207,7 @@ export default async function AdminPage({
           </section>
 
           {switchableProfiles.length > 1 ? (
-            <section className="mt-8" aria-label="Profils administratifs disponibles">
+            <section aria-label="Profils administratifs disponibles">
               <AdminProfileSwitchStrip
                 profiles={switchableProfiles}
                 activeProfile={profile}
@@ -229,10 +223,10 @@ export default async function AdminPage({
             <AdminCreatorConsole
               displayName={creatorDisplayName}
               embedded
-              className="mt-10"
             />
           ) : null}
-        </div>
+          </CmmSectionGroup>
+        </CmmPageLayout>
       </main>
     </AccountCompletionGate>
   );

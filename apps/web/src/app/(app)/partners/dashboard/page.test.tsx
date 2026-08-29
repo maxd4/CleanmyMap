@@ -57,8 +57,6 @@ vi.mock("@/components/account/account-completion-gate", () => ({
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({ title, subtitle, children }: { title: React.ReactNode; subtitle: React.ReactNode; children?: React.ReactNode }) =>
     React.createElement("header", null, title, subtitle, children),
-  PageHeaderBadge: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("span", null, children),
 }));
 
 vi.mock("@/lib/ui/page-families", () => ({

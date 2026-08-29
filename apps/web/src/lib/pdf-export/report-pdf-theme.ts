@@ -241,7 +241,7 @@ export function buildOfficialReportCss(): string {
       gap: 3mm;
     }
     .cmm-web-section__kicker {
-      color: rgba(255, 255, 255, 0.78);
+      color: #FFFFFF;
       font-size: ${t.caption};
       font-weight: 700;
       letter-spacing: 0.16em;
@@ -263,7 +263,7 @@ export function buildOfficialReportCss(): string {
     }
     .cmm-web-section__subtitle {
       margin-top: 1.8mm;
-      color: rgba(255, 255, 255, 0.88);
+      color: #FFFFFF;
     }
     .cmm-web-section.is-locked .cmm-web-section__subtitle {
       color: #64748B;
