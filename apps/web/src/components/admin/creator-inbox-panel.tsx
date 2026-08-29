@@ -107,7 +107,7 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
             ))
           ) : (
             <div className="rounded-[2rem] border border-dashed border-white/10 p-12 text-center">
-              <p className="text-sm font-black text-white opacity-40 uppercase tracking-widest">
+              <p className="text-sm font-black text-white uppercase tracking-widest">
                 {inbox.copy.states.emptyTitle}
               </p>
               <p className="mt-2 text-xs font-medium text-slate-500">

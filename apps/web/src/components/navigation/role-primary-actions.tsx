@@ -86,7 +86,7 @@ const TONE_THEMES: Record<NonNullable<RolePrimaryActionsProps["tone"]>, ToneThem
     badgeSecondary: "border-orange-200/22 bg-orange-100/14 text-orange-50",
     titlePrimary: "text-white",
     titleSecondary: "text-white",
-    detailPrimary: "text-white/92",
+    detailPrimary: "text-white",
     detailSecondary: "text-white/78",
   },
 };

@@ -17,13 +17,10 @@ export type PageFamilyId =
   | "secours";
 
 export type PageFamilyHeroTokens = {
-  eyebrow: string;
-  title: string;
-  /** Alias de compatibilité: même géométrie canonique que `title`. */
-  titleCompact: string;
-  subtitle: string;
-  badge: string;
-  badgeMuted: string;
+  /** Couleur du titre; sa géométrie appartient à `PageHeader`. */
+  titleColor: string;
+  /** Couleur du sous-titre; sa géométrie appartient à `PageHeader`. */
+  subtitleColor: string;
   sectionGradient: string;
   iconWrap: string;
   icon: string;

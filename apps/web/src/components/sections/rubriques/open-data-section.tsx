@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   ArrowRight,
   Code,
@@ -137,25 +138,21 @@ export function OpenDataSection() {
 
         <section className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-violet-700 shadow-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-700 text-white shadow-lg shadow-violet-700/20">
-                <Database size={18} />
-              </div>
-              <span className="text-[0.72rem] font-black uppercase tracking-[0.18em]">
-                {fr ? "Open Data & API" : "Open Data & API"}
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="max-w-3xl text-[clamp(2.8rem,5vw,5.3rem)] font-black leading-[0.94] tracking-[-0.06em] text-[#2f1a78]">
-                {fr ? "Open Data & API" : "Open Data & API"}
-              </h1>
-              <p className="max-w-2xl text-[1.08rem] leading-[1.65] text-slate-600">
-                {fr
+            <PageHeader
+              title={
+                <span className="inline-flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-700 text-white">
+                    <Database size={18} aria-hidden="true" />
+                  </span>
+                  <span>Open Data &amp; API</span>
+                </span>
+              }
+              subtitle={
+                fr
                   ? "Accédez aux données opérationnelles et indicateurs d'impact pour la recherche et l'innovation."
-                  : "Access operational data and impact indicators for research and innovation."}
-              </p>
-            </div>
+                  : "Access operational data and impact indicators for research and innovation."
+              }
+            />
           </div>
 
           <div className="relative rounded-[2rem] border border-violet-100 bg-white/85 p-6 shadow-[0_24px_72px_-58px_rgba(79,70,229,0.45)]">
@@ -298,7 +295,7 @@ export function OpenDataSection() {
                 <h2 className="text-[1.25rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.45rem]">
                   {fr ? "Devenez partenaire" : "Become a partner"}
                 </h2>
-                <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white/90">
+                <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
                   {fr
                     ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
                     : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}

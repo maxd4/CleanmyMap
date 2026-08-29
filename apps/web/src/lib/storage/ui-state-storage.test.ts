@@ -5,6 +5,7 @@ import {
   requestCookieConsentPreferences,
   dashboardPeriodStorage,
   guideChecklistStorage,
+  siteDisplayModeStorage,
   siteLocaleStorage,
   siteThemeStorage,
 } from "./ui-state-storage";
@@ -45,6 +46,10 @@ describe("ui state storage", () => {
     expect(siteThemeStorage.write("mixed")).toBe(true);
     expect(siteThemeStorage.read()).toBe("mixed");
     expect(memory.get("cleanmymap.theme")).toBe("mixed");
+
+    expect(siteDisplayModeStorage.write("sobre")).toBe(true);
+    expect(siteDisplayModeStorage.read()).toBe("sobre");
+    expect(memory.get("cleanmymap.display_mode")).toBe("sobre");
 
     expect(dashboardPeriodStorage.write(365)).toBe(true);
     expect(dashboardPeriodStorage.read()).toBe(365);

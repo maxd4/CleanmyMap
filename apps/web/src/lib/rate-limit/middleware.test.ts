@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearRateLimitStore } from "./store";
 import { rateLimitMiddleware } from "./middleware";
 
@@ -17,6 +17,8 @@ vi.mock("./utils", async () => {
 
 describe("rateLimitMiddleware", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-29T00:00:00.000Z"));
     clearRateLimitStore();
     vi.clearAllMocks();
     getRateLimitIdentityMock.mockResolvedValue({
@@ -25,6 +27,10 @@ describe("rateLimitMiddleware", () => {
       key: "anonymous:198.51.100.20",
     });
     getClientIpMock.mockResolvedValue("198.51.100.20");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("returns 429 with Retry-After after the local limit is exhausted", async () => {

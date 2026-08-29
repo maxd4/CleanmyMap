@@ -46,7 +46,7 @@ export function GamificationMetricChip({
 }: GamificationBadgeMetric & { className?: string }) {
   return (
     <div
-      className={`rounded-2xl border px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] ${className ?? "border-white/10 bg-white/5 text-white/90"}`}
+      className={`rounded-2xl border px-3 py-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] ${className ?? "border-white/10 bg-white/5 text-white"}`}
     >
       <div className="text-[9px] text-white/45">{label}</div>
       <div className="mt-1 text-base font-black text-white">{value}</div>
@@ -186,7 +186,7 @@ export function GamificationBadgePanel({
               style={{ width: `${Math.max(0, Math.min(100, Math.round(progressPercent)))}%` }}
             />
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-white/70">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-white">
             <span>{progressFooterLeft}</span>
             <span>{progressFooterRight}</span>
           </div>

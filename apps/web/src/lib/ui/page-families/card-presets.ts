@@ -21,7 +21,7 @@ function buildDarkCardPreset(input: CardPresetInput): PageFamilyCardTokens {
     shellHover: input.hover ?? "hover:border-opacity-100",
     topBarAccent: input.rubriqueTheme,
     titleOnCard: "text-white",
-    textOnCard: "text-white/90",
+    textOnCard: "text-white",
     textMutedOnCard: "text-white/72",
   };
 }

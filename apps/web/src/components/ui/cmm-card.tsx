@@ -156,22 +156,3 @@ export function CmmCard({
  </motion.div>
  );
 }
-
-// Shell de page canonique
-export interface CmmPageShellProps {
- children: ReactNode;
- className?: string;
-}
-
-export function CmmPageShell({ children, className }: CmmPageShellProps) {
- return (
- <div
- className={cn(
-"space-y-4",
- className
- )}
- >
- {children}
- </div>
- );
-}

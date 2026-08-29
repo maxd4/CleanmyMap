@@ -36,7 +36,7 @@ const createBubbleIcon = (
     html: `
       <div class="group relative flex items-center gap-2 transition-all duration-300 ${highlighted ? 'scale-110 z-[1000]' : 'hover:scale-105'}">
         <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white shadow-lg shadow-black/10 transition-transform overflow-hidden" 
-             style="background-color: ${color}; color: white; font-weight: bold; font-size: 12px;">
+             style="background-color: ${color}; color: #FFFFFF; font-weight: bold; font-size: 12px;">
           ${initials}
         </div>
         <div class="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap rounded-xl border border-violet-300/16 bg-[rgba(24,17,54,0.98)] px-3 py-1.5 shadow-xl backdrop-blur-sm">

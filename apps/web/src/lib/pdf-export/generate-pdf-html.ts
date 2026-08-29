@@ -37,17 +37,17 @@ export function generatePdfHtml(
         <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="2 2" />
         <circle cx="50" cy="50" r="38" fill="#10b981" fill-opacity="0.1" />
         <text x="50" y="45" text-anchor="middle" font-family="Inter" font-size="8" fill="#10b981" font-weight="bold">DONNÉES</text>
-        <text x="50" y="55" text-anchor="middle" font-family="Inter" font-size="12" fill="white" font-weight="bold">CMM</text>
+        <text x="50" y="55" text-anchor="middle" font-family="Inter" font-size="12" fill="#FFFFFF" font-weight="bold">CMM</text>
         <text x="50" y="65" text-anchor="middle" font-family="monospace" font-size="6" fill="#10b981">SOURCE CMM</text>
       </svg>
     </div>
     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
       <div style="font-family: monospace; font-size: 10px; color: #475569; letter-spacing: 0.2em; margin-bottom: 20px;">LIVRABLE OFFICIEL #${deliverableId}</div>
-      <h1 style="font-family: 'Inter'; font-size: 48px; font-weight: 750; color: #f8fafc; margin: 0;">Master Pack</h1>
+      <h1 style="font-family: 'Inter'; font-size: 48px; font-weight: 750; color: #FFFFFF; margin: 0;">Master Pack</h1>
       <h2 style="font-family: 'Inter'; font-size: 26px; font-weight: 500; color: #cbd5e1; margin: 8px 0 0 0;">Rapport d'impact institutionnel</h2>
       <div style="margin-top: 60px; padding: 20px; border-left: 4px solid #10b981; background: rgba(255,255,255,0.03);">
         <div style="color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Périmètre d'Analyse</div>
-        <div style="font-size: 24px; color: white; margin-top: 8px; font-family: 'Outfit';">${organizationName}</div>
+        <div style="font-size: 24px; color: #FFFFFF; margin-top: 8px; font-family: 'Outfit';">${organizationName}</div>
         <div style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Période Annuelle ${new Date().getFullYear()}</div>
       </div>
     </div>
@@ -57,7 +57,7 @@ export function generatePdfHtml(
          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://cleanmymap.com/reports?org=${encodeURIComponent(selectedOrg || "")}" style="width: 100%; height: 100%;" />
       </div>
       <div>
-        <div style="font-weight: 600; font-size: 16px; color: white; font-family: 'Outfit';">Accès rapports d&apos;impact</div>
+        <div style="font-weight: 600; font-size: 16px; color: #FFFFFF; font-family: 'Outfit';">Accès rapports d&apos;impact</div>
         <p style="font-size: 13px; color: #94a3b8; margin-top: 4px; line-height: 1.5;">Scannez pour consulter les synthèses, les preuves spatiales et les certificats d'action détaillés sur la plateforme CleanMyMap.</p>
       </div>
     </div>
@@ -224,7 +224,7 @@ export function generatePdfHtml(
                 <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Surfaces</div>
               </div>
             </div>
-            <div style="padding: 20px; background: #1e293b; color: white; border-radius: 16px;">
+            <div style="padding: 20px; background: #1e293b; color: #FFFFFF; border-radius: 16px;">
               <h5 style="font-size: 11px; text-transform: uppercase; color: #94a3b8; margin: 0 0 12px 0;">Performance Itinéraire</h5>
               <div style="font-size: 13px; line-height: 1.5; color: #cbd5e1;">
                 Vitesse moyenne de collecte: <span style="color: #38bdf8; font-weight: 700;">${toFrNumber(reportData.totals.kg / (reportData.totals.hours || 1))} kg/h</span>
@@ -238,7 +238,7 @@ export function generatePdfHtml(
                 ? reportData.highlightPhotos.map(p => `
                     <div style="border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9; position: relative; height: 140px;">
                       <img src="${p.url}" style="width: 100%; height: 100%; object-fit: cover;" />
-                      <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; font-size: 10px;">
+                      <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: #FFFFFF; font-size: 10px;">
                         <div style="font-weight: 700;">${p.label}</div>
                         <div style="opacity: 0.8;">${toFrDate(p.date)}</div>
                       </div>
@@ -254,7 +254,7 @@ export function generatePdfHtml(
       content += `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
           <div style="display: flex; flex-direction: column; gap: 24px;">
-            <div style="background: #0f172a; color: white; padding: 32px; border-radius: 24px; flex-grow: 1;">
+            <div style="background: #0f172a; color: #FFFFFF; padding: 32px; border-radius: 24px; flex-grow: 1;">
               <h4 style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 24px;">Pollution Évitée</h4>
               <div style="display: grid; gap: 24px;">
                 <div>
@@ -304,7 +304,7 @@ export function generatePdfHtml(
       content += `
         <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px;">
           <div>
-            <div style="background: linear-gradient(135deg, #ec4899, #d946ef); color: white; padding: 32px; border-radius: 24px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #ec4899, #d946ef); color: #FFFFFF; padding: 32px; border-radius: 24px; margin-bottom: 30px;">
               <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; margin-bottom: 12px;">ROI Social & Citoyen</div>
               <div style="font-size: 48px; font-weight: 700;">${toFrInt(reportData.totals.hours * 15.5)} €</div>
               <div style="font-size: 14px; opacity: 0.9; margin-top: 8px;">Valeur économique du temps citoyen (SMIC chargé)</div>

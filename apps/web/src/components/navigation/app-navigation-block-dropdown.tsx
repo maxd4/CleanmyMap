@@ -207,7 +207,7 @@ export function AppNavigationBlockDropdown({
           "group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent text-[20px] leading-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
           isActiveSpace
             ? "bg-white/[0.08] text-white"
-            : "text-white/86 hover:bg-white/[0.07] hover:text-white",
+            : "text-white hover:bg-white/[0.07] hover:text-white",
         )}
       >
         <span className="select-none" aria-hidden="true">

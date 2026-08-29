@@ -9,6 +9,7 @@ import {
   type Locale,
 } from "./feedback-section.shared";
 import { QuestionnaireCard } from "./feedback/questionnaire-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { QUESTIONNAIRES } from "./feedback/questionnaire-config";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
@@ -32,23 +33,14 @@ function FeedbackDiscussionMode({
     >
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr] xl:items-end">
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/80 bg-pink-50 px-4 py-2 text-pink-600 shadow-sm">
-            <MessageSquare className="h-4 w-4" aria-hidden="true" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em]">
-              {fr ? "Feedback & qualité" : "Feedback & quality"}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            <h1 className="text-[clamp(2rem,4.2vw,3.6rem)] font-black leading-[0.92] tracking-[-0.04em] text-slate-950">
-              {fr ? "Retours & Qualité" : "Feedback & Quality"}
-            </h1>
-            <p className="max-w-2xl text-[0.98rem] leading-[1.7] text-slate-600">
-              {fr
+          <PageHeader
+            title={fr ? "Retours & Qualité" : "Feedback & Quality"}
+            subtitle={
+              fr
                 ? "Vos retours nous aident à améliorer CleanMyMap en continu et à garantir des données fiables et utiles pour tous."
-                : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."}
-            </p>
-          </div>
+                : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."
+            }
+          />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

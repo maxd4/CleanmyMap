@@ -273,7 +273,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950/40 text-slate-500 transition-all group-hover/item:bg-violet-500 group-hover/item:text-white">
                         <Heart size={16} />
                       </div>
-                      <span className="text-[11px] font-black uppercase tracking-widest text-white/70 group-hover/item:text-white">
+                      <span className="text-[11px] font-black uppercase tracking-widest text-white group-hover/item:text-white">
                         {CONTRIBUTION_LABELS[type] || type}
                       </span>
                     </motion.div>

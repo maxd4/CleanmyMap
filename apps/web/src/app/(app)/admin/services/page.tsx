@@ -4,7 +4,8 @@ import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
 import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { listGovernanceMonthlyReports } from"@/lib/governance/governance-monthly-report-store";
@@ -40,24 +41,14 @@ export default async function AdminServicesPage() {
  }
 
  return (
- <div className="space-y-6">
+ <CmmPageLayout>
  <PageHeader
   family={pageFamily}
-  eyebrow="Supervision technique"
-  title="Santé des services"
+ title="Santé des services"
   subtitle="Visualisez l'état des intégrations critiques, optionnelles et externes de CleanMyMap, ainsi que la dérive du stockage Supabase et son historique mensuel."
-  badges={
-    <>
-      <PageHeaderBadge family={pageFamily}>
-        Services techniques
-      </PageHeaderBadge>
-      <PageHeaderBadge family={pageFamily} muted>
-        Rapports et stockage
-      </PageHeaderBadge>
-    </>
-  }
  />
 
+ <CmmSectionGroup>
  <div id="codex-usage">
  <CodexUsagePanel />
  </div>
@@ -249,6 +240,7 @@ export default async function AdminServicesPage() {
  </section>
 
  <SystemStatusPanel />
- </div>
+ </CmmSectionGroup>
+ </CmmPageLayout>
  );
 }

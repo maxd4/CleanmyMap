@@ -9,10 +9,11 @@ import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-reques
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { getBlockClasses } from "@/lib/ui/block-accents";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
-import { Network, ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
+import { ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
 export default async function PartnersDashboardPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
@@ -67,26 +68,14 @@ export default async function PartnersDashboardPage() {
   );
 
   const page = (
-    <div className="w-full max-w-7xl mx-auto space-y-10 pb-20">
+    <CmmPageLayout>
       <PageHeader
         family={pageFamily}
-        eyebrow="Pilotage réseau"
         title="Gouvernance des partenariats"
         subtitle="Suivi des demandes d'onboarding, modération des fiches et analyse de la couverture territoriale."
-        badges={
-          <>
-            <PageHeaderBadge family={pageFamily}>
-              <Network size={12} className="mr-2 inline-block align-[-2px] animate-pulse" />
-              Réseau actif
-            </PageHeaderBadge>
-            <PageHeaderBadge family={pageFamily} muted>
-              Fiches et demandes
-            </PageHeaderBadge>
-          </>
-        }
-        className="pt-10"
       />
 
+      <CmmSectionGroup>
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
         {[
@@ -171,7 +160,8 @@ export default async function PartnersDashboardPage() {
           )}
         </aside>
       </div>
-    </div>
+      </CmmSectionGroup>
+    </CmmPageLayout>
   );
 
   return (

@@ -314,7 +314,7 @@ export function AccountSetupForm({
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="cmm-text-small font-medium text-white/90">Rôle</span>
+            <span className="cmm-text-small font-medium text-white">Rôle</span>
             <p className="cmm-text-caption text-violet-100/65">
               {selectedLocale === "fr"
                 ? "Choisis le rôle le plus proche de ton usage actuel."
@@ -338,7 +338,7 @@ export function AccountSetupForm({
                       : "border-white/10 bg-white/[0.06] hover:border-white/20 hover:bg-white/[0.09]",
                   )}
                 >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black uppercase tracking-[0.08em] text-white/80">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black uppercase tracking-[0.08em] text-white">
                     i
                   </span>
                   <span className="min-w-0 flex-1">
@@ -371,7 +371,7 @@ export function AccountSetupForm({
         </div>
 
         <label className="block space-y-2">
-          <span className="cmm-text-small font-medium text-white/90">
+          <span className="cmm-text-small font-medium text-white">
             Langue
           </span>
           <select
@@ -387,7 +387,7 @@ export function AccountSetupForm({
         </label>
 
         <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 lg:col-span-2">
-          <legend className="cmm-text-small font-medium text-white/90">
+          <legend className="cmm-text-small font-medium text-white">
             Mode d&apos;affichage
           </legend>
           <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
@@ -403,15 +403,15 @@ export function AccountSetupForm({
               </span>
               <span className="mt-1 block cmm-text-small text-violet-100/70">
                 {selectedLocale === "fr"
-                  ? "Les modes Sobre et Minimaliste sont en préparation."
-                  : "Calm and Minimalist modes are still in preparation."}
+                  ? "Les modes Sobre et Minimaliste sont disponibles dans vos préférences."
+                  : "Calm and Minimalist modes are available in your preferences."}
               </span>
             </span>
           </label>
         </fieldset>
 
         <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <legend className="cmm-text-small font-medium text-white/90">
+          <legend className="cmm-text-small font-medium text-white">
             Territoire principal
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -440,7 +440,7 @@ export function AccountSetupForm({
           </div>
 
           <label className="block space-y-2">
-            <span className="cmm-text-small font-medium text-white/90">
+            <span className="cmm-text-small font-medium text-white">
               Pays, région, département, commune ou arrondissement
             </span>
             <GreaterParisSelect

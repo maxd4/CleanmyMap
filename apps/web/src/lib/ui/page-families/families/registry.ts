@@ -40,61 +40,49 @@ export const darkHero = (
       gradient: "from-emerald-600/20 via-emerald-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-emerald-200/35 bg-emerald-50/70 p-3",
       icon: "text-emerald-800",
-      eyebrow: "text-emerald-900/85",
-      title: "text-emerald-900",
-      subtitle: "text-emerald-900/78",
+      titleColor: "text-emerald-900",
+      subtitleColor: "text-emerald-900",
     },
     sky: {
       gradient: "from-sky-500/18 via-cyan-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-sky-200/35 bg-sky-50/70 p-3",
       icon: "text-sky-900",
-      eyebrow: "text-sky-950/85",
-      title: "text-sky-900",
-      subtitle: "text-sky-900/78",
+      titleColor: "text-sky-900",
+      subtitleColor: "text-sky-900",
     },
     red: {
       gradient: "from-red-500/18 via-rose-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-rose-200/35 bg-rose-50/70 p-3",
       icon: "text-rose-900",
-      eyebrow: "text-rose-950/85",
-      title: "text-rose-900",
-      subtitle: "text-rose-900/78",
+      titleColor: "text-rose-900",
+      subtitleColor: "text-rose-900",
     },
     pink: {
       gradient: "from-pink-500/18 via-fuchsia-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-pink-200/35 bg-pink-50/70 p-3",
       icon: "text-pink-900",
-      eyebrow: "text-pink-950/85",
-      title: "text-pink-900",
-      subtitle: "text-pink-900/78",
+      titleColor: "text-pink-900",
+      subtitleColor: "text-pink-900",
     },
     indigo: {
       gradient: "from-indigo-500/18 via-violet-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-indigo-200/35 bg-indigo-50/70 p-3",
       icon: "text-indigo-900",
-      eyebrow: "text-indigo-950/85",
-      title: "text-indigo-900",
-      subtitle: "text-indigo-900/78",
+      titleColor: "text-indigo-900",
+      subtitleColor: "text-indigo-900",
     },
     yellow: {
       gradient: "from-yellow-500/18 via-orange-500/12 to-transparent",
       iconWrap: "rounded-2xl border border-amber-200/35 bg-amber-50/70 p-3",
       icon: "text-amber-900",
-      eyebrow: "text-amber-950/85",
-      title: "text-amber-950",
-      subtitle: "text-amber-950/78",
+      titleColor: "text-amber-950",
+      subtitleColor: "text-amber-950",
     },
   } as const;
   const t = map[accent];
   return {
-    eyebrow: `cmm-page-header-eyebrow ${t.eyebrow}`,
-    title: `cmm-page-header-title ${t.title}`,
-    titleCompact: `cmm-page-header-title ${t.title}`,
-    subtitle: `cmm-page-header-subtitle ${t.subtitle}`,
-    badge:
-      `cmm-page-header-badge border-white/20 bg-white/50 text-stone-900`,
-    badgeMuted:
-      "cmm-page-header-badge-muted border-stone-300/35 bg-white/40 text-stone-800/90",
+    titleColor: t.titleColor,
+    subtitleColor: t.subtitleColor,
     sectionGradient: t.gradient,
     iconWrap: t.iconWrap,
     icon: t.icon,
@@ -103,14 +91,8 @@ export const darkHero = (
 
 /** Sommaire `/explorer` — fond jaune, hero clair (cartes = exception locale). */
 const SOMMAIRE_EXPLORER_HERO: PageFamilyHeroTokens = {
-  eyebrow: "cmm-page-header-eyebrow text-yellow-950/85",
-  title: "cmm-page-header-title text-amber-950",
-  titleCompact: "cmm-page-header-title text-amber-950",
-  subtitle: "cmm-page-header-subtitle text-amber-950/78",
-  badge:
-    "cmm-page-header-badge border-yellow-200/35 bg-yellow-50/50 text-yellow-950",
-  badgeMuted:
-    "cmm-page-header-badge-muted border-white/25 bg-white/15 text-white/90",
+  titleColor: "text-amber-950",
+  subtitleColor: "text-amber-950",
   sectionGradient: "from-yellow-400/22 via-amber-400/14 to-transparent",
   iconWrap: "rounded-2xl border border-yellow-200/30 bg-yellow-50/40 p-3",
   icon: "text-yellow-900",
@@ -122,14 +104,8 @@ export const ACCUEIL_PILOTAGE_FAMILY: PageFamilyDefinition = {
   label: FAMILY_META["accueil-pilotage"].label,
   backdropToneKey: FAMILY_META["accueil-pilotage"].backdropToneKey,
   hero: {
-    eyebrow: "cmm-page-header-eyebrow text-orange-950/85",
-    title: "cmm-page-header-title text-orange-950",
-    titleCompact: "cmm-page-header-title text-orange-950",
-    subtitle: "cmm-page-header-subtitle text-orange-950/78",
-    badge:
-      "cmm-page-header-badge border-orange-200/35 bg-orange-50/70 text-stone-900",
-    badgeMuted:
-      "cmm-page-header-badge-muted border-stone-300/40 bg-stone-100/60 text-stone-800/90",
+    titleColor: "text-orange-950",
+    subtitleColor: "text-orange-950",
     sectionGradient: "from-orange-500/18 via-amber-500/12 to-stone-600/10",
     iconWrap:
       "rounded-2xl border border-orange-200/35 bg-orange-50/70 p-3 shadow-sm",
@@ -190,14 +166,8 @@ export const PAGE_FAMILIES = {
     label: FAMILY_META.juridique.label,
     backdropToneKey: FAMILY_META.juridique.backdropToneKey,
     hero: {
-      eyebrow: "cmm-page-header-eyebrow text-slate-600",
-      title: "cmm-page-header-title text-slate-950",
-      titleCompact: "cmm-page-header-title text-slate-950",
-      subtitle: "cmm-page-header-subtitle text-slate-700",
-      badge:
-        "cmm-page-header-badge border-slate-200 bg-slate-50 text-slate-700",
-      badgeMuted:
-        "cmm-page-header-badge-muted border-slate-200/80 bg-white text-slate-600",
+      titleColor: "text-slate-950",
+      subtitleColor: "text-slate-700",
       sectionGradient: "from-slate-200/40 via-transparent to-transparent",
       iconWrap: "rounded-2xl border border-slate-200 bg-white p-3",
       icon: "text-slate-700",
@@ -276,13 +246,8 @@ export const STATE_429_FAMILY: PageFamilyDefinition = {
   label: "Trop de requêtes",
   backdropToneKey: "system",
   hero: {
-    eyebrow: "cmm-page-header-eyebrow text-slate-700",
-    title: "cmm-page-header-title text-slate-950",
-    titleCompact: "cmm-page-header-title text-slate-950",
-    subtitle: "cmm-page-header-subtitle text-slate-800",
-    badge: "cmm-page-header-badge border-slate-200 bg-white text-slate-700",
-    badgeMuted:
-      "cmm-page-header-badge-muted border-slate-200 bg-white text-slate-600",
+    titleColor: "text-slate-950",
+    subtitleColor: "text-slate-800",
     sectionGradient: "from-slate-300/30 via-transparent to-transparent",
     iconWrap: "rounded-2xl border border-slate-200 bg-white p-3",
     icon: "text-slate-700",

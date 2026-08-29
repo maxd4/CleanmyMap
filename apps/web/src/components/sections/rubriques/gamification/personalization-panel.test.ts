@@ -11,12 +11,12 @@ describe("buildPersonalizationSnapshot", () => {
     });
   });
 
-  it("describes future display modes when they become available", () => {
+  it("describes the active simplified display mode", () => {
     expect(buildPersonalizationSnapshot("en", "dark", "minimaliste")).toEqual({
       localeLabel: "English",
       themeLabel: "Dark",
       displayModeLabel: "Minimal",
-      displayModeHint: "Light modes coming soon",
+      displayModeHint: "Simplified display active",
     });
   });
 });

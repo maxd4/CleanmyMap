@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useCallback, useRef, useState } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import useSWR from "swr";
@@ -13,11 +13,9 @@ import {
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
-  canAccessChatChannel,
   extractZoneContextFromMetadata,
   getChatChannelDefinition,
   type ChatChannelType,
-  CHAT_CHANNEL_ORDER,
 } from "@/lib/chat/channels";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import {
@@ -35,6 +33,11 @@ import { useDmInbox } from "./hooks/use-dm-inbox";
 import { useChatNotificationUnreads } from "./hooks/use-chat-notification-unreads";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
+import { useChatShellFeedEffects } from "./hooks/use-chat-shell-feed-effects";
+import { useChatShellNotificationEffects } from "./hooks/use-chat-shell-notification-effects";
+import { useChatShellProfileActions } from "./hooks/use-chat-shell-profile-actions";
+import { useChatShellSearch } from "./hooks/use-chat-shell-search";
+import { useChatShellSidebar } from "./hooks/use-chat-shell-sidebar";
 import type { ChatUser, DmConversation } from "./chat-types";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import {
@@ -64,10 +67,7 @@ import {
   type ChatMetaItem,
   toMetadataRecord,
 } from "./chat-shell.utils";
-import { logFailure } from "@/lib/logging/failure-log";
-import { getChatScrollTopAfterPrepend } from "@/lib/chat/chat-pagination";
 import { useChatSearch } from "./hooks/use-chat-search";
-import type { ChatSearchResult } from "@/lib/chat/chat-search";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -217,17 +217,25 @@ export function ChatShell({
     "Moi";
   const senderHandle =
     currentAccountIdentity?.handle || user?.username || "moi";
-  const [searchTargetMessageId, setSearchTargetMessageId] = useState<string | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const targetMessageIdForScope = searchTargetMessageId ?? (
-    initialMessageId &&
-    activeChannelType === initialChannelType &&
-    activeTopicId === (initialTopicId ?? null) &&
-    (selectedRecipient?.id ?? null) === (initialRecipient?.id ?? null)
-      ? initialMessageId
-      : null
-  );
+  const {
+    isSearchOpen,
+    searchQuery,
+    setSearchQuery,
+    targetMessageIdForScope,
+    handleToggleSearch,
+    handleCloseSearch,
+    handleSelectSearchResult,
+    resetSearch,
+  } = useChatShellSearch({
+    initialChannelType,
+    initialTopicId,
+    initialRecipient,
+    initialMessageId,
+    activeChannelType,
+    activeTopicId,
+    selectedRecipientId: selectedRecipient?.id ?? null,
+    setViewMode,
+  });
 
   const {
     messages,
@@ -268,22 +276,6 @@ export function ChatShell({
     query: searchQuery,
     enabled: messagerieMode && !isBugReportChannel && isLoaded && isSignedIn,
   });
-
-  const handleToggleSearch = useCallback(() => {
-    setIsSearchOpen((open) => !open);
-  }, []);
-
-  const handleCloseSearch = useCallback(() => {
-    setIsSearchOpen(false);
-    setSearchQuery("");
-  }, []);
-
-  const handleSelectSearchResult = useCallback((result: ChatSearchResult) => {
-    setSearchTargetMessageId(result.messageId);
-    setIsSearchOpen(false);
-    setSearchQuery("");
-    setViewMode("messages");
-  }, [setViewMode]);
 
   const {
     conversations,
@@ -567,111 +559,27 @@ export function ChatShell({
     ],
   );
 
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const initialScrollScopeRef = useRef<string | null>(null);
-  const latestMessageIdRef = useRef<string | null>(null);
-  const scrollScopeKey = `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipient?.id ?? "none"}:${effectiveZone}:${territoryFocus ?? "none"}`;
-
-  useEffect(() => {
-    if (initialScrollScopeRef.current !== scrollScopeKey) {
-      initialScrollScopeRef.current = null;
-      latestMessageIdRef.current = null;
-      setHighlightedMessageId(null);
-      setSearchTargetMessageId(null);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    }
-  }, [scrollScopeKey]);
-
-  useEffect(() => {
-    const element = scrollRef.current;
-    if (!element || viewMode !== "messages" || feedState === "loading" || messages.length === 0) {
-      return;
-    }
-
-    const latestMessageId = messages[messages.length - 1]?.id ?? null;
-    if (initialScrollScopeRef.current === null) {
-      element.scrollTop = element.scrollHeight;
-      initialScrollScopeRef.current = scrollScopeKey;
-    } else if (
-      latestMessageId &&
-      latestMessageId !== latestMessageIdRef.current &&
-      element.scrollHeight - (element.scrollTop + element.clientHeight) < 120
-    ) {
-      element.scrollTop = element.scrollHeight;
-    }
-    latestMessageIdRef.current = latestMessageId;
-  }, [feedState, messages, scrollRef, scrollScopeKey, viewMode]);
-
-  useEffect(() => {
-    if (
-      viewMode !== "messages" ||
-      !targetMessageId ||
-      targetStatus !== "found" ||
-      !messages.some((message) => message.id === targetMessageId)
-    ) {
-      return;
-    }
-
-    setHighlightedMessageId(targetMessageId);
-    const frameId = window.requestAnimationFrame(() => {
-      document
-        .getElementById(`chat-message-${targetMessageId}`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+  const { highlightedMessageId, handleLoadPreviousMessages } =
+    useChatShellFeedEffects({
+      activeChannelType,
+      activeTopicId,
+      selectedRecipientId: selectedRecipient?.id ?? null,
+      effectiveZone,
+      territoryFocus,
+      viewMode,
+      feedState,
+      messages,
+      targetMessageId,
+      targetStatus,
+      scrollRef,
+      loadPreviousMessages,
+      resetSearch,
     });
-    const timeoutId = window.setTimeout(() => setHighlightedMessageId(null), 4_000);
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(timeoutId);
-    };
-  }, [messages, targetMessageId, targetStatus, viewMode]);
 
-  const handleLoadPreviousMessages = useCallback(async () => {
-    const element = scrollRef.current;
-    const previousHeight = element?.scrollHeight ?? 0;
-    const previousTop = element?.scrollTop ?? 0;
-    try {
-      await loadPreviousMessages();
-      if (element) {
-        window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            element.scrollTop = getChatScrollTopAfterPrepend(
-              previousTop,
-              previousHeight,
-              element.scrollHeight,
-            );
-          });
-        });
-      }
-    } catch {
-      // The hook exposes the real error and the same control remains available for retry.
-    }
-  }, [loadPreviousMessages, scrollRef]);
-
-  const handleUpdateHandle = useCallback(async () => {
-    if (!newHandle.trim()) return;
-    try {
-      const res = await fetch("/api/users/profile/handle", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle: newHandle }),
-      });
-      if (res.ok) {
-        setIsEditingHandle(false);
-        location.reload();
-      } else {
-        const err = await res.json();
-        alert(
-          err.error ||
-            "Impossible de mettre à jour votre profil. Veuillez réessayer.",
-        );
-      }
-    } catch (err) {
-      logFailure("ChatShell", "Handle update failed", err, {
-        handle: newHandle,
-      });
-    }
-  }, [newHandle, setIsEditingHandle]);
+  const handleUpdateHandle = useChatShellProfileActions({
+    newHandle,
+    setIsEditingHandle,
+  });
 
   const activeChannelVisual = useMemo(
     () => CHANNEL_VISUALS[activeChannelType],
@@ -730,132 +638,33 @@ export function ChatShell({
     ],
   );
 
-  const sidebarChannels = useMemo(
-    () =>
-      CHAT_CHANNEL_ORDER.map((channelType) => {
-        const visual = CHANNEL_VISUALS[channelType];
-        const isActive = activeChannelType === channelType;
-        const isAvailable = canAccessChatChannel(channelType, {
-          roleLabel: currentRoleLabel,
-          hasArrondissement,
-          hasGreaterParisZone,
-          zoneContext: {
-            zoneName: effectiveZone || null,
-            arrondissementId: territoryFocus,
-          },
-        });
-
-        return {
-          channelType,
-          active: isActive,
-          disabled: !isAvailable,
-          icon: visual.icon,
-          label: getChannelTitle(channelType),
-          description: "",
-          count: messagerieMode ? undefined : isActive ? messages.length : undefined,
-          unreadCount:
-            messagerieMode && channelType === "community"
-              ? chatNotificationUnreadCounts.community || undefined
-              : messagerieMode && channelType === "territory"
-                ? chatNotificationUnreadCounts.territory || undefined
-                : undefined,
-          accentClass: visual.accentClass,
-          chipClass: visual.chipClass,
-          isLocked: !isAvailable,
-        };
-      }),
-    [
-      activeChannelType,
-      currentRoleLabel,
-      hasArrondissement,
-      hasGreaterParisZone,
-      effectiveZone,
-      territoryFocus,
-      messages.length,
-      messagerieMode,
-      chatNotificationUnreadCounts.community,
-      chatNotificationUnreadCounts.territory,
-    ],
-  );
-
-  const handleSelectChannel = useCallback(
-    (channelType: ChatChannelType) => {
-      const isAvailable = canAccessChatChannel(channelType, {
-        roleLabel: currentRoleLabel,
-        hasArrondissement,
-        hasGreaterParisZone,
-        zoneContext: {
-          zoneName: effectiveZone || null,
-          arrondissementId: territoryFocus,
-        },
-      });
-      if (!isAvailable) {
-        return;
-      }
-      setComposerMode("message");
-      setAnnouncementTemplate(null);
-      setRelatedEvent(null);
-      setPollOptions(createInitialChatPollOptionDraft());
-      setActiveTopicId(null);
-      setActiveChannelType(channelType);
-      if (channelType !== "dm") {
-        setIsDmThreadOpen(false);
-      }
-    },
-    [
-      currentRoleLabel,
-      hasArrondissement,
-      hasGreaterParisZone,
-      effectiveZone,
-      territoryFocus,
-      setComposerMode,
-      setAnnouncementTemplate,
-      setRelatedEvent,
-      setPollOptions,
-      setActiveTopicId,
-      setActiveChannelType,
-      setIsDmThreadOpen,
-    ],
-  );
-
-  const sidebarTopics = useMemo(
-    () =>
-      channelTopics.map((topic) => ({
-        ...topic,
-        active: topic.id === activeTopicId,
-        unreadCount:
-          activeChannelType === "community"
-            ? chatNotificationUnreadCounts.communityByTopic[topic.id]
-            : activeChannelType === "territory"
-              ? chatNotificationUnreadCounts.territoryByTopic[topic.id]
-              : undefined,
-      })),
-    [activeChannelType, activeTopicId, channelTopics, chatNotificationUnreadCounts],
-  );
-
-  const sidebarTopicSectionTitle = useMemo(() => {
-    if (activeChannelType === "community") {
-      return locale === "fr" ? "Salons proposés" : "Suggested rooms";
-    }
-    if (activeChannelType === "territory") {
-      return locale === "fr" ? "Salons de zone" : "Area rooms";
-    }
-    return null;
-  }, [activeChannelType, locale]);
-
-  const sidebarTopicSectionDescription = useMemo(() => {
-    if (activeChannelType === "community") {
-      return locale === "fr"
-        ? "Raccourcis thématiques sans créer de nouveau canal."
-        : "Thematic shortcuts without creating new channels.";
-    }
-    if (activeChannelType === "territory") {
-      return locale === "fr"
-        ? "Points locaux et coordination de voisinage."
-        : "Local points and nearby coordination.";
-    }
-    return null;
-  }, [activeChannelType, locale]);
+  const {
+    sidebarChannels,
+    sidebarTopics,
+    sidebarTopicSectionTitle,
+    sidebarTopicSectionDescription,
+    handleSelectChannel,
+  } = useChatShellSidebar({
+    activeChannelType,
+    currentRoleLabel,
+    hasArrondissement,
+    hasGreaterParisZone,
+    effectiveZone,
+    territoryFocus,
+    messagesCount: messages.length,
+    messagerieMode,
+    chatNotificationUnreadCounts,
+    channelTopics,
+    activeTopicId,
+    locale,
+    setComposerMode,
+    setAnnouncementTemplate,
+    setRelatedEvent,
+    setPollOptions,
+    setActiveTopicId,
+    setActiveChannelType,
+    setIsDmThreadOpen,
+  });
 
   const handleViewModeChange = useCallback(
     (mode: "messages" | "graph") => {
@@ -921,24 +730,6 @@ export function ChatShell({
     setIsDmThreadOpen(false);
   }, [setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
 
-  useEffect(() => {
-    if (activeChannelType !== "dm" || !selectedRecipient) {
-      return;
-    }
-
-    const inboxConversation = conversations.find(
-      (conversation) => conversation.peer.id === selectedRecipient.id,
-    );
-    if (
-      inboxConversation &&
-      (inboxConversation.peer.display_name !== selectedRecipient.display_name ||
-        inboxConversation.peer.handle !== selectedRecipient.handle ||
-        inboxConversation.peer.avatar_url !== selectedRecipient.avatar_url)
-    ) {
-      setSelectedRecipient(inboxConversation.peer);
-    }
-  }, [activeChannelType, conversations, selectedRecipient, setSelectedRecipient]);
-
   const handleRecipientQueryChange = useCallback(
     (value: string) => {
       setRecipientQuery(value);
@@ -947,79 +738,18 @@ export function ChatShell({
     [setRecipientQuery, setIsRecipientPickerOpen],
   );
 
-  const latestMessageId = messages[messages.length - 1]?.id ?? "empty";
-  const lastMarkedConversationRef = useRef<string | null>(null);
-  const lastMarkedChatNotificationRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (
-      !messagerieMode ||
-      activeChannelType !== "dm" ||
-      !selectedRecipient ||
-      feedState === "loading" ||
-      feedState === "degraded"
-    ) {
-      return;
-    }
-
-    const markKey = `${selectedRecipient.id}:${latestMessageId}`;
-    if (lastMarkedConversationRef.current === markKey) {
-      return;
-    }
-
-    lastMarkedConversationRef.current = markKey;
-    void Promise.all([
-      markConversationRead(selectedRecipient.id),
-      markChatNotificationsRead({
-        channelType: "dm",
-        peerId: selectedRecipient.id,
-      }),
-    ]).catch(() => {
-      if (lastMarkedConversationRef.current === markKey) {
-        lastMarkedConversationRef.current = null;
-      }
-    });
-  }, [
-    activeChannelType,
-    feedState,
-    latestMessageId,
-    markChatNotificationsRead,
-    markConversationRead,
-    messagerieMode,
-    selectedRecipient,
-  ]);
-
-  useEffect(() => {
-    if (
-      !messagerieMode ||
-      (activeChannelType !== "community" && activeChannelType !== "territory") ||
-      feedState === "loading" ||
-      feedState === "degraded"
-    ) {
-      return;
-    }
-
-    const markKey = `${activeChannelType}:${activeTopicId ?? "global"}`;
-    if (lastMarkedChatNotificationRef.current === markKey) {
-      return;
-    }
-
-    lastMarkedChatNotificationRef.current = markKey;
-    void markChatNotificationsRead({
-      channelType: activeChannelType,
-      topicId: activeTopicId,
-    }).catch(() => {
-      if (lastMarkedChatNotificationRef.current === markKey) {
-        lastMarkedChatNotificationRef.current = null;
-      }
-    });
-  }, [
+  useChatShellNotificationEffects({
     activeChannelType,
     activeTopicId,
     feedState,
-    markChatNotificationsRead,
     messagerieMode,
-  ]);
+    selectedRecipient,
+    conversations,
+    setSelectedRecipient,
+    markConversationRead,
+    markChatNotificationsRead,
+    messages,
+  });
 
   const isDmSurface = messagerieMode && activeChannelType === "dm";
   const showDmThreadOnMobile = !isDmSurface || Boolean(selectedRecipient) || isDmThreadOpen;

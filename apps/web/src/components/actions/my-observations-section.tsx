@@ -43,7 +43,7 @@ function ObservationCard({ observation }: { observation: MyObservation }) {
             {typeLabel}
           </p>
           <h3 className="truncate text-base font-bold text-white">{observation.label}</h3>
-          <p className="text-xs text-white/70">
+          <p className="text-xs text-white">
             Observé le {formatObservationDate(observation.createdAt)}
           </p>
         </div>
@@ -77,7 +77,7 @@ export function MyObservationsSection({
         <h2 id="mes-observations-title" className="text-2xl font-black tracking-tight text-white">
           Mes observations
         </h2>
-        <p className="text-sm leading-6 text-white/70">
+        <p className="text-sm leading-6 text-white">
           Retrouvez ici vos signalements récents et leur évolution.
         </p>
       </div>

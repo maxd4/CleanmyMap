@@ -6,7 +6,8 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
 import { DASHBOARD_ROUTE, PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -39,32 +40,20 @@ export default async function ReglagesPage() {
   const pageFamily = resolvePageFamily("/reglages");
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] px-4 py-8">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
         <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-cyan-400/8 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-4xl">
-        <div className="space-y-8">
+      <CmmPageLayout>
           <PageHeader
             family={pageFamily}
-            eyebrow={isFrench ? "Configuration" : "Configuration"}
             title={isFrench ? "Réglages" : "Settings"}
             subtitle={
               isFrench
                 ? "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins."
                 : "Customize your CleanMyMap experience according to your preferences and needs."
-            }
-            badges={
-              <>
-                <PageHeaderBadge family={pageFamily}>
-                  {isFrench ? "Préférences" : "Preferences"}
-                </PageHeaderBadge>
-                <PageHeaderBadge family={pageFamily} muted>
-                  {isFrench ? "Compte privé" : "Private account"}
-                </PageHeaderBadge>
-              </>
             }
             action={
               <Link
@@ -75,9 +64,9 @@ export default async function ReglagesPage() {
                 {isFrench ? "Retour au profil" : "Back to profile"}
               </Link>
             }
-            className="max-w-4xl"
           />
 
+          <CmmSectionGroup>
           {/* Sections de réglages */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Profil et compte */}
@@ -149,10 +138,11 @@ export default async function ReglagesPage() {
                     {isFrench ? "Mode d'affichage" : "Display mode"}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {displayMode === "exhaustif" 
+                    {displayMode === "exhaustif"
                       ? (isFrench ? "Exhaustif (toutes les options)" : "Exhaustive (all options)")
-                      : (isFrench ? "Essentiel (options principales)" : "Essential (main options)")
-                    }
+                      : displayMode === "sobre"
+                        ? (isFrench ? "Sobre (police système locale)" : "Calm (local system font)")
+                        : (isFrench ? "Essentiel (options principales)" : "Essential (main options)")}
                   </p>
                 </div>
                 
@@ -273,8 +263,8 @@ export default async function ReglagesPage() {
               </Link>
             </div>
           </section>
-        </div>
-      </div>
+          </CmmSectionGroup>
+      </CmmPageLayout>
     </main>
   );
 }

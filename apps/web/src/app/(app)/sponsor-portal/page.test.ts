@@ -84,7 +84,6 @@ vi.mock("@/components/ui/cmm-button", () => ({
 
 vi.mock("@/components/ui/page-header", () => ({
   PageHeader: ({ title }: { title: React.ReactNode }) => React.createElement("h1", null, title),
-  PageHeaderBadge: ({ children }: { children: React.ReactNode }) => React.createElement("span", null, children),
 }));
 
 vi.mock("@/components/pilotage/pilotage-cluster-panels", () => ({

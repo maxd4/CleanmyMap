@@ -1,0 +1,28 @@
+Bonjour,
+
+Suite à notre visioconférence Zoom du 19 mai, je me permets de vous recontacter afin de vous présenter une demande de partenariat et d’entraide.
+
+Dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université, je développe bénévolement un site web destiné à faciliter la coordination des cleanwalks locales en Île-de-France. Le site est encore en développement, mais une première version est consultable, notamment la page d'accueil.
+
+L’objectif du projet est notamment d’aider les bénévoles, associations et entreprises à :
+
+- déclarer des actions avec suivi GPS afin de cartographier les rues polluées et nettoyées ;
+générer des rapports d’impact à partir des données terrain ;
+- améliorer la communication entre bénévoles et associations via des espaces de discussion par ville ou arrondissement.
+
+Votre structure étant une référence nationale sur le sujet, je souhaiterais échanger avec vous sur une éventuelle collaboration, autour de plusieurs axes :
+
+- harmoniser nos formulaire de déclaration d’action, notamment avec l’ajout du suivi GPS, afin de visualiser plus précisément les zones réellement couvertes et d’éviter les doublons ou les itinéraires peu pertinents sur une carte leaflet commune ;
+- réfléchir à une mise en commun de nos données de bilan d’action en Île-de-France ;
+- générer des bilans d’impact précis par association, entreprise, ville, période ou bénévole, afin de valoriser les initiatives et de renforcer leur crédibilité terrain auprès des élus locaux.
+
+L’un des apports possibles de mon projet serait de compléter votre base de données d'événement annuel avec ma base de données issue des actions hebdomadaires sur Paris (notamment La Brigade Verte dans le 19e et l’Association Sans Murs dans le 15e, qui sont actives).
+
+Je vois mon projet comme un outil local complémentaire à votre structure nationale, reconnue et efficace.
+
+Je joins à ce mail une présentation plus visuelle et détaillée du projet au format PDF. Je serais ravi d’échanger avec vous sur la faisabilité d’un premier test, même limité, ainsi que sur une éventuelle visioconférence.
+
+Cordialement,
+
+Maxence Deroome
+cleanmymap.fr

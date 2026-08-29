@@ -1,4 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from(
+    "local-dev.clerk.accounts.dev$",
+  ).toString("base64")}`;
+  process.env.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
+});
+
 import { APP_SHELL_ROUTE_PREFIXES, isAppShellRoute } from "./proxy";
 import {
   ADMIN_ROUTE,

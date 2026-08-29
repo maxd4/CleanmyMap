@@ -13,19 +13,19 @@ const DOCUMENTATION_ROOT = path.resolve(process.cwd(), "..", "..", "documentatio
 
 const DOCUMENTATION_ASSETS: Record<string, DocumentationAsset> = {
   "graphique-impact-co2e": {
-    filePath: path.join("plans-perso", "rapport_impact", "graphique_impact_CO2e.md"),
+    filePath: path.join("PERSO", "rapport_impact", "graphique_impact_CO2e.md"),
     filename: "graphique_impact_CO2e.md",
   },
   atelier_DU: {
-    filePath: path.join("plans-perso", "ateliers_DU.md"),
+    filePath: path.join("PERSO", "ateliers_DU.md"),
     filename: "atelier_DU.md",
   },
   journal_DU: {
-    filePath: path.join("plans-perso", "journal_impact_DU.md"),
+    filePath: path.join("PERSO", "journal_impact_DU.md"),
     filename: "journal_DU.md",
   },
   journal_impact_DU: {
-    filePath: path.join("plans-perso", "journal_impact_DU.md"),
+    filePath: path.join("PERSO", "journal_impact_DU.md"),
     filename: "journal_impact_DU.md",
   },
 };

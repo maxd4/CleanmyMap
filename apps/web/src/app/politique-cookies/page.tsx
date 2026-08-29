@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
   title: "Politique cookies - CleanMyMap",
@@ -47,11 +48,12 @@ function CookieTypeCard({
 
 export default function PolitiqueCookiesPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+    <main>
+      <CmmPageLayout>
+      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+        <CmmSectionGroup>
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">Cookies et traceurs</PageHeaderBadge>}
           title="Politique cookies"
           subtitle="CleanMyMap utilise des cookies et du stockage local pour faire fonctionner l'application, mémoriser vos préférences et, si vous y consentez, mesurer l'usage du site."
           action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
@@ -197,7 +199,9 @@ export default function PolitiqueCookiesPage() {
             .
           </p>
         </section>
+        </CmmSectionGroup>
       </div>
+      </CmmPageLayout>
     </main>
   );
 }

@@ -608,9 +608,9 @@ export function QuizSessionPanel({
                       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-white">{errorTargetFollowUp.label}</p>
-                          <p className="mt-1 text-sm text-white/80">{errorTargetFollowUp.reason}</p>
+                          <p className="mt-1 text-sm text-white">{errorTargetFollowUp.reason}</p>
                         </div>
-                        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/85">
+                        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
                           {getQuizUiCopy(locale, "session.school.recommendedModeLabel")} : {errorTargetFollowUp.modeLabel}
                         </span>
                       </div>
@@ -632,7 +632,7 @@ export function QuizSessionPanel({
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 p-6 text-sm leading-relaxed text-white/90 shadow-xl">
+              <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 p-6 text-sm leading-relaxed text-white shadow-xl">
                 <div className="absolute right-0 top-0 p-4 opacity-5">
                   <Lightbulb size={80} aria-hidden="true" />
                 </div>
@@ -650,7 +650,7 @@ export function QuizSessionPanel({
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
                         {getQuizUiCopy(locale, "session.school.atRetenir")}
                       </p>
-                      <p className="mt-2 text-sm text-white/90">
+                      <p className="mt-2 text-sm text-white">
                         {getQuizLocalizedTextFallback(locale, question.localized?.takeaway, question.takeaway ?? "")}
                       </p>
                     </div>
@@ -660,7 +660,7 @@ export function QuizSessionPanel({
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
                         {getQuizUiCopy(locale, "session.feedbackLabel")}
                       </p>
-                      <p className="mt-2 text-sm text-white/85">
+                      <p className="mt-2 text-sm text-white">
                         {lastCheckResult === true
                           ? getQuizLocalizedTextFallback(
                               locale,
@@ -680,7 +680,7 @@ export function QuizSessionPanel({
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
                         {getQuizUiCopy(locale, "session.expectedAnswersLabel")}
                       </p>
-                      <p className="mt-2 text-sm text-white/85">{correctOptionsLabel}</p>
+                      <p className="mt-2 text-sm text-white">{correctOptionsLabel}</p>
                     </div>
                   ) : null}
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -695,12 +695,12 @@ export function QuizSessionPanel({
                       {reviewTargetFollowUp.label}
                       <ArrowRight size={14} aria-hidden="true" />
                     </Link>
-                    <p className="mt-3 text-xs text-white/70">{reviewTargetFollowUp.reason}</p>
+                    <p className="mt-3 text-xs text-white">{reviewTargetFollowUp.reason}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/85">
+                      <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
                         {getQuizUiCopy(locale, "session.school.recommendedModeLabel")} : {reviewTargetFollowUp.modeLabel}
                       </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/70">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
                         {getQuizUiCopy(locale, "session.school.revisionLabel")}
                       </span>
                     </div>

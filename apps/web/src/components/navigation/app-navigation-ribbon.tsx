@@ -428,7 +428,7 @@ function AppNavigationRibbonShell({
                 aria-expanded={preferencesOpen}
                 aria-controls="preferences-menu-panel"
                 title={locale === "fr" ? "Réglages" : "Settings"}
-                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden"
               >
                 <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                 <span className="sr-only">
@@ -474,7 +474,7 @@ function AppNavigationRibbonShell({
                           href={buildOnboardingLocalisationHref(PROFIL_ROUTE)}
                           prefetch={false}
                           onClick={() => onTrackNavigation(buildOnboardingLocalisationHref(PROFIL_ROUTE), locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
-                          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white/92 transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
                         >
                           {locale === "fr" ? "Préférences de compte" : "Account preferences"}
                         </Link>
@@ -505,7 +505,7 @@ function AppNavigationRibbonShell({
                 aria-expanded={feedbackOpen}
                 aria-controls="feedback-menu-panel"
                 title={locale === "fr" ? "Feedback" : "Feedback"}
-                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 [&::-webkit-details-marker]:hidden"
               >
                 <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                 <span className="sr-only">
@@ -555,7 +555,7 @@ function AppNavigationRibbonShell({
                               onTrackNavigation(item.href, item.label, null);
                               closeFeedbackMenu();
                             }}
-                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white/90 transition hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white transition hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
                           >
                             {item.label}
                           </Link>
@@ -574,7 +574,7 @@ function AppNavigationRibbonShell({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white/82 transition hover:text-white sm:h-auto sm:w-auto sm:px-3"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white transition hover:text-white sm:h-auto sm:w-auto sm:px-3"
                 >
                   <LogIn className="h-4 w-4 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">

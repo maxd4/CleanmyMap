@@ -77,7 +77,7 @@ export function PilotageOverviewContent({
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
               {locale === "fr" ? "Dernière mise à jour" : "Last update"}
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/90">
+            <p className="mt-2 text-sm font-semibold text-white">
               {lastUpdatedAt ?? (locale === "fr" ? "Indisponible" : "Unavailable")}
             </p>
           </div>

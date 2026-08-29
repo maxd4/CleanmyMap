@@ -170,7 +170,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                     className="pointer-events-none overflow-visible"
                   >
                     <div className="flex flex-col">
-                  <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white/90 drop-shadow-md">
+                  <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white drop-shadow-md">
                         {nodeName}
                       </span>
                       <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 

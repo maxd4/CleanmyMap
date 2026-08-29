@@ -735,7 +735,7 @@ export function ProfileSettingsCard({
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          onClick={() => setDisplayMode("exhaustif")}
+          onClick={() => setDisplayMode(displayMode === "sobre" ? "exhaustif" : "sobre")}
           className={cn(
             "inline-flex items-center justify-center gap-2 rounded-[1.2rem] border px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] transition",
             displayMode === "exhaustif"
@@ -744,7 +744,13 @@ export function ProfileSettingsCard({
           )}
         >
           <Eye size={14} />
-          {fr ? "Passer en affichage simplifié" : "Switch to simplified view"}
+          {displayMode === "sobre"
+            ? fr
+              ? "Revenir en mode exhaustif"
+              : "Return to exhaustive mode"
+            : fr
+              ? "Passer en mode sobre"
+              : "Switch to calm mode"}
         </button>
         <button
           type="button"
@@ -758,8 +764,12 @@ export function ProfileSettingsCard({
 
       <div className="mt-4 rounded-[1.45rem] border border-[#f0d9d2] bg-[#fff8f6] px-4 py-3 text-[12px] leading-6 text-[#8a716b]">
         {fr
-          ? "Charte premium complète active"
-          : "Active, fully premium card"}
+          ? displayMode === "sobre"
+            ? "Mode sobre actif avec la police système canonique"
+            : "Charte premium complète active"
+          : displayMode === "sobre"
+            ? "Calm mode active with the canonical system font"
+            : "Active, fully premium card"}
       </div>
     </section>
   );

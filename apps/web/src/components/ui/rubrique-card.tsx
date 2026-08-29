@@ -99,7 +99,7 @@ export function RubriqueCard({
           <div className="flex items-center gap-4">
             <div className={cn("h-[3px] flex-1 rounded-full", themeClasses[themeColor])} />
             {topBarContent && (
-              <div className="rounded-full border border-white/12 bg-white/8 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/80 backdrop-blur-xl">
+              <div className="rounded-full border border-white/12 bg-white/8 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-xl">
                 {topBarContent}
               </div>
             )}

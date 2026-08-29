@@ -113,15 +113,15 @@ export function ActionStoriesCarousel({ items, onOpenAction, compact = false }: 
                     </h4>
 
                     <div className={compact ? "mb-4 flex flex-col gap-2" : "mb-6 flex flex-col gap-2"}>
-                      <div className="flex items-center gap-2 text-white/90">
+                      <div className="flex items-center gap-2 text-white">
                         <MapPin size={14} className="text-cyan-200" />
                         <span className="line-clamp-1 text-xs font-medium">{mapItemLocationLabel(item)}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-white/90">
+                      <div className="flex items-center gap-2 text-white">
                         <Calendar size={14} className="text-cyan-200" />
                         <span className="text-xs font-medium">{formatStoryDate(mapItemObservedAt(item))}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-white/90">
+                      <div className="flex items-center gap-2 text-white">
                         <Trash2 size={14} className="text-rose-500" />
                         <span className="text-xs font-medium">
                           {wasteKg.toFixed(1)}kg · {Math.round(butts)} mégots

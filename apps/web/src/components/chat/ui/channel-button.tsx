@@ -63,7 +63,7 @@ export function ChannelButton({
             <span
               className={`mt-1 block text-[10px] leading-tight ${
                 active
-                  ? "text-white/80"
+                  ? "text-white"
                   : isLight
                     ? "text-slate-500"
                     : "text-slate-400 dark:text-slate-500"

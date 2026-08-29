@@ -1,7 +1,8 @@
 import { DeferredMissionMap, DeferredMissionQR } from "@/components/missions/deferred-mission-panels";
 import { MapPin, Clock, Trophy } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { readAuthorizedMission } from "@/lib/missions/mission-access";
@@ -37,23 +38,21 @@ export default async function MissionPage({ params }: MissionPageParams) {
   const statusLabel = getMissionStatusLabel(m.status);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-12 pb-20">
+    <CmmPageLayout>
       <PageHeader
         tone="emerald"
         contrast="inverse"
-        eyebrow="Bloc Agir"
         title={m.label ?? "Mission terrain"}
         subtitle="Données de mission et tracé GPS enregistrés par l’application compagnon lorsqu’ils sont disponibles."
-        badges={
-          <div className="flex flex-wrap gap-2">
-            <PageHeaderBadge tone="emerald" contrast="inverse">{statusLabel}</PageHeaderBadge>
-            <PageHeaderBadge tone="emerald" contrast="inverse" muted>
-              Identifiant #{id.split("-")[0]}
-            </PageHeaderBadge>
+        action={
+          <div className="flex flex-wrap gap-2 text-sm font-semibold">
+            <span>{statusLabel}</span>
+            <span>Identifiant #{id.split("-")[0]}</span>
           </div>
         }
       />
 
+      <CmmSectionGroup>
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="space-y-8">
           {isPending ? (
@@ -100,7 +99,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Départ le</p>
-                  <p className="text-sm font-bold text-white/80">
+                  <p className="text-sm font-bold text-white">
                     {formatMissionTimestamp(m.started_at)}
                   </p>
                 </div>
@@ -112,7 +111,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Fin le</p>
-                  <p className="text-sm font-bold text-white/80">
+                  <p className="text-sm font-bold text-white">
                     {formatMissionTimestamp(m.ended_at)}
                   </p>
                 </div>
@@ -148,6 +147,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
           </div>
         </div>
       </div>
-    </div>
+      </CmmSectionGroup>
+    </CmmPageLayout>
   );
 }

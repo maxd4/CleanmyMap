@@ -85,7 +85,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
             <button
               type="button"
               onClick={requestCookieConsentPreferences}
-              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Gérer mes cookies
             </button>
@@ -171,7 +171,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
             <button
               type="button"
               onClick={requestCookieConsentPreferences}
-              className="whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.15em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Gérer mes cookies
             </button>

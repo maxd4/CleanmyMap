@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from 'next/link'
 import { CmmCard } from '@/components/ui/cmm-card'
 import { CmmButton } from '@/components/ui/cmm-button'
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Comparaison interne des formulaires - CleanMyMap",
@@ -16,17 +17,16 @@ export const metadata: Metadata = {
 
 export default function FormComparisonPage() {
  return (
- <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] py-8">
- <div className="container mx-auto max-w-4xl px-4">
+ <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)]">
+ <CmmPageLayout>
  <PageHeader
    tone="sky"
    align="center"
-   badge={<PageHeaderBadge tone="sky">Vue interne</PageHeaderBadge>}
    title="Comparer les formulaires"
    subtitle="Comparez la version actuelle et la version simplifiée du formulaire de déclaration."
-   className="mb-8"
  />
 
+ <CmmSectionGroup>
  <div className="grid md:grid-cols-2 gap-8">
   {/* Complex Form */}
  <CmmCard tone="sky" variant="elevated" className="p-6">
@@ -107,7 +107,7 @@ export default function FormComparisonPage() {
  </CmmCard>
  </div>
 
- <div className="mt-8 text-center">
+ <div className="text-center">
  <CmmCard tone="sky" variant="elevated" className="p-6">
  <h3 className="mb-4 text-lg font-semibold text-slate-900">Gain mesuré</h3>
  <div className="grid grid-cols-3 gap-4 text-center">
@@ -126,7 +126,8 @@ export default function FormComparisonPage() {
  </div>
  </CmmCard>
  </div>
- </div>
+ </CmmSectionGroup>
+ </CmmPageLayout>
  </div>
  )
 }

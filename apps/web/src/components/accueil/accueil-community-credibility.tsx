@@ -258,11 +258,11 @@ export function HomeCommunityCredibility({
                         <p className="truncate text-sm font-bold text-white">
                           {item.actor}
                         </p>
-                        <p className="flex-shrink-0 text-[10px] uppercase tracking-[0.16em] text-white/90">
+                        <p className="flex-shrink-0 text-[10px] uppercase tracking-[0.16em] text-white">
                           {item.timeLabel}
                         </p>
                       </div>
-                      <p className="break-words text-[13px] text-white/92">
+                      <p className="break-words text-[13px] text-white">
                         {item.action}{" "}
                         <span className="font-semibold text-white">
                           @{item.location}

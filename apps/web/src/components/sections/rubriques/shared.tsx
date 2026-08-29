@@ -4,6 +4,7 @@ import type { ReactNode, ElementType } from "react";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { LucideIcon, Sparkles, Target } from "lucide-react";
 import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -45,7 +46,6 @@ export function SectionShell({
   const pageFamily = resolvePageFamily(pathname);
   const hero = pageFamily.hero;
   const fr = locale === "fr";
-  const useFamilyHero = true;
 
   return (
     <section
@@ -56,57 +56,26 @@ export function SectionShell({
       {/* Dynamic Background Gradient */}
       <div
         className={`absolute inset-x-0 top-0 h-[24rem] bg-gradient-to-b ${
-          gradient ||
-          (useFamilyHero
-            ? hero.sectionGradient
-            : "from-slate-900/20 via-transparent to-transparent")
+          gradient || hero.sectionGradient
         } pointer-events-none -z-10`}
       />
       
       {!hideHeader && title && (
         <div className="mb-16 space-y-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                {Icon && (
-                  <div
-                    className={
-                      useFamilyHero
-                        ? hero.iconWrap
-                        : "rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-black/20"
-                    }
-                  >
-                    <Icon
-                      size={24}
-                      className={useFamilyHero ? hero.icon : "text-white/70"}
-                    />
-                  </div>
-                )}
-                <h1
-                  className={
-                    useFamilyHero
-                      ? hero.titleCompact
-                      : "text-4xl font-black leading-none tracking-tighter text-white md:text-5xl"
-                  }
-                >
-                  {t(locale, title)}
-                </h1>
-              </div>
-              {subtitle && (
-                <p
-                  className={
-                    useFamilyHero
-                      ? `text-xl font-medium ${hero.subtitle}`
-                      : "max-w-2xl text-xl font-medium leading-relaxed text-slate-400"
-                  }
-                >
-                  {t(locale, subtitle)}
-                </p>
-              )}
-            </div>
-            
-            <div className="hidden md:block" aria-hidden="true" />
-          </div>
+          <PageHeader
+            family={pageFamily}
+            title={
+              <span className="inline-flex items-center gap-4">
+                {Icon ? (
+                  <span className={hero.iconWrap}>
+                    <Icon size={24} className={hero.icon} aria-hidden="true" />
+                  </span>
+                ) : null}
+                <span>{t(locale, title)}</span>
+              </span>
+            }
+            subtitle={subtitle ? t(locale, subtitle) : undefined}
+          />
           
           <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
         </div>
@@ -164,14 +133,16 @@ export function NotFoundSection() {
       <div className="w-24 h-24 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-8 shadow-2xl shadow-rose-500/10">
         <Target size={48} />
       </div>
-      <h1 className="text-4xl font-black text-white tracking-tight uppercase">
-        {locale === "fr" ? "Rubrique introuvable" : "Section not found"}
-      </h1>
-      <p className="mt-4 text-slate-400 font-medium max-w-md">
-        {locale === "fr"
-          ? "Désolé, cette rubrique n'existe pas ou a été déplacée par nos équipes."
-          : "Sorry, this section does not exist or has been moved by our teams."}
-      </p>
+      <PageHeader
+        align="center"
+        tone="red"
+        title={locale === "fr" ? "Rubrique introuvable" : "Section not found"}
+        subtitle={
+          locale === "fr"
+            ? "Désolé, cette rubrique n'existe pas ou a été déplacée par nos équipes."
+            : "Sorry, this section does not exist or has been moved by our teams."
+        }
+      />
       <CmmButton href={EXPLORER_ROUTE} tone="primary" className="mt-12 h-16 px-10 rounded-2xl font-black shadow-xl shadow-rose-500/20">
         {locale === "fr" ? "Explorer le plan" : "Explore map"}
       </CmmButton>
@@ -194,14 +165,12 @@ export function PendingSection({ label, description, note }: { label: L10n; desc
           {fr ? "Bientôt disponible" : "Coming Soon"}
         </div>
         
-        <div className="space-y-6">
-          <h1 className="text-5xl lg:text-7xl font-black text-white tracking-tighter">
-            {t(locale, label)}
-          </h1>
-          <p className="text-xl lg:text-2xl text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed">
-            {t(locale, description)}
-          </p>
-        </div>
+        <PageHeader
+          align="center"
+          contrast="inverse"
+          title={t(locale, label)}
+          subtitle={t(locale, description)}
+        />
 
         <div className="pt-8">
           <p className="text-sm text-slate-500 font-black uppercase tracking-widest italic opacity-60">

@@ -8,8 +8,8 @@ Date: 2026-04-08
 
 1. **Domains**
    - Verify the app URL host is `cleanmymap.fr`.
-   - Verify the Vercel-managed Clerk production domain is `auth.cleanmymap.fr`.
-   - Verify the Clerk frontend API domain is `clerk.auth.cleanmymap.fr`.
+   - Verify the Clerk production domain is `cleanmymap.fr`.
+   - Verify the Clerk frontend API domain is `cleanmymap.fr`.
    - Only use a proxy path (`/__clerk`) if the app intentionally routes Clerk through the site domain.
 
 2. **Session lifetime**
@@ -30,7 +30,7 @@ Date: 2026-04-08
    - In Clerk Live -> Google OAuth, ensure **Use custom credentials** is enabled.
    - Ensure Google OAuth `Client ID` / `Client Secret` are set in Clerk Dashboard only (no empty values, do not commit them to the repo).
    - Ensure Google redirect URI includes:
-     - `https://clerk.auth.cleanmymap.fr/v1/oauth_callback`
+     - `https://cleanmymap.fr/v1/oauth_callback`
 
 7. **Admin role continuity after Live migration**
    - Verify admin user has either:
@@ -45,13 +45,13 @@ This matrix summarizes the current route behavior verified in runtime. Keep it a
 | --- | --- | --- | --- |
 | `/sign-in` | Public auth page | Renders the Clerk sign-in UI directly | `path="/sign-in"` |
 | `/sign-up` | Public auth page | Renders the Clerk sign-up UI directly | `path="/sign-up"` |
-| `/dashboard` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/admin` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/actions/new` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/prints/report` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/sponsor-portal` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/sections/messagerie` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
-| `/sections/community` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/dashboard` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/admin` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/actions/new` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/prints/report` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/sponsor-portal` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/sections/messagerie` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
+| `/sections/community` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://cleanmymap.fr/sign-in?...` |
 | `/profil` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
 | `/parcours` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
 | `/partners/onboarding` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |

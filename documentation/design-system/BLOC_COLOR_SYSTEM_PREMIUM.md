@@ -2,12 +2,15 @@
 
 > Référence visuelle : page sommaire (`/`) et `apps/web/src/components/accueil/accueil-pillars.tsx`
 > Référence code : `apps/web/src/lib/accueil/config.ts`
+> Typographie et géométrie du titre de page : [`PAGE_HEADER.md`](./PAGE_HEADER.md)
 
 **Logique générale :**
 - Fond de page = teinte claire/lumineuse de la couleur du bloc
 - Cartes et bulles = surfaces à contraste élevé dérivées de la couleur canonique du bloc, pour ressortir nettement sur le fond
-- Titres / chiffres / sous-titres = colorés dans l'accent (`text-[accent]-100`)
-- Textes = blanc a 100% par defaut (`text-white`). Opacite reduite uniquement en exception justifiee (placeholder, etat desactive, hierarchie secondaire explicite)
+- Le **titre et le sous-titre de page** conservent toujours la typographie canonique `PageHeader`; ce document ne fait varier que leur couleur par famille
+- Les titres / chiffres **internes aux cartes sombres** peuvent employer la teinte d'accent adaptée au bloc
+- Texte réellement conçu comme blanc = blanc exact `#FFFFFF` / `text-white`; une opacité réduite n'est permise que pour une exception sémantique explicite (placeholder, disabled, hiérarchie secondaire réellement voulue)
+- Texte réellement conçu comme noir = noir exact `#000000` / `text-black`; une teinte `slate` ou `stone` reste autorisée lorsqu'elle constitue intentionnellement une couleur de famille et non un substitut au noir
 - Bordures cartes = `border-[accent]-200/18`, hover `border-[accent]-200/38`
 
 **⚠️ NOUVELLE STRUCTURE (5 blocs homepage) :**
@@ -60,29 +63,23 @@
 
 ## En-tête canonique des pages
 
+La source de vérité de la **structure, de la taille, de la graisse, du line-height, du tracking, de la largeur et du comportement responsive** du titre / sous-titre est exclusivement :
+
+```txt
+documentation/design-system/PAGE_HEADER.md
+```
+
+Ce document de couleurs ne doit pas redéfinir ces métriques.
+
 **Règle obligatoire :**
-- tout titre principal de page visible doit utiliser `PageHeader`
-- `PageHero` reste un alias de compatibilité pour les pages héritées, sans nouvelle variante de taille
-- toute nouvelle page avec une UI visible doit passer par `PageHeader`
-- les sous-titres doivent rester courts, lisibles et non exhaustifs
-- les majuscules décoratives sont interdites sauf eyebrow très court
-
-**Props autorisées**
-
-| Prop | Obligatoire | Rôle |
-|---|---:|---|
-| `title` | oui | titre principal de la page |
-| `eyebrow` | non | repère court au-dessus du titre |
-| `subtitle` | non | sous-titre bref et lisible |
-| `badge` | non | badge unique ou courte étiquette |
-| `badges` | non | rangée de badges |
-| `action` | non | action contextuelle du header |
-| `align` | non | `left` par défaut, `center` uniquement si documenté |
-| `family` | non | source de vérité prioritaire quand la page appartient à une famille de bloc |
-| `tone` | non | fallback pour les surfaces autonomes sans famille résolue |
-| `className` | non | ajustement de layout strictement local |
-| `badgesClassName` | non | ajustement local des badges |
-| `actionClassName` | non | ajustement local de l'action |
+- tout titre principal de page visible utilise `PageHeader`, sauf shell système explicitement documenté ;
+- toutes les pages partagent exactement la même typographie titre / sous-titre ;
+- seules la **couleur** et la **position** peuvent varier ;
+- couleur → `family`, ou `tone` / `contrast` pour une surface autonome ;
+- position → `align="left"` ou `align="center"` ;
+- aucune famille ne peut introduire sa propre taille, graisse, tracking, line-height ou largeur de H1 ;
+- `PageHeader` est l'unique composant runtime pour les titres principaux de page ;
+- `eyebrow`, `badge` et `badges` ne font plus partie du contrat runtime.
 
 **Tons disponibles dans `PageHeader`**
 
@@ -106,15 +103,14 @@
 | Cartographie & Impact | `sky` pour la cartographie, `red` / `rose` pour l'impact | `/methodologie` reste rattachée à l'impact |
 | Réseau & Discussions | `pink` / `indigo` | `pink` pour discussion, `indigo` pour partenaires |
 | Apprendre | `yellow` / `amber` | fond jaune, cartes soleil/ambre |
-| Familles autonomes | `slate`, `stone` ou palette dédiée | auth, legal, system, admin, print |
+| Institutionnel & Légal | `slate` | palette juridique neutre |
+| Familles autonomes | `slate`, `stone` ou palette dédiée | auth, system, admin, print |
 
-**Règle de mise en page**
-- même taille de h1 partout
-- même graisse
-- même largeur maximale
-- même espacement entre eyebrow, titre et sous-titre
-- même marge basse après header
-- alignement centré seulement pour les landings et dashboards explicitement documentés
+**Règle de position**
+- `left` par défaut ;
+- `center` uniquement si la fiche canonique de page ou `UI_EXCEPTION_PAGES.md` le documente ;
+- titre et sous-titre se déplacent ensemble ;
+- aucun positionnement ne modifie leur typographie.
 
 ---
 
@@ -123,8 +119,7 @@
 ```
 fond page     : canvas #edd4b0 + dégradés orange (249,115,22) et brun (120,53,15 / 92,45,12)
 fond cartes   : inchangé hors scope (cartes sommaire / cartes métier conservent leurs surfaces)
-titres page   : text-stone-950 + eyebrow text-orange-950/85
-sous-titres   : text-stone-800/90
+PageHeader    : couleurs issues de la famille accueil-pilotage, typographie canonique inchangée
 accents       : halos orange + brun simultanés (pas de bascule exclusive par route)
 ```
 
@@ -141,13 +136,14 @@ accents       : halos orange + brun simultanés (pas de bascule exclusive par ro
 ## 02 — Bloc Agir · `emerald`
 
 ```
-fond page     : vert clair lumineux (radial-gradient emerald)
-fond cartes   : #06261c (sombre teinté vert)
-bordure       : border-emerald-200/18  hover: border-emerald-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(7,44,27,0.72)]
-texte titres  : text-emerald-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-emerald-300
+fond page                 : vert clair lumineux (radial-gradient emerald)
+fond cartes               : #06261c (sombre teinté vert)
+bordure                    : border-emerald-200/18  hover: border-emerald-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(7,44,27,0.72)]
+PageHeader                 : couleurs `agir`, typographie canonique inchangée
+titres / chiffres de carte: text-emerald-100
+texte blanc de carte      : text-white
+point accent               : bg-emerald-300
 ```
 
 ---
@@ -157,13 +153,14 @@ dot accent    : bg-emerald-300
 ### Pages type Cartographie · `sky`
 
 ```
-fond page     : bleu clair lumineux (radial-gradient sky)
-fond cartes   : #071827 (sombre teinté bleu)
-bordure       : border-sky-200/18  hover: border-sky-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(7,27,44,0.72)]
-texte titres  : text-sky-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-sky-300
+fond page                 : bleu clair lumineux (radial-gradient sky)
+fond cartes               : #071827 (sombre teinté bleu)
+bordure                    : border-sky-200/18  hover: border-sky-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(7,27,44,0.72)]
+PageHeader                 : couleurs cartographie `sky`, typographie canonique inchangée
+titres / chiffres de carte: text-sky-100
+texte blanc de carte      : text-white
+point accent               : bg-sky-300
 ```
 
 ---
@@ -171,13 +168,14 @@ dot accent    : bg-sky-300
 ### Pages type Impact · `red`
 
 ```
-fond page     : rouge clair lumineux (radial-gradient red)
-fond cartes   : #3b0a0f (sombre teinté rouge)
-bordure       : border-red-200/18  hover: border-red-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(44,7,15,0.72)]
-texte titres  : text-red-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-red-300
+fond page                 : rouge clair lumineux (radial-gradient red)
+fond cartes               : #3b0a0f (sombre teinté rouge)
+bordure                    : border-red-200/18  hover: border-red-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,15,0.72)]
+PageHeader                 : couleurs impact `red` / `rose`, typographie canonique inchangée
+titres / chiffres de carte: text-red-100
+texte blanc de carte      : text-white
+point accent               : bg-red-300
 ```
 
 ---
@@ -191,13 +189,14 @@ dot accent    : bg-red-300
 ## 04 — Bloc Réseau & Discussions · `pink` / `indigo`
 
 ```
-fond page     : rose clair lumineux (radial-gradient pink)
-fond cartes   : #490b38 (sombre teinté rose)
-bordure       : border-pink-200/18  hover: border-pink-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
-texte titres  : text-pink-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-pink-300
+fond page                 : rose clair lumineux (radial-gradient pink)
+fond cartes               : #490b38 (sombre teinté rose)
+bordure                    : border-pink-200/18  hover: border-pink-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
+PageHeader                 : couleurs réseau `pink` ou partenaires `indigo`, typographie canonique inchangée
+titres / chiffres de carte: text-pink-100
+texte blanc de carte      : text-white
+point accent               : bg-pink-300
 ```
 
 ---
@@ -205,16 +204,15 @@ dot accent    : bg-pink-300
 ## 05 — Bloc Apprendre · `yellow` / `amber`
 
 ```
-fond page     : jaune clair lumineux (radial-gradient yellow/amber)
-fond cartes   : ambre/orange solaire sur blanc cassé
-bordure       : border-amber-200/18  hover: border-amber-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(249,115,22,0.24)]
-texte titres  : text-amber-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-amber-300
+fond page                 : jaune clair lumineux (radial-gradient yellow/amber)
+fond cartes               : ambre/orange solaire sur blanc cassé
+bordure                    : border-amber-200/18  hover: border-amber-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(249,115,22,0.24)]
+PageHeader                 : couleurs apprendre `yellow` / `amber`, typographie canonique inchangée
+titres / chiffres de carte: text-amber-100 sur surface sombre appropriée
+texte blanc de carte      : text-white uniquement lorsque la surface exige un texte blanc
+point accent               : bg-amber-300
 ```
-
----
 
 ---
 
@@ -223,13 +221,14 @@ dot accent    : bg-amber-300
 ### Pages type Réseau / Discussion · `pink`
 
 ```
-fond page     : rose clair lumineux (radial-gradient pink)
-fond cartes   : #490b38 (sombre teinté rose)
-bordure       : border-pink-200/18  hover: border-pink-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
-texte titres  : text-pink-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-pink-300
+fond page                 : rose clair lumineux (radial-gradient pink)
+fond cartes               : #490b38 (sombre teinté rose)
+bordure                    : border-pink-200/18  hover: border-pink-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
+PageHeader                 : couleurs réseau `pink`, typographie canonique inchangée
+titres / chiffres de carte: text-pink-100
+texte blanc de carte      : text-white
+point accent               : bg-pink-300
 ```
 
 **Pages concernées :**
@@ -242,13 +241,14 @@ dot accent    : bg-pink-300
 ### Pages type Partenaires · `indigo`
 
 ```
-fond page     : indigo clair lumineux (radial-gradient indigo/violet)
-fond cartes   : #04020f (sombre teinté indigo)
-bordure       : border-indigo-200/18  hover: border-indigo-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(4,2,44,0.72)]
-texte titres  : text-indigo-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-indigo-300
+fond page                 : indigo clair lumineux (radial-gradient indigo/violet)
+fond cartes               : #04020f (sombre teinté indigo)
+bordure                    : border-indigo-200/18  hover: border-indigo-200/38
+ombre                      : shadow-[0_34px_76px_-34px_rgba(4,2,44,0.72)]
+PageHeader                 : couleurs partenaires `indigo`, typographie canonique inchangée
+titres / chiffres de carte: text-indigo-100
+texte blanc de carte      : text-white
+point accent               : bg-indigo-300
 ```
 
 **Pages concernées :**
@@ -277,16 +277,18 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 
 ## Règles pour agents IA
 
-- **En-tête canonique** : utiliser `PageHeader` comme composant de référence pour les titres/sous-titres de page. `PageHero` reste un alias de compatibilité et ne doit plus introduire de variantes de taille.
-1. **Fond de page** : teinte claire/lumineuse de la couleur du bloc — jamais neutre ou gris
-2. **Cartes** : fond sombre teinté, `backdrop-blur-xl`, bordure `[accent]-200/18`
-3. **Titres / chiffres** : `text-[accent]-100`, `font-black`
-4. **Textes** : `text-white` a 100% par defaut. Opacite reduite uniquement en exception justifiee (placeholder, etat desactive, hierarchie secondaire explicite).
-5. **CTA primaire** : utiliser `CmmButton tone="primary"` et laisser le thème du bloc injecter les couleurs.
-6. **CTA secondaire** : utiliser `CmmButton tone="secondary"` pour le CTA de soutien principal du bloc.
-7. **CTA tertiaire** : utiliser `CmmButton tone="tertiary"` pour les actions de bas de hiérarchie ou les liens contextuels.
-8. **Multi-teintes** : Certains blocs ont plusieurs teintes selon le type de page — vérifier le mapping rubrique → teinte.
-9. **Référence** : toujours vérifier `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter.
+1. **En-tête canonique** : utiliser `PageHeader`; sa typographie et sa géométrie sont gouvernées uniquement par `PAGE_HEADER.md`.
+2. **Variation du header** : seules la couleur (`family` / `tone` / `contrast`) et la position (`align`) peuvent varier entre pages.
+3. **Fond de page** : teinte claire/lumineuse de la couleur du bloc, sauf famille autonome documentée.
+4. **Cartes** : utiliser la surface canonique du bloc et éviter les styles isolés.
+5. **Titres / chiffres internes** : les accents `text-[accent]-100` concernent les titres/chiffres de cartes ou de surfaces sombres, jamais une nouvelle variante de H1 de page.
+6. **Texte blanc** : lorsqu'un texte est sémantiquement blanc, utiliser `text-white` à 100 %. Toute opacité réduite doit correspondre à un état ou niveau de hiérarchie explicitement voulu.
+7. **Texte noir** : lorsqu'un texte est sémantiquement noir, utiliser `text-black` à 100 %. Les `slate` / `stone` restent des couleurs intentionnelles de design et ne doivent pas être converties arbitrairement en noir.
+8. **CTA primaire** : utiliser `CmmButton tone="primary"` et laisser le thème du bloc injecter les couleurs.
+9. **CTA secondaire** : utiliser `CmmButton tone="secondary"` pour le CTA de soutien principal du bloc.
+10. **CTA tertiaire** : utiliser `CmmButton tone="tertiary"` pour les actions de bas de hiérarchie ou les liens contextuels.
+11. **Multi-teintes** : certains blocs ont plusieurs teintes selon le type de page ; vérifier le mapping rubrique → teinte.
+12. **Référence** : vérifier `PAGE_HEADER.md`, `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter une évolution de palette ou de header.
 
 ---
 

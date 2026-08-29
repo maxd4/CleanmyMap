@@ -3,13 +3,12 @@ import {
   Flame,
   RotateCcw,
   ShieldAlert,
-  ShieldHalf,
   Terminal,
   Users,
   Zap,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
@@ -38,21 +37,9 @@ export function AdminCreatorConsole({
 
         <PageHeader
           family={pageFamily}
-          eyebrow="Sous-partie cachée"
           title="Administration avancée"
           subtitle="Bloc caché de l'administration pour l'arbitrage, la sécurité et les exécutions sensibles."
-          badges={
-            <>
-              <PageHeaderBadge family={pageFamily}>
-                <ShieldHalf size={12} className="mr-2 inline-block align-[-2px]" />
-                Accès IMU
-              </PageHeaderBadge>
-              <PageHeaderBadge family={pageFamily} muted>
-                Rôle normalisé: max
-              </PageHeaderBadge>
-            </>
-          }
-          className="relative z-10 max-w-3xl"
+          className="relative z-10"
         />
 
         <div className="relative z-10 flex gap-3">
@@ -220,7 +207,7 @@ export function AdminCreatorConsole({
               <ShieldAlert size={14} />
               Avertissement sécurité
             </h4>
-            <p className="text-xs font-bold leading-relaxed text-white/90">
+            <p className="text-xs font-bold leading-relaxed text-white">
               Toutes les actions de ce panneau sont journalisées et immuables. Chaque opération sensible impacte directement la supervision du site.
             </p>
           </div>

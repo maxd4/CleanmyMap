@@ -252,7 +252,7 @@ export function AppNavigationTreeMenu({
                             "cmm-dropdown-trigger flex min-h-11 w-full items-center justify-between gap-2 rounded-[0.95rem] px-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 [&::-webkit-details-marker]:hidden",
                             isOpenSpace
                               ? "bg-white/75 text-black"
-                              : "text-black/80 hover:bg-white/60 hover:text-black",
+                              : "text-black hover:bg-white/60",
                           )}
                           >
                           <span className="flex min-w-0 items-center gap-2.5">

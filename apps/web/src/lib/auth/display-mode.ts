@@ -1,6 +1,6 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import {
-  DISPLAY_MODES,
+  ENABLED_DISPLAY_MODES,
   type DisplayMode,
 } from "@/lib/ui/preferences";
 
@@ -18,7 +18,9 @@ function extractDisplayModePreferenceFromMetadata(
     return null;
   }
 
-  return DISPLAY_MODES.includes(rawDisplayMode as DisplayMode)
+  return ENABLED_DISPLAY_MODES.includes(
+    rawDisplayMode as (typeof ENABLED_DISPLAY_MODES)[number],
+  )
     ? (rawDisplayMode as DisplayMode)
     : null;
 }

@@ -29,8 +29,12 @@ export function isRateLimitKeyLocked(key: string): boolean {
   return LOCKED_KEYS.has(key);
 }
 
-function refillTokenBucket(bucket: TokenBucket, limit: number, window: number): void {
-  const now = Date.now();
+function refillTokenBucket(
+  bucket: TokenBucket,
+  limit: number,
+  window: number,
+  now: number,
+): void {
   const windowMs = window * 1000;
   const timePassed = now - bucket.lastRefill;
   const tokensToAdd = Math.floor(timePassed / windowMs) * limit;
@@ -68,7 +72,7 @@ export function checkRateLimit(options: RateLimitOptions): RateLimitResult {
     };
   }
 
-  refillTokenBucket(bucket, limit, window);
+  refillTokenBucket(bucket, limit, window, now);
 
   if (bucket.tokens > 0) {
     bucket.tokens--;

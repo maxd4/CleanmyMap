@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalContentReportForm } from "@/components/sections/rubriques/legal-content-report-form";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Signaler un contenu illicite - CleanMyMap",
@@ -11,18 +12,12 @@ export const metadata: Metadata = {
 
 export default function SignalerContenuIllicitePage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="space-y-8 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+    <main>
+      <CmmPageLayout>
+      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+        <CmmSectionGroup>
         <PageHeader
           tone="slate"
-          badges={
-            <>
-              <PageHeaderBadge tone="slate">Notification électronique</PageHeaderBadge>
-              <PageHeaderBadge tone="slate" muted>
-                Mis à jour le 27 août 2026
-              </PageHeaderBadge>
-            </>
-          }
           title="Signaler un contenu potentiellement illicite"
           subtitle="Indiquez l’URL exacte du contenu et décrivez les faits. Aucun compte n’est nécessaire."
         />
@@ -45,7 +40,9 @@ export default function SignalerContenuIllicitePage() {
           Les informations personnelles sont traitées selon la{" "}
           <Link href="/politique-confidentialite" className="font-medium text-emerald-700 hover:underline">politique de confidentialité</Link>.
         </p>
+        </CmmSectionGroup>
       </div>
+      </CmmPageLayout>
     </main>
   );
 }

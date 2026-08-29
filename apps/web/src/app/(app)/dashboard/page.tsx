@@ -28,6 +28,7 @@ import {
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout } from "@/components/ui/cmm-section";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
@@ -211,7 +212,8 @@ export default async function DashboardPage() {
         className="relative min-h-screen overflow-hidden"
         data-display-mode={displayMode}
       >
-        <DashboardEntrance className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
+        <DashboardEntrance className="relative z-10">
+          <CmmPageLayout>
           {/* ── Configuration active ── */}
           <div data-gsap-reveal>
             <IdentityProfileBanner profile={profile} />
@@ -220,13 +222,10 @@ export default async function DashboardPage() {
           {/* ── Header ── */}
           <div
             data-gsap-reveal
-            className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+            className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
           >
             <PageHeader
               family={pageFamily}
-              eyebrow={
-                locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"
-              }
               title={t("title_v1")}
               className="flex-1"
             />
@@ -243,7 +242,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Résumé décisionnel + Plan de journée ── */}
-          <div data-gsap-reveal className="mt-12">
+          <div data-gsap-reveal>
             <Suspense fallback={<DashboardOverviewSkeleton />}>
               <DashboardOverviewSection
                 overviewPromise={overviewPromise}
@@ -255,12 +254,12 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Séparateur ── */}
-          <div className="mt-14 h-px bg-amber-200/24" />
+          <div className="h-px bg-amber-200/24" />
 
           {/* ── Action prioritaire ── */}
           <div
             data-gsap-reveal
-            className="mt-10 relative overflow-hidden rounded-3xl"
+            className="relative overflow-hidden rounded-3xl"
           >
             {/* Layer fond isolé */}
             <div className="pointer-events-none absolute inset-0 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
@@ -298,22 +297,22 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Séparateur ── */}
-          <div className="mt-14 h-px bg-amber-200/24" />
+          <div className="h-px bg-amber-200/24" />
 
           {/* ── Accès rapides ── */}
-          <div data-gsap-reveal className="mt-10">
+          <div data-gsap-reveal>
             <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
               {locale === "fr" ? "Accès rapides" : "Quick access"}
             </p>
             <RolePrimaryActions profile={profile} title="" tone="warm" />
           </div>
 
-          <div className="mt-14 h-px bg-amber-200/24" />
+          <div className="h-px bg-amber-200/24" />
 
           {/* ── Parrainages + Classement global des niveaux utilisateur ── */}
           <div
             data-gsap-reveal
-            className="mt-10 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]"
+            className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]"
           >
             <DashboardReferralCard
               locale={locale}
@@ -392,7 +391,7 @@ export default async function DashboardPage() {
 
           <div
             data-gsap-reveal
-            className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]"
+            className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]"
           >
             <FamilyRubriqueCard
               withTopBar={true}
@@ -448,6 +447,7 @@ export default async function DashboardPage() {
               </FamilyRubriqueCard>
             </div>
           ) : null}
+          </CmmPageLayout>
         </DashboardEntrance>
       </main>
     </AccountCompletionGate>

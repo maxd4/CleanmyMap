@@ -143,7 +143,7 @@ export function FundingSection() {
                  {fr ? "Rejoindre l'Action" : "Join the Action"}
               </div>
               <h3 className="text-4xl font-black tracking-tighter">{fr ? "Devenez Partenaire" : "Become a Partner"}</h3>
-              <p className="text-lg font-bold text-white/80 max-w-xl leading-relaxed">
+              <p className="text-lg font-bold text-white max-w-xl leading-relaxed">
                  {fr 
                    ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
                    : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}

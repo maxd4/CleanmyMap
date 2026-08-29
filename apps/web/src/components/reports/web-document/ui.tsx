@@ -89,7 +89,7 @@ export function ReportTable(props: { headers: string[]; rows: string[][] }) {
  return (
  <div className="print-break-inside-avoid overflow-x-auto rounded-2xl border border-slate-200">
  <table className="min-w-full text-left cmm-text-small">
- <thead style={{ backgroundColor: reportPdfColors.navy, color: "#f8fafc" }}>
+ <thead style={{ backgroundColor: reportPdfColors.navy, color: "#FFFFFF" }}>
  <tr>
  {props.headers.map((header) => (
  <th key={header} className="px-3 py-2 font-semibold">

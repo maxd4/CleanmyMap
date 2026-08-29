@@ -81,7 +81,7 @@ export function PilotageOverviewSurfaceTabs({
             <h2 className="text-2xl font-black tracking-tight text-white md:text-3xl">
               {locale === "fr" ? "Lecture pour décideurs" : "Reading for decision makers"}
             </h2>
-            <p className="text-sm leading-relaxed text-white/78 md:text-base">
+            <p className="text-sm leading-relaxed text-white md:text-base">
               {locale === "fr"
                 ? "Vue courte pour arbitrer rapidement, sans quitter le bloc Accueil & Pilotage."
                 : "Short view for quick arbitration, without leaving the Home & Operations block."}

@@ -45,7 +45,7 @@ function ChartTooltip({
       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
         {formatPercent(item.sharePercent)}% du total
       </p>
-      <div className="mt-3 space-y-1 text-[11px] font-semibold text-white/75">
+      <div className="mt-3 space-y-1 text-[11px] font-semibold text-white">
         <p>Mois précédent: {getModeValueLabel(mode, item.previousValue)}</p>
         <p
           className={cn(

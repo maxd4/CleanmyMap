@@ -76,4 +76,4 @@ export const NAVIGATION_DROPDOWN_TREE_ITEM_ACTIVE_CLASS_NAME =
   "border-black/18 bg-white/72 text-black";
 
 export const NAVIGATION_DROPDOWN_TREE_ITEM_INACTIVE_CLASS_NAME =
-  "border-black/8 bg-white/40 text-black/78 hover:border-black/12 hover:bg-white/60 hover:text-black";
+  "border-black/8 bg-white/40 text-black hover:border-black/12 hover:bg-white/60";

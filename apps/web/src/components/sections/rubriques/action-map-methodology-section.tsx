@@ -50,7 +50,7 @@ export function ReferenceDocCard({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/75">
+        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">
           {schemaLabel[isFrench ? "fr" : "en"]}
         </span>
         {doc.isPdf ? (
@@ -68,7 +68,7 @@ export function ReferenceDocCard({
       </a>
       <a
         href={doc.secondaryAction?.href ?? schemaHref}
-        className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
+        className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
       >
         <ExternalLink size={14} />
         {doc.secondaryAction

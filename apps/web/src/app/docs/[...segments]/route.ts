@@ -290,7 +290,7 @@ function buildViewerHtml(params: {
       --panel: rgba(15, 23, 42, 0.72);
       --panel-2: rgba(255, 255, 255, 0.04);
       --border: rgba(255, 255, 255, 0.10);
-      --text: #f8fafc;
+      --text: #FFFFFF;
       --muted: rgba(226, 232, 240, 0.78);
       --accent: #fb7185;
       --accent-2: #f59e0b;
@@ -386,7 +386,7 @@ function buildViewerHtml(params: {
     }
 
     .content {
-      color: rgba(248, 250, 252, 0.96);
+      color: #FFFFFF;
       font-size: 1rem;
       line-height: 1.8;
     }
@@ -400,7 +400,7 @@ function buildViewerHtml(params: {
 
     .content h2 { font-size: 1.7rem; }
     .content h3 { font-size: 1.3rem; }
-    .content p { margin: 0 0 1.05em; color: rgba(248, 250, 252, 0.92); }
+    .content p { margin: 0 0 1.05em; color: #FFFFFF; }
     .content ul,
     .content ol { margin: 0 0 1.2em 1.4em; padding: 0; }
     .content li { margin: 0.35em 0; }
@@ -488,7 +488,7 @@ function buildViewerHtml(params: {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: #f8fafc;
+      color: #FFFFFF;
     }
     td { color: rgba(226, 232, 240, 0.92); }
 

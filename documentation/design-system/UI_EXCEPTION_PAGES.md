@@ -178,20 +178,36 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/politique-cookies` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/en` | Canonique | Institutionnel & Légal | non | Variante linguistique |
 
-## Pages non migrées vers `PageHeader`
+## Exceptions de structure (hors header de page classique)
 
-Les pages ci-dessous n'utilisent pas encore le composant canonique directement. La raison indiquée est celle qui bloque ou justifie la migration à ce stade.
+Ces exceptions ne sont pas des pages éditoriales standard ou ne portent pas un
+H1 de page classique. Elles ne doivent pas être utilisées pour créer une
+nouvelle variante de `PageHeader`.
 
-### Encore à migrer
-
-| Route | Pourquoi ce n'est pas encore migré | Priorité |
+| Surface | Raison vérifiée | Référence |
 |---|---|---|
-| `/explorer` | sommaire validé comme surface dédiée, pas un simple header de page | faible |
-| `/not-found` | page système d'erreur, doit rester sur un traitement `SystemState` | faible |
-| `/explorer` | sommaire validé comme surface dédiée, pas un simple header de page | faible |
-| `/not-found` | page système d'erreur, doit rester sur un traitement `SystemState` | faible |
+| `/explorer` | Sommaire de navigation avec composition dédiée et cartes de rubriques | `app/(app)/explorer/page.tsx` |
+| `/not-found` | État système 404 | `app/not-found.tsx` |
+| `/sign-in`, `/sign-up` | Branding et structure Clerk Auth & Onboarding | pages auth dédiées |
+| `/onboarding` | Étape de parcours de configuration, non page éditoriale | `app/onboarding/page.tsx` |
+| `SystemState*` | États système réutilisables, pas des headers de page | `components/ui/system-state.tsx` |
+| `report-cover` | Couverture du document PDF/export | `components/reports/web-document/report-cover.tsx` |
+| formulaires et flows internes | H1 d'étape ou de sous-formulaire, sans rôle de titre de route | composants `actions/` et `account/` |
+| onglet `Messagerie` | Titre de sous-vue compacte dans la rubrique Connect | `components/sections/rubriques/connect-section.tsx` |
+| `impact-profile-page` | Libellé de carte d'impact interne, pas titre de page | `components/profil/impact-profile-page.tsx` |
 
-### Migrées sur `PageHeader`
+Les exceptions sont gardées dans l'allowlist commentée du garde-fou
+`check:page-header`. Toute nouvelle exception doit être ajoutée ici et dans
+ce garde-fou avec une justification propre à la surface.
+
+### Exceptions de shell et de rythme
+
+Les pages classiques utilisent `CmmPageLayout` pour la grille globale et
+`CmmSectionGroup` pour le rythme entre sections. Les exceptions de structure
+listées ci-dessus conservent leur shell spécialisé ; elles ne doivent pas
+servir de modèle pour une nouvelle page éditoriale.
+
+### Routes migrées sur `PageHeader`
 
 | Route | Pourquoi la page n'est plus dans la liste précédente | Note |
 |---|---|---|

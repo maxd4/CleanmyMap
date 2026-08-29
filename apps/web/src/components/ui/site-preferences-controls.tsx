@@ -1,6 +1,7 @@
 "use client";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { ENABLED_DISPLAY_MODES, type DisplayMode } from "@/lib/ui/preferences";
 import { ChevronDown, CheckCircle2, Languages, LayoutPanelLeft, Moon, Sun } from "lucide-react";
 
 type SitePreferencesControlsProps = {
@@ -10,7 +11,14 @@ type SitePreferencesControlsProps = {
 export function SitePreferencesControls({
   variant = "full",
 }: SitePreferencesControlsProps) {
-  const { locale, setLocale, theme, toggleTheme } = useSitePreferences();
+  const { locale, setLocale, theme, toggleTheme, displayMode, setDisplayMode } =
+    useSitePreferences();
+
+  const displayModeLabels: Record<DisplayMode, { fr: string; en: string }> = {
+    exhaustif: { fr: "Exhaustif", en: "Exhaustive" },
+    minimaliste: { fr: "Minimaliste", en: "Minimal" },
+    sobre: { fr: "Sobre", en: "Calm" },
+  };
 
   if (variant === "locale") {
     const nextLocale = locale === "fr" ? "en" : "fr";
@@ -84,9 +92,28 @@ export function SitePreferencesControls({
             <p className="cmm-text-caption font-bold uppercase tracking-[0.16em] cmm-text-muted">
               {locale === "fr" ? "Mode d'affichage" : "Display mode"}
             </p>
-            <p className="text-[0.74rem] font-semibold text-emerald-700">
-              {locale === "fr" ? "Exhaustif" : "Exhaustive"}
-            </p>
+            <select
+              id="display-mode-switch"
+              value={displayMode}
+              onChange={(event) => {
+                const nextMode = ENABLED_DISPLAY_MODES.find(
+                  (mode) => mode === event.target.value,
+                );
+                if (nextMode) setDisplayMode(nextMode);
+              }}
+              className="cmm-select-control w-full cursor-pointer bg-transparent text-[0.74rem] font-semibold text-emerald-700 outline-none"
+              aria-label={
+                locale === "fr"
+                  ? "Choisir le mode d'affichage"
+                  : "Choose display mode"
+              }
+            >
+              {ENABLED_DISPLAY_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {displayModeLabels[mode][locale]}
+                </option>
+              ))}
+            </select>
           </div>
           <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
             <CheckCircle2 size={11} />
@@ -96,8 +123,8 @@ export function SitePreferencesControls({
       </div>
       <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-700/70">
         {locale === "fr"
-          ? "Sobre et Minimaliste sont en préparation"
-          : "Calm and Minimalist are in preparation"}
+          ? "Le mode sobre utilise une police système locale"
+          : "Calm mode uses a local system font stack"}
       </p>
     </div>
   );

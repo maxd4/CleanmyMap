@@ -1,7 +1,4 @@
-import {
-  env,
-  LOCAL_DEV_CLERK_PUBLISHABLE_KEY,
-} from "@/lib/env";
+import { env } from "@/lib/env";
 
 function parseOrigin(raw: string | undefined): string | undefined {
   if (!raw || raw.trim().length === 0) {
@@ -20,6 +17,39 @@ function parsePublishableKey(raw: string | undefined): string | undefined {
   }
   const candidate = raw.trim();
   return candidate.length > 0 ? candidate : undefined;
+}
+
+type ClerkKeyMode = "test" | "live" | "invalid" | "missing";
+
+function getClerkKeyMode(raw: string | undefined, prefix: "pk" | "sk"): ClerkKeyMode {
+  if (!raw || raw.trim().length === 0) {
+    return "missing";
+  }
+
+  return raw.trim().startsWith(`${prefix}_test_`)
+    ? "test"
+    : raw.trim().startsWith(`${prefix}_live_`)
+      ? "live"
+      : "invalid";
+}
+
+function decodePublishableKeyHost(raw: string): string | undefined {
+  const payload = raw.trim().replace(/^pk_(?:test|live)_/, "").replace(/\$$/, "");
+  if (!payload) {
+    return undefined;
+  }
+
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = atob(padded).trim().replace(/\$$/, "");
+    const parsed = new URL(
+      decoded.includes("://") ? decoded : `https://${decoded}`,
+    );
+    return parsed.hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
 }
 
 function parseDomain(raw: string | undefined): string | undefined {
@@ -84,27 +114,63 @@ function parseOriginCsv(raw: string | undefined): string[] {
   return Array.from(new Set(normalized));
 }
 
-function resolveClerkPublishableKey(
-  publishableKey: string | undefined,
-  isLocalDevOrigin: boolean,
-): string | undefined {
-  if (publishableKey && isLocalDevOrigin && publishableKey.startsWith("pk_live_")) {
-    return LOCAL_DEV_CLERK_PUBLISHABLE_KEY;
-  }
-
-  if (publishableKey) {
-    return publishableKey;
-  }
-
-  return process.env.NODE_ENV !== "production" ? LOCAL_DEV_CLERK_PUBLISHABLE_KEY : undefined;
-}
-
 function resolveClerkDomain(
   domain: string | undefined,
   isLocalDevOrigin: boolean,
   proxyUrl: string | undefined,
 ): string | undefined {
   return isLocalDevOrigin && !proxyUrl ? undefined : domain;
+}
+
+function normalizeClerkHost(raw: string): string | undefined {
+  const candidate = raw.trim();
+  if (!candidate) {
+    return undefined;
+  }
+
+  try {
+    return new URL(
+      candidate.includes("://") ? candidate : `https://${candidate}`,
+    ).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
+function assertLocalClerkConfiguration(
+  publishableKey: string | undefined,
+  secretKey: string | undefined,
+  domain: string | undefined,
+  proxyUrl: string | undefined,
+): void {
+  const publishableMode = getClerkKeyMode(publishableKey, "pk");
+  const secretMode = getClerkKeyMode(secretKey, "sk");
+
+  if (publishableMode !== "test" || secretMode !== "test") {
+    throw new Error(
+      "Invalid local Clerk configuration: localhost requires NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_* and CLERK_SECRET_KEY=sk_test_* from the same Development instance; production keys are not allowed.",
+    );
+  }
+
+  const publishableHost = decodePublishableKeyHost(publishableKey ?? "");
+  if (!publishableHost) {
+    throw new Error(
+      "Invalid local Clerk configuration: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not a valid Clerk publishable key.",
+    );
+  }
+
+  const configuredDomain = domain ? normalizeClerkHost(domain) : undefined;
+  if (domain && !configuredDomain) {
+    throw new Error(
+      "Invalid local Clerk configuration: CLERK_DOMAIN is not a valid Clerk host.",
+    );
+  }
+
+  if (!proxyUrl && configuredDomain && configuredDomain !== publishableHost) {
+    throw new Error(
+      "Invalid local Clerk configuration: CLERK_DOMAIN does not match the configured Clerk Development publishable key.",
+    );
+  }
 }
 
 function resolveClerkSatellite(
@@ -140,8 +206,16 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
   const domain = parseDomain(env.CLERK_DOMAIN);
   const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
   const isLocalDevOrigin = process.env.NODE_ENV !== "production" && isLocalhostOrigin(appOrigin);
-  // Do not leak the production Clerk domain into localhost unless an explicit proxy is configured.
-  const resolvedPublishableKey = resolveClerkPublishableKey(publishableKey, isLocalDevOrigin);
+  if (isLocalDevOrigin) {
+    assertLocalClerkConfiguration(
+      publishableKey,
+      env.CLERK_SECRET_KEY,
+      domain,
+      proxyUrl,
+    );
+  }
+
+  const resolvedPublishableKey = publishableKey;
   const resolvedDomain = resolveClerkDomain(domain, isLocalDevOrigin, proxyUrl);
   const resolvedIsSatellite = resolveClerkSatellite(isSatellite, isLocalDevOrigin, proxyUrl);
 

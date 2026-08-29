@@ -1,7 +1,8 @@
 import { PartnerOnboardingForm } from "@/components/partners/partner-onboarding-form";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
@@ -13,21 +14,13 @@ export default async function PartnerOnboardingPage() {
 
  if (!userId) {
  return (
- <div className="space-y-6">
+ <CmmPageLayout>
+ <CmmSectionGroup>
   <PageHeader
    tone="indigo"
    contrast="inverse"
-   eyebrow="Bloc Réseau & Discussions"
    title="Parcours partenaire"
    subtitle="Créer ou compléter la fiche partenaire puis l’envoyer à validation."
-   badges={
-    <>
-     <PageHeaderBadge tone="indigo" contrast="inverse">Partenaires</PageHeaderBadge>
-     <PageHeaderBadge tone="indigo" contrast="inverse" muted>
-      Accès restreint
-     </PageHeaderBadge>
-    </>
-   }
   />
   <ClerkRequiredGate
    isAuthenticated={false}
@@ -57,7 +50,8 @@ export default async function PartnerOnboardingPage() {
   >
    <div />
   </ClerkRequiredGate>
- </div>
+ </CmmSectionGroup>
+ </CmmPageLayout>
  );
  }
 
@@ -89,26 +83,19 @@ export default async function PartnerOnboardingPage() {
     }
    >
     <AccountCompletionGate state={accountCompletion}>
-     <div className="space-y-6">
+     <CmmPageLayout>
+     <CmmSectionGroup>
       <PageHeader
        tone="indigo"
        contrast="inverse"
-       eyebrow="Bloc Réseau & Discussions"
        title="Parcours partenaire"
        subtitle="Créer ou compléter la fiche partenaire puis l’envoyer à validation."
-       badges={
-        <>
-         <PageHeaderBadge tone="indigo" contrast="inverse">Partenaires</PageHeaderBadge>
-         <PageHeaderBadge tone="indigo" contrast="inverse" muted>
-          Onboarding
-         </PageHeaderBadge>
-        </>
-       }
       />
       <div className="rounded-xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-4 shadow-sm">
        <PartnerOnboardingForm />
       </div>
-     </div>
+     </CmmSectionGroup>
+     </CmmPageLayout>
     </AccountCompletionGate>
    </ClerkRequiredGate>
  );

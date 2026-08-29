@@ -212,7 +212,6 @@ export function ReportsAnalysisDashboard({
     <div className="rounded-[2rem] border border-rose-100/80 bg-white/95 p-4 shadow-[0_26px_70px_-42px_rgba(190,24,93,0.35)] sm:p-6 lg:p-7">
       <PageHeader
         tone="red"
-        eyebrow={`Profil ${roleLabel}`}
         title="Rapports d&apos;impact"
         subtitle="Analysez la qualité de vos données, suivez vos KPI et comparez vos résultats dans le temps."
         action={
@@ -221,6 +220,9 @@ export function ReportsAnalysisDashboard({
               <CalendarDays size={15} className="text-slate-500" aria-hidden="true" />
               {periodDays} jours glissants
             </div>
+            <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+              {roleLabel}
+            </span>
             <a
               href="#exports"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"

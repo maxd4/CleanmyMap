@@ -1,7 +1,7 @@
-import { ArrowRight, BarChart3, Compass, LockKeyhole, ShieldAlert, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowRight, BarChart3, Compass, LockKeyhole, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { PAGE_COPY } from "../access-screen-constants";
-import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import type { PilotageLocale } from "../access-screen-constants";
 import {
@@ -39,21 +39,10 @@ export function PilotageLockedPage({
       <div className="space-y-8 md:p-2">
         <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-5">
-            <PageHero
+            <PageHeader
               family={pageFamily}
               title={title}
               subtitle={subtitle}
-              badges={
-                <>
-                  <PageHeroBadge family={pageFamily}>
-                    <Sparkles size={14} aria-hidden="true" />
-                    {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
-                  </PageHeroBadge>
-                  <PageHeroBadge family={pageFamily} muted>
-                    {locale === "fr" ? "Contrôle opérationnel" : "Operational control"}
-                  </PageHeroBadge>
-                </>
-              }
             />
 
             <div className="grid gap-3 sm:grid-cols-3">
@@ -91,7 +80,7 @@ export function PilotageLockedPage({
                     {item.label}
                   </p>
                   <p className="mt-2 text-lg font-bold text-white">{item.value}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/72">{item.detail}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-white">{item.detail}</p>
                 </article>
               ))}
             </div>
@@ -121,7 +110,7 @@ export function PilotageLockedPage({
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
                   {locale === "fr" ? "Ce bloc sert à" : "This block is for"}
                 </p>
-                <p className="mt-2 text-sm font-semibold text-white/92">
+                <p className="mt-2 text-sm font-semibold text-white">
                   {locale === "fr"
                     ? "La supervision transverse, les arbitrages et les accès sensibles."
                     : "Transverse supervision, arbitration and sensitive access."}

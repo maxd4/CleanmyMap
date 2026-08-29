@@ -131,7 +131,7 @@ export function AnnuaireActorCard({
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                   Mission associative
                 </p>
-                <p className="text-sm font-semibold leading-relaxed text-white/90">
+                <p className="text-sm font-semibold leading-relaxed text-white">
                   {associationProfile.mission}
                 </p>
               </div>

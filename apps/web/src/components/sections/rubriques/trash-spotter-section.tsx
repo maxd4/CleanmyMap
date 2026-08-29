@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { PageHeader } from "@/components/ui/page-header";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
 import { useTrashSpotter } from "./use-trash-spotter";
@@ -71,17 +72,14 @@ export function TrashSpotterSection() {
 
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:items-center">
             <motion.div variants={itemVariants} className="space-y-5">
-              <div className="space-y-2">
-                <h1 className="text-[clamp(2.9rem,6vw,5.4rem)] font-black leading-[0.94] tracking-[-0.06em] text-emerald-950">
-                  {fr ? "Observation de terrain" : "Trash Spotter"}
-                </h1>
-              </div>
-
-              <p className="max-w-2xl text-base font-medium leading-relaxed text-slate-600 sm:text-lg">
-                {fr
-                  ? "Observation rapide de l’état d’un lieu et cartographie collaborative."
-                  : "Fast reporting and collaborative mapping of areas to treat."}
-              </p>
+              <PageHeader
+                title={fr ? "Observation de terrain" : "Trash Spotter"}
+                subtitle={
+                  fr
+                    ? "Observation rapide de l’état d’un lieu et cartographie collaborative."
+                    : "Fast reporting and collaborative mapping of areas to treat."
+                }
+              />
             </motion.div>
 
             <motion.div

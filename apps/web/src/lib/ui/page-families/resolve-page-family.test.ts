@@ -98,7 +98,8 @@ describe("page-families resolver", () => {
       id: "cartographie-impact",
       backdropToneKey: "red",
       hero: {
-        title: "cmm-page-header-title text-rose-900",
+        titleColor: "text-rose-900",
+        subtitleColor: "text-rose-900",
       },
       card: {
         rubriqueTheme: "rose",

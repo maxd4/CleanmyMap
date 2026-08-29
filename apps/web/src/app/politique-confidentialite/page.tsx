@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-form";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -47,11 +48,12 @@ export default function PolitiqueConfidentialitePage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+    <main>
+      <CmmPageLayout>
+      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
+        <CmmSectionGroup>
         <PageHeader
           tone="slate"
-          badge={<PageHeaderBadge tone="slate">RGPD</PageHeaderBadge>}
           title="Politique de confidentialité"
           subtitle="Cette page décrit les données réellement traitées par CleanMyMap, les finalités, les destinataires, les critères de conservation et les droits des personnes."
           action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
@@ -324,7 +326,9 @@ export default function PolitiqueConfidentialitePage() {
             <Link href="/signaler-contenu-illicite" className="font-medium text-emerald-700 hover:underline">notification de contenu</Link>
           </p>
         </section>
+        </CmmSectionGroup>
       </div>
+      </CmmPageLayout>
     </main>
   );
 }

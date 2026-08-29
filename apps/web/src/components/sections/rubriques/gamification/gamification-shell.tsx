@@ -1,4 +1,5 @@
 import { Sparkles, type LucideIcon } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function SectionLabel({
   icon: Icon,
@@ -149,17 +150,14 @@ export function HeroBlock({ fr }: { fr: boolean }) {
     <section className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
       <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
-          <p className="text-[11px] font-black uppercase tracking-[0.42em] text-[#c51f1f]">
-            Impact rouge
-          </p>
-          <div className="space-y-4">
-            <h1 className="text-[clamp(2.8rem,5vw,4.8rem)] font-black leading-[0.93] tracking-[-0.05em] text-[#2a1412]">
-              {fr ? "Écosystème & Gamification" : "Ecosystem & Gamification"}
-            </h1>
-            <p className="max-w-2xl text-[clamp(1.05rem,1.7vw,1.55rem)] font-medium leading-tight text-[#4f2e29]">
-              {fr ? "Engagement communautaire et impact validé" : "Community engagement and validated impact"}
-            </p>
-          </div>
+          <PageHeader
+            title={fr ? "Écosystème & Gamification" : "Ecosystem & Gamification"}
+            subtitle={
+              fr
+                ? "Engagement communautaire et impact validé"
+                : "Community engagement and validated impact"
+            }
+          />
           <p className="max-w-2xl text-[15px] leading-7 text-[#6f5450]">
             {fr
               ? "Votre progression reflète des contributions vérifiées et votre participation au service de l'intérêt collectif. Chaque action compte."

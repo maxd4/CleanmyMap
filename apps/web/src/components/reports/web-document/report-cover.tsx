@@ -41,14 +41,14 @@ export function ReportCover({
             background: "linear-gradient(135deg, #dc2626, #991b1b)",
           }}
         >
-          <div className="flex flex-wrap items-center gap-2 cmm-text-caption font-semibold uppercase tracking-[0.18em] text-white/70">
+          <div className="flex flex-wrap items-center gap-2 cmm-text-caption font-semibold uppercase tracking-[0.18em] text-white">
             <ShieldCheck size={14} />
             Synthèse exécutive
           </div>
           <h1 className="mt-3 text-2xl font-semibold leading-tight lg:text-[2.15rem]">
             Une lecture visuelle unique pour prévisualiser le livrable officiel.
           </h1>
-          <p className="mt-3 max-w-2xl cmm-text-small leading-6 text-white/88">
+          <p className="mt-3 max-w-2xl cmm-text-small leading-6 text-white">
             {narrative.summary}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function FeedbackHeader() {
   const { locale } = useSitePreferences();
@@ -17,24 +18,24 @@ export function FeedbackHeader() {
     >
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-100">
-            <ShieldAlert className="h-4 w-4 text-cyan-300" aria-hidden="true" />
-            <span className="cmm-text-caption font-semibold uppercase tracking-[0.22em]">
-              {locale === "fr" ? "Rubrique feedback" : "Feedback section"}
-            </span>
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
-              {locale === "fr"
-                ? "Un canal unique pour corriger, améliorer et collaborer."
-                : "A single channel to fix, improve and collaborate."}
-            </h1>
-            <p className="max-w-2xl text-base leading-relaxed text-slate-300">
-              {locale === "fr"
+          <PageHeader
+            contrast="inverse"
+            title={
+              <span className="inline-flex items-center gap-3">
+                <ShieldAlert className="h-6 w-6 text-cyan-300" aria-hidden="true" />
+                <span>
+                  {locale === "fr"
+                    ? "Un canal unique pour corriger, améliorer et collaborer."
+                    : "A single channel to fix, improve and collaborate."}
+                </span>
+              </span>
+            }
+            subtitle={
+              locale === "fr"
                 ? "Choisis le questionnaire adapté: bug, amélioration ou collaboration. Chaque réponse est enregistrée dans le suivi CleanMyMap avec un vrai contexte."
-                : "Choose the right questionnaire: bug, improvement or collaboration. Each answer is recorded in the CleanMyMap follow-up with real context."}
-            </p>
-          </div>
+                : "Choose the right questionnaire: bug, improvement or collaboration. Each answer is recorded in the CleanMyMap follow-up with real context."
+            }
+          />
 
           <CmmButtonGroup>
             <CmmButton href="#bug" tone="primary" variant="pill">

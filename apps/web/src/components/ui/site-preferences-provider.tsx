@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import {
-  DEFAULT_DISPLAY_MODE,
+  parseDisplayMode,
   STORAGE_KEYS,
   type DisplayMode,
   type Locale,
@@ -88,7 +88,7 @@ export function SitePreferencesProvider({
   );
 
   const [displayMode, setDisplayModeState] = useState<DisplayMode>(
-    initialDisplayMode ?? DEFAULT_DISPLAY_MODE,
+    parseDisplayMode(initialDisplayMode),
   );
 
   const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
@@ -174,7 +174,7 @@ export function SitePreferencesProvider({
   }, []);
 
   const setDisplayMode = useCallback((value: DisplayMode) => {
-    setDisplayModeState(value === "exhaustif" ? "exhaustif" : DEFAULT_DISPLAY_MODE);
+    setDisplayModeState(parseDisplayMode(value));
     setIsDisplayModeExplicitlySet(true);
   }, []);
 

@@ -37,7 +37,7 @@ export function RouteSummaryCards({ constraints, fr }: RouteSummaryCardsProps) {
       <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
         {fr ? "Ce que l'IA optimise" : "What the AI optimizes"}
       </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/78">
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white">
         {fr
           ? "Le trajet privilégie les actions qui ont du sens aujourd'hui, avec vos contraintes réelles: temps, équipe, météo, sécurité et distance."
           : "The route prioritizes what matters today, based on real constraints: time, team size, weather, safety, and distance."}

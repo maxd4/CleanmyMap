@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Heart, MessageSquare, ShieldCheck } from "lucide-react";
+import { ArrowRight, ChevronRight, Heart, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   FEEDBACK_METRICS,
   FEEDBACK_ROADMAP_ITEMS,
@@ -65,7 +66,6 @@ function FeedbackDashboardMode({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSubmittedTitle, setLastSubmittedTitle] = useState<string | null>(null);
 
-  const titleRef = useRef<HTMLHeadingElement | null>(null);
   const activeTopic = getTopicById(topicId);
   const visibleTrackerItems = FEEDBACK_TRACKER_ITEMS.filter(
     (item) => statusFilter === "all" || item.statusId === statusFilter,
@@ -147,26 +147,14 @@ function FeedbackDashboardMode({
     <div className="space-y-10 pb-20 pt-2 text-slate-950">
       <header className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/70 bg-pink-50 px-4 py-2 text-pink-600 shadow-sm">
-            <MessageSquare className="h-4 w-4" aria-hidden="true" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em]">
-              {fr ? "Feedback & qualité" : "Feedback & quality"}
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            <h1
-              ref={titleRef}
-              className="text-[clamp(2.3rem,4.8vw,4.5rem)] font-black leading-[0.92] tracking-[-0.04em] text-slate-950"
-            >
-              {fr ? "Retours & Qualité" : "Feedback & Quality"}
-            </h1>
-            <p className="max-w-2xl text-[1rem] leading-[1.7] text-slate-600">
-              {fr
+          <PageHeader
+            title={fr ? "Retours & Qualité" : "Feedback & Quality"}
+            subtitle={
+              fr
                 ? "Vos retours nous aident à améliorer CleanMyMap en continu et à garantir des données fiables et utiles pour tous."
-                : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."}
-            </p>
-          </div>
+                : "Your feedback helps us improve CleanMyMap continuously and keep the data reliable and useful for everyone."
+            }
+          />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -620,7 +608,7 @@ function FeedbackDashboardMode({
               <h2 className="text-[1.2rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.35rem]">
                 {fr ? "Votre avis fait la différence" : "Your feedback makes a difference"}
               </h2>
-              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white/90">
+              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
                 {fr
                   ? "Ensemble, améliorons CleanMyMap pour un impact toujours plus fort et des données toujours plus fiables."
                   : "Together, let's improve CleanMyMap for stronger impact and more reliable data."}

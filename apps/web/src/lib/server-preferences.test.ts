@@ -11,7 +11,7 @@ describe("server preferences", () => {
     vi.clearAllMocks();
   });
 
-  it("normalizes display mode cookies to exhaustive", async () => {
+  it("preserves the enabled sober display mode from the cookie", async () => {
     cookiesMock.mockResolvedValue({
       get: vi.fn().mockImplementation((key: string) =>
         key === "cleanmymap.display_mode" ? { value: "sobre" } : undefined,
@@ -20,7 +20,21 @@ describe("server preferences", () => {
 
     const { getServerDisplayModePreference } = await import("./server-preferences");
     await expect(getServerDisplayModePreference()).resolves.toEqual({
-      displayMode: "exhaustif",
+      displayMode: "sobre",
+      isExplicit: true,
+    });
+  });
+
+  it("preserves the enabled minimaliste display mode from the cookie", async () => {
+    cookiesMock.mockResolvedValue({
+      get: vi.fn().mockImplementation((key: string) =>
+        key === "cleanmymap.display_mode" ? { value: "minimaliste" } : undefined,
+      ),
+    });
+
+    const { getServerDisplayModePreference } = await import("./server-preferences");
+    await expect(getServerDisplayModePreference()).resolves.toEqual({
+      displayMode: "minimaliste",
       isExplicit: true,
     });
   });

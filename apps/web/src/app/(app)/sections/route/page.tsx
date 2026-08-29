@@ -2,7 +2,8 @@ import { Navigation, MapPin, History, FilePlus2 } from "lucide-react";
 import { RouteSection } from "@/components/sections/rubriques/route-section";
 import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
-import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
+import { PageHeader } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ export default function RoutePage() {
     <main
       data-section="agir"
       className={cn(
-        "relative overflow-hidden px-4 py-10 text-white sm:px-6 lg:px-8 min-h-screen transition-colors duration-700"
+        "relative min-h-screen overflow-hidden text-white transition-colors duration-700"
       )}
     >
       <div className="pointer-events-none absolute inset-0">
@@ -23,26 +24,18 @@ export default function RoutePage() {
         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-500/5 blur-[120px]" />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-10">
+      <CmmPageLayout className="relative z-10">
+      <CmmSectionGroup>
         <PageHeader
           tone="emerald"
           contrast="inverse"
-          eyebrow={
-            <span className="inline-flex items-center gap-2">
-              <Navigation className="h-4 w-4" />
-              Bloc Agir
+          title={
+            <span className="inline-flex items-center gap-3">
+              <Navigation className="h-6 w-6" aria-hidden="true" />
+              <span>Où agir</span>
             </span>
           }
-          title="Où agir"
           subtitle="Décidez vite où agir aujourd’hui avec le temps disponible, la météo, l’accessibilité et l’impact prioritaire."
-          badges={
-            <>
-              <PageHeaderBadge tone="emerald" contrast="inverse">Agir</PageHeaderBadge>
-              <PageHeaderBadge tone="emerald" contrast="inverse" muted>
-                Où agir
-              </PageHeaderBadge>
-            </>
-          }
           action={
             <CmmButtonGroup>
               <CmmButton
@@ -98,7 +91,8 @@ export default function RoutePage() {
         <div className={cn("rounded-[3rem] p-1 border overflow-hidden", classes.surface, classes.shadow)}>
           <RouteSection />
         </div>
-      </div>
+      </CmmSectionGroup>
+      </CmmPageLayout>
     </main>
   );
 }

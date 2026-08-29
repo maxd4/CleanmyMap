@@ -97,7 +97,7 @@ function ExternalHubCard({ title, icon, links, color }: ExternalHubCardProps) {
               <div className="text-white/40 group-hover/link:text-white transition-colors">
                 {link.icon || <ExternalLink size={16} />}
               </div>
-              <span className="text-sm font-bold text-white/70 group-hover/link:text-white transition-colors">
+              <span className="text-sm font-bold text-white group-hover/link:text-white transition-colors">
                 {link.label}
               </span>
             </div>

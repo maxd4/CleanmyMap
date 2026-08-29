@@ -204,7 +204,7 @@ export function CodexUsagePanel() {
           onClick={submit}
           disabled={isSaving}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60",
+            "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
           <RefreshCcw size={12} className={cn(isSaving && "animate-spin")} />
@@ -218,7 +218,7 @@ export function CodexUsagePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Source
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Journal hebdomadaire manuel, importé ou reconstruit à partir de l&apos;activité réelle du projet.
             </p>
           </article>
@@ -226,7 +226,7 @@ export function CodexUsagePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Conversion
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Le calcul transforme sessions, conversations, actions outillées et temps actif en kg CO2e proxy.
             </p>
           </article>
@@ -234,7 +234,7 @@ export function CodexUsagePanel() {
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
               Historique
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/80">
+            <p className="mt-2 text-sm font-semibold text-white">
               Le calculateur lit ensuite les 4 dernières semaines pour produire l&apos;équivalent mensuel.
             </p>
           </article>
@@ -269,7 +269,7 @@ export function CodexUsagePanel() {
             return (
               <label
               key={key}
-              className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white/70"
+              className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white"
             >
               <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
                 {label}
@@ -292,7 +292,7 @@ export function CodexUsagePanel() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white/70">
+          <label className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white">
             <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
               Source de la semaine
             </span>
@@ -311,7 +311,7 @@ export function CodexUsagePanel() {
               <option value="reconstructed">Reconstructed</option>
             </select>
           </label>
-          <label className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white/70">
+          <label className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs font-semibold text-white">
             <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
               Notes
             </span>
