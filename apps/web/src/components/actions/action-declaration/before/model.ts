@@ -26,6 +26,8 @@ export type ActionBeforeDeclarationFormProps = {
   initialRecordType?: "action";
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
+  signInHref?: string;
+  signUpHref?: string;
 };
 
 export type BeforeActionFieldUpdater = <K extends keyof FormState>(
