@@ -58,7 +58,7 @@ export function CmmSection({
 
  if (accentType ==="none") {
  return (
- <section className={cn("rounded-2xl border p-5 shadow-sm", className)}>
+ <section className={cn("cmm-surface cmm-panel p-5", className)}>
  <TitleTag className={cn(titleClasses,"mb-4")}>
  {title}
  </TitleTag>

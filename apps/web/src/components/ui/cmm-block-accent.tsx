@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { CmmCard } from "@/components/ui/cmm-card";
 import {
   type BlockAccent,
   type BlockId,
@@ -51,7 +52,7 @@ export interface CmmBlockAccentProps {
  * Usage:
  * <CmmBlockAccent accent="emerald" element="dot" />
  * <CmmBlockAccent blockId="impact" element="bar" barPosition="left" />
- * <CmmCard accent="sky">...</CmmCard>
+ * <CmmBlockCard blockId="visualize">...</CmmBlockCard>
  */
 export function CmmBlockAccent({
   accent: accentProp,
@@ -83,7 +84,7 @@ export function CmmBlockAccent({
     return (
       <span
         className={cn(
-          "relative inline-block rounded-full transition-all duration-300",
+          "relative inline-block rounded-full cmm-block-accent cmm-block-accent--dot",
           sizeClasses,
           classes.dot,
           classes.glow,
@@ -92,7 +93,7 @@ export function CmmBlockAccent({
           className
         )}
       >
-        <span className={cn("absolute inset-0 rounded-full animate-pulse opacity-40", classes.dot)} />
+        <span className={cn("absolute inset-0 rounded-full exhaustive-only cmm-block-accent__pulse opacity-40", classes.dot)} />
       </span>
     );
   }
@@ -114,7 +115,7 @@ export function CmmBlockAccent({
           classes.glow,
           hoverOnly && "opacity-0",
           hoverOnly && "group-hover:opacity-100",
-          "transition-all duration-500",
+          "cmm-block-accent cmm-block-accent--bar",
           className
         )}
       />
@@ -131,7 +132,7 @@ export function CmmBlockAccent({
           "ring-opacity-0",
           !hoverOnly && "focus-within:ring-opacity-100",
           "group-hover:ring-opacity-100",
-          "transition-all duration-300",
+          "cmm-block-accent cmm-block-accent--ring",
           className
         )}
       />
@@ -143,12 +144,12 @@ export function CmmBlockAccent({
     return (
       <span
         className={cn(
-          "absolute inset-0 opacity-[0.12]",
+          "absolute inset-0 opacity-[0.12] exhaustive-only",
           "bg-gradient-to-br",
           classes.gradient,
           hoverOnly && "opacity-0",
           hoverOnly && "group-hover:opacity-[0.15]",
-          "transition-opacity duration-500",
+          "cmm-block-accent cmm-block-accent--gradient",
           className
         )}
       />
@@ -160,11 +161,11 @@ export function CmmBlockAccent({
     return (
       <span
         className={cn(
-          "absolute inset-0 pointer-events-none opacity-40",
+          "absolute inset-0 pointer-events-none opacity-40 exhaustive-only",
           classes.glow,
           hoverOnly && "opacity-0",
           hoverOnly && "group-hover:opacity-60",
-          "transition-opacity duration-700",
+          "cmm-block-accent cmm-block-accent--glow",
           className
         )}
       />
@@ -206,20 +207,15 @@ export function CmmBlockCard({
   accentType = "bar",
   barPosition = "left",
 }: CmmBlockCardProps) {
-  const accent = getBlockClasses(blockId);
   // Source de vérité : getBlockAccent() lit BLOCK_ACCENT_MAP
   const accentKey = getBlockAccent(blockId);
 
   return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-[2rem] border p-6 transition-all duration-500",
-        accent.surface,
-        accent.border,
-        "hover:border-white/20",
-        accent.shadow,
-        className
-      )}
+    <CmmCard
+      tone={accentKey}
+      variant="elevated"
+      size="lg"
+      className={cn("cmm-block-card group relative", className)}
     >
       {/* Accent visuel selon le type */}
       {accentType === "bar" && (
@@ -244,6 +240,6 @@ export function CmmBlockCard({
       <div className="relative z-10">
         {children}
       </div>
-    </div>
+    </CmmCard>
   );
 }

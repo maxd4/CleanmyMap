@@ -7,10 +7,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 1. `BLOC_COLOR_SYSTEM_PREMIUM.md`
 2. `PAGE_HEADER.md`
 3. `LAYOUT_SPACING.md`
-4. `charte-ui-pro-moderne-futuriste.md`
-5. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-6. `UI_EXCEPTION_PAGES.md`
-7. fiche canonique de la page dans `documentation/pages_site/`
+4. `SURFACES_CARDS.md`
+5. `charte-ui-pro-moderne-futuriste.md`
+6. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+7. `UI_EXCEPTION_PAGES.md`
+8. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 
@@ -33,6 +34,13 @@ Pour le shell de contenu et le rythme vertical des pages classiques, utiliser
 [`LAYOUT_SPACING.md`](./LAYOUT_SPACING.md). Les pages ne choisissent pas de
 largeur, de gutters ou de rythme structurel local ; les exceptions sont
 documentées dans `UI_EXCEPTION_PAGES.md`.
+
+Pour les cartes et panels standards, utiliser `CmmCard` ; `CmmBlockCard` ne
+fait qu'y composer l'accent de famille. Le contrat des surfaces, états,
+effets et exceptions est documenté dans
+[`SURFACES_CARDS.md`](./SURFACES_CARDS.md). Les couleurs de famille restent
+documentées dans [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md).
+Le contrat est contrôlé par `npm run check:surfaces`.
 
 ## Couleurs par famille
 
