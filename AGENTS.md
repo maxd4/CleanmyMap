@@ -62,10 +62,17 @@ intermédiaires ne doivent pas commencer par ce canari.
   `maxd4/CleanmyMap`, branche `main` ;
 - lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
   pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
-- le checkout de travail reste directement sur `main` ; après autorisation
-  explicite, committer sur `main` puis pousser vers `origin/main` ;
+- le checkout de travail reste directement sur `main` ; toute exécution qui
+  produit des modifications doit se terminer par un commit ciblé sur `main`
+  puis un push vers `origin/main` ; aucune modification ne justifie un commit
+  artificiel ;
 - ne pas créer de Pull Request, branche temporaire ou worktree sans demande
   explicite ; ne jamais pousser avec `--force` ni réécrire l'historique publié ;
+- le commit et le push doivent couvrir uniquement le lot de l'exécution
+  courante ; stage uniquement les chemins concernés et préserve les
+  changements parallèles ;
+- si le push échoue, conserver le commit local et signaler explicitement le
+  blocage ; ne jamais contourner les protections par un force push ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes et l'égalité des SHAs `main`/`origin/main`.
 - lorsqu'une vérification effective du site web est demandée, comparer le
@@ -79,8 +86,9 @@ checkout, applique les changements autorisés, valide, committe et pousse.
 
 `CHATGPT.md` gouverne la réflexion et la préparation côté ChatGPT ; ce fichier
 gouverne l'exécution locale Codex. ChatGPT ne crée ni commit, ni push, ni
-worktree. Codex intègre les décisions autorisées, exécute les checks et
-committe/pousse lorsque la demande l'autorise.
+worktree. Codex intègre les décisions autorisées, exécute les checks puis
+committe et pousse chaque lot modifié en fin d'exécution selon la règle
+ci-dessus.
 
 ## Chantiers parallèles
 
