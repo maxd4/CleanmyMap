@@ -28,7 +28,7 @@ function severityClasses(severity: AlertSeverity): string {
 export function BusinessAlertsPanel() {
   const actions = useSWR(
     ["business-alerts-actions"],
-    () => fetchActions({ status: "approved", days: 120, limit: 500, types: "all" }),
+    () => fetchActions({ status: "approved", days: 120, limit: 500, types: "action" }),
     swrRecentViewOptions,
   );
   const map = useSWR(
@@ -38,7 +38,7 @@ export function BusinessAlertsPanel() {
         status: "approved",
         days: 120,
         limit: 500,
-        types: "all",
+        types: "action",
       }),
     swrRecentViewOptions,
   );

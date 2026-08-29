@@ -72,6 +72,31 @@ describe("loadOrRefreshPublicSurfaceSnapshot", () => {
     expect(upsertPublicSurfaceSnapshotMock).toHaveBeenCalledOnce();
   });
 
+  it("coalesce les reconstructions concurrentes d'une même clé", async () => {
+    let resolveBuild!: (payload: string) => void;
+    const buildPayload = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveBuild = resolve;
+        }),
+    );
+    const first = params({ buildPayload });
+    const second = params({ buildPayload: vi.fn().mockResolvedValue("unused") });
+
+    const firstRefresh = loadOrRefreshPublicSurfaceSnapshot(first);
+    const secondRefresh = loadOrRefreshPublicSurfaceSnapshot(second);
+    await vi.waitFor(() => expect(buildPayload).toHaveBeenCalledOnce());
+    resolveBuild("coalesced");
+
+    await expect(Promise.all([firstRefresh, secondRefresh])).resolves.toEqual([
+      expect.objectContaining({ payload: "coalesced" }),
+      expect.objectContaining({ payload: "coalesced" }),
+    ]);
+    expect(buildPayload).toHaveBeenCalledOnce();
+    expect(second.buildPayload).not.toHaveBeenCalled();
+    expect(upsertPublicSurfaceSnapshotMock).toHaveBeenCalledOnce();
+  });
+
   it("autorise le fallback stale si la reconstruction de la même version échoue", async () => {
     const existing = existingSnapshot("v1", "stale");
     const options = params({
