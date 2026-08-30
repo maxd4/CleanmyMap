@@ -30,7 +30,7 @@ Date: 2026-04-08
    - In Clerk Live -> Google OAuth, ensure **Use custom credentials** is enabled.
    - Ensure Google OAuth `Client ID` / `Client Secret` are set in Clerk Dashboard only (no empty values, do not commit them to the repo).
    - Ensure Google redirect URI includes:
-     - `https://cleanmymap.fr/v1/oauth_callback`
+     - `https://clerk.cleanmymap.fr/v1/oauth_callback`
 
 7. **Admin role continuity after Live migration**
    - Verify admin user has either:
