@@ -1,0 +1,98 @@
+@layer utilities {
+  @keyframes cmm-bounce-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  .animate-bounce-slow {
+    animation: cmm-bounce-slow 3.2s ease-in-out infinite;
+  }
+
+  @keyframes cmm-gamification-dot-pop {
+    0% {
+      transform: translateY(2px) scale(0.7);
+      opacity: 0.35;
+    }
+    55% {
+      transform: translateY(-1px) scale(1.18);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes cmm-gamification-pop {
+    0% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+    45% {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+
+  @keyframes cmm-gamification-progress-glow {
+    0% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.2);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+
+  .cmm-gamification-dot {
+    display: block;
+    height: 0.5rem;
+    width: 100%;
+    border-radius: 9999px;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .cmm-gamification-dot--empty {
+    background: rgba(148, 163, 184, 0.36);
+    opacity: 0.72;
+  }
+
+  .cmm-gamification-dot--filled {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.95), rgba(252, 211, 77, 0.95));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    animation: cmm-gamification-dot-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cmm-gamification-dot--active {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.24),
+      0 0 16px rgba(251, 191, 36, 0.35);
+  }
+
+  .cmm-gamification-celebrate {
+    animation: cmm-gamification-pop 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cmm-gamification-progress {
+    animation: cmm-gamification-progress-glow 720ms ease-out both;
+  }
+
+  .cmm-gamification-toast-shell {
+    animation: cmm-modal-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}

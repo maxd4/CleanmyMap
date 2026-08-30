@@ -1,0 +1,105 @@
+@layer utilities {
+  /* ============================================================
+     MODAL UX — Prompt #18
+     Backdrop, enter/exit, focus hierarchy, scrollbar
+     ============================================================ */
+
+  /* Backdrop separation: deep blur + warm dark overlay */
+  .cmm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(2, 6, 23, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: cmm-backdrop-in 0.22s ease forwards;
+  }
+
+  @keyframes cmm-backdrop-in {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to   { opacity: 1; backdrop-filter: blur(6px); }
+  }
+
+  .cmm-backdrop-exit {
+    animation: cmm-backdrop-out 0.18s ease forwards;
+  }
+
+  @keyframes cmm-backdrop-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* Modal panel: slide-up enter, scale-down exit */
+  .cmm-modal-panel {
+    animation: cmm-modal-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes cmm-modal-enter {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .cmm-modal-panel-exit {
+    animation: cmm-modal-exit 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  @keyframes cmm-modal-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+  }
+
+  /* Modal scrollable body: thin scrollbar */
+  .cmm-modal-scroll {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 99px;
+  }
+
+  html[data-theme="dark"] .cmm-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+  }
+
+  /* Sticky header/footer inside modal: subtle separator */
+  .cmm-modal-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .cmm-modal-footer-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-default);
+  }
+}

@@ -1,0 +1,61 @@
+/* Print optimizations (Refonte Cockpit / Export) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  body, html {
+    background: white !important;
+    color: #000000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide typical navigation elements */
+  nav, header, footer, aside, [data-rubrique-report-root] > header button, [data-rubrique-print-hide], .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for clean printing */
+  .rounded-xl, .rounded-2xl {
+    box-shadow: none !important;
+    border-color: #e2e8f0 !important;
+    break-inside: avoid;
+  }
+
+  /* Keep dense blocks intact, but allow sections to flow on long reports */
+  article, tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  section {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  .print-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .print-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* Force grid-columns to stack normally or stay readable on A4 */
+  .grid-cols-1, .lg\:grid-cols-\[1fr_1\.5fr\], .lg\:grid-cols-\[1\.4fr_1fr\], .lg\:grid-cols-\[1\.2fr_1fr\] {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1.5rem;
+  }
+}

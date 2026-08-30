@@ -1,0 +1,64 @@
+/* Note: Les overrides globaux !important ont été supprimés (P0)
+ * Utilisez les classes canoniques suivantes pour garantir la cohérence dark/light:
+ * - Surfaces: .cmm-surface, .cmm-surface-muted, .cmm-panel, .cmm-card
+ * - Texte: --text-primary, --text-secondary, --text-muted (via CSS variables)
+ * - Bordures: --border-default, --border-strong
+ * - Cards premium: .premium-card
+ * */
+
+/* Classes utilitaires legacy pour compatibilité - à migrer vers les tokens sémantiques */
+html[data-theme="dark"] .cmm-legacy-surface {
+  background-color: #111827;
+}
+
+html[data-theme="dark"] .cmm-legacy-muted {
+  background-color: #0b1220;
+}
+
+html[data-theme="dark"] .cmm-legacy-elevated {
+  background-color: #1e293b;
+}
+
+@layer utilities {
+/* ============================================================
+   P3 POLISH - Accessibilité, densité mobile, typographie
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   Accessibilité focus
+   ----------------------------------------------------------- */
+
+/* Focus visible cohérent pour tous les éléments interactifs */
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Focus dans le mode sobre - plus visible */
+[data-display-mode="sobre"] *:focus-visible {
+  outline: 3px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+/* Suppression du focus pour les éléments non-interactifs */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus spécifique pour les cards cliquables */
+.cmm-clickable:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: inherit;
+}
+
+}
+
+@layer utilities {
+/* Disabled cohérent */
+.cmm-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+}
