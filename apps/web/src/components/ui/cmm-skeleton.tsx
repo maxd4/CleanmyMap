@@ -14,25 +14,9 @@ function CmmSkeleton({
 }: SkeletonProps) {
   return (
     <div
-      className={cn(
-        "relative overflow-hidden",
-        animation === "shimmer" && "cmm-shimmer",
-        animation === "pulse" && "animate-pulse",
-        {
-          "rounded-full": variant === "circular",
-          "rounded-md": variant === "rectangular" || variant === "text" || variant === "title",
-          "rounded-xl": variant === "stat" || variant === "card" || variant === "chart",
-          "rounded-lg": variant === "list-item",
-          "h-4 w-full": variant === "text",
-          "h-5 w-2/3": variant === "title",
-          "h-16 w-full": variant === "stat",
-          "h-24 w-full": variant === "card",
-          "h-48 w-full": variant === "chart",
-          "h-12 w-full": variant === "list-item",
-          "bg-slate-100/80 dark:bg-slate-800/80": true,
-        },
-        className
-      )}
+      className={cn("cmm-skeleton", className)}
+      data-skeleton-variant={variant}
+      data-skeleton-animation={animation}
       {...props}
     />
   )

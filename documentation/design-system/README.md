@@ -50,6 +50,13 @@ Pour les champs texte standards, utiliser `CmmField` avec `CmmInput`,
 padding, radius, ombre et focus restent dans les classes `cmm-field-*` ; les
 exceptions spécialisées sont explicitement hors contrat.
 
+Pour les états système et les retours inline, utiliser respectivement les
+primitives composées `SystemStateLayout`, `SystemStateIcon`,
+`SystemStateTitle`, `SystemStateDescription`, `SystemStateMeta`,
+`SystemStateAction` et `CmmFeedback`. Leurs variants sont exposés par
+`data-state-variant` et `data-feedback-tone` ; leur rendu visuel est centralisé
+dans `globals.css`, avec les modes d'affichage et `prefers-reduced-motion`.
+
 ## Couleurs par famille
 
 La source canonique est :
