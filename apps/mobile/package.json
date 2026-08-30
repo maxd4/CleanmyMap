@@ -30,7 +30,7 @@
     "expo-task-manager": "~57.0.11",
     "expo-web-browser": "~57.0.2",
     "react": "19.2.8",
-    "react-native": "0.87.0",
+    "react-native": "0.87.1",
     "react-native-url-polyfill": "^4.0.0"
   },
   "devDependencies": {
