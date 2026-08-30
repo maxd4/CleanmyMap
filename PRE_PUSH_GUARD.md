@@ -28,18 +28,25 @@ Les deux scripts CI résolvent la racine du dépôt depuis
 La détection Vercel porte donc sur les chemins relatifs à la racine réelle :
 `.vercel/project.json` et `apps/web/.vercel/project.json`.
 
-Le garde-fou exécute actuellement, dans l'ordre:
+Le garde-fou détermine le périmètre à partir des changements de travail, de
+l'index, des fichiers non suivis et des commits locaux situés entre
+`origin/main` et `HEAD` lorsque cette référence est disponible.
 
-1. `npm run check:root-files`
-2. `npm run check:gitnexus-hygiene`
-3. `npm run check:9c-public-facades`
-4. `npm run check:doc-governance`
-5. `npm run audit:vercel-quota`
-6. `npm run test:regression-gates`
-7. `npm run lint`
-8. `npm run typecheck`
-9. `npm run build`
-10. `npx vercel build --yes` si au moins un fichier de liaison Vercel est présent
+Il exécute toujours les contrôles de gouvernance et de sécurité pertinents,
+puis applique la matrice suivante:
+
+| Périmètre détecté | Contrôles bloquants |
+| --- | --- |
+| Documentation | gouvernance documentaire et contrôle des visuels |
+| `apps/web/supabase/` | audit de l'arbre de migrations, gates web statiques et Vitest ciblé |
+| Scripts | `npm run test:scripts` |
+| TypeScript/source web | lint, typecheck, audit Vercel, politique des fichiers lourds et Vitest ciblé |
+| Configuration Vercel ou code nécessitant un build | build de production ; `npx vercel build --yes` seulement si un lien Vercel existe |
+
+Les contrôles hors périmètre sont affichés explicitement comme `[skip]`. Un
+changement documentaire ne déclenche donc pas les gates web, scripts,
+Supabase ou build. Si aucun changement ne peut être déterminé, le garde-fou
+utilise la validation complète séparée `npm run checks:full`.
 
 L'étape Vercel peut être explicitement ignorée pour un contrôle local avec :
 
@@ -93,6 +100,15 @@ npx vercel inspect <deployment-url> --logs
 
 Note Windows: si `vercel build --yes` échoue avec `EPERM: operation not permitted, symlink ...`, le garde-fou doit rester bloquant. Le build applicatif peut être valide, mais l'empaquetage Vercel local n'est pas validé. À résoudre avant push via un environnement qui autorise les symlinks, par exemple terminal administrateur, Developer Mode Windows ou environnement Linux/WSL configuré.
 
-## Exception document-only
+## Validation complète release/transversale
 
-Pour une modification strictement documentaire, le build peut être inutile pour travailler localement, mais il reste obligatoire avant un push GitHub si le changement est destiné à être publié.
+Pour une release ou un changement transversal, utiliser explicitement la voie
+complète:
+
+```powershell
+npm run checks:full
+```
+
+La variante `npm run checks:full:e2e` ajoute Playwright lorsque cette preuve
+est requise. `prepush:guard` reste la validation proportionnelle au périmètre
+du push courant.
