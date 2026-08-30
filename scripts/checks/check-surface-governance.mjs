@@ -54,6 +54,24 @@ function read(relativePath) {
   return fs.readFileSync(absolutePath, "utf8");
 }
 
+function readCssEntryPoint(relativePath, seen = new Set()) {
+  const absolutePath = path.join(repositoryRoot, relativePath.replaceAll("/", path.sep));
+  if (seen.has(absolutePath)) return "";
+  seen.add(absolutePath);
+  const content = read(relativePath);
+  const imports = [...content.matchAll(/@import\s+["']([^"']+)["']\s*;/g)];
+  return [
+    content,
+    ...imports
+      .map(([, importPath]) => importPath)
+      .filter((importPath) => importPath.startsWith("."))
+      .map((importPath) => readCssEntryPoint(
+        path.relative(repositoryRoot, path.resolve(path.dirname(absolutePath), importPath)),
+        seen,
+      )),
+  ].join("\n");
+}
+
 for (const relativePath of canonicalFiles) {
   const source = read(relativePath);
   for (const forbidden of forbiddenByFile.get(relativePath) ?? []) {
@@ -63,7 +81,7 @@ for (const relativePath of canonicalFiles) {
   }
 }
 
-const globals = read(globalsPath);
+const globals = readCssEntryPoint(globalsPath);
 for (const token of requiredSurfaceTokens) {
   if (!globals.includes(token)) violations.push(`${globalsPath}: missing canonical surface token ${token}`);
 }

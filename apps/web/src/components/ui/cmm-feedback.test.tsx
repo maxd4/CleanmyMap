@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CmmFeedback } from "./cmm-feedback";
 
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+const css = readFileSync(new URL("../../styles/states-feedback.css", import.meta.url), "utf8");
 const source = readFileSync(new URL("./cmm-feedback.tsx", import.meta.url), "utf8");
 
 describe("canonical inline feedback", () => {

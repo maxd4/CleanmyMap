@@ -1,0 +1,314 @@
+@layer utilities {
+  /* Base: Éléments interactifs natifs */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href],
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  summary {
+    cursor: pointer;
+  }
+
+  /* Éléments de texte */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    cursor: text;
+  }
+
+  /* Éléments désactivés */
+  :disabled,
+  [aria-disabled="true"],
+  .disabled {
+    cursor: not-allowed !important;
+  }
+
+  /* Éléments draggables */
+  [draggable="true"],
+  .cursor-grab {
+    cursor: grab;
+  }
+
+  .cursor-grab:active,
+  .cursor-grabbing,
+  [draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  /* Classes utilitaires cursor explicites */
+  .cursor-pointer { cursor: pointer; }
+  .cursor-text { cursor: text; }
+  .cursor-not-allowed { cursor: not-allowed; }
+  .cursor-default { cursor: default; }
+  .cursor-help { cursor: help; }
+  .cursor-wait { cursor: wait; }
+  .cursor-move { cursor: move; }
+  .cursor-crosshair { cursor: crosshair; }
+  .cursor-zoom-in { cursor: zoom-in; }
+  .cursor-zoom-out { cursor: zoom-out; }
+
+  /* Comportement par défaut pour éléments non-interactifs */
+  .cursor-inherit { cursor: inherit; }
+
+  /* ============================================================
+     COLOR POP-OUT — 60/30/10 rule
+     60% neutral canvas, 30% secondary (slate/muted), 10% CTA accent
+     ============================================================ */
+
+  /* Primary CTA pop-out: high-chroma emerald with warm contrast */
+  .cmm-cta-pop {
+    background: var(--action-primary-bg);
+    color: var(--action-primary-text);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    transition: background 0.18s ease, box-shadow 0.22s ease, transform 0.15s ease;
+  }
+  .cmm-cta-pop:hover {
+    background: var(--action-primary-hover);
+    box-shadow: 0 4px 14px -4px rgba(16, 185, 129, 0.45);
+    transform: translateY(-1px);
+  }
+  .cmm-cta-pop:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px -2px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Neutral 30%: secondary surfaces – subtle hover tint */
+  .cmm-surface-action {
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .cmm-surface-action:hover {
+    background: var(--action-secondary-hover);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+
+  /* ============================================================
+     INTERACTION POLISH — Cards, buttons, controls
+     ============================================================ */
+
+  /* Cards et surfaces cliquables */
+  .cmm-clickable {
+    cursor: pointer;
+    transition:
+      transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .cmm-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .cmm-clickable:active {
+    transform: translateY(0) scale(0.99);
+    box-shadow: var(--shadow-soft);
+    transition-duration: 0.08s;
+  }
+
+  /* S'assurer que les enfants d'éléments cliquables héritent correctement */
+  .cmm-clickable > * {
+    cursor: inherit;
+  }
+
+  /* Liens et boutons avec indicateur visuel supplémentaire */
+  .cmm-interactive {
+    cursor: pointer;
+    position: relative;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.18s ease,
+      transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .cmm-interactive::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.06), transparent 70%);
+  }
+
+  .cmm-interactive:hover::after {
+    opacity: 1;
+  }
+
+  .cmm-interactive:active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+  }
+
+  /* Primitive bouton : géométrie, états et surfaces sont exclusivement tokenisés. */
+  .cmm-button {
+    --cmm-button-height: var(--cmm-button-height-md);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-md);
+    --cmm-button-font-size: 0.875rem;
+    --cmm-button-background: var(--action-secondary-bg);
+    --cmm-button-background-hover: var(--action-secondary-hover);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--action-secondary-text);
+    --cmm-button-radius: var(--radius-sm);
+    box-sizing: border-box;
+    display: inline-flex;
+    height: var(--cmm-button-height);
+    min-width: max-content;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cmm-button-gap);
+    padding-inline: var(--cmm-button-padding-x);
+    border: 1px solid var(--cmm-button-border);
+    border-radius: var(--cmm-button-radius);
+    background-color: var(--cmm-button-background);
+    background-image: var(--cmm-button-background-image);
+    color: var(--cmm-button-color);
+    font: 600 var(--cmm-button-font-size) / 1.25 var(--font-base);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: var(--cmm-button-shadow);
+    cursor: pointer;
+    transition: var(--cmm-button-transition);
+  }
+
+  .cmm-button[data-cmm-button-tone="primary"] {
+    --cmm-button-background: var(--action-primary-bg);
+    --cmm-button-background-hover: var(--action-primary-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-bg) 86%, white), var(--action-primary-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-hover) 86%, white), var(--action-primary-hover));
+    --cmm-button-border: var(--action-primary-bg);
+    --cmm-button-border-hover: var(--action-primary-hover);
+    --cmm-button-color: var(--action-primary-text);
+  }
+
+  .cmm-button[data-cmm-button-tone="secondary"] {
+    --cmm-button-border: var(--border-strong);
+    --cmm-button-border-hover: var(--action-primary-bg);
+  }
+
+  .cmm-button[data-cmm-button-tone="tertiary"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--text-primary);
+    --cmm-button-shadow: none;
+  }
+
+  .cmm-button[data-cmm-button-tone="destructive"] {
+    --cmm-button-background: var(--action-destructive-bg);
+    --cmm-button-background-hover: var(--action-destructive-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-bg) 86%, white), var(--action-destructive-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-hover) 86%, white), var(--action-destructive-hover));
+    --cmm-button-border: var(--action-destructive-bg);
+    --cmm-button-border-hover: var(--action-destructive-hover);
+    --cmm-button-color: var(--action-destructive-text);
+  }
+
+  .cmm-button[data-cmm-button-size="sm"] {
+    --cmm-button-height: var(--cmm-button-height-sm);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-sm);
+    --cmm-button-font-size: 0.75rem;
+  }
+
+  .cmm-button[data-cmm-button-size="lg"] {
+    --cmm-button-height: var(--cmm-button-height-lg);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-lg);
+    --cmm-button-font-size: 1rem;
+  }
+
+  .cmm-button[data-cmm-button-variant="pill"] {
+    --cmm-button-radius: var(--radius-full);
+  }
+
+  .cmm-button[data-cmm-button-variant="ghost"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: transparent;
+    --cmm-button-border-hover: transparent;
+    --cmm-button-shadow: none;
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):hover {
+    border-color: var(--cmm-button-border-hover);
+    background-color: var(--cmm-button-background-hover);
+    background-image: var(--cmm-button-background-image-hover);
+    transform: var(--cmm-button-hover-transform);
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):active {
+    transform: var(--cmm-button-active-transform);
+  }
+
+  .cmm-button:focus-visible {
+    outline: 2px solid var(--cmm-button-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cmm-button[data-cmm-button-disabled="true"],
+  .cmm-button[data-cmm-button-loading="true"] {
+    cursor: not-allowed;
+    opacity: var(--cmm-button-disabled-opacity);
+    pointer-events: none;
+  }
+
+  /* ============================================================
+
+/* Hover states subtils */
+.cmm-hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cmm-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Active states */
+.cmm-active-press:active {
+  transform: translateY(1px);
+}
+
+/* Disabled cohérent */
+.cmm-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   Réduction de mouvement (accessibilité)
+   ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cmm-clickable:hover,
+  .cmm-hover-lift:hover {
+    transform: none !important;
+  }
+}
+}

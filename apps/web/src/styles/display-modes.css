@@ -1,0 +1,217 @@
+/* ============================================================
+   DISPLAY MODES - Chartes graphiques distinctes
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   MODE EXHAUSTIF (défaut)
+   Charte premium complète: gradients, glassmorphism, animations
+   ----------------------------------------------------------- */
+/* Aucune règle spécifique - le CSS par défaut s'applique */
+
+/* -----------------------------------------------------------
+   MODE MINIMALISTE
+   Essentiel stylé: fond uni, ombres soft, pas de blur
+   ----------------------------------------------------------- */
+[data-display-mode="minimaliste"] {
+  /* Désactiver le mesh gradient */
+  --vibrant-bg: none;
+  /* Contrat surface : carte standard plate, elevated limité au soft. */
+  --cmm-surface-background: var(--bg-elevated);
+  --cmm-surface-background-muted: var(--bg-muted);
+  --cmm-surface-border: var(--border-strong);
+  --cmm-surface-border-strong: var(--border-strong);
+  --cmm-surface-shadow: none;
+  --cmm-surface-shadow-elevated: var(--shadow-soft);
+  --cmm-surface-blur: none;
+  --cmm-surface-texture-opacity: 0;
+  --cmm-surface-hover-translate: 0;
+  --cmm-surface-hover-scale: 1;
+  --cmm-surface-active-scale: 1;
+  --cmm-surface-transition-duration: 150ms;
+  --shadow-elevated: var(--shadow-soft);
+  --shadow-vibrant: var(--shadow-soft);
+  /* Désactiver glassmorphism par défaut */
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-bg-dark: rgba(15, 23, 42, 0.95);
+  --glass-blur: none;
+}
+
+/* Masquer les éléments décoratifs excessifs */
+[data-display-mode="minimaliste"] .exhaustive-only {
+  display: none;
+}
+
+/* Afficher uniquement en mode minimaliste */
+[data-display-mode="exhaustif"] .minimal-only,
+[data-display-mode="sobre"] .minimal-only {
+  display: none;
+}
+
+/* Afficher uniquement en mode sobre */
+[data-display-mode="exhaustif"] .sober-only,
+[data-display-mode="minimaliste"] .sober-only {
+  display: none;
+}
+
+/* Visible en exhaustif et minimaliste, masqué en sobre */
+[data-display-mode="sobre"] .not-sober {
+  display: none !important;
+}
+
+/* Fond uni sans mesh */
+[data-display-mode="minimaliste"] body {
+  background: var(--background);
+}
+
+/* Cards sans glassmorphism mais avec style propre */
+[data-display-mode="minimaliste"] .cmm-minimal {
+  backdrop-filter: none;
+  background: var(--bg-elevated);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Désactiver animations complexes, garder transitions douces */
+[data-display-mode="minimaliste"] .cmm-minimal-animate {
+  animation: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Typographie sans gradient */
+[data-display-mode="minimaliste"] .cmm-minimal-text {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--text-primary);
+  -webkit-text-fill-color: initial;
+}
+
+/* Hover minimaliste (pas de transform) */
+[data-display-mode="minimaliste"] .cmm-minimal-hover:hover {
+  transform: none;
+  background-color: var(--bg-muted);
+}
+
+/* -----------------------------------------------------------
+   MODE SOBRE
+   Accessibilité cognitive: aucun effet, statique, contrastes élevés
+   ----------------------------------------------------------- */
+[data-display-mode="sobre"] {
+  --font-base: var(--font-sober);
+  --font-sans: var(--font-sober);
+  --font-display: var(--font-sober);
+  /* Supprimer tous les effets visuels */
+  --shadow-soft: none;
+  --shadow-elevated: none;
+  --shadow-vibrant: none;
+  --shadow-premium: none;
+  --glass-blur: none;
+  --glass-bg: var(--background);
+  --glass-bg-dark: var(--background);
+  --cmm-surface-background: var(--background);
+  --cmm-surface-background-muted: var(--background);
+  --cmm-surface-border: var(--border-strong);
+  --cmm-surface-border-strong: var(--border-strong);
+  --cmm-surface-shadow: none;
+  --cmm-surface-shadow-elevated: none;
+  --cmm-surface-blur: none;
+  --cmm-surface-texture-opacity: 0;
+  --cmm-surface-hover-translate: 0;
+  --cmm-surface-hover-scale: 1;
+  --cmm-surface-active-scale: 1;
+  --cmm-surface-transition-duration: 0ms;
+  /* Couleurs unies uniquement */
+  --bg-elevated: var(--background);
+  --bg-muted: var(--background);
+}
+
+/* Masquer éléments décoratifs */
+[data-display-mode="sobre"] .exhaustive-only,
+[data-display-mode="sobre"] .minimal-only {
+  display: none !important;
+}
+
+/* Fond strictement uni */
+[data-display-mode="sobre"] body {
+  background: var(--background) !important;
+}
+
+/* Classes canoniques pour mode sobre */
+[data-display-mode="sobre"] .cmm-sober {
+  border-radius: 0.75rem;
+  border-width: 1px;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  background: var(--background);
+  border-color: #cbd5e1;
+}
+
+html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
+  border-color: #334155;
+  background: #0b1220;
+}
+
+/* Aucune animation */
+[data-display-mode="sobre"] .cmm-sober-animate {
+  animation: none !important;
+  transition: opacity 0.1s ease-out !important;
+}
+
+/* Typographie plate */
+[data-display-mode="sobre"] .cmm-sober-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Hover uniquement sur bordure */
+[data-display-mode="sobre"] .cmm-sober-hover:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--text-primary) !important;
+}
+
+/* Focus visible uniquement */
+[data-display-mode="sobre"] .cmm-sober-focus:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+/* Boutons : les modes ne changent que les effets, jamais la géométrie. */
+[data-display-mode="minimaliste"] .cmm-button {
+  --cmm-button-shadow: none;
+  --cmm-button-hover-transform: none;
+  --cmm-button-active-transform: none;
+  --cmm-button-background-image: none;
+  --cmm-button-background-image-hover: none;
+  --cmm-button-transition-duration: 150ms;
+  --cmm-button-transition: background-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    border-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
+}
+
+[data-display-mode="sobre"] .cmm-button {
+  --cmm-button-shadow: none;
+  --cmm-button-hover-transform: none;
+  --cmm-button-active-transform: none;
+  --cmm-button-background-image: none;
+  --cmm-button-background-image-hover: none;
+  --cmm-button-transition-duration: 0ms;
+  --cmm-button-transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmm-button {
+    --cmm-button-hover-transform: none;
+    --cmm-button-active-transform: none;
+    --cmm-button-transition: none;
+    transition: none !important;
+  }
+
+  .cmm-button:hover,
+  .cmm-button:active {
+    transform: none !important;
+  }
+}

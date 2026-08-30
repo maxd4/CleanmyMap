@@ -3,7 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "./cmm-field";
 
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  const css = [
+    readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8"),
+    readFileSync(new URL("../../styles/forms.css", import.meta.url), "utf8"),
+    readFileSync(new URL("../../styles/states-feedback.css", import.meta.url), "utf8"),
+  ].join("\n");
 const source = readFileSync(new URL("./cmm-field.tsx", import.meta.url), "utf8");
 
 describe("canonical form fields", () => {
