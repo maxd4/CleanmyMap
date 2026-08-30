@@ -11,8 +11,12 @@ import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { getServerDisplayModePreference } from "@/lib/server-preferences";
-import { getServerLocale } from "@/lib/server-preferences";
+import {
+  DEFAULT_DISPLAY_MODE,
+  DEFAULT_LOCALE,
+  DEFAULT_THEME,
+} from "@/lib/ui/preferences";
+import { DisplayModeInitializer } from "@/components/ui/display-mode-initializer";
 
 export const metadata: Metadata = appMetadata;
 
@@ -25,22 +29,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const displayModePreference = await getServerDisplayModePreference();
-  const locale = await getServerLocale();
-
   return (
-    <html className="h-full antialiased" suppressHydrationWarning data-theme="mixed">
+    <html
+      className="h-full antialiased"
+      lang={DEFAULT_LOCALE}
+      suppressHydrationWarning
+      data-theme={DEFAULT_THEME}
+      data-display-mode={DEFAULT_DISPLAY_MODE}
+    >
       <head>
+        <DisplayModeInitializer />
         <OrganizationJsonLd />
         <WebSiteJsonLd />
         <FAQJsonLd />
       </head>
       <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">
-        <SitePreferencesProvider
-          initialLocale={locale}
-          initialDisplayMode={displayModePreference.displayMode}
-          initialDisplayModeExplicit={displayModePreference.isExplicit}
-        >
+        <SitePreferencesProvider>
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
             signUpUrl="/sign-up"

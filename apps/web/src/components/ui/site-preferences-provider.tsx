@@ -84,11 +84,11 @@ export function SitePreferencesProvider({
   const shouldRefreshAfterLocaleChange = useRef(false);
 
   const [locale, setLocaleState] = useState<Locale>(
-    // Le cookie serveur est la source initiale; le localStorage legacy est
-    // migré après montage sans réécrire temporairement la valeur serveur.
+    // Le rendu serveur reste déterministe; la préférence navigateur est
+    // restaurée après montage pour éviter un mismatch d'hydratation.
     resolveInitialLocale(initialLocale, null),
   );
-  const [hasResolvedLocalePreference, setHasResolvedLocalePreference] =
+  const [hasResolvedClientPreferences, setHasResolvedClientPreferences] =
     useState(false);
 
   const [theme, setThemeState] = useState<ThemeMode>(
@@ -117,7 +117,8 @@ export function SitePreferencesProvider({
         setIsDisplayModeExplicitlySet(true);
       }
     }
-    setHasResolvedLocalePreference(true);
+    removeLocalStorageEntry(STORAGE_KEYS.displayModePendingSync);
+    setHasResolvedClientPreferences(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,7 +127,7 @@ export function SitePreferencesProvider({
       return;
     }
 
-    if (!hasResolvedLocalePreference) {
+    if (!hasResolvedClientPreferences) {
       return;
     }
 
@@ -142,19 +143,27 @@ export function SitePreferencesProvider({
         window.location.reload();
       },
     });
-  }, [hasResolvedLocalePreference, locale]);
+  }, [hasResolvedClientPreferences, locale]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
+    if (!hasResolvedClientPreferences) {
+      return;
+    }
+
     siteThemeStorage.write(theme);
     document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+  }, [hasResolvedClientPreferences, theme]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!hasResolvedClientPreferences) {
       return;
     }
 
@@ -168,15 +177,7 @@ export function SitePreferencesProvider({
 
     siteDisplayModeStorage.remove();
     clearCookie(STORAGE_KEYS.displayMode);
-  }, [displayMode, isDisplayModeExplicitlySet]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    removeLocalStorageEntry(STORAGE_KEYS.displayModePendingSync);
-  }, []);
+  }, [displayMode, hasResolvedClientPreferences, isDisplayModeExplicitlySet]);
 
   const setLocale = useCallback((value: Locale) => {
     setLocaleState(value);

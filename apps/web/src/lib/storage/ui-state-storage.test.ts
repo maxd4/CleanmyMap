@@ -47,9 +47,18 @@ describe("ui state storage", () => {
     expect(siteThemeStorage.read()).toBe("mixed");
     expect(memory.get("cleanmymap.theme")).toBe("mixed");
 
-    expect(siteDisplayModeStorage.write("sobre")).toBe(true);
-    expect(siteDisplayModeStorage.read()).toBe("sobre");
-    expect(memory.get("cleanmymap.display_mode")).toBe("sobre");
+    memory.set("cleanmymap.locale", "de");
+    expect(siteLocaleStorage.read()).toBeNull();
+    memory.set("cleanmymap.theme", "light");
+    expect(siteThemeStorage.read()).toBeNull();
+
+    for (const displayMode of ["exhaustif", "minimaliste", "sobre"] as const) {
+      expect(siteDisplayModeStorage.write(displayMode)).toBe(true);
+      expect(siteDisplayModeStorage.read()).toBe(displayMode);
+      expect(memory.get("cleanmymap.display_mode")).toBe(displayMode);
+    }
+    memory.set("cleanmymap.display_mode", "compact");
+    expect(siteDisplayModeStorage.read()).toBeNull();
 
     expect(dashboardPeriodStorage.write(365)).toBe(true);
     expect(dashboardPeriodStorage.read()).toBe(365);
