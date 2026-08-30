@@ -42,20 +42,28 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "public interactions campaign 3a",
+      testMatch: /public-interactions-campaign-3a\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "global teardown",
       testMatch: /global\.teardown\.ts/,
     },
   ],
-  webServer: {
-    command: "node scripts/dev/dev-with-fallback-port.mjs",
-    url: baseURL,
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: {
-      ...process.env,
-      DEV_HOST: process.env.DEV_HOST ?? "127.0.0.1",
-      DEV_STRICT_PORT: process.env.DEV_STRICT_PORT ?? "1",
-      CMM_DISABLE_DEV_AUTH_BYPASS: "1",
-    },
-  },
+  webServer:
+    process.env.PLAYWRIGHT_SKIP_WEBSERVER === "1"
+      ? undefined
+      : {
+          command: "node scripts/dev/dev-with-fallback-port.mjs",
+          url: baseURL,
+          reuseExistingServer: false,
+          timeout: 120_000,
+          env: {
+            ...process.env,
+            DEV_HOST: process.env.DEV_HOST ?? "127.0.0.1",
+            DEV_STRICT_PORT: process.env.DEV_STRICT_PORT ?? "1",
+            CMM_DISABLE_DEV_AUTH_BYPASS: "1",
+          },
+        },
 });
