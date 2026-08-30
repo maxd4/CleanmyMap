@@ -12,6 +12,7 @@ import type {
   CleanPlaceModerationEditDraft,
 } from"./types";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type StepConfirmProps = {
@@ -49,24 +50,24 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
     </p>
 
     <div className="mt-3 flex flex-wrap items-center gap-3">
-    <button
+    <CmmButton
       onClick={() => void workflow.onDownloadCsv()}
-      disabled={workflow.csvState ==="pending"}
-      className="rounded-lg bg-emerald-600 px-4 py-2 cmm-text-small font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+      tone="primary"
+      loading={workflow.csvState === "pending"}
     >
     {workflow.csvState ==="pending"
     ? (fr ? "Préparation CSV..." : "Preparing CSV...")
     : (fr ? "Confirmer export CSV" : "Confirm CSV export")}
-    </button>
-    <button
+    </CmmButton>
+    <CmmButton
       onClick={() => void workflow.onDownloadJson()}
-      disabled={workflow.jsonState ==="pending"}
-      className="rounded-lg border border-slate-300 bg-white px-4 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:cmm-text-muted"
+      tone="secondary"
+      loading={workflow.jsonState === "pending"}
     >
     {workflow.jsonState ==="pending"
     ? (fr ? "Préparation JSON..." : "Preparing JSON...")
     : (fr ? "Confirmer export JSON" : "Confirm JSON export")}
-    </button>
+    </CmmButton>
     </div>
 
     <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
@@ -84,22 +85,23 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  spellCheck={false}
  />
  <div className="mt-3 flex flex-wrap items-center gap-3">
- <button
- onClick={() => void workflow.onImportDryRun()}
- disabled={workflow.importDryRunState ==="pending"}
- className="rounded-lg border border-slate-300 bg-white px-4 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100 disabled:cursor-not-allowed"
+ <CmmButton
+  onClick={() => void workflow.onImportDryRun()}
+  tone="secondary"
+  loading={workflow.importDryRunState === "pending"}
  >
  {workflow.importDryRunState ==="pending"
  ?"Dry-run..."
  :"Previsualiser (dry-run)"}
- </button>
- <button
+ </CmmButton>
+ <CmmButton
  onClick={() => void workflow.onImportPastActions()}
- disabled={workflow.importState ==="pending" || !workflow.canConfirmImport}
- className="rounded-lg bg-slate-900 px-4 py-2 cmm-text-small font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+ disabled={!workflow.canConfirmImport}
+ loading={workflow.importState === "pending"}
+ tone="primary"
  >
  {workflow.importState ==="pending" ?"Import..." :"Confirmer import"}
- </button>
+ </CmmButton>
  </div>
  <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
  Confirmation explicite
@@ -209,20 +211,20 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </label>
  )}
  <div className="flex items-end">
- <button
+ <CmmButton
  onClick={() => void workflow.onModerateEntity()}
  disabled={
- workflow.moderationState ==="pending" ||
  !workflow.moderationConfirmed ||
  workflow.moderationConfirmationText.trim().toUpperCase() !==
 "CONFIRMER MODERATION"
  }
- className="rounded-lg bg-red-700 px-4 py-2 cmm-text-small font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+ loading={workflow.moderationState === "pending"}
+ tone="destructive"
  >
  {workflow.moderationState ==="pending"
  ?"Application..."
  :"Confirmer moderation"}
- </button>
+ </CmmButton>
  </div>
  </div>
  {workflow.selectedRecordType === "spot" || workflow.selectedRecordType === "clean_place" ? (

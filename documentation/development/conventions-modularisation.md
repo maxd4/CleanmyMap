@@ -40,3 +40,16 @@
   - il entasse plusieurs etats et transformations,
   - il contient plusieurs micro-flux qui se croisent,
   - il devient difficile de voir le contrat du composant en une lecture.
+
+## Exécution des plans
+
+Lorsqu'un plan de modularisation est utilisé :
+
+- lire le plan entier avant de commencer à coder ;
+- exécuter les phases séquentielles dans l'ordre prévu ;
+- valider chaque phase avant de passer à la suivante ;
+- ne pas modifier l'API publique, les props ou les exports sans instruction explicite ;
+- en cas de doute, s'arrêter et lister les options au lieu d'inventer un comportement.
+
+Un plan doit rester autonome, avec ses prompts d'exécution et ses critères de
+validation directement compréhensibles par l'agent qui l'exécute.

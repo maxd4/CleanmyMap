@@ -29,7 +29,7 @@ Supabase doit rester la couche des données vraiment vivantes et utiles: comptes
 Quand une table est centrale, elle peut rester très sollicitée. Le but n'est pas de la faire disparaître, mais d'éviter qu'elle soit relue ou recopiée naïvement.
 
 Référence à garder à portée de main:
-- [Audit localStorage vs Supabase](../backend/local-storage-vs-supabase-audit.md)
+- [Gouvernance des données et choix du stockage](../architecture/data-governance.md)
 - [Guide de référence database](../database/README.md)
 - [Playbook d'optimisation des tables Supabase](../database/supabase-table-optimization-playbook.md)
 

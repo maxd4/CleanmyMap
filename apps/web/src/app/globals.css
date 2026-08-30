@@ -27,6 +27,9 @@
   --action-secondary-bg: #ffffff;
   --action-secondary-text: #0f172a;
   --action-secondary-hover: rgba(15, 23, 42, 0.04);
+  --action-destructive-bg: #dc2626;
+  --action-destructive-text: #ffffff;
+  --action-destructive-hover: #b91c1c;
 
   /* ============================================================
      TYPOGRAPHY TOKENS - stack systeme stable pour le build
@@ -177,6 +180,31 @@
     transform var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing);
   --cmm-card-disabled-opacity: 0.6;
 
+  /* ============================================================
+     BUTTONS - primitive canonique
+     ============================================================ */
+  --cmm-button-height-sm: 2.5rem;
+  --cmm-button-height-md: 2.75rem;
+  --cmm-button-height-lg: 3rem;
+  --cmm-button-padding-x-sm: 0.75rem;
+  --cmm-button-padding-x-md: 1rem;
+  --cmm-button-padding-x-lg: 1.25rem;
+  --cmm-button-gap: 0.5rem;
+  --cmm-button-radius: var(--radius-sm);
+  --cmm-button-transition-duration: 180ms;
+  --cmm-button-transition-easing: ease;
+  --cmm-button-shadow: var(--shadow-soft);
+  --cmm-button-hover-transform: translateY(-1px);
+  --cmm-button-active-transform: scale(0.98);
+  --cmm-button-disabled-opacity: 0.6;
+  --cmm-button-focus-ring: var(--focus-ring);
+  --cmm-button-transition: background-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    background-image var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    border-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    box-shadow var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    transform var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
+
 
 
   /* 6. Semantic Text Colors */
@@ -211,6 +239,9 @@ html[data-theme="dark"] {
   --action-secondary-bg: rgba(15, 23, 42, 0.72);
   --action-secondary-text: #f8fafc;
   --action-secondary-hover: rgba(16, 185, 129, 0.12);
+  --action-destructive-bg: #ef4444;
+  --action-destructive-text: #ffffff;
+  --action-destructive-hover: #dc2626;
 
   /* States */
   --text-success: #34d399;
@@ -1210,6 +1241,123 @@ html[data-theme="dark"] {
     transition-duration: 0.08s;
   }
 
+  /* Primitive bouton : géométrie, états et surfaces sont exclusivement tokenisés. */
+  .cmm-button {
+    --cmm-button-height: var(--cmm-button-height-md);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-md);
+    --cmm-button-font-size: 0.875rem;
+    --cmm-button-background: var(--action-secondary-bg);
+    --cmm-button-background-hover: var(--action-secondary-hover);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--action-secondary-text);
+    --cmm-button-radius: var(--radius-sm);
+    box-sizing: border-box;
+    display: inline-flex;
+    height: var(--cmm-button-height);
+    min-width: max-content;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cmm-button-gap);
+    padding-inline: var(--cmm-button-padding-x);
+    border: 1px solid var(--cmm-button-border);
+    border-radius: var(--cmm-button-radius);
+    background-color: var(--cmm-button-background);
+    background-image: var(--cmm-button-background-image);
+    color: var(--cmm-button-color);
+    font: 600 var(--cmm-button-font-size) / 1.25 var(--font-base);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: var(--cmm-button-shadow);
+    cursor: pointer;
+    transition: var(--cmm-button-transition);
+  }
+
+  .cmm-button[data-cmm-button-tone="primary"] {
+    --cmm-button-background: var(--action-primary-bg);
+    --cmm-button-background-hover: var(--action-primary-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-bg) 86%, white), var(--action-primary-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-primary-hover) 86%, white), var(--action-primary-hover));
+    --cmm-button-border: var(--action-primary-bg);
+    --cmm-button-border-hover: var(--action-primary-hover);
+    --cmm-button-color: var(--action-primary-text);
+  }
+
+  .cmm-button[data-cmm-button-tone="secondary"] {
+    --cmm-button-border: var(--border-strong);
+    --cmm-button-border-hover: var(--action-primary-bg);
+  }
+
+  .cmm-button[data-cmm-button-tone="tertiary"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-border: var(--border-default);
+    --cmm-button-border-hover: var(--border-strong);
+    --cmm-button-color: var(--text-primary);
+    --cmm-button-shadow: none;
+  }
+
+  .cmm-button[data-cmm-button-tone="destructive"] {
+    --cmm-button-background: var(--action-destructive-bg);
+    --cmm-button-background-hover: var(--action-destructive-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-bg) 86%, white), var(--action-destructive-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-destructive-hover) 86%, white), var(--action-destructive-hover));
+    --cmm-button-border: var(--action-destructive-bg);
+    --cmm-button-border-hover: var(--action-destructive-hover);
+    --cmm-button-color: var(--action-destructive-text);
+  }
+
+  .cmm-button[data-cmm-button-size="sm"] {
+    --cmm-button-height: var(--cmm-button-height-sm);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-sm);
+    --cmm-button-font-size: 0.75rem;
+  }
+
+  .cmm-button[data-cmm-button-size="lg"] {
+    --cmm-button-height: var(--cmm-button-height-lg);
+    --cmm-button-padding-x: var(--cmm-button-padding-x-lg);
+    --cmm-button-font-size: 1rem;
+  }
+
+  .cmm-button[data-cmm-button-variant="pill"] {
+    --cmm-button-radius: var(--radius-full);
+  }
+
+  .cmm-button[data-cmm-button-variant="ghost"] {
+    --cmm-button-background: transparent;
+    --cmm-button-background-hover: var(--bg-muted);
+    --cmm-button-background-image: none;
+    --cmm-button-background-image-hover: none;
+    --cmm-button-border: transparent;
+    --cmm-button-border-hover: transparent;
+    --cmm-button-shadow: none;
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):hover {
+    border-color: var(--cmm-button-border-hover);
+    background-color: var(--cmm-button-background-hover);
+    background-image: var(--cmm-button-background-image-hover);
+    transform: var(--cmm-button-hover-transform);
+  }
+
+  .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):active {
+    transform: var(--cmm-button-active-transform);
+  }
+
+  .cmm-button:focus-visible {
+    outline: 2px solid var(--cmm-button-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cmm-button[data-cmm-button-disabled="true"],
+  .cmm-button[data-cmm-button-loading="true"] {
+    cursor: not-allowed;
+    opacity: var(--cmm-button-disabled-opacity);
+    pointer-events: none;
+  }
+
   /* ============================================================
      FORM FIELD POLISH — Prompt #17
      ============================================================ */
@@ -1840,6 +1988,43 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 [data-display-mode="sobre"] .cmm-sober-focus:focus-visible {
   outline: 2px solid var(--text-primary);
   outline-offset: 2px;
+}
+
+/* Boutons : les modes ne changent que les effets, jamais la géométrie. */
+[data-display-mode="minimaliste"] .cmm-button {
+  --cmm-button-shadow: none;
+  --cmm-button-hover-transform: none;
+  --cmm-button-active-transform: none;
+  --cmm-button-background-image: none;
+  --cmm-button-background-image-hover: none;
+  --cmm-button-transition-duration: 150ms;
+  --cmm-button-transition: background-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    border-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
+}
+
+[data-display-mode="sobre"] .cmm-button {
+  --cmm-button-shadow: none;
+  --cmm-button-hover-transform: none;
+  --cmm-button-active-transform: none;
+  --cmm-button-background-image: none;
+  --cmm-button-background-image-hover: none;
+  --cmm-button-transition-duration: 0ms;
+  --cmm-button-transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmm-button {
+    --cmm-button-hover-transform: none;
+    --cmm-button-active-transform: none;
+    --cmm-button-transition: none;
+    transition: none !important;
+  }
+
+  .cmm-button:hover,
+  .cmm-button:active {
+    transform: none !important;
+  }
 }
 
 /* Profile-Specific Theming */

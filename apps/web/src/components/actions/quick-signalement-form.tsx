@@ -23,11 +23,17 @@ import {
 export type TrashSpotterObservationFormProps = {
   initialLocation?: { lat: number; lng: number } | null;
   onSignalementCreated?: () => void;
+  isAuthenticated?: boolean;
+  signInHref?: string;
+  signUpHref?: string;
 };
 
 export function TrashSpotterObservationForm({
   initialLocation = null,
   onSignalementCreated,
+  isAuthenticated = true,
+  signInHref,
+  signUpHref,
 }: TrashSpotterObservationFormProps) {
   const [recordType, setRecordType] = useState<QuickSignalementRecordType>("spot");
   const [selectedCategories, setSelectedCategories] = useState<WasteCategorySlug[]>([]);
@@ -44,10 +50,38 @@ export function TrashSpotterObservationForm({
   const [pendingPhotoUploads, setPendingPhotoUploads] = useState<SignalementEvidenceUploadItem[]>([]);
   const [submittedSignalementId, setSubmittedSignalementId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const { acquire, release } = useSubmissionLock();
   const isCleanPlace = recordType === "clean_place";
 
   useEffect(() => {
+    try {
+      const rawDraft = window.sessionStorage.getItem("cmm:signalement:pending-draft:v1");
+      if (rawDraft) {
+        const draft = JSON.parse(rawDraft) as {
+          recordType?: QuickSignalementRecordType;
+          selectedCategories?: WasteCategorySlug[];
+          location?: { lat: number; lng: number } | null;
+        };
+        if (draft.recordType === "spot" || draft.recordType === "clean_place") {
+          setRecordType(draft.recordType);
+        }
+        if (Array.isArray(draft.selectedCategories)) {
+          setSelectedCategories(draft.selectedCategories);
+        }
+        if (
+          draft.location &&
+          Number.isFinite(draft.location.lat) &&
+          Number.isFinite(draft.location.lng)
+        ) {
+          setLocation(draft.location);
+          setLocStatus("success");
+        }
+      }
+    } catch {
+      // Local resume data is optional and must never block the form.
+    }
+
     if (initialLocation) {
       setLocation(initialLocation);
       setLocStatus("success");
@@ -71,6 +105,21 @@ export function TrashSpotterObservationForm({
 
   const handleSubmit = async () => {
     if ((!isCleanPlace && selectedCategories.length === 0) || !location) return;
+    if (!isAuthenticated) {
+      try {
+        window.sessionStorage.setItem(
+          "cmm:signalement:pending-draft:v1",
+          JSON.stringify({ recordType, selectedCategories, location }),
+        );
+      } catch {
+        // Local resume data is optional; the authentication CTA remains usable.
+      }
+      setAuthRequired(true);
+      setError(
+        "Connectez-vous pour transmettre cette observation. Vos choix préparés restent sur cet appareil.",
+      );
+      return;
+    }
     if (!acquire()) {
       setError("Un signalement est déjà en cours. Réessayez dans un instant.");
       return;
@@ -88,6 +137,11 @@ export function TrashSpotterObservationForm({
         }),
       );
       setSubmittedSignalementId(created.id);
+      try {
+        window.sessionStorage.removeItem("cmm:signalement:pending-draft:v1");
+      } catch {
+        // Ignore cleanup failures after a successful server mutation.
+      }
       setSubmittedRecordType(recordType);
       onSignalementCreated?.();
       if (photos.length > 0) {
@@ -328,6 +382,27 @@ export function TrashSpotterObservationForm({
             {error}
           </div>
         )}
+
+        {authRequired ? (
+          <div className="flex flex-wrap justify-center gap-3 rounded-2xl border border-amber-300/30 bg-amber-400/10 p-4 text-center">
+            {signInHref ? (
+              <Link
+                href={signInHref}
+                className="rounded-xl bg-emerald-300 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-950"
+              >
+                Se connecter et reprendre
+              </Link>
+            ) : null}
+            {signUpHref ? (
+              <Link
+                href={signUpHref}
+                className="rounded-xl border border-emerald-200/40 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-100"
+              >
+                Créer un compte
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
         
          <button
            onClick={handleSubmit}

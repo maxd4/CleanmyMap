@@ -1,8 +1,6 @@
 import { TrashSpotterOwnerLoop } from "@/components/actions/trash-spotter-owner-loop";
-import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { cn } from "@/lib/utils";
 import { MapPin, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
@@ -39,50 +37,7 @@ export default async function SignalementPage({
     ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
     : null;
 
-  if (!userId) {
-    return (
-      <ClerkRequiredGate
-        isAuthenticated={false}
-        mode="blur"
-        lockedPreview={
-          <div className={cn("space-y-4 rounded-[3rem] border p-12 bg-white/5 backdrop-blur-2xl border-white/5")}>
-            <div className="rounded-[2rem] border border-white/5 bg-emerald-400/5 p-8">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
-                Cockpit Terrain
-              </p>
-              <p className="mt-4 text-lg text-white/20 leading-tight font-medium">
-                La géolocalisation haute précision et l&apos;envoi certifié se déverrouillent après connexion.
-              </p>
-            </div>
-          </div>
-        }
-      >
-        <div />
-      </ClerkRequiredGate>
-    );
-  }
-
   return (
-    <ClerkRequiredGate
-      isAuthenticated={Boolean(userId)}
-      mode="blur"
-      lockedPreview={
-        <div
-          className={cn(
-            "space-y-4 rounded-[3rem] border p-12 bg-white/5 backdrop-blur-2xl border-white/5",
-          )}
-        >
-          <div className="rounded-[2rem] border border-white/5 bg-emerald-400/5 p-8">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
-              Cockpit Terrain
-            </p>
-            <p className="mt-4 text-lg text-white/20 leading-tight font-medium">
-              La géolocalisation haute précision et l&apos;envoi certifié se déverrouillent après connexion.
-            </p>
-          </div>
-        </div>
-      }
-    >
       <AccountCompletionGate state={accountCompletion}>
         <SectionShell
           id="signalement"
@@ -115,11 +70,15 @@ export default async function SignalementPage({
               }
               className="p-1 sm:p-12"
             >
-              <TrashSpotterOwnerLoop initialLocation={initialLocation} />
+            <TrashSpotterOwnerLoop
+              initialLocation={initialLocation}
+              isAuthenticated={Boolean(userId)}
+              signInHref={`/sign-in?redirect_url=${encodeURIComponent("/signalement")}`}
+              signUpHref={`/sign-up?redirect_url=${encodeURIComponent("/signalement")}`}
+            />
             </FamilyRubriqueCard>
           </div>
         </SectionShell>
       </AccountCompletionGate>
-    </ClerkRequiredGate>
   );
 }

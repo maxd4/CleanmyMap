@@ -1,11 +1,11 @@
 "use client";
 
 import Link from"next/link";
-import type { ReactElement, ReactNode } from"react";
+import type { MouseEvent, ReactElement, ReactNode, Ref } from"react";
 import { isValidElement, cloneElement } from"react";
 import { cn } from"@/lib/utils";
 
-export type ButtonTone ="primary" |"secondary" |"tertiary";
+export type ButtonTone ="primary" |"secondary" |"tertiary" |"destructive";
 export type ButtonSize ="sm" |"md" |"lg";
 export type ButtonVariant ="default" |"pill" |"ghost";
 
@@ -14,40 +14,29 @@ export interface CmmButtonProps {
  href?: string;
  prefetch?: boolean;
  onClick?: () => void;
- tone?: ButtonTone | "muted";
+ tone?: ButtonTone;
  size?: ButtonSize;
  variant?: ButtonVariant;
  className?: string;
  disabled?: boolean;
+ loading?: boolean;
  ariaLabel?: string;
  title?: string;
  type?:"button" |"submit" |"reset";
  asChild?: boolean;
+ ref?: Ref<HTMLButtonElement>;
 }
 
-const toneClasses: Record<ButtonTone, string> = {
- primary:
-"border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-primary-ring)]",
- secondary:
-"border-[color:var(--cmm-button-secondary-border)] bg-[linear-gradient(135deg,var(--cmm-button-secondary-bg-start)_0%,var(--cmm-button-secondary-bg-end)_100%)] text-[var(--cmm-button-secondary-text)] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.18)] hover:border-[color:var(--cmm-button-secondary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-secondary-bg-hover-start)_0%,var(--cmm-button-secondary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-secondary-ring)]",
- tertiary:
-"border-[color:var(--cmm-button-tertiary-border)] bg-[linear-gradient(135deg,var(--cmm-button-tertiary-bg-start)_0%,var(--cmm-button-tertiary-bg-end)_100%)] text-[var(--cmm-button-tertiary-text)] shadow-[0_10px_22px_-20px_rgba(15,23,42,0.14)] hover:border-[color:var(--cmm-button-tertiary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-tertiary-bg-hover-start)_0%,var(--cmm-button-tertiary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-tertiary-ring)]",
+type CmmButtonChildProps = {
+ className?: string;
+ onClick?: (event: MouseEvent<HTMLElement>) => void;
+ disabled?: boolean;
+ tabIndex?: number;
+ title?: string;
+ "aria-label"?: string;
+ "aria-busy"?: boolean;
+ "aria-disabled"?: boolean;
 };
-
-const sizeClasses: Record<ButtonSize, string> = {
- sm:"px-2.5 py-1.5 text-xs",
- md:"px-3 py-2 text-sm",
- lg:"px-4 py-2.5 text-sm",
-};
-
-const variantClasses: Record<ButtonVariant, string> = {
- default:"rounded-lg",
- pill:"rounded-full",
- ghost:"rounded-lg shadow-none border-transparent",
-};
-
-const baseClasses =
-"cmm-interactive inline-flex items-center justify-center gap-1.5 border font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 dark:focus-visible:ring-offset-slate-900/80 disabled:opacity-50 disabled:cursor-not-allowed";
 
 export function CmmButton({
  children,
@@ -63,40 +52,87 @@ export function CmmButton({
  title,
  type ="button",
  asChild = false,
+ loading = false,
+ ref,
 }: CmmButtonProps) {
- const normalizedTone = tone === "muted" ? "tertiary" : tone;
- const classes = cn(
-  baseClasses,
-  toneClasses[normalizedTone],
-  sizeClasses[size],
-  variantClasses[variant],
-  className
- );
+ const blocked = Boolean(disabled || loading);
+ const classes = cn("cmm-button", className);
+ const handleClick = (event: MouseEvent<HTMLElement>) => {
+  if (blocked) {
+   event.preventDefault();
+   event.stopPropagation();
+   return;
+  }
+
+  onClick?.();
+ };
+ const stateProps = {
+  "data-cmm-button-tone": tone,
+  "data-cmm-button-size": size,
+  "data-cmm-button-variant": variant,
+  "data-cmm-button-disabled": disabled ? "true" : undefined,
+  "data-cmm-button-loading": loading ? "true" : undefined,
+  "aria-busy": loading || undefined,
+  "aria-disabled": blocked || undefined,
+ };
 
  if (href) {
  return (
- <Link href={href} prefetch={prefetch} className={classes} aria-label={ariaLabel} title={title}>
+ <Link
+  href={href}
+  prefetch={prefetch}
+  className={classes}
+  onClick={handleClick}
+  aria-label={ariaLabel}
+  title={title}
+  tabIndex={blocked ? -1 : undefined}
+  {...stateProps}
+ >
  {children}
  </Link>
  );
-}
+ }
 
  if (asChild && isValidElement(children)) {
-   const child = children as ReactElement<{ className?: string; onClick?: () => void }>;
-   return cloneElement(child, {
-     className: cn(classes, child.props.className),
-     onClick,
-   });
+   const child = children as ReactElement<CmmButtonChildProps>;
+   const childOnClick = child.props.onClick;
+   const childProps: Partial<CmmButtonChildProps> & Record<string, unknown> = {
+    ...stateProps,
+    className: cn(classes, child.props.className),
+    onClick: (event: MouseEvent<HTMLElement>) => {
+     if (blocked) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+     }
+
+     childOnClick?.(event);
+     onClick?.();
+    },
+    "aria-label": ariaLabel ?? child.props["aria-label"],
+    title: title ?? child.props.title,
+    "aria-busy": loading || child.props["aria-busy"] || undefined,
+    "aria-disabled": blocked || child.props["aria-disabled"] || undefined,
+    tabIndex: blocked ? -1 : child.props.tabIndex,
+   };
+
+   if (child.type === "button") {
+    childProps.disabled = blocked;
+   }
+
+   return cloneElement(child, childProps);
  }
 
  return (
  <button
- type={type}
- onClick={onClick}
- disabled={disabled}
- className={classes}
- aria-label={ariaLabel}
- title={title}
+  ref={ref}
+  type={type}
+  onClick={handleClick}
+  disabled={blocked}
+  className={classes}
+  aria-label={ariaLabel}
+  title={title}
+  {...stateProps}
  >
  {children}
  </button>

@@ -40,7 +40,7 @@ export function IdentityAndSharingSection({
   onToggleGroupJoinHelp,
 }: IdentityAndSharingSectionProps) {
   return (
-            <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
+            <CmmCard tone="emerald" variant="glass" size="lg">
               <div className="space-y-6">
                 <SectionLabel
                   icon={ClipboardList}
@@ -130,7 +130,7 @@ export function IdentityAndSharingSection({
 
 export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
   return (
-            <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
+            <CmmCard tone="emerald" variant="glass" size="lg">
               <div className="space-y-4">
                 <SectionLabel
                   icon={Sparkles}
@@ -344,7 +344,7 @@ export function ExpectedWasteSection({ form, updateField }: BaseSectionProps) {
 
 export function PreparationAndSafetySection({ form, updateField }: BaseSectionProps) {
   return (
-          <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
+          <CmmCard tone="emerald" variant="glass" size="lg">
             <div className="space-y-4">
               <SectionLabel
                 icon={PencilLine}

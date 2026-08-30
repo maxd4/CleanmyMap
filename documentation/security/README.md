@@ -12,7 +12,7 @@ Lire cette page avant toute modification concernant API, auth, données, CI, sec
 6. `admin-operation-audit.md`
 7. `url-validation-security.md`
 8. `regex-security.md`
-9. `../backend/RATE_LIMITING.md`
+9. `RATE_LIMITING.md`
 10. `CODEX_SECURITY_PLAYBOOK.md`
 11. `supabase-review-checklist.md`
 12. `github-audit-backlog.md`

@@ -35,9 +35,15 @@ export async function getSafeAuthSession(): Promise<SafeAuthSession> {
       error !== null &&
       "digest" in error &&
       (error as { digest?: string }).digest === "DYNAMIC_SERVER_USAGE";
+    const isMissingClerkMiddlewareContext =
+      error instanceof Error &&
+      error.message.includes("can't detect usage of clerkMiddleware");
 
     // Next.js can throw this during static generation when auth() is not allowed.
-    if (!isExpectedDynamicUsage) {
+    // Public-first routes may deliberately skip Clerk middleware for a request
+    // with no session signal. That is an anonymous, non-authorizing fallback,
+    // not an authentication bypass.
+    if (!isExpectedDynamicUsage && !isMissingClerkMiddlewareContext) {
       console.error("Safe auth session fallback triggered", error);
     }
 

@@ -43,6 +43,8 @@ type ActionDeclarationFormProps = {
   initialRecordType?: "action";
   initialActionId?: string | null;
   onReturnToChoice?: () => void;
+  signInHref?: string;
+  signUpHref?: string;
 };
 
 function SectionDivider({
@@ -147,7 +149,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     return (
       <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
         <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
-          <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl border-emerald-200/80 bg-white/95">
+          <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl">
             <div className="space-y-4 text-center">
               <Loader2 size={22} className="mx-auto animate-spin text-emerald-600" />
               <h2 className="text-2xl font-black tracking-tight text-emerald-950">
@@ -167,7 +169,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     return (
       <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
         <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
-          <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl border-rose-200/70 bg-white/96">
+          <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl">
             <div className="space-y-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-rose-700">
                 Erreur
@@ -257,6 +259,18 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
               <p className="text-sm leading-7 text-amber-950/82">
                 {restrictionMessage}
               </p>
+              <div className="flex flex-wrap gap-2">
+                {props.signInHref ? (
+                  <CmmButton href={props.signInHref} tone="primary" variant="pill" size="sm">
+                    Se connecter et reprendre
+                  </CmmButton>
+                ) : null}
+                {props.signUpHref ? (
+                  <CmmButton href={props.signUpHref} tone="secondary" variant="pill" size="sm">
+                    Créer un compte
+                  </CmmButton>
+                ) : null}
+              </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-amber-200/70 bg-[#FFF8EE] px-6 py-5">
               <button
@@ -324,16 +338,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl"
           >
             <div className="relative p-6 md:p-10 space-y-8">
-              {isCompletionBlocked ? (
-                <button
-                  type="button"
-                  aria-label="Ouvrir l'explication"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  onClick={() => setShowRestrictionDialog(true)}
-                  className="absolute inset-0 z-20 cursor-not-allowed rounded-[2.5rem] bg-transparent"
-                />
-              ) : null}
               {showPreparationSummary ? (
                 <section className="rounded-2xl border border-emerald-200/70 bg-white/88 px-5 py-4 shadow-sm">
                   <p className="text-sm font-bold text-emerald-950">
@@ -344,10 +348,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </p>
                 </section>
               ) : null}
-              <fieldset
-                disabled={isCompletionBlocked}
-                className="relative z-10 space-y-8"
-              >
+              <fieldset className="relative z-10 space-y-8">
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
                   <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-black tracking-tighter text-emerald-950">

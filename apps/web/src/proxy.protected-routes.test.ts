@@ -31,7 +31,6 @@ describe("proxy protected routes", () => {
     const required = [
       `${ADMIN_ROUTE}(.*)`,
       `${DASHBOARD_ROUTE}(.*)`,
-      "/actions(.*)",
       "/missions(.*)",
       "/prints(.*)",
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
@@ -43,8 +42,8 @@ describe("proxy protected routes", () => {
       "/api/route(.*)",
       "/api/send(.*)",
       "/api/services(.*)",
+      "/api/signalements(.*)",
       "/api/spots(.*)",
-      "/sections(.*)",
       "/api/admin(.*)",
       "/api/actions(.*)",
       "/api/reports(.*)",
@@ -62,7 +61,6 @@ describe("proxy protected routes", () => {
       "/missions(.*)",
       `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/actions/history(.*)",
-      "/actions/new(.*)",
       "/pilotage(.*)",
       "/reports(.*)",
       ...CLERK_CONTEXT_API_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
@@ -78,13 +76,29 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-up(.*)");
     expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/pilotage");
     expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/reports");
-    expect(CLERK_CONTEXT_ROUTE_PREFIXES).toEqual(["/pilotage", "/reports"]);
+    expect(CLERK_CONTEXT_ROUTE_PREFIXES).toEqual([
+      "/pilotage",
+      "/reports",
+      "/actions/new",
+      "/signalement",
+      "/partners/network",
+      "/sections/annuaire",
+      "/sections/rejoindre-un-formulaire",
+    ]);
     expect(isClerkContextOnlyRoute("/pilotage")).toBe(true);
     expect(isClerkContextOnlyRoute("/reports/exports")).toBe(true);
     expect(isClerkContextOnlyRoute("/api/reports/actions.json")).toBe(false);
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/actions/new(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/signalement(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/partners/network(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/annuaire(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/rejoindre-un-formulaire(.*)");
+    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/actions/new");
+    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/signalement");
+    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/partners/network");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/manifest(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
@@ -97,4 +111,5 @@ describe("proxy protected routes", () => {
     expect(PROTECTED_ROUTE_PATTERNS).not.toContain("/api/legal-content-reports(.*)");
     expect(isProtectedRoutePath("/api/legal-content-reports")).toBe(false);
   });
+
 });

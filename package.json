@@ -63,6 +63,7 @@
     "check:page-header": "node scripts/checks/check-page-header-governance.mjs",
     "check:layout": "node scripts/checks/check-layout-governance.mjs",
     "check:surfaces": "node scripts/checks/check-surface-governance.mjs",
+    "check:actions": "node scripts/checks/check-actions-governance.mjs",
     "analyze:heavy-files": "node scripts/reports/analyze-heavy-files.mjs",
     "data:export:clerk": "node scripts/data/export-clerk-users.mjs",
     "data:audit:clerk-supabase": "node scripts/audits/audit-clerk-supabase.mjs",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
@@ -218,21 +219,23 @@ export function JoinFormConfirmationDialog({
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
+          <CmmButton
             onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+            tone="secondary"
+            variant="pill"
+            size="md"
           >
             {fr ? "Annuler" : "Cancel"}
-          </button>
-          <button
+          </CmmButton>
+          <CmmButton
             ref={confirmButtonRef}
-            type="button"
             onClick={onConfirm}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 text-sm font-semibold text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] transition-all duration-200 hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--cmm-button-primary-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            tone={isLeaveFlow ? "destructive" : "primary"}
+            variant="pill"
+            size="md"
           >
             {confirmLabel}
-          </button>
+          </CmmButton>
         </div>
       </div>
     </div>

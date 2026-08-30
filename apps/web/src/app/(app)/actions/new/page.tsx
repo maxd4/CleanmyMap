@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ActionDeclarationEntryFlow } from "@/components/actions/action-declaration-entry-flow";
-import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -50,28 +49,12 @@ export default async function NewActionPage({
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId });
-  const { userId, clerkReachable } = await getSafeAuthSession();
+  const { userId } = await getSafeAuthSession();
 
-  if (!userId) {
-    return (
-      <ClerkRequiredGate
-        isAuthenticated={false}
-        authUnavailable={!clerkReachable}
-        mode="disabled"
-        signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
-        signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
-        title="Connexion requise pour déclarer une action"
-        description="Connectez-vous à votre compte CleanMyMap pour remplir et envoyer une déclaration protégée."
-      >
-        <div aria-hidden="true" />
-      </ClerkRequiredGate>
-    );
-  }
-
-  const isAuthenticated = true;
-  const identity = await getCurrentUserIdentity();
+  const isAuthenticated = Boolean(userId);
+  const identity = userId ? await getCurrentUserIdentity() : null;
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
-  const fallbackActorName = userId;
+  const fallbackActorName = userId ?? "Visiteur";
   const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
@@ -80,7 +63,7 @@ export default async function NewActionPage({
   const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
 
   const userMetadata = {
-    userId,
+    userId: userId ?? "anonymous",
     username: identity?.username,
     displayName: identity?.displayName ?? fallbackActorName,
     email: undefined,
@@ -97,6 +80,8 @@ export default async function NewActionPage({
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
           isAutoApprovedSubmission={isAutoApprovedSubmission}
+          signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
+          signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
         />
       </div>
     );
@@ -112,6 +97,8 @@ export default async function NewActionPage({
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
         isAutoApprovedSubmission={isAutoApprovedSubmission}
+        signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
+        signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
       />
     </div>
   );
