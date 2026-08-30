@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowLeft, Leaf } from "lucide-react";
+import { ClerkHydrationGate } from "@/components/auth/clerk-hydration-gate";
 import { HOME_ROUTE } from "@/lib/home-routes";
 
 export const metadata: Metadata = {
@@ -12,6 +13,19 @@ export const metadata: Metadata = {
     canonical: "/sign-in",
   },
 };
+
+function SignInLoadingState() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-12 rounded-2xl border border-white/10 bg-white/[0.08]" />
+      <div className="h-12 rounded-2xl border border-white/10 bg-white/[0.08]" />
+      <div className="h-12 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)]" />
+      <p className="pt-2 text-sm text-violet-100/60">
+        Chargement sécurisé de l&apos;authentification...
+      </p>
+    </div>
+  );
+}
 
 export default function SignInPage() {
   return (
@@ -98,44 +112,40 @@ export default function SignInPage() {
                 </p>
               </div>
 
-              <ClerkLoading>
-                <div className="space-y-4 animate-pulse">
-                  <div className="h-12 rounded-2xl border border-white/10 bg-white/[0.08]" />
-                  <div className="h-12 rounded-2xl border border-white/10 bg-white/[0.08]" />
-                  <div className="h-12 rounded-full bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)]" />
-                  <p className="pt-2 text-sm text-violet-100/60">
-                    Chargement sécurisé de l&apos;authentification...
-                  </p>
-                </div>
-              </ClerkLoading>
+              <ClerkHydrationGate fallback={<SignInLoadingState />}>
+                <ClerkLoading>
+                  <SignInLoadingState />
+                </ClerkLoading>
 
-              <ClerkLoaded>
-                <SignIn
-                  path="/sign-in"
-                  routing="path"
-                  oauthFlow="redirect"
-                  fallbackRedirectUrl={HOME_ROUTE}
-                  signUpUrl="/sign-up"
-                  appearance={{
-                    elements: {
-                      rootBox: "w-full",
-                      card: "shadow-none border-0 bg-transparent",
-                      headerTitle: "text-xl font-bold text-white",
-                      headerSubtitle: "text-violet-100/80",
-                      socialButtonsBlockButton:
-                        "border border-white/10 bg-white/[0.08] text-white transition-all duration-300 hover:border-emerald-300/30 hover:bg-white/[0.12] hover:text-white",
-                      formFieldLabel: "text-violet-100/90",
-                      formFieldInput:
-                        "border-white/10 bg-white/[0.08] text-white placeholder:text-violet-100/40 shadow-none ring-0 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30",
-                      formFieldInputShowPasswordButton: "text-violet-100/70 hover:text-white",
-                      formButtonPrimary:
-                        "border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] text-white shadow-[0_18px_34px_-18px_rgba(15,23,42,0.55)] transition-all hover:border-emerald-300/30 hover:shadow-[0_22px_40px_-20px_rgba(79,70,229,0.45)]",
-                      footerActionLink:
-                        "text-emerald-200 hover:text-white font-semibold",
-                    },
-                  }}
-                />
-              </ClerkLoaded>
+                <ClerkLoaded>
+                  <SignIn
+                    path="/sign-in"
+                    routing="path"
+                    oauthFlow="redirect"
+                    fallbackRedirectUrl={HOME_ROUTE}
+                    signUpUrl="/sign-up"
+                    appearance={{
+                      elements: {
+                        rootBox: "w-full",
+                        card: "shadow-none border-0 bg-transparent",
+                        headerTitle: "text-xl font-bold text-white",
+                        headerSubtitle: "text-violet-100/80",
+                        socialButtonsBlockButton:
+                          "border border-white/10 bg-white/[0.08] text-white transition-all duration-300 hover:border-emerald-300/30 hover:bg-white/[0.12] hover:text-white",
+                        formFieldLabel: "text-violet-100/90",
+                        formFieldInput:
+                          "border-white/10 bg-white/[0.08] text-white placeholder:text-violet-100/40 shadow-none ring-0 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30",
+                        formFieldInputShowPasswordButton:
+                          "text-violet-100/70 hover:text-white",
+                        formButtonPrimary:
+                          "border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] text-white shadow-[0_18px_34px_-18px_rgba(15,23,42,0.55)] transition-all hover:border-emerald-300/30 hover:shadow-[0_22px_40px_-20px_rgba(79,70,229,0.45)]",
+                        footerActionLink:
+                          "text-emerald-200 hover:text-white font-semibold",
+                      },
+                    }}
+                  />
+                </ClerkLoaded>
+              </ClerkHydrationGate>
             </div>
 
             <div className="text-center">

@@ -109,7 +109,7 @@ describe("Server/Client boundaries", () => {
     expect(source.indexOf("<ClerkLoading>")).toBeLessThan(
       source.indexOf("<ClerkLoaded>"),
     );
-    expect(source.indexOf("<SignIn")).toBeGreaterThan(
+    expect(source.search(/<SignIn\s/u)).toBeGreaterThan(
       source.indexOf("<ClerkLoaded>"),
     );
   });
