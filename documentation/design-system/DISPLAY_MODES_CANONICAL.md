@@ -222,7 +222,8 @@ La stack sobre canonique :
 
 Ne pas recopier cette liste dans les composants.
 
-Le token `--font-sober` est déclaré une seule fois dans `apps/web/src/app/globals.css`.
+Le token `--font-sober` est déclaré une seule fois dans
+`apps/web/src/styles/tokens.css`, importé par `apps/web/src/app/globals.css`.
 Lorsque `data-display-mode="sobre"` est présent sur `<html>`, les tokens globaux
 `--font-base`, `--font-sans` et `--font-display` résolvent vers cette stack. Le
 `body` conserve son unique déclaration `font-family: var(--font-base)`, ce qui
@@ -391,7 +392,9 @@ apps/web/src/lib/ui/preferences.ts
 apps/web/src/lib/storage/ui-state-storage.ts
 apps/web/src/components/ui/site-preferences-provider.tsx
 apps/web/src/components/ui/site-preferences-controls.tsx
-apps/web/src/app/globals.css
+apps/web/src/app/globals.css (point d’entrée)
+apps/web/src/styles/tokens.css
+apps/web/src/styles/display-modes.css
 ```
 
 Sources documentaires principales :

@@ -27,7 +27,9 @@ export const DISPLAY_MODES = ["exhaustif", "minimaliste", "sobre"] as const;
 ```
 
 ### 2. Styles CSS
-**Fichier**: `apps/web/src/app/globals.css`
+**Fichiers**: `apps/web/src/styles/tokens.css` et
+`apps/web/src/styles/display-modes.css`, importés par
+`apps/web/src/app/globals.css`
 
 Sections ajoutées:
 - `[data-display-mode="exhaustif"]` - défaut (aucune règle spécifique)

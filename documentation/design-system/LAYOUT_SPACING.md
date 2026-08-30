@@ -29,7 +29,9 @@ ces valeurs sont des tokens CSS communs à toutes les pages.
 
 ## Tokens canoniques
 
-Les valeurs vivent dans `apps/web/src/app/globals.css` :
+Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
+`apps/web/src/app/globals.css`, et les classes de layout dans
+`apps/web/src/styles/layout.css` :
 
 | Contrat | Token |
 | --- | --- |

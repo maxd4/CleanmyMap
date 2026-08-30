@@ -14,8 +14,9 @@ data-display-mode
   → consommateurs de page
 ```
 
-Les tokens sont définis dans `apps/web/src/app/globals.css`. Les composants
-sélectionnent une sémantique (`tone`, `variant`, `size`, `surfaceKind` ou un
+Les tokens sont définis dans `apps/web/src/styles/tokens.css`, importé par
+`apps/web/src/app/globals.css`. Les composants sélectionnent une sémantique
+(`tone`, `variant`, `size`, `surfaceKind` ou un
 accent de bloc) ; ils ne redéfinissent pas le shell avec des couleurs,
 ombres, blur, radius ou transforms locaux.
 

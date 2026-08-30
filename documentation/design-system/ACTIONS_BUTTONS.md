@@ -3,6 +3,7 @@
 `CmmButton` est la primitive unique des actions standard du web. Les pages
 choisissent uniquement une intention (`tone`), une densité (`size`) et une
 forme (`variant`) ; la géométrie et les états restent définis dans
+`apps/web/src/styles/actions.css`, importé par
 `apps/web/src/app/globals.css`.
 
 ## API

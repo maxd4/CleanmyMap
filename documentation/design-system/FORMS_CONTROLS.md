@@ -22,7 +22,8 @@ préserve l'identifiant du contrôle, relie le label et les messages via
 ## Contrat visuel
 
 La géométrie et les états sont définis une seule fois par les classes
-`cmm-field-*` dans `apps/web/src/app/globals.css` :
+`cmm-field-*` dans `apps/web/src/styles/forms.css`, importé par
+`apps/web/src/app/globals.css` :
 
 - input/select : hauteur 44 px et padding horizontal 14 px ;
 - radius : `var(--radius-sm)` ;

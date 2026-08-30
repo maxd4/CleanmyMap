@@ -229,6 +229,6 @@ Si un élément n'a pas le bon curseur:
 ---
 
 ## Fichier source
-**`apps/web/src/app/globals.css`** (lignes 139-259)
+**`apps/web/src/styles/base.css`**
 
 Section `@layer utilities` contenant toutes les règles de curseur.

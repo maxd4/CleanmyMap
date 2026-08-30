@@ -56,13 +56,42 @@ primitives composées `SystemStateLayout`, `SystemStateIcon`,
 `SystemStateTitle`, `SystemStateDescription`, `SystemStateMeta`,
 `SystemStateAction` et `CmmFeedback`. Leurs variants sont exposés par
 `data-state-variant` et `data-feedback-tone` ; leur rendu visuel est centralisé
-dans `globals.css`, avec les modes d'affichage et `prefers-reduced-motion`.
+dans les modules CSS canoniques importés par `globals.css`, avec les modes
+d'affichage et `prefers-reduced-motion`.
 
 Pour les états et retours utilisateur, suivre
 [`STATES_FEEDBACK.md`](./STATES_FEEDBACK.md) : `SystemState` est réservé aux
 états bloquants ou aux vides importants, `CmmFeedback` aux retours inline,
 `CmmSkeleton` aux chargements structurels et `CmmField` aux erreurs associées
 à un champ.
+
+## Architecture CSS runtime
+
+`apps/web/src/app/globals.css` reste le point d’entrée unique du CSS web. Il
+importe les feuilles spécialisées dans un ordre contractuel ; les composants
+et les pages ne doivent pas recréer ces responsabilités localement.
+
+| Module | Responsabilité canonique |
+| --- | --- |
+| `tokens.css` | variables fondamentales, couleurs sémantiques, thèmes et tokens UI |
+| `base.css` | reset, `html`, `body` et fondations globales |
+| `typography.css` | échelle typographique, classes `cmm-text-*` et `PageHeader` |
+| `layout.css` | grille, shell de page, spacing et structures globales |
+| `surfaces.css` | `CmmCard`, surfaces et panels |
+| `actions.css` | boutons et groupes d’actions |
+| `forms.css` | `CmmField`, inputs, selects et textareas |
+| `states-feedback.css` | `SystemState`, `CmmFeedback` et `CmmSkeleton` |
+| `display-modes.css` | adaptations `exhaustif`, `minimaliste` et `sobre` |
+| `overlays.css` | modales, dialogs, drawers, popovers, tooltips et backdrops |
+| `indicators.css` | badges, pills, chips, statuts, progress et compteurs |
+| `maps.css` | Leaflet, markers, clusters et cartographie |
+| `print.css` | impression, rapports et surfaces Print & Export |
+| `utilities.css` | helpers globaux ne relevant pas d’un module spécialisé |
+| `motion.css` | keyframes, transitions et règles de motion communes |
+
+Un module n’est créé que s’il reçoit du CSS existant. Toute extraction future
+doit conserver les valeurs, sélecteurs et l’ordre de cascade, puis mettre à
+jour cet index si une responsabilité change.
 
 ## Couleurs par famille
 
