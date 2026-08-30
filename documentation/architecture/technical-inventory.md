@@ -7,7 +7,7 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 ## Applications et runtime
 
 - Le dépôt est un monorepo npm avec workspaces `apps/web` et `apps/mobile`.
-- L'application web utilise Next.js 16.3.1, React 19.2.8, TypeScript `^7` et
+- L'application web utilise Next.js 16.3.3, React 19.2.8, TypeScript `^7` et
   l'App Router. Les manifestes et le lockfile racine font foi pour les
   versions exactes.
 - L'application web est structurée autour de `apps/web/src/app` pour les
