@@ -29,6 +29,8 @@ declare namespace NodeJS {
     NEXT_PUBLIC_POSTHOG_REGION?: "eu" | "us";
     NEXT_PUBLIC_POSTHOG_TOKEN?: string;
     NEXT_PUBLIC_SENTRY_DSN?: string;
+    NEXT_PUBLIC_SENTRY_RELEASE?: string;
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT?: "production" | "preview" | "development";
     NEXT_PUBLIC_SITE_URL?: string;
     NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
     NEXT_PUBLIC_SUPABASE_URL?: string;
@@ -47,6 +49,7 @@ declare namespace NodeJS {
     SENTRY_ORG?: string;
     SENTRY_PROJECT?: string;
     SENTRY_RELEASE?: string;
+    SENTRY_ENVIRONMENT?: string;
     STRIPE_SECRET_KEY?: string;
     STRIPE_WEBHOOK_SECRET?: string;
     SUPABASE_SERVICE_ROLE_KEY?: string;

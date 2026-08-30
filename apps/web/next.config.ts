@@ -1,11 +1,21 @@
 import path from "path";
 import type { NextConfig } from "next";
 import { withBotId } from "botid/next/config";
+import {
+  resolveSentryEnvironment,
+  resolveSentryRelease,
+} from "./src/lib/observability/sentry-metadata.mjs";
 
 const repoRoot = path.resolve(__dirname, "../..");
 const env = process.env;
+const sentryRelease = resolveSentryRelease(env) ?? "";
+const sentryEnvironment = resolveSentryEnvironment(env);
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease,
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: sentryEnvironment,
+  },
   reactStrictMode: true,
   productionBrowserSourceMaps: true,
   outputFileTracingRoot: repoRoot,

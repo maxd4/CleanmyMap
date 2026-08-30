@@ -1,5 +1,10 @@
 import * as Sentry from "@sentry/nextjs";
-import { getSentryDsn, getSentryRelease, isSentryEnabled } from "./src/lib/observability/sentry";
+import {
+  getSentryDsn,
+  getSentryEnvironment,
+  getSentryRelease,
+  isSentryEnabled,
+} from "./src/lib/observability/sentry";
 
 export async function register() {
   const dsn = getSentryDsn();
@@ -10,6 +15,7 @@ export async function register() {
   Sentry.init({
     dsn,
     release: getSentryRelease() || undefined,
+    environment: getSentryEnvironment(),
     tracesSampleRate: 0.1,
     debug: false,
     enabled: true,

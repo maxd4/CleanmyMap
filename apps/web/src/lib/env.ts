@@ -67,6 +67,8 @@ const envSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
   NEXT_PUBLIC_POSTHOG_REGION: z.enum(["eu", "us"]).optional(),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
+  NEXT_PUBLIC_SENTRY_RELEASE: z.string().optional(),
+  NEXT_PUBLIC_SENTRY_ENVIRONMENT: z.enum(["production", "preview", "development"]).optional(),
   NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
 
   CLERK_SECRET_KEY: z.string().optional(),
@@ -83,6 +85,7 @@ const envSchema = z.object({
   SENTRY_PROJECT: z.string().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(),
+  SENTRY_ENVIRONMENT: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   CONTACT_EMAIL: z.string().email().optional(),
   RESEND_API_KEY: z.string().optional(),
@@ -126,8 +129,11 @@ const candidate = {
   NEXT_PUBLIC_POSTHOG_HOST: process.env["NEXT_PUBLIC_POSTHOG_HOST"],
   NEXT_PUBLIC_POSTHOG_REGION: process.env["NEXT_PUBLIC_POSTHOG_REGION"],
   NEXT_PUBLIC_SENTRY_DSN: process.env["NEXT_PUBLIC_SENTRY_DSN"],
+  NEXT_PUBLIC_SENTRY_RELEASE: process.env["NEXT_PUBLIC_SENTRY_RELEASE"],
+  NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env["NEXT_PUBLIC_SENTRY_ENVIRONMENT"],
   SENTRY_AUTH_TOKEN: process.env["SENTRY_AUTH_TOKEN"],
   SENTRY_RELEASE: process.env["SENTRY_RELEASE"],
+  SENTRY_ENVIRONMENT: process.env["SENTRY_ENVIRONMENT"],
 };
 
 const parsed = envSchema.safeParse(candidate);

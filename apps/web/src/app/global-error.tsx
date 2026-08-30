@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { ServerErrorCard } from "@/components/ui/server-error-card";
 import { buildSupportHref } from "@/lib/errors/app-errors";
-import { isSentryEnabled } from "@/lib/observability/sentry";
+import { getSentryClientDsn } from "@/lib/observability/sentry-client";
 
 export default function GlobalError({
   error,
@@ -13,7 +13,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const isSentryConfigured = isSentryEnabled();
+  const isSentryConfigured = getSentryClientDsn() !== null;
 
   const supportHref = useMemo(() => {
     return buildSupportHref({

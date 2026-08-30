@@ -4,7 +4,7 @@ import { useEffect } from"react";
 import * as Sentry from"@sentry/nextjs";
 import { ServerErrorCard } from"@/components/ui/server-error-card";
 import { buildSupportHref } from"@/lib/errors/app-errors";
-import { isSentryEnabled } from "@/lib/observability/sentry";
+import { getSentryClientDsn } from "@/lib/observability/sentry-client";
 
 export default function Error({
  error,
@@ -13,7 +13,7 @@ export default function Error({
  error: Error & { digest?: string };
  reset: () => void;
 }) {
- const isSentryConfigured = isSentryEnabled();
+ const isSentryConfigured = getSentryClientDsn() !== null;
  const supportHref = buildSupportHref({
   message: error.message,
   code: error.name !== "Error" ? error.name : null,
