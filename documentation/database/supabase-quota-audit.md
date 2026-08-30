@@ -117,6 +117,41 @@ comparables et caractériser le nouveau consumer avant toute modification. Elle
 ne devra créer ni monitoring permanent, ni cron, ni benchmark synthétique par
 défaut.
 
+## Surveillance future proportionnée
+
+L'état courant est très largement sous les limites Supabase. La surveillance
+future doit rester limitée aux trois signaux qui peuvent réellement changer la
+décision opérationnelle :
+
+1. la tendance de la mémoire réellement utilisée, et non la seule valeur
+   `Memory commitment` ;
+2. les connexions, uniquement si elles augmentent durablement sans trafic
+   correspondant ;
+3. les quotas Supabase et `Query Performance`, lorsque CleanMyMap aura de vrais
+   utilisateurs et un trafic mesurable.
+
+```yaml
+CPU                : SAIN
+RAM réelle         : SAINE / STABLE
+Memory commitment  : À SURVEILLER, PAS ALARMANT SEUL
+Connexions         : SAINES ET STABLES
+Réseau             : NÉGLIGEABLE
+IOPS               : NÉGLIGEABLE
+Débit disque       : NÉGLIGEABLE
+Stockage DB        : TRÈS FAIBLE
+CAPACITÉ SUPABASE  : TRÈS LARGEMENT SUFFISANTE
+```
+
+`Memory commitment` est donc un signal de contexte à suivre, mais ne constitue
+pas à lui seul une alerte : la tendance de la RAM réellement utilisée est le
+signal pertinent. Les connexions restent saines et stables ; une hausse isolée
+ne justifie pas d'action sans trafic correspondant et durable. Le réseau, les
+IOPS, le débit disque et le stockage de la base sont actuellement négligeables.
+
+Cette situation ne justifie ni nouveau monitoring permanent, ni cron, ni
+benchmark synthétique. Les quotas et `Query Performance` seront réévalués
+lorsque des utilisateurs réels fourniront une base de mesure représentative.
+
 ## Quotas Supabase à surveiller
 
 Les quotas exacts dépendent du plan et de l'organisation, mais les dimensions qui comptent pour CleanMyMap sont les suivantes.
