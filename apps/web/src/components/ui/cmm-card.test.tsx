@@ -4,7 +4,11 @@ import { describe, expect, it } from "vitest";
 import { CmmCard } from "./cmm-card";
 import { CmmBlockCard } from "./cmm-block-accent";
 
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+const css = [
+  readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../styles/surfaces.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../styles/display-modes.css", import.meta.url), "utf8"),
+].join("\n");
 const cardSource = readFileSync(new URL("./cmm-card.tsx", import.meta.url), "utf8");
 
 describe("canonical surface cards", () => {

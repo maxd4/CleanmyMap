@@ -1,0 +1,358 @@
+@layer utilities {
+  /* ============================================================
+     SYSTEM STATES - variant palette via data-state-variant
+     ============================================================ */
+  .cmm-system-state,
+  .cmm-system-state-icon,
+  .cmm-system-state-title,
+  .cmm-system-state-description,
+  .cmm-system-state-meta {
+    --cmm-system-state-background: var(--bg-elevated);
+    --cmm-system-state-border: var(--border-default);
+    --cmm-system-state-icon-background: var(--bg-muted);
+    --cmm-system-state-icon-border: var(--border-default);
+    --cmm-system-state-accent: var(--text-secondary);
+    --cmm-system-state-text: var(--text-primary);
+    --cmm-system-state-description: var(--text-secondary);
+    --cmm-system-state-meta-background: var(--bg-muted);
+    --cmm-system-state-meta-border: var(--border-default);
+    --cmm-system-state-meta-label: var(--text-secondary);
+    --cmm-system-state-meta-text: var(--text-secondary);
+  }
+
+  .cmm-system-state[data-state-variant="error"],
+  .cmm-system-state-icon[data-state-variant="error"],
+  .cmm-system-state-title[data-state-variant="error"],
+  .cmm-system-state-description[data-state-variant="error"],
+  .cmm-system-state-meta[data-state-variant="error"] {
+    --cmm-system-state-background: color-mix(in srgb, var(--text-danger) 8%, var(--bg-elevated));
+    --cmm-system-state-border: color-mix(in srgb, var(--text-danger) 24%, var(--border-default));
+    --cmm-system-state-icon-background: color-mix(in srgb, var(--text-danger) 12%, var(--bg-muted));
+    --cmm-system-state-icon-border: color-mix(in srgb, var(--text-danger) 28%, var(--border-default));
+    --cmm-system-state-accent: var(--text-danger);
+    --cmm-system-state-meta-background: color-mix(in srgb, var(--text-danger) 6%, var(--bg-muted));
+    --cmm-system-state-meta-border: color-mix(in srgb, var(--text-danger) 22%, var(--border-default));
+    --cmm-system-state-meta-label: var(--text-danger);
+  }
+
+  .cmm-system-state[data-state-variant="warning"],
+  .cmm-system-state-icon[data-state-variant="warning"],
+  .cmm-system-state-title[data-state-variant="warning"],
+  .cmm-system-state-description[data-state-variant="warning"],
+  .cmm-system-state-meta[data-state-variant="warning"] {
+    --cmm-system-state-background: color-mix(in srgb, var(--text-warning) 8%, var(--bg-elevated));
+    --cmm-system-state-border: color-mix(in srgb, var(--text-warning) 24%, var(--border-default));
+    --cmm-system-state-icon-background: color-mix(in srgb, var(--text-warning) 12%, var(--bg-muted));
+    --cmm-system-state-icon-border: color-mix(in srgb, var(--text-warning) 28%, var(--border-default));
+    --cmm-system-state-accent: var(--text-warning);
+    --cmm-system-state-meta-background: color-mix(in srgb, var(--text-warning) 6%, var(--bg-muted));
+    --cmm-system-state-meta-border: color-mix(in srgb, var(--text-warning) 22%, var(--border-default));
+    --cmm-system-state-meta-label: var(--text-warning);
+  }
+
+  .cmm-system-state[data-state-variant="forbidden"],
+  .cmm-system-state-icon[data-state-variant="forbidden"],
+  .cmm-system-state-title[data-state-variant="forbidden"],
+  .cmm-system-state-description[data-state-variant="forbidden"],
+  .cmm-system-state-meta[data-state-variant="forbidden"] {
+    --cmm-system-state-background: color-mix(in srgb, var(--text-warning) 5%, var(--bg-elevated));
+    --cmm-system-state-border: color-mix(in srgb, var(--text-warning) 18%, var(--border-default));
+    --cmm-system-state-icon-background: color-mix(in srgb, var(--text-warning) 9%, var(--bg-muted));
+    --cmm-system-state-icon-border: color-mix(in srgb, var(--text-warning) 22%, var(--border-default));
+    --cmm-system-state-accent: var(--text-warning);
+    --cmm-system-state-meta-background: color-mix(in srgb, var(--text-warning) 4%, var(--bg-muted));
+    --cmm-system-state-meta-border: color-mix(in srgb, var(--text-warning) 16%, var(--border-default));
+    --cmm-system-state-meta-label: var(--text-warning);
+  }
+
+  .cmm-system-state[data-state-variant="empty"],
+  .cmm-system-state-icon[data-state-variant="empty"],
+  .cmm-system-state-title[data-state-variant="empty"],
+  .cmm-system-state-description[data-state-variant="empty"],
+  .cmm-system-state-meta[data-state-variant="empty"],
+  .cmm-system-state[data-state-variant="loading"],
+  .cmm-system-state-icon[data-state-variant="loading"],
+  .cmm-system-state-title[data-state-variant="loading"],
+  .cmm-system-state-description[data-state-variant="loading"],
+  .cmm-system-state-meta[data-state-variant="loading"] {
+    --cmm-system-state-accent: var(--text-secondary);
+  }
+
+  .cmm-system-state[data-state-variant="offline"],
+  .cmm-system-state-icon[data-state-variant="offline"],
+  .cmm-system-state-title[data-state-variant="offline"],
+  .cmm-system-state-description[data-state-variant="offline"],
+  .cmm-system-state-meta[data-state-variant="offline"] {
+    --cmm-system-state-background: color-mix(in srgb, var(--text-info) 7%, var(--bg-elevated));
+    --cmm-system-state-border: color-mix(in srgb, var(--text-info) 22%, var(--border-default));
+    --cmm-system-state-icon-background: color-mix(in srgb, var(--text-info) 11%, var(--bg-muted));
+    --cmm-system-state-icon-border: color-mix(in srgb, var(--text-info) 26%, var(--border-default));
+    --cmm-system-state-accent: var(--text-info);
+    --cmm-system-state-meta-background: color-mix(in srgb, var(--text-info) 5%, var(--bg-muted));
+    --cmm-system-state-meta-border: color-mix(in srgb, var(--text-info) 20%, var(--border-default));
+    --cmm-system-state-meta-label: var(--text-info);
+  }
+
+  .cmm-system-state {
+    width: 100%;
+    max-width: var(--cmm-system-state-max-width);
+  }
+
+  .cmm-system-state-shell {
+    overflow: hidden;
+    border: 1px solid var(--cmm-system-state-border);
+    border-radius: var(--cmm-system-state-radius);
+    background-color: var(--cmm-system-state-background);
+    box-shadow: var(--cmm-system-state-shadow);
+    backdrop-filter: var(--cmm-system-state-blur);
+  }
+
+  .cmm-system-state-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cmm-system-state-content-gap);
+    padding: var(--cmm-system-state-padding-block) var(--cmm-system-state-padding-inline);
+    text-align: center;
+  }
+
+  .cmm-system-state-icon {
+    display: flex;
+    width: var(--cmm-system-state-icon-size);
+    height: var(--cmm-system-state-icon-size);
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--cmm-system-state-icon-border);
+    border-radius: var(--cmm-system-state-icon-radius);
+    background-color: var(--cmm-system-state-icon-background);
+    color: var(--cmm-system-state-accent);
+    box-shadow: var(--cmm-system-state-shadow);
+  }
+
+  .cmm-system-state-title {
+    color: var(--cmm-system-state-text);
+  }
+
+  .cmm-system-state-description {
+    color: var(--cmm-system-state-description);
+  }
+
+  .cmm-system-state-meta {
+    width: 100%;
+    border: 1px solid var(--cmm-system-state-meta-border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: left;
+    background-color: var(--cmm-system-state-meta-background);
+    color: var(--cmm-system-state-meta-text);
+  }
+
+  .cmm-system-state-meta-label {
+    margin: 0;
+    color: var(--cmm-system-state-meta-label);
+    font-size: 0.72rem;
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+  }
+
+  .cmm-system-state-meta-content {
+    font-size: var(--text-small);
+    line-height: 1.5;
+  }
+
+  .cmm-system-state-meta-label + .cmm-system-state-meta-content {
+    margin-top: 0.5rem;
+  }
+
+  .cmm-system-state-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  /* ============================================================
+     FEEDBACK INLINE - tone palette via data-feedback-tone
+     ============================================================ */
+  .cmm-feedback {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cmm-feedback-gap);
+    border: 1px solid var(--cmm-feedback-border);
+    border-radius: var(--cmm-feedback-radius);
+    padding: var(--cmm-feedback-padding-block) var(--cmm-feedback-padding-inline);
+    background-color: var(--cmm-feedback-background);
+    color: var(--cmm-feedback-text);
+  }
+
+  .cmm-feedback[data-feedback-tone="info"] {
+    --cmm-feedback-accent: var(--text-info);
+    --cmm-feedback-background: color-mix(in srgb, var(--text-info) 7%, var(--bg-elevated));
+    --cmm-feedback-border: color-mix(in srgb, var(--text-info) 22%, var(--border-default));
+  }
+
+  .cmm-feedback[data-feedback-tone="success"] {
+    --cmm-feedback-accent: var(--text-success);
+    --cmm-feedback-background: color-mix(in srgb, var(--text-success) 7%, var(--bg-elevated));
+    --cmm-feedback-border: color-mix(in srgb, var(--text-success) 22%, var(--border-default));
+  }
+
+  .cmm-feedback[data-feedback-tone="warning"] {
+    --cmm-feedback-accent: var(--text-warning);
+    --cmm-feedback-background: color-mix(in srgb, var(--text-warning) 7%, var(--bg-elevated));
+    --cmm-feedback-border: color-mix(in srgb, var(--text-warning) 22%, var(--border-default));
+  }
+
+  .cmm-feedback[data-feedback-tone="error"] {
+    --cmm-feedback-accent: var(--text-danger);
+    --cmm-feedback-background: color-mix(in srgb, var(--text-danger) 7%, var(--bg-elevated));
+    --cmm-feedback-border: color-mix(in srgb, var(--text-danger) 22%, var(--border-default));
+  }
+
+  .cmm-feedback-title {
+    margin: 0;
+    color: var(--cmm-feedback-accent);
+    font-weight: var(--weight-semibold);
+  }
+
+  .cmm-feedback-content {
+    color: var(--cmm-feedback-text);
+  }
+
+  .cmm-feedback-action {
+    display: flex;
+    align-items: center;
+    gap: var(--cmm-feedback-gap);
+  }
+
+  /* ============================================================
+     SKELETONS - dimensions, surfaces and motion via data attributes
+     ============================================================ */
+  .cmm-skeleton {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    background-color: var(--cmm-skeleton-background);
+  }
+
+  .cmm-skeleton[data-skeleton-variant="circular"] {
+    border-radius: var(--radius-full);
+  }
+
+  .cmm-skeleton[data-skeleton-variant="rectangular"],
+  .cmm-skeleton[data-skeleton-variant="text"],
+  .cmm-skeleton[data-skeleton-variant="title"] {
+    border-radius: var(--radius-sm);
+  }
+
+  .cmm-skeleton[data-skeleton-variant="stat"],
+  .cmm-skeleton[data-skeleton-variant="card"],
+  .cmm-skeleton[data-skeleton-variant="chart"] {
+    border-radius: var(--radius-md);
+  }
+
+  .cmm-skeleton[data-skeleton-variant="list-item"] {
+    border-radius: var(--radius-sm);
+  }
+
+  .cmm-skeleton[data-skeleton-variant="text"] {
+    min-height: 1rem;
+    width: 100%;
+  }
+
+  .cmm-skeleton[data-skeleton-variant="title"] {
+    min-height: 1.25rem;
+    width: 66.666667%;
+  }
+
+  .cmm-skeleton[data-skeleton-variant="stat"] {
+    min-height: 4rem;
+    width: 100%;
+  }
+
+  .cmm-skeleton[data-skeleton-variant="card"] {
+    min-height: 6rem;
+    width: 100%;
+  }
+
+  .cmm-skeleton[data-skeleton-variant="chart"] {
+    min-height: 12rem;
+    width: 100%;
+  }
+
+  .cmm-skeleton[data-skeleton-variant="list-item"] {
+    min-height: 3rem;
+    width: 100%;
+  }
+
+  @keyframes cmm-skeleton-shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  @keyframes cmm-skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+  }
+
+  .cmm-skeleton[data-skeleton-animation="shimmer"]::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: linear-gradient(90deg, transparent, var(--cmm-skeleton-shimmer), transparent);
+    transform: translateX(-100%);
+    animation: cmm-skeleton-shimmer var(--cmm-skeleton-animation-duration) infinite linear;
+  }
+
+  .cmm-skeleton[data-skeleton-animation="pulse"] {
+    animation: cmm-skeleton-pulse var(--cmm-skeleton-pulse-duration) ease-in-out infinite;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-skeleton[data-skeleton-animation="shimmer"]::after {
+    display: none;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-skeleton[data-skeleton-animation="shimmer"],
+  [data-display-mode="minimaliste"] .cmm-skeleton[data-skeleton-animation="pulse"] {
+    animation: cmm-skeleton-pulse var(--cmm-skeleton-pulse-duration) ease-in-out infinite;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-skeleton[data-skeleton-animation="pulse"] {
+    animation-duration: var(--cmm-skeleton-pulse-duration);
+  }
+
+  [data-display-mode="sobre"] .cmm-skeleton::after,
+  [data-display-mode="sobre"] .cmm-skeleton[data-skeleton-animation="pulse"] {
+    display: none;
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-skeleton,
+    .cmm-skeleton::after {
+      animation: none !important;
+    }
+  }
+
+  [data-display-mode="minimaliste"] .cmm-field-control {
+    --cmm-field-control-shadow: none;
+  }
+
+  [data-display-mode="sobre"] .cmm-field-control {
+    --cmm-field-control-background: var(--bg-canvas);
+    --cmm-field-control-border: var(--border-strong);
+    --cmm-field-control-shadow: none;
+    --cmm-field-control-transition-duration: 0ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-field-control {
+      --cmm-field-control-transition-duration: 0ms;
+      transition: none;
+    }
+  }
+
+}

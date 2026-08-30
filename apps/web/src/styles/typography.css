@@ -1,0 +1,192 @@
+@layer utilities {
+  /* ============================================================
+     TYPOGRAPHY UTILITIES - Classes sémantiques hiérarchiques
+     ============================================================ */
+
+  /* Hiérarchie Display/Titres */
+  .cmm-text-h1 {
+    font: var(--weight-h1) var(--size-h1)/var(--leading-h1) var(--font-h1);
+    letter-spacing: -0.02em;
+  }
+
+  .cmm-text-h2 {
+    font: var(--weight-h2) var(--size-h2)/var(--leading-h2) var(--font-h2);
+    letter-spacing: -0.01em;
+  }
+
+  .cmm-text-h3 {
+    font: var(--weight-h3) var(--size-h3)/var(--leading-h3) var(--font-h3);
+  }
+
+  .cmm-text-h4 {
+    font: var(--weight-h4) var(--size-h4)/var(--leading-h4) var(--font-h4);
+  }
+
+  /* Corps et texte courant */
+  .cmm-text-body {
+    font: var(--weight-body) var(--size-body)/var(--leading-body) var(--font-body-text);
+  }
+
+  .cmm-text-small {
+    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-body-text);
+  }
+
+  .cmm-text-caption {
+    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-body-text);
+  }
+
+  /* Couleurs texte sémantiques (préfixe cmm- pour éviter conflit Tailwind v4) */
+  .cmm-text-primary { color: var(--text-primary); }
+  .cmm-text-secondary { color: var(--text-secondary); }
+  .cmm-text-muted { color: var(--text-muted); }
+  .cmm-text-inverse { color: var(--text-inverse); }
+
+  .cmm-text-success { color: var(--text-success); }
+  .cmm-text-warning { color: var(--text-warning); }
+  .cmm-text-danger { color: var(--text-danger); }
+  .cmm-text-info { color: var(--text-info); }
+
+  .cmm-text-link {
+    color: var(--text-link);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .cmm-text-link:hover {
+    color: var(--text-link-hover);
+  }
+
+  /* Typographie des cartes / bulles sombres
+     - les petits textes restent blancs pour assurer la lisibilité
+     - les titres, sous-titres et chiffres portent l'accent couleur
+  */
+  .cmm-text-card-label {
+    color: #FFFFFF;
+  }
+
+  .cmm-text-card-copy {
+    color: #FFFFFF;
+  }
+
+  .cmm-text-card-title {
+    color: var(--accent-primary);
+  }
+
+  .cmm-text-card-value {
+    color: var(--accent-vibrant);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Canonical page headers
+     - Same typography across the repo
+     - Only colors vary by block / tone
+  */
+  .cmm-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 42rem;
+  }
+
+  .cmm-page-header--left {
+    align-items: flex-start;
+    padding-left: 0.125rem;
+    padding-top: 0.25rem;
+    text-align: left;
+  }
+
+  .cmm-page-header--center {
+    align-items: center;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .cmm-page-header-title {
+    display: block;
+    width: 100%;
+    font-size: clamp(2.5rem, 4vw, 4.5rem);
+    font-weight: 900;
+    line-height: 0.96;
+    letter-spacing: -0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cmm-page-header-subtitle {
+    display: block;
+    width: 100%;
+    max-width: 42rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.55;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
+  .cmm-page-header-action {
+    margin-top: 0.25rem;
+  }
+
+  /* ============================================================
+     CANONICAL PAGE SHELL & VERTICAL RHYTHM
+
+/* -----------------------------------------------------------
+   Typographie optimale
+   ----------------------------------------------------------- */
+
+/* Équilibrage du texte pour éviter les retours à la ligne inutiles */
+.cmm-text-balance {
+  text-wrap: balance;
+}
+
+/* Largeur de texte optimale (65-75 caractères) */
+.cmm-prose {
+  max-width: 65ch;
+}
+
+.cmm-prose-wide {
+  max-width: 75ch;
+}
+
+.cmm-prose-narrow {
+  max-width: 55ch;
+}
+
+/* Titres avec balance automatique */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
+/* Empêcher les titres trop longs de créer des orphans */
+.cmm-heading {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Description avec limite de lignes */
+.cmm-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cmm-line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Whitespace pour pills et labels courts */
+.cmm-nowrap {
+  white-space: nowrap;
+}
+
+}

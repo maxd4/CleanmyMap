@@ -1,0 +1,438 @@
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: #fafaf9;
+  --foreground: #0f172a;
+  --accent-primary: #10b981;
+  --accent-vibrant: #38bdf8;
+  --accent-soft: rgba(16, 185, 129, 0.08);
+  --slate-deep: #0f172a;
+
+  --bg-canvas: var(--background);
+  --bg-elevated: #ffffff;
+  --bg-muted: #f5f5f4;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverse: #f8fafc;
+  --border-default: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --focus-ring: rgba(16, 185, 129, 0.3);
+
+  --action-primary-bg: rgb(16 185 129);
+  --action-primary-text: #ffffff;
+  --action-primary-hover: rgb(5 150 105);
+  --action-secondary-bg: #ffffff;
+  --action-secondary-text: #0f172a;
+  --action-secondary-hover: rgba(15, 23, 42, 0.04);
+  --action-destructive-bg: #dc2626;
+  --action-destructive-text: #ffffff;
+  --action-destructive-hover: #b91c1c;
+
+  /* ============================================================
+     TYPOGRAPHY TOKENS - stack systeme stable pour le build
+     ============================================================ */
+
+  /* 1. Font Family Unique */
+  --font-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sober: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+
+  /* 2. Type Scale (Modular Scale - Perfect Fourth 1.333) - Base 16px */
+  --text-caption: 0.75rem;   /* 12px */
+  --text-small: 0.875rem;    /* 14px */
+  --text-body: 1rem;         /* 16px */
+  --text-h4: 1.333rem;       /* ~21px */
+  --text-h3: 1.777rem;       /* ~28px */
+  --text-h2: 2.369rem;       /* ~38px */
+  --text-h1: 3.157rem;       /* ~50px */
+  --text-display: 4.209rem;  /* ~67px */
+
+  /* 3. Font Weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* 4. Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+
+  /* 5. Semantic Typography (Hiérarchie) */
+  --font-h1: var(--font-base);
+  --font-h2: var(--font-base);
+  --font-h3: var(--font-base);
+  --font-h4: var(--font-base);
+
+  --size-h1: var(--text-h1);
+  --size-h2: var(--text-h2);
+  --size-h3: var(--text-h3);
+  --size-h4: var(--text-h4);
+
+  --weight-h1: var(--weight-bold);
+  --weight-h2: var(--weight-semibold);
+  --weight-h3: var(--weight-semibold);
+  --weight-h4: var(--weight-medium);
+
+  --leading-h1: var(--leading-tight);
+  --leading-h2: var(--leading-tight);
+  --leading-h3: var(--leading-tight);
+  --leading-h4: var(--leading-normal);
+
+  /* Corps */
+  --font-body-text: var(--font-base);
+  --size-body: var(--text-body);
+  --weight-body: var(--weight-normal);
+  --leading-body: var(--leading-normal);
+
+  /* Petit texte */
+  --font-small: var(--font-base);
+  --size-small: var(--text-small);
+  --weight-small: var(--weight-normal);
+  --leading-small: var(--leading-normal);
+
+  /* Caption */
+  --font-caption: var(--font-base);
+  --size-caption: var(--text-caption);
+  --weight-caption: var(--weight-normal);
+  --leading-caption: var(--leading-normal);
+
+  /* ============================================================
+     SPACING TOKENS - Base unit 8px
+     ============================================================ */
+  --space-1: 0.5rem;   /* 8px */
+  --space-2: 1rem;     /* 16px */
+  --space-3: 1.5rem;   /* 24px */
+  --space-4: 2rem;     /* 32px */
+  --space-5: 2.5rem;   /* 40px */
+  --space-6: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
+  --space-12: 6rem;    /* 96px */
+
+  /* ============================================================
+     GRID TOKENS - CleanMyMap layout foundations
+     ============================================================ */
+  --cmm-grid-columns-mobile: 4;
+  --cmm-grid-columns-tablet: 6;
+  --cmm-grid-columns-desktop: 12;
+  --cmm-grid-margin-mobile: 1rem;   /* 16px */
+  --cmm-grid-margin-tablet: 1.5rem;  /* 24px */
+  --cmm-grid-margin-desktop: 2rem;   /* 32px */
+  --cmm-grid-gutter-mobile: 1rem;    /* 16px */
+  --cmm-grid-gutter-tablet: 1.5rem;  /* 24px */
+  --cmm-grid-gutter-desktop: 1.5rem; /* 24px */
+  --cmm-grid-max-width: 90rem;       /* 1440px */
+  --cmm-grid-step: 0.5rem;           /* 8px */
+
+  /* ============================================================
+     PAGE LAYOUT & SPACING - contrat canonique des pages classiques
+     ============================================================ */
+  --cmm-page-max-width: var(--cmm-grid-max-width);
+  --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
+  --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);
+  --cmm-page-gutter-desktop: var(--cmm-grid-margin-desktop);
+  --cmm-page-padding-block: var(--space-4);
+  --cmm-page-header-content-gap: var(--space-4);
+  --cmm-section-gap: var(--space-4);
+  --cmm-content-group-gap: var(--space-2);
+
+  /* ============================================================
+     RADIUS TOKENS
+     ============================================================ */
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 1rem;     /* 16px */
+  --radius-lg: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* ============================================================
+     SURFACES & CARDS - contrat canonique
+     ============================================================ */
+  --cmm-surface-background: var(--bg-elevated);
+  --cmm-surface-background-muted: var(--bg-muted);
+  --cmm-surface-border: var(--border-default);
+  --cmm-surface-border-strong: var(--border-strong);
+  --cmm-surface-shadow: var(--shadow-soft);
+  --cmm-surface-shadow-elevated: var(--shadow-elevated);
+  --cmm-surface-blur: blur(10px);
+  --cmm-surface-texture-opacity: 1;
+  --cmm-surface-hover-translate: -2px;
+  --cmm-surface-hover-scale: 1.01;
+  --cmm-surface-active-scale: 0.99;
+  --cmm-surface-transition-duration: 180ms;
+  --cmm-surface-transition-easing: ease;
+  --cmm-card-radius: var(--radius-md);
+  --cmm-card-padding-sm: var(--space-2);
+  --cmm-card-padding-md: var(--space-2); /* 16px */
+  --cmm-card-padding-lg: var(--space-3); /* 24px */
+  --cmm-card-background: var(--cmm-surface-background);
+  --cmm-card-border: var(--cmm-surface-border);
+  --cmm-card-text: var(--text-primary);
+  --cmm-card-shadow: none;
+  --cmm-card-hover-shadow: var(--cmm-surface-shadow-elevated);
+  --cmm-card-focus-ring: var(--focus-ring);
+  --cmm-card-blur: var(--cmm-surface-blur);
+  --cmm-card-tone-rgb: 100 116 139;
+  --cmm-card-transition: background-color var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing),
+    border-color var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing),
+    box-shadow var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing),
+    transform var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing);
+  --cmm-card-disabled-opacity: 0.6;
+
+  /* ============================================================
+     BUTTONS - primitive canonique
+     ============================================================ */
+  --cmm-button-height-sm: 2.5rem;
+  --cmm-button-height-md: 2.75rem;
+  --cmm-button-height-lg: 3rem;
+  --cmm-button-padding-x-sm: 0.75rem;
+  --cmm-button-padding-x-md: 1rem;
+  --cmm-button-padding-x-lg: 1.25rem;
+  --cmm-button-gap: 0.5rem;
+  --cmm-button-radius: var(--radius-sm);
+  --cmm-button-transition-duration: 180ms;
+  --cmm-button-transition-easing: ease;
+  --cmm-button-shadow: var(--shadow-soft);
+  --cmm-button-hover-transform: translateY(-1px);
+  --cmm-button-active-transform: scale(0.98);
+  --cmm-button-disabled-opacity: 0.6;
+  --cmm-button-focus-ring: var(--focus-ring);
+  --cmm-button-transition: background-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    background-image var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    border-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    box-shadow var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
+    transform var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
+
+  /* ============================================================
+     FORMS & CONTROLS - primitive canonique
+     ============================================================ */
+  --cmm-field-control-height: 2.75rem;
+  --cmm-field-control-padding-x: 0.875rem;
+  --cmm-field-control-radius: var(--radius-sm);
+  --cmm-field-control-background: var(--bg-elevated);
+  --cmm-field-control-background-disabled: var(--bg-muted);
+  --cmm-field-control-border: var(--border-default);
+  --cmm-field-control-border-hover: var(--border-strong);
+  --cmm-field-control-border-focus: var(--accent-primary);
+  --cmm-field-control-border-error: var(--text-danger);
+  --cmm-field-control-text: var(--text-primary);
+  --cmm-field-control-placeholder: var(--text-muted);
+  --cmm-field-control-focus-ring: var(--focus-ring);
+  --cmm-field-control-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  --cmm-field-control-transition-duration: 150ms;
+  --cmm-field-control-transition-easing: ease;
+  --cmm-field-control-transition:
+    background-color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    border-color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    opacity var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing);
+
+  /* ============================================================
+     STATES & FEEDBACK - primitives canoniques
+     ============================================================ */
+  --cmm-system-state-max-width: 42rem;
+  --cmm-system-state-radius: var(--radius-lg);
+  --cmm-system-state-icon-radius: var(--radius-md);
+  --cmm-system-state-icon-size: 4rem;
+  --cmm-system-state-content-gap: 1.25rem;
+  --cmm-system-state-padding-block: 2rem;
+  --cmm-system-state-padding-inline: 1.25rem;
+  --cmm-system-state-background: var(--bg-elevated);
+  --cmm-system-state-border: var(--border-default);
+  --cmm-system-state-shadow: var(--cmm-surface-shadow);
+  --cmm-system-state-blur: var(--cmm-surface-blur);
+  --cmm-system-state-icon-background: var(--bg-muted);
+  --cmm-system-state-icon-border: var(--border-default);
+  --cmm-system-state-accent: var(--text-secondary);
+  --cmm-system-state-text: var(--text-primary);
+  --cmm-system-state-description: var(--text-secondary);
+  --cmm-system-state-meta-background: var(--bg-muted);
+  --cmm-system-state-meta-border: var(--border-default);
+  --cmm-system-state-meta-label: var(--text-secondary);
+  --cmm-system-state-meta-text: var(--text-secondary);
+  --cmm-feedback-radius: var(--radius-md);
+  --cmm-feedback-padding-block: 0.75rem;
+  --cmm-feedback-padding-inline: 1rem;
+  --cmm-feedback-gap: 0.5rem;
+  --cmm-feedback-accent: var(--text-info);
+  --cmm-feedback-background: var(--bg-elevated);
+  --cmm-feedback-border: var(--border-default);
+  --cmm-feedback-text: var(--text-secondary);
+  --cmm-skeleton-background: color-mix(in srgb, var(--text-muted) 12%, var(--bg-muted));
+  --cmm-skeleton-shimmer: rgb(255 255 255 / 0.6);
+  --cmm-skeleton-animation-duration: 1.8s;
+  --cmm-skeleton-pulse-duration: 2.4s;
+
+
+
+  /* 6. Semantic Text Colors */
+  /* États / Feedback */
+  --text-success: #059669;
+  --text-warning: #b45309;
+  --text-danger: #dc2626;
+  --text-info: #0369a1;
+
+  /* Actions */
+  --text-link: #0369a1;
+  --text-link-hover: #0284c7;
+}
+
+html[data-theme="dark"] {
+  --background: #020617; /* Very deep slate */
+  --foreground: #f8fafc;
+  --accent-soft: rgba(16, 185, 129, 0.1);
+
+  /* Tokens sémantiques (canon) */
+  --bg-canvas: var(--background);
+  --bg-elevated: rgba(2, 6, 23, 0.62);
+  --bg-muted: rgba(15, 23, 42, 0.62);
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-inverse: #0b1220;
+  --border-default: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.26);
+  --focus-ring: rgba(16, 185, 129, 0.4);
+
+  --action-secondary-bg: rgba(15, 23, 42, 0.72);
+  --action-secondary-text: #f8fafc;
+  --action-secondary-hover: rgba(16, 185, 129, 0.12);
+  --action-destructive-bg: #ef4444;
+  --action-destructive-text: #ffffff;
+  --action-destructive-hover: #dc2626;
+
+  /* States */
+  --text-success: #34d399;
+  --text-warning: #fbbf24;
+  --text-danger: #f87171;
+  --text-info: #38bdf8;
+
+  /* Actions */
+  --text-link: #38bdf8;
+  --text-link-hover: #7dd3fc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--accent-primary);
+
+  /* Font families */
+  --font-sans: var(--font-base);
+  --font-display: var(--font-base);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-dark: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-border-dark: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(16px);
+
+  /* Premium Soft Shadows */
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
+  --shadow-vibrant: 0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04);
+
+  /* Propreté / cohérence */
+  --shadow-soft: 0 10px 24px -18px rgba(15, 23, 42, 0.28);
+  --shadow-elevated: 0 22px 52px -42px rgba(15, 23, 42, 0.42);
+}
+
+/* Profile-Specific Theming */
+:root {
+  --profile-primary: 16 185 129; /* Default Emerald */
+}
+
+[data-user-profile="scientifique"] {
+  --profile-primary: 79 70 229; /* Indigo */
+}
+
+[data-user-profile="elu"] {
+  --profile-primary: 217 119 6; /* Amber */
+}
+
+[data-user-profile="admin"] {
+  --profile-primary: 225 29 72; /* Rose */
+}
+
+[data-user-profile="coordinateur"] {
+  --profile-primary: 8 145 178; /* Cyan */
+}
+
+[data-user-profile="entreprise"] {
+  --profile-primary: 37 99 235; /* Blue */
+}
+
+/* Profile-specific accent - classe canonique au lieu d'override global des classes emerald */
+/* Utilisez .cmm-profile-accent pour appliquer la couleur du profil (supprime l'override destructif sur .bg-emerald-500) */
+.cmm-profile-bg {
+  background-color: rgb(var(--profile-primary));
+}
+
+.cmm-profile-text {
+  color: rgb(var(--profile-primary));
+}
+
+.cmm-profile-border {
+  border-color: rgb(var(--profile-primary));
+}
+
+/* Transition douce pour les éléments profile */
+.cmm-profile-accent {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* ============================================================
+   BLOCK ACCENTS - Classes utilitaires par bloc
+   ============================================================ */
+
+/* Classes utilitaires pour accents par bloc - source: BLOCK_ACCENT_MAP */
+.cmm-accent-home {
+  @apply bg-amber-50/80 border-amber-300/80 text-amber-900;
+}
+
+.cmm-accent-act {
+  @apply bg-emerald-50/80 border-emerald-300/80 text-emerald-900;
+}
+
+.cmm-accent-visualize {
+  @apply bg-sky-50/80 border-sky-300/80 text-sky-900;
+}
+
+.cmm-accent-impact {
+  @apply bg-red-50/80 border-red-300/80 text-red-900;
+}
+
+.cmm-accent-network {
+  @apply bg-indigo-50/80 border-indigo-300/80 text-indigo-900;
+}
+
+.cmm-accent-connect {
+  @apply bg-pink-50/80 border-pink-300/80 text-pink-900;
+}
+
+.cmm-accent-learn {
+  @apply bg-yellow-50/80 border-yellow-300/80 text-yellow-900;
+}
+
+.cmm-accent-pilot {
+  @apply bg-amber-100/80 border-amber-400/80 text-amber-950;
+}
+
+/* Classes pour dots d'accent par bloc */
+.cmm-dot-home { @apply bg-amber-500; }
+.cmm-dot-act { @apply bg-emerald-500; }
+.cmm-dot-visualize { @apply bg-sky-500; }
+.cmm-dot-impact { @apply bg-red-500; }
+.cmm-dot-network { @apply bg-indigo-500; }
+.cmm-dot-connect { @apply bg-pink-500; }
+.cmm-dot-learn { @apply bg-yellow-500; }
+.cmm-dot-pilot { @apply bg-amber-700; }
+
+/* Classes pour rings d'accent par bloc */
+.cmm-ring-home { @apply ring-amber-300; }
+.cmm-ring-act { @apply ring-emerald-300; }
+.cmm-ring-visualize { @apply ring-sky-300; }
+.cmm-ring-impact { @apply ring-red-300; }
+.cmm-ring-network { @apply ring-indigo-300; }
+.cmm-ring-connect { @apply ring-pink-300; }
+.cmm-ring-learn { @apply ring-yellow-300; }
+.cmm-ring-pilot { @apply ring-amber-400; }

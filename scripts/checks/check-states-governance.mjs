@@ -24,7 +24,28 @@ function read(relativePath) {
   return fs.readFileSync(absolutePath, "utf8");
 }
 
-const source = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
+function readCssEntryPoint(relativePath, seen = new Set()) {
+  const absolutePath = path.join(repositoryRoot, relativePath.replaceAll("/", path.sep));
+  if (seen.has(absolutePath)) return "";
+  seen.add(absolutePath);
+  const content = read(relativePath);
+  const imports = [...content.matchAll(/@import\s+["']([^"']+)["']\s*;/g)];
+  return [
+    content,
+    ...imports
+      .map(([, importPath]) => importPath)
+      .filter((importPath) => importPath.startsWith("."))
+      .map((importPath) => readCssEntryPoint(
+        path.relative(repositoryRoot, path.resolve(path.dirname(absolutePath), importPath)),
+        seen,
+      )),
+  ].join("\n");
+}
+
+const source = Object.fromEntries(Object.entries(files).map(([key, file]) => [
+  key,
+  key === "globals" ? readCssEntryPoint(file) : read(file),
+]));
 
 function requireText(key, text, message = `missing ${text}`) {
   if (!source[key].includes(text)) violations.push(`${files[key]}: ${message}`);

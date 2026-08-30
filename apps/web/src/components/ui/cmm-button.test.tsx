@@ -4,7 +4,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CmmButton } from "./cmm-button";
 
-const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+const css = [
+  readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../styles/actions.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../../styles/display-modes.css", import.meta.url), "utf8"),
+].join("\n");
 const source = readFileSync(new URL("./cmm-button.tsx", import.meta.url), "utf8");
 
 describe("CmmButton", () => {
