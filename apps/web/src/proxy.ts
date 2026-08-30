@@ -22,22 +22,27 @@ export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   DASHBOARD_ROUTE,
   "/missions",
   "/actions/history",
-  "/actions/new",
   "/declaration",
   "/form-comparison",
   "/onboarding",
   "/partners/dashboard",
-  "/partners/network",
   "/partners/onboarding",
   PARCOURS_ROUTE,
   "/prints/report",
   PROFIL_ROUTE,
   "/reglages",
-  "/signalement",
   SPONSOR_PORTAL_ROUTE,
 ] as const;
 
-export const CLERK_CONTEXT_ROUTE_PREFIXES = ["/pilotage", "/reports"] as const;
+export const CLERK_CONTEXT_ROUTE_PREFIXES = [
+  "/pilotage",
+  "/reports",
+  "/actions/new",
+  "/signalement",
+  "/partners/network",
+  "/sections/annuaire",
+  "/sections/rejoindre-un-formulaire",
+] as const;
 
 // These API families need Clerk request context for auth() or centralized
 // authz helpers. Their handlers keep the authentication/authorization decision
@@ -62,6 +67,7 @@ export const CLERK_CONTEXT_API_ROUTE_PREFIXES = [
   "/api/sandbox",
   "/api/send",
   "/api/services",
+  "/api/signalements",
   "/api/spots",
   "/api/users",
 ] as const;
@@ -112,12 +118,56 @@ function isApiRoute(pathname: string): boolean {
   return pathname.startsWith("/api/");
 }
 
+function isAnonymousSafeApiRequest(req: NextRequest): boolean {
+  if (req.method !== "GET") {
+    return false;
+  }
+
+  return [
+    "/api/actions/map",
+    "/api/actions/map/initial-nearest",
+    "/api/actions/group-join",
+    "/api/partners/published-directory",
+  ].some((pathname) => req.nextUrl.pathname === pathname);
+}
+
+function hasClerkSessionSignal(req: NextRequest): boolean {
+  if (req.headers.has("authorization")) {
+    return true;
+  }
+
+  const cookie = req.headers.get("cookie") ?? "";
+  return /(?:^|;\s*)(?:__session|__client|__clerk_db_jwt(?:_[^=;]+)?|__clerk_handshake)=/.test(
+    cookie,
+  );
+}
+
+function shouldSkipClerkForAnonymousPublicRequest(req: NextRequest): boolean {
+  if (req.method === "GET" && [
+    "/api/actions/map",
+    "/api/actions/map/initial-nearest",
+    "/api/partners/published-directory",
+  ].includes(req.nextUrl.pathname)) {
+    return true;
+  }
+
+  if (hasClerkSessionSignal(req)) {
+    return false;
+  }
+
+  return isClerkContextOnlyRoute(req.nextUrl.pathname) || isAnonymousSafeApiRequest(req);
+}
+
 function clerkUnavailableResponse(req: NextRequest): NextResponse {
   if (isClerkContextOnlyRoute(req.nextUrl.pathname)) {
     return nextWithSeoHeaders(req);
   }
 
   if (isApiRoute(req.nextUrl.pathname)) {
+    if (isAnonymousSafeApiRequest(req)) {
+      return nextWithSeoHeaders(req);
+    }
+
     return NextResponse.json(
       {
         error: "Clerk authentication indisponible temporairement.",
@@ -177,17 +227,12 @@ const clerkProxy = clerkMiddleware(
 );
 
 export async function proxy(req: NextRequest, evt: NextFetchEvent) {
+  if (shouldSkipClerkForAnonymousPublicRequest(req)) {
+    return nextWithSeoHeaders(req);
+  }
+
   try {
     const response = await clerkProxy(req, evt);
-    const clerkReason = response?.headers.get("x-clerk-auth-reason");
-    const isDevBrowserMissing = clerkReason?.includes("dev-browser-missing") ?? false;
-
-    if (isDevBrowserMissing) {
-      if (!isDevAuthBypassEnabled(req.headers.get("host"))) {
-        return clerkUnavailableResponse(req);
-      }
-      return response;
-    }
     return response;
   } catch (error) {
     console.error("Proxy fallback: Clerk middleware failure", error);
@@ -205,21 +250,23 @@ export const config = {
     "/dashboard(.*)",
     "/missions(.*)",
     "/actions/history(.*)",
-    "/actions/new(.*)",
     "/declaration(.*)",
     "/form-comparison(.*)",
     "/onboarding(.*)",
     "/partners/dashboard(.*)",
-    "/partners/network(.*)",
     "/partners/onboarding(.*)",
     "/parcours(.*)",
     "/prints/report(.*)",
     "/profil(.*)",
     "/reglages(.*)",
-    "/signalement(.*)",
     "/sponsor-portal(.*)",
     "/pilotage(.*)",
     "/reports(.*)",
+    "/actions/new(.*)",
+    "/signalement(.*)",
+    "/partners/network(.*)",
+    "/sections/annuaire(.*)",
+    "/sections/rejoindre-un-formulaire(.*)",
     "/api/account(.*)",
     "/api/actions(.*)",
     "/api/admin(.*)",
@@ -239,6 +286,7 @@ export const config = {
     "/api/sandbox(.*)",
     "/api/send(.*)",
     "/api/services(.*)",
+    "/api/signalements(.*)",
     "/api/spots(.*)",
     "/api/users(.*)",
   ],

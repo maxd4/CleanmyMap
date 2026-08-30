@@ -141,7 +141,7 @@ export const PersonalizationPanel = memo(function PersonalizationPanel() {
               onClick={() => setLocale(locale === "fr" ? "en" : "fr")}
               tone="primary"
               variant="pill"
-              className="min-h-11 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]"
+              size="md"
             >
               <Languages size={14} />
               {fr ? "Passer en EN" : "Switch to FR"}
@@ -151,7 +151,7 @@ export const PersonalizationPanel = memo(function PersonalizationPanel() {
               onClick={toggleTheme}
               tone="tertiary"
               variant="pill"
-              className="min-h-11 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em]"
+              size="md"
             >
               <Moon size={14} />
               {fr

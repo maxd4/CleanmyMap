@@ -25,6 +25,8 @@ export function ActionBeforeDeclarationForm({
   initialRecordType = "action",
   onReturnToChoice,
   onPassToComplete,
+  signInHref,
+  signUpHref,
 }: ActionBeforeDeclarationFormProps) {
   const {
     form,
@@ -57,7 +59,7 @@ export function ActionBeforeDeclarationForm({
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-7xl">
-          <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/96">
+          <CmmCard tone="emerald" variant="glass" size="lg">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -120,7 +122,7 @@ export function ActionBeforeDeclarationForm({
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl space-y-6">
-        <CmmCard tone="emerald" variant="glass" size="lg" className="border-emerald-200/80 bg-white/95">
+        <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <CmmPill tone="emerald" size="sm" className="tracking-[0.18em]">
@@ -179,6 +181,20 @@ export function ActionBeforeDeclarationForm({
                 </ul>
               ) : null}
               {errorMessage ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}
+              {!isAuthenticated ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {signInHref ? (
+                    <CmmButton href={signInHref} tone="primary" variant="pill" size="sm">
+                      Se connecter et reprendre
+                    </CmmButton>
+                  ) : null}
+                  {signUpHref ? (
+                    <CmmButton href={signUpHref} tone="secondary" variant="pill" size="sm">
+                      Créer un compte
+                    </CmmButton>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 

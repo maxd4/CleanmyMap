@@ -8,10 +8,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 2. `PAGE_HEADER.md`
 3. `LAYOUT_SPACING.md`
 4. `SURFACES_CARDS.md`
-5. `charte-ui-pro-moderne-futuriste.md`
-6. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-7. `UI_EXCEPTION_PAGES.md`
-8. fiche canonique de la page dans `documentation/pages_site/`
+5. `ACTIONS_BUTTONS.md`
+6. `charte-ui-pro-moderne-futuriste.md`
+7. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+8. `UI_EXCEPTION_PAGES.md`
+9. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 

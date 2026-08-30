@@ -102,13 +102,26 @@ ci-dessus.
   contrat ou régression du lot. Une erreur étrangère est
   `SKIPPED_PARALLEL_CHANTIER` et ne doit pas être corrigée dans ce lot.
 
-## Hygiène du dépôt
+## Hygiène du dépôt et architecture interne
 
-- ne pas créer de dépôt sibling, copie complète, worktree ou dossier
-  `CleanmyMap-*` parallèle ;
+- conserver par défaut sous la racine du projet tous les fichiers et dossiers
+  du projet, notamment le code, les tests, la documentation, les scripts, les
+  données et les artefacts, selon les emplacements canoniques de son
+  architecture ;
+- ne pas créer par commodité de dossier parallèle, copie persistante, clone,
+  worktree ou arborescence hors projet ailleurs sous `business` ou sur la
+  machine, notamment un dépôt ou dossier `CleanmyMap-*` parallèle ;
+- respecter et étendre l'arborescence canonique existante ; ne pas créer de
+  structure ambiguë ou dupliquée lorsqu'un contenu possède déjà un emplacement
+  canonique ; la racine du projet reste la source canonique des fichiers
+  versionnables ;
 - ne pas créer de fichier racine sans justification explicite ; placer les
   temporaires, captures, logs, exports et artefacts dans leur emplacement
   canonique (`artifacts/`, `documentation/`, `backups/` ou sous-dossier dédié) ;
+- supprimer les artefacts temporaires dès qu'ils ne sont plus nécessaires ; une
+  exception hors projet n'est admise que pour une contrainte technique réelle
+  et justifiée ; si elle est persistante, mentionner obligatoirement son chemin
+  exact et sa justification dans le compte rendu final ;
 - les images et captures placées sous `documentation/pages_site/routes/` sont
   des assets locaux uniquement : elles doivent rester ignorées par Git et ne
   doivent jamais être ajoutées à l'index ou commitées ;

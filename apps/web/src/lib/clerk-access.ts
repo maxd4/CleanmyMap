@@ -10,7 +10,7 @@ const SECTION_ACCESS_MODES: Record<string, ClerkAccessMode> = {
   "open-data": "visible",
   funding: "visible",
   actors: "visible",
-  annuaire: "disabled",
+  annuaire: "visible",
   community: "disabled",
   gamification: "disabled",
   elus: "disabled",

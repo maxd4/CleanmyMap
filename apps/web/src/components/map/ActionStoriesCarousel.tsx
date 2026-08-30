@@ -94,7 +94,7 @@ export function ActionStoriesCarousel({ items, onOpenAction, compact = false }: 
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
               >
-                <CmmCard className={compact ? "pointer-events-auto h-full w-full max-w-sm overflow-hidden border border-cyan-200/80 bg-cyan-50/95 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-3xl group" : "pointer-events-auto h-full w-full max-w-sm overflow-hidden border border-cyan-200/80 bg-cyan-50/95 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-3xl group"}>
+                <CmmCard tone="sky" className="pointer-events-auto h-full w-full group">
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/38 to-slate-950/10 z-10" />
                   <div
                     className="absolute inset-0 bg-cover bg-center opacity-55 transition-transform duration-700 group-hover:scale-110"

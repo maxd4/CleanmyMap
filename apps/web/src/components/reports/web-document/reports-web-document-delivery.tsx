@@ -5,6 +5,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import { GenerationStageCard } from "./reports-web-document.shared";
 
@@ -60,15 +61,16 @@ export function ReportsWebDocumentDelivery({
       title="Ce qui est prêt à exporter"
       description="Lancez le PDF dès que la configuration est validée."
       action={
-        <button
-          type="button"
+        <CmmButton
           onClick={onGenerate}
           disabled={isDisabled}
-          className="inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-3 text-sm font-black text-white shadow-[0_18px_34px_-18px_rgba(220,38,38,0.55)] transition hover:from-red-700 hover:to-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+          loading={state === "pending"}
+          tone="primary"
+          size="lg"
         >
           <FileText size={18} />
           {state === "pending" ? pendingLabel : "Générer le rapport"}
-        </button>
+        </CmmButton>
       }
     >
       <div className="space-y-3">
@@ -200,16 +202,24 @@ export function ReportsWebDocumentDeliveryHistory({
                   </td>
                   <td className="border-b border-slate-100 px-4 py-3">
                     <div className="flex flex-wrap gap-2">
-                      <HistoryActionButton
-                        label="Voir"
+                      <CmmButton
                         disabled={actionStateById[row.id]?.state === "pending"}
                         onClick={() => onView(row.id)}
-                      />
-                      <HistoryActionButton
-                        label="Réexporter"
+                        tone="tertiary"
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Voir
+                      </CmmButton>
+                      <CmmButton
                         disabled={actionStateById[row.id]?.state === "pending"}
                         onClick={() => onReexport(row.id)}
-                      />
+                        tone="tertiary"
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Réexporter
+                      </CmmButton>
                     </div>
                     {actionStateById[row.id] ? (
                       <p
@@ -234,26 +244,5 @@ export function ReportsWebDocumentDeliveryHistory({
         </div>
       )}
     </section>
-  );
-}
-
-function HistoryActionButton({
-  label,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {label}
-    </button>
   );
 }

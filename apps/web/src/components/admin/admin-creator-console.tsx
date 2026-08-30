@@ -7,7 +7,8 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import Link from "next/link";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -146,12 +147,11 @@ export function AdminCreatorConsole({
             </div>
 
             <div className="relative z-10 space-y-4">
-              <CmmButton
-                href="/admin"
-                prefetch={false}
-                tone="secondary"
-                variant="default"
-                className="group/btn w-full justify-start gap-4 rounded-2xl p-5 text-left"
+              <Link href="/admin" prefetch={false} className="block">
+              <CmmCard
+                tone="slate"
+                size="lg"
+                className="group/btn flex w-full items-center justify-start gap-4 text-left"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-400/10 text-slate-400 transition-all duration-500 group-hover/btn:bg-slate-400 group-hover/btn:text-slate-950">
                   <Zap size={22} className="transition-transform group-hover/btn:scale-110" />
@@ -162,14 +162,14 @@ export function AdminCreatorConsole({
                     Modération et audit
                   </p>
                 </div>
-              </CmmButton>
+              </CmmCard>
+              </Link>
 
-              <CmmButton
-                href="/reports"
-                prefetch={false}
-                tone="primary"
-                variant="default"
-                className="group/btn w-full justify-start gap-4 rounded-2xl p-5 text-left"
+              <Link href="/reports" prefetch={false} className="block">
+              <CmmCard
+                tone="rose"
+                size="lg"
+                className="group/btn flex w-full items-center justify-start gap-4 text-left"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-500 transition-all duration-500 group-hover/btn:bg-red-500 group-hover/btn:text-white">
                   <Flame size={22} className="transition-transform group-hover/btn:scale-110" />
@@ -180,13 +180,14 @@ export function AdminCreatorConsole({
                     Exports décideurs
                   </p>
                 </div>
-              </CmmButton>
+              </CmmCard>
+              </Link>
 
-              <CmmButton
-                href="/api/health"
-                tone="tertiary"
-                variant="default"
-                className="group/btn w-full justify-start gap-4 rounded-2xl p-5 text-left"
+              <Link href="/api/health" prefetch={false} className="block">
+              <CmmCard
+                tone="emerald"
+                size="lg"
+                className="group/btn flex w-full items-center justify-start gap-4 text-left"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 transition-all duration-500 group-hover/btn:bg-emerald-500 group-hover/btn:text-white">
                   <RotateCcw size={22} className="transition-transform duration-700 group-hover/btn:rotate-180" />
@@ -197,7 +198,8 @@ export function AdminCreatorConsole({
                     État des endpoints
                   </p>
                 </div>
-              </CmmButton>
+              </CmmCard>
+              </Link>
             </div>
           </div>
 

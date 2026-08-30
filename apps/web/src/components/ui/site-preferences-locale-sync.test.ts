@@ -52,4 +52,24 @@ describe("applyLocalePreferenceChange", () => {
     expect(setCookie).toHaveBeenCalledTimes(2);
     expect(setDocumentLang).toHaveBeenCalledTimes(2);
   });
+
+  it("does not refresh when Strict Mode repeats the same locale sync", () => {
+    const gate = { current: false };
+    const refresh = vi.fn();
+
+    applyLocalePreferenceChange("fr", gate, {
+      writeLocale: vi.fn(),
+      setCookie: vi.fn(),
+      setDocumentLang: vi.fn(),
+      refresh,
+    });
+    applyLocalePreferenceChange("fr", gate, {
+      writeLocale: vi.fn(),
+      setCookie: vi.fn(),
+      setDocumentLang: vi.fn(),
+      refresh,
+    });
+
+    expect(refresh).not.toHaveBeenCalled();
+  });
 });

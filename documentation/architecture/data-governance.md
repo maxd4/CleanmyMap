@@ -44,6 +44,31 @@ réexporter les types généraux ni les sous-domaines d'impact, de géométrie, 
 contexte opérationnel ou de pollution. Les modules internes Actions importent
 directement leur module propriétaire.
 
+## Choix du stockage
+
+Le choix de stockage dépend de la durée de vie, de la valeur métier et du
+besoin de partage de la donnée :
+
+| Type de donnée | Emplacement par défaut | Règle durable |
+|---|---|---|
+| Contenus pédagogiques, guides, décisions et checklists durables | Repo Markdown / Git | Versionner et publier comme contenu statique lorsque c'est possible. |
+| Préférences UI, brouillons non critiques, quiz anonymes et états temporaires | `localStorage` | Les garder côté navigateur tant qu'ils n'ont pas de valeur métier durable ou de besoin multi-appareils. |
+| Données métier vivantes, comptes, rôles, actions, participations et agrégats persistés | Supabase | Conserver une source de vérité serveur, appliquer les RLS et borner les lectures ; ne pas dupliquer le calcul métier côté client. |
+| Données dérivées recalculables | Cache HTTP, ISR, `SWR` ou cache applicatif | Utiliser le cache pour réduire les lectures, jamais comme source de vérité. |
+| Fichiers téléchargeables, images uploadées, PDF et exports réutilisables | Fichier préparé / Storage | Stocker seulement les métadonnées minimales en base si le fichier doit rester utile ou traçable. |
+
+Les quiz anonymes et les brouillons non critiques ne doivent pas devenir une
+nouvelle table par défaut. Supabase devient pertinent pour un suivi connecté
+réellement utile, stable et justifiable entre appareils. Les formulaires à
+soumission unique ne doivent pas persister chaque frappe ou un auto-save
+permanent ; un document généré doit être produit à la demande et ne laisser en
+base qu'un résumé minimal lorsque ce suivi apporte une valeur métier.
+
+Déplacer une donnée métier de Supabase vers `localStorage` exige de préserver
+la synchronisation, l'historique, les permissions et la conformité. En cas de
+doute, conserver la donnée dans sa source de vérité serveur et documenter le
+choix avant de créer une nouvelle persistance.
+
 ## Entités principales
 
 | Entité | Table principale | Contrat |

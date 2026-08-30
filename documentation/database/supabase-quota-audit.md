@@ -49,6 +49,74 @@ du 27 août. Le snapshot observé après le déploiement restait celui généré
 donc pas présenter cette séquence comme une preuve complète de la
 reconstruction runtime post-déploiement.
 
+## Clôture de l'optimisation des lectures — 29 août 2026
+
+Cette passe clôture l'optimisation préventive issue des commits
+`07c08cf39313ba194df9683374aa622c3de3a386` et
+`7e8abd5d78a28262f909fbfb35b6ef3063bd5ee5`.
+
+### Changements retenus
+
+- `BusinessAlertsPanel` demande désormais `types=action` au lieu de
+  `types=all` et ne déclenche plus la lecture inutile de
+  `trash_spotter_spots` pour cette surface.
+- `action_pollution_score_references()` est protégée par un cache serveur de
+  cinq minutes et par une coalescence des appels concurrents.
+- Le provider navigateur des références de pollution utilise une clé SWR
+  partagée, un TTL de cinq minutes et conserve l'invalidation explicite.
+- Les reconstructions concurrentes des snapshots publics sont coalescées ;
+  leurs TTL existants sont conservés. Le correctif asynchrone ultérieur de
+  nettoyage est celui de `7e8abd5d...`.
+
+Ce chantier est applicatif et préventif : aucune migration, aucun index,
+aucune policy RLS et aucun privilège Supabase n'ont été modifiés.
+
+### Baseline historique `pg_stat_statements`
+
+- `pg_stat_statements.stats_reset` : `2026-05-25T09:24:39.148710Z`
+- snapshot observé : `2026-08-29T18:16:41.205367Z`
+
+| Surface | queryid | calls | total_exec_time (ms) | mean_exec_time (ms) | rows |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `actions` | `-3393483178721463869` | `63173` | `25027.991593` | `0.3961817801` | `63173` |
+| `trash_spotter_spots` | `2002319452271838000` | `49455` | `6692.507664` | `0.1353251979` | `49455` |
+| `action_pollution_score_references()` | `6131033985496519836` | `5925` | `4015.215263` | `0.6776734621` | `5925` |
+
+Ces nombres sont des compteurs cumulés depuis le reset du 25 mai 2026 ; ils ne
+représentent pas le trafic actuel du site. CleanMyMap est actuellement très
+peu utilisé. Une attente passive de 24, 48 ou 72 heures ne constituerait donc
+pas une fenêtre statistiquement utile dans l'état actuel du trafic.
+
+Les trois fingerprints étaient servis à 100 % depuis le cache PostgreSQL dans
+le snapshot relevé, avec des temps moyens déjà très faibles. Le problème traité
+était la fréquence et la redondance des lectures applicatives, pas une lenteur
+SQL. Aucun pourcentage de réduction OLD/NEW n'est retenu : le trafic réel est
+insuffisant pour une comparaison exploitable et un benchmark synthétique
+n'apporterait pas une valeur proportionnée au stade actuel du produit.
+
+### Verdict et règle de clôture
+
+**OPTIMISATION PRÉVENTIVE DE SOBRIÉTÉ / QUOTAS — TERMINÉE**
+
+Le chantier ne doit pas être rouvert pour répéter les mêmes relevés historiques
+ou fabriquer une comparaison OLD/NEW sans trafic représentatif.
+
+Une réouverture est justifiée uniquement par au moins un signal nouveau et
+mesurable :
+
+- utilisation réelle du site devenue significative ;
+- hausse anormale d'un quota Supabase ;
+- régression visible dans Query Performance ;
+- nouveau polling ou nouveau consumer fréquent ;
+- augmentation importante des appels à `actions`,
+  `trash_spotter_spots` ou à la RPC, rapportée à un trafic réel mesurable ;
+- problème de fraîcheur ou d'invalidation introduit par les caches.
+
+Une telle réouverture devra comparer des fenêtres de trafic réellement
+comparables et caractériser le nouveau consumer avant toute modification. Elle
+ne devra créer ni monitoring permanent, ni cron, ni benchmark synthétique par
+défaut.
+
 ## Quotas Supabase à surveiller
 
 Les quotas exacts dépendent du plan et de l'organisation, mais les dimensions qui comptent pour CleanMyMap sont les suivantes.
