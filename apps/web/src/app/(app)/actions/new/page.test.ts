@@ -34,6 +34,8 @@ vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
       "data-auto-approved": String(props.isAutoApprovedSubmission),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
+      "data-sign-in-href": String(props.signInHref ?? ""),
+      "data-sign-up-href": String(props.signUpHref ?? ""),
     }),
 }));
 
@@ -64,7 +66,7 @@ describe("action creation entry point", () => {
     expect(source).toContain("estimations d’impact");
   });
 
-  it("shows the existing auth state instead of an editable form for anonymous users", async () => {
+  it("passes the anonymous auth state and return context to the entry flow", async () => {
     const html = renderToStaticMarkup(
       await NewActionPage({
         searchParams: Promise.resolve({
@@ -75,10 +77,14 @@ describe("action creation entry point", () => {
     );
 
     expect(html).not.toContain("<form");
-    expect(html).toContain("Connexion requise pour déclarer une action");
-    expect(html).toContain("Se connecter");
+    expect(html).toContain('data-authenticated="false"');
+    expect(html).toContain('data-action-id="action-7"');
+    expect(html).toContain('data-event-id="event-42"');
     expect(html).toContain(
-      "redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7",
+      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7"',
+    );
+    expect(html).toContain(
+      'data-sign-up-href="/sign-up?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7"',
     );
   });
 
