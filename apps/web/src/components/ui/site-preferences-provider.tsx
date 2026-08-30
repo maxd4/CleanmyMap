@@ -26,7 +26,10 @@ import {
   siteLocaleStorage,
   siteThemeStorage,
 } from "@/lib/storage/ui-state-storage";
-import { applyLocalePreferenceChange } from "./site-preferences-locale-sync";
+import {
+  applyLocalePreferenceChange,
+  resolveInitialLocale,
+} from "./site-preferences-locale-sync";
 
 type SitePreferencesContextValue = {
   locale: Locale;
@@ -41,6 +44,7 @@ type SitePreferencesContextValue = {
 
 type SitePreferencesProviderProps = {
   children: ReactNode;
+  initialLocale?: Locale;
   initialDisplayMode?: DisplayMode;
   initialDisplayModeExplicit?: boolean;
 };
@@ -73,15 +77,19 @@ function applyDisplayModeAttribute(displayMode: DisplayMode): void {
 
 export function SitePreferencesProvider({
   children,
+  initialLocale,
   initialDisplayMode,
   initialDisplayModeExplicit = false,
 }: SitePreferencesProviderProps) {
   const shouldRefreshAfterLocaleChange = useRef(false);
 
   const [locale, setLocaleState] = useState<Locale>(
-    // Toujours partir du default serveur pour le rendu initial — évite l'hydration mismatch
-    STORAGE_DEFAULTS.locale,
+    // Le cookie serveur est la source initiale; le localStorage legacy est
+    // migré après montage sans réécrire temporairement la valeur serveur.
+    resolveInitialLocale(initialLocale, null),
   );
+  const [hasResolvedLocalePreference, setHasResolvedLocalePreference] =
+    useState(false);
 
   const [theme, setThemeState] = useState<ThemeMode>(
     STORAGE_DEFAULTS.theme,
@@ -97,7 +105,7 @@ export function SitePreferencesProvider({
   // Après le premier rendu (client uniquement), on synchronise avec le localStorage
   useEffect(() => {
     const storedLocale = siteLocaleStorage.read();
-    if (storedLocale) setLocaleState(storedLocale);
+    setLocaleState(() => resolveInitialLocale(initialLocale, storedLocale));
 
     const storedTheme = siteThemeStorage.read();
     if (storedTheme) setThemeState(storedTheme);
@@ -109,11 +117,16 @@ export function SitePreferencesProvider({
         setIsDisplayModeExplicitlySet(true);
       }
     }
+    setHasResolvedLocalePreference(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!hasResolvedLocalePreference) {
       return;
     }
 
@@ -129,7 +142,7 @@ export function SitePreferencesProvider({
         window.location.reload();
       },
     });
-  }, [locale]);
+  }, [hasResolvedLocalePreference, locale]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

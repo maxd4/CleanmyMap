@@ -47,6 +47,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "public locale explorer campaign 3a1",
+      testMatch: /public-locale-explorer-campaign-3a1\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "global teardown",
       testMatch: /global\.teardown\.ts/,
     },

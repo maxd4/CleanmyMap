@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getNavigationSpacesForProfile,
   type NavigationItem,
@@ -167,11 +168,14 @@ function formatBlockLabel(label: string): string {
 }
 
 export default async function ExplorerPage() {
-  const [locale, displayModePreference, role] = await Promise.all([
+  const [locale, displayModePreference, session] = await Promise.all([
     getServerLocale(),
     getServerDisplayModePreference(),
-    getCurrentUserRoleLabel(),
+    getSafeAuthSession(),
   ]);
+  const role = session.state === "authenticated"
+    ? await getCurrentUserRoleLabel()
+    : "anonymous" as const;
   const currentProfile = toProfile(role);
   const spaces = getNavigationSpacesForProfile(currentProfile, displayModePreference.displayMode, locale);
   const visibleSpaces = spaces.map((space) => ({

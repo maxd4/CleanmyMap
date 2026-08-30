@@ -76,9 +76,9 @@ persistence métier.
 | Navigation globale | `/`, toutes routes publiques | anonyme/connecté | liens principaux, CTA, retour, alias et redirections | aucune pour lire/naviguer ; session seulement pour les cibles privées | route cible réellement atteinte, sans mur prématuré | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `app-navigation-ribbon`, `page_site/INDEX.md`, `proxy.ts` | `E2E-3A-NAVIGATION` : routes publiques, CTA `/actions/map → /methodologie` et alias `/open-data → /sections/open-data` atteints. |
 | Recherche globale | toutes pages avec recherche | anonyme/connecté | saisir, sélectionner un résultat | aucune pour résultats publics ; auth à l’ouverture d’une cible privée | redirection vers la bonne fiche/section | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `GlobalSearch`, `router.push` | `E2E-3A-GLOBAL-SEARCH` : requête publique `Méthodologie`, sélection du résultat puis URL finale `/methodologie`. |
 | Authentification | `/sign-in`, `/sign-up` | anonyme | connexion, inscription, `returnTo` | précisément au moment de l’accès privé ou de la mutation | session Clerk établie puis retour vers la cible, onboarding si nécessaire | Présente | Contrats Clerk | NON PROUVÉ | Clerk, `proxy.ts`, onboarding | Le retour après auth et le cas session indisponible restent non vérifiés navigateur. |
-| Préférences d’interface | toutes pages | anonyme/connecté | langue, thème, mode d’affichage, préférence locale | aucune pour les préférences locales ; auth seulement si persistance compte | cookie/local storage ou préférence serveur effectivement relue | PAGE_OK | INTERACTION_OK | BLOCKED_ENV | `site-preferences-provider`, cookies, serveur préférences | `E2E-3A-PREFERENCES` : contrôles langue/mode visibles et manipulables ; le déploiement public réécrit `cleanmymap.locale` à `fr` après sélection `en`. Le bouton thème est masqué par l’UI et n’est pas une préférence exposée. |
+| Préférences d’interface | toutes pages | anonyme/connecté | langue, thème, mode d’affichage, préférence locale | aucune pour les préférences locales ; auth seulement si persistance compte | cookie/local storage ou préférence serveur effectivement relue | PAGE_OK | INTERACTION_OK | END_TO_END_OK (locale) | `site-preferences-provider`, `site-preferences-locale-sync`, cookies | `E2E-3A1-PREFERENCES-SELECT-RELOAD` et `E2E-3A1-PREFERENCES-LEGACY` : `en` sélectionné puis relu dans localStorage, cookie et `document.lang` après reload ; cookie serveur `en` initial ; migration localStorage `en` sur default serveur `fr` stabilisée sans nouvelle navigation après la migration. Thème non exposé par l’UI. |
 | Consentement cookies | toutes pages | anonyme | accepter/refuser/ouvrir la politique | aucune | état de consentement conservé et bannière masquée au rechargement | PAGE_OK | INTERACTION_OK | END_TO_END_OK | cookie/local storage | `E2E-3A-COOKIE-CONSENT-ACCEPT` et `E2E-3A-COOKIE-CONSENT-REJECT` : choix et cookie analytics relus après reload, bandeau absent. |
-| Explorer | `/explorer`, `/en` | anonyme/connecté | filtres, sélection de carte/fiche, liens de lecture | aucune pour lecture publique | exploration et redirection vers une fiche cohérente | BLOCKED_ENV | NOT_RUN | NOT_RUN | sources d’actions, navigation | `E2E-3A-EXPLORER` : le déploiement public ne rend pas le heading `Sommaire` attendu et a exposé un écran runtime React `#441` lors de la première vérification ; aucune fixture n’a été fabriquée. |
+| Explorer | `/explorer`, `/en` | anonyme/connecté | filtres, sélection de carte/fiche, liens de lecture | aucune pour lecture publique | exploration et redirection vers une fiche cohérente | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `getSafeAuthSession`, `getServerLocale`, `getServerDisplayModePreference`, `getNavigationSpacesForProfile`, `BLOCK_THEME` | `E2E-3A1-EXPLORER` : page locale `200`, heading `Sommaire`, 5 cartes rendues sans erreur page ; sélection d’un lien de carte puis URL finale `/actions/new`. Tous les `space.id` retournés par `FIXED_SPACE_ORDER` sont couverts par `BLOCK_THEME`. |
 | Carte des actions | `/actions/map` | anonyme/connecté | filtres date/zone/catégorie, couches, popup, géométrie, reset, rechargement | aucune pour lecture et export local | données publiques approuvées affichées, sélection synchronisée, carte lisible | PAGE_OK | INTERACTION_OK | BLOCKED_DATA | `/api/actions/map`, `/api/actions/map/initial-nearest`, MapLibre, géoloc fallback | `E2E-3A-MAP-INTERACTIONS` : zone, période, catégorie et reset modifiés puis relus dans l’UI ; journal/sélection non disponibles avec la réponse publique observée. Exports non rejoués (`E2E-1B-EXPORTS`). |
 | Export carte | `/actions/map` | anonyme/connecté | CSV, GeoJSON, PNG | aucune | fichier local généré et contenu conforme aux filtres | PAGE_OK | INTERACTION_OK | END_TO_END_OK | `actions-map-export-button`, Blob/html-to-image | Les trois fichiers ont été téléchargés et inspectés contre les 10 identifiants retournés par `/api/actions/map` (`E2E-1B-EXPORTS`). |
 | Documentation et open data | `/methodologie`, `/open-data`, `/sections/open-data` | anonyme | ancres, accordéons, liens et téléchargements documentaires | aucune | contenu/ressource publique atteint et téléchargée | PAGE_OK | INTERACTION_OK | END_TO_END_OK | pages docs, `/api/documentation/[slug]` | `E2E-3A-OPEN-DATA-DOCS` : ancres `/methodologie#methodologie-carte-actions` et `/sections/open-data#formats` atteintes ; aucun contrôle de téléchargement documentaire n’est exposé, donc aucun fichier n’a été artificiellement déclaré. |
@@ -352,6 +352,32 @@ La preuve JSON est conservée dans
 `8/8` tests Playwright, mais ce vert technique inclut les deux statuts
 explicitement bloqués ci-dessus ; il ne transforme pas ces blocages en
 `END_TO_END_OK`.
+
+## Lot ciblé 3A.1 — locale + Explorer
+
+Exécution le 30 août 2026 sur le `main` courant, sans Docker ni Supabase local,
+avec Next local et `CMM_DISABLE_DEV_AUTH_BYPASS=1`. Les exports, la recherche
+globale, le consentement cookies et la navigation globale n’ont pas été
+rejoués.
+
+| statut | preuve | portée |
+|---|---|---|
+| `END_TO_END_OK` | `E2E-3A1-PREFERENCES-SELECT-RELOAD` : contexte navigateur vierge ; `fr` initial ; sélection `en` ; relecture réelle de `localStorage[cleanmymap.locale] = en`, du cookie `cleanmymap.locale=en` et de `document.documentElement.lang = en`, puis reload avec les trois valeurs toujours `en`. | locale publique |
+| `END_TO_END_OK` | `E2E-3A1-PREFERENCES-LEGACY` : cookie serveur `fr` et préférence legacy `localStorage=en` ; la migration aboutit à `en`, écrit le cookie, puis aucune nouvelle navigation n’est observée après 1,5 seconde de stabilisation. Le test unitaire `resolveInitialLocale` couvre aussi le cookie serveur `en` initial et l’absence de boucle Strict Mode. | migration de préférence locale |
+| `END_TO_END_OK` | `E2E-3A1-EXPLORER` : `GET /explorer` local `200`, heading `Sommaire`, cinq cartes et absence d’erreur page ; sélection d’un lien réellement rendu dans une carte puis URL finale `/actions/new`. | lecture et navigation Explorer |
+
+### Corrections ciblées 3A.1
+
+- `RootLayout` transmet `getServerLocale()` au `SitePreferencesProvider`.
+- Le provider attend la lecture de la préférence locale legacy avant sa première
+  écriture, ce qui évite la réécriture transitoire `fr` et les reloads Strict Mode.
+- Explorer utilise `getSafeAuthSession()` pour rester lisible anonymement ; la
+  résolution détaillée du rôle n’est appelée que pour une session authentifiée.
+  Les contrôles AuthN/AuthZ et les mutations ne sont pas modifiés.
+
+Le diagnostic initial `/explorer` avait reproduit l’erreur serveur non minifiée
+`Clerk: auth() was called but Clerk can't detect usage of clerkMiddleware()` dans
+`getCurrentUserRoleLabel()`. Après correction, la page locale rend sans erreur.
 
 ### Problèmes rencontrés et solutions n°2
 

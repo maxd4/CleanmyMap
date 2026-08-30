@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, type Locale } from "@/lib/ui/preferences";
+import { DEFAULT_LOCALE, STORAGE_KEYS, type Locale } from "@/lib/ui/preferences";
 
 export type LocaleRefreshGate = {
   current: boolean;
@@ -11,6 +11,13 @@ export type LocalePreferenceSyncActions = {
   setDocumentLang: (value: Locale) => void;
   refresh: () => void;
 };
+
+export function resolveInitialLocale(
+  initialLocale: Locale | undefined,
+  storedLocale: Locale | null,
+): Locale {
+  return storedLocale ?? initialLocale ?? DEFAULT_LOCALE;
+}
 
 export function applyLocalePreferenceChange(
   locale: Locale,
