@@ -103,6 +103,7 @@ describe("page-families resolver", () => {
       },
       card: {
         rubriqueTheme: "rose",
+        surfaceKind: "themed",
       },
       exceptionId: "methodologie-impact",
     });
