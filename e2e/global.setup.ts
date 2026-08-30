@@ -91,7 +91,7 @@ setup("authenticate and save official Clerk state", async ({ page }) => {
     page,
     emailAddress: process.env.E2E_CLERK_USER_EMAIL!,
   });
-  await page.goto("/actions/new");
-  await page.getByRole("heading", { name: "Choisissez votre parcours" }).waitFor();
+  await page.goto("/sections/route");
+  await page.getByRole("heading", { name: "Où agir", exact: true }).first().waitFor();
   await page.context().storageState({ path: authFileForTests });
 });

@@ -1,24 +1,55 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { RouteConstraints, RouteResponse } from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import {
+  DEFAULT_ROUTE_CONSTRAINTS,
+  readRouteDraftConstraints,
+  writeRouteDraftConstraints,
+} from "../route-draft-storage";
 
 export function useRouteData() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
-  const [constraints, setConstraints] = useState<RouteConstraints>({
-    availableMinutes: 180,
-    volunteers: 4,
-    accessibility: "standard",
-    security: "standard",
-    weather: "ok",
-    impactVsDistance: 65,
-    maxStops: 6,
-  });
+  const [constraints, setConstraintsState] = useState<RouteConstraints>(() => ({
+    ...DEFAULT_ROUTE_CONSTRAINTS,
+  }));
+  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequested, setRecommendationRequested] = useState(false);
+  const draftEditedBeforeHydration = useRef(false);
+
+  const setConstraints = useCallback<React.Dispatch<React.SetStateAction<RouteConstraints>>>((update) => {
+    draftEditedBeforeHydration.current = true;
+    setConstraintsState(update);
+  }, []);
+
+  useEffect(() => {
+    let storage: Storage | undefined;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      storage = undefined;
+    }
+    if (!draftEditedBeforeHydration.current) {
+      setConstraintsState(readRouteDraftConstraints(storage));
+    }
+    setIsDraftHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDraftHydrated) return;
+
+    let storage: Storage | undefined;
+    try {
+      storage = window.sessionStorage;
+    } catch {
+      storage = undefined;
+    }
+    writeRouteDraftConstraints(storage, constraints);
+  }, [constraints, isDraftHydrated]);
 
   const { data, isLoading, error } = useSWR<RouteResponse>(
     recommendationRequested ? ["section-route", JSON.stringify(constraints)] : null,
