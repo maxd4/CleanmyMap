@@ -6,6 +6,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { SystemStateLayout, SystemStateTitle } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import { GenerationStageCard } from "./reports-web-document.shared";
 
@@ -53,6 +55,8 @@ export function ReportsWebDocumentDelivery({
   onGenerate,
 }: ReportsWebDocumentDeliveryProps) {
   const ExportStatusIcon = exportStatus.icon;
+  const feedbackTone =
+    state === "error" ? "error" : state === "success" ? "success" : "info";
 
   return (
     <GenerationStageCard
@@ -74,19 +78,12 @@ export function ReportsWebDocumentDelivery({
       }
     >
       <div className="space-y-3">
-        <div className={`flex items-start gap-3 rounded-2xl border px-3 py-3 ${exportStatus.tone}`}>
-          <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${exportStatus.iconTone}`}
-          >
-            <ExportStatusIcon size={18} className={state === "pending" ? "animate-spin" : ""} />
+        <CmmFeedback tone={feedbackTone} title={exportStatus.label}>
+          <span className="inline-flex items-center gap-2">
+            <ExportStatusIcon size={18} aria-hidden="true" />
+            {exportStatus.description}
           </span>
-          <div className="min-w-0">
-            <p className="text-sm font-black">{exportStatus.label}</p>
-            <p className="mt-0.5 text-xs leading-5 text-slate-600">
-              {exportStatus.description}
-            </p>
-          </div>
-        </div>
+        </CmmFeedback>
 
         <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -114,24 +111,10 @@ export function ReportsWebDocumentDelivery({
         </p>
 
         {message ? (
-          <p
-            role={state === "error" ? "alert" : "status"}
-            className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
-              state === "error"
-                ? "border-red-200 bg-red-50 text-red-800"
-                : "border-cyan-200 bg-cyan-50 text-cyan-900"
-            }`}
-          >
-            {message}
-          </p>
+          <CmmFeedback tone={state === "error" ? "error" : "info"}>{message}</CmmFeedback>
         ) : null}
         {historyWarning ? (
-          <p
-            role="status"
-            className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900"
-          >
-            {historyWarning}
-          </p>
+          <CmmFeedback tone="warning">{historyWarning}</CmmFeedback>
         ) : null}
       </div>
     </GenerationStageCard>
@@ -155,16 +138,13 @@ export function ReportsWebDocumentDeliveryHistory({
       </div>
 
       {historyAvailability === "unavailable" ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-8 text-center text-sm font-semibold text-amber-900"
-        >
+        <CmmFeedback tone="warning" className="mt-4">
           Historique temporairement indisponible
-        </p>
+        </CmmFeedback>
       ) : recentRows.length === 0 ? (
-        <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">
-          Aucun rapport généré
-        </p>
+        <SystemStateLayout variant="empty" className="mt-4">
+          <SystemStateTitle variant="empty">Aucun rapport généré</SystemStateTitle>
+        </SystemStateLayout>
       ) : (
         <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
           <table className="w-full min-w-full border-separate border-spacing-0 text-left">
@@ -222,19 +202,18 @@ export function ReportsWebDocumentDeliveryHistory({
                       </CmmButton>
                     </div>
                     {actionStateById[row.id] ? (
-                      <p
-                        role={actionStateById[row.id].state === "error" ? "alert" : "status"}
-                        className={
-                          "mt-2 text-xs leading-5 " +
-                          (actionStateById[row.id].state === "error"
-                            ? "text-red-700"
+                      <CmmFeedback
+                        tone={
+                          actionStateById[row.id].state === "error"
+                            ? "error"
                             : actionStateById[row.id].state === "pending"
-                              ? "text-slate-500"
-                              : "text-emerald-700")
+                              ? "info"
+                              : "success"
                         }
+                        className="mt-2"
                       >
                         {actionStateById[row.id].message}
-                      </p>
+                      </CmmFeedback>
                     ) : null}
                   </td>
                 </tr>

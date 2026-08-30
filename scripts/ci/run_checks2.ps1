@@ -172,7 +172,8 @@ Invoke-ParallelSteps @(
     [pscustomobject]@{ Label = "check:layout"; Command = "npm run check:layout" },
     [pscustomobject]@{ Label = "check:surfaces"; Command = "npm run check:surfaces" },
     [pscustomobject]@{ Label = "check:actions"; Command = "npm run check:actions" },
-    [pscustomobject]@{ Label = "check:forms"; Command = "npm run check:forms" }
+    [pscustomobject]@{ Label = "check:forms"; Command = "npm run check:forms" },
+    [pscustomobject]@{ Label = "check:states"; Command = "npm run check:states" }
 ) 3
 
 # UTF-8 normalization remains available when Python is installed.

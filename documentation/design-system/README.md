@@ -10,10 +10,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 4. `SURFACES_CARDS.md`
 5. `ACTIONS_BUTTONS.md`
 6. `FORMS_CONTROLS.md`
-7. `charte-ui-pro-moderne-futuriste.md`
-8. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-9. `UI_EXCEPTION_PAGES.md`
-10. fiche canonique de la page dans `documentation/pages_site/`
+7. `STATES_FEEDBACK.md`
+8. `charte-ui-pro-moderne-futuriste.md`
+9. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+10. `UI_EXCEPTION_PAGES.md`
+11. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 
@@ -56,6 +57,12 @@ primitives composées `SystemStateLayout`, `SystemStateIcon`,
 `SystemStateAction` et `CmmFeedback`. Leurs variants sont exposés par
 `data-state-variant` et `data-feedback-tone` ; leur rendu visuel est centralisé
 dans `globals.css`, avec les modes d'affichage et `prefers-reduced-motion`.
+
+Pour les états et retours utilisateur, suivre
+[`STATES_FEEDBACK.md`](./STATES_FEEDBACK.md) : `SystemState` est réservé aux
+états bloquants ou aux vides importants, `CmmFeedback` aux retours inline,
+`CmmSkeleton` aux chargements structurels et `CmmField` aux erreurs associées
+à un champ.
 
 ## Couleurs par famille
 

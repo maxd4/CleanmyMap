@@ -46,4 +46,34 @@ describe("ActionsMapFeed", () => {
       }),
     );
   });
+
+  it("uses the canonical feedback and skeleton primitives for feed states", () => {
+    useMapFeedDataMock.mockReturnValue({
+      data: null,
+      allItems: [],
+      items: [],
+      summary: { totalKg: 0, totalButts: 0 },
+      error: new Error("Carte indisponible"),
+      isLoading: true,
+      isValidating: false,
+      reload: vi.fn(),
+      freshnessLabel: null,
+      partialSourcesLabel: "inconnues",
+      hasPartialSource: false,
+    });
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionsMapFeed, {
+        days: 30,
+        statusFilter: "approved",
+        impactFilter: "all",
+        qualityMin: 0,
+        showStoriesCarousel: false,
+      }),
+    );
+
+    expect(markup).toContain('data-skeleton-variant="text"');
+    expect(markup).toContain('data-feedback-tone="error"');
+    expect(markup).toContain("Carte indisponible");
+  });
 });

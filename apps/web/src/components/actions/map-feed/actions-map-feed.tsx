@@ -7,6 +7,7 @@ import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
 import { logFailure } from "@/lib/logging/failure-log";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
@@ -141,12 +142,12 @@ export function ActionsMapFeedContent({
 
       {feedData.isLoading ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
+          <div className="cmm-surface-muted space-y-3 rounded-2xl p-4">
             <CmmSkeleton variant="text" className="w-32" />
             <CmmSkeleton variant="title" className="w-48" />
             <CmmSkeleton variant="text" className="w-3/4" />
           </div>
-          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
+          <div className="cmm-surface-muted space-y-3 rounded-2xl p-4">
             <CmmSkeleton variant="text" className="w-28" />
             <CmmSkeleton variant="title" className="w-40" />
             <div className="flex gap-2">
@@ -154,7 +155,7 @@ export function ActionsMapFeedContent({
               <CmmSkeleton variant="rectangular" className="h-8 w-16 rounded-full" />
             </div>
           </div>
-          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
+          <div className="cmm-surface-muted space-y-3 rounded-2xl p-4">
             <CmmSkeleton variant="text" className="w-24" />
             <CmmSkeleton variant="chart" className="h-24" />
           </div>
@@ -162,11 +163,11 @@ export function ActionsMapFeedContent({
       ) : null}
 
       {feedData.error ? (
-        <p className="mt-5 rounded-lg border border-rose-300/20 bg-[rgba(255,241,245,0.95)] px-3 py-2 text-sm text-rose-800">
+        <CmmFeedback tone="error" className="mt-5">
           {feedData.error instanceof Error
             ? feedData.error.message
             : "Impossible de récupérer les données de la carte. Veuillez vérifier votre connexion."}
-        </p>
+        </CmmFeedback>
       ) : null}
     </section>
   );

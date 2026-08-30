@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { Image as ImageIcon, LoaderCircle, RefreshCw } from "lucide-react";
+import { Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import {
   createSignalementMediaReadController,
   type SignalementMediaReadSnapshot,
@@ -68,87 +70,81 @@ export function SignalementMediaProofsView({
   const isPanel = variant === "panel";
 
   if (snapshot.status === "idle") {
+    const loadButton = (
+      <CmmButton
+        type="button"
+        onClick={onLoad}
+        tone="secondary"
+        variant="ghost"
+        size="sm"
+        className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+      >
+        <ImageIcon size={14} aria-hidden="true" />
+        Voir les preuves photo
+      </CmmButton>
+    );
+
     return (
-      <div className={`${shell} space-y-2`}>
-        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
-        {isPanel ? (
-          <p className="cmm-text-small cmm-text-secondary">
-            Les preuves photo sont chargées uniquement à votre demande.
-          </p>
-        ) : null}
-        <CmmButton
-          type="button"
-          onClick={onLoad}
-          tone="secondary"
-          variant="ghost"
-          size="sm"
-          className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
-        >
-          <ImageIcon size={14} aria-hidden="true" />
-          Voir les preuves photo
-        </CmmButton>
-      </div>
+      <CmmFeedback
+        tone="info"
+        title={isPanel ? "Preuves terrain" : undefined}
+        action={isPanel ? loadButton : undefined}
+      >
+        {isPanel ? "Les preuves photo sont chargées uniquement à votre demande." : loadButton}
+      </CmmFeedback>
     );
   }
 
   if (snapshot.status === "loading") {
     return (
       <div
-        className={`${shell} flex items-center gap-2 cmm-text-caption text-slate-500 dark:text-slate-400`}
+        className="flex items-center gap-2 cmm-text-caption"
         role="status"
         aria-live="polite"
       >
-        <LoaderCircle size={14} className="animate-spin" aria-hidden="true" />
-        Chargement des preuves photo…
+        <CmmSkeleton variant="circular" animation="pulse" className="h-4 w-4" aria-hidden="true" />
+        <span>Chargement des preuves photo…</span>
       </div>
     );
   }
 
   if (snapshot.status === "forbidden") {
     return (
-      <div
-        className={`${shell} cmm-text-caption text-slate-500 dark:text-slate-400`}
-        role="status"
-      >
-        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
-        <p className={isPanel ? "mt-2" : undefined}>
-          Les preuves photo ne sont pas publiques pour ce signalement.
-        </p>
-      </div>
+      <CmmFeedback tone="info" title={isPanel ? "Preuves terrain" : undefined}>
+        Les preuves photo ne sont pas publiques pour ce signalement.
+      </CmmFeedback>
     );
   }
 
   if (snapshot.status === "error") {
     return (
-      <div className={`${shell} space-y-2`} role="alert">
-        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
-        <p className="cmm-text-caption text-rose-700 dark:text-rose-300">
-          Les preuves photo n&apos;ont pas pu être chargées.
-        </p>
-        <CmmButton
-          type="button"
-          onClick={onRetry}
-          tone="secondary"
-          variant="ghost"
-          size="sm"
-          className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
-        >
-          <RefreshCw size={14} aria-hidden="true" />
-          Réessayer
-        </CmmButton>
-      </div>
+      <CmmFeedback
+        tone="error"
+        title={isPanel ? "Preuves terrain" : undefined}
+        action={
+          <CmmButton
+            type="button"
+            onClick={onRetry}
+            tone="secondary"
+            variant="ghost"
+            size="sm"
+            className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            Réessayer
+          </CmmButton>
+        }
+      >
+        Les preuves photo n&apos;ont pas pu être chargées.
+      </CmmFeedback>
     );
   }
 
   if (snapshot.status === "empty") {
     return (
-      <div
-        className={`${shell} cmm-text-caption text-slate-500 dark:text-slate-400`}
-        role="status"
-      >
-        {isPanel ? <p className={titleClassName(variant)}>Preuves terrain</p> : null}
-        <p className={isPanel ? "mt-2" : undefined}>Aucune preuve photo disponible.</p>
-      </div>
+      <CmmFeedback tone="info" title={isPanel ? "Preuves terrain" : undefined}>
+        Aucune preuve photo disponible.
+      </CmmFeedback>
     );
   }
 
