@@ -18,6 +18,14 @@ const SCANNED_EXTENSIONS = new Set([
   ".yaml",
 ]);
 const EXACT_SCANNED_FILES = new Set([".env.example"]);
+const GENERATED_UNTRACKED_PATHS = [
+  /(^|\/)\.next-codex-[^/]+(?:\/|$)/,
+  /(^|\/)\.artifacts\/apps-web-node_modules-incomplete-0830(?:\/|$)/,
+];
+const UNTRACKED_PATHSPEC_EXCLUDES = [
+  ":(exclude,glob)**/.next-codex-*/**",
+  ":(exclude,glob).artifacts/apps-web-node_modules-incomplete-0830/**",
+];
 const IGNORED_SEGMENTS = new Set([
   ".git",
   ".next",
@@ -198,21 +206,42 @@ Allowlist entries:
 `);
 }
 
-function listRepoFiles() {
-  const output = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], {
+function parseGitNullDelimited(output) {
+  return output
+    .split("\0")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function listGitFiles(args) {
+  const output = execFileSync("git", args, {
     cwd: ROOT,
     encoding: "utf8",
   });
-  return output
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return parseGitNullDelimited(output);
+}
+
+function listRepoFiles() {
+  const tracked = listGitFiles(["ls-files", "--cached", "-z"]);
+  const untracked = listGitFiles([
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "-z",
+    "--",
+    ".",
+    ...UNTRACKED_PATHSPEC_EXCLUDES,
+  ]);
+  return [...new Set([...tracked, ...untracked])];
 }
 
 function shouldScan(relativePath) {
   const normalized = relativePath.replace(/\\/g, "/");
   const parts = normalized.split("/");
 
+  if (GENERATED_UNTRACKED_PATHS.some((pattern) => pattern.test(normalized))) {
+    return false;
+  }
   if (parts.some((part) => IGNORED_SEGMENTS.has(part))) {
     return false;
   }
@@ -222,7 +251,7 @@ function shouldScan(relativePath) {
   if (normalized.includes("/generated/") || normalized.includes("__generated__")) {
     return false;
   }
-  if (EXACT_SCANNED_FILES.has(normalized)) {
+  if (EXACT_SCANNED_FILES.has(normalized) || normalized.endsWith("/.env.example")) {
     return true;
   }
 

@@ -21,6 +21,8 @@ test-results/
 node_modules/
 **/.next/
 **/.next-sourcemap-test/
+# Codex-local Next build/cache snapshots are generated outputs, not source.
+/apps/web/.next-codex-*/
 *.tsbuildinfo
 cache/
 tmp/
