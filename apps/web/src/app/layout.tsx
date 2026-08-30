@@ -12,6 +12,7 @@ import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerDisplayModePreference } from "@/lib/server-preferences";
+import { getServerLocale } from "@/lib/server-preferences";
 
 export const metadata: Metadata = appMetadata;
 
@@ -25,6 +26,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const displayModePreference = await getServerDisplayModePreference();
+  const locale = await getServerLocale();
 
   return (
     <html className="h-full antialiased" suppressHydrationWarning data-theme="mixed">
@@ -35,6 +37,7 @@ export default async function RootLayout({
       </head>
       <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">
         <SitePreferencesProvider
+          initialLocale={locale}
           initialDisplayMode={displayModePreference.displayMode}
           initialDisplayModeExplicit={displayModePreference.isExplicit}
         >

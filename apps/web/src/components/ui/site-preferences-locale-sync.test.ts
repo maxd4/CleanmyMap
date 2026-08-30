@@ -1,5 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import { applyLocalePreferenceChange } from "./site-preferences-locale-sync";
+import {
+  applyLocalePreferenceChange,
+  resolveInitialLocale,
+} from "./site-preferences-locale-sync";
+
+describe("resolveInitialLocale", () => {
+  it("uses the server cookie locale for the initial render", () => {
+    expect(resolveInitialLocale("en", null)).toBe("en");
+  });
+
+  it("lets a legacy localStorage locale win during the one hydration sync", () => {
+    expect(resolveInitialLocale("fr", "en")).toBe("en");
+    expect(resolveInitialLocale(undefined, null)).toBe("fr");
+  });
+});
 
 describe("applyLocalePreferenceChange", () => {
   it("persists the locale without refreshing on the first sync", () => {
