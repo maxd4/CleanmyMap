@@ -150,11 +150,19 @@ Activation:
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
 - `SENTRY_AUTH_TOKEN` pour l'upload des source maps
-- `SENTRY_RELEASE` optionnel, sinon le commit SHA Vercel est utilisé
+- `SENTRY_RELEASE` optionnel; sinon `VERCEL_GIT_COMMIT_SHA`, puis `GIT_COMMIT_SHA` est utilisé (aucun fallback sur le nom de branche)
+- `SENTRY_ENVIRONMENT` optionnel; sinon `VERCEL_ENV`, puis `NODE_ENV` est utilisé, avec normalisation vers `production`, `preview` ou `development`
+
+Le serveur et l'upload des source maps utilisent ces mêmes règles. Le navigateur
+reçoit uniquement les valeurs publiques calculées au build via
+`NEXT_PUBLIC_SENTRY_RELEASE` et `NEXT_PUBLIC_SENTRY_ENVIRONMENT`; aucun token,
+secret ou identifiant d'organisation Sentry n'est injecté dans le bundle client.
 
 Code clé:
 
 - [apps/web/src/lib/observability/sentry.ts](../../apps/web/src/lib/observability/sentry.ts)
+- [apps/web/src/lib/observability/sentry-metadata.mjs](../../apps/web/src/lib/observability/sentry-metadata.mjs)
+- [apps/web/src/lib/observability/sentry-client.ts](../../apps/web/src/lib/observability/sentry-client.ts)
 - [apps/web/src/app/error.tsx](../../apps/web/src/app/error.tsx)
 - [apps/web/src/lib/http/api-errors.ts](../../apps/web/src/lib/http/api-errors.ts)
 - [apps/web/next.config.ts](../../apps/web/next.config.ts)

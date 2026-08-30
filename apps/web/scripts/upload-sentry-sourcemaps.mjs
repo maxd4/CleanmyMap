@@ -7,6 +7,7 @@ import {
   collectFiles,
   stageMatchedArtifacts,
 } from "./lib/sentry-sourcemap-staging.mjs";
+import { resolveSentryRelease } from "../src/lib/observability/sentry-metadata.mjs";
 
 function log(message) {
   console.log(`[sentry-sourcemaps] ${message}`);
@@ -186,12 +187,7 @@ const preserveOriginalMaps =
   process.env.VERCEL === "1" ||
   process.env.VERCEL_ENV === "production" ||
   process.env.VERCEL_ENV === "preview";
-const release =
-  process.env.SENTRY_RELEASE?.trim() ||
-  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
-  process.env.GIT_COMMIT_SHA?.trim() ||
-  process.env.VERCEL_GIT_COMMIT_REF?.trim() ||
-  "";
+const release = resolveSentryRelease(process.env) ?? "";
 const shouldReportMissingSentryConfig =
   process.env.CI === "1" ||
   process.env.VERCEL === "1" ||
