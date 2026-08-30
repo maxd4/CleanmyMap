@@ -18,9 +18,10 @@ export function useRouteData() {
     impactVsDistance: 65,
     maxStops: 6,
   });
+  const [recommendationRequested, setRecommendationRequested] = useState(false);
 
   const { data, isLoading, error } = useSWR<RouteResponse>(
-    ["section-route", JSON.stringify(constraints)],
+    recommendationRequested ? ["section-route", JSON.stringify(constraints)] : null,
     async () => {
       const response = await fetch("/api/route/recommend", {
         method: "POST",
@@ -73,5 +74,7 @@ export function useRouteData() {
     hasData,
     hasRoute,
     fr,
+    recommendationRequested,
+    requestRecommendation: () => setRecommendationRequested(true),
   };
 }

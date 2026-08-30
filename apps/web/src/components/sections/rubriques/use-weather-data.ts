@@ -77,6 +77,7 @@ async function resolveWeatherLocationFromLabel(
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",
+        signal: AbortSignal.timeout(8_000),
       },
     );
 
@@ -145,26 +146,34 @@ export function useWeatherData() {
         return { status: "ok", query: deferredLocationQuery, items: localSuggestions };
       }
 
-      const response = await fetch(
-        `/api/geo/address-suggestions?q=${encodeURIComponent(deferredLocationQuery)}&limit=6`,
-        {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-        },
-      );
+      try {
+        const response = await fetch(
+          `/api/geo/address-suggestions?q=${encodeURIComponent(deferredLocationQuery)}&limit=6`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: AbortSignal.timeout(8_000),
+          },
+        );
 
-      if (!response.ok) {
-        throw new Error("location_suggestions_unavailable");
+        if (!response.ok) {
+          throw new Error("location_suggestions_unavailable");
+        }
+
+        const remote = (await response.json()) as AddressSuggestionsResponse;
+        return {
+          ...remote,
+          items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
+        };
+      } catch (error) {
+        if (localSuggestions.length > 0) {
+          return { status: "ok", query: deferredLocationQuery, items: localSuggestions };
+        }
+        throw error;
       }
-
-      const remote = (await response.json()) as AddressSuggestionsResponse;
-      return {
-        ...remote,
-        items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
-      };
     },
-    swrRecentViewOptions,
+    { ...swrRecentViewOptions, keepPreviousData: false },
   );
   const locationSuggestionsError = locationSuggestions.error ? "location_suggestions_unavailable" : null;
 
@@ -186,6 +195,7 @@ export function useWeatherData() {
 
       const response = await fetch(`https://api.open-meteo.com/v1/forecast?${query.toString()}`, {
         cache: "no-store",
+        signal: AbortSignal.timeout(8_000),
       });
 
       if (!response.ok) {
