@@ -28,7 +28,8 @@ SystemState  ≠  CmmFeedback  ≠  CmmSkeleton  ≠  erreur CmmField
 - les textes, données, conditions, handlers et actions existants restent
   inchangés ;
 - les styles de surface, palettes, focus et motion restent dans les
-  primitives et `globals.css`, pas dans les branches migrées ;
+  primitives et les modules CSS canoniques (`states-feedback.css`,
+  `surfaces.css`, `motion.css`), pas dans les branches migrées ;
 - les champs de formulaire gardent l’erreur dans `CmmField`.
 
 ## Modes d’affichage

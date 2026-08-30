@@ -41,7 +41,7 @@ import { CmmSection, CmmSectionGroup, CmmPageLayout } from "@/components/ui/cmm-
 ### 2. Classes utilitaires pour accents
 
 ```typescript
-// Classes d'accent par bloc (ajoutées dans globals.css)
+// Classes d'accent par bloc (définies dans styles/surfaces.css)
 <div className="cmm-accent-impact p-4 rounded-lg">
   Section avec accent impact (rose/rouge)
 </div>
@@ -358,5 +358,5 @@ export function SectionShell(props: SectionShellProps) {
 - **Composants de base:** `components/ui/cmm-card.tsx`, `cmm-button.tsx`, `cmm-pill.tsx`
 - **Accents par bloc:** `components/ui/cmm-block-accent.tsx`, `lib/ui/block-accents.ts`
 - **Nouveaux composants:** `components/ui/cmm-section.tsx`
-- **Classes utilitaires:** `app/globals.css` (section BLOCK ACCENTS)
+- **Classes utilitaires:** `apps/web/src/styles/surfaces.css` (section BLOCK ACCENTS)
 - **Audit visuel global:** `documentation/product/visual-first-audit-global.md`

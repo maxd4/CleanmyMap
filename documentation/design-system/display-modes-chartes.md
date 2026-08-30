@@ -236,7 +236,7 @@ AUTORISÉ (sobre):
   --shadow-elevated: var(--shadow-soft);
 }
 
-/* Sobre - déjà implémenté dans globals.css */
+/* Sobre - implémenté dans les modules tokens.css/display-modes.css */
 [data-display-mode="sobre"] .cmm-sober { ... }
 [data-display-mode="sobre"] .cmm-sober-animate { ... }
 ```

@@ -258,5 +258,6 @@ Si une règle doit changer pour des raisons UX ou responsive, modifier le contra
 - [`UI_EXCEPTION_PAGES.md`](./UI_EXCEPTION_PAGES.md)
 - [`README.md`](./README.md)
 - `apps/web/src/components/ui/page-header.tsx`
-- `apps/web/src/app/globals.css`
+- `apps/web/src/app/globals.css` (point d’entrée)
+- `apps/web/src/styles/typography.css`
 - `apps/web/src/lib/ui/page-families/`
