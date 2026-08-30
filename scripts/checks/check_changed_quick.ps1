@@ -18,11 +18,28 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Test-GeneratedUntrackedPath([string]$Path) {
+    $normalized = $Path.Replace('\', '/')
+    return (
+        $normalized -match '(^|/)\.next-codex-[^/]+(/|$)' -or
+        $normalized -eq '.artifacts/apps-web-node_modules-incomplete-0830' -or
+        $normalized -like '.artifacts/apps-web-node_modules-incomplete-0830/*'
+    )
+}
+
 function Get-ChangedFiles {
     $changed = @()
     $changed += git diff --name-only --diff-filter=ACMRTUXB HEAD --
     $changed += git diff --cached --name-only --diff-filter=ACMRTUXB --
-    $changed += git ls-files --others --exclude-standard
+    # Exclude recognized generated/temp trees before Git returns their file list.
+    # Keep the final predicate as defense-in-depth for unusual Git/pathspec behavior.
+    $untrackedPathspecs = @(
+        '.',
+        ':(exclude,glob)**/.next-codex-*/**',
+        ':(exclude,glob).artifacts/apps-web-node_modules-incomplete-0830/**'
+    )
+    $untracked = @(git ls-files --others --exclude-standard -- $untrackedPathspecs)
+    $changed += $untracked | Where-Object { -not (Test-GeneratedUntrackedPath $_) }
     return $changed | Where-Object { $_ -and $_.Trim() } | Sort-Object -Unique
 }
 
