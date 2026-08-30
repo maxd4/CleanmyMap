@@ -50,3 +50,25 @@ npm run typecheck -w apps/web
 Ajouter les tests de contrat SQL/RPC directement concernés. Toute application
 distante d'une migration reste une opération explicitement autorisée et
 distincte de la validation locale.
+
+## Disponibilité du runtime local
+
+- Docker et Supabase local sont strictement on-demand : ne jamais lancer
+  automatiquement Docker Desktop, WSL, un daemon Docker ou un runtime de
+  conteneurs pour satisfaire une validation.
+- Avant toute commande Supabase qui nécessite Docker, effectuer uniquement un
+  probe borné de disponibilité du daemon, limité à quelques secondes. Si le
+  probe échoue ou dépasse ce délai, enregistrer `LOCAL_SUPABASE_UNAVAILABLE` et
+  ne lancer ni `supabase start`, ni `supabase status`, ni `supabase db reset`, ni
+  une boucle de tentatives sur le CLI.
+- Lorsque le probe réussit et que la tâche exige explicitement le runtime local,
+  exécuter la commande locale nécessaire depuis `apps/web/supabase`, sans
+  démarrage implicite ni processus persistant non requis.
+- Poursuivre toutes les validations indépendantes de Docker. Toute preuve qui
+  nécessite PostgreSQL ou Supabase local doit rester marquée explicitement
+  `NON_PROUVÉE` lorsque le runtime est indisponible ; cette absence ne doit pas
+  bloquer artificiellement les autres validations.
+- Les accès MCP ou `--linked` ne doivent jamais servir à appliquer une
+  migration en production pour compenser l'absence de Docker. Toute
+  alternative distante de test ou de preview doit être explicitement autorisée
+  avant son utilisation.
