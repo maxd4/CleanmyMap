@@ -77,7 +77,10 @@ export function RecyclingSection() {
   }, [actions.data?.items, map.data?.items]);
 
   const isLoading = actions.isLoading || map.isLoading || breakdown.isLoading;
-  const hasError = Boolean(actions.error || map.error || breakdown.error);
+  // The question assistant is a public, local interaction. A private
+  // breakdown failure must not hide it (the breakdown endpoint can correctly
+  // return 401 for an anonymous visitor).
+  const hasError = Boolean(actions.error || map.error);
 
   return (
     <SectionShell
@@ -118,6 +121,10 @@ export function RecyclingSection() {
                 <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Rechercher une filière" : "Search a stream"}</span>
              </div>
           </div>
+        </RubriqueCard>
+
+        <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+          <RecyclingQuestionAssistant />
         </RubriqueCard>
 
         {isLoading ? (
@@ -168,9 +175,6 @@ export function RecyclingSection() {
                 <RecyclingQualitySummary quality={breakdown.data?.triQuality} fr={fr} />
               </RubriqueCard>
 
-              <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
-                <RecyclingQuestionAssistant />
-              </RubriqueCard>
             </div>
           </motion.div>
         )}

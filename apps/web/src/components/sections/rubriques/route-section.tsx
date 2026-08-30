@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useRouteData } from "./route/hooks/use-route-data";
 import { RouteSummaryCards } from "./route/components/route-summary-cards";
@@ -19,6 +21,7 @@ const RouteMap = dynamic(
 
 export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const { isLoaded, isSignedIn } = useUser();
   const {
     constraints,
     setConstraints,
@@ -31,6 +34,8 @@ export function RouteSection() {
     hasData,
     hasRoute,
     fr,
+    recommendationRequested,
+    requestRecommendation,
   } = useRouteData();
 
   return (
@@ -56,6 +61,25 @@ export function RouteSection() {
              
              <RouteSummaryCards constraints={constraints} fr={fr} />
              <RouteConstraintsForm constraints={constraints} setConstraints={setConstraints} fr={fr} />
+             <div className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
+               {isLoaded && isSignedIn ? (
+                 <button
+                   type="button"
+                   onClick={requestRecommendation}
+                   disabled={recommendationRequested && isLoading}
+                   className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
+                 >
+                   {fr ? "Calculer la recommandation" : "Calculate recommendation"}
+                 </button>
+               ) : (
+                 <Link
+                   href="/sign-in?redirect_url=%2Fsections%2Froute"
+                   className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400"
+                 >
+                   {fr ? "Se connecter pour calculer" : "Sign in to calculate"}
+                 </Link>
+               )}
+             </div>
              <RouteAssistant data={data} hasData={hasData} fr={fr} />
           </div>
         </aside>

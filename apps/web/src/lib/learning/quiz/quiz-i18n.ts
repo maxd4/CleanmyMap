@@ -70,6 +70,7 @@ export type QuizUiCopyKey =
   | "session.expectedAnswersLabel"
   | "session.reviewTargetLabel"
   | "session.checkAnswer"
+  | "session.viewSummary"
   | "session.demo.bannerLabel"
   | "session.demo.bannerText"
   | "session.sessionTitle"
@@ -185,6 +186,7 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "session.expectedAnswersLabel": { fr: "Réponses attendues", en: "Expected answers" },
   "session.reviewTargetLabel": { fr: "À revoir dans", en: "Review in" },
   "session.checkAnswer": { fr: "Vérifier la réponse", en: "Check answer" },
+  "session.viewSummary": { fr: "Voir le bilan", en: "View summary" },
   "session.demo.bannerLabel": { fr: "Mode démo" },
   "session.demo.bannerText": {
     fr: "Session courte de cinq questions, sans compte obligatoire, pour présenter rapidement la valeur pédagogique du quiz.",

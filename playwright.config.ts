@@ -52,6 +52,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "public campaign 3b",
+      testMatch: /public-campaign-3b\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "global teardown",
       testMatch: /global\.teardown\.ts/,
     },
