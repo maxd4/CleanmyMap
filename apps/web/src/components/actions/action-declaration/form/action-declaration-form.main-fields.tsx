@@ -3,6 +3,7 @@ import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from "@/lib/actions/
 import type { FormState } from "./model";
 import { convertCigaretteButtsToKg } from "./model";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
+import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 
 type ActionDeclarationMainFieldsProps = {
   form: FormState;
@@ -61,11 +62,12 @@ export function ActionDeclarationMainFields({
     <div className="space-y-4">
       {/* 1. Structure / cadre d'engagement */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Structure / cadre d&apos;engagement <span className="text-emerald-500">*</span>
-          <select
-            required
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
+        <CmmField
+          label="Structure / cadre d&apos;engagement"
+          required
+          hint="⭐ = structures les plus utilisées"
+        >
+          <CmmSelect
             value={form.associationName}
             onChange={(event) => onAssociationNameChange(event.target.value)}
           >
@@ -74,71 +76,57 @@ export function ActionDeclarationMainFields({
                 {option.label}
               </option>
             ))}
-          </select>
-          <p className="cmm-text-caption cmm-text-muted font-normal">
-            ⭐ = structures les plus utilisées
-          </p>
-        </label>
+          </CmmSelect>
+        </CmmField>
       </div>
 
       {/* 2. Nom d'entreprise (si mode entreprise) */}
       {isEntrepriseMode && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-            Nom de l&apos;entreprise <span className="text-emerald-500">*</span>
-            <input
-              required
+          <CmmField label="Nom de l&apos;entreprise" required>
+            <CmmInput
               type="text"
-              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
               value={form.enterpriseName}
               onChange={(event) => onEnterpriseNameChange(event.target.value)}
               placeholder="Ex: Veolia, Orange, SNCF..."
               minLength={2}
               maxLength={100}
             />
-          </label>
+          </CmmField>
         </div>
       )}
 
       {form.recordType === "action" && !isActionSpontanee && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-            Organisateur / Référant ayant participé à l&apos;action
-            <input
+          <CmmField
+            label="Organisateur / Référant ayant participé à l&apos;action"
+            hint="Hors action spontanée, indiquez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé."
+          >
+            <CmmInput
               type="text"
-              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
               value={form.organizerAccounts}
               onChange={(event) => onOrganizerAccountsChange(event.target.value)}
               placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
             />
-            <p className="cmm-text-caption cmm-text-muted font-normal">
-              Hors action spontanée, indiquez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé.
-            </p>
-          </label>
+          </CmmField>
         </div>
       )}
 
       {/* 3. Date de l'action */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Date de l&apos;action <span className="text-emerald-500">*</span>
-          <input
-            required
+        <CmmField label="Date de l&apos;action" required>
+          <CmmInput
             type="date"
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.actionDate}
             onChange={(event) => onActionDateChange(event.target.value)}
           />
-        </label>
+        </CmmField>
       </div>
 
       {/* 4. Type de lieu */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Type de lieu <span className="text-emerald-500">*</span>
-          <select
-            required
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
+        <CmmField label="Type de lieu" required>
+          <CmmSelect
             value={normalizePlaceTypeForUi(form.placeType)}
             onChange={(event) => onPlaceTypeChange(event.target.value)}
           >
@@ -147,51 +135,41 @@ export function ActionDeclarationMainFields({
                 {option.label}
               </option>
             ))}
-          </select>
-        </label>
+          </CmmSelect>
+        </CmmField>
       </div>
 
       {/* 5. Déchets collectés */}
       <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-sm">
-        <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Déchets collectés (kg) <span className="text-emerald-500">*</span>
-          <input
-            required
+        <CmmField label="Déchets collectés (kg)" required hint="Poids total des déchets ramassés">
+          <CmmInput
             type="number"
             step="0.1"
             min="0"
-            className="rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 shadow-sm"
             value={form.wasteKg}
             onChange={(event) => onWasteKgChange(event.target.value)}
             placeholder="Ex: 12.5"
           />
-          <p className="cmm-text-caption text-emerald-800 font-normal">
-            Poids total des déchets ramassés
-          </p>
-        </label>
+        </CmmField>
       </div>
 
       {/* 5b. Nombre de mégots (pour actions spontanées) */}
       {isActionSpontanee && (
         <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-4 shadow-sm">
           <div className="space-y-3">
-            <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-              Nombre de mégots (optionnel)
-              <input
+            <CmmField label="Nombre de mégots (optionnel)">
+              <CmmInput
                 type="number"
                 min="1"
                 step="1"
-                className="rounded-xl border-2 border-orange-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-orange-500 shadow-sm"
                 value={form.cigaretteButtsCount}
                 onChange={(event) => onCigaretteButtsCountChange(event.target.value)}
                 placeholder="Ex: 50"
               />
-            </label>
+            </CmmField>
 
-            <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-              État des mégots
-              <select
-                className="rounded-xl border-2 border-orange-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-orange-500 shadow-sm"
+            <CmmField label="État des mégots">
+              <CmmSelect
                 value={form.cigaretteButtsCondition}
                 onChange={(event) =>
                   onCigaretteButtsConditionChange(event.target.value as ActionMegotsCondition)
@@ -200,8 +178,8 @@ export function ActionDeclarationMainFields({
                 <option value="propre">Sec</option>
                 <option value="humide">Humide</option>
                 <option value="mouille">Mouillé</option>
-              </select>
-            </label>
+              </CmmSelect>
+            </CmmField>
 
             {cigaretteButtsCount > 0 && (
               <div className="rounded-lg bg-orange-100 p-3">
@@ -229,18 +207,15 @@ export function ActionDeclarationMainFields({
 
       {/* 6. Nombre de bénévoles */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Nombre de bénévoles <span className="text-emerald-500">*</span>
-          <input
-            required
+        <CmmField label="Nombre de bénévoles" required>
+          <CmmInput
             type="number"
             min="1"
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.volunteersCount}
             onChange={(event) => onVolunteersCountChange(event.target.value)}
             placeholder="Ex: 5"
           />
-        </label>
+        </CmmField>
       </div>
     </div>
   );

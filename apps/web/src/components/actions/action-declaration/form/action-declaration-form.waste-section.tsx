@@ -1,6 +1,7 @@
 import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/place-type-options";
 import type { FormState } from"./model";
 import { ActionDeclarationWasteAssist } from"./action-declaration-form.smart-assist";
+import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 
 type ActionDeclarationWasteSectionProps = {
  form: FormState;
@@ -35,10 +36,8 @@ export function ActionDeclarationWasteSection({
  </span>
  </div>
 
- <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
- Type de lieu <span className="text-emerald-500">*</span>
-<select
-className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
+ <CmmField label="Type de lieu" required hint="Sert au classement et aux rapports.">
+<CmmSelect
 value={normalizePlaceTypeForUi(form.placeType)}
 onChange={(event) => onPlaceTypeChange(event.target.value)}
 >
@@ -47,49 +46,45 @@ onChange={(event) => onPlaceTypeChange(event.target.value)}
  {option.label}
  </option>
  ))}
-</select>
- <p className="cmm-text-caption cmm-text-muted font-normal mt-1">
- Sert au classement et aux rapports.
- </p>
- </label>
+</CmmSelect>
+ </CmmField>
 
- <label className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 cmm-text-small font-bold cmm-text-secondary shadow-sm">
+ <div className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 cmm-text-small font-bold cmm-text-secondary shadow-sm">
+ <CmmField
+ label={(
  <span className="flex items-center justify-between gap-3">
- <span>
- Déchets collectés (kg) <span className="text-emerald-500">*</span>
- </span>
+ <span>Déchets collectés (kg)</span>
  <span className="rounded-full bg-white px-3 py-1 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
  valeur réelle
  </span>
  </span>
- <input
+ )}
+ required
+ hint="La vision aide, la saisie reste manuelle."
+ >
+ <CmmInput
  type="number"
  step="0.1"
  min="0"
- className="rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
  value={form.wasteKg}
  onChange={(event) => onWasteKgChange(event.target.value)}
  placeholder="Ex: 12.5"
  />
- <p className="cmm-text-caption font-normal text-emerald-900/80">
- La vision aide, la saisie reste manuelle.
- </p>
+ </CmmField>
  <ActionDeclarationWasteAssist
  estimatedWasteKg={estimatedWasteKg}
  estimatedWasteKgInterval={estimatedWasteKgInterval}
  />
- </label>
+ </div>
 
- <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
- Nombre de bénévoles <span className="text-emerald-500">*</span>
- <input
+ <CmmField label="Nombre de bénévoles" required>
+ <CmmInput
  type="number"
  min="1"
- className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
  value={form.volunteersCount}
  onChange={(event) => onVolunteersCountChange(event.target.value)}
  />
- </label>
+ </CmmField>
  </section>
  );
 }

@@ -9,10 +9,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 3. `LAYOUT_SPACING.md`
 4. `SURFACES_CARDS.md`
 5. `ACTIONS_BUTTONS.md`
-6. `charte-ui-pro-moderne-futuriste.md`
-7. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-8. `UI_EXCEPTION_PAGES.md`
-9. fiche canonique de la page dans `documentation/pages_site/`
+6. `FORMS_CONTROLS.md`
+7. `charte-ui-pro-moderne-futuriste.md`
+8. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+9. `UI_EXCEPTION_PAGES.md`
+10. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 
@@ -42,6 +43,12 @@ effets et exceptions est documenté dans
 [`SURFACES_CARDS.md`](./SURFACES_CARDS.md). Les couleurs de famille restent
 documentées dans [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md).
 Le contrat est contrôlé par `npm run check:surfaces`.
+
+Pour les champs texte standards, utiliser `CmmField` avec `CmmInput`,
+`CmmSelect` ou `CmmTextarea` selon
+[`FORMS_CONTROLS.md`](./FORMS_CONTROLS.md). Les recettes de bordure, fond,
+padding, radius, ombre et focus restent dans les classes `cmm-field-*` ; les
+exceptions spécialisées sont explicitement hors contrat.
 
 ## Couleurs par famille
 

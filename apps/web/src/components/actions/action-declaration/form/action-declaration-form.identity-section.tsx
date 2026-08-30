@@ -1,5 +1,6 @@
 import { ActionDeclarationIdentityFields } from"./action-declaration-form.identity-fields";
 import type { FormState } from"./model";
+import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 
 type ActionDeclarationIdentitySectionProps = {
  resolvedActorOptions: string[];
@@ -49,15 +50,13 @@ export function ActionDeclarationIdentitySection({
  onOrganizerAccountsChange={onOrganizerAccountsChange}
  />
 
- <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
- Date de l&apos;action <span className="text-emerald-500">*</span>
- <input
+ <CmmField label="Date de l&apos;action" required>
+ <CmmInput
  type="date"
- className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
  value={form.actionDate}
  onChange={(event) => onActionDateChange(event.target.value)}
  />
- </label>
+ </CmmField>
  </div>
  </section>
  );

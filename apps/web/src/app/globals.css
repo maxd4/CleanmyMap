@@ -205,6 +205,30 @@
     box-shadow var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
     transform var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
 
+  /* ============================================================
+     FORMS & CONTROLS - primitive canonique
+     ============================================================ */
+  --cmm-field-control-height: 2.75rem;
+  --cmm-field-control-padding-x: 0.875rem;
+  --cmm-field-control-radius: var(--radius-sm);
+  --cmm-field-control-background: var(--bg-elevated);
+  --cmm-field-control-background-disabled: var(--bg-muted);
+  --cmm-field-control-border: var(--border-default);
+  --cmm-field-control-border-hover: var(--border-strong);
+  --cmm-field-control-border-focus: var(--accent-primary);
+  --cmm-field-control-border-error: var(--text-danger);
+  --cmm-field-control-text: var(--text-primary);
+  --cmm-field-control-placeholder: var(--text-muted);
+  --cmm-field-control-focus-ring: var(--focus-ring);
+  --cmm-field-control-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  --cmm-field-control-transition-duration: 150ms;
+  --cmm-field-control-transition-easing: ease;
+  --cmm-field-control-transition:
+    background-color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    border-color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    color var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing),
+    opacity var(--cmm-field-control-transition-duration) var(--cmm-field-control-transition-easing);
+
 
 
   /* 6. Semantic Text Colors */
@@ -1356,6 +1380,113 @@ html[data-theme="dark"] {
     cursor: not-allowed;
     opacity: var(--cmm-button-disabled-opacity);
     pointer-events: none;
+  }
+
+  /* ============================================================
+     FORM FIELDS - shared geometry, states and accessibility hooks
+     ============================================================ */
+  .cmm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .cmm-field-label {
+    color: var(--text-primary);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+  }
+
+  .cmm-field-required {
+    color: var(--text-danger);
+    font-weight: var(--weight-semibold);
+  }
+
+  .cmm-field-control {
+    width: 100%;
+    min-height: var(--cmm-field-control-height);
+    border: 1px solid var(--cmm-field-control-border);
+    border-radius: var(--cmm-field-control-radius);
+    background-color: var(--cmm-field-control-background);
+    color: var(--cmm-field-control-text);
+    box-shadow: var(--cmm-field-control-shadow);
+    font: inherit;
+    line-height: 1.4;
+    transition: var(--cmm-field-control-transition);
+  }
+
+  .cmm-field-control[data-cmm-field-control="input"],
+  .cmm-field-control[data-cmm-field-control="select"] {
+    padding-inline: var(--cmm-field-control-padding-x);
+  }
+
+  .cmm-field-control[data-cmm-field-control="textarea"] {
+    min-height: 7rem;
+    padding: 0.75rem var(--cmm-field-control-padding-x);
+    resize: vertical;
+  }
+
+  .cmm-field-control:hover:not(:disabled):not([aria-invalid="true"]) {
+    border-color: var(--cmm-field-control-border-hover);
+  }
+
+  .cmm-field-control:focus,
+  .cmm-field-control:focus-visible {
+    border-color: var(--cmm-field-control-border-focus);
+    outline: 2px solid var(--cmm-field-control-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .cmm-field-control[aria-invalid="true"] {
+    border-color: var(--cmm-field-control-border-error);
+  }
+
+  .cmm-field-control::placeholder {
+    color: var(--cmm-field-control-placeholder);
+    opacity: 1;
+  }
+
+  .cmm-field-control:disabled {
+    cursor: not-allowed;
+    background-color: var(--cmm-field-control-background-disabled);
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .cmm-field-hint,
+  .cmm-field-error {
+    margin: 0;
+    font-size: var(--text-caption);
+    line-height: 1.4;
+  }
+
+  .cmm-field-hint {
+    color: var(--text-secondary);
+  }
+
+  .cmm-field-error {
+    color: var(--cmm-field-control-border-error);
+    font-weight: var(--weight-medium);
+  }
+
+  [data-display-mode="minimaliste"] .cmm-field-control {
+    --cmm-field-control-shadow: none;
+  }
+
+  [data-display-mode="sobre"] .cmm-field-control {
+    --cmm-field-control-background: var(--bg-canvas);
+    --cmm-field-control-border: var(--border-strong);
+    --cmm-field-control-shadow: none;
+    --cmm-field-control-transition-duration: 0ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-field-control {
+      --cmm-field-control-transition-duration: 0ms;
+      transition: none;
+    }
   }
 
   /* ============================================================

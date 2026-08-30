@@ -13,6 +13,7 @@ import type {
 } from"./types";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmField, CmmInput, CmmSelect, CmmTextarea } from "@/components/ui/cmm-field";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type StepConfirmProps = {
@@ -77,13 +78,15 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
     <p className="mt-1 cmm-text-small cmm-text-secondary">
     {fr ? "1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l'import." : "1) Preview (dry-run) 2) Verify summary 3) Confirm import."}
     </p>
- <textarea
+ <CmmField className="mt-3" label={fr ? "Données à importer" : "Import data"}>
+ <CmmTextarea
  value={workflow.importPayload}
  onChange={(event) => workflow.setImportPayload(event.target.value)}
  rows={8}
- className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono cmm-text-caption cmm-text-secondary outline-none transition focus:border-emerald-500"
+ className="font-mono cmm-text-caption cmm-text-secondary"
  spellCheck={false}
  />
+ </CmmField>
  <div className="mt-3 flex flex-wrap items-center gap-3">
  <CmmButton
   onClick={() => void workflow.onImportDryRun()}
@@ -103,17 +106,16 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  {workflow.importState ==="pending" ?"Import..." :"Confirmer import"}
  </CmmButton>
  </div>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
- Confirmation explicite
- <input
+ <CmmField className="mt-3" label="Confirmation explicite">
+ <CmmInput
  value={workflow.importConfirmationText}
  onChange={(event) =>
  workflow.setImportConfirmationText(event.target.value)
  }
  placeholder="Taper: CONFIRMER IMPORT"
- className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ className="cmm-text-small font-normal normal-case cmm-text-primary"
  />
- </label>
+ </CmmField>
 
  {workflow.importPreview ? (
  <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-caption text-emerald-900">
@@ -149,66 +151,59 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  Moderation: confirmation
  </p>
  <div className="mt-3 grid gap-3 md:grid-cols-3">
- <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Type de record
- <select
+ <CmmField label="Type de record">
+ <CmmSelect
  value={workflow.moderationEntityType}
  onChange={(event) =>
  workflow.setModerationEntityType(
  event.target.value as ModerationEntityType,
  )
  }
- className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
  >
  <option value="action">Action</option>
  <option value="clean_place">Signalement Trash Spotter</option>
- </select>
- </label>
- <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary md:col-span-2">
- ID du record
- <input
+ </CmmSelect>
+ </CmmField>
+ <CmmField className="md:col-span-2" label="ID du record">
+ <CmmInput
  value={workflow.moderationId}
  onChange={(event) => workflow.setModerationId(event.target.value)}
  placeholder="UUID/ID"
- className="rounded-lg border border-slate-300 px-3 py-2 font-mono cmm-text-caption outline-none transition focus:border-emerald-500"
+ className="font-mono cmm-text-caption"
  />
- </label>
+ </CmmField>
  </div>
  <div className="mt-3 grid gap-3 md:grid-cols-2">
  {workflow.moderationEntityType ==="action" ? (
- <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Statut action
- <select
+ <CmmField label="Statut action">
+ <CmmSelect
  value={workflow.actionStatus}
  onChange={(event) =>
  workflow.setActionStatus(
  event.target.value as ModerationActionStatus,
  )
  }
- className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
  >
  <option value="pending">pending</option>
  <option value="approved">approved</option>
  <option value="rejected">rejected</option>
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
  ) : (
- <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Statut du signalement
- <select
+ <CmmField label="Statut du signalement">
+ <CmmSelect
  value={workflow.cleanPlaceStatus}
  onChange={(event) =>
  workflow.setCleanPlaceStatus(
  event.target.value as ModerationCleanPlaceStatus,
  )
  }
- className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
  >
  <option value="new">new</option>
  <option value="validated">validated</option>
  <option value="cleaned">cleaned</option>
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
  )}
  <div className="flex items-end">
  <CmmButton
@@ -255,57 +250,51 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  enregistrées avec le statut lors de la confirmation.
  </p>
  <div className="mt-3 grid gap-3 md:grid-cols-3">
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Auteur
- <input
+ <CmmField label="Auteur">
+ <CmmInput
  value={workflow.actionEditDraft!.actorName}
  onChange={(event) => updateActionDraft(workflow,"actorName",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Association
- <input
+ </CmmField>
+ <CmmField label="Association">
+ <CmmInput
  value={workflow.actionEditDraft!.associationName}
  onChange={(event) => updateActionDraft(workflow,"associationName",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Date
- <input
+ </CmmField>
+ <CmmField label="Date">
+ <CmmInput
  type="date"
  value={workflow.actionEditDraft!.actionDate}
  onChange={(event) => updateActionDraft(workflow,"actionDate",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
+ </CmmField>
  </div>
  <div className="mt-3 grid gap-3 md:grid-cols-3">
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950 md:col-span-3">
- Lieu affiché
- <input
+ <CmmField className="md:col-span-3" label="Lieu affiché">
+ <CmmInput
  value={workflow.actionEditDraft!.locationLabel}
  onChange={(event) => updateActionDraft(workflow,"locationLabel",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Départ
- <input
+ </CmmField>
+ <CmmField label="Départ">
+ <CmmInput
  value={workflow.actionEditDraft!.departureLocationLabel}
  onChange={(event) => updateActionDraft(workflow,"departureLocationLabel",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Arrivée
- <input
+ </CmmField>
+ <CmmField label="Arrivée">
+ <CmmInput
  value={workflow.actionEditDraft!.arrivalLocationLabel}
  onChange={(event) => updateActionDraft(workflow,"arrivalLocationLabel",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
+ </CmmField>
  <div className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-caption font-semibold text-emerald-950">
  Réglage appliqué
  <span className="inline-flex w-fit rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-700">
@@ -313,14 +302,13 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </span>
  </div>
 </div>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Précisions de localisation
- <input
+ <CmmField className="mt-3" label="Précisions de localisation">
+ <CmmInput
  value={workflow.actionEditDraft!.routeAdjustmentMessage}
  onChange={(event) => updateActionDraft(workflow,"routeAdjustmentMessage",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
+ </CmmField>
  <div className="mt-3 grid gap-3 md:grid-cols-4">
  {[
  ["latitude","Latitude"],
@@ -335,9 +323,8 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  ["wasteMetalKg","Métal kg"],
  ["wasteMixteKg","Mixte kg"],
  ].map(([key, label]) => (
- <label key={key} className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- {label}
- <input
+ <CmmField key={key} label={label}>
+ <CmmInput
  inputMode="decimal"
  value={workflow.actionEditDraft![key as keyof ActionModerationEditDraft] as string}
  onChange={(event) =>
@@ -347,74 +334,65 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  event.target.value as never,
  )
  }
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
+ </CmmField>
  ))}
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- État mégots
- <select
+ <CmmField label="État mégots">
+ <CmmSelect
  value={workflow.actionEditDraft!.wasteMegotsCondition}
  onChange={(event) => updateActionDraft(workflow,"wasteMegotsCondition",event.target.value as ActionModerationEditDraft["wasteMegotsCondition"])}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
  <option value="propre">Propre</option>
  <option value="humide">Humide</option>
  <option value="mouille">Mouillé</option>
- </select>
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Qualité tri
- <select
+ </CmmSelect>
+ </CmmField>
+ <CmmField label="Qualité tri">
+ <CmmSelect
  value={workflow.actionEditDraft!.triQuality}
  onChange={(event) => updateActionDraft(workflow,"triQuality",event.target.value as ActionModerationEditDraft["triQuality"])}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
  <option value="faible">Faible</option>
  <option value="moyenne">Moyenne</option>
  <option value="elevee">Élevée</option>
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
  </div>
  <div className="mt-3 grid gap-3 md:grid-cols-2">
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Type de lieu
- <input
+ <CmmField label="Type de lieu">
+ <CmmInput
  value={workflow.actionEditDraft!.placeType}
  onChange={(event) => updateActionDraft(workflow,"placeType",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Mode
- <select
+ </CmmField>
+ <CmmField label="Mode">
+ <CmmSelect
  value={workflow.actionEditDraft!.submissionMode}
  onChange={(event) => updateActionDraft(workflow,"submissionMode",event.target.value as ActionModerationEditDraft["submissionMode"])}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
  <option value="quick">Rapide</option>
  <option value="complete">Complet</option>
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
  </div>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Notes
- <textarea
+ <CmmField className="mt-3" label="Notes">
+ <CmmTextarea
  rows={3}
  value={workflow.actionEditDraft!.notes}
  onChange={(event) => updateActionDraft(workflow,"notes",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ className="font-normal"
  />
- </label>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Localisation JSON
- <textarea
+ </CmmField>
+ <CmmField className="mt-3" label="Localisation JSON">
+ <CmmTextarea
  rows={4}
  value={workflow.actionEditDraft!.manualDrawingJson}
  onChange={(event) => updateActionDraft(workflow,"manualDrawingJson",event.target.value)}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-mono font-normal outline-none transition focus:border-emerald-600"
+ className="font-mono font-normal"
  />
- </label>
+ </CmmField>
  </div>
  ) : null}
  {workflow.moderationEntityType ==="clean_place" && workflow.cleanPlaceEditDraft ? (
@@ -423,30 +401,25 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  Correction du signalement
  </p>
  <div className="mt-3 grid gap-3 md:grid-cols-2">
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Lieu
- <input value={workflow.cleanPlaceEditDraft.label} onChange={(event) => updateCleanPlaceDraft(workflow,"label",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Type
- <select value={workflow.cleanPlaceEditDraft.spotType} onChange={(event) => updateCleanPlaceDraft(workflow,"spotType",event.target.value as "spot" | "clean_place")} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none focus:border-emerald-600">
+ <CmmField label="Lieu">
+ <CmmInput value={workflow.cleanPlaceEditDraft.label} onChange={(event) => updateCleanPlaceDraft(workflow,"label",event.target.value)} className="font-normal" />
+ </CmmField>
+ <CmmField label="Type">
+ <CmmSelect value={workflow.cleanPlaceEditDraft.spotType} onChange={(event) => updateCleanPlaceDraft(workflow,"spotType",event.target.value as "spot" | "clean_place")}>
   <option value="spot">Spot</option>
   <option value="clean_place">Lieu propre</option>
- </select>
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Latitude
- <input inputMode="decimal" value={workflow.cleanPlaceEditDraft.latitude} onChange={(event) => updateCleanPlaceDraft(workflow,"latitude",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
- </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Longitude
- <input inputMode="decimal" value={workflow.cleanPlaceEditDraft.longitude} onChange={(event) => updateCleanPlaceDraft(workflow,"longitude",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
- </label>
+ </CmmSelect>
+ </CmmField>
+ <CmmField label="Latitude">
+ <CmmInput inputMode="decimal" value={workflow.cleanPlaceEditDraft.latitude} onChange={(event) => updateCleanPlaceDraft(workflow,"latitude",event.target.value)} />
+ </CmmField>
+ <CmmField label="Longitude">
+ <CmmInput inputMode="decimal" value={workflow.cleanPlaceEditDraft.longitude} onChange={(event) => updateCleanPlaceDraft(workflow,"longitude",event.target.value)} />
+ </CmmField>
  </div>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Notes
- <textarea rows={3} value={workflow.cleanPlaceEditDraft.notes} onChange={(event) => updateCleanPlaceDraft(workflow,"notes",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
- </label>
+ <CmmField className="mt-3" label="Notes">
+ <CmmTextarea rows={3} value={workflow.cleanPlaceEditDraft.notes} onChange={(event) => updateCleanPlaceDraft(workflow,"notes",event.target.value)} className="font-normal" />
+ </CmmField>
  </div>
  ) : null}
  <label className="mt-3 flex items-center gap-2 cmm-text-caption cmm-text-secondary">
@@ -460,47 +433,42 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  />
  Je confirme la moderation de cette entite.
  </label>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
- Phrase de confirmation
- <input
+ <CmmField className="mt-3" label="Phrase de confirmation">
+ <CmmInput
  value={workflow.moderationConfirmationText}
  onChange={(event) =>
  workflow.setModerationConfirmationText(event.target.value)
  }
  placeholder="Taper: CONFIRMER MODERATION"
- className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ className="cmm-text-small font-normal normal-case cmm-text-primary"
  />
- </label>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
- Visibilité modération
- <select
+ </CmmField>
+ <CmmField
+ className="mt-3"
+ label="Visibilité modération"
+ hint="Le masquage retire l&apos;action de la carte, des listes publiques et des formulaires de groupe."
+ >
+ <CmmSelect
  value={workflow.moderationVisibility}
  onChange={(event) =>
  workflow.setModerationVisibility(event.target.value as ModerationVisibility)
  }
- className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ className="cmm-text-small font-normal normal-case cmm-text-primary"
  >
  <option value="unchanged">Ne pas changer</option>
  <option value="visible">Restaurer la visibilité publique</option>
  <option value="hidden">Masquer des surfaces publiques</option>
- </select>
- <span className="font-normal normal-case text-slate-500">
- Le masquage retire l&apos;action de la carte, des listes publiques et des formulaires de groupe.
- </span>
- </label>
- <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
- Motif de modération
- <textarea
+ </CmmSelect>
+ </CmmField>
+ <CmmField className="mt-3" label="Motif de modération" hint="Obligatoire pour un rejet ou une correction d&apos;impact.">
+ <CmmTextarea
  rows={3}
  value={workflow.moderationReason}
  onChange={(event) => workflow.setModerationReason(event.target.value)}
  placeholder="Exemple: correction des données terrain après vérification"
- className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-small font-normal normal-case cmm-text-primary outline-none transition focus:border-emerald-500"
+ className="cmm-text-small font-normal normal-case cmm-text-primary"
  />
- <span className="font-normal normal-case text-slate-500">
- Obligatoire pour un rejet ou une correction d&apos;impact.
- </span>
- </label>
+ </CmmField>
  {workflow.moderationResult ? (
  <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-300 bg-white p-3 cmm-text-caption cmm-text-secondary">
  {workflow.moderationResult}
