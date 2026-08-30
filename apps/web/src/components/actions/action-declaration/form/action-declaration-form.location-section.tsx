@@ -7,6 +7,7 @@ import { toRequiredNumber } from "./model";
 import { ActionDeclarationLocationAssist } from "./action-declaration-form.smart-assist";
 import type { GpsStatus } from "./action-declaration-form.smart-assist";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import { CmmField, CmmInput, CmmTextarea } from "@/components/ui/cmm-field";
 
 const ActionDrawingMap = dynamic(
   () =>
@@ -80,27 +81,23 @@ export function ActionDeclarationLocationSection({
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <label className="flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
-          Lieu principal <span className="text-emerald-500">*</span>
-          <input
+        <CmmField label="Lieu principal" required>
+          <CmmInput
             type="text"
-            className="rounded-xl border border-sky-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-sky-400"
             value={form.departureLocationLabel}
             onChange={(event) => onDepartureLocationChange(event.target.value)}
             placeholder="Ex: Place de la République"
           />
-        </label>
+        </CmmField>
 
-        <label className="flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
-          Complément
-          <input
+        <CmmField label="Complément">
+          <CmmInput
             type="text"
-            className="rounded-xl border border-sky-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-sky-400"
             value={form.arrivalLocationLabel}
             onChange={(event) => onArrivalLocationChange(event.target.value)}
             placeholder="Vide = boucle"
           />
-        </label>
+        </CmmField>
       </div>
 
       <div className="mt-4">
@@ -189,45 +186,36 @@ export function ActionDeclarationLocationSection({
           Détails avancés
         </summary>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
-            Latitude
-            <input
+          <CmmField label="Latitude">
+            <CmmInput
               type="number"
               step="any"
-              className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-primary outline-none transition focus:border-sky-400"
               value={form.latitude}
               onChange={(event) => onLatitudeChange(event.target.value)}
               placeholder="48.8566"
             />
-          </label>
+          </CmmField>
 
-          <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
-            Longitude
-            <input
+          <CmmField label="Longitude">
+            <CmmInput
               type="number"
               step="any"
-              className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-primary outline-none transition focus:border-sky-400"
               value={form.longitude}
               onChange={(event) => onLongitudeChange(event.target.value)}
               placeholder="2.3522"
             />
-          </label>
+          </CmmField>
 
-          <label className="md:col-span-2 flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
-            Précisions de localisation
-            <textarea
+          <CmmField className="md:col-span-2" label="Précisions de localisation" hint="Transmis avec l&apos;action si besoin.">
+            <CmmTextarea
               value={form.routeAdjustmentMessage}
               onChange={(event) =>
                 onRouteAdjustmentMessageChange(event.target.value)
               }
               placeholder="Ex: éviter l'avenue principale, passer par la rue latérale, garder la zone compacte..."
-              className="min-h-[96px] rounded-xl border border-sky-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-sky-400"
               maxLength={500}
             />
-            <span className="cmm-text-caption font-normal text-sky-800">
-              Transmis avec l&apos;action si besoin.
-            </span>
-          </label>
+          </CmmField>
         </div>
       </details>
     </section>

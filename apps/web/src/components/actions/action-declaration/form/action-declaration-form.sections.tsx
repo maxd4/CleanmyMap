@@ -6,6 +6,7 @@ import type {
 import type { FormState } from "./model";
 import { ActionDeclarationPhotoSection } from "./action-declaration-form.photo-section";
 import { ActionDeclarationVisionFields } from "./action-declaration-form.vision-fields";
+import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
@@ -31,23 +32,19 @@ export function ActionDeclarationMegotsSection({
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
-        Mégots (kg)
-        <input
+      <CmmField label="Mégots (kg)">
+        <CmmInput
           type="number"
           step="0.01"
           min="0"
-          className="rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-primary outline-none transition focus:border-emerald-500"
           value={form.wasteMegotsKg}
           onChange={(event) => updateField("wasteMegotsKg", event.target.value)}
           placeholder="0.5"
         />
-      </label>
+      </CmmField>
 
-      <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
-        État
-        <select
-          className="rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-primary outline-none transition focus:border-emerald-500"
+      <CmmField label="État">
+        <CmmSelect
           value={form.wasteMegotsCondition}
           onChange={(event) =>
             updateField(
@@ -59,8 +56,8 @@ export function ActionDeclarationMegotsSection({
           <option value="propre">Propre</option>
           <option value="humide">Humide</option>
           <option value="mouille">Mouillé</option>
-        </select>
-      </label>
+        </CmmSelect>
+      </CmmField>
     </div>
   );
 }
@@ -95,16 +92,14 @@ export function ActionDeclarationCompleteModeFields({
         }
       />
 
-      <label className="mt-4 flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-        Durée (minutes) <span className="text-emerald-500">*</span>
-        <input
+      <CmmField className="mt-4" label="Durée (minutes)" required>
+        <CmmInput
           type="number"
           min="5"
-          className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
           value={form.durationMinutes}
           onChange={(event) => updateField("durationMinutes", event.target.value)}
         />
-      </label>
+      </CmmField>
     </>
   );
 }

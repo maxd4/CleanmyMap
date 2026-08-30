@@ -1,4 +1,5 @@
 import type { FormState } from"./model";
+import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 
 type ActionDeclarationSummarySectionProps = {
  form: FormState;
@@ -31,19 +32,14 @@ export function ActionDeclarationSummarySection({
  </span>
  </div>
 
- <label className="mt-4 flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- Détails pour l&apos;équipe (optionnel)
- <textarea
- className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 cmm-text-primary outline-none transition focus:border-emerald-500"
+ <CmmField className="mt-4" label="Détails pour l&apos;équipe (optionnel)" hint="Ces détails ne sont pas obligatoires, mais ils aident les admins à comprendre le ramassage.">
+ <CmmTextarea
  value={form.notes}
  onChange={(event) => onNotesChange(event.target.value)}
  maxLength={1000}
  placeholder="Si le parcours est difficile à tracer sur mobile, décris ici les étapes et les points clés."
  />
- <span className="cmm-text-caption cmm-text-muted">
- Ces détails ne sont pas obligatoires, mais ils aident les admins à comprendre le ramassage.
- </span>
- </label>
+ </CmmField>
 
   <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
     <div className="flex items-center gap-2">

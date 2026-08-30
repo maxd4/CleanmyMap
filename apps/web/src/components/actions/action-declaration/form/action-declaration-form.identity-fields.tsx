@@ -3,6 +3,7 @@ import {
  ENTREPRISE_ASSOCIATION_OPTION,
 } from"@/lib/actions/association-options";
 import type { ActionRecordType } from "@/lib/actions/types";
+import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 
 const associationOptionLabels: Record<string, string> = {
 "Action spontanee":"Action spontanée",
@@ -40,12 +41,10 @@ export function ActionDeclarationIdentityFields({
 
  return (
  <>
- <label className="flex flex-col gap-2 cmm-text-small font-semibold cmm-text-secondary">
- Acteur
- <select
+ <CmmField label="Acteur">
+ <CmmSelect
  name="actorName"
  autoComplete="name"
- className="rounded-xl border border-slate-300 px-3 py-2 cmm-text-primary"
  value={actorName}
  onChange={(event) => onActorNameChange(event.target.value)}
  >
@@ -54,16 +53,13 @@ export function ActionDeclarationIdentityFields({
  {option}
  </option>
  ))}
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
 
- <label className="flex flex-col gap-2 cmm-text-small font-semibold cmm-text-secondary">
- Structure <span className="text-emerald-500">*</span>
- <select
- required
+ <CmmField label="Structure" required>
+ <CmmSelect
  name="associationName"
  autoComplete="organization"
- className="rounded-xl border border-slate-300 px-3 py-2 cmm-text-primary"
  value={associationName}
  onChange={(event) => onAssociationNameChange(event.target.value)}
  >
@@ -72,41 +68,36 @@ export function ActionDeclarationIdentityFields({
  {associationOptionLabels[option] ?? option}
  </option>
  ))}
- </select>
- </label>
+ </CmmSelect>
+ </CmmField>
 
  {isActionMode && !isSpontaneousAction && (
- <label className="flex flex-col gap-2 cmm-text-small font-semibold cmm-text-secondary">
- Organisateur / Référant ayant participé à l&apos;action
- <input
+ <CmmField
+ label="Organisateur / Référant ayant participé à l&apos;action"
+ hint="Hors action spontanée, renseignez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé."
+ >
+ <CmmInput
  name="organizerAccounts"
  autoComplete="off"
- className="rounded-xl border border-slate-300 px-3 py-2 cmm-text-primary"
  value={organizerAccounts}
  onChange={(event) => onOrganizerAccountsChange(event.target.value)}
  placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
  />
- <span className="cmm-text-caption cmm-text-muted font-normal">
- Hors action spontanée, renseignez le compte du référant ou de l&apos;organisateur ayant participé à l&apos;action. À défaut, le compte admin par défaut sera utilisé.
- </span>
- </label>
+ </CmmField>
  )}
 
  {isEntrepriseMode && (
- <label className="flex flex-col gap-2 cmm-text-small font-semibold cmm-text-secondary">
- Nom entreprise <span className="text-emerald-500">*</span>
- <input
- required
+ <CmmField label="Nom entreprise" required>
+ <CmmInput
  name="enterpriseName"
  autoComplete="organization"
- className="rounded-xl border border-slate-300 px-3 py-2 cmm-text-primary"
  value={enterpriseName}
  onChange={(event) => onEnterpriseNameChange(event.target.value)}
  placeholder="Ex: Veolia"
  minLength={2}
  maxLength={100}
  />
- </label>
+ </CmmField>
  )}
  </>
  );
