@@ -57,9 +57,11 @@ try {
     }
 
     $vercelProjectFiles = @(
-        ".vercel/project.json",
-        "apps/web/.vercel/project.json"
-    ) | Where-Object { Test-Path -LiteralPath $_ }
+        @(
+            ".vercel/project.json",
+            "apps/web/.vercel/project.json"
+        ) | Where-Object { Test-Path -LiteralPath $_ }
+    )
 
     Write-Host "Pre-push guardrail"
     Write-Host "Repository: $RepoRoot"
