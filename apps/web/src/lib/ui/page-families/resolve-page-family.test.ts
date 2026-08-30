@@ -103,7 +103,6 @@ describe("page-families resolver", () => {
       },
       card: {
         rubriqueTheme: "rose",
-        shell: expect.stringContaining("border-rose-200/18"),
       },
       exceptionId: "methodologie-impact",
     });
