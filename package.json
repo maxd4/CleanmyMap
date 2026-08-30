@@ -65,6 +65,7 @@
     "check:surfaces": "node scripts/checks/check-surface-governance.mjs",
     "check:actions": "node scripts/checks/check-actions-governance.mjs",
     "check:forms": "node scripts/checks/check-forms-governance.mjs",
+    "check:states": "node scripts/checks/check-states-governance.mjs",
     "analyze:heavy-files": "node scripts/reports/analyze-heavy-files.mjs",
     "data:export:clerk": "node scripts/data/export-clerk-users.mjs",
     "data:audit:clerk-supabase": "node scripts/audits/audit-clerk-supabase.mjs",

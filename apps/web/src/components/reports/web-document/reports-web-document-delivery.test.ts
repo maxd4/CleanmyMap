@@ -105,6 +105,9 @@ describe("ReportsWebDocumentDelivery", () => {
     );
 
     expect(markup).toContain(label);
+    expect(markup).toContain(
+      `data-feedback-tone="${state === "error" ? "error" : state === "success" ? "success" : "info"}"`,
+    );
     if (state === "error") {
       expect(markup).toContain("Erreur de génération.");
       expect(markup).toContain('role="alert"');
@@ -162,6 +165,7 @@ describe("ReportsWebDocumentDelivery", () => {
     );
 
     expect(markup).toContain("Aucun rapport généré");
+    expect(markup).toContain('data-state-variant="empty"');
     expect(markup).not.toContain("Rapport d&#x27;impact");
   });
 
@@ -176,6 +180,8 @@ describe("ReportsWebDocumentDelivery", () => {
     );
 
     expect(markup).toContain("Historique temporairement indisponible");
+    expect(markup).toContain('data-feedback-tone="warning"');
+    expect(markup).toContain('role="alert"');
     expect(markup).not.toContain("Aucun rapport généré");
   });
 });

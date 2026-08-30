@@ -124,10 +124,19 @@ describe("shared signalement media proofs", () => {
     );
 
     expect(markup).toContain("Les preuves photo ne sont pas publiques");
+    expect(markup).toContain('data-feedback-tone="info"');
+    expect(markup).toContain('role="status"');
     expect(markup).not.toContain("Voir les preuves photo");
   });
 
-  it("renders an empty state and a retryable error state", () => {
+  it("renders loading, empty and retryable error states with canonical primitives", () => {
+    const loadingMarkup = renderToStaticMarkup(
+      React.createElement(SignalementMediaProofsView, {
+        snapshot: { status: "loading", items: [], error: null },
+        onLoad: () => undefined,
+        onRetry: () => undefined,
+      }),
+    );
     const emptyMarkup = renderToStaticMarkup(
       React.createElement(SignalementMediaProofsView, {
         snapshot: { status: "empty", items: [], error: null },
@@ -148,8 +157,13 @@ describe("shared signalement media proofs", () => {
     );
 
     expect(emptyMarkup).toContain("Aucune preuve photo disponible.");
+    expect(emptyMarkup).toContain('data-feedback-tone="info"');
     expect(errorMarkup).toContain("Les preuves photo n&#x27;ont pas pu être chargées.");
     expect(errorMarkup).toContain("Réessayer");
+    expect(errorMarkup).toContain('data-feedback-tone="error"');
+    expect(errorMarkup).toContain('role="alert"');
+    expect(loadingMarkup).toContain('data-skeleton-animation="pulse"');
+    expect(loadingMarkup).toContain("Chargement des preuves photo…");
   });
 
   it("renders up to three ready media with dimensions, neutral alt text and ephemeral URLs", () => {

@@ -1,9 +1,11 @@
 "use client";
 
-import { Loader2, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
+import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { ChatSearchResult } from "@/lib/chat/chat-search";
 import { getDiscussionTopic } from "./discussion-guidance";
 
@@ -71,13 +73,14 @@ export function ChatSearchPanel({
       {hasMinimumQuery ? (
         <div className="mt-3 space-y-2">
           {isLoading ? (
-            <p className="flex items-center gap-2 text-xs text-slate-500" role="status">
-              <Loader2 size={14} className="animate-spin" aria-hidden="true" /> Recherche en cours…
-            </p>
+            <div className="flex items-center gap-2 text-xs" role="status">
+              <CmmSkeleton variant="circular" animation="pulse" className="h-4 w-4" aria-hidden="true" />
+              <span>Recherche en cours…</span>
+            </div>
           ) : error ? (
-            <p className="text-xs text-rose-700" role="alert">{error.message}</p>
+            <CmmFeedback tone="error">{error.message}</CmmFeedback>
           ) : results.length === 0 ? (
-            <p className="text-xs text-slate-500" role="status">Aucun message trouvé dans ce fil.</p>
+            <CmmFeedback tone="info">Aucun message trouvé dans ce fil.</CmmFeedback>
           ) : (
             <div className="max-h-64 space-y-1 overflow-y-auto" aria-live="polite">
               {results.map((result) => {
@@ -114,12 +117,14 @@ export function ChatSearchPanel({
                   {isLoadingMore ? "Chargement…" : "Charger plus de résultats"}
                 </button>
               ) : null}
-              {loadMoreError ? <p className="text-xs text-rose-700" role="alert">{loadMoreError}</p> : null}
+              {loadMoreError ? <CmmFeedback tone="error">{loadMoreError}</CmmFeedback> : null}
             </div>
           )}
         </div>
       ) : (
-        <p className="mt-2 text-xs text-slate-500">Saisissez au moins 2 caractères.</p>
+        <CmmFeedback tone="info" className="mt-2">
+          Saisissez au moins 2 caractères.
+        </CmmFeedback>
       )}
     </div>
   );
