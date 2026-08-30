@@ -5,12 +5,16 @@ import {
 } from "./site-preferences-locale-sync";
 
 describe("resolveInitialLocale", () => {
-  it("uses the server cookie locale for the initial render", () => {
+  it("uses the optional initial locale when no browser value exists", () => {
     expect(resolveInitialLocale("en", null)).toBe("en");
   });
 
   it("lets a legacy localStorage locale win during the one hydration sync", () => {
     expect(resolveInitialLocale("fr", "en")).toBe("en");
+    expect(resolveInitialLocale(undefined, null)).toBe("fr");
+  });
+
+  it("falls back to French for an absent or invalid browser value", () => {
     expect(resolveInitialLocale(undefined, null)).toBe("fr");
   });
 });
