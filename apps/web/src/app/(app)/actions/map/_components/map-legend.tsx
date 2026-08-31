@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { ChevronDown, Cigarette, Info, Trash2 } from "lucide-react";
+import { Cigarette, Info, Trash2 } from "lucide-react";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import {
   ACTION_POLLUTION_COLOR_THRESHOLDS,
   INFRASTRUCTURE_ALERT_THRESHOLD,
@@ -129,12 +130,10 @@ export function MapLegend() {
           </span>
         </div>
 
-        <details className="group rounded-[1.75rem] border border-sky-200/80 bg-white/75 p-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-950">
-            <span>Détails des couleurs, de l&apos;infrastructure et des seuils</span>
-            <ChevronDown size={16} className="shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
-          </summary>
-
+        <CmmDisclosure
+          tone="sky"
+          summary="Détails des couleurs, de l'infrastructure et des seuils"
+        >
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <div className="space-y-3">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
@@ -158,7 +157,7 @@ export function MapLegend() {
               </div>
             </div>
           </div>
-        </details>
+        </CmmDisclosure>
       </div>
     </section>
   );

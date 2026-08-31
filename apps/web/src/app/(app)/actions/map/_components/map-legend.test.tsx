@@ -17,6 +17,8 @@ describe("MapLegend", () => {
     const markup = renderToStaticMarkup(React.createElement(MapLegend));
 
     expect(markup).toContain("<details");
+    expect(markup).toContain('data-disclosure-tone="sky"');
+    expect(markup).toContain('class="cmm-disclosure__summary"');
     expect(markup).toContain("Détails des couleurs, de l&#x27;infrastructure et des seuils");
     expect(markup).toContain("projection &lt; 30");
     expect(markup).toContain("≥ 75");

@@ -14,12 +14,14 @@ const source = readFileSync(new URL("./cmm-disclosure.tsx", import.meta.url), "u
 describe("CmmDisclosure", () => {
   it("renders the native details and summary elements", () => {
     const markup = renderToStaticMarkup(
-      <CmmDisclosure summary="Résumé">Contenu métier</CmmDisclosure>,
+      <CmmDisclosure id="disclosure-example" summary="Résumé">
+        Contenu métier
+      </CmmDisclosure>,
     );
 
-    expect(markup).toMatch(/^<details/);
+    expect(markup).toMatch(/^<details id="disclosure-example"/);
     expect(markup).toContain('<summary class="cmm-disclosure__summary">');
-    expect(markup).toContain(">Résumé</span>");
+    expect(markup).toContain(">Résumé</div>");
     expect(markup).toContain(">Contenu métier</div>");
     expect(markup).toContain('data-disclosure-tone="slate"');
     expect(markup).toContain('data-disclosure-size="md"');

@@ -1,4 +1,5 @@
-import type { FormState } from"./model";
+import type { FormState } from "./model";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 
 type ActionDeclarationVisionFieldsProps = {
@@ -15,10 +16,11 @@ export function ActionDeclarationVisionFields({
  onVisionDensityChange,
 }: ActionDeclarationVisionFieldsProps) {
  return (
- <details className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3">
- <summary className="cursor-pointer list-none cmm-text-small font-semibold text-emerald-950">
- Précisions IA (optionnel)
- </summary>
+ <CmmDisclosure
+   className="mt-4"
+   tone="emerald"
+   summary="Précisions IA (optionnel)"
+ >
  <div className="mt-4 grid gap-3 md:grid-cols-3">
  <CmmField label="Nombre de sacs">
  <CmmInput
@@ -54,6 +56,6 @@ export function ActionDeclarationVisionFields({
  />
  </CmmField>
  </div>
- </details>
+ </CmmDisclosure>
  );
 }

@@ -65,6 +65,12 @@ Pour les états et retours utilisateur, suivre
 `CmmSkeleton` aux chargements structurels et `CmmField` aux erreurs associées
 à un champ.
 
+Pour les contenus complémentaires repliables, utiliser `CmmDisclosure` selon
+[`DISCLOSURE_ACCORDIONS.md`](./DISCLOSURE_ACCORDIONS.md). La primitive native
+conserve `<details>/<summary>` ; elle ne fournit pas de fermeture exclusive
+entre voisins et ne remplace pas les dropdowns, menus, tooltips, popovers ou
+overlays.
+
 ## Architecture CSS runtime
 
 `apps/web/src/app/globals.css` reste le point d’entrée unique du CSS web. Il
@@ -81,6 +87,7 @@ et les pages ne doivent pas recréer ces responsabilités localement.
 | `actions.css` | boutons et groupes d’actions |
 | `forms.css` | `CmmField`, inputs, selects et textareas |
 | `states-feedback.css` | `SystemState`, `CmmFeedback` et `CmmSkeleton` |
+| `disclosure.css` | `CmmDisclosure`, son indicateur, ses surfaces et ses modes |
 | `display-modes.css` | adaptations `exhaustif`, `minimaliste` et `sobre` |
 | `overlays.css` | modales, dialogs, drawers, popovers, tooltips et backdrops |
 | `indicators.css` | badges, pills, chips, statuts, progress et compteurs |

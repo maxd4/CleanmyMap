@@ -30,6 +30,30 @@ function runNode(scriptPath, args = []) {
   });
 }
 
+function getChangedFiles() {
+  const commands = [
+    ["diff", "--name-only", "--diff-filter=ACMRTUXB", "HEAD", "--"],
+    ["diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB", "--"],
+    [
+      "ls-files",
+      "--others",
+      "--exclude-standard",
+      "--",
+      ".",
+      ":(exclude,glob)**/.next-codex-*/**",
+      ":(exclude,glob).artifacts/apps-web-node_modules-incomplete-0830/**",
+    ],
+  ];
+
+  return new Set(
+    commands.flatMap((args) => {
+      const result = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.split(/\r?\n/).filter(Boolean);
+    }),
+  );
+}
+
 function createStressFixture() {
   mkdirSync(STRESS_DIR, { recursive: true });
   for (let index = 0; index < 1500; index += 1) {
@@ -46,8 +70,16 @@ function cleanupFixtures() {
 
 afterEach(cleanupFixtures);
 
-describe("generated artifact guard boundaries", () => {
+describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
   it("ignores a large generated tree while retaining an untracked source and test", () => {
+    const baselineChangedFiles = getChangedFiles();
+    const baselineWebSourceCount = [...baselineChangedFiles].filter(
+      (file) => /^apps\/web\/.*\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file) && !file.endsWith(".d.ts"),
+    ).length;
+    const baselineWebTestCount = [...baselineChangedFiles].filter(
+      (file) => /^apps\/web\/.*\.(test|spec)\.(ts|tsx|js|jsx)$/.test(file),
+    ).length;
+
     createStressFixture();
     writeFileSync(QUICK_SENTINEL, "export const quickGuardSentinel = true;\n");
     writeFileSync(
@@ -58,8 +90,8 @@ describe("generated artifact guard boundaries", () => {
     const result = runPowerShell(join(ROOT, "scripts", "checks", "check_changed_quick.ps1"));
     const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.status, 0, output);
-    assert.match(output, /changed web source files: 2/);
-    assert.match(output, /changed web test files: 1/);
+    assert.match(output, new RegExp(`changed web source files: ${baselineWebSourceCount + 2}`));
+    assert.match(output, new RegExp(`changed web test files: ${baselineWebTestCount + 1}`));
     assert.doesNotMatch(output, /too long|longueur de commande/i);
   });
 

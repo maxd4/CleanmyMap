@@ -22,6 +22,7 @@ export interface CmmDisclosureProps {
   onToggle?: (open: boolean) => void;
   tone?: DisclosureTone;
   size?: DisclosureSize;
+  id?: string;
   className?: string;
 }
 
@@ -40,10 +41,12 @@ export function CmmDisclosure({
   onToggle,
   tone = "slate",
   size = "md",
+  id,
   className,
 }: CmmDisclosureProps) {
   return (
     <details
+      id={id}
       open={open ?? defaultOpen}
       onToggle={(event) => onToggle?.(event.currentTarget.open)}
       data-disclosure-tone={tone}
@@ -51,7 +54,7 @@ export function CmmDisclosure({
       className={cn("cmm-disclosure", className)}
     >
       <summary className="cmm-disclosure__summary">
-        <span className="cmm-disclosure__summary-content">{summary}</span>
+        <div className="cmm-disclosure__summary-content">{summary}</div>
         <ChevronDown
           aria-hidden="true"
           className="cmm-disclosure__icon"
