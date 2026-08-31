@@ -74,11 +74,13 @@ intermédiaires ne doivent pas commencer par ce canari.
   changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
   préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
 - le dossier du projet est l'unique source canonique ; ne pas créer ni
-  conserver de copie persistante du dépôt, copie de fichier, clone, branche
-  temporaire ou worktree isolé ; une sandbox de publication éphémère n'est
-  permise qu'en cas de commit étranger à publier, divergence/race ou
-  resynchronisation dangereuse, depuis le dernier `origin/main`, avec la seule
-  allowlist du lot, puis suppression avant la fin du chantier ;
+  conserver de copie persistante du dépôt, copie de fichier, branche temporaire
+  ou worktree isolé ; il est strictement interdit de créer ou d'utiliser un
+  clone Git isolé, même temporaire ou sous `business` ; une sandbox de
+  publication éphémère n'est permise qu'en cas de commit étranger à publier,
+  divergence/race ou resynchronisation dangereuse, depuis le dernier
+  `origin/main`, avec la seule allowlist du lot, puis suppression avant la fin
+  du chantier, et ne peut pas être matérialisée par un clone Git ;
 - Git pousse des commits, pas des fichiers ; avant de pousser, après
   `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
   et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
@@ -300,6 +302,11 @@ et la prochaine étape, puis attendre confirmation avant de continuer.
   hors de cette racine un fichier ou dossier issu du projet à titre persistant,
   notamment une copie complète, un backup, un staging durable, un worktree ou
   un clone Git.
+- Il est également interdit de créer ou d'utiliser un clone Git isolé, même
+  éphémère ; la sandbox exceptionnelle de publication ne constitue pas une
+  autorisation de clone et doit utiliser un mécanisme qui ne duplique pas le
+  dépôt. Si aucun mécanisme conforme n'est disponible, l'opération est
+  `BLOCKED`.
 - Cette interdiction couvre `%TEMP%`, `%TMP%`, `%LOCALAPPDATA%`, le dossier
   parent `business`, les dossiers frères et tout autre chemin externe.
 - Utiliser uniquement un emplacement canonique déjà prévu sous la racine

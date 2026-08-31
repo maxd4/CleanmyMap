@@ -89,7 +89,8 @@ ChatGPT ne doit jamais :
 - modifier directement un fichier du dépôt distant ;
 - réécrire l'historique ;
 - utiliser `--force` ;
-- créer un worktree ou une copie parallèle du dépôt.
+- créer un worktree, une copie parallèle ou un clone Git isolé du dépôt, même
+  temporaire.
 
 Lorsqu'une modification doit être appliquée au dépôt :
 
@@ -733,9 +734,10 @@ Ne pas créer :
 - dossier parallèle du dépôt ;
 - fichier racine opportuniste.
 
-sans demande explicite. Cette interdiction n'empêche pas la sandbox de
+sans demande explicite. Cette interdiction n'empêche pas une sandbox de
 publication éphémère prévue par la gouvernance Git lorsqu'elle est nécessaire,
-bornée à l'allowlist et supprimée avant la clôture ; ChatGPT ne la crée jamais.
+bornée à l'allowlist et supprimée avant la clôture ; cette sandbox ne peut pas
+être un clone Git isolé et ChatGPT ne la crée jamais.
 
 Le dossier suivant est protégé et ne doit pas être modifié sans demande explicite :
 
