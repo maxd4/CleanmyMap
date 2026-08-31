@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseCommunityEventDescription } from "@/lib/community/event-ops";
 import { distanceToParisArrondissementKm } from "@/lib/geo/paris-arrondissements";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
 
@@ -84,7 +85,7 @@ export async function loadEventPressureByArrondissement(
   const toDate = isoDateDaysFromNow(21);
   const eventsResult = await supabase
     .from("community_events")
-    .select("id, title, event_date, location_label, capacity_target")
+    .select("id, title, event_date, location_label, description")
     .gte("event_date", fromDate)
     .lte("event_date", toDate)
     .order("event_date", { ascending: true })
@@ -94,13 +95,16 @@ export async function loadEventPressureByArrondissement(
     throw new Error(eventsResult.error.message);
   }
 
-  const events = (eventsResult.data ?? []) as Array<{
+  const events = ((eventsResult.data ?? []) as Array<{
     id: string;
     title: string;
     event_date: string;
     location_label: string;
-    capacity_target: number | null;
-  }>;
+    description: string | null;
+  }>).map((event) => ({
+    ...event,
+    capacityTarget: parseCommunityEventDescription(event.description).ops.capacityTarget,
+  }));
   if (events.length === 0) {
     return { pressureByArrondissement: new Map(), eventSignals: [] };
   }
@@ -141,7 +145,7 @@ export async function loadEventPressureByArrondissement(
       const arrondissement = parseArrondissementFromLabel(event.location_label);
       const rsvp = rsvpByEventId.get(event.id) ?? { yes: 0, maybe: 0, no: 0 };
       const attendancePressure =
-        rsvp.yes + rsvp.maybe * 0.5 + Math.min(12, (event.capacity_target ?? 0) / 6);
+        rsvp.yes + rsvp.maybe * 0.5 + Math.min(12, (event.capacityTarget ?? 0) / 6);
       if (arrondissement !== null) {
         const previous = pressureByArrondissement.get(arrondissement) ?? 0;
         pressureByArrondissement.set(
