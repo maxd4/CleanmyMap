@@ -116,6 +116,34 @@
     --cmm-badge-shadow: none;
   }
 
+  .cmm-badge--on-dark {
+    --cmm-badge-accent: rgb(255 255 255);
+    --cmm-badge-background: rgb(255 255 255 / 0.1);
+    --cmm-badge-border: rgb(255 255 255 / 0.12);
+    --cmm-badge-shadow: none;
+    --cmm-badge-text: rgb(255 255 255);
+  }
+
+  .cmm-badge--on-dark[data-badge-tone="muted"] {
+    --cmm-badge-background: rgb(255 255 255 / 0.05);
+    --cmm-badge-border: rgb(255 255 255 / 0.1);
+    --cmm-badge-text: rgb(255 255 255 / 0.55);
+  }
+
+  .cmm-badge--on-dark[data-badge-tone="sky"] {
+    --cmm-badge-accent: rgb(165 243 252);
+    --cmm-badge-background: rgb(6 182 212 / 0.1);
+    --cmm-badge-border: rgb(165 243 252 / 0.15);
+    --cmm-badge-text: rgb(236 254 255 / 0.9);
+  }
+
+  .cmm-badge--on-dark[data-badge-tone="emerald"] {
+    --cmm-badge-accent: rgb(167 243 208);
+    --cmm-badge-background: rgb(16 185 129 / 0.1);
+    --cmm-badge-border: rgb(167 243 208 / 0.15);
+    --cmm-badge-text: rgb(236 253 245 / 0.95);
+  }
+
   [data-display-mode="sobre"] .cmm-badge {
     --cmm-badge-background: var(--bg-canvas);
     --cmm-badge-border: var(--border-strong);

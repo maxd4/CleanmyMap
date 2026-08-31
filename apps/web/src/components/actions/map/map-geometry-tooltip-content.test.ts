@@ -4,6 +4,28 @@ import { describe, expect, it } from "vitest";
 import { GeometryTooltipContent } from "./map-geometry-tooltip-content";
 
 describe("geometry tooltip action reading", () => {
+  it("renders the three static geometry capsules through CmmBadge", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(GeometryTooltipContent, {
+        title: "Action · Longueur ~ 1 km",
+        geometryModeLabel: "Parcours connu",
+        geometryPointsLabel: "2 points",
+        geometryMetricLabel: "Longueur ~ 1 km",
+        geometryConfidenceLabel: "Confiance élevée",
+        color: "hsl(35, 90%, 50%)",
+      }),
+    );
+
+    expect(markup.match(/class="cmm-badge"/g)).toHaveLength(3);
+    expect(markup.match(/data-badge-shape="pill"/g)).toHaveLength(3);
+    expect(markup).toContain("2 points");
+    expect(markup).toContain("Longueur ~ 1 km");
+    expect(markup).toContain("Confiance élevée");
+    expect(markup).toContain("hsl(35, 90%, 50%)");
+    expect(markup).not.toContain("inline-flex items-center gap-1 rounded-full border");
+    expect(markup).not.toContain("inline-flex items-center rounded-full border");
+  });
+
   it("distinguishes observed pollution, last action and revisit priority", () => {
     const markup = renderToStaticMarkup(
       React.createElement(GeometryTooltipContent, {

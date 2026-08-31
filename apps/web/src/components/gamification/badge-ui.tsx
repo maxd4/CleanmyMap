@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { CmmBadge, type CmmBadgeTone } from "@/components/ui/cmm-badge";
 
 export type GamificationBadgeState = "vide" | "actif" | "debloque";
 
@@ -20,21 +21,24 @@ export function getGamificationBadgeState(current: number, threshold: number): G
   return current === threshold ? "debloque" : "actif";
 }
 
-const BADGE_STATE_STYLES: Record<GamificationBadgeState, string> = {
-  vide: "border-white/10 bg-white/5 text-white/55",
-  actif: "border-cyan-200/15 bg-cyan-500/10 text-cyan-50/90",
-  debloque: "border-emerald-200/15 bg-emerald-500/10 text-emerald-50/90",
+const BADGE_STATE_TONES: Record<GamificationBadgeState, CmmBadgeTone> = {
+  vide: "muted",
+  actif: "sky",
+  debloque: "emerald",
 };
 
 export function GamificationStatePill({ state }: { state: GamificationBadgeState }) {
   const label = state === "vide" ? "Vide" : state === "debloque" ? "Débloqué" : "Actif";
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${BADGE_STATE_STYLES[state]}`}
+    <CmmBadge
+      tone={BADGE_STATE_TONES[state]}
+      size="sm"
+      shape="pill"
+      className="cmm-badge--on-dark"
     >
       {label}
-    </span>
+    </CmmBadge>
   );
 }
 

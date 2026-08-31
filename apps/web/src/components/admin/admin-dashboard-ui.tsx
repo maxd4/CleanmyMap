@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import type { Role } from "@/lib/domain-language";
+import { CmmBadge } from "@/components/ui/cmm-badge";
 import type {
   AdminOperationalMetricAvailability,
   AdminOperationalMetricItem,
@@ -130,9 +131,14 @@ export function AdminHeroStrip({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white">
+          <CmmBadge
+            tone="slate"
+            size="md"
+            shape="pill"
+            className="cmm-badge--on-dark"
+          >
             {accessLabel}
-          </span>
+          </CmmBadge>
           {action}
         </div>
       </div>
