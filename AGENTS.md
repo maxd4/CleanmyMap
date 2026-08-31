@@ -66,15 +66,35 @@ intermédiaires ne doivent pas commencer par ce canari.
   produit des modifications doit se terminer par un commit ciblé sur `main`
   puis un push vers `origin/main` ; aucune modification ne justifie un commit
   artificiel ;
-- ne pas créer de Pull Request, branche temporaire ou worktree sans demande
-  explicite ; ne jamais pousser avec `--force` ni réécrire l'historique publié ;
-- le commit et le push doivent couvrir uniquement le lot de l'exécution
-  courante ; stage uniquement les chemins concernés et préserve les
-  changements parallèles ;
+- les modifications locales non stagées hors périmètre ne bloquent ni le commit
+  ni le push d'un lot ; Codex délimite le lot, stage uniquement son allowlist
+  explicite (jamais `git add -A`) et vérifie
+  `git diff --cached --name-only` avant le commit ;
+- un commit doit contenir exclusivement les fichiers du lot courant ; les
+  changements parallèles hors périmètre restent non stagés et préservés ;
+- ne pas créer systématiquement de clone, Pull Request, branche temporaire ou
+  worktree isolé ; ces contextes restent exceptionnels et nécessitent une
+  règle applicable ou une autorisation explicite ; ne jamais pousser avec
+  `--force` ni réécrire l'historique publié ;
+- Git pousse des commits, pas des fichiers ; avant de pousser, après
+  `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
+  et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
+  contient déjà un commit étranger au lot ;
+- s'il n'existe aucun commit local étranger dans l'ascendance à publier, le lot
+  peut être commité puis poussé normalement malgré les changements dirty hors
+  périmètre ; si un commit local étranger serait nécessairement embarqué par le
+  push, ne pas le publier silencieusement, conserver le lot et signaler
+  précisément ce seul blocage ;
+- si `origin/main` avance, faire d'abord `git fetch origin main` ; une
+  évolution distante indépendante du lot autorise une resynchronisation sûre
+  sans écraser les changements parallèles, suivie des validations et du push ;
+  un conflit réel sur les fichiers ou contrats du lot impose un STOP explicite ;
+- avant le push, vérifier le diff exact du périmètre logique, les validations
+  pertinentes, `git diff --cached --name-only` et l'ascendance réellement
+  destinée au push ; après création du commit local, ne pas exiger l'égalité
+  littérale `HEAD == origin/main` ;
 - si le push échoue, conserver le commit local et signaler explicitement le
   blocage ; ne jamais contourner les protections par un force push ;
-- avant le push, vérifier le diff exact du périmètre logique, les validations
-  pertinentes et l'égalité des SHAs `main`/`origin/main`.
 - lorsqu'une vérification effective du site web est demandée, comparer le
   déploiement actif avec le `main` actuel ; si le déploiement est obsolète,
   redéployer Vercel depuis ce `main` avant de vérifier le site et ne pas tirer
@@ -92,12 +112,13 @@ ci-dessus.
 
 ## Chantiers parallèles
 
-- un worktree dirty est permis ; les modifications étrangères ne sont ni
-  corrigées, nettoyées, stashées, déplacées ni inventoriées systématiquement ;
-- délimiter chaque lot, modifier uniquement son périmètre et stage uniquement
-  les chemins nécessaires ; ne jamais utiliser `git add -A` ;
-- préserver les artefacts et changements parallèles, et ne signaler le dirty
-  state que s'il provoque une interférence concrète ;
+- un worktree dirty est permis ; les modifications étrangères non stagées ne
+  bloquent pas un lot indépendant et ne doivent être ni corrigées, nettoyées,
+  stashées, déplacées ni inventoriées systématiquement ;
+- Codex ne doit pas arrêter un chantier uniquement parce que le worktree
+  contient des modifications parallèles indépendantes ; il préserve les
+  artefacts et changements parallèles et ne signale le dirty state que s'il
+  provoque une interférence concrète ;
 - attribuer un échec de validation au lot seulement s'il concerne un fichier,
   contrat ou régression du lot. Une erreur étrangère est
   `SKIPPED_PARALLEL_CHANTIER` et ne doit pas être corrigée dans ce lot.
