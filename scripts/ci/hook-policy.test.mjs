@@ -27,9 +27,8 @@ test("pre-push keeps scoped gates and a separate full validation path", async ()
 
   assert.match(packageJson.scripts["prepush:guard"], /pre_push_guard\.ps1/);
   for (const requiredStep of [
-    "git diff --name-only --diff-filter=ACMRTUXB HEAD --",
-    "git diff --cached --name-only --diff-filter=ACMRTUXB --",
-    "git ls-files --others --exclude-standard",
+    "git diff --name-only --diff-filter=ACMRTUXB",
+    "$($upstream[0])...HEAD",
     "scripts/checks/validation-policy.mjs",
     "npm run checks:full",
     "npm run audit:supabase-migration-trees",
@@ -42,6 +41,9 @@ test("pre-push keeps scoped gates and a separate full validation path", async ()
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.doesNotMatch(guard, /git diff --name-only --diff-filter=ACMRTUXB HEAD --/);
+  assert.doesNotMatch(guard, /git diff --cached --name-only/);
+  assert.doesNotMatch(guard, /git ls-files --others/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
   assert.match(guard, /Write-SkippedGuardStep/);
 });
