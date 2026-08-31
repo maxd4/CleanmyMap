@@ -38,6 +38,22 @@ export function RouteSection() {
     requestRecommendation,
   } = useRouteData();
 
+  const dataStatusMessage = data
+    ? data.dataStatus === "empty"
+      ? fr
+        ? "Aucune donnée géolocalisée exploitable n'est disponible pour ces contraintes."
+        : "No usable geolocated data is available for these constraints."
+      : data.dataStatus === "partial"
+        ? fr
+          ? "Données partielles : la recommandation est calculée sur un volume ou une source non exhaustif."
+          : "Partial data: the recommendation uses a non-exhaustive volume or source."
+        : data.dataStatus === "unavailable"
+          ? fr
+            ? "Source de signalements indisponible : aucun point n'est présenté comme s'il était réellement vide."
+            : "The report source is unavailable: no point is presented as genuinely empty."
+          : null
+    : null;
+
   return (
     <SectionShell
       id="route"
@@ -66,10 +82,16 @@ export function RouteSection() {
                  <button
                    type="button"
                    onClick={requestRecommendation}
-                   disabled={recommendationRequested && isLoading}
+                   disabled={isLoading}
                    className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
                  >
-                   {fr ? "Calculer la recommandation" : "Calculate recommendation"}
+                   {fr
+                     ? recommendationRequested
+                       ? "Recalculer la recommandation"
+                       : "Calculer la recommandation"
+                     : recommendationRequested
+                       ? "Recalculate recommendation"
+                       : "Calculate recommendation"}
                  </button>
                ) : (
                  <Link
@@ -112,6 +134,28 @@ export function RouteSection() {
                   : "Unable to compute priority stops. Check location settings."}
               </p>
             </motion.div>
+          )}
+
+          {dataStatusMessage && data && (
+            <div
+              role="status"
+              data-route-data-status={data.dataStatus}
+              className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-5 py-4 text-sm font-semibold text-amber-50"
+            >
+              <p>{dataStatusMessage}</p>
+              {data.isTruncated && (
+                <p className="mt-1 text-xs font-medium text-amber-100/75">
+                  {fr
+                    ? "Le volume chargé a atteint la limite de recommandation."
+                    : "The loaded volume reached the recommendation limit."}
+                </p>
+              )}
+              {data.sourceHealth.warnings.map((warning) => (
+                <p key={warning} className="mt-1 text-xs font-medium text-amber-100/75">
+                  {warning}
+                </p>
+              ))}
+            </div>
           )}
 
           <AnimatePresence mode="wait">

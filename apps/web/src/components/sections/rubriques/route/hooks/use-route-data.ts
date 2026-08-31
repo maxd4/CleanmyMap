@@ -9,6 +9,11 @@ import {
   readRouteDraftConstraints,
   writeRouteDraftConstraints,
 } from "../route-draft-storage";
+import {
+  createRouteRecommendationRequest,
+  fetchRouteRecommendation,
+  type RouteRecommendationRequest,
+} from "../route-request";
 
 export function useRouteData() {
   const { locale } = useSitePreferences();
@@ -18,7 +23,9 @@ export function useRouteData() {
     ...DEFAULT_ROUTE_CONSTRAINTS,
   }));
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
-  const [recommendationRequested, setRecommendationRequested] = useState(false);
+  const [recommendationRequest, setRecommendationRequest] =
+    useState<RouteRecommendationRequest | null>(null);
+  const requestSequence = useRef(0);
   const draftEditedBeforeHydration = useRef(false);
 
   const setConstraints = useCallback<React.Dispatch<React.SetStateAction<RouteConstraints>>>((update) => {
@@ -52,19 +59,15 @@ export function useRouteData() {
   }, [constraints, isDraftHydrated]);
 
   const { data, isLoading, error } = useSWR<RouteResponse>(
-    recommendationRequested ? ["section-route", JSON.stringify(constraints)] : null,
-    async () => {
-      const response = await fetch("/api/route/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(constraints),
-      });
-
-      if (!response.ok) {
-        throw new Error(fr ? "Route indisponible" : "Route unavailable");
-      }
-
-      return (await response.json()) as RouteResponse;
+    recommendationRequest
+      ? ["section-route", recommendationRequest]
+      : null,
+    ([, request]: readonly [string, RouteRecommendationRequest]) =>
+      fetchRouteRecommendation(request),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
     },
   );
 
@@ -105,7 +108,12 @@ export function useRouteData() {
     hasData,
     hasRoute,
     fr,
-    recommendationRequested,
-    requestRecommendation: () => setRecommendationRequested(true),
+    recommendationRequested: recommendationRequest !== null,
+    requestRecommendation: () => {
+      requestSequence.current += 1;
+      setRecommendationRequest(
+        createRouteRecommendationRequest(requestSequence.current, constraints),
+      );
+    },
   };
 }
