@@ -19,9 +19,14 @@ médias et rapports présents sous `scripts/`.
   le contrôle de pré-commit doit utiliser exclusivement la portée `STAGED`,
   issue de `git diff --cached`, et ignorer le dirty state et les untracked
   étrangers ;
-- le contrôle de pré-push doit utiliser exclusivement la portée `COMMITTED
-  RANGE`, issue de `origin/main...HEAD`, et scanner le contenu commité plutôt
-  que le checkout courant ;
+- le contrôle de pré-push réel doit utiliser exclusivement la portée
+  `PUSH_CANDIDATE`, construite à partir des refs et des lignes stdin fournies
+  par le protocole pre-push Git ; il doit scanner les ranges effectivement
+  envoyés plutôt que `HEAD`, `origin/main` ou le checkout courant ;
+- l'invocation manuelle du guard sans protocole peut utiliser le fallback
+  `origin/main...HEAD`, affiché explicitement comme `manual-fallback` ;
+- `STAGED` et `PUSH_CANDIDATE` sont distincts : le premier décrit le candidat
+  du commit, le second les refs réellement transmises au push ;
 - toute modification d'un hook ou d'un script de scope doit préserver ces
   frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
   candidat et un fichier étranger hors candidat lorsque pertinent.
