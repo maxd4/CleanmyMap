@@ -23,6 +23,47 @@ Il classe les dossiers lourds avant tout nettoyage automatique et distingue ce q
 | `scratch` | `0.03 MB` | Oui, plusieurs scripts utiles existent | Scripts ponctuels et brouillons techniques | Selon le script; pas de suppression globale | Non | Non | Non | `PRESERVE_PROJECT` |
 | `.vercel` | `39.27 MB` | Non | Liaison Vercel locale et variables de preview | `vercel link` / reconfiguration Vercel | Non | Oui, pour le déploiement local et preview | Non | `PRESERVE_PROJECT` |
 
+## Politique de rétention des sorties locales
+
+Les sorties générées peuvent exister pendant une exécution locale, mais elles
+ne doivent pas devenir un stock permanent dans le checkout. Un fichier ignoré
+par Git n'est pas automatiquement supprimable : sa provenance, son producteur,
+sa régénérabilité et son rôle doivent être établis avant toute suppression.
+
+- `artifacts/` est réservé aux sorties locales d'un run : rapports, exports,
+  captures, logs et snapshots temporaires. Chaque run doit utiliser un
+  sous-dossier nommé et être classé à la fin en `KEEP`,
+  `EXTRACT_THEN_DELETE`, `DELETE` ou `REVIEW`.
+- `.artifacts/` est réservé aux preuves durables explicitement retenues et
+  référencées. Une preuve conservée doit rester minimale et documenter sa
+  commande productrice, sa date, son SHA ou état Git pertinent et ses hashes
+  lorsqu'ils sont nécessaires à l'intégrité. Ce n'est pas un espace de cache.
+- Ne jamais conserver dans `artifacts/` ou `.artifacts/` une copie complète du
+  dépôt, un clone imbriqué, `.git`, `node_modules`, `.next`, un cache de build,
+  un log de travail ou un dump temporaire. Ces éléments sont reproductibles ou
+  locaux par nature et doivent être supprimés après vérification de l'absence
+  de dépendance active.
+- Une copie complète nécessaire à un diagnostic doit rester exceptionnelle,
+  limitée à la durée du diagnostic et supprimée dès que les preuves utiles ont
+  été extraites. Elle ne doit jamais être utilisée comme emplacement de
+  sauvegarde permanent dans le checkout.
+- Avant la suppression, vérifier les références actives, les processus
+  producteurs et l'état Git. Ne jamais supprimer un fichier uniquement parce
+  qu'il est untracked, ancien ou absent des imports. Toute utilité incertaine
+  reste en `REVIEW`.
+- Les migrations, fixtures, données locales, configurations, secrets locaux,
+  `.clerk`, `.vercel`, `.mcp.json`, `.env*` et les preuves de validation encore
+  référencées ne sont pas des temporaires par défaut.
+
+Checklist de fin de run :
+
+1. classer chaque sortie locale selon sa provenance et son rôle ;
+2. extraire uniquement les preuves nécessaires vers leur emplacement canonique ;
+3. supprimer les seuls éléments `DELETE` dont la régénération et l'absence de
+   rôle canonique sont prouvées ;
+4. contrôler `git status --short`, `git diff --cached --name-status` et
+   `git check-ignore` pour confirmer qu'aucun temporaire n'est suivi ou staged.
+
 ## Décisions déjà prises
 
 - Le cache Next utile au démarrage local reste conservé.

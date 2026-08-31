@@ -1,8 +1,0 @@
-{
-  "name": "CleanMyMap Templates Generator",
-  "id": "cleanmymap-templates-generator-local",
-  "api": "1.0.0",
-  "main": "code.js",
-  "editorType": ["figma"]
-}
-
