@@ -13,6 +13,19 @@ médias et rapports présents sous `scripts/`.
   donnée, un artefact ou un environnement ;
 - privilégier une validation ciblée avant une suite lourde.
 
+## Portée Git des contrôles
+
+- les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;
+  le contrôle de pré-commit doit utiliser exclusivement la portée `STAGED`,
+  issue de `git diff --cached`, et ignorer le dirty state et les untracked
+  étrangers ;
+- le contrôle de pré-push doit utiliser exclusivement la portée `COMMITTED
+  RANGE`, issue de `origin/main...HEAD`, et scanner le contenu commité plutôt
+  que le checkout courant ;
+- toute modification d'un hook ou d'un script de scope doit préserver ces
+  frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
+  candidat et un fichier étranger hors candidat lorsque pertinent.
+
 Le fichier `scripts/heavy-files-baseline.json` est un inventaire temporaire de
 dette historique, pas une autorisation permanente de dépasser les seuils. Ne
 pas y ajouter une entrée pour contourner un garde-fou. Lorsqu'un fichier sort

@@ -71,11 +71,14 @@ intermédiaires ne doivent pas commencer par ce canari.
   explicite (jamais `git add -A`) et vérifie
   `git diff --cached --name-only` avant le commit ;
 - un commit doit contenir exclusivement les fichiers du lot courant ; les
-  changements parallèles hors périmètre restent non stagés et préservés ;
-- ne pas créer systématiquement de clone, Pull Request, branche temporaire ou
-  worktree isolé ; ces contextes restent exceptionnels et nécessitent une
-  règle applicable ou une autorisation explicite ; ne jamais pousser avec
-  `--force` ni réécrire l'historique publié ;
+  changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
+  préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
+- le dossier du projet est l'unique source canonique ; ne pas créer ni
+  conserver de copie persistante du dépôt, copie de fichier, clone, branche
+  temporaire ou worktree isolé ; une sandbox de publication éphémère n'est
+  permise qu'en cas de commit étranger à publier, divergence/race ou
+  resynchronisation dangereuse, depuis le dernier `origin/main`, avec la seule
+  allowlist du lot, puis suppression avant la fin du chantier ;
 - Git pousse des commits, pas des fichiers ; avant de pousser, après
   `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
   et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
@@ -88,7 +91,19 @@ intermédiaires ne doivent pas commencer par ce canari.
 - si `origin/main` avance, faire d'abord `git fetch origin main` ; une
   évolution distante indépendante du lot autorise une resynchronisation sûre
   sans écraser les changements parallèles, suivie des validations et du push ;
-  un conflit réel sur les fichiers ou contrats du lot impose un STOP explicite ;
+  si cette resynchronisation n'est pas sûre dans le checkout partagé, utiliser
+  la sandbox de publication éphémère ci-dessus ; un conflit réel sur les
+  fichiers ou contrats du lot impose un STOP explicite ;
+- distinguer les trois portées de validation : `WORKTREE` pour l'itération
+  manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
+  pré-commit (`git diff --cached`) et `COMMITTED RANGE` pour le pré-push
+  (`origin/main...HEAD`, sans dépendre du dirty state) ;
+- le flux normal de publication est : allowlist → stage ciblé → validation
+  `STAGED` → commit → `git fetch origin main` → vérification d'ascendance et de
+  périmètre → validation `COMMITTED RANGE` → push normal. En sandbox, transférer
+  aussi les ajouts et suppressions de l'allowlist, vérifier l'absence de fichier
+  étranger, puis appliquer au plus une nouvelle tentative bornée après une
+  avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes, `git diff --cached --name-only` et l'ascendance réellement
   destinée au push ; après création du commit local, ne pas exiger l'égalité
@@ -129,9 +144,12 @@ ci-dessus.
   du projet, notamment le code, les tests, la documentation, les scripts, les
   données et les artefacts, selon les emplacements canoniques de son
   architecture ;
-- ne pas créer par commodité de dossier parallèle, copie persistante, clone,
-  worktree ou arborescence hors projet ailleurs sous `business` ou sur la
-  machine, notamment un dépôt ou dossier `CleanmyMap-*` parallèle ;
+- le dossier du projet est la source canonique unique ; ne pas créer ni
+  conserver par commodité de dossier parallèle, copie persistante, clone,
+  worktree ou arborescence de projet hors racine sous `business` ou sur la
+  machine, notamment un dépôt ou dossier `CleanmyMap-*` parallèle ; seule la
+  sandbox de publication éphémère explicitement autorisée par la gouvernance
+  Git fait exception et doit être supprimée avant la fin du chantier ;
 - respecter et étendre l'arborescence canonique existante ; ne pas créer de
   structure ambiguë ou dupliquée lorsqu'un contenu possède déjà un emplacement
   canonique ; la racine du projet reste la source canonique des fichiers
@@ -272,3 +290,26 @@ Si plusieurs chantiers se mélangent ou si une décision importante risque d'êt
 perdue, ne pas reconstruire approximativement le contexte : fournir une
 passation courte avec l'état, le dernier commit, les fichiers, les décisions
 et la prochaine étape, puis attendre confirmation avant de continuer.
+
+## Interdiction stricte des copies persistantes hors projet
+
+- La racine de ce dépôt est l’unique emplacement canonique de travail.
+- Cette règle prévaut sur toute mention générale d’un répertoire temporaire
+  système pour du contenu issu du projet.
+- Il est interdit de créer, copier, cloner, snapshotter, exporter ou conserver
+  hors de cette racine un fichier ou dossier issu du projet à titre persistant,
+  notamment une copie complète, un backup, un staging durable, un worktree ou
+  un clone Git.
+- Cette interdiction couvre `%TEMP%`, `%TMP%`, `%LOCALAPPDATA%`, le dossier
+  parent `business`, les dossiers frères et tout autre chemin externe.
+- Utiliser uniquement un emplacement canonique déjà prévu sous la racine
+  (`work/`, `artifacts/` ou `.artifacts/` selon le dépôt) pour les fichiers de
+  travail et preuves. Ne jamais diriger volontairement un outil vers `%TEMP%`
+  pour y déposer du contenu du projet.
+- Si une sandbox externe devient nécessaire pour la publication, elle doit
+  respecter exclusivement la procédure Git ci-dessus : chemin éphémère,
+  dernier `origin/main`, allowlist complète, aucune modification étrangère,
+  suppression vérifiée avant la fin. Toute autre copie externe est `BLOCKED`.
+- Avant de clôturer, vérifier qu’aucune copie externe n’a été créée par le lot;
+  les éventuels artefacts internes générés hors du contrôle de l’agent ne
+  constituent pas une autorisation de reproduire ce comportement.

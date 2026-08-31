@@ -12,7 +12,8 @@ Designed for local iteration:
 This script is additive and does not replace CI checks.
 #>
 param(
-    [switch]$IncludeBuild
+    [switch]$IncludeBuild,
+    [switch]$StagedOnly
 )
 
 Set-StrictMode -Version Latest
@@ -28,6 +29,14 @@ function Test-GeneratedUntrackedPath([string]$Path) {
 }
 
 function Get-ChangedFiles {
+    if ($StagedOnly) {
+        # Pre-commit scope: the index is the candidate, never the dirty
+        # worktree or untracked files.
+        return @(git diff --cached --name-only --diff-filter=ACMRTUXB --) |
+            Where-Object { $_ -and $_.Trim() } |
+            Sort-Object -Unique
+    }
+
     $changed = @()
     $changed += git diff --name-only --diff-filter=ACMRTUXB HEAD --
     $changed += git diff --cached --name-only --diff-filter=ACMRTUXB --
@@ -53,7 +62,11 @@ function Invoke-Step([string]$Label, [scriptblock]$Action) {
 
 $changedFiles = @(Get-ChangedFiles)
 if ($changedFiles.Count -eq 0) {
-    Write-Host "[quick] No changed files detected."
+    if ($StagedOnly) {
+        Write-Host "[quick] No staged files detected."
+    } else {
+        Write-Host "[quick] No changed files detected."
+    }
     exit 0
 }
 
@@ -67,6 +80,11 @@ $webTestFilesRelative = @($webTestFiles | ForEach-Object { $_ -replace '^apps/we
 
 $pythonFiles = @($changedFiles | Where-Object { $_ -match "\.py$" })
 
+if ($StagedOnly) {
+    Write-Host "[quick] scope: STAGED"
+} else {
+    Write-Host "[quick] scope: WORKTREE"
+}
 Write-Host "[quick] changed total: $($changedFiles.Count)"
 Write-Host "[quick] changed web source files: $($webSourceFiles.Count)"
 Write-Host "[quick] changed web test files: $($webTestFiles.Count)"
