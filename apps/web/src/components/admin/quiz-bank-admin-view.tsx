@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Filter, RotateCcw, ShieldAlert } from "lucide-react";
 import { AdminSectionHeader } from "@/components/admin/admin-dashboard-ui";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { SourceBadge, StatCard } from "@/components/ui/page-structure";
 import { cn } from "@/lib/utils";
 import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz/quiz-access-types";
@@ -150,11 +151,11 @@ function getQuestionTone(question: QuizBankAdminQuestion): "rose" | "amber" | "e
 
 function QuestionCard({ question }: { question: QuizBankAdminQuestion }) {
   return (
-    <details
+    <CmmDisclosure
       id={question.id}
-      className="group rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-[0_16px_40px_-32px_rgba(69,45,28,0.2)]"
-    >
-      <summary className="cursor-pointer list-none">
+      tone={getQuestionTone(question)}
+      size="lg"
+      summary={
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -190,8 +191,8 @@ function QuestionCard({ question }: { question: QuizBankAdminQuestion }) {
             <span>{question.sourceFlags.length} alerte{question.sourceFlags.length > 1 ? "s" : ""} source</span>
           </div>
         </div>
-      </summary>
-
+      }
+    >
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <section className="rounded-[1.25rem] border border-stone-200 bg-stone-50 p-4">
           <p className="text-[11px] font-black uppercase tracking-[0.22em] text-stone-500">
@@ -300,7 +301,7 @@ function QuestionCard({ question }: { question: QuizBankAdminQuestion }) {
           </div>
         </section>
       </div>
-    </details>
+    </CmmDisclosure>
   );
 }
 

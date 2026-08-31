@@ -173,6 +173,7 @@ Invoke-ParallelSteps @(
     [pscustomobject]@{ Label = "check:surfaces"; Command = "npm run check:surfaces" },
     [pscustomobject]@{ Label = "check:actions"; Command = "npm run check:actions" },
     [pscustomobject]@{ Label = "check:forms"; Command = "npm run check:forms" },
+    [pscustomobject]@{ Label = "check:disclosure"; Command = "npm run check:disclosure" },
     [pscustomobject]@{ Label = "check:states"; Command = "npm run check:states" }
 ) 3
 
