@@ -187,6 +187,9 @@ pytest, build, Turbopack et E2E. Ne pas laisser tourner de serveur, watcher,
 worker ou processus local après la validation. Ne pas explorer par défaut
 `node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`,
 `.codex-remote-attachments/`, `artifacts/` ou `backups/`.
+Si Codex utilise Docker pendant une exécution, fermer proprement Docker
+Desktop à la fin, après les validations, et vérifier son arrêt avant le
+rapport final ; ne le laisser actif que sur demande explicite de l'utilisateur.
 
 ## Validation
 
