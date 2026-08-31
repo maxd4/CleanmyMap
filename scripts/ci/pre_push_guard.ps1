@@ -39,10 +39,9 @@ function Invoke-GuardStep {
 
     function Get-ChangedFiles {
         $changed = @()
-        $changed += @(git diff --name-only --diff-filter=ACMRTUXB HEAD --)
-        $changed += @(git diff --cached --name-only --diff-filter=ACMRTUXB --)
-        $changed += @(git ls-files --others --exclude-standard)
-
+        # Scope push validation to committed changes only. A pre-push hook must
+        # not let unrelated staged, unstaged, or untracked worktree files alter
+        # the gates selected for the commits being sent.
         $upstream = @(git rev-parse --verify --quiet origin/main 2>$null)
         if ($LASTEXITCODE -eq 0 -and $upstream.Count -gt 0) {
             $changed += @(git diff --name-only --diff-filter=ACMRTUXB "$($upstream[0])...HEAD" --)
