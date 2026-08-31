@@ -33,6 +33,17 @@ describe("waste UX registry wiring", () => {
     expect(read("components/sections/rubriques/use-trash-spotter.ts")).not.toContain("createSpot");
   });
 
+  it("never persists precise geolocation in the anonymous signalement draft", () => {
+    const quickForm = read("components/actions/quick-signalement-form.tsx");
+    const anonymousBranch = quickForm.match(
+      /if \(!isAuthenticated\) \{[\s\S]*?setAuthRequired\(true\);/,
+    )?.[0];
+
+    expect(anonymousBranch).toContain("serializeQuickSignalementDraft({ recordType, selectedCategories })");
+    expect(anonymousBranch).not.toContain("location");
+    expect(quickForm).not.toContain("draft.location");
+  });
+
   it("keeps the selector usable on narrow and wide layouts", () => {
     const selector = read("components/waste/waste-category-selector.tsx");
     expect(selector).toContain("min-h-12");
