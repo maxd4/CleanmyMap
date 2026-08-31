@@ -177,6 +177,8 @@ function parseArgs(argv) {
       : null,
     scope: "worktree",
     ref: null,
+    candidateRefs: [],
+    candidateRanges: [],
     showHelp: false,
   };
 
@@ -188,8 +190,8 @@ function parseArgs(argv) {
     } else if (arg === "--no-allowlist") {
       options.allowlistPath = null;
     } else if (arg === "--staged-only") {
-      if (options.ref) {
-        throw new Error("--staged-only cannot be combined with --ref");
+      if (options.ref || options.candidateRefs.length > 0 || options.candidateRanges.length > 0) {
+        throw new Error("--staged-only cannot be combined with another scan scope");
       }
       options.scope = "staged";
     } else if (arg.startsWith("--ref=")) {
@@ -197,14 +199,38 @@ function parseArgs(argv) {
       if (!ref) {
         throw new Error("--ref requires a Git ref");
       }
-      if (options.scope === "staged") {
-        throw new Error("--ref cannot be combined with --staged-only");
+      if (options.scope === "staged" || options.scope === "candidate") {
+        throw new Error("--ref cannot be combined with another scan scope");
       }
       options.ref = ref;
       options.scope = "ref";
+    } else if (arg.startsWith("--candidate-ref=")) {
+      if (options.scope !== "worktree" && options.scope !== "candidate") {
+        throw new Error("--candidate-ref cannot be combined with another scan scope");
+      }
+      const ref = arg.slice("--candidate-ref=".length).trim();
+      if (!ref) {
+        throw new Error("--candidate-ref requires a Git ref");
+      }
+      options.candidateRefs.push(ref);
+      options.scope = "candidate";
+    } else if (arg.startsWith("--candidate-range=")) {
+      if (options.scope !== "worktree" && options.scope !== "candidate") {
+        throw new Error("--candidate-range cannot be combined with another scan scope");
+      }
+      const range = arg.slice("--candidate-range=".length).trim();
+      if (!range) {
+        throw new Error("--candidate-range requires a Git range");
+      }
+      options.candidateRanges.push(range);
+      options.scope = "candidate";
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
+  }
+
+  if (options.scope === "candidate" && options.candidateRefs.length !== options.candidateRanges.length) {
+    throw new Error("--candidate-ref and --candidate-range must be provided in matching pairs");
   }
 
   return options;
@@ -218,6 +244,8 @@ Options:
   --no-allowlist     Run without any allowlist.
   --staged-only      Scan only staged candidate files from the Git index.
   --ref=REF          Scan the committed tree at REF, ignoring the worktree.
+  --candidate-ref=REF --candidate-range=RANGE
+                     Scan only files changed by RANGE in the committed candidate REF.
   --help             Show this help.
 
 Allowlist entries:
@@ -268,6 +296,13 @@ function listStagedFiles() {
 
 function listRefFiles(ref) {
   return listGitFiles(["ls-tree", "-r", "--name-only", "-z", ref, "--"]);
+}
+
+function listCandidateFiles(candidates) {
+  const files = candidates.flatMap(({ range }) =>
+    listGitFiles(["diff", "--name-only", "--diff-filter=ACMRTUXB", "-z", range, "--"]),
+  );
+  return [...new Set(files)];
 }
 
 function shouldScan(relativePath) {
@@ -493,11 +528,28 @@ function main() {
   } else if (options.scope === "ref") {
     files = listRefFiles(options.ref).filter(shouldScan);
     findings = scanGitFiles(files, options.ref);
+  } else if (options.scope === "candidate") {
+    const candidates = options.candidateRefs.map((ref, index) => ({
+      ref,
+      range: options.candidateRanges[index],
+    }));
+    const filesByCandidate = candidates.map(({ ref, range }) => ({
+      ref,
+      files: listCandidateFiles([{ range }]).filter(shouldScan),
+    }));
+    files = [...new Set(filesByCandidate.flatMap(({ files: candidateFiles }) => candidateFiles))];
+    findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) =>
+      scanGitFiles(candidateFiles, ref),
+    );
   } else {
     files = listRepoFiles().filter(shouldScan);
     findings = files.flatMap(scanFile);
   }
   findings = findings.filter((finding) => !isAllowed(finding, allowlist));
+
+  if (options.scope === "candidate") {
+    console.log(`[secret-audit] scope: PUSH_CANDIDATE (${options.candidateRefs.length} candidate ref(s))`);
+  }
 
   printSummary(findings, files.length, options.allowlistPath);
   if (findings.length > 0) {
