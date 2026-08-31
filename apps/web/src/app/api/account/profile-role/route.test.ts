@@ -121,6 +121,41 @@ describe("POST /api/account/profile-role", () => {
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalled();
   });
 
+  it.each([
+    ["benevole", "coordinateur"],
+    ["coordinateur", "scientifique"],
+    ["scientifique", "entreprise"],
+    ["entreprise", "benevole"],
+  ])("keeps the self-service role cycle available: %s -> %s", async (currentRole, targetRole) => {
+    getCurrentUserRoleLabelMock.mockResolvedValue(currentRole);
+    const getUser = vi.fn().mockResolvedValue({
+      id: "user-1",
+      publicMetadata: { role: currentRole },
+      privateMetadata: {},
+    });
+    const updateUser = vi.fn().mockResolvedValue({
+      id: "user-1",
+      publicMetadata: { role: targetRole, profile: targetRole },
+      privateMetadata: { role: targetRole, profile: targetRole },
+    });
+    clerkClientMock.mockResolvedValue({
+      users: { getUser, updateUser },
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/account/profile-role", {
+        method: "POST",
+        body: JSON.stringify({ profile: targetRole }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).role).toBe(targetRole);
+    expect(updateUser).toHaveBeenCalledTimes(1);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+  });
+
   it("stores the canonical max value for the IMU profile", async () => {
     getCurrentUserRoleLabelMock.mockResolvedValue("admin");
     const getUser = vi.fn().mockResolvedValue({
