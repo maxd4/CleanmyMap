@@ -21,6 +21,11 @@ const RLS_ADVISOR_NAMES = new Set([
   "policy_exists_rls_disabled",
 ]);
 
+const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = new Set([
+  "legal_content_reports",
+  "legal_content_report_decisions",
+]);
+
 function normalizeAdvisorName(value) {
   return String(value ?? "")
     .trim()
@@ -79,8 +84,28 @@ function findingName(finding) {
   return "";
 }
 
+function isAllowedServerOnlyRlsInfo(finding) {
+  const name = normalizeAdvisorName(findingName(finding));
+  const level = typeof finding?.level === "string" ? finding.level.trim().toUpperCase() : "";
+  const metadata = finding?.metadata;
+  const tableName = typeof metadata?.name === "string" ? metadata.name : "";
+  const detail = typeof finding?.detail === "string" ? finding.detail : "";
+
+  return (
+    name === "rls_enabled_no_policy" &&
+    level === "INFO" &&
+    metadata?.type === "table" &&
+    ALLOWED_SERVER_ONLY_RLS_INFO_TABLES.has(tableName) &&
+    detail === `Table \`public.${tableName}\` has RLS enabled, but no policies exist`
+  );
+}
+
 function isRlsContractFinding(finding) {
   const name = normalizeAdvisorName(findingName(finding));
+  if (isAllowedServerOnlyRlsInfo(finding)) {
+    return false;
+  }
+
   if (RLS_ADVISOR_NAMES.has(name)) {
     return true;
   }
