@@ -19,6 +19,12 @@ import {
   buildQuickSignalementPayload,
   type QuickSignalementRecordType,
 } from "@/lib/actions/signalement/quick-signalement";
+import {
+  parseQuickSignalementDraft,
+  serializeQuickSignalementDraft,
+} from "@/lib/actions/signalement/quick-signalement-draft";
+
+const PENDING_DRAFT_STORAGE_KEY = "cmm:signalement:pending-draft:v1";
 
 export type TrashSpotterObservationFormProps = {
   initialLocation?: { lat: number; lng: number } | null;
@@ -56,26 +62,24 @@ export function TrashSpotterObservationForm({
 
   useEffect(() => {
     try {
-      const rawDraft = window.sessionStorage.getItem("cmm:signalement:pending-draft:v1");
+      const rawDraft = window.sessionStorage.getItem(PENDING_DRAFT_STORAGE_KEY);
       if (rawDraft) {
-        const draft = JSON.parse(rawDraft) as {
-          recordType?: QuickSignalementRecordType;
-          selectedCategories?: WasteCategorySlug[];
-          location?: { lat: number; lng: number } | null;
-        };
-        if (draft.recordType === "spot" || draft.recordType === "clean_place") {
+        const draft = parseQuickSignalementDraft(rawDraft);
+        if (draft?.recordType) {
           setRecordType(draft.recordType);
         }
-        if (Array.isArray(draft.selectedCategories)) {
+        if (draft?.selectedCategories) {
           setSelectedCategories(draft.selectedCategories);
         }
-        if (
-          draft.location &&
-          Number.isFinite(draft.location.lat) &&
-          Number.isFinite(draft.location.lng)
-        ) {
-          setLocation(draft.location);
-          setLocStatus("success");
+
+        if (draft) {
+          // Also migrate legacy drafts so precise coordinates do not remain in storage.
+          window.sessionStorage.setItem(
+            PENDING_DRAFT_STORAGE_KEY,
+            serializeQuickSignalementDraft(draft),
+          );
+        } else {
+          window.sessionStorage.removeItem(PENDING_DRAFT_STORAGE_KEY);
         }
       }
     } catch {
@@ -108,8 +112,8 @@ export function TrashSpotterObservationForm({
     if (!isAuthenticated) {
       try {
         window.sessionStorage.setItem(
-          "cmm:signalement:pending-draft:v1",
-          JSON.stringify({ recordType, selectedCategories, location }),
+          PENDING_DRAFT_STORAGE_KEY,
+          serializeQuickSignalementDraft({ recordType, selectedCategories }),
         );
       } catch {
         // Local resume data is optional; the authentication CTA remains usable.
@@ -138,7 +142,7 @@ export function TrashSpotterObservationForm({
       );
       setSubmittedSignalementId(created.id);
       try {
-        window.sessionStorage.removeItem("cmm:signalement:pending-draft:v1");
+        window.sessionStorage.removeItem(PENDING_DRAFT_STORAGE_KEY);
       } catch {
         // Ignore cleanup failures after a successful server mutation.
       }
