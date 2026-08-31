@@ -6,7 +6,7 @@ import {
 } from "../../../scripts/supabase-security-advisors.mjs";
 
 describe("Supabase security advisor guard", () => {
-  it("loads INFO findings so RLS no-policy findings cannot be hidden", () => {
+  it("allows only the two documented server-only INFO findings", () => {
     expect(SECURITY_ADVISOR_COMMAND_OPTIONS).toEqual([
       "--type",
       "security",
@@ -18,14 +18,64 @@ describe("Supabase security advisor guard", () => {
       "json",
     ]);
 
+    const allowedFindings = [
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail: "Table `public.legal_content_reports` has RLS enabled, but no policies exist",
+        metadata: { name: "legal_content_reports", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail:
+          "Table `public.legal_content_report_decisions` has RLS enabled, but no policies exist",
+        metadata: { name: "legal_content_report_decisions", type: "table" },
+      },
+    ];
+
+    expect(
+      findRlsContractFindings(JSON.stringify(allowedFindings)),
+    ).toEqual([]);
+
     expect(
       findRlsContractFindings(
         JSON.stringify([
-          { name: "rls_enabled_no_policy", level: "INFO" },
-          { name: "extension_in_public", level: "WARN" },
+          ...allowedFindings,
+          {
+            name: "rls_enabled_no_policy",
+            level: "INFO",
+            detail: "Table `public.other_table` has RLS enabled, but no policies exist",
+            metadata: { name: "other_table", type: "table" },
+          },
         ]),
       ),
-    ).toHaveLength(1);
+    ).toEqual([
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail: "Table `public.other_table` has RLS enabled, but no policies exist",
+        metadata: { name: "other_table", type: "table" },
+      },
+    ]);
+  });
+
+  it("keeps the allowlist fail-closed for severity, table, and payload changes", () => {
+    const base = {
+      name: "rls_enabled_no_policy",
+      detail: "Table `public.legal_content_reports` has RLS enabled, but no policies exist",
+      metadata: { name: "legal_content_reports", type: "table" },
+    };
+
+    for (const finding of [
+      { ...base, level: "WARN" },
+      { ...base, level: "ERROR" },
+      { ...base, metadata: { name: "other_table", type: "table" } },
+      { ...base, metadata: { name: "legal_content_reports", type: "view" } },
+      { ...base, detail: "Table `private.legal_content_reports` has RLS enabled, but no policies exist" },
+    ]) {
+      expect(findRlsContractFindings(JSON.stringify([finding]))).toEqual([finding]);
+    }
   });
 
   it("fails closed on each known RLS contract violation and renamed equivalents", () => {
