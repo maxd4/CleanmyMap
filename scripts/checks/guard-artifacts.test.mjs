@@ -8,8 +8,8 @@ import { afterEach, describe, it } from "node:test";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WEB_SOURCE = join(ROOT, "apps", "web", "src");
 const STRESS_DIR = join(WEB_SOURCE, "..", ".next-codex-guard-stress");
-const QUICK_SENTINEL = join(WEB_SOURCE, "__codex-quick-guard-sentinel.ts");
-const QUICK_TEST_SENTINEL = join(WEB_SOURCE, "__codex-quick-guard-sentinel.test.ts");
+const QUICK_SENTINEL = join(WEB_SOURCE, "components", "__codex-quick-guard-sentinel.ts");
+const QUICK_TEST_SENTINEL = join(WEB_SOURCE, "components", "__codex-quick-guard-sentinel.test.ts");
 const SECRET_SENTINEL = join(WEB_SOURCE, "__codex-secret-audit-sentinel.ts");
 const CLEAN_SENTINEL = join(WEB_SOURCE, "__codex-secret-audit-clean-sentinel.ts");
 
