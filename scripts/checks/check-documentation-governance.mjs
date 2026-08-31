@@ -17,7 +17,6 @@ const skippedPathParts = [
   `${path.sep}documentation${path.sep}development${path.sep}DOCUMENTATION_POLICY.md`,
   `${path.sep}documentation${path.sep}documentation-push-status.md`,
   `${path.sep}documentation${path.sep}AGENTS.md`,
-  `${path.sep}documentation${path.sep}maintenance${path.sep}vercel_deployments.txt`,
   `${path.sep}documentation${path.sep}operations${path.sep}agent-memory-governance.md`,
   `${path.sep}documentation${path.sep}operations${path.sep}session-standard-runbook.md`,
 ];
@@ -29,8 +28,6 @@ const forbiddenReferences = [
   "sessions\\",
   "rapport_IA/",
   "rapport_IA\\",
-  "maintenance/vercel_deployments.txt",
-  "maintenance\\vercel_deployments.txt",
   "plans/",
   "plans\\",
   "operations/agent-memory-governance.md",
@@ -43,15 +40,7 @@ const forbiddenReferences = [
 
 const allowedReferencesByFile = new Map([
   [
-    path.join(docsRoot, "gamification", "README.md"),
-    new Set(["sessions/", "sessions\\"]),
-  ],
-  [
     path.join(docsRoot, "features", "master-pack.md"),
-    new Set(["sessions/", "sessions\\"]),
-  ],
-  [
-    path.join(docsRoot, "gamification", "BADGE_CATALOG.md"),
     new Set(["sessions/", "sessions\\"]),
   ],
 ]);

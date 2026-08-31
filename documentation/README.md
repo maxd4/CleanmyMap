@@ -25,7 +25,7 @@ Avant toute modification ciblant le dépôt :
 | Affichage des scores UI | `development/ui-score-formatting.md` |
 | Produit | `product/README.md` |
 | Fonctionnalités | `features/README.md` |
-| Gamification | `gamification/README.md` |
+| Gamification | `features/GAMIFICATION_ENGINE.md` puis la spec canonique liée |
 | Design system | `design-system/README.md` |
 | Pages et routes | `pages_site/INDEX.md` |
 | Exploitation | `operations/README.md` |
@@ -80,7 +80,6 @@ documentation/
 │   └── generated/board/
 ├── development/
 ├── features/
-├── gamification/
 ├── operations/
 ├── pages_site/
 │   ├── INDEX.md

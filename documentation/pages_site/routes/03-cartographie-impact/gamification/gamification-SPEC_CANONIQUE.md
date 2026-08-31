@@ -32,8 +32,7 @@ Ordre de confiance:
 1. le code métier dans `apps/web/src/app/api/gamification/badges/list/route.ts` et les modules `apps/web/src/lib/gamification/*`;
 2. les composants UI dans `apps/web/src/components/gamification/*`;
 3. cette spec canonique;
-4. le catalogue détaillé `documentation/gamification/BADGE_CATALOG.md`;
-5. les mémoires produit `documentation/product/*`.
+4. les mémoires produit `documentation/product/*`.
 
 Si un document secondaire contredit cette spec, cette spec prime.
 
@@ -196,8 +195,9 @@ But:
 
 Règles:
 
-- sources: `trash_spotter_spots` et `spots`;
-- fusion des deux sources avant comptage;
+- source métier courante: `trash_spotter_spots` uniquement;
+- `spots` n'est jamais relue pour constituer les candidats;
+- les anciennes clés `spots` dans `progression_events` restent reconnues uniquement pour compatibilité historique et idempotence;
 - dédoublonnage par clé canonique de lieu;
 - cooldown de `24h` avant comptage;
 - XP: `+1` par palier;
@@ -371,12 +371,15 @@ Règles:
 
 ## Documents de soutien
 
-- [Catalogue des badges](../../../../gamification/BADGE_CATALOG.md)
 - [Gamification non competitive](../../../../product/gamification-non-competitive.md)
 - [Objectifs validés](../../../../product/objectifs-valides.md)
 - [Objectifs non pertinents](./gamification-objectifs-non-pertinents.md)
 
 ## Vérification
+
+La surface administrative d'audit XP est `/admin/gamification/xp-audit` et
+doit appeler `checkAdminAccess()` avant toute lecture privilégiée. Les règles
+générales d'autorisation restent définies dans la doctrine sécurité dédiée.
 
 Cette spec doit rester alignée avec:
 

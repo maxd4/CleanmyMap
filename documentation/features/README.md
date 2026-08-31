@@ -10,11 +10,9 @@ Documentation des fonctionnalités pour agents IA.
 - **group-action.md** - Guide utilisateur du flux d'action de groupe
 
 ### Gamification
-- **GAMIFICATION_ENGINE.md** - Moteur de gamification complet
-  - Système de badges
-  - Progression utilisateur
-  - Leaderboard
-  - Récompenses
+- **GAMIFICATION_ENGINE.md** - Point d'entrée technique du moteur et de ses
+  frontières
+  - Lire ensuite la [spécification canonique](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
 
 ### Rapports
 - **master-pack.md** - Référence courante vérifiée du Master Pack et liens vers
@@ -49,7 +47,7 @@ Documentation des fonctionnalités pour agents IA.
 
 ### Lors de Modification de la Gamification
 1. Lire **GAMIFICATION_ENGINE.md** en entier
-2. Comprendre le système de points/badges
+2. Lire la spécification canonique liée par le moteur
 3. Respecter les règles de progression
 4. Ne pas casser les calculs existants
 
@@ -67,7 +65,7 @@ Documentation des fonctionnalités pour agents IA.
 ### Gamification
 - **Cohérence** : Les points doivent être cohérents entre fonctionnalités
 - **Progression** : La progression doit être motivante
-- **Badges** : Les badges doivent être atteignables
+- **Badges** : Les badges doivent suivre les critères définis par la spec canonique
 
 ### Quiz
 - **SRS** : Respecter l'algorithme de répétition espacée
