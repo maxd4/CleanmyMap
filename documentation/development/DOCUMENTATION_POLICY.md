@@ -73,15 +73,14 @@ Les chemins suivants ne doivent pas être exposés comme documentation publique 
 - `documentation/plans/` ;
 - `documentation/operations/agent-memory-governance.md` ;
 - `documentation/operations/session-standard-runbook.md` ;
-- `documentation/maintenance/vercel_deployments.txt` ;
 - `documentation/rapport_IA/` ;
 - `.codex-remote-attachments/` ;
 - `backups/` et `scratch/` ;
 - les archives Python historiques et leurs dumps.
 
-Les familles `architecture/`, `backend/`, `database/`, `design-system/`,
-`development/`, `features/`, `frontend/`, `legal/`, `operations/`, `product/`,
-`security/` et `seo/` peuvent rester visibles dans la documentation publique,
+Les familles `architecture/`, `database/`, `design-system/`, `development/`,
+`features/`, `legal/`, `operations/`, `product/`, `security/` et `seo/` peuvent
+rester visibles dans la documentation publique,
 à condition de ne pas référencer les éléments strictement non publics.
 
 ## Sorties générées et archives visuelles

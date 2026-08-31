@@ -1,40 +1,55 @@
-# Moteur de Gamification & Engagement
+# Moteur de gamification
 
-CleanMyMap utilise la gamification non pas pour créer une addiction, mais pour encourager la persévérance dans l'action écologique. Ce document décrit les piliers du moteur.
+Ce document est le point d'entrée technique de la gamification CleanMyMap.
+Il ne duplique pas les seuils, badges ni règles métier détaillées.
 
-## 1. Système SRS (Spaced Repetition System)
-*Voir la documentation détaillée : `documentation/features/quiz-srs.md`*
+## Sources de vérité
 
-Le SRS adapte la difficulté du contenu éducatif à la maîtrise de l'utilisateur.
-- **Objectif** : Mémorisation pérenne des enjeux climatiques.
-- **Niveaux** : Enfant, Novice, Intermédiaire, Expert.
+Ordre de confiance :
 
-## 2. Calcul des Points & XP
-Chaque action terrain génère des points basés sur le **Protocole Scientifique**.
+1. runtime :
+   - `apps/web/src/app/api/gamification/`
+   - `apps/web/src/lib/gamification/`
+   - `apps/web/src/components/gamification/`
+2. spécification fonctionnelle canonique :
+   - `documentation/pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md`
+3. direction produit :
+   - `documentation/product/gamification-non-competitive.md`
+   - `documentation/product/gamification-inventory.md`
+4. sécurité et autorisations :
+   - `documentation/security/authz-authn-regles.md`
 
-| Action | Points de base | Bonus |
-| :--- | :--- | :--- |
-| **Rapport de déchets** | 10 pts | +1 pt par kg |
-| **Validation par IA** | +20 pts | Si preuve photo claire |
-| **Quête quotidienne** | 50 pts | Complétion du quiz SRS |
-| **Participation collective** | +5 pts | Par participant supplémentaire |
+Le code et les tests priment si une divergence apparaît.
 
-## 3. Badges & Rangs (Progression)
-Le rang de l'utilisateur est déterminé par son impact total accumulé.
+## Frontières techniques
 
-1. **Graine** (0 - 100 pts)
-2. **Pousse** (101 - 500 pts)
-3. **Arbrisseau** (501 - 2000 pts)
-4. **Chêne** (2001 - 10000 pts)
-5. **Forêt Vivante** (> 10000 pts)
+- `progression_events` journalise les événements de progression avec une identité logique stable et une écriture idempotente.
+- les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
+- les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
+- les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
+- les anciennes identités d'événement liées à `spots` peuvent être reconnues uniquement pour préserver l'historique et empêcher une réattribution d'XP ; la table legacy n'est pas une source courante de candidats.
+- les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
 
-## 4. Streaks (Séries)
-Le système récompense la régularité plutôt que la quantité ponctuelle.
-- **Action Streak** : Une action par semaine maintient la série.
-- **Quiz Streak** : Une session SRS par jour maintient la série.
+## Audit XP administratif
 
-## 5. Intégrité & Éthique
-- Pas de "Loot Boxes" ou de mécanismes de hasard.
-- Les points sont un reflet direct de l'impact scientifique.
-- Possibilité de masquer les scores pour un mode "Sobre" (Focus utilité pure).
-- **Règle de Transparence** : Informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.
+La surface courante est :
+
+`/admin/gamification/xp-audit`
+
+Elle appelle `checkAdminAccess()` avant toute lecture privilégiée et consulte
+`xp_audit` / `xp_audit_daily` côté serveur.
+
+Les règles générales AuthN/AuthZ ne sont pas redéfinies ici :
+consulter `documentation/security/authz-authn-regles.md`.
+
+## Évolution
+
+Toute modification du moteur doit vérifier ensemble :
+
+- code métier ;
+- tests concernés ;
+- spec canonique ;
+- éventuelle doctrine produit ;
+- sécurité si une permission ou une surface privilégiée change.
+
+Ne pas introduire une seconde documentation des seuils ou des familles de badges.

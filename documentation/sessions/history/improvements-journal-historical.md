@@ -1,3 +1,7 @@
+> **Document historique.** Les prescriptions de ce journal sont non
+> canoniques. Ne pas utiliser ce document comme source actuelle du design
+> system ou de l'architecture.
+
 # Journal des Améliorations & Bonnes Pratiques
 
 Ce document répertorie les améliorations structurelles, visuelles et techniques apportées au repo afin d'éviter les régressions et de maintenir le standard de qualité "Premium/Futuriste" de CleanmyMap.

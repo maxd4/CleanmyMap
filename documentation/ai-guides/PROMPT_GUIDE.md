@@ -106,4 +106,4 @@ Avant de déclarer la tâche terminée :
 Pour éviter l'erreur critique d'**oubli de déplacement** (suppression accidentelle de paragraphes), tout agent doit :
 1. Comparer le nombre de lignes avant/après chaque modification.
 2. Tolérer une variation de maximum **2%** du volume global.
-3. Consulter systématiquement [AI_GUARDRAILS.md](file:///c:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/maintenance/AI_GUARDRAILS.md) avant toute intervention complexe.
+3. Consulter systématiquement [AI_GUARDRAILS.md](AI_GUARDRAILS.md) avant toute intervention complexe.

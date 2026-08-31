@@ -15,8 +15,8 @@ contexte projet canonique.
 ### history/
 - **latest-session.md** — mémoire volatile de la dernière session ; source
   canonique de clôture et troisième source lue au démarrage ;
-- **quality-audit-snapshot.md** — ressource de contexte, à consulter si le
-  chantier le nécessite.
+- **history/quality-audit-snapshot.md** — ressource de contexte, à consulter si
+  le chantier le nécessite.
 - Les documents conceptuels historisés du Master Pack et de la gamification
   portent le suffixe `-historical.md` et ne décrivent pas l’architecture runtime
   actuelle.

@@ -64,6 +64,22 @@ Formule de travail :
 - garder une trace des hypothèses dans un seul endroit ;
 - refuser toute presentation qui ferait croire a une precision artificielle.
 
+### Fiabilité et auditabilité des indicateurs
+
+- effectuer périodiquement une revue des métriques et de leurs coefficients ;
+- réaliser des contrôles de cohérence entre les données déclaratives, les
+  preuves disponibles et les indicateurs consolidés ;
+- distinguer explicitement les sources terrain, numériques, mesurées, dérivées
+  et proxy avant toute interprétation ;
+- conserver des exports auditables (notamment CSV ou JSON) des métriques
+  consolidées ;
+- tracer les coefficients, hypothèses, changements et anomalies qui influencent
+  un indicateur ou une alerte d'intégrité.
+
+Le runtime calcule actuellement `dataIntegrityPriority` à partir de
+`anomaliesCount`. Ce protocole ne définit donc pas de seuil implémenté de
+« 10 tonnes pour un individu ».
+
 ### Empreinte numérique et électricité
 
 Le moteur d'empreinte numérique conserve la séparation entre valeur mesurée, valeur dérivée et proxy. La conversion électrique ne s'effectue que dans le sens `kWh réel × facteur électrique`; en l'absence de kWh, l'interface utilise le libellé `équivalent électrique estimé` et conserve le CO₂e proxy sans reconstruire de kWh par division. Une donnée absente reste `à compléter`.
