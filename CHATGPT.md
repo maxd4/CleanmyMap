@@ -819,10 +819,14 @@ Règles :
 - indiquer clairement où télécharger le fichier ;
 - fournir le fichier prêt à remplacer la version locale ;
 - ne pas se limiter à demander à Codex de réécrire un fichier que ChatGPT peut produire lui-même ;
-- ne jamais regrouper les fichiers dans un ZIP, sauf pour des fichiers `.mjs` lorsque ce format est explicitement utile ;
+- ChatGPT peut fournir une archive `.zip` lorsqu'elle facilite la livraison de plusieurs fichiers ou d'une arborescence complète ;
+- à l'intérieur de l'archive, conserver exactement les noms de fichiers et les chemins attendus dans le dépôt afin que l'utilisateur puisse extraire directement au bon emplacement ;
+- une archive est uniquement un format de transport : elle ne crée pas de structure alternative au dépôt et ne modifie pas les règles Git/GitHub ;
+- pour un seul fichier, privilégier normalement le fichier directement plutôt qu'une archive ;
+- si l'utilisateur demande explicitement un ZIP, le fournir lorsqu'il est techniquement possible ;
 - ne pas fournir de copie partielle présentée comme remplacement complet.
 
-Lorsque plusieurs fichiers doivent changer, préférer plusieurs fichiers explicites à une archive opaque.
+Lorsque plusieurs fichiers doivent changer, préférer le format de livraison qui conserve clairement leurs chemins attendus, notamment une archive lorsque cela facilite l'extraction directe.
 
 ## 26. Règle de clôture d'un lot
 
