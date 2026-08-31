@@ -1,6 +1,6 @@
 # Plan de découpage monolithes
 
-**Mis à jour :** 2026-08-10 | **Portée :** `apps/web/src` | **Source :** `npm run analyze:heavy-files` | **Seuil d'alerte enforcement :** > 1000 lignes ou > 50 KB
+**Mis à jour :** 2026-08-31 | **Portée :** `apps/web/src` | **Source :** `npm run analyze:heavy-files` | **Seuil radar informatif :** > 7 KB | **Seuil d'alerte enforcement :** > 1000 lignes ou > 50 KB
 
 ## Objectif
 
@@ -12,41 +12,48 @@ Règle : **un lot structurel par cible principale**, **API publique inchangée**
 
 ---
 
-## 📊 Radar actuel (scan 2026-08-10)
+## 📊 Radar actuel (scan 2026-08-31)
 
 | Priorité | Taille actuelle | Fichier | Statut factuel |
 |----------|-----------------|---------|----------------|
-| 🟠 HAUTE | 996 lignes | `components/sections/rubriques/free-plan-services-methodology-visual.tsx` | À découper |
-| 🟠 HAUTE | 983 lignes | `app/api/actions/group-join/route.test.ts` | À découper par helpers métier |
-| 🟠 HAUTE | 935 lignes | `components/actions/action-declaration/before/form.tsx` | Découpé dans `model.ts`, `use-before-action-form.ts`, `sections.tsx` et `ui.tsx` |
-| 🟠 HAUTE | 927 lignes | `components/admin/free-plan-services-visual.tsx` | À découper |
-| 🟠 HAUTE | 923 lignes | `components/sections/rubriques/partners-network-section.tsx` | À découper |
-| 🟠 HAUTE | 861 lignes | `components/actions/action-declaration/form/action-declaration-export-picker.tsx` | À découper |
-| 🟠 HAUTE | 860 lignes | `components/learn/quiz-session-panel.tsx` | Revalider le statut du découpage |
-| 🟠 HAUTE | 838 lignes | `components/admin/free-plan-services-panel.tsx` | À découper |
-| 🟠 HAUTE | 838 lignes | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | À découper |
-| 🟠 HAUTE | 827 lignes | `components/sections/rubriques/gamification/gamification-panels.tsx` | Sous-module dense à revalider |
-| 🟠 HAUTE | 812 lignes | `lib/actions/group-participation.ts` | À découper après tests métier |
-| 🟠 HAUTE | 799 lignes | `components/learn/environmental-quiz.tsx` | À découper |
-| 🟠 HAUTE | 796 lignes | `components/sections/rubriques/weather-section.tsx` | À découper |
-| 🟠 HAUTE | 792 lignes | `lib/governance/governance-monthly-report.ts` | À découper après contrat de données |
-| 🟠 HAUTE | 777 lignes | `components/learn/learn-practice-theme-tabs.tsx` | À découper |
-| 🟠 HAUTE | 774 lignes | `components/reports/reports-web-document.tsx` | Prioritaire avec `/reports` |
-| 🟠 HAUTE | 770 lignes | `components/sections/rubriques/rejoindre-un-formulaire-section.tsx` | À découper |
-| 🟠 HAUTE | 770 lignes | `lib/environmental-impact-estimator/project-signals.impl.ts` | À revalider avec le contrat impact |
-| 🟠 HAUTE | 767 lignes | `app/(app)/admin/page.tsx` | À découper par responsabilités |
-| 🟠 HAUTE | 758 lignes | `lib/learning/quiz-personal-progress.ts` | À découper avec tests de progression |
-| 🟠 HAUTE | 738 lignes | `components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | À découper en helpers purs |
-| 🟠 HAUTE | 718 lignes | `lib/supabase/storage-business-contribution.ts` | À découper après revue quota |
+| 🔴 CRITIQUE | 861 lignes / 41,5 KB | `components/learn/quiz/quiz-session-panel.tsx` | Toujours dans le radar ; revalider le découpage |
+| 🔴 CRITIQUE | 769 lignes / 36,9 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.tsx` | À découper |
+| 🔴 CRITIQUE | 839 lignes / 36,4 KB | `components/admin/free-plan-services-panel.tsx` | À découper |
+| 🔴 CRITIQUE | 922 lignes / 36,2 KB | `components/sections/rubriques/partners-network-section.tsx` | À découper |
+| 🔴 CRITIQUE | 676 lignes / 34,5 KB | `app/learn/ressources/learn-ressources-client.sections.tsx` | Nouveau signal ; qualifier les responsabilités avant extraction |
+| 🔴 CRITIQUE | 837 lignes / 33,6 KB | `components/sections/rubriques/gamification/gamification-panels.tsx` | Sous-module dense à revalider |
+| 🔴 CRITIQUE | 693 lignes / 33,3 KB | `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | Nouveau signal ; qualifier la frontière avec le shell extrait |
+| 🔴 CRITIQUE | 933 lignes / 33,2 KB | `components/actions/map/map-layers.tsx` | Nouveau signal ; découper par responsabilités cartographiques |
+| 🔴 CRITIQUE | 861 lignes / 32,6 KB | `components/actions/action-declaration/form/action-declaration-export-picker.tsx` | À découper |
+| 🔴 CRITIQUE | 927 lignes / 32,1 KB | `components/admin/free-plan-services-visual.tsx` | À découper |
+| 🔴 CRITIQUE | 795 lignes / 31,6 KB | `components/sections/rubriques/weather-section.tsx` | À découper |
+| 🔴 CRITIQUE | 466 lignes / 30,9 KB | `lib/pdf-export/generate-pdf-html.ts` | Nouveau signal ; isoler le pipeline de génération HTML |
+| 🔴 CRITIQUE | 991 lignes / 30,7 KB | `app/api/actions/group-join/route.test.ts` | À découper par helpers métier |
+| 🔴 CRITIQUE | 783 lignes / 30,0 KB | `components/learn/learn-practice-theme-tabs.tsx` | À découper |
+| 🔴 CRITIQUE | 929 lignes / 29,6 KB | `app/api/chat/route.test.ts` | À découper par scénarios et helpers de test |
+| 🔴 CRITIQUE | 991 lignes / 29,4 KB | `app/api/chat/route.ts` | À découper après caractérisation du contrat API |
+| 🔴 CRITIQUE | 793 lignes / 29,2 KB | `lib/governance/governance-monthly-report.ts` | À découper après contrat de données |
+| 🔴 CRITIQUE | 928 lignes / 29,1 KB | `components/chat/chat-shell.tsx` | Revalider le découpage du shell et des hooks |
+| 🔴 CRITIQUE | 700 lignes / 28,4 KB | `components/navigation/app-navigation-ribbon.tsx` | Nouveau signal ; séparer composition et rendu |
+| 🔴 CRITIQUE | 654 lignes / 27,9 KB | `components/sections/rubriques/weather-section.preparation.tsx` | Nouveau signal ; vérifier la frontière avec `weather-section.tsx` |
+| 🔴 CRITIQUE | 530 lignes / 27,5 KB | `components/learn/quiz/quiz-school-kit-page.tsx` | Nouveau signal ; qualifier données et rendu |
+| 🔴 CRITIQUE | 779 lignes / 27,3 KB | `components/learn/quiz/environmental-quiz.tsx` | À découper |
+| 🔴 CRITIQUE | 655 lignes / 27,1 KB | `components/admin/quiz-bank-admin-view.tsx` | Nouveau signal ; séparer orchestration et vues admin |
+| 🔴 CRITIQUE | 488 lignes / 26,9 KB | `components/sections/rubriques/elus-section.tsx` | Nouveau signal ; vérifier la densité de données statiques |
+| 🔴 CRITIQUE | 838 lignes / 26,6 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | À découper |
 
-Le seuil enforcement ne signale actuellement aucun nouveau fichier au-dessus de
-1000 lignes ou 50 KB. La liste ci-dessus reste une dette de maintenance mesurée,
-pas une autorisation de lancer une refonte globale. Les statuts historiques des
-lots détaillés plus bas doivent être revalidés contre ce radar avant exécution.
+Le scan du 31 août identifie 472 fichiers au-dessus du seuil informatif de 7 KB,
+dont 133 au-dessus de 15 KB et 287 au-dessus de 10 KB. Le fichier le plus long
+fait 991 lignes et le plus volumineux 41,5 KB. Le seuil enforcement ne signale
+donc aucun fichier au-dessus de 1000 lignes ou 50 KB, et le baseline
+`scripts/checks/heavy-files-baseline.json` reste vide (`allowed: []`). La liste
+ci-dessus reste une dette de maintenance mesurée, pas une autorisation de
+lancer une refonte globale. Les statuts historiques des lots détaillés plus
+bas doivent être revalidés contre ce radar avant exécution.
 
 > Déjà sortis du radar sur ce cycle :
 > - `app/api/actions/[actionId]/group-join/route.test.ts`
-> - `components/learn/quiz-session-panel.tsx`
+> - `components/sections/rubriques/free-plan-services-methodology-visual.tsx`
 > - `components/sections/rubriques/feedback-section.tsx`
 > - `components/sections/rubriques/gamification/index.tsx`
 >
