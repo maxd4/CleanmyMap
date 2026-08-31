@@ -175,6 +175,8 @@ function parseArgs(argv) {
     allowlistPath: existsSync(resolve(ROOT, DEFAULT_ALLOWLIST))
       ? DEFAULT_ALLOWLIST
       : null,
+    scope: "worktree",
+    ref: null,
     showHelp: false,
   };
 
@@ -185,6 +187,21 @@ function parseArgs(argv) {
       options.allowlistPath = arg.slice("--allowlist=".length);
     } else if (arg === "--no-allowlist") {
       options.allowlistPath = null;
+    } else if (arg === "--staged-only") {
+      if (options.ref) {
+        throw new Error("--staged-only cannot be combined with --ref");
+      }
+      options.scope = "staged";
+    } else if (arg.startsWith("--ref=")) {
+      const ref = arg.slice("--ref=".length).trim();
+      if (!ref) {
+        throw new Error("--ref requires a Git ref");
+      }
+      if (options.scope === "staged") {
+        throw new Error("--ref cannot be combined with --staged-only");
+      }
+      options.ref = ref;
+      options.scope = "ref";
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
@@ -199,6 +216,8 @@ function printHelp() {
 Options:
   --allowlist=PATH   Exclude documented false positives from a JSON allowlist.
   --no-allowlist     Run without any allowlist.
+  --staged-only      Scan only staged candidate files from the Git index.
+  --ref=REF          Scan the committed tree at REF, ignoring the worktree.
   --help             Show this help.
 
 Allowlist entries:
@@ -217,6 +236,7 @@ function listGitFiles(args) {
   const output = execFileSync("git", args, {
     cwd: ROOT,
     encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
   });
   return parseGitNullDelimited(output);
 }
@@ -233,6 +253,21 @@ function listRepoFiles() {
     ...UNTRACKED_PATHSPEC_EXCLUDES,
   ]);
   return [...new Set([...tracked, ...untracked])];
+}
+
+function listStagedFiles() {
+  return listGitFiles([
+    "diff",
+    "--cached",
+    "--name-only",
+    "--diff-filter=ACMRTUXB",
+    "-z",
+    "--",
+  ]);
+}
+
+function listRefFiles(ref) {
+  return listGitFiles(["ls-tree", "-r", "--name-only", "-z", ref, "--"]);
 }
 
 function shouldScan(relativePath) {
@@ -376,9 +411,52 @@ function scanFile(relativePath) {
   if (!existsSync(absolutePath)) {
     return [];
   }
-  const content = readFileSync(absolutePath, "utf8");
+  return scanContent(relativePath, readFileSync(absolutePath, "utf8"));
+}
+
+function scanContent(relativePath, content) {
   const lines = content.split(/\r?\n/);
   return lines.flatMap((line, index) => scanLine(relativePath, line, index + 1));
+}
+
+function readGitFiles(ref, files) {
+  if (files.length === 0) {
+    return [];
+  }
+
+  const specs = files.map((relativePath) =>
+    ref === ":" ? `:${relativePath}` : `${ref}:${relativePath}`,
+  );
+  const output = execFileSync("git", ["cat-file", "--batch"], {
+    cwd: ROOT,
+    input: `${specs.join("\n")}\n`,
+    maxBuffer: 128 * 1024 * 1024,
+  });
+
+  const contents = [];
+  let offset = 0;
+  for (const spec of specs) {
+    const headerEnd = output.indexOf(0x0a, offset);
+    if (headerEnd === -1) {
+      throw new Error(`Unexpected git cat-file response for ${spec}`);
+    }
+    const header = output.subarray(offset, headerEnd).toString("utf8");
+    const [, type, sizeText] = header.split(" ");
+    if (type !== "blob") {
+      throw new Error(`Git ref does not contain a readable blob: ${spec}`);
+    }
+    const size = Number(sizeText);
+    const dataStart = headerEnd + 1;
+    const dataEnd = dataStart + size;
+    contents.push(output.subarray(dataStart, dataEnd).toString("utf8"));
+    offset = dataEnd + 1;
+  }
+  return contents;
+}
+
+function scanGitFiles(files, ref) {
+  const contents = readGitFiles(ref, files);
+  return files.flatMap((relativePath, index) => scanContent(relativePath, contents[index]));
 }
 
 function printSummary(findings, scannedCount, allowlistPath) {
@@ -407,10 +485,19 @@ function main() {
   }
 
   const allowlist = loadAllowlist(options.allowlistPath);
-  const files = listRepoFiles().filter(shouldScan);
-  const findings = files
-    .flatMap(scanFile)
-    .filter((finding) => !isAllowed(finding, allowlist));
+  let files;
+  let findings;
+  if (options.scope === "staged") {
+    files = listStagedFiles().filter(shouldScan);
+    findings = scanGitFiles(files, ":");
+  } else if (options.scope === "ref") {
+    files = listRefFiles(options.ref).filter(shouldScan);
+    findings = scanGitFiles(files, options.ref);
+  } else {
+    files = listRepoFiles().filter(shouldScan);
+    findings = files.flatMap(scanFile);
+  }
+  findings = findings.filter((finding) => !isAllowed(finding, allowlist));
 
   printSummary(findings, files.length, options.allowlistPath);
   if (findings.length > 0) {

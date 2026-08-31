@@ -545,6 +545,26 @@ Les modifications `staged`, `unstaged` ou `untracked` étrangères au chantier c
 - ne doivent pas être incluses dans le commit courant ;
 - ne doivent pas déclencher une refonte hors périmètre.
 
+Les validations ont trois portées qui ne doivent pas être confondues :
+
+```text
+WORKTREE        = itération manuelle, changements dirty et untracked inclus
+STAGED          = candidat du commit, exclusivement git diff --cached
+COMMITTED RANGE = commits destinés au push, exclusivement origin/main...HEAD
+```
+
+ChatGPT ne doit pas recommander d'attendre un chantier parallèle indépendant.
+Codex stage uniquement l'allowlist du lot, vérifie le nom des fichiers staged et
+peut publier normalement malgré des changements dirty étrangers. Avant tout
+push, il vérifie l'ascendance de `HEAD` : un commit local étranger qui serait
+embarqué est un blocage explicite, pas une publication silencieuse.
+
+Si le checkout partagé contient déjà un commit étranger, une divergence, une
+race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
+sandbox de publication éphémère depuis le dernier `origin/main`, avec la seule
+allowlist du lot, puis la supprimer. Ce n'est pas une copie persistante et ce
+n'est pas un workflow par défaut.
+
 Une erreur de test clairement attribuable à un chantier parallèle est classée :
 
 ```text
@@ -713,7 +733,9 @@ Ne pas créer :
 - dossier parallèle du dépôt ;
 - fichier racine opportuniste.
 
-sans demande explicite.
+sans demande explicite. Cette interdiction n'empêche pas la sandbox de
+publication éphémère prévue par la gouvernance Git lorsqu'elle est nécessaire,
+bornée à l'allowlist et supprimée avant la clôture ; ChatGPT ne la crée jamais.
 
 Le dossier suivant est protégé et ne doit pas être modifié sans demande explicite :
 

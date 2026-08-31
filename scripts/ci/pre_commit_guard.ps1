@@ -27,9 +27,9 @@ try {
     Write-Host "Pre-commit guardrail"
     Write-Host "Repository: $RepoRoot"
 
-    Invoke-GuardStep "changed-surface quick checks" { npm run checks:changed:quick }
-    Invoke-GuardStep "secret audit" { npm run security:secrets }
-    Invoke-GuardStep "git diff check" { git diff --check }
+    Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
+    Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
+    Invoke-GuardStep "staged diff check" { git diff --cached --check }
 
     Write-Host ""
     Write-Host "Pre-commit guardrail passed."

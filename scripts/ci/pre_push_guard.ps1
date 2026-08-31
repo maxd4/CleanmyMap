@@ -142,6 +142,7 @@ function Invoke-GuardStep {
     )
 
     $changedFiles = @(Get-ChangedFiles)
+    $upstreamCommit = @(git rev-parse --verify --quiet origin/main 2>$null)
 
     Write-Host "Pre-push guardrail"
     Write-Host "Repository: $RepoRoot"
@@ -161,7 +162,8 @@ function Invoke-GuardStep {
     $webRelevant = [bool]$policy.webRelevant -or $vercelConfigRelevant
     $buildRelevant = [bool]$policy.buildRelevant -or $vercelConfigRelevant
 
-    Invoke-GuardStep "secret audit" { npm run security:secrets }
+    Invoke-GuardStep "committed range diff check" { git diff --check "$($upstreamCommit[0])...HEAD" -- }
+    Invoke-GuardStep "secret audit" { npm run security:secrets -- --ref=HEAD }
     Invoke-GuardStep "root file hygiene" { npm run check:root-files }
     Invoke-GuardStep "GitNexus hygiene" { npm run check:gitnexus-hygiene }
     Invoke-GuardStep "documentation governance" { npm run check:doc-governance }

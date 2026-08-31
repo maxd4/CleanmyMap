@@ -93,6 +93,7 @@
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/ci/pre_push_guard.ps1",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/ci/install_git_hooks.ps1",
     "checks:changed:quick": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1",
+    "checks:staged:quick": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -StagedOnly",
     "checks:changed:quick:build": "powershell -ExecutionPolicy Bypass -File scripts/checks/check_changed_quick.ps1 -IncludeBuild",
     "checks:changed": "powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks2.ps1 -Scope changed",
     "checks:full": "powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks2.ps1 -Scope full",
