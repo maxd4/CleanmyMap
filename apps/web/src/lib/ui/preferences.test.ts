@@ -11,6 +11,15 @@ const globalsCss = readFileSync(
   resolve(process.cwd(), "src/app/globals.css"),
   "utf8",
 );
+const tokensCss = readFileSync(
+  resolve(process.cwd(), "src/styles/tokens.css"),
+  "utf8",
+);
+const displayModesCss = readFileSync(
+  resolve(process.cwd(), "src/styles/display-modes.css"),
+  "utf8",
+);
+const baseCss = readFileSync(resolve(process.cwd(), "src/styles/base.css"), "utf8");
 const providerSource = readFileSync(
   resolve(process.cwd(), "src/components/ui/site-preferences-provider.tsx"),
   "utf8",
@@ -34,16 +43,18 @@ describe("display mode preferences", () => {
     expect(providerSource).toContain(
       'document.documentElement.setAttribute("data-display-mode", displayMode);',
     );
-    expect(globalsCss).toContain('[data-display-mode="minimaliste"]');
-    expect(globalsCss).toContain('[data-display-mode="sobre"]');
-    expect(globalsCss).toContain("font-family: var(--font-base);");
+    expect(displayModesCss).toContain('[data-display-mode="minimaliste"]');
+    expect(displayModesCss).toContain('[data-display-mode="sobre"]');
+    expect(baseCss).toContain("font-family: var(--font-base);");
+    expect(globalsCss).toContain('@import "../styles/display-modes.css";');
+    expect(globalsCss).toContain('@import "../styles/base.css";');
   });
 
   it("keeps the three visual mode contracts in global CSS", () => {
-    expect(globalsCss).toMatch(
+    expect(displayModesCss).toMatch(
       /\[data-display-mode="minimaliste"\]\s*\{[\s\S]*?--shadow-elevated:\s*var\(--shadow-soft\);[\s\S]*?--glass-blur:\s*none;/,
     );
-    expect(globalsCss).toMatch(
+    expect(displayModesCss).toMatch(
       /\[data-display-mode="sobre"\]\s*\{[\s\S]*?--shadow-soft:\s*none;[\s\S]*?--glass-blur:\s*none;/,
     );
   });
@@ -52,11 +63,13 @@ describe("display mode preferences", () => {
     const soberStack =
       'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif';
 
-    expect(globalsCss).toContain(`--font-sober: ${soberStack};`);
-    expect(globalsCss).toMatch(
+    expect(tokensCss).toContain(`--font-sober: ${soberStack};`);
+    expect(displayModesCss).toMatch(
       /\[data-display-mode="sobre"\]\s*\{[\s\S]*?--font-base:\s*var\(--font-sober\);[\s\S]*?--font-sans:\s*var\(--font-sober\);/,
     );
-    expect(globalsCss).toContain("font-family: var(--font-base);");
-    expect(globalsCss).not.toMatch(/@font-face|fonts\.googleapis|@import\s+url/);
+    expect(baseCss).toContain("font-family: var(--font-base);");
+    expect(`${tokensCss}\n${displayModesCss}\n${baseCss}`).not.toMatch(
+      /@font-face|fonts\.googleapis|@import\s+url/,
+    );
   });
 });

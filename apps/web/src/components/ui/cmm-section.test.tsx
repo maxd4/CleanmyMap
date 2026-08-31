@@ -28,7 +28,15 @@ describe("canonical page layout primitives", () => {
   });
 
   it("keeps page geometry in shared tokens for every display mode", () => {
-    const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+    const globalsCss = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+    const tokensCss = readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8");
+    const displayModesCss = readFileSync(
+      new URL("../../styles/display-modes.css", import.meta.url),
+      "utf8",
+    );
+
+    expect(globalsCss).toContain('@import "../styles/tokens.css";');
+    expect(globalsCss).toContain('@import "../styles/display-modes.css";');
 
     for (const token of [
       "--cmm-page-max-width",
@@ -40,10 +48,11 @@ describe("canonical page layout primitives", () => {
       "--cmm-section-gap",
       "--cmm-content-group-gap",
     ]) {
-      expect(css).toContain(token);
+      expect(tokensCss).toContain(token);
     }
 
-    const displayModeBlocks = css.match(/\[data-display-mode=[^\]]+\][^{]*\{[^}]*\}/g) ?? [];
+    const displayModeBlocks =
+      displayModesCss.match(/\[data-display-mode=[^\]]+\][^{]*\{[^}]*\}/g) ?? [];
     expect(displayModeBlocks.join("\n")).not.toContain("--cmm-page-");
   });
 });
