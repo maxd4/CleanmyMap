@@ -70,6 +70,66 @@ function stripSqlComments(sql) {
     .replace(/--[^\r\n]*/g, "");
 }
 
+export function findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql) {
+  const violations = [];
+
+  if (
+    /\b(?:create|alter)\s+(?:or\s+replace\s+)?function\s+public\.create_spot_with_progression\b/i.test(
+      normalizedSql,
+    )
+  ) {
+    violations.push(
+      `${name}: create_spot_with_progression must not be reintroduced after legacy spots retirement`,
+    );
+  }
+
+  if (
+    /\bcreate\s+policy\b.*?\bon\s+public\.spots\b.*?\bfor\s+(?:insert|update|all)\b/i.test(
+      normalizedSql,
+    )
+  ) {
+    violations.push(
+      `${name}: public.spots INSERT/UPDATE policies must not be reintroduced after legacy spots retirement`,
+    );
+  }
+
+  const alteredPolicyMatches = normalizedSql.matchAll(
+    /\balter\s+policy\s+("[^"]+"|[^\s]+)\s+on\s+public\.spots\b[^;]*;/gi,
+  );
+  for (const match of alteredPolicyMatches) {
+    const policyName = match[1].replace(/^"|"$/g, "").toLowerCase();
+    if (policyName !== "spots_service_select") {
+      violations.push(
+        `${name}: public.spots policies other than spots_service_select must not be altered after legacy spots retirement`,
+      );
+    }
+  }
+
+  const writeGrantMatch = normalizedSql.match(
+    /\bgrant\s+([^;]+?)\s+on\s+(?:table\s+)?public\.spots\s+to\s+([^;]+)/i,
+  );
+  if (writeGrantMatch) {
+    const privileges = writeGrantMatch[1]
+      .replace(/\s+privileges?/gi, "")
+      .split(",")
+      .map((privilege) => privilege.trim().replace(/\s*\([^)]*\)\s*$/, "").toLowerCase());
+    const roles = writeGrantMatch[2].toLowerCase();
+    const hasWritePrivilege = privileges.some((privilege) =>
+      ["all", "insert", "update", "delete", "truncate", "references", "trigger"].includes(
+        privilege,
+      ),
+    );
+
+    if (hasWritePrivilege && /\banon\b|\bauthenticated\b/.test(roles)) {
+      violations.push(
+        `${name}: public.spots write grants to anon/authenticated are not allowed after legacy spots retirement`,
+      );
+    }
+  }
+
+  return violations;
+}
+
 const canonical = readCanonicalMigrations(canonicalDir);
 const duplicateVersions = [];
 const versions = new Map();
@@ -140,47 +200,7 @@ for (const [name, migration] of canonical) {
   }
 
   if (!LEGACY_SPOTS_RUNTIME_SURFACE_HISTORICAL_ALLOWLIST.has(name)) {
-    if (
-      /\b(?:create|alter)\s+(?:or\s+replace\s+)?function\s+public\.create_spot_with_progression\b/i.test(
-        normalizedSql,
-      )
-    ) {
-      migrationGuardViolations.push(
-        `${name}: create_spot_with_progression must not be reintroduced after legacy spots retirement`,
-      );
-    }
-
-    if (
-      /\bcreate\s+policy\b.*?\bon\s+public\.spots\b.*?\bfor\s+(?:insert|update|all)\b/i.test(
-        normalizedSql,
-      ) || /\balter\s+policy\b.*?\bon\s+public\.spots\b/i.test(normalizedSql)
-    ) {
-      migrationGuardViolations.push(
-        `${name}: public.spots INSERT/UPDATE policies must not be reintroduced after legacy spots retirement`,
-      );
-    }
-
-    const writeGrantMatch = normalizedSql.match(
-      /\bgrant\s+([^;]+?)\s+on\s+(?:table\s+)?public\.spots\s+to\s+([^;]+)/i,
-    );
-    if (writeGrantMatch) {
-      const privileges = writeGrantMatch[1]
-        .replace(/\s+privileges?/gi, "")
-        .split(",")
-        .map((privilege) => privilege.trim().toLowerCase());
-      const roles = writeGrantMatch[2].toLowerCase();
-      const hasWritePrivilege = privileges.some((privilege) =>
-        ["all", "insert", "update", "delete", "truncate", "references", "trigger"].includes(
-          privilege,
-        ),
-      );
-
-      if (hasWritePrivilege && /\banon\b|\bauthenticated\b/.test(roles)) {
-        migrationGuardViolations.push(
-          `${name}: public.spots write grants to anon/authenticated are not allowed after legacy spots retirement`,
-        );
-      }
-    }
+    migrationGuardViolations.push(...findLegacySpotsRuntimeSurfaceViolations(name, normalizedSql));
   }
 }
 
