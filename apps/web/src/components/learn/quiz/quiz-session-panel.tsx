@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -19,21 +18,21 @@ import type {
   CognitiveQuizStateId,
   SupportedLocale,
 } from "@/lib/learning/cognitive-principles";
-import { getQuizStateLabel } from "@/lib/learning/cognitive-principles";
 import type { SRSQuality } from "@/lib/gamification/quiz-srs";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
 import type { QuizSessionSummary } from "@/lib/learning/quiz/quiz-session-types";
-import { buildQuizErrorGrid } from "@/lib/learning/quiz/quiz-error-grid";
-import { getQuizReviewFollowUp, getQuizReviewTarget } from "@/lib/learning/quiz/quiz-review-targets";
-import { getQuizErrorFollowUp } from "@/lib/learning/quiz/quiz-error-grid";
 import type { QuizReasoningType } from "@/lib/learning/quiz/quiz-reasoning-types";
 import type { QuizPersonalProgressSnapshot } from "@/lib/learning/quiz/quiz-personal-progress";
 import {
   getQuizLocalizedTextFallback,
-  getQuizLocalizedTextListFallback,
   getQuizUiCopy,
 } from "@/lib/learning/quiz/quiz-i18n";
 import { QuizSessionPanelSummary } from "./quiz-session-panel-summary";
+import {
+  buildQuizSessionPanelModel,
+  getQuizStateLabel,
+  STATE_TONES,
+} from "./quiz-session-panel.model";
 
 const INTERACTIVE_FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
@@ -76,13 +75,6 @@ type QuizSessionPanelProps = {
   onHandleSRSUpdate: (quality: SRSQuality) => void;
 };
 
-const STATE_TONES: Record<CognitiveQuizStateId, "cyan" | "amber" | "violet" | "emerald"> = {
-  new: "cyan",
-  failed: "amber",
-  due: "violet",
-  mastered: "emerald",
-};
-
 export function QuizSessionPanel({
   locale,
   isDemoMode = false,
@@ -120,30 +112,33 @@ export function QuizSessionPanel({
   onHandleSRSUpdate,
   onRevealAnswer,
 }: QuizSessionPanelProps) {
-  const nextReasoningTypeLabel = useMemo(() => nextReasoningType, [nextReasoningType]);
-  const questionFormatLabel = useMemo(() => {
-    if (question.type === "flashcard") {
-      return "Flashcard";
-    }
-    if (question.type === "true-false") {
-      return "Vrai / Faux";
-    }
-    if (question.type === "multiple-select") {
-      return "Cases à cocher";
-    }
-    return "Choix Multiple";
-  }, [question.type]);
-  const reviewTarget = useMemo(
-    () => question.reviewTarget ?? getQuizReviewTarget(question.category, question.review, question.reasoningType),
-    [question.category, question.reasoningType, question.review, question.reviewTarget],
-  );
-  const reviewTargetFollowUp = useMemo(() => getQuizReviewFollowUp(reviewTarget), [reviewTarget]);
-  const resolvedErrorType = useMemo(
-    () => question.errorType ?? buildQuizErrorGrid(question).errorType,
-    [question],
-  );
-  const errorTargetFollowUp = useMemo(() => getQuizErrorFollowUp(resolvedErrorType), [resolvedErrorType]);
-  const progressValue = questionIndex + 1;
+  const {
+    nextReasoningTypeLabel,
+    questionFormatLabel,
+    reviewTargetFollowUp,
+    resolvedErrorType,
+    errorTargetFollowUp,
+    progressValue,
+    answerFeedbackTitle,
+    answerFeedbackBody,
+    selectedOptionsLabel,
+    correctOptionsLabel,
+    displayOptions,
+    sourceIsExternal,
+    collectiveRevealLabel,
+    shouldHideChoices,
+  } = buildQuizSessionPanelModel({
+    locale,
+    question,
+    questionIndex,
+    selectedOptions,
+    showAnswer,
+    showChoices,
+    isSchoolMode,
+    isCollectiveMode,
+    lastCheckResult,
+    nextReasoningType,
+  });
 
   if (sessionSummary) {
     return (
@@ -160,38 +155,6 @@ export function QuizSessionPanel({
       />
     );
   }
-
-  const answerFeedbackTitle =
-    question.type === "flashcard"
-      ? Array.isArray(question.answer)
-        ? question.answer.join(", ")
-        : question.answer
-      : lastCheckResult === true
-        ? question.type === "multiple-select"
-          ? "Bonne combinaison"
-          : "Réponse correcte"
-        : lastCheckResult === false
-          ? "Réponse incorrecte"
-          : "Réponse attendue";
-
-  const answerFeedbackBody =
-    question.type === "flashcard"
-      ? "La réponse attendue et la piste de révision sont affichées immédiatement."
-      : lastCheckResult === true
-        ? question.feedbackCorrect ?? "Bonne réponse : tu as appliqué le bon mécanisme."
-        : question.type === "multiple-select"
-          ? question.feedbackWrong ?? "Erreur pédagogique : le corrigé montre les cases attendues et les exclusions utiles."
-          : question.feedbackWrong ?? "Erreur pédagogique : le corrigé explique pourquoi la réponse attendue est la bonne.";
-
-  const selectedOptionsLabel = selectedOptions.join(", ");
-  const correctOptionsLabel = Array.isArray(question.answer) ? question.answer.join(", ") : question.answer;
-  const displayOptions = getQuizLocalizedTextListFallback(locale, question.localized?.options, question.options ?? []);
-  const sourceIsExternal = Boolean(question.sourceUrl?.startsWith("http"));
-  const collectiveRevealLabel =
-    isSchoolMode && isCollectiveMode
-      ? getQuizUiCopy(locale, "session.school.revealAnswer")
-      : getQuizUiCopy(locale, "session.checkAnswer");
-  const shouldHideChoices = isSchoolMode && isCollectiveMode && !showChoices && !showAnswer;
 
   return (
     <div className="space-y-8">
