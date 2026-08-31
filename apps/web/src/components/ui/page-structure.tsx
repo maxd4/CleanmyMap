@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmBadge, type CmmBadgeTone } from "@/components/ui/cmm-badge";
 import { cn } from "@/lib/utils";
 
 type SectionTitleSize = "sm" | "md" | "lg";
@@ -239,19 +240,8 @@ export function CTAGroup({ children, className }: CTAGroupProps) {
 
 export type SourceBadgeProps = {
   children: ReactNode;
-  tone?: "slate" | "emerald" | "sky" | "amber" | "violet" | "muted" | "indigo" | "rose";
+  tone?: CmmBadgeTone;
   className?: string;
-};
-
-const sourceBadgeToneClasses: Record<NonNullable<SourceBadgeProps["tone"]>, string> = {
-  slate: "border-[color:var(--border-default)] bg-[color:var(--bg-muted)] text-stone-700",
-  emerald: "border-emerald-300/70 bg-emerald-500/10 text-emerald-800",
-  sky: "border-sky-300/70 bg-sky-500/10 text-sky-800",
-  amber: "border-amber-300/70 bg-amber-500/10 text-amber-800",
-  violet: "border-violet-300/70 bg-violet-500/10 text-violet-800",
-  muted: "border-transparent bg-transparent text-stone-500",
-  indigo: "border-indigo-300/70 bg-indigo-500/10 text-indigo-800",
-  rose: "border-rose-300/70 bg-rose-500/10 text-rose-800",
 };
 
 export function SourceBadge({
@@ -260,15 +250,9 @@ export function SourceBadge({
   className,
 }: SourceBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-xl border px-2.5 py-1 text-[11px] font-semibold tracking-wide whitespace-normal",
-        sourceBadgeToneClasses[tone],
-        className,
-      )}
-    >
+    <CmmBadge tone={tone} size="sm" shape="rounded" className={className}>
       {children}
-    </span>
+    </CmmBadge>
   );
 }
 
