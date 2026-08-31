@@ -1,0 +1,153 @@
+@layer utilities {
+  /* ============================================================
+     DISCLOSURE - native details/summary primitive
+     ============================================================ */
+  .cmm-disclosure {
+    --cmm-disclosure-background: color-mix(in srgb, var(--bg-elevated) 92%, var(--cmm-disclosure-accent));
+    --cmm-disclosure-border: color-mix(in srgb, var(--border-default) 72%, var(--cmm-disclosure-accent));
+    --cmm-disclosure-border-open: color-mix(in srgb, var(--border-strong) 72%, var(--cmm-disclosure-accent));
+    --cmm-disclosure-accent: var(--text-secondary);
+    --cmm-disclosure-accent-soft: color-mix(in srgb, var(--cmm-disclosure-accent) 10%, transparent);
+    --cmm-disclosure-content-background: color-mix(in srgb, var(--bg-elevated) 96%, var(--cmm-disclosure-accent));
+    --cmm-disclosure-summary-min-height: 3rem;
+    --cmm-disclosure-summary-padding-inline: var(--space-2);
+    --cmm-disclosure-summary-padding-block: 0.5rem;
+    --cmm-disclosure-content-padding-inline: var(--space-2);
+    --cmm-disclosure-content-padding-block: var(--space-2);
+    --cmm-disclosure-radius: var(--radius-md);
+    --cmm-disclosure-shadow: var(--shadow-soft);
+    --cmm-disclosure-transition-duration: 180ms;
+    --cmm-disclosure-transition: background-color var(--cmm-disclosure-transition-duration) ease,
+      border-color var(--cmm-disclosure-transition-duration) ease,
+      box-shadow var(--cmm-disclosure-transition-duration) ease;
+    --cmm-disclosure-icon-transition: transform var(--cmm-disclosure-transition-duration) ease;
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--cmm-disclosure-border);
+    border-radius: var(--cmm-disclosure-radius);
+    background-color: var(--cmm-disclosure-background);
+    color: var(--text-primary);
+    box-shadow: var(--cmm-disclosure-shadow);
+    transition: var(--cmm-disclosure-transition);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="slate"] {
+    --cmm-disclosure-accent: var(--text-secondary);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="emerald"] {
+    --cmm-disclosure-accent: var(--text-success);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="sky"] {
+    --cmm-disclosure-accent: var(--text-info);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="amber"] {
+    --cmm-disclosure-accent: var(--text-warning);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="rose"] {
+    --cmm-disclosure-accent: var(--text-danger);
+  }
+
+  .cmm-disclosure[data-disclosure-tone="indigo"] {
+    --cmm-disclosure-accent: rgb(79 70 229);
+  }
+
+  .cmm-disclosure[data-disclosure-size="sm"] {
+    --cmm-disclosure-summary-min-height: 2.75rem;
+    --cmm-disclosure-summary-padding-inline: 0.75rem;
+    --cmm-disclosure-content-padding-inline: 0.75rem;
+    --cmm-disclosure-content-padding-block: 0.75rem;
+  }
+
+  .cmm-disclosure[data-disclosure-size="lg"] {
+    --cmm-disclosure-summary-min-height: 3.5rem;
+    --cmm-disclosure-summary-padding-inline: var(--space-3);
+    --cmm-disclosure-summary-padding-block: 0.75rem;
+    --cmm-disclosure-content-padding-inline: var(--space-3);
+    --cmm-disclosure-content-padding-block: var(--space-3);
+  }
+
+  .cmm-disclosure[open] {
+    border-color: var(--cmm-disclosure-border-open);
+  }
+
+  .cmm-disclosure__summary {
+    display: flex;
+    min-height: var(--cmm-disclosure-summary-min-height);
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1);
+    padding: var(--cmm-disclosure-summary-padding-block) var(--cmm-disclosure-summary-padding-inline);
+    color: inherit;
+    font: var(--weight-semibold) var(--text-small) / var(--leading-normal) var(--font-base);
+    list-style: none;
+    outline: none;
+  }
+
+  .cmm-disclosure[data-disclosure-size="lg"] .cmm-disclosure__summary {
+    font-size: var(--text-body);
+  }
+
+  .cmm-disclosure__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .cmm-disclosure__summary::marker {
+    content: "";
+  }
+
+  .cmm-disclosure__summary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .cmm-disclosure__summary-content {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .cmm-disclosure__icon {
+    flex: 0 0 auto;
+    color: var(--cmm-disclosure-accent);
+    transition: var(--cmm-disclosure-icon-transition);
+  }
+
+  .cmm-disclosure[open] > .cmm-disclosure__summary .cmm-disclosure__icon {
+    transform: rotate(180deg);
+  }
+
+  .cmm-disclosure__content {
+    border-top: 1px solid var(--cmm-disclosure-border);
+    padding: var(--cmm-disclosure-content-padding-block) var(--cmm-disclosure-content-padding-inline);
+    background-color: var(--cmm-disclosure-content-background);
+  }
+
+  [data-display-mode="minimaliste"] .cmm-disclosure {
+    --cmm-disclosure-background: var(--bg-elevated);
+    --cmm-disclosure-content-background: var(--bg-elevated);
+    --cmm-disclosure-shadow: none;
+    --cmm-disclosure-transition-duration: 150ms;
+  }
+
+  [data-display-mode="sobre"] .cmm-disclosure {
+    --cmm-disclosure-background: var(--bg-canvas);
+    --cmm-disclosure-border: var(--border-strong);
+    --cmm-disclosure-border-open: var(--border-strong);
+    --cmm-disclosure-content-background: var(--bg-canvas);
+    --cmm-disclosure-shadow: none;
+    --cmm-disclosure-transition: none;
+    --cmm-disclosure-icon-transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-disclosure,
+    .cmm-disclosure__icon {
+      --cmm-disclosure-transition: none;
+      --cmm-disclosure-icon-transition: none;
+      transition: none !important;
+    }
+  }
+}
