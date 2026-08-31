@@ -71,6 +71,12 @@ conserve `<details>/<summary>` ; elle ne fournit pas de fermeture exclusive
 entre voisins et ne remplace pas les dropdowns, menus, tooltips, popovers ou
 overlays.
 
+Pour les labels compacts statiques, utiliser `CmmBadge` selon
+[`INDICATORS_BADGES.md`](./INDICATORS_BADGES.md). Le badge conserve une
+sémantique neutre, expose ses variantes par `data-badge-tone`,
+`data-badge-size` et `data-badge-shape`, et ne doit pas être le seul vecteur
+d’une information.
+
 ## Architecture CSS runtime
 
 `apps/web/src/app/globals.css` reste le point d’entrée unique du CSS web. Il

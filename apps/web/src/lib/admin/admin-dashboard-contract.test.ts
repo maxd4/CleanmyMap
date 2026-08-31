@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 import {
+  AdminHeroStrip,
   AdminOperationalMetricGrid,
 } from "@/components/admin/admin-dashboard-ui";
 import { ModerationByBlockPanel } from "@/components/admin/moderation-by-block-panel";
@@ -309,5 +310,25 @@ describe("/admin data availability contract", () => {
     expect(pageSource).not.toContain("Workflow administration");
     expect(workflowSource.match(/title="Workflow administration"/g)).toHaveLength(1);
     expect(workflowSource).toContain('variant="warm"');
+  });
+
+  it("renders the admin access label through the canonical static badge", () => {
+    const markup = renderToStaticMarkup(
+      createElement(AdminHeroStrip, {
+        icon: "ShieldCheck",
+        eyebrow: "Administration",
+        description: "Accès de supervision",
+        accessLabel: "Accès administrateur",
+        action: createElement("span", null, "Action"),
+      }),
+    );
+
+    expect(markup).toContain('class="cmm-badge cmm-badge--on-dark"');
+    expect(markup).toContain('data-badge-tone="slate"');
+    expect(markup).toContain('data-badge-size="md"');
+    expect(markup).toContain('data-badge-shape="pill"');
+    expect(markup).toContain("Accès administrateur");
+    expect(markup).toContain("Action");
+    expect(markup).not.toContain('role="status"');
   });
 });

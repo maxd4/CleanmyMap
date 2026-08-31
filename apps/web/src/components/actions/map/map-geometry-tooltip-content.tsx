@@ -1,4 +1,5 @@
 import { formatObservedDate } from "./action-popup-content.helpers";
+import { CmmBadge } from "@/components/ui/cmm-badge";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type GeometryTooltipContentProps = {
@@ -38,10 +39,10 @@ export function GeometryTooltipContent({
         <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           {geometryModeLabel}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+        <CmmBadge tone="slate" size="sm" shape="pill">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
           {geometryPointsLabel}
-        </span>
+        </CmmBadge>
       </div>
 
       <p className="mt-1 text-[11px] font-bold leading-tight text-slate-900 dark:text-slate-50">
@@ -50,14 +51,14 @@ export function GeometryTooltipContent({
 
       <div className="mt-2 flex flex-wrap gap-1.5">
         {geometryMetricLabel && (
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+          <CmmBadge tone="slate" size="sm" shape="pill">
             {geometryMetricLabel}
-          </span>
+          </CmmBadge>
         )}
         {geometryConfidenceLabel && (
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+          <CmmBadge tone="slate" size="sm" shape="pill">
             {geometryConfidenceLabel}
-          </span>
+          </CmmBadge>
         )}
       </div>
 
