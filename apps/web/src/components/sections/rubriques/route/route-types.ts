@@ -2,6 +2,8 @@ import type {
   RouteGeometry,
   RouteStop,
 } from "@/lib/route/route-contract";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { RouteDataStatus } from "@/lib/route/route-data-status";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
@@ -16,6 +18,10 @@ export type RouteConstraints = {
 };
 
 export type RouteResponse = {
+  status: "ok";
+  dataStatus: RouteDataStatus;
+  isTruncated: boolean;
+  sourceHealth: UnifiedSourceHealth;
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
   scoreBreakdown: {

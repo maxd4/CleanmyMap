@@ -29,6 +29,11 @@ import {
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
+import {
+  createServerRateLimitResponse,
+  verifyRateLimit,
+} from "@/lib/rate-limit/server";
+import { resolveRouteDataStatus } from "@/lib/route/route-data-status";
 
 export const runtime ="nodejs";
 
@@ -41,13 +46,33 @@ const requestSchema = z.object({
  security: z.enum(["standard","renforced"]).default("standard"),
  weather: z.enum(["ok","rain","wind","heat","cold"]).default("ok"),
  impactVsDistance: z.number().min(0).max(100).default(65),
- maxStops: z.number().int().min(2).max(12).default(6),
+  maxStops: z.number().int().min(2).max(12).default(6),
 });
+
+const ROUTE_RECOMMENDATION_RATE_LIMIT = {
+  limit: 6,
+  window: 60,
+} as const;
+
+const EMPTY_EVENT_PRESSURE_CONTEXT = {
+  pressureByArrondissement: new Map<number, number>(),
+  eventSignals: [],
+};
 
 export async function POST(request: Request) {
  const { userId } = await auth();
  if (!userId) {
  return unauthorizedJsonResponse();
+ }
+
+ const rateLimit = await verifyRateLimit(request, ROUTE_RECOMMENDATION_RATE_LIMIT);
+ const rateLimitResponse = createServerRateLimitResponse(
+   rateLimit.allowed,
+   rateLimit.retryAfter,
+   rateLimit,
+ );
+ if (rateLimitResponse) {
+   return rateLimitResponse;
  }
 
  let rawPayload: unknown;
@@ -72,11 +97,23 @@ export async function POST(request: Request) {
 
  try {
  const supabase = getSupabaseServerClient();
+ const eventPressurePromise = loadCachedEventPressureByArrondissement(() => supabase).catch(
+   (eventPressureError: unknown) => {
+     console.warn("Route recommendation event pressure unavailable; continuing without it", {
+       message:
+         eventPressureError instanceof Error
+           ? eventPressureError.message
+           : String(eventPressureError),
+     });
+     return EMPTY_EVENT_PRESSURE_CONTEXT;
+   },
+ );
  const [locationPreference, eventPressureContext] = await Promise.all([
- getCurrentUserLocationPreference(),
- loadCachedEventPressureByArrondissement(() => supabase),
+   getCurrentUserLocationPreference(),
+   eventPressurePromise,
  ]);
- const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
+ const { items: contracts, isTruncated, sourceHealth } =
+   await fetchUnifiedActionContracts(supabase, {
  limit: 600,
  status:"approved",
  floorDate: defaultRouteRecommendationFloorDate(),
@@ -91,12 +128,20 @@ export async function POST(request: Request) {
  actionableCandidates,
  constraints,
  );
+ const dataStatus = resolveRouteDataStatus({
+   candidateCount: candidates.length,
+   isTruncated,
+   sourceHealth,
+ });
 
   const selected = candidates.slice(0, Math.max(constraints.maxStops * 2, 8));
   const routeStart = selected[0];
   if (routeStart === undefined) {
     return NextResponse.json({
       status: "ok",
+      dataStatus,
+      isTruncated,
+      sourceHealth,
       stops: [],
       routeGeometry: createFallbackRouteGeometry([]),
       scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
@@ -206,6 +251,9 @@ export async function POST(request: Request) {
 
  return NextResponse.json({
  status:"ok",
+ dataStatus,
+ isTruncated,
+ sourceHealth,
  stops,
  routeGeometry,
  scoreBreakdown: {

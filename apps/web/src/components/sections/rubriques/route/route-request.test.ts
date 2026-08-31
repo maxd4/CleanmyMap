@@ -1,0 +1,81 @@
+import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_ROUTE_CONSTRAINTS } from "./route-draft-storage";
+import {
+  createRouteRecommendationRequest,
+  fetchRouteRecommendation,
+} from "./route-request";
+
+const responsePayload = {
+  status: "ok",
+  dataStatus: "empty",
+  isTruncated: false,
+  sourceHealth: {
+    partial: false,
+    failedSources: [],
+    availableSources: ["spots"],
+    warnings: [],
+  },
+  stops: [],
+  routeGeometry: {
+    coordinates: [],
+    distanceKm: 0,
+    durationMinutes: 0,
+    legs: [],
+    provider: "none",
+    profile: null,
+    mode: "fallback",
+    estimated: true,
+  },
+  scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
+  tradeoffs: [],
+  proactiveAssistant: {
+    actNow: "",
+    criticalNearby: "",
+    mostUsefulAction: "",
+    predictedDirtyZones: [],
+    eventAnticipation: [],
+    hotspots: [],
+  },
+} as const;
+
+describe("route recommendation request gate", () => {
+  it("keeps the submitted snapshot stable while the draft is edited", async () => {
+    const submitted = createRouteRecommendationRequest(1, DEFAULT_ROUTE_CONSTRAINTS);
+    const editedConstraints = {
+      ...DEFAULT_ROUTE_CONSTRAINTS,
+      weather: "rain" as const,
+    };
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(submitted, transport);
+
+    expect(transport).toHaveBeenCalledOnce();
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual(
+      DEFAULT_ROUTE_CONSTRAINTS,
+    );
+    expect(submitted.constraints).not.toBe(editedConstraints);
+    expect(submitted.constraints.weather).toBe("ok");
+  });
+
+  it("performs one POST for each explicit calculation request", async () => {
+    const transport = vi.fn().mockImplementation(
+      async () => new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(
+      createRouteRecommendationRequest(1, DEFAULT_ROUTE_CONSTRAINTS),
+      transport,
+    );
+    await fetchRouteRecommendation(
+      createRouteRecommendationRequest(
+        2,
+        { ...DEFAULT_ROUTE_CONSTRAINTS, maxStops: 8 },
+      ),
+      transport,
+    );
+
+    expect(transport).toHaveBeenCalledTimes(2);
+  });
+});
