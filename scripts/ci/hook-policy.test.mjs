@@ -93,13 +93,20 @@ test("pre-push leaves the complete release validation available separately", asy
   }
 });
 
-test("tracked hooks dispatch to their distinct package guards", async () => {
+test("pre-commit remains blocking while pre-push stays non-blocking and manual", async () => {
+  const packageJson = JSON.parse(await readRepoFile("package.json"));
   const preCommitHook = await readRepoFile(".githooks/pre-commit");
   const prePushHook = await readRepoFile(".githooks/pre-push");
+  const prePushGuard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
   assert.match(preCommitHook, /npm run precommit:guard/);
-  assert.match(prePushHook, /npm run prepush:guard -- \"\$@\"/);
-  assert.match(prePushHook, /\$@/);
+  assert.match(packageJson.scripts["prepush:guard"], /pre_push_guard\.ps1/);
+  assert.match(prePushHook, /non-blocking/);
+  assert.match(prePushHook, /npm run prepush:guard/);
+  assert.doesNotMatch(prePushHook, /(^|\n)\s*(?:exec\s+)?npm run prepush:guard(?:\s|$)/);
+  assert.doesNotMatch(prePushHook, /prepush:guard\s+--/);
+  assert.match(prePushGuard, /PUSH_CANDIDATE/);
+  assert.match(prePushGuard, /--candidate-ref=/);
   assert.notEqual(preCommitHook, prePushHook);
 });
 

@@ -30,6 +30,11 @@ médias et rapports présents sous `scripts/`.
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
   `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
   ses checks statiques doivent utiliser `--ref=HEAD` ;
+- le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED` ; le
+  hook `.githooks/pre-push` est volontairement non bloquant et ne doit pas
+  lancer `npm run prepush:guard`. Ce dernier reste une validation renforcée
+  manuelle et opt-in ; les validations larges relèvent de la CI ou d'une
+  préparation explicite de release ;
 - `npm run checks:changed` reste un contrôle `WORKTREE` de développement et ne
   constitue pas une preuve de publication. Un échec prouvé étranger peut être
   classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
