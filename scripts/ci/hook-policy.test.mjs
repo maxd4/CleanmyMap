@@ -37,6 +37,7 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
     "git diff",
     "--candidate-ref=",
     "--candidate-range=",
+    "run-static-candidate-check.mjs",
     "scripts/checks/validation-policy.mjs",
     "scripts/checks/check-root-file-hygiene.mjs",
     "scripts/checks/check-documentation-governance.mjs",
@@ -64,12 +65,12 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.doesNotMatch(guard, /git diff --cached --name-only/);
   assert.doesNotMatch(guard, /git ls-files --others/);
   assert.match(guard, /staticCandidateRefs/);
-  assert.match(guard, /refArgument = "--ref=\$candidateRef"/);
   assert.match(guard, /CandidateRefs @\("HEAD"\)/);
   assert.doesNotMatch(guard, /npm run check:lockfile-policy\b/);
   assert.doesNotMatch(guard, /npm run audit:vercel:ci\b/);
   assert.doesNotMatch(guard, /npm run quality:top-heavy\b/);
   assert.match(guard, /STATIC_CANDIDATE/);
+  assert.match(guard, /exact Git tree named by --ref/);
   assert.match(guard, /DYNAMIC_WORKTREE/);
   assert.match(guard, /HOST_ENVIRONMENT/);
   assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
@@ -85,9 +86,9 @@ test("pre-push leaves the complete release validation available separately", asy
   assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
   assert.doesNotMatch(guard, /Invoke-GuardStep "full validation"/);
   for (const requiredStep of [
-    "node scripts/checks/check-root-file-hygiene.mjs $refArgument",
-    "node scripts/checks/check-gitnexus-hygiene.mjs $refArgument",
-    "node scripts/checks/check-9c-public-facades.mjs $refArgument",
+    "--script=scripts/checks/check-root-file-hygiene.mjs",
+    "--script=scripts/checks/check-gitnexus-hygiene.mjs",
+    "--script=scripts/checks/check-9c-public-facades.mjs",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

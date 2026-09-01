@@ -294,8 +294,9 @@ function Invoke-GuardStep {
     }
 
     function Invoke-StaticCandidateChecks {
-        # STATIC_CANDIDATE: every invariant below reads the exact Git tree named
-        # by --ref. These checks must not be repeated against the worktree.
+        # STATIC_CANDIDATE: the runner materializes the exact Git tree named by --ref
+        # before loading checker code or its relative imports. These
+        # checks must not be repeated against the worktree.
         param(
             [Parameter(Mandatory = $true)]
             [string[]]$CandidateRefs,
@@ -308,28 +309,27 @@ function Invoke-GuardStep {
         )
 
         foreach ($candidateRef in @($CandidateRefs | Sort-Object -Unique)) {
-            $refArgument = "--ref=$candidateRef"
             Write-Host ""
             Write-Host "==> static candidate checks ($candidateRef)"
-            Invoke-GuardStep "root file hygiene ($candidateRef)" { node scripts/checks/check-root-file-hygiene.mjs $refArgument }
-            Invoke-GuardStep "GitNexus hygiene ($candidateRef)" { node scripts/checks/check-gitnexus-hygiene.mjs $refArgument }
-            Invoke-GuardStep "documentation governance ($candidateRef)" { node scripts/checks/check-documentation-governance.mjs $refArgument }
-            Invoke-GuardStep "AGENTS governance ($candidateRef)" { node scripts/checks/check-agent-governance.mjs $refArgument }
-            Invoke-GuardStep "agent skills ($candidateRef)" { node scripts/checks/check-agent-skill-mirrors.mjs $refArgument }
-            Invoke-GuardStep "stack documentation drift ($candidateRef)" { node scripts/checks/check-stack-doc-drift.mjs $refArgument }
-            Invoke-GuardStep "GitHub Actions security ($candidateRef)" { node scripts/checks/check-github-actions-security.mjs $refArgument }
-            Invoke-GuardStep "9C public facades ($candidateRef)" { node scripts/checks/check-9c-public-facades.mjs $refArgument }
+            Invoke-GuardStep "root file hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-root-file-hygiene.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "GitNexus hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-gitnexus-hygiene.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "documentation governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-documentation-governance.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "AGENTS governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-agent-governance.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "agent skills ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-agent-skill-mirrors.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "stack documentation drift ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-stack-doc-drift.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "GitHub Actions security ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-github-actions-security.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "9C public facades ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-9c-public-facades.mjs -- "--ref=$candidateRef" }
 
             if ($DocumentationRelevant) {
-                Invoke-GuardStep "documentation visuals ($candidateRef)" { node scripts/checks/check-doc-visuals.mjs $refArgument }
+                Invoke-GuardStep "documentation visuals ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-doc-visuals.mjs -- "--ref=$candidateRef" }
             }
             if ($SupabaseRelevant) {
-                Invoke-GuardStep "Supabase migration tree audit ($candidateRef)" { node scripts/audits/audit-supabase-migration-trees.mjs $refArgument }
+                Invoke-GuardStep "Supabase migration tree audit ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/audits/audit-supabase-migration-trees.mjs -- "--ref=$candidateRef" }
             }
             if ($WebRelevant) {
-                Invoke-GuardStep "lockfile policy ($candidateRef)" { node scripts/checks/check-lockfile-policy.mjs $refArgument }
-                Invoke-GuardStep "Vercel CI audit ($candidateRef)" { node scripts/audits/audit-vercel-ci.mjs $refArgument }
-                Invoke-GuardStep "top-heavy files policy ($candidateRef)" { node scripts/checks/check-top-heavy-files.mjs --enforce $refArgument }
+                Invoke-GuardStep "lockfile policy ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-lockfile-policy.mjs -- "--ref=$candidateRef" }
+                Invoke-GuardStep "Vercel CI audit ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/audits/audit-vercel-ci.mjs -- "--ref=$candidateRef" }
+                Invoke-GuardStep "top-heavy files policy ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-top-heavy-files.mjs -- --enforce "--ref=$candidateRef" }
             }
         }
     }
@@ -360,12 +360,12 @@ function Invoke-GuardStep {
         $foreignWorktreeOnly =
             -not $CandidateWebRelevant -and
             $scriptTestText -match "(?i)guard-artifacts\.test\.mjs" -and
-            $scriptTestText -match "(?i)vitest.*(n'est pas reconnu|not recognized)" -and
+            $scriptTestText -match "(?i)(vitest|eslint).*(n'est pas reconnu|not recognized)" -and
             $scriptTestText -match "(?i)changed web (source|test) files:\s*[1-9]" -and
             $scriptTestText -match "(?i)1\s*!==\s*0"
 
         if ($foreignWorktreeOnly) {
-            Write-Warning "SKIPPED_PARALLEL_CHANTIER: script tests saw foreign WORKTREE web files in guard-artifacts.test.mjs; the PUSH_CANDIDATE has no web changes and the local vitest command is unavailable."
+            Write-Warning "SKIPPED_PARALLEL_CHANTIER: script tests saw foreign WORKTREE web files in guard-artifacts.test.mjs; the PUSH_CANDIDATE has no web changes and local web tooling is unavailable."
             return
         }
 

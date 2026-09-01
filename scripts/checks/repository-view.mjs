@@ -121,7 +121,7 @@ export function createGitRepositoryView(ref, root = process.cwd()) {
   }
 
   const repositoryRoot = path.resolve(root);
-  const treeOutput = execFileSync("git", ["ls-tree", "-r", "-z", ref, "--"], {
+  const treeOutput = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-z", ref, "--"], {
     cwd: repositoryRoot,
   });
   const objectByPath = new Map();
