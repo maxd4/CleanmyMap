@@ -565,6 +565,12 @@ fallback manuel, la plage reste `origin/main...HEAD`, mais les checks statiques
 utilisent `--ref=HEAD` et ignorent le worktree dirty.
 L'invocation manuelle de `npm run prepush:guard` sans protocole conserve le
 fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback`.
+Le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED`.
+Le hook `.githooks/pre-push` est volontairement non bloquant : il ne lance pas
+`npm run prepush:guard` et ne déclenche pas de validation qualité lourde.
+`npm run prepush:guard` est une validation renforcée, manuelle et opt-in ; les
+validations larges sont exécutées par la CI ou avant une release lorsque cela
+est explicitement requis.
 `npm run checks:changed` est un contrôle de développement `WORKTREE`, et non
 une preuve de publication. Un échec démontré comme étranger peut être signalé
 `SKIPPED_PARALLEL_CHANTIER` lorsque `STAGED` et `PUSH_CANDIDATE` sont verts ;

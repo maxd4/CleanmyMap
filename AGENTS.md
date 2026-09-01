@@ -106,6 +106,11 @@ intermédiaires ne doivent pas commencer par ce canari.
   `--ref=<local-sha>` ; il ne doit lire ni le staged, ni l'unstaged, ni les
   untracked, ni un commit local étranger. Les refs identiques sont dédupliquées
   et une suppression de ref ne possède aucun arbre candidat à valider ;
+- le hook `.githooks/pre-commit` est automatique et bloquant sur `STAGED` ; le
+  hook `.githooks/pre-push` est volontairement non bloquant et n'exécute aucun
+  garde-fou qualité lourd. `npm run prepush:guard` reste disponible comme
+  validation renforcée manuelle et opt-in ; les validations larges relèvent de
+  la CI ou d'une préparation explicite de release ;
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
   `origin/main...HEAD`, qui doit être affiché comme `manual-fallback`, mais ses
   checks statiques doivent utiliser `--ref=HEAD` plutôt que le worktree ;

@@ -2,7 +2,7 @@
 
 Objectif: aucun push GitHub ne doit partir sans validation locale stricte.
 
-## Commande standard
+## Commande manuelle de validation renforcée
 
 ```powershell
 npm run prepush:guard
@@ -20,8 +20,13 @@ Ensuite :
 
 - `.githooks/pre-commit` (hook extensionless, shell, LF) exécute
   `npm run precommit:guard`
-- `.githooks/pre-push` (hook extensionless, shell, LF) exécute
-  `npm run prepush:guard`
+- `.githooks/pre-push` (hook extensionless, shell, LF) reste volontairement
+  non bloquant et n'exécute pas de validation qualité lourde.
+
+`npm run prepush:guard` est conservé comme validation renforcée manuelle et
+opt-in. La CI et les préparations explicites de release portent les
+validations larges ; l'installation des hooks ne transforme pas cette
+validation manuelle en obligation à chaque `git push`.
 
 Les deux scripts CI résolvent la racine du dépôt depuis
 `$PSScriptRoot/../..`, puis exécutent le garde-fou depuis cette racine.
@@ -54,9 +59,11 @@ L'étape Vercel peut être explicitement ignorée pour un contrôle local avec :
 npm run prepush:guard -- -SkipVercel
 ```
 
-Si une étape échoue, le push doit être bloqué.
+Si le garde-fou manuel est lancé et qu'une étape échoue, la publication doit
+être bloquée jusqu'à résolution. Le hook automatique de push, lui, ne lance
+pas ce garde-fou.
 
-## Protocole avant chaque push GitHub
+## Protocole de validation renforcée avant un push GitHub
 
 1. Vérifier les fichiers modifiés:
 
@@ -64,7 +71,7 @@ Si une étape échoue, le push doit être bloqué.
 git status --short
 ```
 
-2. Lancer le garde-fou complet:
+2. Pour une validation renforcée volontaire, lancer le garde-fou complet :
 
 ```powershell
 npm run prepush:guard
@@ -72,7 +79,7 @@ npm run prepush:guard
 
 3. Si `vercel build` échoue pour une raison d'authentification ou d'environnement, corriger la configuration locale ou récupérer les logs du déploiement Vercel avant de pousser.
 
-4. Pousser uniquement si toutes les étapes sont vertes:
+4. Pousser après les validations requises pour le contexte :
 
 ```powershell
 git push
