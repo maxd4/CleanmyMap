@@ -294,6 +294,8 @@ function Invoke-GuardStep {
     }
 
     function Invoke-StaticCandidateChecks {
+        # STATIC_CANDIDATE: every invariant below reads the exact Git tree named
+        # by --ref. These checks must not be repeated against the worktree.
         param(
             [Parameter(Mandatory = $true)]
             [string[]]$CandidateRefs,
@@ -459,11 +461,10 @@ function Invoke-GuardStep {
     }
 
     if ($webRelevant) {
-        Invoke-GuardStep "lockfile policy" { npm run check:lockfile-policy }
+        # DYNAMIC_WORKTREE: these gates execute tools/code from the checkout and
+        # intentionally remain distinct from the static candidate checks above.
         Invoke-GuardStep "lint" { npm run lint }
         Invoke-GuardStep "typecheck" { npm run typecheck }
-        Invoke-GuardStep "Vercel CI audit" { npm run audit:vercel:ci }
-        Invoke-GuardStep "top-heavy files policy" { npm run quality:top-heavy }
 
         $targetedArgs = @(
             "scripts/checks/validation-policy.mjs",
@@ -500,6 +501,8 @@ function Invoke-GuardStep {
         Write-Host ""
         Write-Host "Vercel project link detected:"
         $vercelProjectFiles | ForEach-Object { Write-Host "- $_" }
+        # HOST_ENVIRONMENT + DYNAMIC_WORKTREE: this optional build depends on
+        # the local Vercel project link and executes the checkout build.
         Invoke-VercelBuildGuard
     }
 

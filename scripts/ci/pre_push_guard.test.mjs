@@ -63,6 +63,7 @@ function runGuard({
   remoteBase = "remote-main-sha",
   mergeBase = "merge-base-sha",
   scriptTestsForeignOnly = false,
+  foreignLockfile = false,
 } = {}) {
   const testRoot = mkdtempSync(join(tmpdir(), "cleanmymap-pre-push-guard-"));
   const scriptsRoot = join(testRoot, "scripts", "ci");
@@ -73,6 +74,10 @@ function runGuard({
   mkdirSync(scriptsRoot, { recursive: true });
   mkdirSync(checksRoot, { recursive: true });
   mkdirSync(binRoot, { recursive: true });
+  if (foreignLockfile) {
+    mkdirSync(join(testRoot, "artifacts", "foreign"), { recursive: true });
+    writeFileSync(join(testRoot, "artifacts", "foreign", "package-lock.json"), "{\"name\":\"foreign\"}\n");
+  }
   writeFileSync(join(scriptsRoot, "pre_push_guard.ps1"), GUARD_SOURCE);
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
   writeCommandStub(binRoot, "npm", [
@@ -183,6 +188,25 @@ test("web push keeps the existing web gates", () => {
   assertCommand(result.log, "npm run build");
   assertNoCommand(result.log, "npm run test:scripts");
   assertNoCommand(result.log, "npm run check:doc-visuals");
+});
+
+test("web candidate ignores a foreign artifact lockfile and runs scoped static gates once", () => {
+  const result = runGuard({
+    foreignLockfile: true,
+    records: ["refs/heads/web refs/web-local refs/heads/main refs/web-remote"],
+    rangeFiles: { "refs/web-remote..refs/web-local": ["apps/web/src/lib/example.ts"] },
+  });
+
+  assert.equal(result.status, 0, result.output);
+  assertCommandCount(result.log, "node scripts/checks/check-lockfile-policy.mjs --ref=refs/web-local", 1);
+  assertCommandCount(result.log, "node scripts/audits/audit-vercel-ci.mjs --ref=refs/web-local", 1);
+  assertCommandCount(result.log, "node scripts/checks/check-top-heavy-files.mjs --enforce --ref=refs/web-local", 1);
+  assertNoCommand(result.log, "npm run check:lockfile-policy");
+  assertNoCommand(result.log, "npm run audit:vercel:ci");
+  assertNoCommand(result.log, "npm run quality:top-heavy");
+  assertCommand(result.log, "npm run lint");
+  assertCommand(result.log, "npm run typecheck");
+  assertCommand(result.log, "npm run build");
 });
 
 test("script push runs script tests without web gates", () => {

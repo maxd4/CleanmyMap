@@ -66,6 +66,12 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.match(guard, /staticCandidateRefs/);
   assert.match(guard, /refArgument = "--ref=\$candidateRef"/);
   assert.match(guard, /CandidateRefs @\("HEAD"\)/);
+  assert.doesNotMatch(guard, /npm run check:lockfile-policy\b/);
+  assert.doesNotMatch(guard, /npm run audit:vercel:ci\b/);
+  assert.doesNotMatch(guard, /npm run quality:top-heavy\b/);
+  assert.match(guard, /STATIC_CANDIDATE/);
+  assert.match(guard, /DYNAMIC_WORKTREE/);
+  assert.match(guard, /HOST_ENVIRONMENT/);
   assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
   assert.match(guard, /Write-SkippedGuardStep/);
