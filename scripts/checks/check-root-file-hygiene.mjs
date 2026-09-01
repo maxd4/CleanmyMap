@@ -1,7 +1,6 @@
-import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const repoRoot = process.cwd();
 const allowRootFileGeneration = process.env.ALLOW_ROOT_FILE_GENERATION === "1";
@@ -71,22 +70,6 @@ export const localOnlyTrackedPrefixes = localOnlyRootDirectories.map(
   (directory) => `${directory}/`,
 );
 
-function listRootFiles(directory) {
-  return fs
-    .readdirSync(directory, { withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name)
-    .sort();
-}
-
-function listRootDirectories(directory) {
-  return fs
-    .readdirSync(directory, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-}
-
 export function findForbiddenRootDirectories(rootDirectories) {
   const allowed = new Set(allowedRootDirectories);
   return rootDirectories
@@ -100,19 +83,9 @@ export function findForbiddenTrackedPaths(trackedFiles) {
   );
 }
 
-function listTrackedFiles(directory) {
-  return execFileSync("git", ["ls-files", "-z"], {
-    cwd: directory,
-    encoding: "buffer",
-  })
-    .toString("utf8")
-    .split("\0")
-    .filter(Boolean);
-}
-
-function main() {
-  const rootFiles = listRootFiles(repoRoot);
-  const rootDirectories = listRootDirectories(repoRoot);
+export function validateRootFileHygiene(view, { allowRootFileGeneration = false } = {}) {
+  const rootFiles = view.rootFiles();
+  const rootDirectories = view.rootDirectories();
   const forbidden = allowRootFileGeneration
     ? []
     : rootFiles.filter(
@@ -121,8 +94,17 @@ function main() {
       );
   const forbiddenRootDirectories = findForbiddenRootDirectories(rootDirectories);
   const forbiddenTrackedPaths = findForbiddenTrackedPaths(
-    listTrackedFiles(repoRoot),
+    view.listFiles(),
   );
+
+  return { rootFiles, rootDirectories, forbidden, forbiddenRootDirectories, forbiddenTrackedPaths };
+}
+
+function main() {
+  const ref = parseRepositoryRef();
+  const view = createRepositoryView({ root: repoRoot, ref });
+  const { rootFiles, rootDirectories, forbidden, forbiddenRootDirectories, forbiddenTrackedPaths } =
+    validateRootFileHygiene(view, { allowRootFileGeneration });
 
   if (
     forbidden.length > 0 ||
@@ -163,7 +145,7 @@ function main() {
   console.log(
     `Root file and directory hygiene OK (${rootFiles.length} files and ${rootDirectories.length} directories scanned${
       allowRootFileGeneration ? ", file override enabled" : ""
-    }; no unknown directories or local-only tracked paths).`,
+    }${ref ? `; ref ${ref}` : ""}; no unknown directories or local-only tracked paths).`,
   );
 }
 

@@ -98,11 +98,26 @@ intermédiaires ne doivent pas commencer par ce canari.
   fichiers ou contrats du lot impose un STOP explicite ;
 - distinguer les trois portées de validation : `WORKTREE` pour l'itération
   manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
-  pré-commit (`git diff --cached`) et `COMMITTED RANGE` pour le pré-push
-  (`origin/main...HEAD`, sans dépendre du dirty state) ;
+  pré-commit (`git diff --cached`) et `PUSH_CANDIDATE` pour le vrai pré-push,
+  construit exclusivement depuis les refs et le stdin du protocole Git, sans
+  dépendre du dirty state, de `HEAD` global ou d'un commit local non envoyé ;
+- `PUSH_CANDIDATE` désigne l'arbre Git exact de chaque SHA local effectivement
+  poussé. Tout check statique exécuté par le pre-push doit lire cet arbre via
+  `--ref=<local-sha>` ; il ne doit lire ni le staged, ni l'unstaged, ni les
+  untracked, ni un commit local étranger. Les refs identiques sont dédupliquées
+  et une suppression de ref ne possède aucun arbre candidat à valider ;
+- l'invocation manuelle du guard sans protocole peut utiliser le fallback
+  `origin/main...HEAD`, qui doit être affiché comme `manual-fallback`, mais ses
+  checks statiques doivent utiliser `--ref=HEAD` plutôt que le worktree ;
+- `npm run checks:changed` est un contrôle de développement `WORKTREE`, pas une
+  preuve de publication. Si son échec est démontré comme étranger, tandis que
+  `STAGED` et `PUSH_CANDIDATE` sont verts, le signaler comme
+  `SKIPPED_PARALLEL_CHANTIER` sans masquer une erreur du candidat ;
+- les suites lourdes ne doivent pas être répétées entre phases sans raison
+  liée au candidat réellement validé ;
 - le flux normal de publication est : allowlist → stage ciblé → validation
   `STAGED` → commit → `git fetch origin main` → vérification d'ascendance et de
-  périmètre → validation `COMMITTED RANGE` → push normal. En sandbox, transférer
+  périmètre → validation `PUSH_CANDIDATE` → push normal. En sandbox, transférer
   aussi les ajouts et suppressions de l'allowlist, vérifier l'absence de fichier
   étranger, puis appliquer au plus une nouvelle tentative bornée après une
   avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
