@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { exportFormAsPdf } from "@/lib/actions/exports/export-form-pdf";
 import {
   buildActionDeclarationExportLabel,
@@ -209,27 +210,6 @@ export function ActionDeclarationExportPicker({
       // localStorage can be unavailable in private or restricted contexts.
     }
   }, [history]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen, onClose]);
 
   async function handleExport(target: ActionDeclarationExportTarget) {
     setStatus("exporting-single");
@@ -437,23 +417,14 @@ export function ActionDeclarationExportPicker({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
+    <CmmDialog
+      open={isOpen}
+      onClose={onClose}
+      ariaLabelledBy="action-declaration-export-title"
+      size="xl"
+      panelClassName="max-h-[calc(100dvh-1.25rem)] overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl"
     >
-      <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" aria-hidden="true" />
-
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="action-declaration-export-title"
-        className="relative z-10 flex max-h-[calc(100dvh-1.25rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl"
-      >
+      <section className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-3 sm:px-6 sm:py-4">
           <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700">
@@ -855,6 +826,6 @@ export function ActionDeclarationExportPicker({
           ) : null}
         </div>
       </section>
-    </div>
+    </CmmDialog>
   );
 }

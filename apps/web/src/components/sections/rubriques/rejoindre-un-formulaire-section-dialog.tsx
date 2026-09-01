@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
@@ -20,89 +21,21 @@ export function JoinFormConfirmationDialog({
   onClose,
   onConfirm,
 }: JoinFormConfirmationDialogProps) {
-  const dialogRef = useRef<HTMLDivElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (!pendingAction) {
-      return undefined;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    const previouslyFocusedElement = document.activeElement;
-    if (previouslyFocusedElement instanceof HTMLElement) {
-      previouslyFocusedElementRef.current = previouslyFocusedElement;
-    }
-    document.body.style.overflow = "hidden";
-
-    const focusableSelector = [
-      "button:not([disabled])",
-      "[href]",
-      "input:not([disabled])",
-      "select:not([disabled])",
-      "textarea:not([disabled])",
-      '[tabindex]:not([tabindex="-1"])',
-    ].join(",");
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") {
-        return;
-      }
-
-      const dialogElement = dialogRef.current;
-      if (!dialogElement) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        dialogElement.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter((element) => !element.hasAttribute("disabled"));
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey) {
-        if (activeElement === firstElement || !dialogElement.contains(activeElement)) {
-          event.preventDefault();
-          lastElement.focus();
-        }
-        return;
-      }
-
-      if (activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    window.setTimeout(() => {
-      confirmButtonRef.current?.focus();
-    }, 0);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previouslyFocusedElementRef.current?.focus();
-    };
-  }, [onClose, pendingAction, pendingAction?.id]);
 
   if (!pendingAction) {
-    return null;
+    return (
+      <CmmDialog
+        open={Boolean(pendingAction)}
+        onClose={onClose}
+        ariaLabelledBy="join-dialog-title"
+        ariaDescribedBy="join-dialog-description"
+        size="md"
+        initialFocusRef={confirmButtonRef}
+      >
+        {null}
+      </CmmDialog>
+    );
   }
 
   const isLeaveFlow = mode === "leave";
@@ -141,23 +74,15 @@ export function JoinFormConfirmationDialog({
       : "Your request appears in the public queue.";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
+    <CmmDialog
+      open={Boolean(pendingAction)}
+      onClose={onClose}
+      ariaLabelledBy="join-dialog-title"
+      ariaDescribedBy="join-dialog-description"
+      size="md"
+      initialFocusRef={confirmButtonRef}
+      panelClassName="rounded-[2rem] border border-emerald-200 bg-white p-6 text-slate-900 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.55)]"
     >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="join-dialog-title"
-        aria-describedby="join-dialog-description"
-        className="w-full max-w-lg rounded-[2rem] border border-emerald-200 bg-white p-6 text-slate-900 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.55)]"
-      >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700/70">
@@ -237,7 +162,6 @@ export function JoinFormConfirmationDialog({
             {confirmLabel}
           </CmmButton>
         </div>
-      </div>
-    </div>
+    </CmmDialog>
   );
 }

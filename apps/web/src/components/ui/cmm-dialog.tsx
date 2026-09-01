@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { cn } from "@/lib/utils";
 
 export type CmmDialogSize = "sm" | "md" | "lg" | "xl";
@@ -21,6 +21,7 @@ export type CmmDialogProps = CmmDialogAccessibleName & {
   children: ReactNode;
   onClose?: () => void;
   ariaDescribedBy?: string;
+  initialFocusRef?: RefObject<HTMLElement | null>;
   dismissible?: boolean;
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
@@ -66,6 +67,7 @@ export function CmmDialog({
   ariaLabel,
   ariaLabelledBy,
   ariaDescribedBy,
+  initialFocusRef,
   dismissible = true,
   closeOnBackdrop = true,
   closeOnEscape = true,
@@ -97,8 +99,9 @@ export function CmmDialog({
 
     const panel = panelRef.current;
     if (panel) {
+      const initialFocusElement = initialFocusRef?.current;
       const firstFocusableElement = getFocusableElements(panel)[0];
-      focusWithoutScroll(firstFocusableElement ?? panel);
+      focusWithoutScroll(initialFocusElement ?? firstFocusableElement ?? panel);
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -157,7 +160,7 @@ export function CmmDialog({
         focusWithoutScroll(previousFocus);
       }
     };
-  }, [open]);
+  }, [initialFocusRef, open]);
 
   if (!open) {
     return null;

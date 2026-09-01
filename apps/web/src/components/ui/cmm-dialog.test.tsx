@@ -69,13 +69,15 @@ describe("CmmDialog", () => {
       "previousFocusRef.current",
       "event.target === event.currentTarget",
       "event.stopPropagation()",
-      "focusWithoutScroll(firstFocusableElement ?? panel)",
+      "focusWithoutScroll(initialFocusElement ?? firstFocusableElement ?? panel)",
     ]) {
       expect(source).toContain(marker);
     }
 
     expect(source).toContain("ariaLabel: string");
     expect(source).toContain("ariaLabelledBy: string");
+    expect(source).toContain("initialFocusRef?: RefObject<HTMLElement | null>");
+    expect(source).toContain("const initialFocusElement = initialFocusRef?.current");
     expect(source).not.toMatch(/(?:bg-|border-|shadow-|rounded-|p-|px-|py-|transition)/);
   });
 
