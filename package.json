@@ -68,6 +68,7 @@
     "check:disclosure": "node scripts/checks/check-disclosure-governance.mjs",
     "check:indicators": "node scripts/checks/check-indicators-governance.mjs",
     "check:states": "node scripts/checks/check-states-governance.mjs",
+    "check:overlays": "node scripts/checks/check-overlays-governance.mjs",
     "analyze:heavy-files": "node scripts/reports/analyze-heavy-files.mjs",
     "data:export:clerk": "node scripts/data/export-clerk-users.mjs",
     "data:audit:clerk-supabase": "node scripts/audits/audit-clerk-supabase.mjs",
