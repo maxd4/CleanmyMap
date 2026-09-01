@@ -155,6 +155,17 @@ function assertNoCommand(log, command) {
   assert.ok(!log.split(/\r?\n/).some((line) => line === command), `unexpected command: ${command}\n${log}`);
 }
 
+function candidateCheckCommand(ref, script, extraArguments = []) {
+  return [
+    "node scripts/ci/run-static-candidate-check.mjs",
+    `--ref=${ref}`,
+    `--script=${script}`,
+    "--",
+    ...extraArguments,
+    `--ref=${ref}`,
+  ].join(" ");
+}
+
 test("docs-only push ignores a foreign web commit in HEAD", () => {
   const result = runGuard({
     records: ["refs/heads/docs refs/docs-local refs/heads/main refs/docs-remote"],
@@ -164,9 +175,9 @@ test("docs-only push ignores a foreign web commit in HEAD", () => {
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = push-protocol/);
   assert.match(result.output, /\[skip\] web quality gates: no web-relevant changes/);
-  assertCommand(result.log, "node scripts/checks/check-root-file-hygiene.mjs --ref=refs/docs-local");
-  assertCommand(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/docs-local");
-  assertCommand(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=refs/docs-local");
+  assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-root-file-hygiene.mjs"));
+  assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-documentation-governance.mjs"));
+  assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-doc-visuals.mjs"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local");
   assertNoCommand(result.log, "npm run lint");
   assertNoCommand(result.log, "npm run typecheck");
@@ -198,9 +209,9 @@ test("web candidate ignores a foreign artifact lockfile and runs scoped static g
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommandCount(result.log, "node scripts/checks/check-lockfile-policy.mjs --ref=refs/web-local", 1);
-  assertCommandCount(result.log, "node scripts/audits/audit-vercel-ci.mjs --ref=refs/web-local", 1);
-  assertCommandCount(result.log, "node scripts/checks/check-top-heavy-files.mjs --enforce --ref=refs/web-local", 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-lockfile-policy.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/web-local", "scripts/audits/audit-vercel-ci.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/web-local", "scripts/checks/check-top-heavy-files.mjs", ["--enforce"]), 1);
   assertNoCommand(result.log, "npm run check:lockfile-policy");
   assertNoCommand(result.log, "npm run audit:vercel:ci");
   assertNoCommand(result.log, "npm run quality:top-heavy");
@@ -240,7 +251,7 @@ test("Supabase push runs its audit and no production build", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommand(result.log, "node scripts/audits/audit-supabase-migration-trees.mjs --ref=refs/db-local");
+  assertCommand(result.log, candidateCheckCommand("refs/db-local", "scripts/audits/audit-supabase-migration-trees.mjs"));
   assertCommand(result.log, "npm run lint");
   assertCommand(result.log, "npm run typecheck");
   assertNoCommand(result.log, "npm run build");
@@ -259,9 +270,9 @@ test("multi-ref push unions ranges and runs global checks once", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommandCount(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=refs/docs-local", 1);
-  assertCommandCount(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/docs-local", 1);
-  assertCommandCount(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/scripts-local", 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-doc-visuals.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-documentation-governance.mjs"), 1);
+  assertCommandCount(result.log, candidateCheckCommand("refs/scripts-local", "scripts/checks/check-documentation-governance.mjs"), 1);
   assertCommandCount(result.log, "npm run test:scripts", 1);
   assertCommandCount(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
   assertNoCommand(result.log, "npm run lint");
@@ -310,7 +321,7 @@ test("manual invocation keeps the documented fallback visible", () => {
 
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = manual-fallback/);
-  assertCommand(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=HEAD");
+  assertCommand(result.log, candidateCheckCommand("HEAD", "scripts/checks/check-doc-visuals.mjs"));
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
   assertNoCommand(result.log, "npm run lint");
 });
