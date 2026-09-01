@@ -27,6 +27,16 @@ médias et rapports présents sous `scripts/`.
   l'arbre Git exact correspondant, sans staged, unstaged, untracked ni commit
   local étranger. Les SHA identiques sont dédupliqués ; une ref supprimée n'a
   pas d'arbre candidat ;
+- les gates dynamiques du pre-push (`test:scripts`, lint, typecheck, Vitest et
+  build) doivent utiliser `DYNAMIC_CANDIDATE` et un arbre éphémère construit
+  exclusivement depuis le SHA candidat sous
+  `.artifacts/validation/prepush-candidate/<sha>/`. Elles ne doivent jamais
+  lire le WORKTREE ni ses fichiers étrangers ; les dépendances locales peuvent
+    être reliées ou matérialisées temporairement sous cette racine sans modifier
+    le dépôt, et l'index normal doit rester inchangé ;
+- un outil ou une dépendance absente est un blocage `HOST_ENVIRONMENT` explicite,
+  jamais un `SKIPPED_PARALLEL_CHANTIER`. Le fallback manuel matérialise `HEAD`
+  comme candidat dynamique ;
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
   `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
   ses checks statiques doivent utiliser `--ref=HEAD` ;

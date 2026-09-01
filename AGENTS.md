@@ -106,6 +106,17 @@ intermédiaires ne doivent pas commencer par ce canari.
   `--ref=<local-sha>` ; il ne doit lire ni le staged, ni l'unstaged, ni les
   untracked, ni un commit local étranger. Les refs identiques sont dédupliquées
   et une suppression de ref ne possède aucun arbre candidat à valider ;
+- les validations dynamiques du pre-push réel utilisent la portée
+  `DYNAMIC_CANDIDATE` : `test:scripts`, lint, typecheck, Vitest et build sont
+  exécutés dans un arbre éphémère matérialisé exclusivement depuis le SHA
+  candidat sous `.artifacts/validation/prepush-candidate/<sha>/`, jamais dans
+    le WORKTREE. Les dépendances locales peuvent être reliées ou matérialisées
+    temporairement sous cette racine sans modifier le dépôt ;
+  l'index normal et les refs Git restent inchangés ;
+- un outil ou une dépendance dynamique absente relève de `HOST_ENVIRONMENT` et
+  bloque avec un diagnostic explicite ; il ne doit pas être reclassé comme
+  chantier parallèle. Le fallback manuel utilise `HEAD` comme candidat
+  dynamique matérialisé, pas le WORKTREE dirty ;
 - le hook `.githooks/pre-commit` est automatique et bloquant sur `STAGED` ; le
   hook `.githooks/pre-push` est volontairement non bloquant et n'exécute aucun
   garde-fou qualité lourd. `npm run prepush:guard` reste disponible comme

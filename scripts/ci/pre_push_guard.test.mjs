@@ -11,6 +11,14 @@ const POLICY_PATH = join(REPO_ROOT, "scripts", "checks", "validation-policy.mjs"
 const GUARD_SOURCE = readFileSync(GUARD_PATH, "utf8");
 const POLICY_SOURCE = readFileSync(POLICY_PATH, "utf8");
 
+function withoutCandidateGitEnvironment(extra = {}) {
+  const env = { ...process.env, ...extra };
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_INDEX_FILE;
+  return env;
+}
+
 function writeCommandStub(binRoot, name, lines) {
   writeFileSync(
     join(binRoot, `${name}.cmd`),
@@ -62,8 +70,8 @@ function runGuard({
   ancestorExit = 0,
   remoteBase = "remote-main-sha",
   mergeBase = "merge-base-sha",
-  scriptTestsForeignOnly = false,
   foreignLockfile = false,
+  foreignWebWorktree = false,
 } = {}) {
   const testRoot = mkdtempSync(join(tmpdir(), "cleanmymap-pre-push-guard-"));
   const scriptsRoot = join(testRoot, "scripts", "ci");
@@ -78,22 +86,13 @@ function runGuard({
     mkdirSync(join(testRoot, "artifacts", "foreign"), { recursive: true });
     writeFileSync(join(testRoot, "artifacts", "foreign", "package-lock.json"), "{\"name\":\"foreign\"}\n");
   }
+  if (foreignWebWorktree) {
+    mkdirSync(join(testRoot, "apps", "web", "src"), { recursive: true });
+    writeFileSync(join(testRoot, "apps", "web", "src", "foreign-invalid.test.ts"), "this is not valid TypeScript\n");
+  }
   writeFileSync(join(scriptsRoot, "pre_push_guard.ps1"), GUARD_SOURCE);
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
-  writeCommandStub(binRoot, "npm", [
-    ...(scriptTestsForeignOnly
-      ? [
-          'if /I "%~1"=="run" if /I "%~2"=="test:scripts" (',
-          '  echo test at scripts\\checks\\guard-artifacts.test.mjs:94:3',
-          '  echo changed web source files: 27',
-          '  echo vitest n^\'est pas reconnu',
-          '  echo 1 ^!^=^= 0',
-          '  exit /b 1',
-          ')',
-        ]
-      : []),
-    '>>"%GUARD_TEST_LOG%" echo npm %*',
-  ]);
+  writeCommandStub(binRoot, "npm", ['>>"%GUARD_TEST_LOG%" echo npm %*']);
   writeCommandStub(binRoot, "npx", ['>>"%GUARD_TEST_LOG%" echo npx %*']);
   writeCommandStub(binRoot, "node", [
     'if /I "%~1"=="scripts/checks/validation-policy.mjs" goto :runreal',
@@ -122,11 +121,10 @@ function runGuard({
         cwd: testRoot,
         input: records.length > 0 ? `${records.join("\n")}\n` : undefined,
         encoding: "utf8",
-        env: {
-          ...process.env,
+        env: withoutCandidateGitEnvironment({
           GUARD_TEST_LOG: logPath,
           PATH: `${binRoot};${process.env.PATH ?? ""}`,
-        },
+        }),
         windowsHide: true,
         maxBuffer: 2 * 1024 * 1024,
       },
@@ -144,6 +142,10 @@ function runGuard({
 
 function assertCommand(log, command) {
   assert.ok(log.split(/\r?\n/).some((line) => line === command), `missing command: ${command}\n${log}`);
+}
+
+function assertCommandPrefix(log, prefix) {
+  assert.ok(log.split(/\r?\n/).some((line) => line.startsWith(prefix)), `missing command prefix: ${prefix}\n${log}`);
 }
 
 function assertCommandCount(log, command, expected) {
@@ -166,6 +168,16 @@ function candidateCheckCommand(ref, script, extraArguments = []) {
   ].join(" ");
 }
 
+function dynamicCandidateCommand(ref, command, commandArguments = []) {
+  return [
+    "node scripts/ci/run-dynamic-candidate-check.mjs",
+    `--ref=${ref}`,
+    `--command=${command}`,
+    "--",
+    ...commandArguments,
+  ].join(" ");
+}
+
 test("docs-only push ignores a foreign web commit in HEAD", () => {
   const result = runGuard({
     records: ["refs/heads/docs refs/docs-local refs/heads/main refs/docs-remote"],
@@ -174,7 +186,7 @@ test("docs-only push ignores a foreign web commit in HEAD", () => {
 
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = push-protocol/);
-  assert.match(result.output, /\[skip\] web quality gates: no web-relevant changes/);
+  assert.match(result.output, /\[skip\] web quality gates \(refs\/docs-local\): no web-relevant changes/);
   assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-root-file-hygiene.mjs"));
   assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-documentation-governance.mjs"));
   assertCommand(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-doc-visuals.mjs"));
@@ -194,16 +206,23 @@ test("web push keeps the existing web gates", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommand(result.log, "npm run lint");
-  assertCommand(result.log, "npm run typecheck");
-  assertCommand(result.log, "npm run build");
-  assertNoCommand(result.log, "npm run test:scripts");
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"]));
+  assertCommandPrefix(result.log, dynamicCandidateCommand("refs/web-local", "node", [
+    "scripts/checks/validation-policy.mjs",
+    "--run-vitest",
+    "--groups",
+    "security,regression",
+  ]));
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "test:scripts"]));
   assertNoCommand(result.log, "npm run check:doc-visuals");
 });
 
 test("web candidate ignores a foreign artifact lockfile and runs scoped static gates once", () => {
   const result = runGuard({
     foreignLockfile: true,
+    foreignWebWorktree: true,
     records: ["refs/heads/web refs/web-local refs/heads/main refs/web-remote"],
     rangeFiles: { "refs/web-remote..refs/web-local": ["apps/web/src/lib/example.ts"] },
   });
@@ -215,9 +234,10 @@ test("web candidate ignores a foreign artifact lockfile and runs scoped static g
   assertNoCommand(result.log, "npm run check:lockfile-policy");
   assertNoCommand(result.log, "npm run audit:vercel:ci");
   assertNoCommand(result.log, "npm run quality:top-heavy");
-  assertCommand(result.log, "npm run lint");
-  assertCommand(result.log, "npm run typecheck");
-  assertCommand(result.log, "npm run build");
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"]));
+  assert.doesNotMatch(result.output, /foreign-invalid\.test\.ts|artifacts[\\/]foreign[\\/]package-lock\.json/);
 });
 
 test("script push runs script tests without web gates", () => {
@@ -227,21 +247,10 @@ test("script push runs script tests without web gates", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommand(result.log, "npm run test:scripts");
-  assertNoCommand(result.log, "npm run lint");
-  assertNoCommand(result.log, "npm run typecheck");
-  assertNoCommand(result.log, "npm run build");
-});
-
-test("classifies only the known foreign worktree script-test failure", () => {
-  const result = runGuard({
-    scriptTestsForeignOnly: true,
-    records: ["refs/heads/scripts refs/scripts-local refs/heads/main refs/scripts-remote"],
-    rangeFiles: { "refs/scripts-remote..refs/scripts-local": ["scripts/ci/example.mjs"] },
-  });
-
-  assert.equal(result.status, 0, result.output);
-  assert.match(result.output, /SKIPPED_PARALLEL_CHANTIER/);
+  assertCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "test:scripts"]));
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "lint"]));
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "typecheck"]));
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "build"]));
 });
 
 test("Supabase push runs its audit and no production build", () => {
@@ -252,9 +261,9 @@ test("Supabase push runs its audit and no production build", () => {
 
   assert.equal(result.status, 0, result.output);
   assertCommand(result.log, candidateCheckCommand("refs/db-local", "scripts/audits/audit-supabase-migration-trees.mjs"));
-  assertCommand(result.log, "npm run lint");
-  assertCommand(result.log, "npm run typecheck");
-  assertNoCommand(result.log, "npm run build");
+  assertCommand(result.log, dynamicCandidateCommand("refs/db-local", "npm", ["run", "lint"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/db-local", "npm", ["run", "typecheck"]));
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/db-local", "npm", ["run", "build"]));
 });
 
 test("multi-ref push unions ranges and runs global checks once", () => {
@@ -273,9 +282,9 @@ test("multi-ref push unions ranges and runs global checks once", () => {
   assertCommandCount(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-doc-visuals.mjs"), 1);
   assertCommandCount(result.log, candidateCheckCommand("refs/docs-local", "scripts/checks/check-documentation-governance.mjs"), 1);
   assertCommandCount(result.log, candidateCheckCommand("refs/scripts-local", "scripts/checks/check-documentation-governance.mjs"), 1);
-  assertCommandCount(result.log, "npm run test:scripts", 1);
+  assertCommandCount(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "test:scripts"]), 1);
   assertCommandCount(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
-  assertNoCommand(result.log, "npm run lint");
+  assertNoCommand(result.log, dynamicCandidateCommand("refs/scripts-local", "npm", ["run", "lint"]));
 });
 
 test("ref deletion skips tree validation", () => {

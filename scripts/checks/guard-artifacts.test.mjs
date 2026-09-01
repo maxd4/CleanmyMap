@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
@@ -18,12 +18,12 @@ const DIRTY_ROUTE_SENTINEL = join(WEB_SOURCE, "app", "api", "route", "recommend"
 const STAGED_SECRET_SENTINEL = join(WEB_SOURCE, "components", "ui", "__codex-staged-secret.ts");
 const DIRTY_SECRET_SENTINEL = join(WEB_SOURCE, "app", "api", "route", "recommend", "__codex-dirty-secret.ts");
 
-function runPowerShell(scriptPath, args = [], envOverrides = {}) {
+function runPowerShell(scriptPath, args = [], envOverrides = {}, cwd = ROOT) {
   return spawnSync(
     "powershell.exe",
     ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...args],
     {
-      cwd: ROOT,
+      cwd,
       encoding: "utf8",
       env: { ...process.env, ...envOverrides },
       windowsHide: true,
@@ -46,6 +46,20 @@ function runGit(args, env) {
   const result = spawnSync("git", args, { cwd: ROOT, env, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   return result;
+}
+
+function runGitAt(cwd, args, env = process.env) {
+  const result = spawnSync("git", args, { cwd, env, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  return result;
+}
+
+function withoutCandidateGitEnvironment(extra = {}) {
+  const env = { ...process.env, ...extra };
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_INDEX_FILE;
+  return env;
 }
 
 function withAlternateIndex(callback) {
@@ -72,6 +86,24 @@ function createStressFixture() {
   }
 }
 
+function createQuickCheckFixture() {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "cleanmymap-quick-guard-"));
+  mkdirSync(join(fixtureRoot, "scripts", "checks"), { recursive: true });
+  mkdirSync(join(fixtureRoot, "apps", "web", "src", "components"), { recursive: true });
+  writeFileSync(join(fixtureRoot, ".gitignore"), ".next-codex-guard-stress/\nnode_modules/\n");
+  writeFileSync(
+    join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+    readFileSync(join(ROOT, "scripts", "checks", "check_changed_quick.ps1"), "utf8"),
+  );
+  const fixtureEnv = withoutCandidateGitEnvironment();
+  runGitAt(fixtureRoot, ["init", "-q"], fixtureEnv);
+  runGitAt(fixtureRoot, ["config", "user.email", "codex.invalid"], fixtureEnv);
+  runGitAt(fixtureRoot, ["config", "user.name", "Codex"], fixtureEnv);
+  runGitAt(fixtureRoot, ["add", "."], fixtureEnv);
+  runGitAt(fixtureRoot, ["commit", "-qm", "fixture baseline"], fixtureEnv);
+  return fixtureRoot;
+}
+
 function cleanupFixtures() {
   for (const file of [
     QUICK_SENTINEL,
@@ -92,20 +124,36 @@ afterEach(cleanupFixtures);
 
 describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
   it("ignores a large generated tree while retaining an untracked source and test", () => {
-    createStressFixture();
-    writeFileSync(QUICK_SENTINEL, "export const quickGuardSentinel = true;\n");
-    writeFileSync(
-      QUICK_TEST_SENTINEL,
-      'import { describe, expect, it } from "vitest";\ndescribe("guard sentinel", () => it("passes", () => expect(true).toBe(true)));\n',
-    );
+    const fixtureRoot = createQuickCheckFixture();
+    const binRoot = createNpmStub();
+    try {
+      const sourceSentinel = join(fixtureRoot, "apps", "web", "src", "components", "cmm-quick-guard-sentinel.ts");
+      const testSentinel = join(fixtureRoot, "apps", "web", "src", "components", "cmm-quick-guard-sentinel.test.ts");
+      const generatedRoot = join(fixtureRoot, "apps", "web", ".next-codex-guard-stress");
+      mkdirSync(generatedRoot, { recursive: true });
+      writeFileSync(join(generatedRoot, "chunk.js"), "export const generated = true;\n");
+      writeFileSync(sourceSentinel, "export const quickGuardSentinel = true;\n");
+      writeFileSync(
+        testSentinel,
+        'import { describe, expect, it } from "vitest";\ndescribe("guard sentinel", () => it("passes", () => expect(true).toBe(true)));\n',
+      );
 
-    const result = runPowerShell(join(ROOT, "scripts", "checks", "check_changed_quick.ps1"));
-    const output = `${result.stdout}\n${result.stderr}`;
-    assert.equal(result.status, 0, output);
-    assert.match(output, /cmm-quick-guard-sentinel\.ts/);
-    assert.match(output, /cmm-quick-guard-sentinel\.test\.ts/);
-    assert.doesNotMatch(output, /\.next-codex-guard-stress/);
-    assert.doesNotMatch(output, /too long|longueur de commande/i);
+      const result = runPowerShell(
+        join(fixtureRoot, "scripts", "checks", "check_changed_quick.ps1"),
+        [],
+        withoutCandidateGitEnvironment({ PATH: `${binRoot};${process.env.PATH ?? ""}` }),
+        fixtureRoot,
+      );
+      const output = `${result.stdout}\n${result.stderr}`;
+      assert.equal(result.status, 0, output);
+      assert.match(output, /changed total: 2/);
+      assert.match(output, /changed web test files: 1/);
+      assert.doesNotMatch(output, /\.next-codex-guard-stress/);
+      assert.doesNotMatch(output, /too long|longueur de commande/i);
+    } finally {
+      rmSync(binRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
   });
 
   it("keeps detecting a real untracked source secret without scanning the cache", () => {
