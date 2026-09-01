@@ -173,5 +173,5 @@ Si tu veux une séquence ultra-courte pour une IA de maintenance, utilise plutô
 ## Références
 
 - [TypeScript Precision Policy](./typescript-precision-policy.md)
-- [AI Mindset Kaizen](./AI_MINDSET_KAIZEN.md)
+- [Principes Kaizen](./kaizen/PRINCIPLES.md)
 - [TypeScript strict - rapport priorisé](./typescript-strict-priority-report.md)

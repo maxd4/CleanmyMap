@@ -71,6 +71,6 @@ Quand une erreur TypeScript apparaît:
 
 ## Références
 
-- [AI Mindset Kaizen](./AI_MINDSET_KAIZEN.md)
+- [Principes Kaizen](./kaizen/PRINCIPLES.md)
 - [Checklist de correction ESLint](./LINT_CORRECTION_CHECKLIST.md)
 - [TypeScript strict - rapport priorisé](./typescript-strict-priority-report.md)

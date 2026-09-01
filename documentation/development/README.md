@@ -17,6 +17,8 @@ concurrente.
 - [Testing](./TESTING.md) — stratégie et commandes de test ;
 - [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées
   lorsqu'elles sont directement concernées.
+- [Doctrine Kaizen](./kaizen/README.md) — amélioration continue, méthode d'audit
+  et template canonique de développement.
 
 ## Routage rapide
 
