@@ -563,6 +563,15 @@ effectivement poussé via `--ref=<local-sha>` ; les SHA identiques sont
 dédupliqués et une suppression de ref ne possède aucun arbre à scanner. En
 fallback manuel, la plage reste `origin/main...HEAD`, mais les checks statiques
 utilisent `--ref=HEAD` et ignorent le worktree dirty.
+Les validations dynamiques du pre-push utilisent la portée `DYNAMIC_CANDIDATE` :
+`test:scripts`, lint, typecheck, Vitest et build s'exécutent dans un arbre
+éphémère matérialisé exclusivement depuis le SHA candidat sous
+`.artifacts/validation/prepush-candidate/<sha>/`, jamais dans le WORKTREE. Les
+Les dépendances locales peuvent être reliées ou matérialisées temporairement
+sous cette racine sans modifier l'index ni les refs Git. Un outil ou une
+dépendance absente est un blocage explicite
+`HOST_ENVIRONMENT`, pas un chantier parallèle ; le fallback manuel utilise
+`HEAD` comme candidat dynamique matérialisé.
 L'invocation manuelle de `npm run prepush:guard` sans protocole conserve le
 fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback`.
 Le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED`.

@@ -48,11 +48,7 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
     "scripts/checks/check-9c-public-facades.mjs",
     "scripts/checks/check-doc-visuals.mjs",
     "scripts/audits/audit-supabase-migration-trees.mjs",
-    "npm run test:scripts",
-    "npm run lint",
-    "npm run typecheck",
-    "npm run build",
-    "npx vercel build --yes",
+    "run-dynamic-candidate-check.mjs",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -64,15 +60,15 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.doesNotMatch(guard, /git diff --name-only --diff-filter=ACMRTUXB HEAD --/);
   assert.doesNotMatch(guard, /git diff --cached --name-only/);
   assert.doesNotMatch(guard, /git ls-files --others/);
-  assert.match(guard, /staticCandidateRefs/);
-  assert.match(guard, /CandidateRefs @\("HEAD"\)/);
+  assert.match(guard, /candidateRefs/);
+  assert.match(guard, /CandidateRef = "HEAD"/);
   assert.doesNotMatch(guard, /npm run check:lockfile-policy\b/);
   assert.doesNotMatch(guard, /npm run audit:vercel:ci\b/);
   assert.doesNotMatch(guard, /npm run quality:top-heavy\b/);
   assert.match(guard, /STATIC_CANDIDATE/);
   assert.match(guard, /exact Git tree named by --ref/);
-  assert.match(guard, /DYNAMIC_WORKTREE/);
-  assert.match(guard, /HOST_ENVIRONMENT/);
+  assert.match(guard, /DYNAMIC_CANDIDATE/);
+  assert.doesNotMatch(guard, /(?<!run-dynamic-candidate-check\.mjs[^\r\n]*)npm run (?:test:scripts|lint|typecheck|build)/);
   assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
   assert.match(guard, /Write-SkippedGuardStep/);

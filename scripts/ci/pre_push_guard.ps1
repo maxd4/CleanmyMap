@@ -215,12 +215,17 @@ function Invoke-GuardStep {
         param(
             [Parameter(Mandatory = $true)]
             [AllowEmptyCollection()]
-            [string[]]$ChangedFiles
+            [string[]]$ChangedFiles,
+            [Parameter(Mandatory = $false)]
+            [ValidateSet("changed", "full")]
+            [string]$Scope = "changed"
         )
 
-        $policyArgs = @("scripts/checks/validation-policy.mjs", "--scope", "changed")
-        foreach ($file in $ChangedFiles) {
-            $policyArgs += @("--changed-file", $file)
+        $policyArgs = @("scripts/checks/validation-policy.mjs", "--scope", $Scope)
+        if ($Scope -eq "changed") {
+            foreach ($file in $ChangedFiles) {
+                $policyArgs += @("--changed-file", $file)
+            }
         }
         $policyArgs += "--json"
 
@@ -264,14 +269,28 @@ function Invoke-GuardStep {
     }
 
     function Invoke-VercelBuildGuard {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef
+        )
+
         Write-Host ""
-        Write-Host "==> vercel build"
+        Write-Host "==> vercel build ($CandidateRef) [DYNAMIC_CANDIDATE]"
 
         $buildStartedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
         $previousErrorActionPreference = $ErrorActionPreference
         try {
             $ErrorActionPreference = "Continue"
-            $vercelOutput = @(& npx vercel build --yes 2>&1)
+            $dynamicArguments = @(
+                "scripts/ci/run-dynamic-candidate-check.mjs",
+                "--ref=$CandidateRef",
+                "--command=npx",
+                "--",
+                "vercel",
+                "build",
+                "--yes"
+            )
+            $vercelOutput = @(& node @dynamicArguments 2>&1)
             $vercelExitCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $previousErrorActionPreference
@@ -334,42 +353,28 @@ function Invoke-GuardStep {
         }
     }
 
-    function Invoke-ScriptTests {
+    function Invoke-DynamicCandidateCommand {
         param(
             [Parameter(Mandatory = $true)]
-            [bool]$CandidateWebRelevant
+            [string]$CandidateRef,
+            [Parameter(Mandatory = $true)]
+            [string]$Label,
+            [Parameter(Mandatory = $true)]
+            [string]$Command,
+            [Parameter(Mandatory = $false)]
+            [AllowEmptyCollection()]
+            [string[]]$CommandArguments = @()
         )
 
         Write-Host ""
-        Write-Host "==> script tests"
-        $previousErrorActionPreference = $ErrorActionPreference
-        try {
-            $ErrorActionPreference = "Continue"
-            $scriptTestOutput = @(& npm run test:scripts 2>&1)
-            $scriptTestExitCode = $LASTEXITCODE
-        } finally {
-            $ErrorActionPreference = $previousErrorActionPreference
-        }
-        $scriptTestOutput | ForEach-Object { Write-Host $_ }
-
-        if ($scriptTestExitCode -eq 0) {
-            return
-        }
-
-        $scriptTestText = ($scriptTestOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
-        $foreignWorktreeOnly =
-            -not $CandidateWebRelevant -and
-            $scriptTestText -match "(?i)guard-artifacts\.test\.mjs" -and
-            $scriptTestText -match "(?i)(vitest|eslint).*(n'est pas reconnu|not recognized)" -and
-            $scriptTestText -match "(?i)changed web (source|test) files:\s*[1-9]" -and
-            $scriptTestText -match "(?i)1\s*!==\s*0"
-
-        if ($foreignWorktreeOnly) {
-            Write-Warning "SKIPPED_PARALLEL_CHANTIER: script tests saw foreign WORKTREE web files in guard-artifacts.test.mjs; the PUSH_CANDIDATE has no web changes and local web tooling is unavailable."
-            return
-        }
-
-        throw "script tests failed with exit code $scriptTestExitCode"
+        Write-Host "==> $Label ($CandidateRef) [DYNAMIC_CANDIDATE]"
+        $runnerArguments = @(
+            "scripts/ci/run-dynamic-candidate-check.mjs",
+            "--ref=$CandidateRef",
+            "--command=$Command",
+            "--"
+        ) + $CommandArguments
+        Invoke-GuardStep "$Label ($CandidateRef)" { & node @runnerArguments }
     }
 
     $vercelProjectFiles = @(
@@ -412,25 +417,7 @@ function Invoke-GuardStep {
 
     if ($manualFallback -and $changedFiles.Count -eq 0) {
         Write-Host "No changed files detected in manual fallback; validating the HEAD candidate tree only."
-        Invoke-GuardStep "secret audit" { npm run security:secrets -- --candidate-ref=HEAD --candidate-range=$($ranges[0]) }
-        Invoke-StaticCandidateChecks `
-            -CandidateRefs @("HEAD") `
-            -DocumentationRelevant $true `
-            -SupabaseRelevant $true `
-            -WebRelevant $true
-        Write-Host ""
-        Write-Host "Pre-push guardrail passed."
-        return
     }
-
-    $policy = Get-ValidationPolicy -ChangedFiles $changedFiles
-    $documentationRelevant = Test-DocumentationChange -ChangedFiles $changedFiles
-    $supabaseRelevant = Test-ChangedPathPrefix -ChangedFiles $changedFiles -Prefix "apps/web/supabase/"
-    $vercelConfigRelevant = $changedFiles -contains "apps/web/vercel.json"
-    $webRelevant = [bool]$policy.webRelevant -or $vercelConfigRelevant
-    $buildRelevant = [bool]$policy.buildRelevant -or $vercelConfigRelevant
-
-    $staticCandidateRefs = @($candidates | Select-Object -ExpandProperty LocalSha -Unique)
 
     foreach ($range in $ranges) {
         Invoke-GuardStep "PUSH_CANDIDATE diff check ($range)" { & git diff --check $range -- }
@@ -445,45 +432,77 @@ function Invoke-GuardStep {
     }
     $secretCommandArgs = @("run", "security:secrets", "--") + $secretArgs
     Invoke-GuardStep "secret audit" { & npm @secretCommandArgs }
-    Invoke-StaticCandidateChecks `
-        -CandidateRefs $staticCandidateRefs `
-        -DocumentationRelevant $documentationRelevant `
-        -SupabaseRelevant $supabaseRelevant `
-        -WebRelevant $webRelevant
-
-    if (-not $documentationRelevant) { Write-SkippedGuardStep "documentation visuals" "no documentation changes" }
-    if (-not $supabaseRelevant) { Write-SkippedGuardStep "Supabase migration tree audit" "no apps/web/supabase changes" }
-
-    if ($policy.scriptsRelevant) {
-        Invoke-ScriptTests -CandidateWebRelevant $webRelevant
-    } else {
-        Write-SkippedGuardStep "script tests" "no scripts changes"
+    $candidatePlans = @()
+    $candidateRefs = @($candidates | Select-Object -ExpandProperty LocalSha -Unique)
+    foreach ($candidateRef in $candidateRefs) {
+        $candidateRanges = @(
+            $candidates |
+                Where-Object { $_.LocalSha -eq $candidateRef } |
+                Select-Object -ExpandProperty Range -Unique
+        )
+        $candidateFiles = @(Get-ChangedFilesFromRanges -Ranges $candidateRanges)
+        $candidatePolicy = Get-ValidationPolicy -ChangedFiles $candidateFiles
+        $candidateVercelConfigRelevant = $candidateFiles -contains "apps/web/vercel.json"
+        $candidatePlans += [pscustomobject]@{
+            CandidateRef = $candidateRef
+            Ranges = $candidateRanges
+            ChangedFiles = $candidateFiles
+            Policy = $candidatePolicy
+            DocumentationRelevant = Test-DocumentationChange -ChangedFiles $candidateFiles
+            SupabaseRelevant = Test-ChangedPathPrefix -ChangedFiles $candidateFiles -Prefix "apps/web/supabase/"
+            WebRelevant = [bool]$candidatePolicy.webRelevant -or $candidateVercelConfigRelevant
+            BuildRelevant = [bool]$candidatePolicy.buildRelevant -or $candidateVercelConfigRelevant
+        }
     }
 
-    if ($webRelevant) {
-        # DYNAMIC_WORKTREE: these gates execute tools/code from the checkout and
-        # intentionally remain distinct from the static candidate checks above.
-        Invoke-GuardStep "lint" { npm run lint }
-        Invoke-GuardStep "typecheck" { npm run typecheck }
+    if ($manualFallback -and $changedFiles.Count -eq 0) {
+        $fullPolicy = Get-ValidationPolicy -ChangedFiles @() -Scope full
+        $candidatePlans = @([pscustomobject]@{
+                CandidateRef = "HEAD"
+                Ranges = @($ranges[0])
+                ChangedFiles = @()
+                Policy = $fullPolicy
+                DocumentationRelevant = $true
+                SupabaseRelevant = $true
+                WebRelevant = $true
+                BuildRelevant = $true
+            })
+    }
 
-        $targetedArgs = @(
-            "scripts/checks/validation-policy.mjs",
-            "--run-vitest",
-            "--groups",
-            "security,regression"
-        )
-        foreach ($file in @($policy.targetedVitestFiles)) {
-            $targetedArgs += @("--test-file", [string]$file)
-        }
-        Invoke-GuardStep "Vitest targeted security/regression" { & node @targetedArgs }
+    foreach ($plan in $candidatePlans) {
+        Invoke-StaticCandidateChecks -CandidateRefs @($plan.CandidateRef) -DocumentationRelevant ([bool]$plan.DocumentationRelevant) -SupabaseRelevant ([bool]$plan.SupabaseRelevant) -WebRelevant ([bool]$plan.WebRelevant)
 
-        if ($buildRelevant) {
-            Invoke-GuardStep "build" { npm run build }
+        if ([bool]$plan.Policy.scriptsRelevant) {
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "script tests" -Command "npm" -CommandArguments @("run", "test:scripts")
         } else {
-            Write-SkippedGuardStep "build" "changed web scope does not require a production build"
+            Write-SkippedGuardStep "script tests ($($plan.CandidateRef))" "no scripts changes in this candidate"
         }
-    } else {
-        Write-SkippedGuardStep "web quality gates" "no web-relevant changes"
+
+        if ([bool]$plan.WebRelevant) {
+            # DYNAMIC_CANDIDATE: these gates execute in a materialized candidate
+            # tree and remain distinct from STATIC_CANDIDATE checks above.
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "lint" -Command "npm" -CommandArguments @("run", "lint")
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "typecheck" -Command "npm" -CommandArguments @("run", "typecheck")
+
+            $targetedArgs = @(
+                "scripts/checks/validation-policy.mjs",
+                "--run-vitest",
+                "--groups",
+                "security,regression"
+            )
+            foreach ($file in @($plan.Policy.targetedVitestFiles)) {
+                $targetedArgs += @("--test-file", [string]$file)
+            }
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "Vitest targeted security/regression" -Command "node" -CommandArguments $targetedArgs
+
+            if ([bool]$plan.BuildRelevant) {
+                Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "build" -Command "npm" -CommandArguments @("run", "build")
+            } else {
+                Write-SkippedGuardStep "build ($($plan.CandidateRef))" "changed web scope does not require a production build"
+            }
+        } else {
+            Write-SkippedGuardStep "web quality gates ($($plan.CandidateRef))" "no web-relevant changes in this candidate"
+        }
     }
 
     if ($SkipVercel) {
@@ -495,15 +514,15 @@ function Invoke-GuardStep {
     if ($vercelProjectFiles.Count -eq 0) {
         Write-Host ""
         Write-Host "No Vercel project link detected; skipping vercel build."
-    } elseif (-not $buildRelevant) {
-        Write-SkippedGuardStep "vercel build" "changed scope does not require a production build"
     } else {
         Write-Host ""
         Write-Host "Vercel project link detected:"
         $vercelProjectFiles | ForEach-Object { Write-Host "- $_" }
-        # HOST_ENVIRONMENT + DYNAMIC_WORKTREE: this optional build depends on
-        # the local Vercel project link and executes the checkout build.
-        Invoke-VercelBuildGuard
+        foreach ($plan in $candidatePlans | Where-Object { [bool]$_.BuildRelevant }) {
+            # HOST_ENVIRONMENT + DYNAMIC_CANDIDATE: this optional build depends on
+            # the local Vercel project link and executes the candidate tree.
+            Invoke-VercelBuildGuard -CandidateRef $plan.CandidateRef
+        }
     }
 
     Write-Host ""
