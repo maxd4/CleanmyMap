@@ -74,6 +74,50 @@ describe("OSRM routing capability", () => {
     expect(transport).toHaveBeenCalledTimes(1);
   });
 
+  it("supports per-call endpoint and semantic metadata without changing the default", async () => {
+    const transport = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return new Response(JSON.stringify({
+          code: "Ok",
+          routes: [{
+            distance: 100,
+            duration: 60,
+            geometry: {
+              coordinates: [
+                [2.3522, 48.8566],
+                [2.3532, 48.8576],
+              ],
+            },
+          }],
+        }), { status: 200 });
+    });
+
+    const result = await routePolylineThroughStreetNetwork(stops.slice(0, 2), {
+      transport,
+      baseUrl: "https://routing.example.test/custom/",
+      profileSegment: "driving",
+      provider: "fossgis-osrm",
+      profile: "foot",
+      headers: { Referer: "https://cleanmymap.fr/sections/route" },
+    });
+
+    expect(String(transport.mock.calls[0]?.[0])).toContain(
+      "https://routing.example.test/custom/route/v1/driving/",
+    );
+    expect(new Headers(transport.mock.calls[0]?.[1]?.headers).get("Referer")).toBe(
+      "https://cleanmymap.fr/sections/route",
+    );
+    expect(result).toMatchObject({
+      provider: "fossgis-osrm",
+      profile: "foot",
+      mode: "network",
+    });
+    expect(buildOsrmRouteUrl(stops)).toContain(
+      "https://router.project-osrm.org/route/v1/foot/",
+    );
+  });
+
   it("returns a deterministic estimated fallback on provider errors", async () => {
     const transport = vi.fn(async () => {
       throw new Error("offline test transport");

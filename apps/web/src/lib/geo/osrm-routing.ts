@@ -1,5 +1,10 @@
 import { logFailure, logWarning } from "@/lib/logging/failure-log";
-import type { RouteGeometry, RouteGeometryLeg } from "@/lib/route/route-contract";
+import type {
+  RouteGeometry,
+  RouteGeometryLeg,
+  RouteNetworkGeometryProvider,
+  RouteGeometryProfile,
+} from "@/lib/route/route-contract";
 
 export const OSRM_PROVIDER = "osrm" as const;
 export const OSRM_PROFILE = "foot" as const;
@@ -14,6 +19,11 @@ export type RoutingTransport = (
 export type RoutePolylineOptions = {
   transport?: RoutingTransport;
   timeoutMs?: number;
+  baseUrl?: string;
+  profileSegment?: string;
+  provider?: RouteNetworkGeometryProvider;
+  profile?: Exclude<RouteGeometryProfile, null>;
+  headers?: HeadersInit;
 };
 
 type OsrmLeg = {
@@ -111,11 +121,14 @@ function fallbackDistanceKm(coordinates: [number, number][]): number {
 
 export function buildOsrmRouteUrl(
   coordinates: [number, number][],
+  options: Pick<RoutePolylineOptions, "baseUrl" | "profileSegment"> = {},
 ): string {
   const coordString = coordinates
     .map((point) => `${point[1].toFixed(6)},${point[0].toFixed(6)}`)
     .join(";");
-  return `${OSRM_BASE_URL}/route/v1/${OSRM_PROFILE}/${coordString}?geometries=geojson&overview=full&steps=false`;
+  const baseUrl = (options.baseUrl ?? OSRM_BASE_URL).replace(/\/+$/, "");
+  const profileSegment = options.profileSegment ?? OSRM_PROFILE;
+  return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=false`;
 }
 
 export function createFallbackRouteGeometry(
@@ -140,6 +153,8 @@ export function createFallbackRouteGeometry(
 function parseNetworkRoute(
   payload: OsrmResponse,
   expectedStopCount: number,
+  provider: RouteNetworkGeometryProvider,
+  profile: Exclude<RouteGeometryProfile, null>,
 ): RouteGeometry | null {
   if (payload.code !== "Ok" || !Array.isArray(payload.routes)) {
     return null;
@@ -184,8 +199,8 @@ function parseNetworkRoute(
     distanceKm: Number((route.distance / 1000).toFixed(2)),
     durationMinutes: Math.max(0, Math.round(route.duration / 60)),
     legs,
-    provider: OSRM_PROVIDER,
-    profile: OSRM_PROFILE,
+    provider,
+    profile,
     mode: "network",
     estimated: false,
   };
@@ -195,14 +210,17 @@ async function fetchOsrmRoute(
   coordinates: [number, number][],
   transport: RoutingTransport,
   timeoutMs: number,
+  options: RoutePolylineOptions,
 ): Promise<RouteGeometry | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await transport(buildOsrmRouteUrl(coordinates), {
+    const headers = new Headers(options.headers);
+    headers.set("Accept", "application/json");
+    const response = await transport(buildOsrmRouteUrl(coordinates, options), {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers,
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -212,7 +230,12 @@ async function fetchOsrmRoute(
       return null;
     }
     const payload = (await response.json()) as OsrmResponse;
-    return parseNetworkRoute(payload, coordinates.length);
+    return parseNetworkRoute(
+      payload,
+      coordinates.length,
+      options.provider ?? OSRM_PROVIDER,
+      options.profile ?? OSRM_PROFILE,
+    );
   } catch (error) {
     logFailure("OSRM", "Routing failed", error, {
       pointCount: coordinates.length,
@@ -245,6 +268,7 @@ export async function routePolylineThroughStreetNetwork(
     coordinates,
     options.transport ?? ((input, init) => fetch(input, init)),
     options.timeoutMs ?? 5000,
+    options,
   );
   return (
     networkResult ??

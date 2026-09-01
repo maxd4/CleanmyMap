@@ -120,4 +120,31 @@ describe("RouteMap", () => {
     expect(markup).toContain("Itinéraire estimé · réseau indisponible");
     expect(markup).toContain('data-testid="route-line"');
   });
+
+  it("shows FOSSGIS and OpenStreetMap attribution only for FOSSGIS network geometry", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops,
+        routeGeometry: {
+          ...networkGeometry,
+          provider: "fossgis-osrm",
+        },
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain("Routage piéton FOSSGIS");
+    expect(markup).toContain("https://www.openstreetmap.org");
+    expect(markup).toContain("https://www.openstreetmap.org/fixthemap");
+    expect(markup).toContain("Corriger la carte");
+
+    const genericMarkup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops,
+        routeGeometry: networkGeometry,
+        fr: true,
+      }),
+    );
+    expect(genericMarkup).not.toContain("Corriger la carte");
+  });
 });

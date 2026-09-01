@@ -12,7 +12,7 @@ const distanceKmMock = vi.hoisted(() => vi.fn());
 const selectNextTrashSpotterStopMock = vi.hoisted(() => vi.fn());
 const applyRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
 const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn());
-const routePolylineThroughStreetNetworkMock = vi.hoisted(() => vi.fn());
+const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn());
 const buildHotspotsMock = vi.hoisted(() => vi.fn());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
@@ -47,7 +47,9 @@ vi.mock("@/lib/route/route-contract", () => ({
 }));
 vi.mock("@/lib/geo/osrm-routing", () => ({
   createFallbackRouteGeometry: createFallbackRouteGeometryMock,
-  routePolylineThroughStreetNetwork: routePolylineThroughStreetNetworkMock,
+}));
+vi.mock("@/lib/route/fossgis-foot-routing", () => ({
+  routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
 }));
 vi.mock("@/lib/route/recommendation-assistant", () => ({
   buildHotspots: buildHotspotsMock,
@@ -135,7 +137,7 @@ describe("POST /api/route/recommend", () => {
     createFallbackRouteGeometryMock.mockReturnValue(fallbackGeometry);
     distanceKmMock.mockReturnValue(1);
     selectNextTrashSpotterStopMock.mockReturnValue(null);
-    routePolylineThroughStreetNetworkMock.mockResolvedValue(fallbackGeometry);
+    routePolylineThroughFossgisFootMock.mockResolvedValue(fallbackGeometry);
     applyRouteGeometryLegsMock.mockImplementation((stops) => stops);
     buildHotspotsMock.mockReturnValue([]);
     defaultRouteAssistantPayloadMock.mockReturnValue({
@@ -190,6 +192,19 @@ describe("POST /api/route/recommend", () => {
     expect(payload.dataStatus).toBe("complete");
     expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
     expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
+  });
+
+  it("uses the server pedestrian provider for a non-empty recommendation", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
+      [[candidate.latitude, candidate.longitude]],
+      {},
+    );
   });
 
   it("ignores removed legacy route fields at the HTTP boundary", async () => {
