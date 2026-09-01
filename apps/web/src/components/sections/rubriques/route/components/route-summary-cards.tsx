@@ -1,31 +1,21 @@
-import { RouteConstraints } from "../route-types";
+import { RouteOptions } from "../route-types";
 
 interface RouteSummaryCardsProps {
-  constraints: RouteConstraints;
+  options: RouteOptions;
   fr: boolean;
 }
 
-export function RouteSummaryCards({ constraints, fr }: RouteSummaryCardsProps) {
+export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
   const summaryCards = [
     {
-      label: fr ? "Temps dispo" : "Time available",
-      value: `${constraints.availableMinutes} min`,
-      note: fr ? "Fenêtre terrain" : "Field window",
-    },
-    {
-      label: fr ? "Bénévoles" : "Volunteers",
-      value: `${constraints.volunteers}`,
-      note: fr ? "Force de sortie" : "Team size",
-    },
-    {
       label: fr ? "Arrêts max" : "Max stops",
-      value: `${constraints.maxStops}`,
+      value: `${options.maxStops}`,
       note: fr ? "Parcours ciblé" : "Focused route",
     },
     {
-      label: fr ? "Arbitrage" : "Trade-off",
-      value: `${constraints.impactVsDistance}%`,
-      note: fr ? "Impact priorisé" : "Impact weighted",
+      label: fr ? "Priorité / distance" : "Priority / distance",
+      value: `${options.priorityVsDistance}% / ${100 - options.priorityVsDistance}%`,
+      note: fr ? "Pondération opérationnelle" : "Operational weighting",
     },
   ] as const;
 
@@ -35,12 +25,12 @@ export function RouteSummaryCards({ constraints, fr }: RouteSummaryCardsProps) {
         {fr ? "Lecture rapide" : "Quick read"}
       </p>
       <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
-        {fr ? "Ce que l'IA optimise" : "What the AI optimizes"}
+        {fr ? "Ce que la recommandation utilise" : "What the recommendation uses"}
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white">
         {fr
-          ? "Le trajet privilégie les actions qui ont du sens aujourd'hui, avec vos contraintes réelles: temps, équipe, météo, sécurité et distance."
-          : "The route prioritizes what matters today, based on real constraints: time, team size, weather, safety, and distance."}
+          ? "La sélection combine la priorité opérationnelle disponible (fraîcheur des signalements) et la distance."
+          : "The selection combines the available operational priority (report freshness) and distance."}
       </p>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">

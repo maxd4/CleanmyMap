@@ -1,15 +1,11 @@
-import type { RouteConstraints } from "./route-types";
+import type { RouteOptions } from "./route-types";
 
 export const ROUTE_DRAFT_STORAGE_KEY = "cleanmymap.route-draft";
-export const ROUTE_DRAFT_SCHEMA_VERSION = 1;
+export const ROUTE_DRAFT_SCHEMA_VERSION = 2;
+const LEGACY_ROUTE_DRAFT_SCHEMA_VERSION = 1;
 
-export const DEFAULT_ROUTE_CONSTRAINTS: RouteConstraints = {
-  availableMinutes: 180,
-  volunteers: 4,
-  accessibility: "standard",
-  security: "standard",
-  weather: "ok",
-  impactVsDistance: 65,
+export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
+  priorityVsDistance: 65,
   maxStops: 6,
 };
 
@@ -26,63 +22,45 @@ function boundedInteger(value: unknown, fallback: number, min: number, max: numb
     : fallback;
 }
 
-function enumValue<T extends string>(value: unknown, fallback: T, allowed: readonly T[]): T {
-  return typeof value === "string" && allowed.includes(value as T) ? (value as T) : fallback;
-}
-
-export function normalizeRouteConstraints(value: unknown): RouteConstraints {
+export function normalizeRouteOptions(value: unknown): RouteOptions {
   const candidate = isRecord(value) ? value : {};
 
   return {
-    availableMinutes: boundedInteger(
-      candidate.availableMinutes,
-      DEFAULT_ROUTE_CONSTRAINTS.availableMinutes,
-      30,
-      600,
-    ),
-    volunteers: boundedInteger(candidate.volunteers, DEFAULT_ROUTE_CONSTRAINTS.volunteers, 1, 200),
-    accessibility: enumValue(
-      candidate.accessibility,
-      DEFAULT_ROUTE_CONSTRAINTS.accessibility,
-      ["standard", "accessible", "strict"] as const,
-    ),
-    security: enumValue(candidate.security, DEFAULT_ROUTE_CONSTRAINTS.security, ["standard", "renforced"] as const),
-    weather: enumValue(
-      candidate.weather,
-      DEFAULT_ROUTE_CONSTRAINTS.weather,
-      ["ok", "rain", "wind", "heat", "cold"] as const,
-    ),
-    impactVsDistance: boundedInteger(
-      candidate.impactVsDistance,
-      DEFAULT_ROUTE_CONSTRAINTS.impactVsDistance,
+    priorityVsDistance: boundedInteger(
+      candidate.priorityVsDistance,
+      DEFAULT_ROUTE_OPTIONS.priorityVsDistance,
       0,
       100,
     ),
-    maxStops: boundedInteger(candidate.maxStops, DEFAULT_ROUTE_CONSTRAINTS.maxStops, 2, 12),
+    maxStops: boundedInteger(candidate.maxStops, DEFAULT_ROUTE_OPTIONS.maxStops, 2, 12),
   };
 }
 
-export function readRouteDraftConstraints(storage?: StorageReader): RouteConstraints {
-  if (!storage) return { ...DEFAULT_ROUTE_CONSTRAINTS };
+export function readRouteDraftOptions(storage?: StorageReader): RouteOptions {
+  if (!storage) return { ...DEFAULT_ROUTE_OPTIONS };
 
   try {
     const raw = storage.getItem(ROUTE_DRAFT_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_ROUTE_CONSTRAINTS };
+    if (!raw) return { ...DEFAULT_ROUTE_OPTIONS };
 
     const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || parsed.version !== ROUTE_DRAFT_SCHEMA_VERSION) {
-      return { ...DEFAULT_ROUTE_CONSTRAINTS };
+    if (
+      !isRecord(parsed) ||
+      (parsed.version !== ROUTE_DRAFT_SCHEMA_VERSION &&
+        parsed.version !== LEGACY_ROUTE_DRAFT_SCHEMA_VERSION)
+    ) {
+      return { ...DEFAULT_ROUTE_OPTIONS };
     }
 
-    return normalizeRouteConstraints(parsed.constraints);
+    return normalizeRouteOptions(parsed.options ?? parsed.constraints);
   } catch {
-    return { ...DEFAULT_ROUTE_CONSTRAINTS };
+    return { ...DEFAULT_ROUTE_OPTIONS };
   }
 }
 
-export function writeRouteDraftConstraints(
+export function writeRouteDraftOptions(
   storage: StorageWriter | undefined,
-  constraints: RouteConstraints,
+  options: RouteOptions,
 ): void {
   if (!storage) return;
 
@@ -91,7 +69,7 @@ export function writeRouteDraftConstraints(
       ROUTE_DRAFT_STORAGE_KEY,
       JSON.stringify({
         version: ROUTE_DRAFT_SCHEMA_VERSION,
-        constraints: normalizeRouteConstraints(constraints),
+        options: normalizeRouteOptions(options),
       }),
     );
   } catch {

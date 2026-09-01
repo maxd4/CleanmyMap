@@ -13,8 +13,8 @@ type StopCandidateInput = {
 
 export type HotspotRecommendation = {
   zoneLabel: string;
-  /** Historical HTTP field name; value is now an operational signal, not severity. */
-  predictedDirtScore: number;
+  /** Freshness, validated spot count and event pressure; not severity or prediction. */
+  operationalSignalScore: number;
   recentActions: number;
   recentSpots: number;
   eventPressure: number;
@@ -69,8 +69,8 @@ export function defaultRouteAssistantPayload() {
       "Point prioritaire proche de toi: impossible a estimer pour le moment.",
     mostUsefulAction:
       "Action la plus utile en ce moment: declarer des actions geolocalisees.",
-    predictedDirtyZones: [] as string[],
-    eventAnticipation: [] as string[],
+    operationalSignalZones: [] as string[],
+    upcomingEvents: [] as string[],
     hotspots: [] as HotspotRecommendation[],
   };
 }
@@ -164,7 +164,7 @@ export async function loadEventPressureByArrondissement(
     .slice(0, 3)
     .map(
       (event) =>
-        `Anticiper ${event.title} (${event.date}) a ${event.label}: pression estimee ${event.pressure.toFixed(1)}.`,
+        `Événement à venir : ${event.title} (${event.date}) à ${event.label}, pression calculée ${event.pressure.toFixed(1)}.`,
     );
 
   return {
@@ -244,10 +244,7 @@ export function buildHotspots(params: {
         zone.arrondissement !== null
           ? params.pressureByArrondissement.get(zone.arrondissement) ?? 0
           : 0;
-      // Kept under the historical response field name for HTTP compatibility.
-      // This is an operational signal (validated spot freshness/count and
-      // event pressure), not an environmental severity estimate.
-      const predictedDirtScore = Math.min(
+      const operationalSignalScore = Math.min(
         10,
         zone.recentSpots * 1.5 + averageFreshness * 4 + eventPressure * 0.2,
       );
@@ -267,7 +264,7 @@ export function buildHotspots(params: {
 
       return {
         zoneLabel: zone.zoneLabel,
-        predictedDirtScore: Number(predictedDirtScore.toFixed(1)),
+        operationalSignalScore: Number(operationalSignalScore.toFixed(1)),
         recentActions: 0,
         recentSpots: zone.recentSpots,
         eventPressure: Number(eventPressure.toFixed(1)),
@@ -278,7 +275,7 @@ export function buildHotspots(params: {
         reason,
       };
     })
-    .sort((a, b) => b.predictedDirtScore - a.predictedDirtScore)
+    .sort((a, b) => b.operationalSignalScore - a.operationalSignalScore)
     .slice(0, 5);
 }
 
@@ -290,8 +287,8 @@ export function buildProactiveAssistant(params: {
   actNow: string;
   criticalNearby: string;
   mostUsefulAction: string;
-  predictedDirtyZones: string[];
-  eventAnticipation: string[];
+  operationalSignalZones: string[];
+  upcomingEvents: string[];
   hotspots: HotspotRecommendation[];
 } {
   const topStop = params.stops[0];
@@ -316,13 +313,13 @@ export function buildProactiveAssistant(params: {
     mostUsefulAction: topStop
       ? `Intervention la plus utile en ce moment: ${topStop.label} (score operationnel ${topStop.score.toFixed(1)}).`
       : "Intervention la plus utile en ce moment: renforcer la collecte de donnees geolocalisees.",
-    predictedDirtyZones: params.hotspots
+    operationalSignalZones: params.hotspots
       .slice(0, 3)
       .map(
         (zone) =>
-          `${zone.zoneLabel}: signal operationnel ${zone.predictedDirtScore.toFixed(1)}/10 (actions legacy ${zone.recentActions}, spots valides ${zone.recentSpots}, pression evenement ${zone.eventPressure.toFixed(1)}).`,
+          `${zone.zoneLabel}: signal opérationnel ${zone.operationalSignalScore.toFixed(1)}/10 (actions legacy ${zone.recentActions}, spots validés ${zone.recentSpots}, pression événementielle calculée ${zone.eventPressure.toFixed(1)}).`,
       ),
-    eventAnticipation: params.eventSignals,
+    upcomingEvents: params.eventSignals,
     hotspots: params.hotspots,
   };
 }

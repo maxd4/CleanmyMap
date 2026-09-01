@@ -2,12 +2,6 @@ import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotte
 import { isVolunteerRouteEligible } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { formatScorePercent } from "@/lib/formatters/score";
 
-export type TrashSpotterRouteConstraints = {
-  accessibility: "standard" | "accessible" | "strict";
-  security: "standard" | "renforced";
-  weather: "ok" | "rain" | "wind" | "heat" | "cold";
-};
-
 export type TrashSpotterRouteCandidate =
   TrashSpotterActionableCandidate & {
     score: number;
@@ -36,35 +30,14 @@ export function freshnessScore(
   return Math.max(0, Math.min(100, 100 - (ageDays / 120) * 100));
 }
 
-function constraintPenalty(constraints: TrashSpotterRouteConstraints): number {
-  const weatherPenalty =
-    constraints.weather === "ok"
-      ? 0
-      : constraints.weather === "rain" || constraints.weather === "wind"
-        ? 6
-        : 4;
-  const accessibilityPenalty =
-    constraints.accessibility === "strict"
-      ? 6
-      : constraints.accessibility === "accessible"
-        ? 2
-        : 0;
-  const securityPenalty = constraints.security === "renforced" ? 4 : 0;
-  return weatherPenalty + accessibilityPenalty + securityPenalty;
-}
-
 export function buildTrashSpotterRouteCandidates(
   candidates: TrashSpotterActionableCandidate[],
-  constraints: TrashSpotterRouteConstraints,
   now = new Date(),
 ): TrashSpotterRouteCandidate[] {
-  const penalty = constraintPenalty(constraints);
-
   return candidates
     .filter(isVolunteerRouteEligible)
     .map((candidate) => {
       const freshness = freshnessScore(candidate.observedAt, now);
-      const score = Math.max(0, freshness - penalty);
       const ageDays = Math.max(
         0,
         Math.floor(
@@ -79,8 +52,8 @@ export function buildTrashSpotterRouteCandidates(
 
       return {
         ...candidate,
-        score,
-        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}, contraintes météo=${constraints.weather}, sécurité=${constraints.security}.`,
+        score: freshness,
+        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}.`,
       };
     })
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));

@@ -94,11 +94,11 @@ const fallbackGeometry = {
   estimated: true,
 };
 
-function request() {
+function request(payload: unknown = {}) {
   return new Request("http://localhost/api/route/recommend", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -142,16 +142,16 @@ describe("POST /api/route/recommend", () => {
       actNow: "",
       criticalNearby: "",
       mostUsefulAction: "",
-      predictedDirtyZones: [],
-      eventAnticipation: [],
+      operationalSignalZones: [],
+      upcomingEvents: [],
       hotspots: [],
     });
     buildProactiveAssistantMock.mockReturnValue({
       actNow: "",
       criticalNearby: "",
       mostUsefulAction: "",
-      predictedDirtyZones: [],
-      eventAnticipation: [],
+      operationalSignalZones: [],
+      upcomingEvents: [],
       hotspots: [],
     });
     trackRouteRecommendationUseMock.mockResolvedValue(undefined);
@@ -188,8 +188,30 @@ describe("POST /api/route/recommend", () => {
 
     expect(response.status).toBe(200);
     expect(payload.dataStatus).toBe("complete");
-    expect(payload.proactiveAssistant.eventAnticipation).toEqual([]);
+    expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
     expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
+  });
+
+  it("ignores removed legacy route fields at the HTTP boundary", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      request({
+        availableMinutes: 240,
+        volunteers: 8,
+        accessibility: "strict",
+        security: "renforced",
+        weather: "rain",
+        impactVsDistance: 15,
+        priorityVsDistance: 35,
+        maxStops: 4,
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.constraintsApplied).toBeUndefined();
+    expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
+    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith([]);
   });
 
   it("returns empty, partial and unavailable source states distinctly", async () => {

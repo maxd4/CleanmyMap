@@ -7,7 +7,7 @@ import { useUser } from "@clerk/nextjs";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useRouteData } from "./route/hooks/use-route-data";
 import { RouteSummaryCards } from "./route/components/route-summary-cards";
-import { RouteConstraintsForm } from "./route/components/route-constraints-form";
+import { RouteOptionsForm } from "./route/components/route-constraints-form";
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -23,8 +23,8 @@ export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const { isLoaded, isSignedIn } = useUser();
   const {
-    constraints,
-    setConstraints,
+    options,
+    setOptions,
     data,
     isLoading,
     error,
@@ -41,11 +41,11 @@ export function RouteSection() {
   const dataStatusMessage = data
     ? data.dataStatus === "empty"
       ? fr
-        ? "Aucune donnée géolocalisée exploitable n'est disponible pour ces contraintes."
-        : "No usable geolocated data is available for these constraints."
+        ? "Aucune donnée géolocalisée exploitable n'est disponible pour cette recommandation."
+        : "No usable geolocated data is available for this recommendation."
       : data.dataStatus === "partial"
         ? fr
-          ? "Données partielles : la recommandation est calculée sur un volume ou une source non exhaustif."
+          ? "Données partielles : la recommandation repose sur un volume ou une source non exhaustif."
           : "Partial data: the recommendation uses a non-exhaustive volume or source."
         : data.dataStatus === "unavailable"
           ? fr
@@ -59,8 +59,8 @@ export function RouteSection() {
       id="route"
       title={fr ? "Où agir" : "Where to act"}
       subtitle={fr 
-        ? "Décidez rapidement où agir selon l'impact, la météo et la disponibilité." 
-        : "Spatial intelligence to plan your collections and maximize field impact."}
+        ? "Décidez rapidement où agir selon la priorité opérationnelle, la distance et le nombre d’arrêts."
+        : "Choose where to act using operational priority, distance, and the number of stops."}
       icon={Navigation}
       gradient="from-blue-500/20 via-indigo-500/10 to-transparent"
     >
@@ -75,8 +75,8 @@ export function RouteSection() {
                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Configuration" : "Settings"}</h3>
              </div>
              
-             <RouteSummaryCards constraints={constraints} fr={fr} />
-             <RouteConstraintsForm constraints={constraints} setConstraints={setConstraints} fr={fr} />
+             <RouteSummaryCards options={options} fr={fr} />
+             <RouteOptionsForm options={options} setOptions={setOptions} fr={fr} />
              <div className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
                {isLoaded && isSignedIn ? (
                  <button
@@ -187,8 +187,8 @@ export function RouteSection() {
                       </div>
 
                       <div className="text-right space-y-2">
-                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fr ? "Score IA Global" : "Overall AI Score"}</p>
-                         <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.global}</p>
+                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>
+                         <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.priority}</p>
                       </div>
                    </div>
                 </div>
@@ -201,7 +201,7 @@ export function RouteSection() {
                             <Info size={20} />
                          </div>
                          <h3 className="text-xl font-black text-white tracking-tight">
-                            {fr ? "Ajustements automatiques" : "Automatic adjustments"}
+                            {fr ? "Méthode de sélection" : "Selection method"}
                          </h3>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

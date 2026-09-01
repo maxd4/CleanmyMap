@@ -1,17 +1,17 @@
-import type { RouteConstraints, RouteResponse } from "./route-types";
+import type { RouteOptions, RouteResponse } from "./route-types";
 
 export type RouteRecommendationRequest = {
   id: number;
-  constraints: RouteConstraints;
+  options: RouteOptions;
 };
 
 export function createRouteRecommendationRequest(
   id: number,
-  constraints: RouteConstraints,
+  options: RouteOptions,
 ): RouteRecommendationRequest {
   return {
     id,
-    constraints: { ...constraints },
+    options: { ...options },
   };
 }
 
@@ -22,7 +22,7 @@ export async function fetchRouteRecommendation(
   const response = await transport("/api/route/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request.constraints),
+    body: JSON.stringify(request.options),
   });
 
   if (!response.ok) {

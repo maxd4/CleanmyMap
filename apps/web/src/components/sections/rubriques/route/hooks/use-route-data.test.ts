@@ -21,9 +21,9 @@ function renderHarness(action: "none" | "calculate-then-edit") {
       route.requestRecommendation();
     } else if (action === "calculate-then-edit" && step.current === 1) {
       step.current = 2;
-      route.setConstraints((previous) => ({
+      route.setOptions((previous) => ({
         ...previous,
-        weather: "rain",
+        priorityVsDistance: 20,
       }));
     }
 
@@ -70,7 +70,7 @@ describe("useRouteData explicit request gate", () => {
       "/api/route/recommend",
       expect.objectContaining({
         method: "POST",
-        body: expect.stringContaining('"weather":"ok"'),
+        body: expect.stringContaining('"priorityVsDistance":65'),
       }),
     );
   });

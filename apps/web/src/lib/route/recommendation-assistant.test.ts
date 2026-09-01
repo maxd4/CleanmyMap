@@ -67,7 +67,7 @@ describe("loadEventPressureByArrondissement", () => {
     );
 
     expect(result.pressureByArrondissement.get(4)).toBe(9.5);
-    expect(result.eventSignals[0]).toContain("pression estimee 9.5");
+    expect(result.eventSignals[0]).toContain("pression calculée 9.5");
   });
 
   it("treats a description without EVENT_OPS as zero capacity", async () => {
@@ -79,7 +79,7 @@ describe("loadEventPressureByArrondissement", () => {
     );
 
     expect(result.pressureByArrondissement.get(4)).toBe(1);
-    expect(result.eventSignals[0]).toContain("pression estimee 1.0");
+    expect(result.eventSignals[0]).toContain("pression calculée 1.0");
   });
 
   it("treats corrupted EVENT_OPS as zero capacity without throwing", async () => {
@@ -91,6 +91,6 @@ describe("loadEventPressureByArrondissement", () => {
     );
 
     expect(result.pressureByArrondissement.get(4)).toBe(0.5);
-    expect(result.eventSignals[0]).toContain("pression estimee 0.5");
+    expect(result.eventSignals[0]).toContain("pression calculée 0.5");
   });
 });

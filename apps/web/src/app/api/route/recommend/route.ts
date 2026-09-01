@@ -38,16 +38,9 @@ import { resolveRouteDataStatus } from "@/lib/route/route-data-status";
 export const runtime ="nodejs";
 
 const requestSchema = z.object({
- availableMinutes: z.number().int().min(30).max(600).default(180),
- volunteers: z.number().int().min(1).max(200).default(4),
- accessibility: z
- .enum(["standard","accessible","strict"])
- .default("standard"),
- security: z.enum(["standard","renforced"]).default("standard"),
- weather: z.enum(["ok","rain","wind","heat","cold"]).default("ok"),
- impactVsDistance: z.number().min(0).max(100).default(65),
-  maxStops: z.number().int().min(2).max(12).default(6),
-});
+ priorityVsDistance: z.number().min(0).max(100).default(65),
+ maxStops: z.number().int().min(2).max(12).default(6),
+}).strip();
 
 const ROUTE_RECOMMENDATION_RATE_LIMIT = {
   limit: 6,
@@ -93,7 +86,7 @@ export async function POST(request: Request) {
  );
  }
 
- const constraints = parsed.data;
+ const options = parsed.data;
 
  try {
  const supabase = getSupabaseServerClient();
@@ -126,7 +119,6 @@ export async function POST(request: Request) {
  const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
  const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
  actionableCandidates,
- constraints,
  );
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
@@ -134,7 +126,7 @@ export async function POST(request: Request) {
    sourceHealth,
  });
 
-  const selected = candidates.slice(0, Math.max(constraints.maxStops * 2, 8));
+  const selected = candidates.slice(0, Math.max(options.maxStops * 2, 8));
   const routeStart = selected[0];
   if (routeStart === undefined) {
     return NextResponse.json({
@@ -144,10 +136,9 @@ export async function POST(request: Request) {
       sourceHealth,
       stops: [],
       routeGeometry: createFallbackRouteGeometry([]),
-      scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
-      constraintsApplied: constraints,
+      scoreBreakdown: { priority: 0, distance: 0 },
       tradeoffs: [
-        "Aucun point geolocalise disponible pour les contraintes selectionnees.",
+        "Aucun point géolocalisé disponible dans la source consultée.",
       ],
       proactiveAssistant: {
         ...defaultRouteAssistantPayload(),
@@ -155,18 +146,18 @@ export async function POST(request: Request) {
     });
   }
 
- const impactWeight = constraints.impactVsDistance / 100;
- const distanceWeight = 1 - impactWeight;
+ const priorityWeight = options.priorityVsDistance / 100;
+ const distanceWeight = 1 - priorityWeight;
  const route: TrashSpotterRouteCandidate[] = [routeStart];
  const unvisited = selected.slice(1);
 
- while (route.length < constraints.maxStops && unvisited.length > 0) {
+ while (route.length < options.maxStops && unvisited.length > 0) {
   const current = route[route.length - 1];
   if (!current) {
    break;
   }
 
-  const next = selectNextTrashSpotterStop(current, unvisited, impactWeight, distanceWeight);
+  const next = selectNextTrashSpotterStop(current, unvisited, priorityWeight, distanceWeight);
   if (!next) {
    break;
   }
@@ -187,13 +178,7 @@ export async function POST(request: Request) {
  latitude: item.latitude,
  longitude: item.longitude,
  segmentKm: Number(segmentKm.toFixed(2)),
- estimatedMinutes: Math.max(
- 8,
- Math.round(
- segmentKm * 4 +
- constraints.availableMinutes / Math.max(1, route.length),
- ),
- ),
+ estimatedMinutes: Math.max(0, Math.round((segmentKm / 4.5) * 60)),
  priorityReason: item.reason,
  score: Number(item.score.toFixed(2)),
  };
@@ -201,31 +186,16 @@ export async function POST(request: Request) {
 
  const routeGeometry = await routePolylineThroughStreetNetwork(
    route.map((item) => [item.latitude, item.longitude] as [number, number]),
-   {
-     fallbackDurationMinutes: estimatedStops.reduce(
-       (total, stop) => total + stop.estimatedMinutes,
-       0,
-     ),
-   },
+   {},
  );
  const stops = applyRouteGeometryLegs(estimatedStops, routeGeometry);
  const totalDistance =
    routeGeometry.mode === "network"
      ? routeGeometry.distanceKm
      : stops.reduce((acc, stop) => acc + stop.segmentKm, 0);
- const averageImpact =
+ const averagePriority =
  route.reduce((acc, item) => acc + item.score, 0) / route.length;
  const distanceScore = Math.max(0, 100 - totalDistance * 5);
- const constraintsScore = Math.max(
- 0,
- 100 -
- (constraints.weather ==="ok" ? 0 : 10) -
- (constraints.security ==="renforced" ? 5 : 0) -
- (constraints.accessibility ==="strict" ? 7 : 0),
- );
- const global = Math.round(
- averageImpact * 0.5 + distanceScore * 0.25 + constraintsScore * 0.25,
- );
  const hotspots = buildHotspots({
  candidates,
  pressureByArrondissement: eventPressureContext.pressureByArrondissement,
@@ -257,17 +227,11 @@ export async function POST(request: Request) {
  stops,
  routeGeometry,
  scoreBreakdown: {
- impact: Number(averageImpact.toFixed(1)),
+ priority: Number(averagePriority.toFixed(1)),
  distance: Number(distanceScore.toFixed(1)),
- constraints: Number(constraintsScore.toFixed(1)),
- global,
  },
- constraintsApplied: constraints,
  tradeoffs: [
- `Arbitrage impact/distance: ${constraints.impactVsDistance}% / ${100 - constraints.impactVsDistance}%`,
- constraints.weather ==="ok"
- ?"Pas de contrainte meteo majeure."
- : `Contrainte meteo active: ${constraints.weather}`,
+ `Pondération opérationnelle: ${options.priorityVsDistance}% priorité / ${100 - options.priorityVsDistance}% distance.`,
  ],
  proactiveAssistant,
  });

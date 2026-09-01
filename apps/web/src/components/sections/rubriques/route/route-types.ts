@@ -7,13 +7,8 @@ import type { RouteDataStatus } from "@/lib/route/route-data-status";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
-export type RouteConstraints = {
-  availableMinutes: number;
-  volunteers: number;
-  accessibility: "standard" | "accessible" | "strict";
-  security: "standard" | "renforced";
-  weather: "ok" | "rain" | "wind" | "heat" | "cold";
-  impactVsDistance: number;
+export type RouteOptions = {
+  priorityVsDistance: number;
   maxStops: number;
 };
 
@@ -25,21 +20,19 @@ export type RouteResponse = {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
   scoreBreakdown: {
-    impact: number;
+    priority: number;
     distance: number;
-    constraints: number;
-    global: number;
   };
   tradeoffs: string[];
   proactiveAssistant: {
     actNow: string;
     criticalNearby: string;
     mostUsefulAction: string;
-    predictedDirtyZones: string[];
-    eventAnticipation: string[];
+    operationalSignalZones: string[];
+    upcomingEvents: string[];
     hotspots: Array<{
       zoneLabel: string;
-      predictedDirtScore: number;
+      operationalSignalScore: number;
       recentActions: number;
       recentSpots: number;
       eventPressure: number;
