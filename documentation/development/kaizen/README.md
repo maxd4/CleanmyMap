@@ -67,8 +67,8 @@ La méthode détaillée est dans [`AUDIT_METHOD.md`](./AUDIT_METHOD.md).
 
 ## Relations avec les autres sources
 
-- gouvernance universelle : `AGENTS.md` ;
-- gouvernance documentaire : `documentation/AGENTS.md` ;
+- gouvernance universelle du dépôt ;
+- gouvernance documentaire locale du dépôt ;
 - politique documentaire : `documentation/development/DOCUMENTATION_POLICY.md` ;
 - tests : `documentation/development/TESTING.md` ;
 - design system : `documentation/design-system/` ;

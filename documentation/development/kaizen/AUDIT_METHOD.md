@@ -142,6 +142,6 @@ Un audit simple doit rester lisible sans guide annexe ni contexte de session.
 Quand un audit ou la doctrine Kaizen est modifié :
 
 - vérifier les liens actifs ;
-- vérifier qu'aucune règle générale n'est dupliquée depuis `AGENTS.md` ;
+- vérifier qu'aucune règle générale de gouvernance n'est dupliquée ;
 - conserver les distinctions `current / working / audit / historical` ;
 - exécuter les checks documentaires pertinents du dépôt.
