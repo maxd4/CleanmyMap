@@ -54,6 +54,20 @@ describe("canonical surface cards", () => {
     expect(cardSource).not.toMatch(/(?:bg-|border-|shadow-|backdrop-blur|ring-|rounded-)/);
   });
 
+  it("supports article semantics while preserving canonical card attributes", () => {
+    const markup = renderToStaticMarkup(
+      <CmmCard as="article" tone="sky" variant="muted" size="sm">
+        Contenu KPI
+      </CmmCard>,
+    );
+
+    expect(markup).toContain("<article ");
+    expect(markup).toContain('class="cmm-card"');
+    expect(markup).toContain('data-cmm-card-tone="sky"');
+    expect(markup).toContain('data-cmm-card-variant="muted"');
+    expect(markup).toContain('data-cmm-card-size="sm"');
+  });
+
   it("composes block accents on the same canonical card shell", () => {
     const markup = renderToStaticMarkup(
       <CmmBlockCard blockId="visualize" accentType="bar">

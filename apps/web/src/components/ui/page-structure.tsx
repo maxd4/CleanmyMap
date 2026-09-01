@@ -18,10 +18,14 @@ import {
 } from "lucide-react";
 import { CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmBadge, type CmmBadgeTone } from "@/components/ui/cmm-badge";
+import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 
 type SectionTitleSize = "sm" | "md" | "lg";
-type CardTone = "slate" | "emerald" | "sky" | "amber" | "violet" | "rose" | "indigo";
+type PageStructureCardTone = Extract<
+  CardTone,
+  "slate" | "emerald" | "sky" | "amber" | "violet" | "rose" | "indigo"
+>;
 
 const sectionTitleClasses: Record<SectionTitleSize, string> = {
   sm: "text-lg font-black tracking-tight text-stone-950 sm:text-xl",
@@ -29,17 +33,7 @@ const sectionTitleClasses: Record<SectionTitleSize, string> = {
   lg: "text-2xl font-black tracking-tight text-stone-950 sm:text-3xl",
 };
 
-const statCardToneClasses: Record<CardTone, string> = {
-  slate: "border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] shadow-[0_18px_40px_-34px_rgba(15,23,42,0.22)]",
-  emerald: "border-emerald-300/30 bg-emerald-500/8 shadow-[0_18px_40px_-34px_rgba(16,185,129,0.18)]",
-  sky: "border-sky-300/30 bg-sky-500/8 shadow-[0_18px_40px_-34px_rgba(14,165,233,0.18)]",
-  amber: "border-amber-300/30 bg-amber-500/8 shadow-[0_18px_40px_-34px_rgba(245,158,11,0.16)]",
-  violet: "border-violet-300/30 bg-violet-500/8 shadow-[0_18px_40px_-34px_rgba(139,92,246,0.18)]",
-  rose: "border-rose-300/30 bg-rose-500/8 shadow-[0_18px_40px_-34px_rgba(244,63,94,0.18)]",
-  indigo: "border-indigo-300/30 bg-indigo-500/8 shadow-[0_18px_40px_-34px_rgba(99,102,241,0.18)]",
-};
-
-const actionToneClasses: Record<CardTone, string> = {
+const actionToneClasses: Record<PageStructureCardTone, string> = {
   slate: "border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] shadow-[0_16px_36px_-30px_rgba(15,23,42,0.2)]",
   emerald: "border-emerald-300/30 bg-emerald-500/8 shadow-[0_16px_36px_-30px_rgba(16,185,129,0.18)]",
   sky: "border-sky-300/30 bg-sky-500/8 shadow-[0_16px_36px_-30px_rgba(14,165,233,0.18)]",
@@ -159,7 +153,7 @@ export type StatCardProps = {
   badge?: ReactNode;
   description?: ReactNode;
   footer?: ReactNode;
-  tone?: CardTone;
+  tone?: PageStructureCardTone;
   size?: "sm" | "md" | "lg";
   className?: string;
 };
@@ -184,12 +178,11 @@ export function StatCard({
   }[size];
 
   return (
-    <article
-      className={cn(
-        "rounded-[1.75rem] border p-5",
-        statCardToneClasses[tone],
-        className,
-      )}
+    <CmmCard
+      as="article"
+      tone={tone}
+      size={size}
+      className={className}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -206,7 +199,7 @@ export function StatCard({
       </div>
 
       <div className="mt-5 flex flex-wrap items-baseline gap-2">
-        <span className={cn("font-black tracking-tight text-stone-950", valueSizeClasses)}>
+        <span className={cn("font-black tracking-tight text-stone-950 tabular-nums", valueSizeClasses)}>
           {value}
         </span>
         {unit ? (
@@ -225,7 +218,7 @@ export function StatCard({
       ) : null}
 
       {footer ? <div className="mt-4">{footer}</div> : null}
-    </article>
+    </CmmCard>
   );
 }
 
@@ -262,7 +255,7 @@ export type ActionCardProps = {
   description: string;
   badge: string;
   href?: string;
-  tone?: CardTone;
+  tone?: PageStructureCardTone;
   footerLabel?: string;
   className?: string;
   iconClassName?: string;

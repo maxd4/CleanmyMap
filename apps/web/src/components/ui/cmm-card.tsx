@@ -17,6 +17,7 @@ export type CardTone =
 
 export interface CmmCardProps {
   children: ReactNode;
+  as?: "div" | "article" | "section";
   tone?: CardTone;
   variant?: "default" | "elevated" | "muted" | "outlined" | "glass";
   size?: "sm" | "md" | "lg";
@@ -47,6 +48,7 @@ export interface CmmCardProps {
  */
 export function CmmCard({
   children,
+  as = "div",
   tone = "slate",
   variant = "default",
   size = "md",
@@ -60,6 +62,7 @@ export function CmmCard({
   lineClamp,
   ariaLabel,
 }: CmmCardProps) {
+  const CardElement = as;
   const proseClass = prose === true
     ? "cmm-prose"
     : prose === "narrow"
@@ -75,7 +78,7 @@ export function CmmCard({
       : "";
 
   return (
-    <div
+    <CardElement
       role={clickable ? "button" : undefined}
       tabIndex={clickable && !disabled ? 0 : undefined}
       aria-label={ariaLabel}
@@ -115,6 +118,6 @@ export function CmmCard({
       ) : (
         children
       )}
-    </div>
+    </CardElement>
   );
 }
