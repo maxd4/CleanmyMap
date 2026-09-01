@@ -1,22 +1,13 @@
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 
 const paths = {
-  sectionsRegistry: path.join(
-    repositoryRoot,
-    "apps/web/src/lib/sections-registry/index.ts",
-  ),
-  unifiedSource: path.join(
-    repositoryRoot,
-    "apps/web/src/lib/actions/unified-source.ts",
-  ),
-  unifiedSourceIndex: path.join(
-    repositoryRoot,
-    "apps/web/src/lib/actions/unified-source/index.ts",
-  ),
+  sectionsRegistry: "apps/web/src/lib/sections-registry/index.ts",
+  unifiedSource: "apps/web/src/lib/actions/unified-source.ts",
+  unifiedSourceIndex: "apps/web/src/lib/actions/unified-source/index.ts",
 };
 
 const removedBarrels = [
@@ -70,52 +61,57 @@ const unifiedSourceApi = [
   "filterContractsByViewport",
 ];
 
-const violations = [];
+export function findPublicFacadeViolations(view) {
+  const violations = [];
 
-for (const relativePath of removedBarrels) {
-  if (fs.existsSync(path.join(repositoryRoot, relativePath))) {
-    violations.push(`removed barrel still exists: ${relativePath}`);
-  }
-}
-
-for (const relativePath of [
-  "apps/web/src/lib/sections-registry/index.ts",
-  "apps/web/src/lib/actions/unified-source.ts",
-  "apps/web/src/lib/actions/unified-source/index.ts",
-]) {
-  const source = fs.readFileSync(path.join(repositoryRoot, relativePath), "utf8");
-  if (/\bexport\s+\*/.test(source)) {
-    violations.push(`${relativePath} must not contain export *`);
-  }
-}
-
-const sectionsSource = fs.readFileSync(paths.sectionsRegistry, "utf8");
-for (const symbol of sectionsRegistryApi) {
-  if (!new RegExp(`\\b${symbol}\\b`).test(sectionsSource)) {
-    violations.push(`sections-registry public API is missing ${symbol}`);
-  }
-}
-
-for (const [label, sourcePath] of [
-  ["unified-source.ts", paths.unifiedSource],
-  ["unified-source/index.ts", paths.unifiedSourceIndex],
-]) {
-  const source = fs.readFileSync(sourcePath, "utf8");
-  for (const symbol of unifiedSourceApi) {
-    if (!new RegExp(`\\b${symbol}\\b`).test(source)) {
-      violations.push(`${label} public API is missing ${symbol}`);
+  for (const relativePath of removedBarrels) {
+    if (view.exists(relativePath)) {
+      violations.push(`removed barrel still exists: ${relativePath}`);
     }
   }
+
+  for (const relativePath of Object.values(paths)) {
+    const source = view.readText(relativePath);
+    if (/\bexport\s+\*/.test(source)) {
+      violations.push(`${relativePath} must not contain export *`);
+    }
+  }
+
+  const sectionsSource = view.readText(paths.sectionsRegistry);
+  for (const symbol of sectionsRegistryApi) {
+    if (!new RegExp(`\\b${symbol}\\b`).test(sectionsSource)) {
+      violations.push(`sections-registry public API is missing ${symbol}`);
+    }
+  }
+
+  for (const [label, sourcePath] of [
+    ["unified-source.ts", paths.unifiedSource],
+    ["unified-source/index.ts", paths.unifiedSourceIndex],
+  ]) {
+    const source = view.readText(sourcePath);
+    for (const symbol of unifiedSourceApi) {
+      if (!new RegExp(`\\b${symbol}\\b`).test(source)) {
+        violations.push(`${label} public API is missing ${symbol}`);
+      }
+    }
+  }
+
+  return violations;
 }
 
-if (violations.length > 0) {
+function main() {
+  const ref = parseRepositoryRef();
+  const view = createRepositoryView({ root: repositoryRoot, ref });
+  const violations = findPublicFacadeViolations(view);
+  if (violations.length > 0) {
   console.error("9C public facade boundary check failed:");
   for (const violation of violations) {
     console.error(`- ${violation}`);
   }
   process.exitCode = 1;
-} else {
-  console.log(
-    "9C public facade boundary check passed: removed barrels are absent and kept APIs are explicit.",
-  );
+    return;
+  }
+  console.log(`9C public facade boundary check passed${ref ? ` for ref ${ref}` : ""}: removed barrels are absent and kept APIs are explicit.`);
 }
+
+main();

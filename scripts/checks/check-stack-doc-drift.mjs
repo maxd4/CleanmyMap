@@ -1,7 +1,7 @@
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 export const ACTIVE_DOCS = Object.freeze([
   "AGENTS.md",
@@ -45,14 +45,9 @@ export const CANONICAL_PATHS = Object.freeze([
 
 const ADR_CANARY_EXCEPTION = "documentation/architecture/adr/ADR-005-next-canary-policy.md";
 
-function absolutePath(repoRoot, relativePath) {
-  return path.join(repoRoot, ...relativePath.split("/"));
-}
-
-function readText(repoRoot, relativePath) {
-  const filePath = absolutePath(repoRoot, relativePath);
+function readText(view, relativePath) {
   try {
-    return fs.readFileSync(filePath, "utf8");
+    return view.readText(relativePath);
   } catch (error) {
     const code = error && typeof error === "object" ? error.code : undefined;
     if (code === "ENOENT" || code === "ENOTDIR" || code === "EISDIR") {
@@ -62,8 +57,8 @@ function readText(repoRoot, relativePath) {
   }
 }
 
-function readJson(repoRoot, relativePath) {
-  const content = readText(repoRoot, relativePath);
+function readJson(view, relativePath) {
+  const content = readText(view, relativePath);
   if (!content) {
     return null;
   }
@@ -95,9 +90,9 @@ function versionReferences(content, kind) {
   }));
 }
 
-function validateManifest(repoRoot, findings) {
+function validateManifest(view, findings) {
   const packagePath = "apps/web/package.json";
-  const manifest = readJson(repoRoot, packagePath);
+  const manifest = readJson(view, packagePath);
   if (!manifest) {
     findings.push(finding(packagePath, "web package manifest is missing or invalid"));
     return null;
@@ -119,14 +114,14 @@ function validateManifest(repoRoot, findings) {
   };
 }
 
-function validateActiveFiles(repoRoot, findings, activeDocs) {
-  const manifest = validateManifest(repoRoot, findings);
+function validateActiveFiles(view, findings, activeDocs) {
+  const manifest = validateManifest(view, findings);
   if (!manifest) {
     return;
   }
 
   for (const relativePath of activeDocs) {
-    const content = readText(repoRoot, relativePath);
+    const content = readText(view, relativePath);
     if (content === null) {
       findings.push(finding(relativePath, "active documentation or canonical skill is missing"));
       continue;
@@ -202,23 +197,22 @@ function validateActiveFiles(repoRoot, findings, activeDocs) {
   }
 }
 
-function validateCanonicalPaths(repoRoot, findings, canonicalPaths) {
+function validateCanonicalPaths(view, findings, canonicalPaths) {
   for (const relativePath of canonicalPaths) {
-    const absolute = absolutePath(repoRoot, relativePath.replace(/\/$/, ""));
-    if (!fs.existsSync(absolute)) {
+    if (!view.exists(relativePath.replace(/\/$/, ""))) {
       findings.push(finding(relativePath, "canonical structural source is missing"));
     }
   }
 }
 
-function validateDataContracts(repoRoot, findings) {
+function validateDataContracts(view, findings) {
   const sources = [
     "documentation/architecture/data-governance.md",
     "documentation/operations/data-import/README.md",
     "documentation/operations/data-import/pipeline-import.md",
   ];
   for (const relativePath of sources) {
-    const content = readText(repoRoot, relativePath);
+    const content = readText(view, relativePath);
     if (content === null) {
       continue;
     }
@@ -248,9 +242,9 @@ function validateDataContracts(repoRoot, findings) {
   }
 }
 
-function validateMethodology(repoRoot, findings) {
+function validateMethodology(view, findings) {
   const runtimePath = "apps/web/src/lib/ui/page-families/families/registry.ts";
-  const runtime = readText(repoRoot, runtimePath);
+  const runtime = readText(view, runtimePath);
   if (runtime === null) {
     findings.push(finding(runtimePath, "methodology page-family runtime source is missing"));
   } else {
@@ -265,7 +259,7 @@ function validateMethodology(repoRoot, findings) {
   }
 
   const indexPath = "documentation/pages_site/INDEX.md";
-  const index = readText(repoRoot, indexPath);
+  const index = readText(view, indexPath);
   if (index === null) {
     findings.push(finding(indexPath, "pages index is missing"));
     return;
@@ -276,15 +270,15 @@ function validateMethodology(repoRoot, findings) {
   }
 }
 
-function validateMissions(repoRoot, findings) {
+function validateMissions(view, findings) {
   const runtimePath = "apps/web/src/lib/auth/protected-routes.ts";
-  const runtime = readText(repoRoot, runtimePath);
+  const runtime = readText(view, runtimePath);
   if (runtime === null || !/["']\/missions(?:\(\.\*\))?["']/.test(runtime)) {
     findings.push(finding(runtimePath, "runtime protected routes must include /missions"));
   }
 
   const indexPath = "documentation/pages_site/INDEX.md";
-  const index = readText(repoRoot, indexPath);
+  const index = readText(view, indexPath);
   if (index === null) {
     return;
   }
@@ -304,18 +298,21 @@ function validateMissions(repoRoot, findings) {
 
 export function auditStackDocDrift(repoRoot = process.cwd(), options = {}) {
   const findings = [];
+  const view = options.view ?? createRepositoryView({ root: repoRoot, ref: options.ref });
   const activeDocs = options.activeDocs ?? ACTIVE_DOCS;
   const canonicalPaths = options.canonicalPaths ?? CANONICAL_PATHS;
-  validateActiveFiles(repoRoot, findings, activeDocs);
-  validateCanonicalPaths(repoRoot, findings, canonicalPaths);
-  validateDataContracts(repoRoot, findings);
-  validateMethodology(repoRoot, findings);
-  validateMissions(repoRoot, findings);
+  validateActiveFiles(view, findings, activeDocs);
+  validateCanonicalPaths(view, findings, canonicalPaths);
+  validateDataContracts(view, findings);
+  validateMethodology(view, findings);
+  validateMissions(view, findings);
   return findings.sort((left, right) => `${left.file}:${left.line}:${left.message}`.localeCompare(`${right.file}:${right.line}:${right.message}`));
 }
 
 function main() {
-  const findings = auditStackDocDrift(process.cwd());
+  const ref = parseRepositoryRef();
+  const view = createRepositoryView({ root: process.cwd(), ref });
+  const findings = auditStackDocDrift(process.cwd(), { view });
   if (findings.length > 0) {
     console.error("Stack/documentation drift check failed:");
     for (const findingResult of findings) {
@@ -325,10 +322,10 @@ function main() {
     process.exit(1);
   }
 
-  const manifest = readJson(process.cwd(), "apps/web/package.json");
+  const manifest = readJson(view, "apps/web/package.json");
   const nextMajor = readMajor(manifest?.dependencies?.next);
   const typescriptMajor = readMajor(manifest?.devDependencies?.typescript);
-  console.log(`Stack/documentation drift check passed (Next.js ${nextMajor}, TypeScript ${typescriptMajor}; active scope and canonical contracts verified).`);
+  console.log(`Stack/documentation drift check passed (Next.js ${nextMajor}, TypeScript ${typescriptMajor}${ref ? `; ref ${ref}` : ""}; active scope and canonical contracts verified).`);
 }
 
 const invokedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";

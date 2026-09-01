@@ -101,8 +101,18 @@ intermédiaires ne doivent pas commencer par ce canari.
   pré-commit (`git diff --cached`) et `PUSH_CANDIDATE` pour le vrai pré-push,
   construit exclusivement depuis les refs et le stdin du protocole Git, sans
   dépendre du dirty state, de `HEAD` global ou d'un commit local non envoyé ;
+- `PUSH_CANDIDATE` désigne l'arbre Git exact de chaque SHA local effectivement
+  poussé. Tout check statique exécuté par le pre-push doit lire cet arbre via
+  `--ref=<local-sha>` ; il ne doit lire ni le staged, ni l'unstaged, ni les
+  untracked, ni un commit local étranger. Les refs identiques sont dédupliquées
+  et une suppression de ref ne possède aucun arbre candidat à valider ;
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
-  `origin/main...HEAD`, qui doit être affiché comme `manual-fallback` ;
+  `origin/main...HEAD`, qui doit être affiché comme `manual-fallback`, mais ses
+  checks statiques doivent utiliser `--ref=HEAD` plutôt que le worktree ;
+- `npm run checks:changed` est un contrôle de développement `WORKTREE`, pas une
+  preuve de publication. Si son échec est démontré comme étranger, tandis que
+  `STAGED` et `PUSH_CANDIDATE` sont verts, le signaler comme
+  `SKIPPED_PARALLEL_CHANTIER` sans masquer une erreur du candidat ;
 - les suites lourdes ne doivent pas être répétées entre phases sans raison
   liée au candidat réellement validé ;
 - le flux normal de publication est : allowlist → stage ciblé → validation

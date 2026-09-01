@@ -76,6 +76,15 @@ function runGuard({
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
   writeCommandStub(binRoot, "npm", ['>>"%GUARD_TEST_LOG%" echo npm %*']);
   writeCommandStub(binRoot, "npx", ['>>"%GUARD_TEST_LOG%" echo npx %*']);
+  writeCommandStub(binRoot, "node", [
+    'if /I "%~1"=="scripts/checks/validation-policy.mjs" goto :runreal',
+    'if /I "%~nx1"=="git-test.cjs" goto :runreal',
+    '>>"%GUARD_TEST_LOG%" echo node %*',
+    'exit /b 0',
+    ':runreal',
+    '"%ProgramFiles%\\nodejs\\node.exe" %*',
+    'exit /b %errorlevel%',
+  ]);
   writeGitStub(binRoot, { rangeFiles, manualFiles, ancestorExit, remoteBase, mergeBase });
 
   try {
@@ -106,7 +115,7 @@ function runGuard({
 
     return {
       status: result.status,
-      output: `${result.stdout ?? ""}\n${result.stderr ?? ""}`,
+      output: `${result.stdout ?? ""}\n${result.stderr ?? ""}\n${existsSync(logPath) ? readFileSync(logPath, "utf8") : ""}`,
       log: existsSync(logPath) ? readFileSync(logPath, "utf8") : "",
     };
   } finally {
@@ -136,7 +145,9 @@ test("docs-only push ignores a foreign web commit in HEAD", () => {
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = push-protocol/);
   assert.match(result.output, /\[skip\] web quality gates: no web-relevant changes/);
-  assertCommand(result.log, "npm run check:doc-visuals");
+  assertCommand(result.log, "node scripts/checks/check-root-file-hygiene.mjs --ref=refs/docs-local");
+  assertCommand(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/docs-local");
+  assertCommand(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=refs/docs-local");
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local");
   assertNoCommand(result.log, "npm run lint");
   assertNoCommand(result.log, "npm run typecheck");
@@ -180,7 +191,7 @@ test("Supabase push runs its audit and no production build", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommand(result.log, "npm run audit:supabase-migration-trees");
+  assertCommand(result.log, "node scripts/audits/audit-supabase-migration-trees.mjs --ref=refs/db-local");
   assertCommand(result.log, "npm run lint");
   assertCommand(result.log, "npm run typecheck");
   assertNoCommand(result.log, "npm run build");
@@ -199,7 +210,9 @@ test("multi-ref push unions ranges and runs global checks once", () => {
   });
 
   assert.equal(result.status, 0, result.output);
-  assertCommandCount(result.log, "npm run check:doc-visuals", 1);
+  assertCommandCount(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=refs/docs-local", 1);
+  assertCommandCount(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/docs-local", 1);
+  assertCommandCount(result.log, "node scripts/checks/check-documentation-governance.mjs --ref=refs/scripts-local", 1);
   assertCommandCount(result.log, "npm run test:scripts", 1);
   assertCommandCount(result.log, "npm run security:secrets -- --candidate-ref=refs/docs-local --candidate-range=refs/docs-remote..refs/docs-local --candidate-ref=refs/scripts-local --candidate-range=refs/scripts-remote..refs/scripts-local", 1);
   assertNoCommand(result.log, "npm run lint");
@@ -248,7 +261,7 @@ test("manual invocation keeps the documented fallback visible", () => {
 
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, /mode = manual-fallback/);
-  assertCommand(result.log, "npm run check:doc-visuals");
+  assertCommand(result.log, "node scripts/checks/check-doc-visuals.mjs --ref=HEAD");
   assertCommand(result.log, "npm run security:secrets -- --candidate-ref=HEAD --candidate-range=remote-main-sha...HEAD");
   assertNoCommand(result.log, "npm run lint");
 });

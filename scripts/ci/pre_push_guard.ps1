@@ -214,6 +214,7 @@ function Invoke-GuardStep {
     function Get-ValidationPolicy {
         param(
             [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
             [string[]]$ChangedFiles
         )
 
@@ -239,6 +240,7 @@ function Invoke-GuardStep {
     function Test-ChangedPathPrefix {
         param(
             [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
             [string[]]$ChangedFiles,
             [Parameter(Mandatory = $true)]
             [string]$Prefix
@@ -250,6 +252,7 @@ function Invoke-GuardStep {
     function Test-DocumentationChange {
         param(
             [Parameter(Mandatory = $true)]
+            [AllowEmptyCollection()]
             [string[]]$ChangedFiles
         )
 
@@ -288,6 +291,45 @@ function Invoke-GuardStep {
             node scripts/ci/verify-vercel-static-lambda-fallback.mjs --route /actions/map --build-started-at $buildStartedAt
         }
         Write-Warning "Accepted the verified local Vercel CLI false-negative for static /actions/map; the real vercel build check ran and all other failures remain blocking."
+    }
+
+    function Invoke-StaticCandidateChecks {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string[]]$CandidateRefs,
+            [Parameter(Mandatory = $true)]
+            [bool]$DocumentationRelevant,
+            [Parameter(Mandatory = $true)]
+            [bool]$SupabaseRelevant,
+            [Parameter(Mandatory = $true)]
+            [bool]$WebRelevant
+        )
+
+        foreach ($candidateRef in @($CandidateRefs | Sort-Object -Unique)) {
+            $refArgument = "--ref=$candidateRef"
+            Write-Host ""
+            Write-Host "==> static candidate checks ($candidateRef)"
+            Invoke-GuardStep "root file hygiene ($candidateRef)" { node scripts/checks/check-root-file-hygiene.mjs $refArgument }
+            Invoke-GuardStep "GitNexus hygiene ($candidateRef)" { node scripts/checks/check-gitnexus-hygiene.mjs $refArgument }
+            Invoke-GuardStep "documentation governance ($candidateRef)" { node scripts/checks/check-documentation-governance.mjs $refArgument }
+            Invoke-GuardStep "AGENTS governance ($candidateRef)" { node scripts/checks/check-agent-governance.mjs $refArgument }
+            Invoke-GuardStep "agent skills ($candidateRef)" { node scripts/checks/check-agent-skill-mirrors.mjs $refArgument }
+            Invoke-GuardStep "stack documentation drift ($candidateRef)" { node scripts/checks/check-stack-doc-drift.mjs $refArgument }
+            Invoke-GuardStep "GitHub Actions security ($candidateRef)" { node scripts/checks/check-github-actions-security.mjs $refArgument }
+            Invoke-GuardStep "9C public facades ($candidateRef)" { node scripts/checks/check-9c-public-facades.mjs $refArgument }
+
+            if ($DocumentationRelevant) {
+                Invoke-GuardStep "documentation visuals ($candidateRef)" { node scripts/checks/check-doc-visuals.mjs $refArgument }
+            }
+            if ($SupabaseRelevant) {
+                Invoke-GuardStep "Supabase migration tree audit ($candidateRef)" { node scripts/audits/audit-supabase-migration-trees.mjs $refArgument }
+            }
+            if ($WebRelevant) {
+                Invoke-GuardStep "lockfile policy ($candidateRef)" { node scripts/checks/check-lockfile-policy.mjs $refArgument }
+                Invoke-GuardStep "Vercel CI audit ($candidateRef)" { node scripts/audits/audit-vercel-ci.mjs $refArgument }
+                Invoke-GuardStep "top-heavy files policy ($candidateRef)" { node scripts/checks/check-top-heavy-files.mjs --enforce $refArgument }
+            }
+        }
     }
 
     $vercelProjectFiles = @(
@@ -329,8 +371,13 @@ function Invoke-GuardStep {
     }
 
     if ($manualFallback -and $changedFiles.Count -eq 0) {
-        Write-Host "No changed files detected in manual fallback; running the separate full validation."
-        Invoke-GuardStep "full validation" { npm run checks:full }
+        Write-Host "No changed files detected in manual fallback; validating the HEAD candidate tree only."
+        Invoke-GuardStep "secret audit" { npm run security:secrets -- --candidate-ref=HEAD --candidate-range=$($ranges[0]) }
+        Invoke-StaticCandidateChecks `
+            -CandidateRefs @("HEAD") `
+            -DocumentationRelevant $true `
+            -SupabaseRelevant $true `
+            -WebRelevant $true
         Write-Host ""
         Write-Host "Pre-push guardrail passed."
         return
@@ -342,6 +389,8 @@ function Invoke-GuardStep {
     $vercelConfigRelevant = $changedFiles -contains "apps/web/vercel.json"
     $webRelevant = [bool]$policy.webRelevant -or $vercelConfigRelevant
     $buildRelevant = [bool]$policy.buildRelevant -or $vercelConfigRelevant
+
+    $staticCandidateRefs = @($candidates | Select-Object -ExpandProperty LocalSha -Unique)
 
     foreach ($range in $ranges) {
         Invoke-GuardStep "PUSH_CANDIDATE diff check ($range)" { & git diff --check $range -- }
@@ -356,25 +405,14 @@ function Invoke-GuardStep {
     }
     $secretCommandArgs = @("run", "security:secrets", "--") + $secretArgs
     Invoke-GuardStep "secret audit" { & npm @secretCommandArgs }
-    Invoke-GuardStep "root file hygiene" { npm run check:root-files }
-    Invoke-GuardStep "GitNexus hygiene" { npm run check:gitnexus-hygiene }
-    Invoke-GuardStep "documentation governance" { npm run check:doc-governance }
-    Invoke-GuardStep "stack documentation drift" { npm run check:stack-doc-drift }
-    Invoke-GuardStep "agent skills" { npm run check:agent-skills }
-    Invoke-GuardStep "GitHub Actions security" { npm run check:github-actions }
-    Invoke-GuardStep "9C public facades" { npm run check:9c-public-facades }
+    Invoke-StaticCandidateChecks `
+        -CandidateRefs $staticCandidateRefs `
+        -DocumentationRelevant $documentationRelevant `
+        -SupabaseRelevant $supabaseRelevant `
+        -WebRelevant $webRelevant
 
-    if ($documentationRelevant) {
-        Invoke-GuardStep "documentation visuals" { npm run check:doc-visuals }
-    } else {
-        Write-SkippedGuardStep "documentation visuals" "no documentation changes"
-    }
-
-    if ($supabaseRelevant) {
-        Invoke-GuardStep "Supabase migration tree audit" { npm run audit:supabase-migration-trees }
-    } else {
-        Write-SkippedGuardStep "Supabase migration tree audit" "no apps/web/supabase changes"
-    }
+    if (-not $documentationRelevant) { Write-SkippedGuardStep "documentation visuals" "no documentation changes" }
+    if (-not $supabaseRelevant) { Write-SkippedGuardStep "Supabase migration tree audit" "no apps/web/supabase changes" }
 
     if ($policy.scriptsRelevant) {
         Invoke-GuardStep "script tests" { npm run test:scripts }

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appRoot = path.join(repoRoot, "apps", "web", "src");
+const appRelativeRoot = "apps/web/src";
 
 const scanRoots = [
   path.join(appRoot, "app"),
@@ -102,7 +103,15 @@ function collectWorkspaceFiles() {
   return files;
 }
 
-function buildFileIndex() {
+function buildFileIndex(view = null) {
+  if (view) {
+    const files = view.listFiles(appRelativeRoot)
+      .filter((filePath) => fileExtensions.has(path.extname(filePath)))
+      .filter((filePath) => !/(?:^|\/)(?:\.git|node_modules|\.next|dist|build|coverage)(?:\/|$)/.test(filePath))
+      .filter((filePath) => !/(?:\.test|\.spec)\./.test(path.posix.basename(filePath)));
+    return { files, filesByRelPath: new Map(files.map((filePath) => [filePath, filePath])) };
+  }
+
   const files = collectWorkspaceFiles();
   const filesByRelPath = new Map();
 
@@ -159,14 +168,18 @@ function isLocalImportSpecifier(specifier) {
   return specifier.startsWith(".") || specifier.startsWith("@/");
 }
 
-function resolveLocalImport(filePath, specifier, filesByRelPath) {
+function resolveLocalImport(filePath, specifier, filesByRelPath, view = null) {
   if (!isLocalImportSpecifier(specifier)) {
     return null;
   }
 
-  const candidateBase = specifier.startsWith("@/")
-    ? path.join(appRoot, specifier.slice(2))
-    : path.resolve(path.dirname(filePath), specifier);
+  const candidateBase = view
+    ? (specifier.startsWith("@/")
+      ? path.posix.join(appRelativeRoot, specifier.slice(2))
+      : path.posix.normalize(path.posix.join(path.posix.dirname(filePath), specifier)))
+    : (specifier.startsWith("@/")
+      ? path.join(appRoot, specifier.slice(2))
+      : path.resolve(path.dirname(filePath), specifier));
 
   const candidates = [candidateBase];
 
@@ -181,7 +194,7 @@ function resolveLocalImport(filePath, specifier, filesByRelPath) {
   }
 
   for (const candidate of candidates) {
-    const relPath = toRepoRelative(candidate);
+      const relPath = view ? candidate : toRepoRelative(candidate);
     if (filesByRelPath.has(relPath)) {
       return filesByRelPath.get(relPath);
     }
@@ -190,14 +203,14 @@ function resolveLocalImport(filePath, specifier, filesByRelPath) {
   return null;
 }
 
-function collectLocalDependencies(filePath, content, filesByRelPath) {
+function collectLocalDependencies(filePath, content, filesByRelPath, view = null) {
   const dependencies = new Set();
 
   for (const pattern of localImportPatterns) {
     pattern.lastIndex = 0;
     for (const match of content.matchAll(pattern)) {
       const specifier = match[1];
-      const resolved = resolveLocalImport(filePath, specifier, filesByRelPath);
+      const resolved = resolveLocalImport(filePath, specifier, filesByRelPath, view);
       if (resolved) {
         dependencies.add(resolved);
       }
@@ -247,10 +260,11 @@ function analyzeFile(
   dependencyGraph,
   runtimeSignalsByFile,
   pageSignalsByFile,
+  view = null,
 ) {
-  const relPath = toRepoRelative(filePath);
-  const content = fs.readFileSync(filePath, "utf8");
-  dependencyGraph.set(filePath, collectLocalDependencies(filePath, content, filesByRelPath));
+  const relPath = view ? filePath : toRepoRelative(filePath);
+  const content = view ? view.readText(relPath) : fs.readFileSync(filePath, "utf8");
+  dependencyGraph.set(filePath, collectLocalDependencies(filePath, content, filesByRelPath, view));
   runtimeSignalsByFile.set(filePath, new Set(collectDirectSignals(content)));
 
   if (isApiRoute(relPath)) {
@@ -306,7 +320,7 @@ function analyzeFile(
   }
 }
 
-export function scanVercelSurface() {
+export function scanVercelSurface({ view = null } = {}) {
   const snapshot = {
     apiRoutes: [],
     dynamicPages: [],
@@ -321,7 +335,7 @@ export function scanVercelSurface() {
     externalFetches: [],
   };
 
-  const { files, filesByRelPath } = buildFileIndex();
+  const { files, filesByRelPath } = buildFileIndex(view);
   const dependencyGraph = new Map();
   const runtimeSignalsByFile = new Map();
   const pageSignalsByFile = new Map();
@@ -334,6 +348,7 @@ export function scanVercelSurface() {
       dependencyGraph,
       runtimeSignalsByFile,
       pageSignalsByFile,
+      view,
     );
   }
 
@@ -365,7 +380,7 @@ export function scanVercelSurface() {
   }
 
   for (const filePath of files) {
-    const relPath = toRepoRelative(filePath);
+    const relPath = view ? filePath : toRepoRelative(filePath);
     if (!isPageFile(relPath)) {
       continue;
     }
@@ -403,8 +418,8 @@ export function scanVercelSurface() {
   };
 }
 
-export function hasNearbyJustificationComment(filePath, markerRegex) {
-  const content = fs.readFileSync(filePath, "utf8");
+export function hasNearbyJustificationComment(filePath, markerRegex, { view = null } = {}) {
+  const content = view ? view.readText(filePath) : fs.readFileSync(filePath, "utf8");
   return hasJustificationComment(content, markerRegex);
 }
 
