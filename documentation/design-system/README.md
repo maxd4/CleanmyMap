@@ -71,6 +71,11 @@ conserve `<details>/<summary>` ; elle ne fournit pas de fermeture exclusive
 entre voisins et ne remplace pas les dropdowns, menus, tooltips, popovers ou
 overlays.
 
+Pour les modales génériques, utiliser `CmmDialog` selon
+[`OVERLAYS_DIALOGS.md`](./OVERLAYS_DIALOGS.md). La primitive porte la
+sémantique dialog, le scroll-lock et les contrats de focus ; les exceptions
+legacy restent bornées et explicitement inventoriées.
+
 Pour les labels compacts statiques, utiliser `CmmBadge` selon
 [`INDICATORS_BADGES.md`](./INDICATORS_BADGES.md). Le badge conserve une
 sémantique neutre, expose ses variantes par `data-badge-tone`,
