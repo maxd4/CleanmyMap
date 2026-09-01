@@ -206,11 +206,15 @@ export function useChatSubmit({
             throw uploadError;
           }
 
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
+          const { data: signedUrl, error: signedUrlError } = await supabase.storage
+            .from("chat-attachments")
+            .createSignedUrl(filePath, 120 * 24 * 60 * 60);
 
-          attachmentUrl = publicUrl;
+          if (signedUrlError || !signedUrl?.signedUrl) {
+            throw signedUrlError ?? new Error("La signature de la pièce jointe a échoué.");
+          }
+
+          attachmentUrl = signedUrl.signedUrl;
           attachmentType = inferredAttachmentType ?? (preparedFile.type || file.type || undefined);
         } catch (uploadError) {
           const appError = isAppError(uploadError)
