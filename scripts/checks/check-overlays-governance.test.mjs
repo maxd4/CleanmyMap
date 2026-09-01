@@ -74,3 +74,20 @@ test("removing an exception from the allowlist exposes its raw modal", () => {
   assert.equal(violations.length, 1);
   assert.ok(violations[0].startsWith(legacyPath));
 });
+
+test("allows a former exception after its migration to CmmDialog", () => {
+  const legacyPath = [...LEGACY_MODAL_ALLOWLIST][0];
+  const reducedAllowlist = new Set(LEGACY_MODAL_ALLOWLIST);
+  reducedAllowlist.delete(legacyPath);
+
+  assert.deepEqual(
+    auditModalSources(
+      [{
+        path: legacyPath,
+        source: '<CmmDialog open ariaLabel="Titre">Contenu</CmmDialog>',
+      }],
+      { allowlist: reducedAllowlist },
+    ),
+    [],
+  );
+});
