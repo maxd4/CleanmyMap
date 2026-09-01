@@ -81,7 +81,6 @@ describe("OSRM routing capability", () => {
 
     const result = await routePolylineThroughStreetNetwork(stops, {
       transport,
-      fallbackDurationMinutes: 42,
     });
 
     expect(result).toMatchObject({
@@ -90,8 +89,8 @@ describe("OSRM routing capability", () => {
       provider: "none",
       profile: null,
       estimated: true,
-      durationMinutes: 42,
     });
+    expect(result.durationMinutes).toBeGreaterThan(0);
     expect(result.legs).toEqual([]);
   });
 
@@ -108,14 +107,13 @@ describe("OSRM routing capability", () => {
     const result = await routePolylineThroughStreetNetwork(stops, {
       transport,
       timeoutMs: 1,
-      fallbackDurationMinutes: 17,
     });
 
     expect(result).toMatchObject({
       mode: "fallback",
       estimated: true,
-      durationMinutes: 17,
     });
+    expect(result.durationMinutes).toBeGreaterThan(0);
     expect(transport).toHaveBeenCalledTimes(1);
   });
 

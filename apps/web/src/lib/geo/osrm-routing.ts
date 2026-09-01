@@ -14,7 +14,6 @@ export type RoutingTransport = (
 export type RoutePolylineOptions = {
   transport?: RoutingTransport;
   timeoutMs?: number;
-  fallbackDurationMinutes?: number;
 };
 
 type OsrmLeg = {
@@ -121,13 +120,10 @@ export function buildOsrmRouteUrl(
 
 export function createFallbackRouteGeometry(
   coordinates: [number, number][],
-  fallbackDurationMinutes?: number,
 ): RouteGeometry {
   const normalizedCoordinates = coordinates.filter(isCoordinate);
   const distance = fallbackDistanceKm(normalizedCoordinates);
-  const duration =
-    fallbackDurationMinutes ??
-    (distance > 0 ? (distance / 4.5) * 60 : 0);
+  const duration = distance > 0 ? (distance / 4.5) * 60 : 0;
 
   return {
     coordinates: normalizedCoordinates,
@@ -232,10 +228,7 @@ export async function routePolylineThroughStreetNetwork(
   options: RoutePolylineOptions = {},
 ): Promise<RouteGeometry> {
   if (coordinates.length < 2) {
-    return createFallbackRouteGeometry(
-      coordinates,
-      options.fallbackDurationMinutes,
-    );
+    return createFallbackRouteGeometry(coordinates);
   }
 
   if (
@@ -245,10 +238,7 @@ export async function routePolylineThroughStreetNetwork(
     logWarning("OSRM", "Routing input is outside the supported bounds", {
       pointCount: coordinates.length,
     });
-    return createFallbackRouteGeometry(
-      coordinates,
-      options.fallbackDurationMinutes,
-    );
+    return createFallbackRouteGeometry(coordinates);
   }
 
   const networkResult = await fetchOsrmRoute(
@@ -258,10 +248,7 @@ export async function routePolylineThroughStreetNetwork(
   );
   return (
     networkResult ??
-    createFallbackRouteGeometry(
-      coordinates,
-      options.fallbackDurationMinutes,
-    )
+    createFallbackRouteGeometry(coordinates)
   );
 }
 

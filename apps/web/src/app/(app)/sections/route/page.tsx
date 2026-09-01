@@ -35,7 +35,7 @@ export default function RoutePage() {
               <span>Où agir</span>
             </span>
           }
-          subtitle="Décidez vite où agir aujourd’hui avec le temps disponible, la météo, l’accessibilité et l’impact prioritaire."
+          subtitle="Décidez vite où agir aujourd’hui selon la priorité opérationnelle, la distance et le nombre d’arrêts."
           action={
             <CmmButtonGroup>
               <CmmButton

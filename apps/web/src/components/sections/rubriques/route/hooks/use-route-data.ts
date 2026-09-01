@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import { RouteConstraints, RouteResponse } from "../route-types";
+import { RouteOptions, RouteResponse } from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
-  DEFAULT_ROUTE_CONSTRAINTS,
-  readRouteDraftConstraints,
-  writeRouteDraftConstraints,
+  DEFAULT_ROUTE_OPTIONS,
+  readRouteDraftOptions,
+  writeRouteDraftOptions,
 } from "../route-draft-storage";
 import {
   createRouteRecommendationRequest,
@@ -19,8 +19,8 @@ export function useRouteData() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
-  const [constraints, setConstraintsState] = useState<RouteConstraints>(() => ({
-    ...DEFAULT_ROUTE_CONSTRAINTS,
+  const [options, setOptionsState] = useState<RouteOptions>(() => ({
+    ...DEFAULT_ROUTE_OPTIONS,
   }));
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequest, setRecommendationRequest] =
@@ -28,9 +28,9 @@ export function useRouteData() {
   const requestSequence = useRef(0);
   const draftEditedBeforeHydration = useRef(false);
 
-  const setConstraints = useCallback<React.Dispatch<React.SetStateAction<RouteConstraints>>>((update) => {
+  const setOptions = useCallback<React.Dispatch<React.SetStateAction<RouteOptions>>>((update) => {
     draftEditedBeforeHydration.current = true;
-    setConstraintsState(update);
+    setOptionsState(update);
   }, []);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function useRouteData() {
       storage = undefined;
     }
     if (!draftEditedBeforeHydration.current) {
-      setConstraintsState(readRouteDraftConstraints(storage));
+      setOptionsState(readRouteDraftOptions(storage));
     }
     setIsDraftHydrated(true);
   }, []);
@@ -55,8 +55,8 @@ export function useRouteData() {
     } catch {
       storage = undefined;
     }
-    writeRouteDraftConstraints(storage, constraints);
-  }, [constraints, isDraftHydrated]);
+    writeRouteDraftOptions(storage, options);
+  }, [options, isDraftHydrated]);
 
   const { data, isLoading, error } = useSWR<RouteResponse>(
     recommendationRequest
@@ -83,22 +83,16 @@ export function useRouteData() {
   );
   
   const totalMinutes = useMemo(
-    () =>
-      routeGeometry?.mode === "network"
-        ? routeGeometry.durationMinutes
-        : picks.reduce(
-            (acc, item) => acc + Number(item.estimatedMinutes || 0),
-            0,
-          ),
-    [routeGeometry, picks],
+    () => routeGeometry?.durationMinutes ?? 0,
+    [routeGeometry],
   );
 
   const hasData = !isLoading && !error && Boolean(data);
   const hasRoute = hasData && picks.length > 0;
 
   return {
-    constraints,
-    setConstraints,
+    options,
+    setOptions,
     data,
     isLoading,
     error,
@@ -112,7 +106,7 @@ export function useRouteData() {
     requestRecommendation: () => {
       requestSequence.current += 1;
       setRecommendationRequest(
-        createRouteRecommendationRequest(requestSequence.current, constraints),
+        createRouteRecommendationRequest(requestSequence.current, options),
       );
     },
   };

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_ROUTE_CONSTRAINTS,
+  DEFAULT_ROUTE_OPTIONS,
   ROUTE_DRAFT_SCHEMA_VERSION,
   ROUTE_DRAFT_STORAGE_KEY,
-  readRouteDraftConstraints,
-  writeRouteDraftConstraints,
+  readRouteDraftOptions,
+  writeRouteDraftOptions,
 } from "./route-draft-storage";
-import type { RouteConstraints } from "./route-types";
+import type { RouteOptions } from "./route-types";
 
 class MemoryStorage {
   private readonly values = new Map<string, string>();
@@ -20,61 +20,57 @@ class MemoryStorage {
   }
 }
 
-const nonDefaultConstraints: RouteConstraints = {
-  availableMinutes: 255,
-  volunteers: 7,
-  accessibility: "strict",
-  security: "renforced",
-  weather: "wind",
-  impactVsDistance: 42,
+const nonDefaultOptions: RouteOptions = {
+  priorityVsDistance: 42,
   maxStops: 9,
 };
 
 describe("route draft storage contract", () => {
-  it("serializes only the versioned route constraints and restores them", () => {
+  it("serializes only the versioned route options and restores them", () => {
     const storage = new MemoryStorage();
 
-    writeRouteDraftConstraints(storage, nonDefaultConstraints);
+    writeRouteDraftOptions(storage, nonDefaultOptions);
 
     expect(JSON.parse(storage.getItem(ROUTE_DRAFT_STORAGE_KEY)!)).toEqual({
       version: ROUTE_DRAFT_SCHEMA_VERSION,
-      constraints: nonDefaultConstraints,
+      options: nonDefaultOptions,
     });
-    expect(readRouteDraftConstraints(storage)).toEqual(nonDefaultConstraints);
+    expect(readRouteDraftOptions(storage)).toEqual(nonDefaultOptions);
   });
 
   it("uses canonical defaults for corrupt or incompatible drafts", () => {
     const storage = new MemoryStorage();
 
     storage.setItem(ROUTE_DRAFT_STORAGE_KEY, "not-json");
-    expect(readRouteDraftConstraints(storage)).toEqual(DEFAULT_ROUTE_CONSTRAINTS);
+    expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
 
     storage.setItem(
       ROUTE_DRAFT_STORAGE_KEY,
-      JSON.stringify({ version: ROUTE_DRAFT_SCHEMA_VERSION - 1, constraints: nonDefaultConstraints }),
+      JSON.stringify({ version: 0, options: nonDefaultOptions }),
     );
-    expect(readRouteDraftConstraints(storage)).toEqual(DEFAULT_ROUTE_CONSTRAINTS);
+    expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
   });
 
-  it("falls back per field when values are unknown, fractional, or out of bounds", () => {
+  it("ignores removed legacy fields while preserving valid current fields", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       ROUTE_DRAFT_STORAGE_KEY,
       JSON.stringify({
-        version: ROUTE_DRAFT_SCHEMA_VERSION,
+        version: 1,
         constraints: {
           availableMinutes: 601,
-          volunteers: 2.5,
-          accessibility: "unknown",
-          security: "unsafe",
+          volunteers: 2,
           weather: "storm",
-          impactVsDistance: -1,
-          maxStops: 13,
+          impactVsDistance: 12,
+          maxStops: 9,
         },
       }),
     );
 
-    expect(readRouteDraftConstraints(storage)).toEqual(DEFAULT_ROUTE_CONSTRAINTS);
+    expect(readRouteDraftOptions(storage)).toEqual({
+      priorityVsDistance: 65,
+      maxStops: 9,
+    });
   });
 
   it("does not throw when browser storage is unavailable", () => {
@@ -87,7 +83,7 @@ describe("route draft storage contract", () => {
       },
     };
 
-    expect(readRouteDraftConstraints(storage)).toEqual(DEFAULT_ROUTE_CONSTRAINTS);
-    expect(() => writeRouteDraftConstraints(storage, nonDefaultConstraints)).not.toThrow();
+    expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
+    expect(() => writeRouteDraftOptions(storage, nonDefaultOptions)).not.toThrow();
   });
 });

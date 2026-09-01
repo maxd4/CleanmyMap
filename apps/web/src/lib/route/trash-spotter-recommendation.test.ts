@@ -33,12 +33,6 @@ function buildCandidate(
   return candidate;
 }
 
-const constraints = {
-  accessibility: "standard" as const,
-  security: "standard" as const,
-  weather: "ok" as const,
-};
-
 describe("Trash Spotter route recommendation", () => {
   it("uses only canonical validated spots, never actions or clean places", () => {
     const candidates = buildTrashSpotterActionableCandidates([
@@ -69,7 +63,7 @@ describe("Trash Spotter route recommendation", () => {
 
     expect(candidates.map((candidate) => candidate.id)).toEqual(["spot-1"]);
     expect(
-      buildTrashSpotterRouteCandidates(candidates, constraints, new Date("2026-08-25")),
+      buildTrashSpotterRouteCandidates(candidates, new Date("2026-08-25")),
     ).toHaveLength(1);
   });
 
@@ -83,7 +77,6 @@ describe("Trash Spotter route recommendation", () => {
 
     const routeCandidates = buildTrashSpotterRouteCandidates(
       candidates,
-      constraints,
       new Date("2026-08-25"),
     );
 
@@ -95,5 +88,15 @@ describe("Trash Spotter route recommendation", () => {
     expect(freshnessScore("2026-08-25T00:00:00.000Z", now)).toBe(100);
     expect(freshnessScore("2026-04-27T00:00:00.000Z", now)).toBe(0);
     expect(distanceKm({ latitude: 48.85, longitude: 2.35 }, { latitude: 48.86, longitude: 2.36 })).toBeGreaterThan(0);
+  });
+
+  it("uses freshness alone as the candidate priority score", () => {
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    const candidate = buildCandidate({ observedAt: "2026-08-20T00:00:00.000Z" });
+    const [result] = buildTrashSpotterRouteCandidates([candidate], now);
+
+    expect(result?.score).toBe(freshnessScore(candidate.observedAt, now));
+    expect(result?.reason).not.toContain("météo");
+    expect(result?.reason).not.toContain("sécurité");
   });
 });
