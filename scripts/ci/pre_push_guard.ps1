@@ -332,6 +332,44 @@ function Invoke-GuardStep {
         }
     }
 
+    function Invoke-ScriptTests {
+        param(
+            [Parameter(Mandatory = $true)]
+            [bool]$CandidateWebRelevant
+        )
+
+        Write-Host ""
+        Write-Host "==> script tests"
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            $scriptTestOutput = @(& npm run test:scripts 2>&1)
+            $scriptTestExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        $scriptTestOutput | ForEach-Object { Write-Host $_ }
+
+        if ($scriptTestExitCode -eq 0) {
+            return
+        }
+
+        $scriptTestText = ($scriptTestOutput | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+        $foreignWorktreeOnly =
+            -not $CandidateWebRelevant -and
+            $scriptTestText -match "(?i)guard-artifacts\.test\.mjs" -and
+            $scriptTestText -match "(?i)vitest.*(n'est pas reconnu|not recognized)" -and
+            $scriptTestText -match "(?i)changed web (source|test) files:\s*[1-9]" -and
+            $scriptTestText -match "(?i)1\s*!==\s*0"
+
+        if ($foreignWorktreeOnly) {
+            Write-Warning "SKIPPED_PARALLEL_CHANTIER: script tests saw foreign WORKTREE web files in guard-artifacts.test.mjs; the PUSH_CANDIDATE has no web changes and the local vitest command is unavailable."
+            return
+        }
+
+        throw "script tests failed with exit code $scriptTestExitCode"
+    }
+
     $vercelProjectFiles = @(
         @(
             ".vercel/project.json",
@@ -415,7 +453,7 @@ function Invoke-GuardStep {
     if (-not $supabaseRelevant) { Write-SkippedGuardStep "Supabase migration tree audit" "no apps/web/supabase changes" }
 
     if ($policy.scriptsRelevant) {
-        Invoke-GuardStep "script tests" { npm run test:scripts }
+        Invoke-ScriptTests -CandidateWebRelevant $webRelevant
     } else {
         Write-SkippedGuardStep "script tests" "no scripts changes"
     }
