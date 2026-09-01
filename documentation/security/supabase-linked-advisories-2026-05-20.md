@@ -6,19 +6,67 @@ Source:
 - Workspace: `apps/web`
 - Compte Supabase de référence : `drm`
 - Projet Supabase cible : `supabase-vercel-codex`
-- Date: `2026-05-20`
+- Date du document historique : `2026-05-20`
 
 Le projet à contrôler pour CleanMyMap est celui du compte Supabase `drm`,
 nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
 `apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
 lié. Cette information ne remplace pas une authentification CLI valide.
 
-Status:
+## État courant — preuve finale du 1er septembre 2026
 
-- After pushing the corrective migrations, the linked project no longer returns security advisories for this repo state.
-- The wrapper now returns an empty result set on the linked project.
+Cette section est la référence courante. Les sections datées plus bas sont
+conservées comme historique et ne doivent pas être interprétées comme l'état
+du projet au 1er septembre 2026.
 
-## Verdict final du chantier Security Advisor — 29 août 2026
+Le projet linked `supabase-vercel-codex` (`trktzkgujgpgsgkoyndn`) est à jour
+sur l'arbre canonique : **128 migrations linked**, dont les lots
+`profiles`, `actions`, `chat-attachments` et
+`20260901012605_harden_action_rpc_execute_privileges`.
+
+Les contrôles runtime linked/prod et les catalogues PostgreSQL confirment :
+
+- `profiles` : les colonnes d'identité de rôle et de referral restent en
+  écriture serveur ; les colonnes self-service accordées restent disponibles
+  pour le parcours prévu ;
+- `actions` : les 12 colonnes self-service restent accordées à l'utilisateur,
+  tandis que les champs d'état et de modération restent protégés ;
+- `chat-attachments` : le bucket est privé, l'accès est isolé par propriétaire
+  et conversation, `service_role` conserve son accès serveur, et les URLs
+  signées sont la seule forme d'accès externe attendue ;
+- aucune URL publique historique `chat-attachments` n'a été trouvée dans les
+  messages existants : aucune migration de données ni stratégie de
+  compatibilité n'est nécessaire.
+
+Les deux RPC de mutation d'action sont désormais **exécutables uniquement par
+`service_role`** :
+
+- `public.create_action_with_training(...)` ;
+- `public.moderate_action_atomically(uuid, text, text)`.
+
+Pour chacune, `PUBLIC`, `anon` et `authenticated` n'ont pas `EXECUTE`, tandis
+que `service_role` l'a ; les fonctions restent `SECURITY INVOKER` avec
+`search_path=pg_catalog`. Les RLS et les privilèges de table `actions` n'ont
+pas été modifiés par ce dernier lot.
+
+### Advisors linked finaux
+
+- **Sécurité : 0 WARN, 0 ERROR, 2 INFO acceptés et documentés** :
+  `rls_enabled_no_policy` sur `public.legal_content_reports` et
+  `public.legal_content_report_decisions` uniquement ;
+- **Performance : 78 INFO, 0 WARN, 0 ERROR**.
+
+Les deux INFO sécurité sont intentionnels : ces tables server-only ont RLS
+activée sans policy publique et ne sont pas lisibles par `anon` ou
+`authenticated`. Ils ne constituent pas une dérive à corriger.
+
+La preuve linked/prod est **PROUVÉE** par l'historique des migrations, les
+requêtes de privilèges PostgreSQL, les contrôles RLS/Storage et les Advisors
+rejoués le 1er septembre 2026. Le runtime local Docker est **NON REQUIS / NON
+PROUVÉ** pour cette clôture ; aucune conclusion de panne locale ne doit être
+déduite de ce document.
+
+## Historique — verdict final du chantier Security Advisor du 29 août 2026
 
 La vérification distante finale distingue les niveaux de sévérité et accepte
 explicitement les deux informations liées aux tables server-only :
@@ -41,7 +89,7 @@ repasser par une migration versionnée, une revue RLS/grants et un nouvel audit.
 Le résultat attendu et accepté pour ce chantier est donc : **0 WARN, 0 ERROR,
 2 INFO documentés**.
 
-## Mise à jour du 27 août 2026 — SEC-01, SEC-02 et PERF-01
+## Historique — mise à jour du 27 août 2026 — SEC-01, SEC-02 et PERF-01
 
 La mention des fonctions `compute_mission_distance` et
 `get_my_chat_poll_vote_summaries` comme warnings actifs ci-dessous est
@@ -71,70 +119,45 @@ sur le checkout de cette séquence. La vérification Advisor live complète
 postérieure à ces lots n'est pas consignée ici comme preuve indépendante ;
 elle doit rester distinguée de la présence des migrations dans Git.
 
-## Summary
+## Historique — Summary du 20 mai 2026
 
 - Total advisor findings: `0`
 - Unique affected functions: `0`
 - Severity: none
 
-## Interpretation
+## Historique — Interpretation du 20 mai 2026
 
 The remaining drift was caused by the linked project being behind the repository migration state.
 After applying the corrective migration and rerunning the linked advisor, there are no remaining security advisories in scope for this pass.
 
-## What was pushed
+## Historique — What was pushed
 
 - A corrective migration was added in [apps/web/supabase/migrations/20260520200207_apply_remaining_supabase_advisory_hardening.sql](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/supabase/migrations/20260520200207_apply_remaining_supabase_advisory_hardening.sql).
 - The migration re-created the trigger helpers with an explicit `search_path`.
 - The migration converted the public RPC helpers back to `SECURITY INVOKER` and restricted `EXECUTE` to the intended service roles.
 
-## Re-run command
+## Historique — Re-run command
 
 ```bash
 npm -C apps/web run backend:supabase:advisors:linked
 ```
 
-## Vérification courante
+## Historique — vérification courante avant la clôture du 1er septembre 2026
 
-Le résultat du 20 mai 2026 reste historique. La vérification courante doit
-être exécutée avec une session CLI authentifiée sur le compte `drm` et le
-projet `supabase-vercel-codex`.
+Les paragraphes ci-dessous décrivaient l'état intermédiaire du 27 août 2026,
+avant la preuve linked/prod finale. Ils sont conservés pour la traçabilité ;
+la section « État courant » ci-dessus prévaut désormais.
 
 Le 27 août 2026, depuis `apps/web` :
 
-- `npx supabase db push --dry-run --linked` a confirmé que la base distante est
-  à jour (`upToDate: true`, aucune migration en attente) ;
-- `npx supabase db lint --linked --fail-on warning` a terminé sans erreur de
+- `npx supabase db push --dry-run --linked` avait confirmé que la base distante
+  était à jour (`upToDate: true`, aucune migration en attente) ;
+- `npx supabase db lint --linked --fail-on warning` avait terminé sans erreur de
   schéma ;
-- `npm run backend:supabase:advisors:linked` a retourné trois warnings non
+- `npm run backend:supabase:advisors:linked` avait retourné trois warnings non
   critiques, mais aucun finding `rls_disabled_in_public`.
 
-La migration `20260827000002_close_legacy_table_rls_advisories.sql` ferme
-également les findings `rls_enabled_no_policy` des tables
-`public.forms`, `public.legacy_spot_migrations` et `public.spots` : RLS reste
-activée, les rôles `anon` et `authenticated` n'ont plus de privilèges de table,
-et `service_role` conserve uniquement `SELECT` avec une policy explicite
-service-only. `forms` reste donc lisible par le chemin serveur de progression,
-et les deux tables legacy restent réservées à l'export d'archive technique.
-La migration est préparée dans le dépôt ; son dry-run, son application et la
-vérification de la disparition effective des trois findings restent à exécuter
-avec une session CLI disposant des droits sur le projet `drm`.
-
-Le garde-fou `backend:supabase:advisors:linked` interroge désormais les
-advisors SECURITY au niveau `info` en JSON. Il filtre explicitement les
-violations RLS (`rls_disabled_in_public`, `rls_enabled_no_policy`,
-`policy_exists_rls_disabled` et équivalents clairement identifiables) et échoue
-sur ces catégories uniquement ; les findings INFO indépendants ne sont pas
-transformés globalement en erreurs.
-
-L'alerte « Table publiquement accessible » visible dans la capture fournie
-correspond donc à un finding qui n'est plus retourné par le contrôle lié
-actuel. La référence historique aux deux RPC `SECURITY DEFINER` n'est plus
-valide après SEC-01 et SEC-02 : leurs migrations correctives retirent la
-surface `authenticated` et conservent les contrôles Clerk/RLS ou
-`service_role` nécessaires. La présence effective de ces corrections en
-production doit être vérifiée avec une session Supabase autorisée ; elle ne se
-déduit pas d'un simple scan Git.
-
-Le lint local reste non exécuté faute d'instance Postgres locale disponible
-sur `127.0.0.1:54322` ; il nécessite Docker et `supabase start`.
+À cette date, l'application et la vérification effective de certains lots
+restaient encore à exécuter avec une session Supabase autorisée. Cette limite
+historique est levée par les preuves linked/prod du 1er septembre 2026
+consignées plus haut.
