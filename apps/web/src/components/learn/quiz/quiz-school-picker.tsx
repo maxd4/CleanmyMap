@@ -2,13 +2,10 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, School } from "lucide-react";
+import { ArrowLeft, CheckCircle, GraduationCap, School } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { cn } from "@/lib/utils";
-import {
-  QUIZ_SCHOOL_TRACKS,
-} from "@/components/learn/quiz/quiz-school-modes";
-import type { QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
+import { QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 
 const INTERACTIVE_FOCUS_RING =
@@ -18,7 +15,7 @@ type QuizSchoolPickerProps = {
   locale: SupportedLocale;
   collectiveMode: boolean;
   onToggleCollectiveMode: () => void;
-  onSelectSchoolTrack: (track: QuizSchoolTrackId) => void;
+  onSelectSchoolLevel: (level: QuizSchoolLevel) => void;
   onBackToAccessType: () => void;
 };
 
@@ -26,7 +23,7 @@ export function QuizSchoolPicker({
   locale,
   collectiveMode,
   onToggleCollectiveMode,
-  onSelectSchoolTrack,
+  onSelectSchoolLevel,
   onBackToAccessType,
 }: QuizSchoolPickerProps) {
   return (
@@ -96,38 +93,46 @@ export function QuizSchoolPicker({
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {QUIZ_SCHOOL_TRACKS.map((track, index) => (
+      <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="flex items-start gap-3">
+          <GraduationCap className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" aria-hidden="true" />
+          <div>
+            <h3 className="text-lg font-black text-slate-950">{getQuizUiCopy(locale, "school.levelPrompt")}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">{getQuizUiCopy(locale, "school.levelNote")}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {QUIZ_SCHOOL_LEVEL_ORDER.map((level, index) => (
           <motion.button
-            key={track.id}
+            key={level}
             type="button"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
-            onClick={() => onSelectSchoolTrack(track.id)}
+            onClick={() => onSelectSchoolLevel(level)}
             className="group relative overflow-hidden rounded-[2.25rem] border border-slate-100 bg-white p-7 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
-            <div className={cn("mb-5 flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner", track.tone)}>
-              {track.icon}
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-inner">
+              <GraduationCap size={28} aria-hidden="true" />
             </div>
-            <h3 className="text-xl font-black cmm-text-primary">{getQuizUiCopy(locale, track.labelKey)}</h3>
-            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{track.description[locale]}</p>
+            <h3 className="text-xl font-black cmm-text-primary">{getQuizUiCopy(locale, `school.level.${level}.label`)}</h3>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">{getQuizUiCopy(locale, `school.level.${level}.description`)}</p>
             <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-slate-500 md:text-sm">
-              {getQuizUiCopy(locale, "school.questionsLabel")}
+              {getQuizUiCopy(locale, "school.questionsLabel")} · {getQuizUiCopy(locale, "school.durationLabel")}
             </p>
             <ul className="mt-4 space-y-2 text-sm font-medium text-slate-700">
-              {track.focus[locale].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
-                  <span>{item}</span>
-                </li>
-              ))}
+              <li className="flex items-start gap-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                <span>{getQuizUiCopy(locale, "school.levelNote")}</span>
+              </li>
             </ul>
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
                 {getQuizUiCopy(locale, "school.takeawayLabel")}
               </p>
-              <p className="mt-1 text-sm font-medium text-slate-800">{track.keyMessages[locale][0]}</p>
+              <p className="mt-1 text-sm font-medium text-slate-800">{getQuizUiCopy(locale, "school.collectiveDescription")}</p>
             </div>
             <div className="absolute bottom-0 right-0 p-4 opacity-0 transition-opacity group-hover:opacity-100">
               <CheckCircle className="text-amber-500" size={32} />

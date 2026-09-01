@@ -55,12 +55,12 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
     label: "École",
     labelKey: "access.ecole.label",
     description: {
-      fr: "Atelier de classe pour 4e et 3e, pensé pour voter, discuter et révéler la réponse ensemble.",
-      en: "Classroom workshop for middle school, designed to vote, discuss and reveal the answer together.",
+      fr: "Séance publique de 30 minutes pour la 6e à la 3e, pensée pour voter, discuter et révéler la réponse ensemble.",
+      en: "A 30-minute public session for grades 6 to 9, designed to vote, discuss and reveal the answer together.",
     },
     focus: {
-      fr: ["Atelier collectif sans compte", "Séances courtes de 15 questions"],
-      en: ["Collective workshop without account", "Short 15-question sessions"],
+      fr: ["Atelier collectif sans compte", "Niveau choisi avant le lancement"],
+      en: ["Collective workshop without an account", "Grade chosen before launch"],
     },
     learningLabel: {
       fr: "Atelier en classe",

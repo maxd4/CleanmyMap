@@ -34,6 +34,7 @@ describe("learn-deferred-panels", () => {
         initialAccessType: null,
         initialCollectiveMode: false,
         initialDemoMode: false,
+        initialSchoolLevel: null,
         initialSchoolTrack: null,
       }),
     );

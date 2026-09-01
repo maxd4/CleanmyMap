@@ -5,7 +5,7 @@ import type { QuizUiCopyKey } from "@/lib/learning/quiz/quiz-i18n";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import type { QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
 
-export type { QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
+export type { QuizSchoolLevel, QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
 
 export type QuizSchoolTrackDefinition = {
   id: QuizSchoolTrackId;

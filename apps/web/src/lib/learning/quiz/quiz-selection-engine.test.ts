@@ -3,6 +3,14 @@ import { expect, it } from "vitest";
 import type { SRSStats } from "@/lib/gamification/quiz-srs";
 import type { QuizSelectionQuestionLike } from "./quiz-selection-engine";
 import { buildQuizDemoSessionDeck, buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
+import { QUIZ_QUESTIONS } from "./quiz-question-bank";
+import { getQuizDifficulty } from "./quiz-taxonomy";
+import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_SESSION_DURATION_MINUTES, QUIZ_SCHOOL_SESSION_SIZE, QUIZ_SCHOOL_TRACK_ORDER } from "./quiz-school-types";
+
+it("keeps the public school session target explicit", () => {
+  expect(QUIZ_SCHOOL_SESSION_DURATION_MINUTES).toBe(30);
+  expect(QUIZ_SCHOOL_SESSION_SIZE).toBe(15);
+});
 
 function makeStats(
   questionId: string,
@@ -139,6 +147,66 @@ it("builds a stable classroom deck for the school tracks", () => {
     "v3",
     "v5",
   ]);
+});
+
+it.each(QUIZ_SCHOOL_LEVEL_ORDER)("builds a 30-minute level-adapted deck for %s", (level) => {
+  const deck = buildQuizSchoolSessionDeck(QUIZ_QUESTIONS, level);
+  const difficultyIndexes = deck.map((question) => ["low", "medium", "high"].indexOf(question.schoolEligibility[level]?.difficulty ?? getQuizDifficulty(question)));
+
+  expect(deck).toHaveLength(15);
+  expect(new Set(deck.map((question) => question.id)).size).toBe(15);
+  expect(Math.max(...difficultyIndexes)).toBeLessThanOrEqual(level === "6e" ? 0 : level === "3e" ? 2 : 1);
+  expect(deck.every((question) => !question.needsReview && question.schoolEligibility[level])).toBe(true);
+  expect(new Set(deck.map((question) => question.trackId)).size).toBe(QUIZ_SCHOOL_TRACK_ORDER.length);
+  expect(buildQuizSchoolSessionDeck(QUIZ_QUESTIONS, level)).toEqual(deck);
+});
+
+it("excludes review flags and questions without the requested level while deduplicating IDs", () => {
+  const questions: QuizSelectionQuestionLike[] = [
+    {
+      id: "eligible",
+      type: "true-false",
+      category: "action-terrain",
+      reasoningType: "terrain",
+      skill: "terrain",
+      difficulty: "low",
+      trackId: "mission-terrain",
+      schoolEligibility: { "6e": { difficulty: "low", skills: ["terrain"] } },
+    },
+    {
+      id: "review",
+      type: "true-false",
+      category: "action-terrain",
+      reasoningType: "terrain",
+      skill: "terrain",
+      difficulty: "low",
+      trackId: "mission-terrain",
+      needsReview: true,
+      schoolEligibility: { "6e": { difficulty: "low", skills: ["terrain"] } },
+    },
+    {
+      id: "other-level",
+      type: "true-false",
+      category: "action-terrain",
+      reasoningType: "terrain",
+      skill: "terrain",
+      difficulty: "high",
+      trackId: "mission-terrain",
+      schoolEligibility: { "3e": { difficulty: "high", skills: ["terrain"] } },
+    },
+  ];
+
+  expect(buildQuizSchoolSessionDeck(questions, "6e").map((question) => question.id)).toEqual(["eligible"]);
+});
+
+it.each(QUIZ_SCHOOL_LEVEL_ORDER)("starts the school session with the requested level %s", (level) => {
+  const deck = buildQuizSessionDeck(QUIZ_QUESTIONS, {}, {
+    accessTypeId: "ecole",
+    mode: "ecole",
+    schoolLevel: level,
+  });
+
+  expect(deck).toHaveLength(15);
 });
 
 it("prioritizes failed and due questions before the rest", () => {

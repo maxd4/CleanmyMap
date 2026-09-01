@@ -37,11 +37,7 @@ import {
   type QuizAccessTypeId,
 } from "@/lib/learning/quiz/quiz-access-types";
 import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
-import {
-  getQuizSchoolKeyMessages,
-  getQuizSchoolTrackLabel,
-} from "@/components/learn/quiz/quiz-school-modes";
-import type { QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
+import type { QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
 import {
   getQuizUiCopy,
 } from "@/lib/learning/quiz/quiz-i18n";
@@ -74,14 +70,16 @@ const QUIZ_QUESTION_IDS = QUIZ_QUESTIONS.map((question) => question.id);
 export type EnvironmentalQuizProps = {
   initialAccessType?: QuizAccessTypeId | null;
   initialDemoMode?: boolean;
-  initialSchoolTrack?: QuizSchoolTrackId | null;
+  initialSchoolLevel?: QuizSchoolLevel | null;
+  /** @deprecated Kept so old callers remain type-compatible. */
+  initialSchoolTrack?: string | null;
   initialCollectiveMode?: boolean;
 };
 
 export function EnvironmentalQuiz({
   initialAccessType = null,
   initialDemoMode = false,
-  initialSchoolTrack = null,
+  initialSchoolLevel = null,
   initialCollectiveMode = true,
 }: EnvironmentalQuizProps = {}) {
   const { getToken } = useAuth();
@@ -94,7 +92,7 @@ export function EnvironmentalQuiz({
   const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(initialAccessType);
   const [selectedTrapLevel, setSelectedTrapLevel] = useState<QuizTrapLevelId | null>(null);
   const [selectedReasoningType, setSelectedReasoningType] = useState<QuizReasoningType | null>(null);
-  const [selectedSchoolTrack, setSelectedSchoolTrack] = useState<QuizSchoolTrackId | null>(initialSchoolTrack);
+  const [selectedSchoolLevel, setSelectedSchoolLevel] = useState<QuizSchoolLevel | null>(initialSchoolLevel);
   const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(initialCollectiveMode);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
@@ -112,6 +110,14 @@ export function EnvironmentalQuiz({
 
   useEffect(() => {
     let cancelled = false;
+
+    if (selectedAccessType === "ecole") {
+      setSrsData({});
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     async function init() {
       try {
@@ -136,7 +142,7 @@ export function EnvironmentalQuiz({
     return () => {
       cancelled = true;
     };
-  }, [getToken, user?.id]);
+  }, [getToken, selectedAccessType, user?.id]);
 
   useEffect(() => {
     setPersonalProgress(readQuizPersonalProgress());
@@ -149,17 +155,18 @@ export function EnvironmentalQuiz({
       accessTypeId: selectedAccessType,
       trapLevel: selectedTrapLevel,
       reasoningType: selectedReasoningType,
+      schoolLevel: selectedSchoolLevel,
       shuffleSession: selectedAccessType === "mixte",
     });
-  }, [selectedAccessType, selectedReasoningType, selectedTrapLevel, srsData]);
+  }, [selectedAccessType, selectedReasoningType, selectedSchoolLevel, selectedTrapLevel, srsData]);
 
   const demoQuestions = useMemo(() => buildQuizDemoSessionDeck(QUIZ_QUESTIONS), []);
   const schoolQuestions = useMemo(
     () =>
-      selectedSchoolTrack
-        ? buildQuizSchoolSessionDeck(QUIZ_QUESTIONS, selectedSchoolTrack)
+      selectedSchoolLevel
+        ? buildQuizSchoolSessionDeck(QUIZ_QUESTIONS, selectedSchoolLevel)
         : [],
-    [selectedSchoolTrack],
+    [selectedSchoolLevel],
   );
 
   const eligibleQuestions = useMemo(() => {
@@ -196,7 +203,7 @@ export function EnvironmentalQuiz({
       return;
     }
 
-    if (!isDemoMode && selectedAccessType === "ecole" && !selectedSchoolTrack) {
+    if (!isDemoMode && selectedAccessType === "ecole" && !selectedSchoolLevel) {
       return;
     }
 
@@ -206,7 +213,7 @@ export function EnvironmentalQuiz({
 
     setSessionQuestions(initialQuestions);
     setCurrentQuestionIdx(0);
-  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolTrack, sessionQuestions.length]);
+  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolLevel, sessionQuestions.length]);
 
   const question = sessionQuestions[currentQuestionIdx];
   const quizSummary = useMemo(() => summarizeQuizStates(srsData, QUIZ_QUESTION_IDS), [srsData]);
@@ -553,7 +560,7 @@ export function EnvironmentalQuiz({
     setSelectedAccessType(null);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -563,7 +570,7 @@ export function EnvironmentalQuiz({
     setSelectedAccessType(accessType);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -572,7 +579,7 @@ export function EnvironmentalQuiz({
     setIsDemoMode(false);
     setSelectedTrapLevel(trapLevel);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -582,7 +589,7 @@ export function EnvironmentalQuiz({
     setSelectedAccessType(null);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -596,7 +603,7 @@ export function EnvironmentalQuiz({
     setSelectedAccessType(sessionSummary.recommendedMode.id);
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -606,17 +613,24 @@ export function EnvironmentalQuiz({
     setSelectedAccessType("mixte");
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
-    setSelectedSchoolTrack(null);
+    setSelectedSchoolLevel(null);
     setIsSchoolCollectiveMode(true);
   };
 
-  const handleSelectSchoolTrack = (track: QuizSchoolTrackId) => {
+  const handleSelectSchoolLevel = (level: QuizSchoolLevel) => {
     resetSessionState();
     setIsDemoMode(false);
     setSelectedAccessType("ecole");
     setSelectedTrapLevel(null);
-    setSelectedSchoolTrack(track);
+    setSelectedSchoolLevel(level);
     setSelectedReasoningType(null);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("mode", "ecole");
+      params.set("level", level);
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    }
   };
 
   const handleToggleSchoolCollectiveMode = () => {
@@ -686,13 +700,13 @@ export function EnvironmentalQuiz({
     );
   }
 
-  if (selectedAccessType === "ecole" && !selectedSchoolTrack) {
+  if (selectedAccessType === "ecole" && !selectedSchoolLevel) {
     return (
       <QuizSchoolPicker
         locale={locale}
         collectiveMode={isSchoolCollectiveMode}
         onToggleCollectiveMode={handleToggleSchoolCollectiveMode}
-        onSelectSchoolTrack={handleSelectSchoolTrack}
+        onSelectSchoolLevel={handleSelectSchoolLevel}
         onBackToAccessType={returnToAccessTypeSelection}
       />
     );
@@ -741,8 +755,7 @@ export function EnvironmentalQuiz({
       isSchoolMode={selectedAccessType === "ecole"}
       isCollectiveMode={isSchoolCollectiveMode}
       showChoices={selectedAccessType === "ecole" ? (isSchoolCollectiveMode ? showQuestionChoices : true) : true}
-      schoolTrackLabel={selectedSchoolTrack ? getQuizSchoolTrackLabel(selectedSchoolTrack, locale) : undefined}
-      schoolKeyMessages={selectedSchoolTrack ? getQuizSchoolKeyMessages(selectedSchoolTrack, locale) : undefined}
+      schoolTrackLabel={selectedSchoolLevel ? `${getQuizUiCopy(locale, "school.levelChip")} ${selectedSchoolLevel}` : undefined}
       question={question}
       questionIndex={currentQuestionIdx}
       totalQuestions={sessionQuestions.length}
