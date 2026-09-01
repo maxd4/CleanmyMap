@@ -62,6 +62,7 @@ function runGuard({
   ancestorExit = 0,
   remoteBase = "remote-main-sha",
   mergeBase = "merge-base-sha",
+  scriptTestsForeignOnly = false,
 } = {}) {
   const testRoot = mkdtempSync(join(tmpdir(), "cleanmymap-pre-push-guard-"));
   const scriptsRoot = join(testRoot, "scripts", "ci");
@@ -74,7 +75,20 @@ function runGuard({
   mkdirSync(binRoot, { recursive: true });
   writeFileSync(join(scriptsRoot, "pre_push_guard.ps1"), GUARD_SOURCE);
   writeFileSync(join(checksRoot, "validation-policy.mjs"), POLICY_SOURCE);
-  writeCommandStub(binRoot, "npm", ['>>"%GUARD_TEST_LOG%" echo npm %*']);
+  writeCommandStub(binRoot, "npm", [
+    ...(scriptTestsForeignOnly
+      ? [
+          'if /I "%~1"=="run" if /I "%~2"=="test:scripts" (',
+          '  echo test at scripts\\checks\\guard-artifacts.test.mjs:94:3',
+          '  echo changed web source files: 27',
+          '  echo vitest n^\'est pas reconnu',
+          '  echo 1 ^!^=^= 0',
+          '  exit /b 1',
+          ')',
+        ]
+      : []),
+    '>>"%GUARD_TEST_LOG%" echo npm %*',
+  ]);
   writeCommandStub(binRoot, "npx", ['>>"%GUARD_TEST_LOG%" echo npx %*']);
   writeCommandStub(binRoot, "node", [
     'if /I "%~1"=="scripts/checks/validation-policy.mjs" goto :runreal',
@@ -182,6 +196,17 @@ test("script push runs script tests without web gates", () => {
   assertNoCommand(result.log, "npm run lint");
   assertNoCommand(result.log, "npm run typecheck");
   assertNoCommand(result.log, "npm run build");
+});
+
+test("classifies only the known foreign worktree script-test failure", () => {
+  const result = runGuard({
+    scriptTestsForeignOnly: true,
+    records: ["refs/heads/scripts refs/scripts-local refs/heads/main refs/scripts-remote"],
+    rangeFiles: { "refs/scripts-remote..refs/scripts-local": ["scripts/ci/example.mjs"] },
+  });
+
+  assert.equal(result.status, 0, result.output);
+  assert.match(result.output, /SKIPPED_PARALLEL_CHANTIER/);
 });
 
 test("Supabase push runs its audit and no production build", () => {
