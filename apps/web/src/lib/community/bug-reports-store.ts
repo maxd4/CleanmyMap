@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 import {
-  deleteSupabaseMirror,
-  upsertSupabaseMirror,
-} from "@/lib/supabase/mirror";
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+} from "@/lib/persistence/runtime-store";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -13,6 +13,8 @@ const STORE_FILE = join(
   "local-db",
   "community_bug_reports.json",
 );
+const SUPABASE_BUG_REPORT_COLUMNS =
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, report_type, title, description, page_path, source, status, creator_state";
 
 export type BugReportInput = {
   reportType: "bug" | "idea" | "improvement" | "collaboration";
@@ -140,6 +142,24 @@ function normalizeBugReportRecord(record: unknown): BugReportRecord | null {
   };
 }
 
+function fromSupabaseRow(row: Record<string, unknown>): BugReportRecord | null {
+  return normalizeBugReportRecord({
+    id: row.id,
+    createdAt: row.created_at,
+    submittedByUserId: row.submitted_by_user_id,
+    submittedByDisplayName: row.submitted_by_display_name,
+    submittedByEmail: row.submitted_by_email,
+    submittedByRole: row.submitted_by_role,
+    reportType: row.report_type,
+    title: row.title,
+    description: row.description,
+    pagePath: row.page_path,
+    source: row.source,
+    status: row.status,
+    creatorState: row.creator_state,
+  });
+}
+
 function emptyStore(): StorePayload {
   return {
     updatedAt: new Date().toISOString(),
@@ -228,14 +248,25 @@ export async function appendCommunityBugReport(params: {
     creatorState: "new",
   };
 
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid community bug report.");
+    }
+    return persisted;
+  }
+
   const store = await readStore();
   const records = [record, ...store.records].slice(0, 4000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("community_bug_reports", toSupabaseRow(record)).catch(
-    (error) => {
-      console.warn("Community bug report Supabase sync failed", error);
-    },
-  );
   return record;
 }
 
@@ -244,6 +275,21 @@ export async function listCommunityBugReports(
 ): Promise<BugReportRecord[]> {
   assertPersistenceAvailable("community_bug_reports");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(normalizedLimit);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? [])
+      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+      .filter((record): record is BugReportRecord => Boolean(record));
+  }
+
   const store = await readStore();
   return store.records.slice(0, normalizedLimit);
 }
@@ -252,6 +298,21 @@ export async function getCommunityBugReportById(
   reportId: string,
 ): Promise<BugReportRecord | null> {
   assertPersistenceAvailable("community_bug_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .eq("id", reportId)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   return store.records.find((record) => record.id === reportId) ?? null;
 }
@@ -261,6 +322,28 @@ export async function updateCommunityBugReportStatus(params: {
   status: "open" | "treated" | "archived";
 }): Promise<BugReportRecord | null> {
   assertPersistenceAvailable("community_bug_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const creatorState =
+      params.status === "open"
+        ? "new"
+        : params.status === "treated"
+          ? "treated"
+          : "archived";
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .update({ status: params.status, creator_state: creatorState })
+      .eq("id", params.reportId)
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.reportId);
   if (index < 0) {
@@ -286,11 +369,6 @@ export async function updateCommunityBugReportStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("community_bug_reports", toSupabaseRow(updated)).catch(
-    (error) => {
-      console.warn("Community bug report Supabase sync failed", error);
-    },
-  );
   return updated;
 }
 
@@ -298,15 +376,25 @@ export async function deleteCommunityBugReport(
   reportId: string,
 ): Promise<boolean> {
   assertPersistenceAvailable("community_bug_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .delete()
+      .eq("id", reportId)
+      .select("id");
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? []).length > 0;
+  }
+
   const store = await readStore();
   const nextRecords = store.records.filter((record) => record.id !== reportId);
   if (nextRecords.length === store.records.length) {
     return false;
   }
   await writeStore({ updatedAt: new Date().toISOString(), records: nextRecords });
-  await deleteSupabaseMirror("community_bug_reports", reportId).catch((error) => {
-    console.warn("Community bug report Supabase delete sync failed", error);
-  });
   return true;
 }
 
@@ -315,6 +403,22 @@ export async function updateCommunityBugReportCreatorState(params: {
   creatorState: "new" | "pending" | "responded" | "treated" | "archived";
 }): Promise<BugReportRecord | null> {
   assertPersistenceAvailable("community_bug_reports");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("community_bug_reports")
+      .update({ creator_state: params.creatorState })
+      .eq("id", params.reportId)
+      .select(SUPABASE_BUG_REPORT_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.reportId);
   if (index < 0) {
@@ -334,10 +438,5 @@ export async function updateCommunityBugReportCreatorState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("community_bug_reports", toSupabaseRow(updated)).catch(
-    (error) => {
-      console.warn("Community bug report Supabase sync failed", error);
-    },
-  );
   return updated;
 }

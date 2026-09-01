@@ -1,7 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
+import {
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+  isVercelRuntime,
+} from "@/lib/persistence/runtime-store";
 import {
   normalizePartnerAvailability,
   normalizePartnerCoverage,
@@ -9,9 +13,8 @@ import {
 } from "./onboarding-types";
 import { appendPublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
 import {
-  deleteSupabaseMirror,
-  upsertSupabaseMirror,
-} from "@/lib/supabase/mirror";
+  getSupabaseServerClient,
+} from "@/lib/supabase/server";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -19,6 +22,8 @@ const STORE_FILE = join(
   "local-db",
   "partner_onboarding_requests.json",
 );
+const SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS =
+  "id, created_at, submitted_by_user_id, submitted_by_email, organization_name, organization_type, partner_scope, legal_identity, coverage, contribution_types, relay_actions, availability, contact_name, contact_channel, contact_details, motivation, status, creator_state";
 
 export type PartnerOnboardingRequestRecord = PartnerOnboardingRequestInput & {
   id: string;
@@ -152,6 +157,31 @@ export function normalizeStoredPartnerOnboardingRequest(
   };
 }
 
+function fromSupabaseRow(
+  row: Record<string, unknown>,
+): PartnerOnboardingRequestRecord | null {
+  return normalizeStoredPartnerOnboardingRequest({
+    id: row.id,
+    createdAt: row.created_at,
+    submittedByUserId: row.submitted_by_user_id,
+    submittedByEmail: row.submitted_by_email,
+    organizationName: row.organization_name,
+    organizationType: row.organization_type,
+    partnerScope: row.partner_scope,
+    legalIdentity: row.legal_identity,
+    coverage: row.coverage,
+    contributionTypes: row.contribution_types,
+    relayActions: row.relay_actions,
+    availability: row.availability,
+    contactName: row.contact_name,
+    contactChannel: row.contact_channel,
+    contactDetails: row.contact_details,
+    motivation: row.motivation,
+    status: row.status,
+    creatorState: row.creator_state,
+  });
+}
+
 async function ensureDirectory(filePath: string): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
 }
@@ -230,26 +260,39 @@ export async function appendPartnerOnboardingRequest(params: {
     ...params.input,
   };
 
-  const store = await readStore();
-  const records = [record, ...store.records].slice(0, 2000);
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror(
-    "partner_onboarding_requests",
-    toSupabaseRow(record),
-  ).catch((error) => {
-    console.warn("Partner onboarding Supabase sync failed", error);
-  });
-
-  try {
-    await appendPublishedPartnerAnnuaireEntry({
-      requestId: record.id,
-      request: params.input,
-    });
-  } catch (error) {
-    console.warn("Published partner annuaire entry creation failed", error);
+  let persistedRecord = record;
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid partner onboarding request.");
+    }
+    persistedRecord = persisted;
+  } else {
+    const store = await readStore();
+    const records = [record, ...store.records].slice(0, 2000);
+    await writeStore({ updatedAt: new Date().toISOString(), records });
   }
 
-  return record;
+  if (!isVercelRuntime()) {
+    try {
+      await appendPublishedPartnerAnnuaireEntry({
+        requestId: persistedRecord.id,
+        request: params.input,
+      });
+    } catch (error) {
+      console.warn("Published partner annuaire entry creation failed", error);
+    }
+  }
+
+  return persistedRecord;
 }
 
 export async function listPartnerOnboardingRequests(
@@ -258,6 +301,23 @@ export async function listPartnerOnboardingRequests(
   assertPersistenceAvailable("partner_onboarding_requests");
 
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(normalizedLimit);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? [])
+      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+      .filter(
+        (record): record is PartnerOnboardingRequestRecord => Boolean(record),
+      );
+  }
+
   const store = await readStore();
   return store.records.slice(0, normalizedLimit);
 }
@@ -266,12 +326,38 @@ export async function getPartnerOnboardingRequestById(
   requestId: string,
 ): Promise<PartnerOnboardingRequestRecord | null> {
   assertPersistenceAvailable("partner_onboarding_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .eq("id", requestId)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   return store.records.find((record) => record.id === requestId) ?? null;
 }
 
 export async function countPartnerOnboardingRequests(): Promise<number> {
   assertPersistenceAvailable("partner_onboarding_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .select("id", { count: "exact", head: true });
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return Number(result.count ?? 0);
+  }
+
   const store = await readStore();
   return store.records.length;
 }
@@ -281,6 +367,28 @@ export async function updatePartnerOnboardingRequestStatus(params: {
   status: "pending_admin_review" | "accepted" | "rejected";
 }): Promise<PartnerOnboardingRequestRecord | null> {
   assertPersistenceAvailable("partner_onboarding_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const creatorState =
+      params.status === "accepted"
+        ? "accepted"
+        : params.status === "rejected"
+          ? "rejected"
+          : "pending";
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .update({ status: params.status, creator_state: creatorState })
+      .eq("id", params.requestId)
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.requestId);
   if (index < 0) {
@@ -306,12 +414,6 @@ export async function updatePartnerOnboardingRequestStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror(
-    "partner_onboarding_requests",
-    toSupabaseRow(updated),
-  ).catch((error) => {
-    console.warn("Partner onboarding Supabase sync failed", error);
-  });
   return updated;
 }
 
@@ -320,6 +422,22 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
   creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
 }): Promise<PartnerOnboardingRequestRecord | null> {
   assertPersistenceAvailable("partner_onboarding_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .update({ creator_state: params.creatorState })
+      .eq("id", params.requestId)
+      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.requestId);
   if (index < 0) {
@@ -339,12 +457,6 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror(
-    "partner_onboarding_requests",
-    toSupabaseRow(updated),
-  ).catch((error) => {
-    console.warn("Partner onboarding Supabase sync failed", error);
-  });
   return updated;
 }
 
@@ -352,16 +464,24 @@ export async function deletePartnerOnboardingRequest(
   requestId: string,
 ): Promise<boolean> {
   assertPersistenceAvailable("partner_onboarding_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("partner_onboarding_requests")
+      .delete()
+      .eq("id", requestId)
+      .select("id");
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? []).length > 0;
+  }
+
   const store = await readStore();
   const records = store.records.filter((record) => record.id !== requestId);
   if (records.length === store.records.length) {
     return false;
   }
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await deleteSupabaseMirror("partner_onboarding_requests", requestId).catch(
-    (error) => {
-      console.warn("Partner onboarding Supabase delete sync failed", error);
-    },
-  );
   return true;
 }

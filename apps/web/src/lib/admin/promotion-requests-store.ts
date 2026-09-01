@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
-import type { AppProfile } from "@/lib/profiles";
 import {
-  deleteSupabaseMirror,
-  upsertSupabaseMirror,
-} from "@/lib/supabase/mirror";
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+} from "@/lib/persistence/runtime-store";
+import type { AppProfile } from "@/lib/profiles";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type PromotionRequestTargetRole = "elu" | "admin";
 
@@ -45,6 +45,8 @@ const STORE_FILE = join(
   "local-db",
   "promotion_requests.json",
 );
+const SUPABASE_PROMOTION_REQUEST_COLUMNS =
+  "id, created_at, submitted_by_user_id, submitted_by_display_name, submitted_by_email, submitted_by_role, requested_role, motivation, status, reviewed_at, reviewed_by_user_id, reviewed_by_role, creator_state";
 
 function emptyStore(): StorePayload {
   return {
@@ -136,6 +138,24 @@ function normalizeRecord(record: Record<string, unknown>): PromotionRequestRecor
   };
 }
 
+function fromSupabaseRow(row: Record<string, unknown>): PromotionRequestRecord | null {
+  return normalizeRecord({
+    id: row.id,
+    createdAt: row.created_at,
+    submittedByUserId: row.submitted_by_user_id,
+    submittedByDisplayName: row.submitted_by_display_name,
+    submittedByEmail: row.submitted_by_email,
+    submittedByRole: row.submitted_by_role,
+    requestedRole: row.requested_role,
+    motivation: row.motivation,
+    status: row.status,
+    reviewedAt: row.reviewed_at,
+    reviewedByUserId: row.reviewed_by_user_id,
+    reviewedByRole: row.reviewed_by_role,
+    creatorState: row.creator_state,
+  });
+}
+
 async function ensureDirectory(filePath: string): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
 }
@@ -217,14 +237,25 @@ export async function appendPromotionRequest(params: {
     creatorState: "pending",
   };
 
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid promotion request.");
+    }
+    return persisted;
+  }
+
   const store = await readStore();
   const records = [record, ...store.records].slice(0, 2000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(record)).catch(
-    (error) => {
-      console.warn("Promotion request Supabase sync failed", error);
-    },
-  );
   return record;
 }
 
@@ -233,6 +264,21 @@ export async function listPromotionRequests(
 ): Promise<PromotionRequestRecord[]> {
   assertPersistenceAvailable("promotion_requests");
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .order("created_at", { ascending: false })
+      .limit(normalizedLimit);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? [])
+      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+      .filter((record): record is PromotionRequestRecord => Boolean(record));
+  }
+
   const store = await readStore();
   return store.records.slice(0, normalizedLimit);
 }
@@ -244,6 +290,29 @@ export async function updatePromotionRequestStatus(params: {
   reviewedByRole: AppProfile;
 }): Promise<PromotionRequestRecord | null> {
   assertPersistenceAvailable("promotion_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const reviewedAt = new Date().toISOString();
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .update({
+        status: params.status,
+        reviewed_at: reviewedAt,
+        reviewed_by_user_id: params.reviewedByUserId,
+        reviewed_by_role: params.reviewedByRole,
+        creator_state: params.status,
+      })
+      .eq("id", params.requestId)
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.requestId);
   if (index < 0) {
@@ -267,11 +336,6 @@ export async function updatePromotionRequestStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(updated)).catch(
-    (error) => {
-      console.warn("Promotion request Supabase sync failed", error);
-    },
-  );
   return updated;
 }
 
@@ -280,6 +344,22 @@ export async function updatePromotionRequestCreatorState(params: {
   creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
 }): Promise<PromotionRequestRecord | null> {
   assertPersistenceAvailable("promotion_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .update({ creator_state: params.creatorState })
+      .eq("id", params.requestId)
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.requestId);
   if (index < 0) {
@@ -299,11 +379,6 @@ export async function updatePromotionRequestCreatorState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(updated)).catch(
-    (error) => {
-      console.warn("Promotion request Supabase sync failed", error);
-    },
-  );
   return updated;
 }
 
@@ -311,6 +386,21 @@ export async function getPromotionRequestById(
   requestId: string,
 ): Promise<PromotionRequestRecord | null> {
   assertPersistenceAvailable("promotion_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .eq("id", requestId)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   return store.records.find((record) => record.id === requestId) ?? null;
 }
@@ -319,14 +409,24 @@ export async function deletePromotionRequest(
   requestId: string,
 ): Promise<boolean> {
   assertPersistenceAvailable("promotion_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .delete()
+      .eq("id", requestId)
+      .select("id");
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? []).length > 0;
+  }
+
   const store = await readStore();
   const records = store.records.filter((record) => record.id !== requestId);
   if (records.length === store.records.length) {
     return false;
   }
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await deleteSupabaseMirror("promotion_requests", requestId).catch((error) => {
-    console.warn("Promotion request Supabase delete sync failed", error);
-  });
   return true;
 }
