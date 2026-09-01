@@ -119,6 +119,18 @@ export type QuizUiCopyKey =
   | "school.collective.enabled"
   | "school.collective.disabled"
   | "school.linkTeacherKit"
+  | "school.levelPrompt"
+  | "school.levelNote"
+  | "school.level.6e.label"
+  | "school.level.6e.description"
+  | "school.level.5e.label"
+  | "school.level.5e.description"
+  | "school.level.4e.label"
+  | "school.level.4e.description"
+  | "school.level.3e.label"
+  | "school.level.3e.description"
+  | "school.levelChip"
+  | "school.durationLabel"
   | "school.questionsLabel"
   | "school.takeawayLabel"
   | "school.debat-classe.label"
@@ -212,9 +224,10 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "session.changeType": { fr: "Changer de type", en: "Change type" },
   "access.school.bannerLabel": { fr: "Mode École" },
   "access.school.ctaLabel": { fr: "Lancer le mode École" },
-  "access.school.ctaTitle": { fr: "Atelier de classe pour 4e et 3e" },
+  "access.school.ctaTitle": { fr: "Séance publique pour la 6e à la 3e", en: "Public session for grades 6 to 9" },
   "access.school.ctaText": {
-    fr: "Séance collective de 15 questions, sans compte, pensée pour le vote, la discussion et la révélation de la réponse en groupe.",
+    fr: "Séance collective de 30 minutes, sans compte, avec un niveau choisi avant le lancement.",
+    en: "A 30-minute collective session with no account and a grade chosen before launch.",
   },
   "access.demo.bannerLabel": { fr: "Démo rapide" },
   "access.demo.ctaLabel": { fr: "Lancer la démo" },
@@ -248,10 +261,10 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "access.tri-securite.label": { fr: "Tri & sécurité", en: "Sorting & safety" },
   "school.back": { fr: "Revenir aux autres modes", en: "Back to other modes" },
   "school.bannerLabel": { fr: "Mode École", en: "School mode" },
-  "school.title": { fr: "Choisissez le format de l’atelier", en: "Choose the workshop format" },
+  "school.title": { fr: "Choisissez le niveau de la séance", en: "Choose the session level" },
   "school.description": {
-    fr: "Séance pensée pour une classe de 4e ou 3e, avec des questions claires, des mauvaises réponses plausibles et une réponse à discuter avant révélation.",
-    en: "Designed for grades 8 and 9, with clear questions, plausible wrong answers and a response to discuss before reveal.",
+    fr: "Une séance publique de 30 minutes pour la 6e, la 5e, la 4e ou la 3e. Les questions sont équilibrées automatiquement et les catégories restent internes.",
+    en: "A 30-minute public session for grades 6 to 9. Questions are balanced automatically and categories remain internal.",
   },
   "school.collectiveTitle": { fr: "Mode collectif recommandé", en: "Recommended collective mode" },
   "school.collectiveDescription": {
@@ -261,6 +274,21 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.collective.enabled": { fr: "Mode collectif activé", en: "Collective mode enabled" },
   "school.collective.disabled": { fr: "Mode collectif désactivé", en: "Collective mode disabled" },
   "school.linkTeacherKit": { fr: "Voir le kit enseignant", en: "View teacher kit" },
+  "school.levelPrompt": { fr: "Choisissez une classe avant de lancer", en: "Choose a grade before launching" },
+  "school.levelNote": {
+    fr: "Le parcours mélange automatiquement les quatre catégories de questions. Aucun compte, nom d’élève ou classe à créer.",
+    en: "The path automatically mixes the four question categories. No account, student name or class to create.",
+  },
+  "school.level.6e.label": { fr: "6e", en: "Grade 6" },
+  "school.level.6e.description": { fr: "Repères concrets et questions directes pour démarrer.", en: "Concrete cues and direct questions to get started." },
+  "school.level.5e.label": { fr: "5e", en: "Grade 7" },
+  "school.level.5e.description": { fr: "Premières comparaisons et conséquences à relier.", en: "First comparisons and consequences to connect." },
+  "school.level.4e.label": { fr: "4e", en: "Grade 8" },
+  "school.level.4e.description": { fr: "Un équilibre entre mécanismes, terrain et raisonnement.", en: "A balance of mechanisms, field situations and reasoning." },
+  "school.level.3e.label": { fr: "3e", en: "Grade 9" },
+  "school.level.3e.description": { fr: "Des situations plus nuancées pour argumenter et estimer.", en: "More nuanced situations for arguing and estimating." },
+  "school.levelChip": { fr: "Niveau", en: "Level" },
+  "school.durationLabel": { fr: "30 min", en: "30 min" },
   "school.questionsLabel": { fr: "15 questions", en: "15 questions" },
   "school.takeawayLabel": { fr: "À retenir", en: "Key takeaway" },
   "school.debat-classe.label": { fr: "Débat en classe", en: "Class debate" },

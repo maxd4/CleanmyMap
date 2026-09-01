@@ -5,6 +5,7 @@ import { QUIZ_ACCESS_TYPES, matchesQuizAccessType } from "./quiz-access-types";
 import { getQuizReviewTarget } from "./quiz-review-targets";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
+import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_TRACK_ORDER } from "./quiz-school-types";
 
 const NOW = new Date("2026-06-12T12:00:00.000Z");
 
@@ -118,5 +119,22 @@ describe("quiz bank contract", () => {
   it("does not contain duplicate question ids", () => {
     const ids = QUIZ_QUESTIONS.map((question) => question.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("exposes one normalized school eligibility profile without duplicating question content", () => {
+    expect(QUIZ_QUESTIONS.every((question) => question.schoolEligibility)).toBe(true);
+
+    const schoolQuestions = QUIZ_QUESTIONS.filter((question) => question.trackId);
+    expect(schoolQuestions.length).toBeGreaterThanOrEqual(40);
+    expect(new Set(schoolQuestions.map((question) => question.trackId)).size).toBe(QUIZ_SCHOOL_TRACK_ORDER.length);
+
+    for (const question of schoolQuestions) {
+      expect(Object.keys(question.schoolEligibility ?? {})).toEqual(
+        expect.arrayContaining(
+          QUIZ_SCHOOL_LEVEL_ORDER.filter((level) => Boolean(question.schoolEligibility?.[level])),
+        ),
+      );
+      expect(Object.values(question.schoolEligibility ?? {}).every((profile) => profile.skills.length > 0)).toBe(true);
+    }
   });
 });

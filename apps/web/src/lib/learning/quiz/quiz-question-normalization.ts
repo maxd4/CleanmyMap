@@ -3,6 +3,8 @@ import type { QuizQuestion, ResolvedQuizQuestion } from "./quiz-question-contrac
 import { buildQuizSourceMetadata } from "./quiz-source-metadata.ts";
 import { getQuizDifficulty, getQuizPedagogicalType } from "./quiz-taxonomy.ts";
 import { getQuizTrapLevel } from "./quiz-trap-levels.ts";
+import { buildQuizSchoolQuestionEligibility } from "./quiz-school-eligibility.ts";
+import { getQuizSchoolTrackId } from "./quiz-school-types";
 
 export function stabilizeQuizQuestion(question: QuizQuestion): ResolvedQuizQuestion {
   const errorGrid = buildQuizErrorGrid(question);
@@ -12,9 +14,14 @@ export function stabilizeQuizQuestion(question: QuizQuestion): ResolvedQuizQuest
   const pedagogicalType = question.pedagogicalType ?? question.format ?? getQuizPedagogicalType(question);
   const skill = question.skill ?? question.reasoningType;
   const difficulty = question.difficulty ?? getQuizDifficulty(question);
+  const schoolEligibility =
+    question.schoolEligibility ??
+    buildQuizSchoolQuestionEligibility({ ...question, skill, difficulty, pedagogicalType });
 
   return {
     ...question,
+    trackId: question.trackId ?? getQuizSchoolTrackId(question.id),
+    schoolEligibility,
     structure: {
       content: {
         prompt: question.question,

@@ -11,7 +11,7 @@ describe("QuizSchoolPicker", () => {
         locale: "fr",
         collectiveMode: true,
         onToggleCollectiveMode: () => undefined,
-        onSelectSchoolTrack: () => undefined,
+        onSelectSchoolLevel: () => undefined,
         onBackToAccessType: () => undefined,
       }),
     );
@@ -19,5 +19,9 @@ describe("QuizSchoolPicker", () => {
     expect(markup).toContain("Mode École");
     expect(markup).toContain("Voir le kit enseignant");
     expect(markup).toContain("Mode collectif activé");
+    expect(markup).toContain("6e");
+    expect(markup).toContain("5e");
+    expect(markup).toContain("4e");
+    expect(markup).toContain("3e");
   });
 });

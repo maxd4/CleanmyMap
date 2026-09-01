@@ -14,6 +14,7 @@ import {
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+import { QuizSchoolLevelLauncher } from "@/components/learn/quiz/quiz-school-level-launcher";
 import {
   QUIZ_SCHOOL_TRACKS,
   getQuizSchoolTrackLabel,
@@ -32,17 +33,17 @@ const INTRO_CARDS = [
   {
     icon: School,
     title: { fr: "Public visé", en: "Target audience" },
-    text: { fr: "Élèves de 4e et 3e.", en: "Middle school students." },
+    text: { fr: "Élèves de 6e, 5e, 4e et 3e.", en: "Students from grades 6 to 9." },
   },
   {
     icon: GraduationCap,
     title: { fr: "Durée conseillée", en: "Recommended duration" },
-    text: { fr: "30 à 45 minutes.", en: "30 to 45 minutes." },
+    text: { fr: "30 minutes.", en: "30 minutes." },
   },
   {
     icon: Users,
     title: { fr: "Sans compte", en: "No account" },
-    text: { fr: "Pas de connexion élève, pas de donnée personnelle.", en: "No student login, no personal data." },
+    text: { fr: "Aucun compte, nom d’élève ou donnée personnelle.", en: "No account, student name or personal data." },
   },
   {
     icon: Compass,
@@ -101,8 +102,8 @@ export function QuizSchoolKitPage() {
     <LearnRubricShell
       title={{ fr: "Mode École", en: "School mode" }}
       subtitle={{
-        fr: "Kit d'atelier pour 4e et 3e",
-        en: "Workshop kit for middle school",
+        fr: "Séance publique de la 6e à la 3e",
+        en: "Public session for grades 6 to 9",
       }}
       description={{
         fr: "Une page pour préparer une séance collective, faire voter la classe et garder un cadre simple, lisible et sérieux.",
@@ -117,8 +118,8 @@ export function QuizSchoolKitPage() {
         { fr: "Sans compte élève", en: "No student account" },
       ]}
       cta={{
-        href: "/learn/sentrainer?mode=ecole&track=debat-classe&collective=1",
-        label: { fr: "Ouvrir le mode École", en: "Open school mode" },
+        href: "#choisir-niveau",
+        label: { fr: "Choisir le niveau", en: "Choose the grade" },
       }}
     >
       <div className="space-y-8">
@@ -129,23 +130,21 @@ export function QuizSchoolKitPage() {
                 {isFrench ? "Lancement immédiat" : "Immediate launch"}
               </p>
               <h3 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-                {isFrench
-                  ? "Lancer la séance, garder la démo en secours"
-                  : "Launch the session, keep the demo as backup"}
+                {isFrench ? "Choisir le niveau, puis lancer la séance" : "Choose the grade, then launch the session"}
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 md:text-base">
                 {isFrench
-                  ? "Un clic lance l'atelier collectif. La démo reste disponible pour tester le déroulé."
-                  : "One click launches the collective workshop. The demo stays available for a quick rehearsal."}
+                  ? "La séance publique dure 30 minutes. La démo reste disponible pour tester le déroulé."
+                  : "The public session lasts 30 minutes. The demo stays available for a quick rehearsal."}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/learn/sentrainer?mode=ecole&track=debat-classe&collective=1"
+                href="#choisir-niveau"
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
               >
-                {isFrench ? "Ouvrir le mode École" : "Open school mode"}
+                {isFrench ? "Choisir le niveau" : "Choose the grade"}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
@@ -157,6 +156,8 @@ export function QuizSchoolKitPage() {
             </div>
           </div>
         </section>
+
+        <QuizSchoolLevelLauncher locale={locale} />
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <div className="flex items-start justify-between gap-3">
@@ -272,7 +273,7 @@ export function QuizSchoolKitPage() {
                 {isFrench ? "Déroulé de l'atelier" : "Workshop flow"}
               </p>
               <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-                {isFrench ? "Quatre temps pour tenir une heure sans s'éparpiller" : "Four steps to fill an hour without drifting"}
+                {isFrench ? "Quatre temps pour tenir 30 minutes sans s'éparpiller" : "Four steps to fit 30 minutes without drifting"}
               </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">
                 {isFrench
@@ -331,10 +332,10 @@ export function QuizSchoolKitPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/learn/sentrainer?mode=ecole&track=debat-classe&collective=1"
+                href="#choisir-niveau"
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 md:px-6 md:py-3.5 md:text-base"
               >
-                {isFrench ? "Ouvrir le mode École" : "Open school mode"}
+                {isFrench ? "Choisir le niveau" : "Choose the grade"}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link

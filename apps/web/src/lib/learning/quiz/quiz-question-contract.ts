@@ -9,6 +9,10 @@ import type { QuizConfidenceLevel, QuizLocalScope, QuizSourceType } from "./quiz
 import type { ImpactReferenceMetadata } from "./impact-reference-types.ts";
 import type { QuizQuestionLocalizedFields } from "./quiz-i18n";
 import type { QuizDifficultyId, QuizPedagogicalTypeId, QuizSkillId } from "./quiz-taxonomy.ts";
+import type {
+  QuizSchoolQuestionEligibility,
+  QuizSchoolTrackId,
+} from "./quiz-school-types";
 
 export type QuizQuestion = {
   id: string;
@@ -25,6 +29,8 @@ export type QuizQuestion = {
   reasoningType: QuizReasoningType;
   skill?: QuizSkillId;
   difficulty?: QuizDifficultyId;
+  trackId?: QuizSchoolTrackId;
+  schoolEligibility?: QuizSchoolQuestionEligibility;
   trapLevel?: QuizTrapLevelId;
   errorType?: QuizErrorTypeId;
   misconception?: string;
@@ -102,5 +108,6 @@ export type QuizQuestionStructure = {
 };
 
 export type ResolvedQuizQuestion = QuizQuestion & {
+  schoolEligibility: QuizSchoolQuestionEligibility;
   structure: QuizQuestionStructure;
 };

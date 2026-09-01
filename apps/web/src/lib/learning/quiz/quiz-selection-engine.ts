@@ -25,7 +25,16 @@ import {
   matchesQuizTrapLevel,
   type QuizTrapLevelId,
 } from "./quiz-trap-levels";
-import type { QuizSchoolTrackId } from "./quiz-school-types";
+import {
+  QUIZ_SCHOOL_TRACK_QUESTION_IDS,
+  QUIZ_SCHOOL_SESSION_SIZE,
+  QUIZ_SCHOOL_TRACK_ORDER,
+  getQuizSchoolTrackId,
+  type QuizSchoolLevel,
+  type QuizSchoolQuestionLevelProfile,
+  type QuizSchoolTrackId,
+} from "./quiz-school-types";
+import type { QuizSchoolQuestionEligibility } from "./quiz-school-types";
 
 export type QuizSelectionQuestionLike = {
   id: string;
@@ -37,6 +46,9 @@ export type QuizSelectionQuestionLike = {
   skill?: QuizSkillId;
   difficulty?: QuizDifficultyId;
   trapLevel?: QuizTrapLevelId;
+  trackId?: QuizSchoolTrackId;
+  schoolEligibility?: QuizSchoolQuestionEligibility;
+  needsReview?: boolean;
 };
 
 export type QuizSelectionOptions = {
@@ -45,6 +57,7 @@ export type QuizSelectionOptions = {
   trapLevel?: QuizTrapLevelId | null;
   reasoningType?: QuizReasoningType | null;
   schoolTrack?: QuizSchoolTrackId | null;
+  schoolLevel?: QuizSchoolLevel | null;
   sessionSize?: number;
   shuffleSession?: boolean;
   randomizer?: () => number;
@@ -53,7 +66,7 @@ export type QuizSelectionOptions = {
 
 const DEFAULT_SESSION_SIZE_BY_MODE: Record<QuizAccessTypeId, number> = {
   mixte: 10,
-  ecole: 15,
+  ecole: QUIZ_SCHOOL_SESSION_SIZE,
   terrain: 8,
   "donnees-scientifiques": 8,
   sensibilisation: 8,
@@ -64,11 +77,11 @@ const DEFAULT_SESSION_SIZE_BY_MODE: Record<QuizAccessTypeId, number> = {
 
 const DEMO_SESSION_QUESTION_IDS = ["at8", "e1", "cb5", "at12", "cb17"] as const;
 
-const SCHOOL_SESSION_QUESTION_IDS: Record<QuizSchoolTrackId, readonly string[]> = {
-  "debat-classe": ["e1", "e2", "e3", "n1", "n2", "n5", "v4", "v5", "v3", "im1", "im4", "im5", "im6", "im9", "hb2"],
-  "mission-terrain": ["at7", "at8", "at9", "at10", "at11", "at12", "at13", "at14", "at15", "at16", "at17", "at18", "at19", "at20", "at21"],
-  "ordres-de-grandeur": ["n2", "cb5", "cb6", "i3", "i4", "i7", "i8", "v1", "v2", "v3", "v5", "x3", "x4", "im3", "im8"],
-  "gestes-du-quotidien": ["ec1", "ec2", "hb1", "hb2", "co1", "im6", "im11", "im12", "im13", "im14", "im15", "im16", "im17", "rc1", "rc2"],
+const SCHOOL_LEVEL_DIFFICULTY_ORDER: Record<QuizSchoolLevel, readonly ("low" | "medium" | "high")[]> = {
+  "6e": ["low", "medium", "high"],
+  "5e": ["low", "medium", "high"],
+  "4e": ["medium", "low", "high"],
+  "3e": ["medium", "high", "low"],
 };
 
 export function getDefaultQuizSessionSize(mode: QuizAccessTypeId): number {
@@ -84,15 +97,92 @@ export function buildQuizDemoSessionDeck<T extends QuizSelectionQuestionLike>(qu
 
 export function buildQuizSchoolSessionDeck<T extends QuizSelectionQuestionLike>(
   questions: readonly T[],
-  track: QuizSchoolTrackId,
+  levelOrLegacyTrack: QuizSchoolLevel | QuizSchoolTrackId,
   sessionSize = DEFAULT_SESSION_SIZE_BY_MODE.ecole,
 ): T[] {
   const questionById = new Map(questions.map((question) => [question.id, question] as const));
-  const ordered = SCHOOL_SESSION_QUESTION_IDS[track]
-    .map((questionId) => questionById.get(questionId))
-    .filter((question): question is T => Boolean(question));
+  if (QUIZ_SCHOOL_TRACK_ORDER.includes(levelOrLegacyTrack as QuizSchoolTrackId)) {
+    const legacyTrack = levelOrLegacyTrack as QuizSchoolTrackId;
+    return QUIZ_SCHOOL_TRACK_QUESTION_IDS[legacyTrack]
+      .map((questionId) => questionById.get(questionId))
+      .filter((question): question is T => Boolean(question))
+      .slice(0, sessionSize);
+  }
 
-  return ordered.slice(0, sessionSize);
+  const level = levelOrLegacyTrack as QuizSchoolLevel;
+  const difficultyOrder = SCHOOL_LEVEL_DIFFICULTY_ORDER[level];
+  const difficultyRank = new Map(difficultyOrder.map((difficulty, index) => [difficulty, index] as const));
+  const candidatesByTrack = QUIZ_SCHOOL_TRACK_ORDER.map((track) =>
+    questions
+      .filter((question) => !question.needsReview && getResolvedSchoolTrack(question) === track)
+      .filter((question) => Boolean(getSchoolLevelProfile(question, level)))
+      .sort((left, right) => {
+        const leftProfile = getSchoolLevelProfile(left, level);
+        const rightProfile = getSchoolLevelProfile(right, level);
+        const leftRank = difficultyRank.get(leftProfile?.difficulty ?? getResolvedDifficulty(left)) ?? difficultyOrder.length;
+        const rightRank = difficultyRank.get(rightProfile?.difficulty ?? getResolvedDifficulty(right)) ?? difficultyOrder.length;
+        const leftSkill = leftProfile?.skills.join(",") ?? getResolvedSkill(left);
+        const rightSkill = rightProfile?.skills.join(",") ?? getResolvedSkill(right);
+        return leftRank - rightRank || leftSkill.localeCompare(rightSkill, "fr") || left.id.localeCompare(right.id, "fr");
+      }),
+  );
+
+  const ordered = weaveBuckets(candidatesByTrack);
+  const seenQuestionIds = new Set<string>();
+  const uniqueOrdered = ordered.filter((question) => {
+    if (seenQuestionIds.has(question.id)) {
+      return false;
+    }
+
+    seenQuestionIds.add(question.id);
+    return true;
+  });
+
+  if (uniqueOrdered.length < sessionSize) {
+    const fallbackQuestions = [...questions]
+      .filter((question) => {
+        return (
+          !question.needsReview &&
+          Boolean(getResolvedSchoolTrack(question)) &&
+          Boolean(getSchoolLevelProfile(question, level)) &&
+          !seenQuestionIds.has(question.id)
+        );
+      })
+      .sort((left, right) => {
+        const leftProfile = getSchoolLevelProfile(left, level);
+        const rightProfile = getSchoolLevelProfile(right, level);
+        const leftRank = difficultyRank.get(leftProfile?.difficulty ?? getResolvedDifficulty(left)) ?? difficultyOrder.length;
+        const rightRank = difficultyRank.get(rightProfile?.difficulty ?? getResolvedDifficulty(right)) ?? difficultyOrder.length;
+        return leftRank - rightRank || left.id.localeCompare(right.id, "fr");
+      });
+
+    uniqueOrdered.push(...fallbackQuestions.slice(0, sessionSize - uniqueOrdered.length));
+  }
+
+  return uniqueOrdered.slice(0, sessionSize);
+}
+
+function getResolvedSchoolTrack(question: QuizSelectionQuestionLike): QuizSchoolTrackId | undefined {
+  return question.trackId ?? getQuizSchoolTrackId(question.id);
+}
+
+function getSchoolLevelProfile(
+  question: QuizSelectionQuestionLike,
+  level: QuizSchoolLevel,
+): QuizSchoolQuestionLevelProfile | undefined {
+  const explicitProfile = question.schoolEligibility?.[level];
+  if (explicitProfile) {
+    return explicitProfile;
+  }
+
+  const difficulty = getResolvedDifficulty(question);
+  const isAllowed = level === "6e" ? difficulty === "low" : level === "3e" || difficulty !== "high";
+  return isAllowed
+    ? {
+        difficulty,
+        skills: [getResolvedSkill(question)],
+      }
+    : undefined;
 }
 
 const STATE_PRIORITY: Record<CognitiveQuizStateId, number> = {
@@ -335,12 +425,16 @@ export function buildQuizSessionDeck<T extends QuizSelectionQuestionLike>(
   const selectedMode = getSelectedMode(options);
 
   if (selectedMode === "ecole") {
-    const schoolTrack = options.schoolTrack;
-    if (!schoolTrack) {
+    const schoolSelection = options.schoolLevel ?? options.schoolTrack;
+    if (!schoolSelection) {
       return [];
     }
 
-    return buildQuizSchoolSessionDeck(questions, schoolTrack, options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE.ecole);
+    return buildQuizSchoolSessionDeck(
+      questions,
+      schoolSelection,
+      options.sessionSize ?? DEFAULT_SESSION_SIZE_BY_MODE.ecole,
+    );
   }
 
   const filteredQuestions = questions.filter((question) => {
