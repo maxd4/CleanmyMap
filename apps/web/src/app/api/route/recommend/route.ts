@@ -17,8 +17,8 @@ import {
 } from "@/lib/route/route-contract";
 import {
   createFallbackRouteGeometry,
-  routePolylineThroughStreetNetwork,
 } from "@/lib/geo/osrm-routing";
+import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import {
   buildHotspots,
   buildProactiveAssistant,
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
  };
  });
 
- const routeGeometry = await routePolylineThroughStreetNetwork(
+ const routeGeometry = await routePolylineThroughFossgisFoot(
    route.map((item) => [item.latitude, item.longitude] as [number, number]),
    {},
  );

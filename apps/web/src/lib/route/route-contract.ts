@@ -1,6 +1,11 @@
 export type RouteGeometryMode = "network" | "fallback";
 
-export type RouteGeometryProvider = "osrm" | "none";
+export type RouteGeometryProvider = "osrm" | "fossgis-osrm" | "none";
+
+export type RouteNetworkGeometryProvider = Exclude<
+  RouteGeometryProvider,
+  "none"
+>;
 
 export type RouteGeometryProfile = "foot" | null;
 

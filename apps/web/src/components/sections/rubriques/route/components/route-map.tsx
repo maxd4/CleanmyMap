@@ -164,6 +164,29 @@ export function RouteMap({
           />
         ))}
       </MapContainer>
+      {routeGeometry.mode === "network" &&
+      routeGeometry.provider === "fossgis-osrm" ? (
+        <p className="border-t border-white/10 bg-slate-950/70 px-4 py-3 text-xs text-slate-200">
+          Routage piéton FOSSGIS /{" "}
+          <a
+            className="underline decoration-emerald-300 underline-offset-2"
+            href="https://www.openstreetmap.org"
+            rel="noreferrer"
+            target="_blank"
+          >
+            OpenStreetMap
+          </a>{" "}
+          ·{" "}
+          <a
+            className="underline decoration-emerald-300 underline-offset-2"
+            href="https://www.openstreetmap.org/fixthemap"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Corriger la carte
+          </a>
+        </p>
+      ) : null}
     </section>
   );
 }
