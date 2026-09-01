@@ -24,6 +24,36 @@
     animation: cmm-backdrop-out 0.18s ease forwards;
   }
 
+  /* Canonical dialog shell: layout only; panel surface remains composable. */
+  .cmm-dialog-backdrop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: var(--space-4);
+  }
+
+  .cmm-dialog-panel {
+    width: 100%;
+    max-height: calc(100dvh - (var(--space-4) * 2));
+  }
+
+  .cmm-dialog-panel[data-dialog-size="sm"] {
+    max-width: 24rem;
+  }
+
+  .cmm-dialog-panel[data-dialog-size="md"] {
+    max-width: 32rem;
+  }
+
+  .cmm-dialog-panel[data-dialog-size="lg"] {
+    max-width: 48rem;
+  }
+
+  .cmm-dialog-panel[data-dialog-size="xl"] {
+    max-width: 64rem;
+  }
+
   @keyframes cmm-backdrop-out {
     from { opacity: 1; }
     to   { opacity: 0; }
@@ -101,5 +131,35 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid var(--border-default);
+  }
+
+  [data-display-mode="minimaliste"] .cmm-dialog-backdrop {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  [data-display-mode="minimaliste"] .cmm-dialog-backdrop,
+  [data-display-mode="minimaliste"] .cmm-dialog-panel {
+    animation: none;
+  }
+
+  [data-display-mode="sobre"] .cmm-dialog-backdrop {
+    animation: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  [data-display-mode="sobre"] .cmm-dialog-panel {
+    animation: none;
+    background-image: none;
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-dialog-backdrop,
+    .cmm-dialog-panel {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 }
