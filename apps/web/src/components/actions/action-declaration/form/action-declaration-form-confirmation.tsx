@@ -1,4 +1,5 @@
 import type { FormState } from "./model";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import {
@@ -35,17 +36,23 @@ export function ActionDeclarationFormConfirmation({
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
 
   return (
-    <div className="cmm-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="cmm-modal-panel cmm-modal-scroll max-h-[90vh] w-full max-w-3xl rounded-[2.5rem] border border-emerald-200/70 bg-[#F3FBF6]/98 backdrop-blur-xl shadow-[0_24px_50px_-22px_rgba(34,197,94,0.18)]">
+    <CmmDialog
+      open
+      dismissible={false}
+      size="lg"
+      ariaLabelledBy="action-declaration-confirmation-title"
+      ariaDescribedBy="action-declaration-confirmation-description"
+      panelClassName="max-h-[90vh] rounded-[2.5rem] border border-emerald-200/70 bg-[#F3FBF6]/98 backdrop-blur-xl shadow-[0_24px_50px_-22px_rgba(34,197,94,0.18)]"
+    >
         {/* En-tête avec dégradé */}
         <div className="cmm-modal-header-sticky overflow-hidden rounded-t-[2.5rem] bg-gradient-to-r from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
             <span className="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 shadow-sm" />
-            <h2 className="text-2xl font-bold tracking-tight text-emerald-950">
+            <h2 id="action-declaration-confirmation-title" className="text-2xl font-bold tracking-tight text-emerald-950">
               {isCleanPlaceMode ? "Confirmation de votre lieu propre" : "Confirmation de votre action"}
             </h2>
           </div>
-          <p className="text-sm text-emerald-900/65 pl-6">
+          <p id="action-declaration-confirmation-description" className="text-sm text-emerald-900/65 pl-6">
             {isCleanPlaceMode
               ? "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet le signalement."
               : "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet la déclaration."}
@@ -268,7 +275,6 @@ export function ActionDeclarationFormConfirmation({
             {isSubmitting ? "Envoi en cours..." : "Confirmer et envoyer"}
           </button>
         </div>
-      </div>
-    </div>
+    </CmmDialog>
   );
 }
