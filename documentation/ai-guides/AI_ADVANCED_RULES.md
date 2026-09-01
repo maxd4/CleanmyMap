@@ -74,7 +74,7 @@ Quand aucune suite n'est utile, ne pas forcer une question finale.
 
 ## 5. Kaizen
 
-Référence obligatoire : [AI_MINDSET_KAIZEN.md](../development/AI_MINDSET_KAIZEN.md)
+Référence obligatoire : [doctrine Kaizen](../development/kaizen/README.md)
 
 La mentalité Kaizen doit rester active, mais seulement si elle sert réellement la tâche en cours.
 

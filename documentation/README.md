@@ -22,6 +22,7 @@ Avant toute modification ciblant le dépôt :
 | Sécurité | `security/README.md` |
 | Tests et validation | `development/TESTING.md` |
 | Développement | `development/README.md` |
+| Amélioration continue / Kaizen | `development/kaizen/README.md` |
 | Affichage des scores UI | `development/ui-score-formatting.md` |
 | Produit | `product/README.md` |
 | Fonctionnalités | `features/README.md` |

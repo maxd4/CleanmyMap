@@ -1,3 +1,8 @@
+> **HISTORIQUE — audit du 28/04/2026.**
+> Ce document conserve l’état et les propositions de cette période.
+> Ses prompts, estimations, métriques et recommandations ne doivent pas être
+> exécutés sans réaudit contre le code et les contrats actuels.
+
 # Audit Kaizen - Page d'Accueil (apps/web/src/app/page.tsx)
 
 **Date** : 28/04/2026  

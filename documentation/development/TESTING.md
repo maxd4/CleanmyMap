@@ -31,6 +31,12 @@ Pour les tests E2E Playwright :
 npx playwright install chromium
 ```
 
+Sous Windows, démarrer Docker Desktop avec l'exécutable installé à cet emplacement :
+
+```text
+C:\Users\sophi\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe
+```
+
 ## Validation ciblée
 
 Commande recommandée pendant une correction :

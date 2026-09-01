@@ -93,9 +93,9 @@ Ces règles s'appliquent à chaque shell ou module monolithique traité dans ce 
   - plus aucun fichier applicatif au-dessus de `1000` lignes par défaut ;
   - idéalement, garder les shells UI entre `500` et `700` lignes.
 - Limiter l'utilisation des quotas des services web au strict nécessaire pendant l'audit et la modularisation.
-- S'appuyer sur le plan Kaizen existant du dépôt :
-  - `documentation/kaizen-implementation-plan/README.md`
-  - `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+- S'appuyer sur la doctrine Kaizen du dépôt :
+  - `documentation/development/kaizen/README.md`
+  - `documentation/development/kaizen/templates/TEMPLATE-AUDIT.md`
 
 ---
 

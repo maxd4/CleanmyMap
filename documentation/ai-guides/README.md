@@ -96,10 +96,10 @@ Documentation optimisée pour les agents IA qui développent ce projet.
    - Mentalité Kaizen proactive
    - Format de récapitulatif
 
-7. **[AI_KAIZEN_EXAMPLES.md](./AI_KAIZEN_EXAMPLES.md)**
-   - Exemples concrets de déclencheurs Kaizen
-   - 6 situations types avec réactions
-   - Templates de propositions
+7. **[Doctrine Kaizen](../development/kaizen/README.md)**
+   - Principes d'amélioration continue
+   - Méthode d'audit et exemples
+   - Template d'audit canonique
 
 ### 🧾 Interprétation des plans ChatGPT
 

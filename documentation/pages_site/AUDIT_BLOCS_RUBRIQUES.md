@@ -349,9 +349,9 @@ Produit après `RUBRIQUE-[NOM].md`. Ne pas réinventer la structure — utiliser
 # Audit Kaizen - [Nom de la rubrique] ([chemin du composant])
 
 Sources obligatoires (lire avant de produire ce fichier) :
-- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md` → structure exacte à suivre
-- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md` → comment remplir chaque section
-- `documentation/development/AI_MINDSET_KAIZEN.md` → posture d'amélioration continue attendue
+- `documentation/development/kaizen/templates/TEMPLATE-AUDIT.md` → structure exacte à suivre
+- `documentation/development/kaizen/AUDIT_METHOD.md` → comment remplir chaque section
+- `documentation/development/kaizen/PRINCIPLES.md` → posture d'amélioration continue attendue
 
 Règles :
 - Nom : `KAIZEN-[NOM].md` (même NOM que le fichier RUBRIQUE associé)
@@ -381,9 +381,9 @@ Chaque opportunité = problème concret + solution explicite + prompt à exécut
 | `documentation/design-system/VISUAL_STORYTELLING.md` | Types de visualisation (sparkline, jauge, D3, SVG), règle "jamais de chiffre brut" | Avant tout PROMPT d'implémentation avec données chiffrées |
 | `documentation/design-system/TYPOGRAPHY_SYSTEM.md` | Liste exacte des classes `cmm-text-*`, poids autorisés, cas d'usage par niveau | Avant tout composant textuel |
 | `documentation/design-system/display-modes-chartes.md` | Comportement mode sobre (`useSitePreferences()`), fallbacks statiques | Avant tout composant animé |
-| `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md` | Structure officielle des 6 sections Kaizen | Avant de produire tout `KAIZEN-*.md` |
-| `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md` | Comment remplir chaque section du template Kaizen | Avant de produire tout `KAIZEN-*.md` |
-| `documentation/development/AI_MINDSET_KAIZEN.md` | Posture d'amélioration continue, critères de priorisation, ton attendu | Avant de produire tout `KAIZEN-*.md` |
+| `documentation/development/kaizen/templates/TEMPLATE-AUDIT.md` | Structure officielle des 6 sections Kaizen | Avant de produire tout `KAIZEN-*.md` |
+| `documentation/development/kaizen/AUDIT_METHOD.md` | Comment remplir chaque section | Avant de produire tout `KAIZEN-*.md` |
+| `documentation/development/kaizen/PRINCIPLES.md` | Posture d'amélioration continue, critères de priorisation, ton attendu | Avant de produire tout `KAIZEN-*.md` |
 | `apps/web/src/components/ui/cmm-button.tsx` | Props, variantes, classes générées par CmmButton | Avant tout prompt touchant aux boutons |
 | `apps/web/src/components/ui/cmm-card.tsx` | Props, variantes, classes générées par CmmCard | Avant tout prompt touchant aux cards |
 | `apps/web/tailwind.config.ts` | Palette complète, tokens custom, breakpoints | En cas de doute sur une couleur ou classe |
