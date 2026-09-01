@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const ROOT = process.cwd();
 
@@ -20,31 +19,23 @@ const FIXED_PRIORITY_DOCS = [
 
 const MERMAID_BLOCK_RE = /```mermaid[\s\S]*?```/m;
 
-async function hasMermaidSchema(relativePath) {
-  const absolutePath = path.join(ROOT, relativePath);
-  const content = await readFile(absolutePath, "utf8");
+function hasMermaidSchema(view, relativePath) {
+  const content = view.readText(relativePath);
   return MERMAID_BLOCK_RE.test(content);
 }
 
-async function validatePrioritizedDocs() {
+function validatePrioritizedDocs(view) {
   const prioritizedDocs = [...FIXED_PRIORITY_DOCS];
   const missingSchemas = [];
   const missingFiles = [];
 
   for (const relativePath of prioritizedDocs) {
-    const absolutePath = path.join(ROOT, relativePath);
-    try {
-      const fileStats = await stat(absolutePath);
-      if (!fileStats.isFile()) {
-        missingFiles.push(relativePath);
-        continue;
-      }
-      const hasSchema = await hasMermaidSchema(relativePath);
-      if (!hasSchema) {
-        missingSchemas.push(relativePath);
-      }
-    } catch {
+    if (!view.isFile(relativePath)) {
       missingFiles.push(relativePath);
+      continue;
+    }
+    if (!hasMermaidSchema(view, relativePath)) {
+      missingSchemas.push(relativePath);
     }
   }
 
@@ -65,9 +56,14 @@ async function validatePrioritizedDocs() {
     process.exit(1);
   }
 
-  console.log(
-    `check-doc-visuals: OK (${prioritizedDocs.length} prioritized docs with schema)`,
-  );
+  return prioritizedDocs.length;
 }
 
-await validatePrioritizedDocs();
+function main() {
+  const ref = parseRepositoryRef();
+  const view = createRepositoryView({ root: ROOT, ref });
+  const count = validatePrioritizedDocs(view);
+  console.log(`check-doc-visuals: OK (${count} prioritized docs with schema${ref ? `; ref ${ref}` : ""})`);
+}
+
+main();

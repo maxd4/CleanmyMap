@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
 import process from "node:process";
+import { createRepositoryView, parseRepositoryRef } from "../checks/repository-view.mjs";
 import {
   formatDynamicPageLabel,
   formatHeavyImportLabel,
   scanVercelSurface,
 } from "../vercel-audit-core.mjs";
 
-const surface = scanVercelSurface();
+const ref = parseRepositoryRef();
+const surface = scanVercelSurface({
+  view: createRepositoryView({ root: process.cwd(), ref }),
+});
 
 function emitWarning(title, message) {
   console.log(`::warning title=${title}::${message}`);
@@ -23,7 +27,7 @@ function printSection(title, values, formatter = (value) => value, limit = 10) {
   }
 }
 
-console.log("Audit Vercel CI (warnings only)");
+console.log(`Audit Vercel CI (warnings only${ref ? `; ref ${ref}` : ""})`);
 console.log("");
 console.log(
   "Les garde-fous critiques sont bloqués par les tests de régression; ce rapport n'échoue jamais la CI.",

@@ -558,8 +558,17 @@ PUSH_CANDIDATE  = refs et ranges réellement transmis par le protocole pre-push
 Le vrai hook pre-push ne doit jamais déduire son périmètre de `HEAD` global,
 `origin/main`, du dirty state, des fichiers staged ou des commits locaux non
 envoyés. Il doit afficher et utiliser explicitement le scope `PUSH_CANDIDATE`.
+Chaque check statique du hook doit lire l'arbre Git exact du SHA local
+effectivement poussé via `--ref=<local-sha>` ; les SHA identiques sont
+dédupliqués et une suppression de ref ne possède aucun arbre à scanner. En
+fallback manuel, la plage reste `origin/main...HEAD`, mais les checks statiques
+utilisent `--ref=HEAD` et ignorent le worktree dirty.
 L'invocation manuelle de `npm run prepush:guard` sans protocole conserve le
 fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback`.
+`npm run checks:changed` est un contrôle de développement `WORKTREE`, et non
+une preuve de publication. Un échec démontré comme étranger peut être signalé
+`SKIPPED_PARALLEL_CHANTIER` lorsque `STAGED` et `PUSH_CANDIDATE` sont verts ;
+une violation du candidat reste bloquante.
 Les validations lourdes ne doivent pas être répétées entre phases sans raison
 liée au candidat réellement traité.
 

@@ -38,10 +38,16 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
     "--candidate-ref=",
     "--candidate-range=",
     "scripts/checks/validation-policy.mjs",
-    "npm run checks:full",
-    "npm run audit:supabase-migration-trees",
+    "scripts/checks/check-root-file-hygiene.mjs",
+    "scripts/checks/check-documentation-governance.mjs",
+    "scripts/checks/check-agent-governance.mjs",
+    "scripts/checks/check-agent-skill-mirrors.mjs",
+    "scripts/checks/check-stack-doc-drift.mjs",
+    "scripts/checks/check-github-actions-security.mjs",
+    "scripts/checks/check-9c-public-facades.mjs",
+    "scripts/checks/check-doc-visuals.mjs",
+    "scripts/audits/audit-supabase-migration-trees.mjs",
     "npm run test:scripts",
-    "npm run check:doc-visuals",
     "npm run lint",
     "npm run typecheck",
     "npm run build",
@@ -57,7 +63,10 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.doesNotMatch(guard, /git diff --name-only --diff-filter=ACMRTUXB HEAD --/);
   assert.doesNotMatch(guard, /git diff --cached --name-only/);
   assert.doesNotMatch(guard, /git ls-files --others/);
-  assert.doesNotMatch(guard, /--ref=HEAD/);
+  assert.match(guard, /staticCandidateRefs/);
+  assert.match(guard, /refArgument = "--ref=\$candidateRef"/);
+  assert.match(guard, /CandidateRefs @\("HEAD"\)/);
+  assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
   assert.match(guard, /Write-SkippedGuardStep/);
 });
@@ -67,11 +76,12 @@ test("pre-push leaves the complete release validation available separately", asy
   const guard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
   assert.match(packageJson.scripts["checks:full"], /run_checks2\.ps1 -Scope full/);
-  assert.match(guard, /No changed files detected in manual fallback; running the separate full validation/);
+  assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
+  assert.doesNotMatch(guard, /Invoke-GuardStep "full validation"/);
   for (const requiredStep of [
-    "npm run check:root-files",
-    "npm run check:gitnexus-hygiene",
-    "npm run check:9c-public-facades",
+    "node scripts/checks/check-root-file-hygiene.mjs $refArgument",
+    "node scripts/checks/check-gitnexus-hygiene.mjs $refArgument",
+    "node scripts/checks/check-9c-public-facades.mjs $refArgument",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

@@ -23,8 +23,17 @@ médias et rapports présents sous `scripts/`.
   `PUSH_CANDIDATE`, construite à partir des refs et des lignes stdin fournies
   par le protocole pre-push Git ; il doit scanner les ranges effectivement
   envoyés plutôt que `HEAD`, `origin/main` ou le checkout courant ;
+- chaque check statique du pre-push doit recevoir `--ref=<local-sha>` et lire
+  l'arbre Git exact correspondant, sans staged, unstaged, untracked ni commit
+  local étranger. Les SHA identiques sont dédupliqués ; une ref supprimée n'a
+  pas d'arbre candidat ;
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
-  `origin/main...HEAD`, affiché explicitement comme `manual-fallback` ;
+  `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
+  ses checks statiques doivent utiliser `--ref=HEAD` ;
+- `npm run checks:changed` reste un contrôle `WORKTREE` de développement et ne
+  constitue pas une preuve de publication. Un échec prouvé étranger peut être
+  classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
+  verts ; une violation du candidat demeure bloquante ;
 - `STAGED` et `PUSH_CANDIDATE` sont distincts : le premier décrit le candidat
   du commit, le second les refs réellement transmises au push ;
 - toute modification d'un hook ou d'un script de scope doit préserver ces
