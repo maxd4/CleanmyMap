@@ -4,27 +4,25 @@ import useSWR from "swr";
 import { RefreshCcw, ShieldCheck } from "lucide-react";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import { FreePlanServicesVisual } from "@/components/admin/free-plan-services-visual";
-import { buildGovernanceMethodologyLinks } from "@/lib/governance/governance-links";
-import {
-  buildServiceQuotaSummary,
-  buildServiceRiskRows,
-  buildServiceThresholdAlerts,
-  formatServiceQuotaStateLabel,
-  formatServiceRiskBandLabel,
-  isDevelopmentAiServiceKey,
-} from "@/lib/environmental-impact-estimator/service-risk";
-import { getServicePlanInfo } from "@/lib/environmental-impact-estimator/service-plan";
 import { swrSupervisionOptions } from "@/lib/swr-config";
-import type { ServicesPayload, ServiceStatusInfo } from "@/lib/dashboard/status";
+import type { ServicesPayload } from "@/lib/dashboard/status";
 import type {
   EnvironmentalImpactEstimateModel,
   EnvironmentalImpactSnapshotRecord,
   EnvironmentalImpactProjectSignals,
-  EnvironmentalImpactInfrastructureMetricEstimate,
-  EnvironmentalImpactInfrastructureServiceEstimate,
 } from "@/lib/environmental-impact-estimator";
 import { cn } from "@/lib/utils";
 import { formatScorePercent } from "@/lib/formatters/score";
+import {
+  buildFreePlanServicesPanelModel,
+  formatNumber,
+  formatServiceQuotaStateLabel,
+  formatServiceRiskBandLabel,
+  getAlertTone,
+  getHealthLabel,
+  getHealthTone,
+  getRiskTone,
+} from "./free-plan-services-panel.model";
 
 type FreePlanServicesResponse = {
   status: "ok" | "error";
@@ -44,131 +42,6 @@ const fetcher = async <T,>(url: string): Promise<T> => {
   return (await response.json()) as T;
 };
 
-function formatNumber(value: number | null, maximumFractionDigits?: number): string {
-  if (value === null || Number.isNaN(value)) {
-    return "—";
-  }
-
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits:
-      maximumFractionDigits ?? (Math.abs(value) < 10 ? 2 : 0),
-  }).format(value);
-}
-
-function toReportMonth(value: string | null): string {
-  const date = value ? new Date(value) : new Date();
-  if (Number.isNaN(date.getTime())) {
-    const fallback = new Date();
-    const year = fallback.getUTCFullYear();
-    const month = String(fallback.getUTCMonth() + 1).padStart(2, "0");
-    return `${year}-${month}-01`;
-  }
-
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `${year}-${month}-01`;
-}
-
-function getHealthTone(state: ServiceStatusInfo["state"]) {
-  switch (state) {
-    case "ready":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-100";
-    case "external":
-      return "border-sky-500/20 bg-sky-500/10 text-sky-100";
-    case "defer":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-100";
-    case "missing":
-    default:
-      return "border-rose-500/20 bg-rose-500/10 text-rose-100";
-  }
-}
-
-function getHealthLabel(state: ServiceStatusInfo["state"]) {
-  switch (state) {
-    case "ready":
-      return "Configuré";
-    case "external":
-      return "Externe";
-    case "defer":
-      return "Différé";
-    case "missing":
-    default:
-      return "Manquant";
-  }
-}
-
-function getEstimateTone(status: EnvironmentalImpactInfrastructureServiceEstimate["status"]) {
-  switch (status) {
-    case "ready":
-      return "text-emerald-300";
-    case "derived":
-      return "text-sky-200";
-    case "partial":
-      return "text-amber-200";
-    case "reference":
-    default:
-      return "text-rose-200";
-  }
-}
-
-function getRiskTone(score: number) {
-  if (score >= 80) {
-    return "border-rose-500/20 bg-rose-500/10 text-rose-100";
-  }
-
-  if (score >= 60) {
-    return "border-amber-500/20 bg-amber-500/10 text-amber-100";
-  }
-
-  if (score >= 30) {
-    return "border-sky-500/20 bg-sky-500/10 text-sky-100";
-  }
-
-  return "border-emerald-500/20 bg-emerald-500/10 text-emerald-100";
-}
-
-function getAlertTone(severity: "warning" | "critical") {
-  return severity === "critical"
-    ? "border-rose-500/20 bg-rose-500/10 text-rose-100"
-    : "border-amber-500/20 bg-amber-500/10 text-amber-100";
-}
-
-function countMetricsBySource(
-  services: EnvironmentalImpactInfrastructureServiceEstimate[],
-  source: EnvironmentalImpactInfrastructureMetricEstimate["source"],
-) {
-  return services.reduce(
-    (acc, service) =>
-      acc +
-      service.metricEstimates.filter((metric) => metric.source === source).length,
-    0,
-  );
-}
-
-function getSnapshotServiceCharge(
-  snapshot: EnvironmentalImpactSnapshotRecord | null | undefined,
-  serviceKey: string,
-): number {
-  if (!snapshot) {
-    return 0;
-  }
-
-  const service = snapshot.model.infrastructure.services.find(
-    (item) => item.key === serviceKey,
-  );
-
-  return service?.monthlyKgCo2eProxy ?? 0;
-}
-
-type ServicePressureRow = {
-  key: string;
-  label: string;
-  currentKgCo2eProxy: number;
-  previousKgCo2eProxy: number;
-  deltaKgCo2eProxy: number;
-  confidencePercent: number;
-};
-
 export function FreePlanServicesPanel() {
   const freePlan = useSWR<FreePlanServicesResponse>(
     ["/api/admin/free-plan-services"],
@@ -185,86 +58,38 @@ export function FreePlanServicesPanel() {
   const isRefreshing = freePlan.isValidating || servicesHealth.isValidating;
   const hasError = Boolean(freePlan.error || servicesHealth.error);
 
-  const services = freePlan.data?.model.infrastructure.services ?? [];
-  const quotaServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
-  const snapshots = freePlan.data?.snapshots ?? [];
-  const snapshotCount = freePlan.data?.snapshots.length ?? 0;
-  const generatedAt = freePlan.data?.model.generatedAt ?? null;
-  const serviceByKey = new Map(quotaServices.map((service) => [service.key, service] as const));
   const serviceHealth = servicesHealth.data?.services ?? {};
-  const readyServices = Object.values(serviceHealth).filter(
-    (service) => service.state === "ready",
-  ).length;
-  const trackedServices = Object.values(serviceHealth).filter(
-    (service) => service.state !== "external",
-  ).length;
-  const monitoredMetrics = quotaServices.reduce(
-    (acc, service) => acc + service.metricCount,
-    0,
-  );
-  const inputMetrics = countMetricsBySource(quotaServices, "input");
-  const derivedMetrics = countMetricsBySource(quotaServices, "derived");
-  const referenceMetrics = countMetricsBySource(quotaServices, "reference");
-
-  const sortedServices = quotaServices
-    .slice()
-    .sort((left, right) => {
-      const byCharge =
-        (right.monthlyKgCo2eProxy ?? 0) - (left.monthlyKgCo2eProxy ?? 0);
-      if (byCharge !== 0) {
-        return byCharge;
-      }
-
-      return left.label.localeCompare(right.label);
-    });
-  const previousSnapshot = snapshots[1] ?? null;
-  const servicePressureRows: ServicePressureRow[] = sortedServices.map((service) => {
-    const previousKgCo2eProxy = getSnapshotServiceCharge(previousSnapshot, service.key);
-    const currentKgCo2eProxy = service.monthlyKgCo2eProxy ?? 0;
-    return {
-      key: service.key,
-      label: service.label,
-      currentKgCo2eProxy,
-      previousKgCo2eProxy,
-      deltaKgCo2eProxy: currentKgCo2eProxy - previousKgCo2eProxy,
-      confidencePercent: service.confidencePercent,
-    };
+  const panelModel = buildFreePlanServicesPanelModel({
+    services: freePlan.data?.model.infrastructure.services ?? [],
+    snapshots: freePlan.data?.snapshots ?? [],
+    generatedAt: freePlan.data?.model.generatedAt ?? null,
+    serviceHealth,
   });
-  const servicePressureGrowth = servicePressureRows
-    .slice()
-    .sort((left, right) => right.deltaKgCo2eProxy - left.deltaKgCo2eProxy);
-  const servicePressureLeader = servicePressureRows[0] ?? null;
-  const inputMetricsLabel =
-    inputMetrics === 1 ? "métrique branchée" : "métriques branchées";
-  const trackedServicesLabel =
-    trackedServices === 1 ? "service actif" : "services actifs";
-  const snapshotLabel =
-    snapshotCount === 1 ? "snapshot conservé" : "snapshots conservés";
-  const totalMonthlyPressure = sortedServices.reduce(
-    (acc, service) => acc + (service.monthlyKgCo2eProxy ?? 0),
-    0,
-  );
-  const reportMonth = toReportMonth(generatedAt);
-  const methodologyLinks = buildGovernanceMethodologyLinks(reportMonth);
-  const serviceRiskRows = buildServiceRiskRows(
+  const {
     quotaServices,
-    (snapshots[1]?.model.infrastructure.services ?? []).filter(
-      (service) => !isDevelopmentAiServiceKey(service.key),
-    ),
-  );
-  const serviceThresholdAlerts = buildServiceThresholdAlerts({
-    currentGeneratedAt: generatedAt ?? new Date().toISOString(),
-    currentServices: quotaServices,
-    snapshots,
-  });
-  const serviceRiskLeader = serviceRiskRows[0] ?? null;
-  const serviceRiskCounts = serviceRiskRows.reduce(
-    (acc, row) => {
-      acc[row.band] += 1;
-      return acc;
-    },
-    { faible: 0, surveiller: 0, alerte: 0, critique: 0 },
-  );
+    previousServices,
+    snapshotCount,
+    generatedAtLabel,
+    readyServices,
+    trackedServices,
+    monitoredMetrics,
+    inputMetrics,
+    derivedMetrics,
+    referenceMetrics,
+    previousSnapshot,
+    previousSnapshotLabel,
+    servicePressureGrowth,
+    servicePressureLeader,
+    inputMetricsLabel,
+    trackedServicesLabel,
+    snapshotLabel,
+    totalMonthlyPressure,
+    methodologyLinks,
+    serviceRiskLeader,
+    serviceRiskCounts,
+    serviceThresholdAlerts,
+    serviceRiskCards,
+  } = panelModel;
 
   return (
     <AdminPanelShell
@@ -346,12 +171,7 @@ export function FreePlanServicesPanel() {
                 Dernière lecture
               </p>
               <p className="mt-2 text-lg font-black text-white">
-                {generatedAt
-                  ? new Intl.DateTimeFormat("fr-FR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(generatedAt))
-                  : "—"}
+                {generatedAtLabel}
               </p>
               <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
                 {snapshotCount} {snapshotLabel}
@@ -361,9 +181,7 @@ export function FreePlanServicesPanel() {
 
             <FreePlanServicesVisual
               services={quotaServices}
-              previousServices={(snapshots[1]?.model.infrastructure.services ?? []).filter(
-                (service) => !isDevelopmentAiServiceKey(service.key),
-              )}
+              previousServices={previousServices}
               serviceHealth={serviceHealth}
             />
 
@@ -438,11 +256,7 @@ export function FreePlanServicesPanel() {
                 {previousSnapshot ? (
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/20">
                     Base:{" "}
-                    {new Intl.DateTimeFormat("fr-FR", {
-                      month: "short",
-                      year: "numeric",
-                      timeZone: "UTC",
-                    }).format(new Date(previousSnapshot.snapshotDate))}
+                    {previousSnapshotLabel}
                   </p>
                 ) : null}
               </div>
@@ -637,32 +451,21 @@ export function FreePlanServicesPanel() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            {serviceRiskRows.map((row) => {
-              const service = serviceByKey.get(row.key);
-
-              if (!service) {
-                return null;
-              }
-
-              const health = serviceHealth[service.key];
-              const planInfo = getServicePlanInfo(service.key);
-              const quotaSummary = buildServiceQuotaSummary(service);
-              const primaryQuota = quotaSummary.primaryMetric;
-              const extraQuotaMetrics = quotaSummary.metrics.slice(1);
-              const quotaStateLabel = formatServiceQuotaStateLabel(quotaSummary.state);
-              const primaryQuotaConsumedPercent = primaryQuota?.consumedPercent ?? null;
-              const quotaValue =
-                primaryQuotaConsumedPercent === null
-                  ? "NA"
-                  : `${formatNumber(primaryQuotaConsumedPercent, 0)}%`;
-              const impactLabel =
-                service.monthlyKgCo2eProxy === null
-                  ? "NA"
-                  : `${formatNumber(service.monthlyKgCo2eProxy, 2)} kg CO2e proxy`;
-              const deltaLabel =
-                previousSnapshot === null
-                  ? "NA"
-                  : `${row.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(row.deltaKgCo2eProxy, 2)} kg`;
+            {serviceRiskCards.map((card) => {
+              const {
+                row,
+                service,
+                health,
+                planInfo,
+                primaryQuota,
+                extraQuotaMetrics,
+                quotaStateLabel,
+                quotaValue,
+                impactLabel,
+                deltaLabel,
+                estimateTone,
+                estimateLabel,
+              } = card;
 
               return (
                 <article
@@ -698,16 +501,10 @@ export function FreePlanServicesPanel() {
                         <span
                           className={cn(
                             "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
-                            getEstimateTone(service.status),
+                            estimateTone,
                           )}
                         >
-                          {service.status === "ready"
-                            ? "branché"
-                            : service.status === "derived"
-                              ? "estimé"
-                              : service.status === "partial"
-                                ? "mixte"
-                                : "référence"}
+                          {estimateLabel}
                         </span>
                       </div>
                     </div>
