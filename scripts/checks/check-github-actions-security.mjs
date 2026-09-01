@@ -3,6 +3,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const ACTION_SHA_PATTERN = /^[\w.-]+\/[\w.-]+(?:\/[\w.-]+)*@[0-9a-f]{40}$/i;
 const FORBIDDEN_SECRET_NAMES = [
@@ -53,21 +54,30 @@ export function auditWorkflowContent(content, filePath = "workflow") {
   return issues;
 }
 
-export function auditWorkflowDirectory(workflowDirectory) {
-  const workflowFiles = readdirSync(workflowDirectory)
-    .filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml"))
-    .sort();
+export function auditWorkflowDirectory(workflowDirectory, { view = null } = {}) {
+  const workflowFiles = view
+    ? view.listFiles(".github/workflows")
+      .filter((filePath) => filePath.endsWith(".yml") || filePath.endsWith(".yaml"))
+      .map((filePath) => filePath.slice(".github/workflows/".length))
+      .sort()
+    : readdirSync(workflowDirectory)
+      .filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml"))
+      .sort();
 
   return workflowFiles.flatMap((fileName) => {
-    const filePath = join(workflowDirectory, fileName);
-    return auditWorkflowContent(readFileSync(filePath, "utf8"), filePath);
+    const relativePath = `.github/workflows/${fileName}`;
+    const filePath = view ? relativePath : join(workflowDirectory, fileName);
+    const content = view ? view.readText(relativePath) : readFileSync(filePath, "utf8");
+    return auditWorkflowContent(content, filePath);
   });
 }
 
 function main() {
   const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
   const workflowDirectory = join(repositoryRoot, ".github", "workflows");
-  const issues = auditWorkflowDirectory(workflowDirectory);
+  const ref = parseRepositoryRef();
+  const view = createRepositoryView({ root: repositoryRoot, ref });
+  const issues = auditWorkflowDirectory(workflowDirectory, { view });
 
   if (issues.length > 0) {
     console.error(`[github-actions-security] ${issues.length} issue(s) found:`);
@@ -76,7 +86,8 @@ function main() {
     return;
   }
 
-  console.log(`[github-actions-security] OK: ${readdirSync(workflowDirectory).filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml")).length} workflow file(s) audited.`);
+  const workflowCount = view.listFiles(".github/workflows").filter((fileName) => fileName.endsWith(".yml") || fileName.endsWith(".yaml")).length;
+  console.log(`[github-actions-security] OK: ${workflowCount} workflow file(s) audited${ref ? ` for ref ${ref}` : ""}.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

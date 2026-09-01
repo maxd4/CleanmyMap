@@ -1,7 +1,7 @@
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 export const canonicalAgentFiles = Object.freeze([
   "AGENTS.md",
@@ -55,43 +55,24 @@ const rootForbiddenHeadings = [
   "## 5. Design system",
 ];
 
-function normalize(relativePath) {
-  return relativePath.split(path.sep).join("/");
-}
-
-function walk(root) {
+function walk(view) {
   const files = [];
-  const directories = [];
+  const directories = view.listDirectories().filter((directory) =>
+    !directory.split("/").some((part) => skippedDirectories.has(part)));
+  for (const relativePath of view.listFiles()) {
+    if (!relativePath.split("/").some((part) => skippedDirectories.has(part))) files.push(relativePath);
+  }
 
-  const visit = (current) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      if (entry.isDirectory() && skippedDirectories.has(entry.name)) {
-        continue;
-      }
-
-      const fullPath = path.join(current, entry.name);
-      const relativePath = normalize(path.relative(root, fullPath));
-      if (entry.isDirectory()) {
-        directories.push(relativePath);
-        visit(fullPath);
-      } else if (entry.isFile()) {
-        files.push(relativePath);
-      }
-    }
-  };
-
-  visit(root);
   return { files, directories };
 }
 
-function readIfPresent(repoRoot, relativePath) {
-  const absolutePath = path.join(repoRoot, ...relativePath.split("/"));
-  return fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, "utf8") : null;
+function readIfPresent(view, relativePath) {
+  return view.exists(relativePath) ? view.readText(relativePath) : null;
 }
 
-function validateCanonicalFiles(repoRoot, findings) {
+function validateCanonicalFiles(view, findings) {
   for (const relativePath of canonicalAgentFiles) {
-    if (!readIfPresent(repoRoot, relativePath)) {
+    if (!readIfPresent(view, relativePath)) {
       findings.push(
         `Missing canonical AGENTS.md: ${relativePath}. Create it at this exact boundary or update the governed hierarchy explicitly.`,
       );
@@ -99,8 +80,8 @@ function validateCanonicalFiles(repoRoot, findings) {
   }
 }
 
-function validateAgentLocations(repoRoot, findings) {
-  const { files } = walk(repoRoot);
+function validateAgentLocations(view, findings) {
+  const { files } = walk(view);
   const agentFiles = files.filter((file) => path.basename(file) === "AGENTS.md");
   const canonical = new Set(canonicalAgentFiles);
 
@@ -123,7 +104,7 @@ function validateAgentLocations(repoRoot, findings) {
   }
 }
 
-function validateMigrationTrees(repoRoot, findings, directories) {
+function validateMigrationTrees(findings, directories) {
   const migrationTrees = directories
     .filter((directory) => directory.endsWith("/supabase/migrations") || directory === "supabase/migrations")
     .sort();
@@ -138,9 +119,9 @@ function validateMigrationTrees(repoRoot, findings, directories) {
   }
 }
 
-function validateMarkers(repoRoot, findings) {
+function validateMarkers(view, findings) {
   for (const [relativePath, markers] of requiredMarkers) {
-    const content = readIfPresent(repoRoot, relativePath);
+    const content = readIfPresent(view, relativePath);
     if (!content) {
       continue;
     }
@@ -154,7 +135,7 @@ function validateMarkers(repoRoot, findings) {
     }
   }
 
-  const rootContent = readIfPresent(repoRoot, "AGENTS.md");
+  const rootContent = readIfPresent(view, "AGENTS.md");
   if (rootContent) {
     for (const heading of rootForbiddenHeadings) {
       if (rootContent.includes(heading)) {
@@ -165,14 +146,14 @@ function validateMarkers(repoRoot, findings) {
     }
   }
 
-  const supabaseContent = readIfPresent(repoRoot, "apps/web/supabase/AGENTS.md");
+  const supabaseContent = readIfPresent(view, "apps/web/supabase/AGENTS.md");
   if (supabaseContent && /(?<!apps\/web\/)supabase\/migrations\//.test(supabaseContent)) {
     findings.push(
       "apps/web/supabase/AGENTS.md: references a non-canonical root-level Supabase migration path.",
     );
   }
 
-  const mobileContent = readIfPresent(repoRoot, "apps/mobile/AGENTS.md");
+  const mobileContent = readIfPresent(view, "apps/mobile/AGENTS.md");
   if (mobileContent) {
     for (const [index, line] of mobileContent.split(/\r?\n/).entries()) {
       if (/(Supabase Auth|identité anonyme)/i.test(line) && !/(ne pas|aucune|jamais|réintroduire|historique)/i.test(line)) {
@@ -184,18 +165,22 @@ function validateMarkers(repoRoot, findings) {
   }
 }
 
-export function validateAgentGovernance(repoRoot = process.cwd()) {
+export function validateAgentGovernance(repoRoot = process.cwd(), { view = null } = {}) {
   const findings = [];
-  validateCanonicalFiles(repoRoot, findings);
-  validateAgentLocations(repoRoot, findings);
-  const { directories } = walk(repoRoot);
-  validateMigrationTrees(repoRoot, findings, directories);
-  validateMarkers(repoRoot, findings);
+  const repositoryView = view ?? createRepositoryView({ root: repoRoot });
+  validateCanonicalFiles(repositoryView, findings);
+  validateAgentLocations(repositoryView, findings);
+  const { directories } = walk(repositoryView);
+  validateMigrationTrees(findings, directories);
+  validateMarkers(repositoryView, findings);
   return [...new Set(findings)].sort();
 }
 
 function main() {
-  const findings = validateAgentGovernance(process.cwd());
+  const ref = parseRepositoryRef();
+  const findings = validateAgentGovernance(process.cwd(), {
+    view: createRepositoryView({ root: process.cwd(), ref }),
+  });
   if (findings.length > 0) {
     console.error("AGENTS governance check failed.");
     console.error("Expected canonical hierarchy: root → application → specialized boundary.");
@@ -206,7 +191,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`AGENTS governance check passed (${canonicalAgentFiles.length} canonical files; no concurrent boundaries or second migration tree).`);
+  console.log(`AGENTS governance check passed (${canonicalAgentFiles.length} canonical files${ref ? ` for ref ${ref}` : ""}; no concurrent boundaries or second migration tree).`);
 }
 
 const invokedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";

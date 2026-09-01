@@ -25,21 +25,29 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.doesNotMatch(guard, /pre_push_guard\.ps1|npm run build|vercel build|-IncludeBuild/);
 });
 
-test("pre-push keeps scoped gates and a separate full validation path", async () => {
+test("pre-push derives gates from the Git protocol candidate and keeps manual fallback separate", async () => {
   const packageJson = JSON.parse(await readRepoFile("package.json"));
   const guard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
   assert.match(packageJson.scripts["prepush:guard"], /pre_push_guard\.ps1/);
   for (const requiredStep of [
-    "git diff --name-only --diff-filter=ACMRTUXB",
-    "$($upstream[0])...HEAD",
-    "git diff --check \"$($upstreamCommit[0])...HEAD\" --",
-    "npm run security:secrets -- --ref=HEAD",
+    "Get-PrePushRecords",
+    "mode = push-protocol",
+    "PUSH_CANDIDATE",
+    "git diff",
+    "--candidate-ref=",
+    "--candidate-range=",
     "scripts/checks/validation-policy.mjs",
-    "npm run checks:full",
-    "npm run audit:supabase-migration-trees",
+    "scripts/checks/check-root-file-hygiene.mjs",
+    "scripts/checks/check-documentation-governance.mjs",
+    "scripts/checks/check-agent-governance.mjs",
+    "scripts/checks/check-agent-skill-mirrors.mjs",
+    "scripts/checks/check-stack-doc-drift.mjs",
+    "scripts/checks/check-github-actions-security.mjs",
+    "scripts/checks/check-9c-public-facades.mjs",
+    "scripts/checks/check-doc-visuals.mjs",
+    "scripts/audits/audit-supabase-migration-trees.mjs",
     "npm run test:scripts",
-    "npm run check:doc-visuals",
     "npm run lint",
     "npm run typecheck",
     "npm run build",
@@ -47,10 +55,18 @@ test("pre-push keeps scoped gates and a separate full validation path", async ()
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.match(guard, /RemoteName/);
+  assert.match(guard, /RemoteUrl/);
+  assert.match(guard, /\[Console\]::In\.ReadToEnd/);
+  assert.match(guard, /mode = manual-fallback/);
+  assert.match(guard, /\.\.\.HEAD/);
   assert.doesNotMatch(guard, /git diff --name-only --diff-filter=ACMRTUXB HEAD --/);
   assert.doesNotMatch(guard, /git diff --cached --name-only/);
   assert.doesNotMatch(guard, /git ls-files --others/);
-  assert.doesNotMatch(guard, /npm run security:secrets\s*\}/);
+  assert.match(guard, /staticCandidateRefs/);
+  assert.match(guard, /refArgument = "--ref=\$candidateRef"/);
+  assert.match(guard, /CandidateRefs @\("HEAD"\)/);
+  assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
   assert.match(guard, /Write-SkippedGuardStep/);
 });
@@ -60,11 +76,12 @@ test("pre-push leaves the complete release validation available separately", asy
   const guard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
   assert.match(packageJson.scripts["checks:full"], /run_checks2\.ps1 -Scope full/);
-  assert.match(guard, /No changed files detected; running the separate full validation/);
+  assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
+  assert.doesNotMatch(guard, /Invoke-GuardStep "full validation"/);
   for (const requiredStep of [
-    "npm run check:root-files",
-    "npm run check:gitnexus-hygiene",
-    "npm run check:9c-public-facades",
+    "node scripts/checks/check-root-file-hygiene.mjs $refArgument",
+    "node scripts/checks/check-gitnexus-hygiene.mjs $refArgument",
+    "node scripts/checks/check-9c-public-facades.mjs $refArgument",
   ]) {
     assert.match(guard, new RegExp(requiredStep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -75,7 +92,8 @@ test("tracked hooks dispatch to their distinct package guards", async () => {
   const prePushHook = await readRepoFile(".githooks/pre-push");
 
   assert.match(preCommitHook, /npm run precommit:guard/);
-  assert.match(prePushHook, /npm run prepush:guard/);
+  assert.match(prePushHook, /npm run prepush:guard -- \"\$@\"/);
+  assert.match(prePushHook, /\$@/);
   assert.notEqual(preCommitHook, prePushHook);
 });
 
@@ -89,10 +107,10 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /git log --oneline origin\/main\.\.\.HEAD|git log --oneline origin\/main\.\.HEAD/);
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
-  assert.match(rootAgents, /COMMITTED RANGE/);
+  assert.match(rootAgents, /PUSH_CANDIDATE/);
   assert.match(rootAgents, /sandbox de publication éphémère/);
   assert.match(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
   assert.match(chatgpt, /ne doit pas recommander d'attendre un chantier parallèle indépendant/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
-  assert.match(scriptsAgents, /pré-push doit utiliser exclusivement la portée `COMMITTED/);
+  assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
 });

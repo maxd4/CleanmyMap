@@ -1,2 +1,2 @@
 #!/bin/sh
-exec npm run prepush:guard
+exec npm run prepush:guard -- "$@"
