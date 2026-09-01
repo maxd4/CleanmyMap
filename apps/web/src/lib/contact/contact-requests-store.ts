@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 import {
-  deleteSupabaseMirror,
-  upsertSupabaseMirror,
-} from "@/lib/supabase/mirror";
+  assertPersistenceAvailable,
+  canUseSupabaseServerPersistence,
+} from "@/lib/persistence/runtime-store";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ContactRequestType = "access" | "rectification" | "erasure" | "portability" | "other";
 export type ContactRequestStatus = "queued" | "sent" | "failed";
@@ -38,6 +38,8 @@ type StorePayload = {
 };
 
 const STORE_FILE = join(process.cwd(), "data", "local-db", "contact_requests.json");
+const SUPABASE_CONTACT_REQUEST_COLUMNS =
+  "id, created_at, submitted_by_user_id, submitted_by_email, request_type, subject, message, page_path, source, status, notification_error";
 
 function emptyStore(): StorePayload {
   return { updatedAt: new Date().toISOString(), records: [] };
@@ -106,6 +108,21 @@ function normalizeContactRequest(record: Record<string, unknown>): ContactReques
     status,
     notificationError,
   };
+}
+
+function fromSupabaseRow(row: Record<string, unknown>): ContactRequestRecord | null {
+  return normalizeContactRequest({
+    id: row.id,
+    createdAt: row.created_at,
+    submittedByUserId: row.submitted_by_user_id,
+    submittedByEmail: row.submitted_by_email,
+    requestType: row.request_type,
+    subject: row.subject,
+    message: row.message,
+    pagePath: row.page_path,
+    status: row.status,
+    notificationError: row.notification_error,
+  });
 }
 
 async function ensureDirectory(filePath: string): Promise<void> {
@@ -182,13 +199,25 @@ export async function appendContactRequest(params: {
     notificationError: null,
   };
 
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("contact_requests")
+      .insert(toSupabaseRow(record))
+      .select(SUPABASE_CONTACT_REQUEST_COLUMNS)
+      .single();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
+    if (!persisted) {
+      throw new Error("Supabase returned an invalid contact request.");
+    }
+    return persisted;
+  }
+
   const store = await readStore();
   const records = [record, ...store.records].slice(0, 2000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("contact_requests", toSupabaseRow(record)).catch((error) => {
-    console.warn("Contact request Supabase sync failed", error);
-  });
-
   return record;
 }
 
@@ -198,6 +227,25 @@ export async function updateContactRequestStatus(params: {
   notificationError?: string | null;
 }): Promise<ContactRequestRecord | null> {
   assertPersistenceAvailable("contact_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("contact_requests")
+      .update({
+        status: params.status,
+        notification_error: params.notificationError ?? null,
+      })
+      .eq("id", params.requestId)
+      .select(SUPABASE_CONTACT_REQUEST_COLUMNS)
+      .maybeSingle();
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return result.data
+      ? fromSupabaseRow(result.data as Record<string, unknown>)
+      : null;
+  }
+
   const store = await readStore();
   const index = store.records.findIndex((record) => record.id === params.requestId);
   if (index < 0) {
@@ -218,14 +266,24 @@ export async function updateContactRequestStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  await upsertSupabaseMirror("contact_requests", toSupabaseRow(updated)).catch((error) => {
-    console.warn("Contact request Supabase sync failed", error);
-  });
   return updated;
 }
 
 export async function deleteContactRequest(requestId: string): Promise<boolean> {
   assertPersistenceAvailable("contact_requests");
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("contact_requests")
+      .delete()
+      .eq("id", requestId)
+      .select("id");
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? []).length > 0;
+  }
+
   const store = await readStore();
   const nextRecords = store.records.filter((record) => record.id !== requestId);
   if (nextRecords.length === store.records.length) {
@@ -233,8 +291,5 @@ export async function deleteContactRequest(requestId: string): Promise<boolean> 
   }
 
   await writeStore({ updatedAt: new Date().toISOString(), records: nextRecords });
-  await deleteSupabaseMirror("contact_requests", requestId).catch((error) => {
-    console.warn("Contact request Supabase delete sync failed", error);
-  });
   return true;
 }

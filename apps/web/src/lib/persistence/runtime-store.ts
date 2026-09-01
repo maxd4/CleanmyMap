@@ -24,11 +24,22 @@ export function canUseSupabaseServerPersistence(): boolean {
   );
 }
 
+export function isVercelRuntime(): boolean {
+  return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV?.trim());
+}
+
 export function allowLocalFileStoreFallback(): boolean {
-  return env.ALLOW_LOCAL_FILE_STORE_FALLBACK === true;
+  return (
+    !isVercelRuntime() &&
+    process.env.NODE_ENV !== "production" &&
+    env.ALLOW_LOCAL_FILE_STORE_FALLBACK === true
+  );
 }
 
 export function allowLocalActionStoreInCurrentRuntime(): boolean {
+  if (isVercelRuntime()) {
+    return false;
+  }
   if (process.env.NODE_ENV !== "production") {
     return true;
   }
@@ -38,6 +49,11 @@ export function allowLocalActionStoreInCurrentRuntime(): boolean {
 export function assertPersistenceAvailable(storeName: string): void {
   if (canUseSupabaseServerPersistence()) {
     return;
+  }
+  if (isVercelRuntime()) {
+    throw new Error(
+      `Persistence unavailable for ${storeName} on Vercel: Supabase server persistence is required; local file fallback is forbidden.`,
+    );
   }
   if (allowLocalFileStoreFallback()) {
     console.warn(
