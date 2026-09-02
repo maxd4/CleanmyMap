@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { useEffectiveAuthState } from "@/lib/auth/use-effective-auth-state";
 import { useRouteData } from "./route/hooks/use-route-data";
 import { RouteSummaryCards } from "./route/components/route-summary-cards";
 import { RouteOptionsForm } from "./route/components/route-constraints-form";
@@ -25,7 +25,7 @@ const RouteMap = dynamic(
 
 export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useEffectiveAuthState();
   const {
     options,
     setOptions,
