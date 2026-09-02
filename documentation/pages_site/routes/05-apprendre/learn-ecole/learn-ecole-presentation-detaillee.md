@@ -49,6 +49,19 @@ Le format `quiz-30` lance la séance courte. Le format `atelier-60` enchaîne un
 pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz de
 15 minutes et un bilan collectif.
 
+La séquence centrale est composée par le domaine scolaire pour le niveau choisi.
+Elle part de la définition d’un éco-citoyen, passe par les habitudes utiles
+(déchets, consommation, alimentation, mobilité, eau, énergie et numérique),
+propose une activité scientifique ou de calcul, relie l’individu à la classe,
+au collège puis au territoire, et se termine par une action concrète. Les
+profils de niveau précisent le degré de difficulté et les compétences mobilisées
+sans revendiquer d’alignement officiel aux programmes scolaires.
+
+Les activités supportent les formats QCM raisonné, estimation, calcul, lecture
+de graphique, comparaison, critique de source et situation-problème. La
+composition est déterministe, équilibrée par les tracks internes et exclut les
+éléments `needsReview`.
+
 L’état de l’atelier et les réponses restent locaux et anonymes pendant la
 séance. Ils ne sont pas placés dans l’URL et ne sont pas persistés comme
 données personnelles.
@@ -119,6 +132,7 @@ apps/web/src/components/learn/quiz/session/use-quiz-session-controller.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts
 documentation/pages_site/INDEX.md
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 ```

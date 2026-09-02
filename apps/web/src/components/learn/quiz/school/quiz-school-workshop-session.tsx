@@ -7,7 +7,11 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizLocalizedTextFallback, getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
-import { getQuizSchoolTrackLabel, QUIZ_SCHOOL_TRACKS } from "./quiz-school-modes";
+import {
+  composeQuizSchoolWorkshopActivities,
+  QUIZ_SCHOOL_ACTIVITY_THEME_LABELS,
+  QUIZ_SCHOOL_ACTIVITY_TYPE_LABELS,
+} from "@/lib/learning/quiz/school/quiz-school-workshop-activities";
 import type { QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import {
   createQuizSchoolWorkshopState,
@@ -27,12 +31,6 @@ type Props = {
   onRestart: () => void;
   onChooseFormat: () => void;
 };
-
-const WORKSHOP_STEPS = [
-  { fr: "Observer", en: "Observe", detail: { fr: "Afficher une situation et laisser la classe formuler ses premières idées.", en: "Show a situation and let the class form its first ideas." } },
-  { fr: "Argumenter", en: "Argue", detail: { fr: "Faire voter, demander une justification et comparer les raisonnements.", en: "Vote, ask for a reason and compare the reasoning." } },
-  { fr: "Relier", en: "Connect", detail: { fr: "Relier les réponses aux quatre tracks internes, puis faire émerger une règle utile.", en: "Connect answers to the four internal tracks, then surface a useful rule." } },
-] as const;
 
 function getChoices(question: QuizQuestion): string[] {
   if (question.options?.length) return question.options;
@@ -58,6 +56,7 @@ function phaseLabel(locale: SupportedLocale, phase: QuizSchoolWorkshopPhase) {
 
 export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart, onChooseFormat }: Props) {
   const deck = useMemo(() => questions.slice(0, 5), [questions]);
+  const activities = useMemo(() => composeQuizSchoolWorkshopActivities(level), [level]);
   const [state, setState] = useState(createQuizSchoolWorkshopState);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -79,8 +78,9 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
     setRevealed((current) => ({ ...current, [`${state.phase}:${question.id}`]: true }));
   };
 
-  const moveNext = () => setState((current) => nextQuizSchoolWorkshopPhase(current, deck.length));
-  const movePrevious = () => setState((current) => previousQuizSchoolWorkshopPhase(current, deck.length));
+  const moveNext = () => setState((current) => nextQuizSchoolWorkshopPhase(current, deck.length, activities.length));
+  const movePrevious = () => setState((current) => previousQuizSchoolWorkshopPhase(current, deck.length, activities.length));
+  const activity = state.phase === "atelier" ? activities[state.activityIndex] : undefined;
   const restart = () => {
     setState(createQuizSchoolWorkshopState());
     setSelectedAnswers({});
@@ -122,10 +122,41 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
       {state.phase === "atelier" ? (
         <CmmCard tone="amber" variant="elevated" className="p-5 md:p-8" as="section">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{getQuizUiCopy(locale, "session.school.workshop.activity")}</p>
-          <h2 className="mt-2 text-3xl font-black text-slate-950">{locale === "fr" ? "Une séquence pédagogique de 30 minutes" : "A 30-minute teaching sequence"}</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">{WORKSHOP_STEPS.map((step, index) => <article key={step.en} className="rounded-2xl border border-amber-100 bg-amber-50 p-4"><span className="text-xs font-black text-amber-700">0{index + 1}</span><h3 className="mt-2 text-lg font-black text-slate-950">{step[locale]}</h3><p className="mt-2 text-sm leading-relaxed text-slate-700">{step.detail[locale]}</p></article>)}</div>
-          <p className="mt-6 text-sm leading-relaxed text-slate-700">{QUIZ_SCHOOL_TRACKS.map((track) => getQuizSchoolTrackLabel(track.id, locale)).join(" · ")}</p>
-          <button type="button" onClick={moveNext} className={`${FOCUS_RING} mt-6 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>{getQuizUiCopy(locale, "session.school.workshop.startPost")}<ArrowRight size={17} aria-hidden="true" /></button>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="text-3xl font-black text-slate-950">{activity?.title[locale] ?? (locale === "fr" ? "Séquence pédagogique" : "Teaching sequence")}</h2>
+            <span className="text-sm font-black text-amber-800">{state.activityIndex + 1} / {activities.length} · {activity?.durationMinutes ?? 0} min</span>
+          </div>
+          {activity ? (
+            <>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-black uppercase tracking-[0.12em] text-amber-800">
+                <span className="rounded-full bg-amber-100 px-3 py-1">{QUIZ_SCHOOL_ACTIVITY_TYPE_LABELS[activity.type][locale]}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1">{QUIZ_SCHOOL_ACTIVITY_THEME_LABELS[activity.theme][locale]}</span>
+                <span className="rounded-full bg-emerald-100 px-3 py-1">{activity.difficulty}</span>
+              </div>
+              <p className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-base font-bold leading-relaxed text-slate-900">{activity.instruction[locale]}</p>
+              <p className="mt-4 text-sm font-medium leading-relaxed text-slate-700"><span className="font-black text-slate-950">{locale === "fr" ? "Adaptation" : "Adaptation"} :</span> {activity.adaptation[locale]}</p>
+              {activity.dataPoints ? (
+                <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                  <table className="w-full min-w-[18rem] text-left text-sm">
+                    <caption className="sr-only">{locale === "fr" ? "Données d’exemple de l’activité" : "Example data for the activity"}</caption>
+                    <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-600"><tr><th scope="col" className="px-4 py-3">{locale === "fr" ? "Repère" : "Label"}</th><th scope="col" className="px-4 py-3">{locale === "fr" ? "Valeur" : "Value"}</th></tr></thead>
+                    <tbody>{activity.dataPoints.map((point) => <tr key={point.label.en} className="border-t border-slate-100"><th scope="row" className="px-4 py-3 font-bold text-slate-800">{point.label[locale]}</th><td className="px-4 py-3 text-slate-700">{point.value}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              ) : null}
+              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-relaxed text-emerald-950"><span className="font-black">{locale === "fr" ? "Réponse / explication" : "Answer / explanation"} :</span> {activity.responseExplanation[locale]}</div>
+              <p className="mt-4 text-sm font-medium text-slate-600">{locale === "fr" ? "Compétences mobilisées" : "Skills used"} : {activity.competencies.join(" · ")}</p>
+              <details className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+                <summary className={`${FOCUS_RING} cursor-pointer font-bold text-slate-900`}>{locale === "fr" ? "Source et validation" : "Source and validation"}</summary>
+                <p className="mt-3">{activity.source.label[locale]} · <a className="font-bold text-amber-800 underline" href={activity.source.href}>{activity.source.href}</a></p>
+                <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{activity.validationStatus}</p>
+              </details>
+            </>
+          ) : null}
+          <button type="button" onClick={moveNext} className={`${FOCUS_RING} mt-6 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>
+            {activity && state.activityIndex < activities.length - 1 ? (locale === "fr" ? "Activité suivante" : "Next activity") : getQuizUiCopy(locale, "session.school.workshop.startPost")}
+            <ArrowRight size={17} aria-hidden="true" />
+          </button>
         </CmmCard>
       ) : null}
 
@@ -134,7 +165,7 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
           <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{getQuizUiCopy(locale, "session.school.workshop.summary")}</p>
           <h2 className="mt-2 text-3xl font-black text-slate-950">{locale === "fr" ? "Ce que la classe a fait progresser" : "What the group improved"}</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black uppercase text-slate-500">{getQuizUiCopy(locale, "session.school.workshop.preQuiz")}</p><p className="mt-2 text-3xl font-black text-slate-950">{progress.preCorrect}/{progress.total}</p></div><div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-700">{getQuizUiCopy(locale, "session.school.workshop.postQuiz")}</p><p className="mt-2 text-3xl font-black text-emerald-950">{progress.postCorrect}/{progress.total}</p></div><div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-black uppercase text-amber-700">{locale === "fr" ? "Progression collective" : "Collective progress"}</p><p className="mt-2 text-3xl font-black text-amber-950">{progress.postCorrect - progress.preCorrect > 0 ? "+" : ""}{progress.postCorrect - progress.preCorrect}</p></div></div>
-          <ul className="mt-6 space-y-3 text-sm font-medium text-slate-700">{WORKSHOP_STEPS.map((step) => <li key={step.en} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{step.detail[locale]}</span></li>)}</ul>
+          <ul className="mt-6 space-y-3 text-sm font-medium text-slate-700">{activities.map((item) => <li key={item.id} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{item.title[locale]} · {item.durationMinutes} min</span></li>)}</ul>
           <div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={restart} className={`${FOCUS_RING} inline-flex min-h-12 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>{getQuizUiCopy(locale, "session.school.workshop.restart")}</button><button type="button" onClick={onChooseFormat} className={`${FOCUS_RING} inline-flex min-h-12 rounded-2xl border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 hover:bg-amber-50`}>{getQuizUiCopy(locale, "session.school.workshop.chooseFormat")}</button></div>
         </CmmCard>
       ) : null}

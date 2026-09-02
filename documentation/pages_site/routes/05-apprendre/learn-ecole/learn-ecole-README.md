@@ -24,6 +24,10 @@ Elle permet de :
 
 - choisir un niveau de 6e, 5e, 4e ou 3e avant de lancer le mode École ;
 - choisir un format : `quiz-30` pour le quiz collectif court ou `atelier-60` pour `pré-quiz 15 min → atelier 30 min → post-quiz 15 min` ;
+- dérouler automatiquement, dans les 30 minutes d’atelier, une progression
+  d’éco-citoyenneté : définition, habitudes utiles, activité scientifique ou
+  calcul, changement d’échelle jusqu’au territoire, puis action concrète à
+  retenir ;
 - lancer une séance publique de 15 questions réparties automatiquement entre les catégories internes ;
 - sélectionner une banque unique où chaque question déclare ses niveaux éligibles, sa difficulté et les compétences mobilisées ;
 - préparer une séance collective ;
@@ -90,6 +94,7 @@ apps/web/src/components/learn/quiz/school/quiz-school-modes.tsx
 apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-eligibility.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts
 apps/web/src/lib/learning/quiz/quiz-session-summary.ts
 apps/web/src/lib/learning/quiz/school/README.md
 ```
@@ -102,6 +107,13 @@ apps/web/src/lib/learning/quiz/school/README.md
 - Les questions `needsReview` sont exclues des séances publiques, même si elles restent visibles dans les outils de revue de la banque.
 - Une source externe doit être réelle et traçable.
 - La progression 6e → 3e est une catégorisation pédagogique interne du quiz, pas un alignement officiel aux programmes scolaires.
+- Les profils 6e/5e/4e/3e de la séquence `atelier-60` sont une adaptation
+  pédagogique interne : ils ne constituent pas un alignement officiel aux
+  programmes scolaires.
+- Les activités publiques sont typées (`QCM raisonné`, estimation, calcul,
+  lecture de graphique, comparaison, critique de source, situation-problème),
+  durées et compétences comprises. Leur composition vise 30 minutes et
+  exclut tout contenu marqué `needsReview`.
 - La page ne doit pas recueillir de donnée personnelle d'élève si elle continue d'annoncer « sans compte élève ».
 - Les catégories `debat-classe`, `mission-terrain`, `ordres-de-grandeur` et
   `gestes-du-quotidien` servent à équilibrer la séance en interne ; elles ne
