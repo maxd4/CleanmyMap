@@ -314,7 +314,8 @@ function main() {
   const diagnostics = parseLintOutput(fullOutput);
   const analyses = analyzeWarnings(diagnostics);
   const report = generateMarkdownReport(analyses);
-  const reportPath = path.join(__dirname, '../../documentation/development/LINT_AUDIT_REPORT.md');
+  const reportPath = path.join(__dirname, '../../artifacts/lint/LINT_AUDIT_REPORT.md');
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report, 'utf8');
 
   console.log(`📄 Rapport généré : ${reportPath}`);
