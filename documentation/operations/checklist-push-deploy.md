@@ -66,6 +66,10 @@ force-push le commit historique concerné.
 - Définir l'allowlist exacte du lot et ne jamais utiliser `git add -A`.
 - Stager uniquement cette allowlist, puis vérifier immédiatement
   `git diff --cached --name-status` et `git diff --cached --check`.
+- Pour un index ou une sandbox isolée, utiliser `git commit -S` (ou
+  `git commit-tree -S`) : `commit.gpgsign=true` ne signe pas automatiquement
+  un `git commit-tree`. Vérifier ensuite `git show --show-signature --no-patch`
+  avant le push.
 - Les changements parallèles dirty ou déjà stagés hors lot restent préservés et
   ne sont pas absorbés dans le commit.
 - Après `git fetch origin main`, vérifier l'ascendance et les commits locaux
