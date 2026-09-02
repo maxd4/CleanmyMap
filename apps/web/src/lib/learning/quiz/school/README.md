@@ -18,8 +18,11 @@ la capacité scolaire.
 - `atelier-60` compose automatiquement une séquence pédagogique d’environ
   30 minutes entre le pré-quiz et le post-quiz, à partir d’activités typées ;
 - `atelier-60` évalue huit concepts avant et après, avec deux situations de
-  transfert au post-quiz. Les taux, la progression, les notions et les trois
-  actions de collège sont calculés localement pour le collectif ;
+  transfert au post-quiz. Le taux avant, le taux après et la progression sont
+  calculés uniquement sur les huit concepts appariés ; le score de transfert
+  reste séparé. Les notions retenues proviennent uniquement des concepts
+  effectivement corrects au post-quiz et ne sont jamais complétées
+  artificiellement ;
 - les activités déclarent leurs niveaux autorisés, leur difficulté, leurs
   compétences, leur source et leur statut de validation ; les activités
   `needsReview` ne sont jamais composées pour le public ;
