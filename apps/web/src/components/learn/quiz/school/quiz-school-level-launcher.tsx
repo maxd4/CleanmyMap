@@ -21,6 +21,39 @@ export function getQuizSchoolLaunchHref(level: QuizSchoolLevel, format: QuizScho
   return `/learn/sentrainer?mode=ecole&level=${level}&format=${format}`;
 }
 
+export function getQuizSchoolLaunchFormatFacts(format: QuizSchoolFormat, locale: SupportedLocale) {
+  const facts = {
+    "quiz-30": {
+      duration: { fr: "Séance de 30 min", en: "30-minute session" },
+      materials: {
+        fr: "Matériel minimal : vidéoprojecteur, tableau et vote à main levée.",
+        en: "Minimal equipment: projector, board and a show-of-hands vote.",
+      },
+      flow: {
+        fr: "Fonctionnement : question → vote collectif → révélation → explication courte → question suivante.",
+        en: "Flow: question → collective vote → reveal → short explanation → next question.",
+      },
+    },
+    "atelier-60": {
+      duration: { fr: "Séance de 60 min", en: "60-minute session" },
+      materials: {
+        fr: "Matériel minimal : vidéoprojecteur, tableau et quelques feuilles de vote.",
+        en: "Minimal equipment: projector, board and a few voting sheets.",
+      },
+      flow: {
+        fr: "Fonctionnement : pré-quiz 15 min → atelier 30 min → post-quiz 15 min.",
+        en: "Flow: 15-minute pre-quiz → 30-minute workshop → 15-minute post-quiz.",
+      },
+    },
+  } as const;
+
+  return {
+    duration: facts[format].duration[locale],
+    materials: facts[format].materials[locale],
+    flow: facts[format].flow[locale],
+  };
+}
+
 export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale }) {
   const [selectedLevel, setSelectedLevel] = useState<QuizSchoolLevel | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<QuizSchoolFormat>("quiz-30");
@@ -69,6 +102,12 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h4 className="text-xl font-black text-slate-950">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h4>
             <button type="button" onClick={() => setSelectedLevel(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">{getQuizUiCopy(locale, "school.format.back")}</button>
+          </div>
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4" aria-live="polite">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.sessionCuesLabel")}</p>
+            <p className="mt-1 text-lg font-black text-slate-950">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).duration}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).materials}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-700">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).flow}</p>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {QUIZ_SCHOOL_FORMAT_ORDER.map((format) => (

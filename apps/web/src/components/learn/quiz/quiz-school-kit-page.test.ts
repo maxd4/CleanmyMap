@@ -5,11 +5,17 @@ import { describe, expect, it } from "vitest";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import { QuizSchoolKitPage } from "./quiz-school-kit-page";
-import { getQuizSchoolLaunchHref } from "./school/quiz-school-level-launcher";
+import { getQuizSchoolLaunchFormatFacts, getQuizSchoolLaunchHref } from "./school/quiz-school-level-launcher";
 
 describe("QuizSchoolKitPage", () => {
   it("builds shareable level and format URLs without answers", () => {
     expect(getQuizUiCopy("fr", "school.format.cta")).toBe("Lancer la séance");
+    expect(getQuizSchoolLaunchFormatFacts("quiz-30", "fr")).toEqual({
+      duration: "Séance de 30 min",
+      materials: "Matériel minimal : vidéoprojecteur, tableau et vote à main levée.",
+      flow: "Fonctionnement : question → vote collectif → révélation → explication courte → question suivante.",
+    });
+    expect(getQuizSchoolLaunchFormatFacts("atelier-60", "fr").duration).toBe("Séance de 60 min");
     expect(
       ["6e", "5e", "4e", "3e"].map((level) => getQuizSchoolLaunchHref(level as "6e" | "5e" | "4e" | "3e", "quiz-30")),
     ).toEqual([

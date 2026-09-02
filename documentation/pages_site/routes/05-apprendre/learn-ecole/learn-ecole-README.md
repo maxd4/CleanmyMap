@@ -24,6 +24,8 @@ Elle permet de :
 
 - choisir un niveau de 6e, 5e, 4e ou 3e avant de lancer le mode École ;
 - choisir un format : `quiz-30` pour le quiz collectif court ou `atelier-60` pour `pré-quiz 15 min → atelier 30 min → post-quiz 15 min` ;
+- voir, après le choix du niveau, les repères de durée, de matériel minimal et
+  de fonctionnement collectif avant de lancer la séance ;
 - dérouler automatiquement, dans les 30 minutes d’atelier, une progression
   d’éco-citoyenneté : définition, habitudes utiles, activité scientifique ou
   calcul, changement d’échelle jusqu’au territoire, puis action concrète à

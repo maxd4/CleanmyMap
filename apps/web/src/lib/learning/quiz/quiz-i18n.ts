@@ -143,6 +143,7 @@ export type QuizUiCopyKey =
   | "school.levelChip"
   | "school.durationLabel"
   | "school.questionsLabel"
+  | "school.sessionCuesLabel"
   | "school.formatPrompt"
   | "school.format.quiz-30.label"
   | "school.format.quiz-30.description"
@@ -309,6 +310,7 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.levelChip": { fr: "Niveau", en: "Level" },
   "school.durationLabel": { fr: "30 ou 60 min", en: "30 or 60 min" },
   "school.questionsLabel": { fr: "Questions adaptées", en: "Adapted questions" },
+  "school.sessionCuesLabel": { fr: "Repères avant de lancer", en: "Cues before launching" },
   "school.formatPrompt": { fr: "Choisissez le format", en: "Choose the format" },
   "school.format.quiz-30.label": { fr: "Quiz 30 min", en: "30-minute quiz" },
   "school.format.quiz-30.description": {
