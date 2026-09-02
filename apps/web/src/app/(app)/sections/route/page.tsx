@@ -6,8 +6,11 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
+import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
 
-export default function RoutePage() {
+export default async function RoutePage() {
+  const localDevAuth = await getLocalDevAuthState();
   const classes = getBlockClasses("act");
 
   return (
@@ -89,7 +92,9 @@ export default function RoutePage() {
         <WeatherWarningBar />
 
         <div className={cn("rounded-[3rem] p-1 border overflow-hidden", classes.surface, classes.shadow)}>
-          <RouteSection />
+          <EffectiveAuthStateProvider localDevAuth={localDevAuth}>
+            <RouteSection />
+          </EffectiveAuthStateProvider>
         </div>
       </CmmSectionGroup>
       </CmmPageLayout>
