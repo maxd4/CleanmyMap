@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
-const fetchUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
+const loadRouteRecommendationSourceMock = vi.hoisted(() => vi.fn());
 const buildTrashSpotterActionableCandidatesMock = vi.hoisted(() => vi.fn());
 const getCurrentUserLocationPreferenceMock = vi.hoisted(() => vi.fn());
 const trackRouteRecommendationUseMock = vi.hoisted(() => vi.fn());
@@ -25,8 +25,8 @@ vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
   createServerRateLimitResponse: createServerRateLimitResponseMock,
 }));
-vi.mock("@/lib/actions/unified-source", () => ({
-  fetchUnifiedActionContracts: fetchUnifiedActionContractsMock,
+vi.mock("@/lib/route/route-recommendation-loader", () => ({
+  loadRouteRecommendationSource: loadRouteRecommendationSourceMock,
 }));
 vi.mock("@/lib/actions/trash-spotter-actionable-candidates", () => ({
   buildTrashSpotterActionableCandidates: buildTrashSpotterActionableCandidatesMock,
@@ -127,7 +127,7 @@ describe("POST /api/route/recommend", () => {
       pressureByArrondissement: new Map(),
       eventSignals: [],
     });
-    fetchUnifiedActionContractsMock.mockResolvedValue({
+    loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
       isTruncated: false,
       sourceHealth: availableSourceHealth,
@@ -175,7 +175,11 @@ describe("POST /api/route/recommend", () => {
       expect.any(Request),
       { limit: 6, window: 60 },
     );
-    expect(fetchUnifiedActionContractsMock).toHaveBeenCalledTimes(1);
+    expect(loadRouteRecommendationSourceMock).toHaveBeenCalledWith(
+      {},
+      { limit: 600, floorDate: "2026-01-01" },
+    );
+    expect(loadRouteRecommendationSourceMock).toHaveBeenCalledTimes(1);
   });
 
   it("continues the main calculation when event pressure fails", async () => {
@@ -235,7 +239,7 @@ describe("POST /api/route/recommend", () => {
     const emptyResponse = await POST(request());
     expect((await emptyResponse.json()).dataStatus).toBe("empty");
 
-    fetchUnifiedActionContractsMock.mockResolvedValueOnce({
+    loadRouteRecommendationSourceMock.mockResolvedValueOnce({
       items: ["spot"],
       isTruncated: true,
       sourceHealth: availableSourceHealth,
@@ -246,7 +250,7 @@ describe("POST /api/route/recommend", () => {
     expect(partialPayload.dataStatus).toBe("partial");
     expect(partialPayload.isTruncated).toBe(true);
 
-    fetchUnifiedActionContractsMock.mockResolvedValueOnce({
+    loadRouteRecommendationSourceMock.mockResolvedValueOnce({
       items: [],
       isTruncated: false,
       sourceHealth: {
