@@ -46,6 +46,12 @@ fixture sur un domaine `.invalid`. Cette identité reste limitée aux dépôts t
 `run-static-candidate-check`. Conserver `commit.gpgsign`, `gpg.format`, la clé
 de signature et l'allowlist configurés ; ne pas désactiver Verified Commits.
 
+Un commit construit avec `git commit-tree` n'est pas signé par le seul réglage
+`commit.gpgsign=true`. Pour une publication depuis un index isolé, préférer
+`git commit -S` ou fournir explicitement `git commit-tree -S`, puis vérifier la
+signature du SHA avant le push. Ne jamais remplacer cette vérification par une
+fixture ou par une désactivation de la signature.
+
 Si Vercel répond `TEAM_ACCESS_REQUIRED` avec
 `Git author ... must have access to the team`, le problème est l'attribution
 du commit avant le build. Arrêter les retries, corriger uniquement l'identité
