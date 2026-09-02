@@ -4,7 +4,8 @@ Point d'entrée du registre documentaire route-first.
 
 - `INDEX.md` — inventaire maître ;
 - `charte-pages-hors-blocs.md` — familles autonomes ;
-- `PAGE_FAMILIES_NON_REGRESSION.md` — invariants des familles ;
+- `PAGE_FAMILIES.md` — contrat courant des familles de pages ;
+- `PAGE_FAMILIES_PLAN.md` — décisions et travail résiduel uniquement ;
 - `routes/` — arborescence canonique.
 
 ## Périmètre
@@ -47,7 +48,8 @@ une route canonique
 → une documentation fonctionnelle unique
 ```
 
-Les alias et redirections restent inventoriés mais ne deviennent pas des pages autonomes artificielles.
+Les alias et redirections restent inventoriés mais ne deviennent pas des pages
+autonomes artificielles.
 
 ## Noyau documentaire d'une page canonique
 
@@ -97,6 +99,24 @@ But :
 - éviter de reproposer les mêmes idées ;
 - conserver la raison du rejet ;
 - rester court.
+
+## Familles de pages
+
+Le contrat de famille est séparé du contenu propre à chaque route.
+
+[`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md) documente :
+
+- les sources de vérité runtime ;
+- la taxonomie ;
+- les routes structurantes ;
+- les exceptions ;
+- les invariants de non-régression ;
+- les contrôles de dérive.
+
+[`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md) ne contient que les décisions
+encore ouvertes et doit être supprimé lorsque ce travail est terminé.
+
+Une fiche de page ne doit pas recopier la logique globale de résolution.
 
 ## Captures
 
@@ -164,11 +184,15 @@ gamification/
 ## Mémoire de non-régression
 
 - une route canonique garde un nom unique ;
-- runtime et générateurs partagent une source ;
-- les anciens fichiers de compatibilité supprimés ne sont pas recréés sans besoin ;
-- le registre des familles reste aligné avec le code ;
+- runtime et documentation partagent les sources prévues par le contrat ;
+- les anciens fichiers de compatibilité supprimés ne sont pas recréés sans
+  besoin ;
 - une exception nouvelle est déclarée, testée et documentée ;
-- une modification de famille traverse runtime, documentation et test de cohérence.
+- une modification de famille traverse runtime, documentation et test de
+  cohérence.
+
+Le détail canonique de ces invariants reste dans
+[`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md).
 
 ## Style
 
