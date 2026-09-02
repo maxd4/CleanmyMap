@@ -41,6 +41,19 @@ describe("school/quiz-school-workshop-state", () => {
     expect(getQuizSchoolWorkshopProgress(state)).toMatchObject({ preCorrect: 1, postCorrect: 0, total: 5 });
   });
 
+  it("keeps every pedagogical activity in the 30-minute phase before the post-quiz", () => {
+    let state = createQuizSchoolWorkshopState();
+    for (let index = 0; index < 5; index += 1) state = nextQuizSchoolWorkshopPhase(state, 5, 7);
+
+    expect(state).toMatchObject({ phase: "atelier", activityIndex: 0 });
+    for (let index = 1; index < 7; index += 1) {
+      state = nextQuizSchoolWorkshopPhase(state, 5, 7);
+      expect(state).toMatchObject({ phase: "atelier", activityIndex: index });
+    }
+
+    expect(nextQuizSchoolWorkshopPhase(state, 5, 7)).toMatchObject({ phase: "post-quiz", activityIndex: 0 });
+  });
+
   it("keeps the public workshop anonymous and memory-only", () => {
     const source = readFileSync(resolve(process.cwd(), "src/components/learn/quiz/school/quiz-school-workshop-session.tsx"), "utf8");
     expect(source).not.toContain("useAuth");

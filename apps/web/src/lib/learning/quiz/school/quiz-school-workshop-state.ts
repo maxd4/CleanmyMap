@@ -11,6 +11,7 @@ export type QuizSchoolWorkshopPhase = (typeof QUIZ_SCHOOL_WORKSHOP_PHASES)[numbe
 export type QuizSchoolWorkshopState = {
   phase: QuizSchoolWorkshopPhase;
   questionIndex: number;
+  activityIndex: number;
   preAnswers: Readonly<Record<string, boolean>>;
   postAnswers: Readonly<Record<string, boolean>>;
 };
@@ -23,7 +24,7 @@ export const QUIZ_SCHOOL_WORKSHOP_TIMING = Object.freeze({
 });
 
 export function createQuizSchoolWorkshopState(): QuizSchoolWorkshopState {
-  return { phase: "pre-quiz", questionIndex: 0, preAnswers: {}, postAnswers: {} };
+  return { phase: "pre-quiz", questionIndex: 0, activityIndex: 0, preAnswers: {}, postAnswers: {} };
 }
 
 export function recordQuizSchoolWorkshopAnswer(
@@ -43,13 +44,18 @@ export function recordQuizSchoolWorkshopAnswer(
 export function nextQuizSchoolWorkshopPhase(
   state: QuizSchoolWorkshopState,
   questionCount = QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE,
+  activityCount = 1,
 ): QuizSchoolWorkshopState {
   if (state.phase === "pre-quiz") {
     return state.questionIndex < questionCount - 1
       ? { ...state, questionIndex: state.questionIndex + 1 }
       : { ...state, phase: "atelier", questionIndex: 0 };
   }
-  if (state.phase === "atelier") return { ...state, phase: "post-quiz", questionIndex: 0 };
+  if (state.phase === "atelier") {
+    return state.activityIndex < Math.max(activityCount - 1, 0)
+      ? { ...state, activityIndex: state.activityIndex + 1 }
+      : { ...state, phase: "post-quiz", questionIndex: 0, activityIndex: 0 };
+  }
   if (state.phase === "post-quiz") {
     return state.questionIndex < questionCount - 1
       ? { ...state, questionIndex: state.questionIndex + 1 }
@@ -61,15 +67,20 @@ export function nextQuizSchoolWorkshopPhase(
 export function previousQuizSchoolWorkshopPhase(
   state: QuizSchoolWorkshopState,
   questionCount = QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE,
+  activityCount = 1,
 ): QuizSchoolWorkshopState {
   if (state.phase === "pre-quiz") {
     return state.questionIndex > 0 ? { ...state, questionIndex: state.questionIndex - 1 } : state;
   }
-  if (state.phase === "atelier") return { ...state, phase: "pre-quiz", questionIndex: Math.max(questionCount - 1, 0) };
+  if (state.phase === "atelier") {
+    return state.activityIndex > 0
+      ? { ...state, activityIndex: state.activityIndex - 1 }
+      : { ...state, phase: "pre-quiz", questionIndex: Math.max(questionCount - 1, 0) };
+  }
   if (state.phase === "post-quiz") {
     return state.questionIndex > 0
       ? { ...state, questionIndex: state.questionIndex - 1 }
-      : { ...state, phase: "atelier", questionIndex: 0 };
+      : { ...state, phase: "atelier", questionIndex: 0, activityIndex: Math.max(activityCount - 1, 0) };
   }
   return { ...state, phase: "post-quiz", questionIndex: Math.max(questionCount - 1, 0) };
 }
