@@ -21,7 +21,8 @@ class MemoryStorage {
 }
 
 const nonDefaultOptions: RouteOptions = {
-  priorityVsDistance: 42,
+  priorityVsTravel: 42,
+  travelBudgetMinutes: 90,
   maxStops: 9,
 };
 
@@ -51,26 +52,68 @@ describe("route draft storage contract", () => {
     expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
   });
 
-  it("ignores removed legacy fields while preserving valid current fields", () => {
+  it("migrates priorityVsDistance from an old draft and preserves valid fields", () => {
     const storage = new MemoryStorage();
     storage.setItem(
       ROUTE_DRAFT_STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        constraints: {
-          availableMinutes: 601,
-          volunteers: 2,
-          weather: "storm",
-          impactVsDistance: 12,
+        options: {
+          priorityVsDistance: 42,
           maxStops: 9,
         },
       }),
     );
 
     expect(readRouteDraftOptions(storage)).toEqual({
-      priorityVsDistance: 65,
+      priorityVsTravel: 42,
+      travelBudgetMinutes: 60,
       maxStops: 9,
     });
+  });
+
+  it("keeps older version 2 drafts readable and writes only the new contract", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      ROUTE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        options: { priorityVsDistance: 30, maxStops: 1 },
+      }),
+    );
+
+    expect(readRouteDraftOptions(storage)).toEqual({
+      priorityVsTravel: 30,
+      travelBudgetMinutes: 60,
+      maxStops: 1,
+    });
+
+    writeRouteDraftOptions(storage, nonDefaultOptions);
+    const persisted = JSON.parse(storage.getItem(ROUTE_DRAFT_STORAGE_KEY)!);
+    expect(persisted).toEqual({
+      version: ROUTE_DRAFT_SCHEMA_VERSION,
+      options: nonDefaultOptions,
+    });
+    expect(JSON.stringify(persisted)).not.toContain("priorityVsDistance");
+    expect(JSON.stringify(persisted)).not.toContain("latitude");
+    expect(JSON.stringify(persisted)).not.toContain("longitude");
+  });
+
+  it("bounds budget and maxStops while retaining safe defaults", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      ROUTE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        version: ROUTE_DRAFT_SCHEMA_VERSION,
+        options: {
+          priorityVsTravel: 120,
+          travelBudgetMinutes: 601,
+          maxStops: 0,
+        },
+      }),
+    );
+
+    expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
   });
 
   it("does not throw when browser storage is unavailable", () => {

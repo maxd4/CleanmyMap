@@ -1,11 +1,12 @@
 import type { RouteOptions } from "./route-types";
 
 export const ROUTE_DRAFT_STORAGE_KEY = "cleanmymap.route-draft";
-export const ROUTE_DRAFT_SCHEMA_VERSION = 2;
-const LEGACY_ROUTE_DRAFT_SCHEMA_VERSION = 1;
+export const ROUTE_DRAFT_SCHEMA_VERSION = 3;
+const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2] as const;
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
-  priorityVsDistance: 65,
+  priorityVsTravel: 65,
+  travelBudgetMinutes: 60,
   maxStops: 6,
 };
 
@@ -26,13 +27,19 @@ export function normalizeRouteOptions(value: unknown): RouteOptions {
   const candidate = isRecord(value) ? value : {};
 
   return {
-    priorityVsDistance: boundedInteger(
-      candidate.priorityVsDistance,
-      DEFAULT_ROUTE_OPTIONS.priorityVsDistance,
+    priorityVsTravel: boundedInteger(
+      candidate.priorityVsTravel ?? candidate.priorityVsDistance,
+      DEFAULT_ROUTE_OPTIONS.priorityVsTravel,
       0,
       100,
     ),
-    maxStops: boundedInteger(candidate.maxStops, DEFAULT_ROUTE_OPTIONS.maxStops, 2, 12),
+    travelBudgetMinutes: boundedInteger(
+      candidate.travelBudgetMinutes,
+      DEFAULT_ROUTE_OPTIONS.travelBudgetMinutes,
+      1,
+      600,
+    ),
+    maxStops: boundedInteger(candidate.maxStops, DEFAULT_ROUTE_OPTIONS.maxStops, 1, 12),
   };
 }
 
@@ -47,7 +54,9 @@ export function readRouteDraftOptions(storage?: StorageReader): RouteOptions {
     if (
       !isRecord(parsed) ||
       (parsed.version !== ROUTE_DRAFT_SCHEMA_VERSION &&
-        parsed.version !== LEGACY_ROUTE_DRAFT_SCHEMA_VERSION)
+        !LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS.includes(
+          parsed.version as (typeof LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS)[number],
+        ))
     ) {
       return { ...DEFAULT_ROUTE_OPTIONS };
     }

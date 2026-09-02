@@ -59,8 +59,8 @@ export function RouteSection() {
       id="route"
       title={fr ? "Où agir" : "Where to act"}
       subtitle={fr 
-        ? "Décidez rapidement où agir selon la priorité opérationnelle, la distance et le nombre d’arrêts."
-        : "Choose where to act using operational priority, distance, and the number of stops."}
+        ? "Décidez rapidement où agir selon la priorité opérationnelle, le déplacement et le nombre d’arrêts."
+        : "Choose where to act using operational priority, travel, and the number of stops."}
       icon={Navigation}
       gradient="from-blue-500/20 via-indigo-500/10 to-transparent"
     >

@@ -8,8 +8,15 @@ import type { RouteDataStatus } from "@/lib/route/route-data-status";
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
 export type RouteOptions = {
-  priorityVsDistance: number;
+  priorityVsTravel: number;
+  travelBudgetMinutes: number;
   maxStops: number;
+};
+
+export type RouteResponseOrigin = {
+  latitude: number;
+  longitude: number;
+  source: "browser" | "map" | "approximate_saved_area";
 };
 
 export type RouteResponse = {
@@ -17,6 +24,19 @@ export type RouteResponse = {
   dataStatus: RouteDataStatus;
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
+  origin: RouteResponseOrigin;
+  travelDistanceKm: number;
+  travelMinutes: number;
+  travelBudgetMinutes: number;
+  withinBudget: boolean;
+  serviceMinutesEstimate: null;
+  totalMinutesEstimate: null;
+  diagnostics: {
+    excludedUnsafe: number;
+    excludedByTravelBudget: number;
+  };
+  generatedAt: string;
+  engineVersion: string;
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
   scoreBreakdown: {
