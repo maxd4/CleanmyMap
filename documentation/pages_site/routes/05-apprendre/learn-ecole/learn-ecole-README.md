@@ -18,11 +18,12 @@ Page pédagogique publique pour préparer et lancer un atelier collectif CleanMy
 
 ## Rôle
 
-La page sert de point d’entrée public pour une séance de 30 minutes adaptée au niveau choisi entre la 6e et la 3e.
+La page sert de point d’entrée public pour une séance adaptée au niveau choisi entre la 6e et la 3e. Le professeur choisit ensuite le format `quiz-30` ou `atelier-60`.
 
 Elle permet de :
 
 - choisir un niveau de 6e, 5e, 4e ou 3e avant de lancer le mode École ;
+- choisir un format : `quiz-30` pour le quiz collectif court ou `atelier-60` pour `pré-quiz 15 min → atelier 30 min → post-quiz 15 min` ;
 - lancer une séance publique de 15 questions réparties automatiquement entre les catégories internes ;
 - sélectionner une banque unique où chaque question déclare ses niveaux éligibles, sa difficulté et les compétences mobilisées ;
 - préparer une séance collective ;
@@ -35,7 +36,8 @@ Elle permet de :
 
 ```txt
 Public visé : 6e | 5e | 4e | 3e
-Durée cible : 30 min
+Formats : quiz-30 | atelier-60
+Durée cible : 30 min ou 60 min
 Questions par séance : 15
 Diversification interne : 4 catégories
 Compte professeur ou élève : non requis
@@ -46,16 +48,24 @@ Ces valeurs viennent du code actuel et doivent être mises à jour si le contrat
 ## CTA principaux
 
 ```txt
-/learn/sentrainer?mode=ecole&level=6e
-/learn/sentrainer?mode=ecole&level=5e
-/learn/sentrainer?mode=ecole&level=4e
-/learn/sentrainer?mode=ecole&level=3e
+/learn/sentrainer?mode=ecole&level=6e&format=quiz-30
+/learn/sentrainer?mode=ecole&level=5e&format=quiz-30
+/learn/sentrainer?mode=ecole&level=4e&format=quiz-30
+/learn/sentrainer?mode=ecole&level=3e&format=quiz-30
+/learn/sentrainer?mode=ecole&level=4e&format=atelier-60
 /learn/sentrainer?mode=demo
 ```
 
 `level` est borné au contrat canonique `QuizSchoolLevel`. Une valeur absente ou
 invalide retombe sur `4e` pour préserver les anciens liens École ; le paramètre
 `track` reste accepté pour compatibilité mais ne constitue plus un choix public.
+`format` est borné au contrat `QuizSchoolFormat`; une valeur absente ou invalide
+retombe sur `quiz-30`. Les réponses ne sont jamais encodées dans l’URL.
+
+Pour `atelier-60`, l’état de phase et les réponses collectives restent
+uniquement en mémoire dans le navigateur : pré-quiz, séquence pédagogique,
+post-quiz puis bilan. Aucun nom, compte, classe nominative ou classement n’est
+nécessaire.
 
 ## Fichiers liés
 

@@ -38,7 +38,7 @@ const INTRO_CARDS = [
   {
     icon: GraduationCap,
     title: { fr: "Durée conseillée", en: "Recommended duration" },
-    text: { fr: "30 minutes.", en: "30 minutes." },
+    text: { fr: "Quiz 30 min ou atelier 60 min.", en: "30-minute quiz or 60-minute workshop." },
   },
   {
     icon: Users,
@@ -130,12 +130,15 @@ export function QuizSchoolKitPage() {
                 {isFrench ? "Lancement immédiat" : "Immediate launch"}
               </p>
               <h3 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-                {isFrench ? "Choisir le niveau, puis lancer la séance" : "Choose the grade, then launch the session"}
+                {isFrench ? "Choisir le niveau, puis le format" : "Choose the grade, then the format"}
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 md:text-base">
                 {isFrench
-                  ? "La séance publique dure 30 minutes. La démo reste disponible pour tester le déroulé."
-                  : "The public session lasts 30 minutes. The demo stays available for a quick rehearsal."}
+                  ? "Choisissez un quiz de 30 minutes ou un atelier de 60 minutes. La démo reste disponible pour tester le déroulé."
+                  : "Choose a 30-minute quiz or a 60-minute workshop. The demo stays available for a quick rehearsal."}
+              </p>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-800">
+                {isFrench ? "Formats : quiz 30 min · atelier 60 min" : "Formats: 30-minute quiz · 60-minute workshop"}
               </p>
             </div>
 
@@ -273,12 +276,12 @@ export function QuizSchoolKitPage() {
                 {isFrench ? "Déroulé de l'atelier" : "Workshop flow"}
               </p>
               <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-                {isFrench ? "Quatre temps pour tenir 30 minutes sans s'éparpiller" : "Four steps to fit 30 minutes without drifting"}
+                {isFrench ? "Deux formats, un lancement collectif" : "Two formats, one collective launch"}
               </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">
                 {isFrench
-                  ? "L'atelier reste court, structuré et lisible pour que la classe comprenne vite le rythme."
-                  : "The workshop stays short, structured and readable so the class quickly understands the rhythm."}
+                  ? "Le quiz-30 reste direct ; l'atelier-60 ajoute une séquence pédagogique entre le pré-quiz et le post-quiz."
+                  : "The quiz-30 stays direct; atelier-60 adds a teaching sequence between the pre-quiz and post-quiz."}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-black uppercase tracking-[0.18em] text-amber-800">

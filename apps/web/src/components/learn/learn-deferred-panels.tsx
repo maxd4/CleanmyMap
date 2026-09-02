@@ -281,6 +281,7 @@ export function DeferredEnvironmentalQuiz({
   initialCollectiveMode,
   initialDemoMode,
   initialSchoolLevel,
+  initialSchoolFormat,
   initialSchoolTrack,
 }: DeferredEnvironmentalQuizProps) {
   const { ref, isInView } = useInViewOnce<HTMLDivElement>({
@@ -295,6 +296,7 @@ export function DeferredEnvironmentalQuiz({
           initialCollectiveMode={initialCollectiveMode}
           initialDemoMode={initialDemoMode}
           initialSchoolLevel={initialSchoolLevel}
+          initialSchoolFormat={initialSchoolFormat}
           initialSchoolTrack={initialSchoolTrack}
         />
       ) : (

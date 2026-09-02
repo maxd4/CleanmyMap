@@ -11,7 +11,7 @@ describe("QuizSchoolPicker", () => {
         locale: "fr",
         collectiveMode: true,
         onToggleCollectiveMode: () => undefined,
-        onSelectSchoolLevel: () => undefined,
+        onLaunchSchoolSession: () => undefined,
         onBackToAccessType: () => undefined,
       }),
     );
@@ -23,5 +23,6 @@ describe("QuizSchoolPicker", () => {
     expect(markup).toContain("5e");
     expect(markup).toContain("4e");
     expect(markup).toContain("3e");
+    expect(markup).not.toContain("onSelectSchoolLevel");
   });
 });

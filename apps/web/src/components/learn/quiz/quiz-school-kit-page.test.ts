@@ -4,8 +4,19 @@ import { describe, expect, it } from "vitest";
 
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { QuizSchoolKitPage } from "./quiz-school-kit-page";
+import { getQuizSchoolLaunchHref } from "./quiz-school-level-launcher";
 
 describe("QuizSchoolKitPage", () => {
+  it("builds shareable level and format URLs without answers", () => {
+    expect(getQuizSchoolLaunchHref("6e", "quiz-30")).toBe(
+      "/learn/sentrainer?mode=ecole&level=6e&format=quiz-30",
+    );
+    expect(getQuizSchoolLaunchHref("3e", "atelier-60")).toBe(
+      "/learn/sentrainer?mode=ecole&level=3e&format=atelier-60",
+    );
+    expect(getQuizSchoolLaunchHref("3e", "atelier-60")).not.toContain("answer");
+  });
+
   it("renders the teacher kit content for school mode", () => {
     const markup = renderToStaticMarkup(
       React.createElement(
@@ -18,8 +29,9 @@ describe("QuizSchoolKitPage", () => {
     expect(markup).toContain("Mode École");
     expect(markup).toContain("Séance publique de la 6e à la 3e");
     expect(markup).toContain("Lancement immédiat");
-    expect(markup).toContain("Choisir le niveau, puis lancer la séance");
-    expect(markup).toContain("La séance publique dure 30 minutes. La démo reste disponible pour tester le déroulé.");
+    expect(markup).toContain("Choisir le niveau, puis le format");
+    expect(markup).toContain("Choisissez un quiz de 30 minutes ou un atelier de 60 minutes.");
+    expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");
     expect(markup).toContain("Repères de séance");
     expect(markup).toContain("Les aides à garder visibles");
     expect(markup).toContain("Fiche enseignant");
@@ -31,10 +43,7 @@ describe("QuizSchoolKitPage", () => {
     expect(markup).toContain("Ouvrir les 20 questions détaillées");
     expect(markup).toContain("focus-visible:ring-amber-300/70");
     expect(markup).toContain('href="#choisir-niveau"');
-    expect(markup).toContain('href="/learn/sentrainer?mode=ecole&amp;level=6e"');
-    expect(markup).toContain('href="/learn/sentrainer?mode=ecole&amp;level=5e"');
-    expect(markup).toContain('href="/learn/sentrainer?mode=ecole&amp;level=4e"');
-    expect(markup).toContain('href="/learn/sentrainer?mode=ecole&amp;level=3e"');
+    expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");
     expect(markup).not.toContain("Élèves de 4e et 3e.");
     expect(markup).toContain('href="/learn/sentrainer?mode=demo"');
     expect(markup.indexOf("Lancement immédiat")).toBeLessThan(markup.indexOf("Fiche enseignant"));

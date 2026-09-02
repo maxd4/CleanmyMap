@@ -1,8 +1,10 @@
 import { QUIZ_ACCESS_TYPES, type QuizAccessTypeId } from "./quiz-access-types";
 import {
   QUIZ_SCHOOL_TRACK_ORDER,
+  parseQuizSchoolFormat,
   parseQuizSchoolLevel,
   type QuizSchoolLevel,
+  type QuizSchoolFormat,
   type QuizSchoolTrackId,
 } from "./quiz-school-types";
 
@@ -10,6 +12,7 @@ export type QuizSentrainerEntryState = {
   initialAccessType: QuizAccessTypeId | null;
   initialDemoMode: boolean;
   initialSchoolLevel: QuizSchoolLevel | null;
+  initialSchoolFormat: QuizSchoolFormat | null;
   initialSchoolTrack: QuizSchoolTrackId | null;
   initialCollectiveMode: boolean;
 };
@@ -56,12 +59,14 @@ export function parseQuizSentrainerEntryState(
   const mode = searchParams?.get("mode")?.trim() ?? null;
   const track = searchParams?.get("track")?.trim() ?? null;
   const level = searchParams?.get("level")?.trim() ?? null;
+  const format = searchParams?.get("format")?.trim() ?? null;
   const collective = searchParams?.get("collective")?.trim() ?? null;
 
   return {
     initialAccessType: resolveInitialAccessType(mode),
     initialDemoMode: mode === "demo",
     initialSchoolLevel: resolveInitialSchoolLevel(mode, level),
+    initialSchoolFormat: mode === "ecole" ? parseQuizSchoolFormat(format) : null,
     initialSchoolTrack: resolveInitialSchoolTrack(mode, track),
     initialCollectiveMode: collective !== "0",
   };

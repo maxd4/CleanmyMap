@@ -55,8 +55,8 @@ export const QUIZ_ACCESS_TYPES: readonly QuizAccessTypeDefinition[] = [
     label: "École",
     labelKey: "access.ecole.label",
     description: {
-      fr: "Séance publique de 30 minutes pour la 6e à la 3e, pensée pour voter, discuter et révéler la réponse ensemble.",
-      en: "A 30-minute public session for grades 6 to 9, designed to vote, discuss and reveal the answer together.",
+      fr: "Séance publique de 30 ou 60 minutes pour la 6e à la 3e, pensée pour voter, discuter et révéler la réponse ensemble.",
+      en: "A 30- or 60-minute public session for grades 6 to 9, designed to vote, discuss and reveal the answer together.",
     },
     focus: {
       fr: ["Atelier collectif sans compte", "Niveau choisi avant le lancement"],

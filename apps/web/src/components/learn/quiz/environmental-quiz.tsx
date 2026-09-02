@@ -22,6 +22,7 @@ import {
 import { QuizAccessPicker } from "@/components/learn/quiz/quiz-access-picker";
 import { QuizReasoningPicker } from "@/components/learn/quiz/quiz-reasoning-picker";
 import { QuizSchoolPicker } from "@/components/learn/quiz/quiz-school-picker";
+import { QuizSchoolWorkshopSession } from "@/components/learn/quiz/quiz-school-workshop-session";
 import { QuizSessionPanel } from "@/components/learn/quiz/quiz-session-panel";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz/quiz-adaptive";
 import { getQuizReviewTarget } from "@/lib/learning/quiz/quiz-review-targets";
@@ -37,7 +38,7 @@ import {
   type QuizAccessTypeId,
 } from "@/lib/learning/quiz/quiz-access-types";
 import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
-import type { QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import { DEFAULT_QUIZ_SCHOOL_FORMAT, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
 import {
   getQuizUiCopy,
 } from "@/lib/learning/quiz/quiz-i18n";
@@ -71,6 +72,7 @@ export type EnvironmentalQuizProps = {
   initialAccessType?: QuizAccessTypeId | null;
   initialDemoMode?: boolean;
   initialSchoolLevel?: QuizSchoolLevel | null;
+  initialSchoolFormat?: QuizSchoolFormat | null;
   /** @deprecated Kept so old callers remain type-compatible. */
   initialSchoolTrack?: string | null;
   initialCollectiveMode?: boolean;
@@ -80,6 +82,7 @@ export function EnvironmentalQuiz({
   initialAccessType = null,
   initialDemoMode = false,
   initialSchoolLevel = null,
+  initialSchoolFormat = null,
   initialCollectiveMode = true,
 }: EnvironmentalQuizProps = {}) {
   const { getToken } = useAuth();
@@ -93,6 +96,7 @@ export function EnvironmentalQuiz({
   const [selectedTrapLevel, setSelectedTrapLevel] = useState<QuizTrapLevelId | null>(null);
   const [selectedReasoningType, setSelectedReasoningType] = useState<QuizReasoningType | null>(null);
   const [selectedSchoolLevel, setSelectedSchoolLevel] = useState<QuizSchoolLevel | null>(initialSchoolLevel);
+  const [selectedSchoolFormat, setSelectedSchoolFormat] = useState<QuizSchoolFormat>(initialSchoolFormat ?? DEFAULT_QUIZ_SCHOOL_FORMAT);
   const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(initialCollectiveMode);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
@@ -203,7 +207,7 @@ export function EnvironmentalQuiz({
       return;
     }
 
-    if (!isDemoMode && selectedAccessType === "ecole" && !selectedSchoolLevel) {
+    if (!isDemoMode && selectedAccessType === "ecole" && (!selectedSchoolLevel || selectedSchoolFormat === "atelier-60")) {
       return;
     }
 
@@ -213,7 +217,7 @@ export function EnvironmentalQuiz({
 
     setSessionQuestions(initialQuestions);
     setCurrentQuestionIdx(0);
-  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolLevel, sessionQuestions.length]);
+  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolFormat, selectedSchoolLevel, sessionQuestions.length]);
 
   const question = sessionQuestions[currentQuestionIdx];
   const quizSummary = useMemo(() => summarizeQuizStates(srsData, QUIZ_QUESTION_IDS), [srsData]);
@@ -561,6 +565,7 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -571,6 +576,7 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -580,6 +586,7 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(trapLevel);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -590,6 +597,7 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -604,6 +612,7 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
@@ -614,23 +623,36 @@ export function EnvironmentalQuiz({
     setSelectedTrapLevel(null);
     setSelectedReasoningType(null);
     setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
     setIsSchoolCollectiveMode(true);
   };
 
-  const handleSelectSchoolLevel = (level: QuizSchoolLevel) => {
+  const handleLaunchSchoolSession = (level: QuizSchoolLevel, format: QuizSchoolFormat) => {
     resetSessionState();
     setIsDemoMode(false);
     setSelectedAccessType("ecole");
     setSelectedTrapLevel(null);
     setSelectedSchoolLevel(level);
+    setSelectedSchoolFormat(format);
     setSelectedReasoningType(null);
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       params.set("mode", "ecole");
       params.set("level", level);
+      params.set("format", format);
       window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
     }
+  };
+
+  const restartSchoolWorkshop = () => {
+    setSelectedSchoolFormat("atelier-60");
+  };
+
+  const chooseSchoolFormat = () => {
+    resetSessionState();
+    setSelectedSchoolLevel(null);
+    setSelectedSchoolFormat(DEFAULT_QUIZ_SCHOOL_FORMAT);
   };
 
   const handleToggleSchoolCollectiveMode = () => {
@@ -659,7 +681,7 @@ export function EnvironmentalQuiz({
     (selectedAccessType === "mixte" || selectedReasoningType || isDemoMode || selectedAccessType === "ecole") &&
     !question &&
     ((isDemoMode && demoQuestions.length > 0) ||
-      (selectedAccessType === "ecole" && schoolQuestions.length > 0) ||
+      (selectedAccessType === "ecole" && selectedSchoolFormat !== "atelier-60" && schoolQuestions.length > 0) ||
       (!isDemoMode && selectedAccessType !== "ecole" && !loading && filteredQuestions.length > 0))
   ) {
     return (
@@ -706,8 +728,20 @@ export function EnvironmentalQuiz({
         locale={locale}
         collectiveMode={isSchoolCollectiveMode}
         onToggleCollectiveMode={handleToggleSchoolCollectiveMode}
-        onSelectSchoolLevel={handleSelectSchoolLevel}
+        onLaunchSchoolSession={handleLaunchSchoolSession}
         onBackToAccessType={returnToAccessTypeSelection}
+      />
+    );
+  }
+
+  if (selectedAccessType === "ecole" && selectedSchoolLevel && selectedSchoolFormat === "atelier-60") {
+    return (
+      <QuizSchoolWorkshopSession
+        locale={locale}
+        level={selectedSchoolLevel}
+        questions={schoolQuestions}
+        onRestart={restartSchoolWorkshop}
+        onChooseFormat={chooseSchoolFormat}
       />
     );
   }

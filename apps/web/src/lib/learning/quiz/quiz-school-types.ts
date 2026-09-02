@@ -9,6 +9,23 @@ export const DEFAULT_QUIZ_SCHOOL_LEVEL: QuizSchoolLevel = "4e";
 export const QUIZ_SCHOOL_SESSION_DURATION_MINUTES = 30;
 export const QUIZ_SCHOOL_SESSION_SIZE = 15;
 
+export type QuizSchoolFormat = "quiz-30" | "atelier-60";
+
+export const QUIZ_SCHOOL_FORMAT_ORDER: readonly QuizSchoolFormat[] = ["quiz-30", "atelier-60"];
+export const DEFAULT_QUIZ_SCHOOL_FORMAT: QuizSchoolFormat = "quiz-30";
+export const QUIZ_SCHOOL_WORKSHOP_DURATION_MINUTES = 60;
+export const QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES = 15;
+export const QUIZ_SCHOOL_WORKSHOP_ACTIVITY_DURATION_MINUTES = 30;
+export const QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE = 5;
+
+export function isQuizSchoolFormat(value: string | null | undefined): value is QuizSchoolFormat {
+  return Boolean(value) && QUIZ_SCHOOL_FORMAT_ORDER.includes(value as QuizSchoolFormat);
+}
+
+export function parseQuizSchoolFormat(value: string | null | undefined): QuizSchoolFormat {
+  return isQuizSchoolFormat(value) ? value : DEFAULT_QUIZ_SCHOOL_FORMAT;
+}
+
 export type QuizSchoolQuestionLevelProfile = {
   difficulty: QuizDifficultyId;
   skills: readonly QuizSkillId[];

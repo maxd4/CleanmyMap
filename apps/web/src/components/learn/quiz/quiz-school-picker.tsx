@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle, GraduationCap, School } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { cn } from "@/lib/utils";
-import { QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 
 const INTERACTIVE_FOCUS_RING =
@@ -15,7 +16,7 @@ type QuizSchoolPickerProps = {
   locale: SupportedLocale;
   collectiveMode: boolean;
   onToggleCollectiveMode: () => void;
-  onSelectSchoolLevel: (level: QuizSchoolLevel) => void;
+  onLaunchSchoolSession: (level: QuizSchoolLevel, format: QuizSchoolFormat) => void;
   onBackToAccessType: () => void;
 };
 
@@ -23,9 +24,11 @@ export function QuizSchoolPicker({
   locale,
   collectiveMode,
   onToggleCollectiveMode,
-  onSelectSchoolLevel,
+  onLaunchSchoolSession,
   onBackToAccessType,
 }: QuizSchoolPickerProps) {
+  const [selectedLevel, setSelectedLevel] = useState<QuizSchoolLevel | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<QuizSchoolFormat>(QUIZ_SCHOOL_FORMAT_ORDER[0]);
   return (
     <div className="space-y-12 py-10">
       <div className="space-y-4 text-center">
@@ -111,7 +114,8 @@ export function QuizSchoolPicker({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
-            onClick={() => onSelectSchoolLevel(level)}
+            onClick={() => setSelectedLevel(level)}
+            aria-pressed={selectedLevel === level}
             className="group relative overflow-hidden rounded-[2.25rem] border border-slate-100 bg-white p-7 text-left shadow-xl shadow-slate-200/50 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-inner">
@@ -140,6 +144,29 @@ export function QuizSchoolPicker({
           </motion.button>
         ))}
       </div>
+
+      {selectedLevel ? (
+        <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.format.badge")}</p>
+              <h3 className="mt-1 text-2xl font-black text-slate-950">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h3>
+            </div>
+            <button type="button" onClick={() => setSelectedLevel(null)} className={`${INTERACTIVE_FOCUS_RING} rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900`}>{getQuizUiCopy(locale, "school.format.back")}</button>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {QUIZ_SCHOOL_FORMAT_ORDER.map((format) => (
+              <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)} className={`${INTERACTIVE_FOCUS_RING} rounded-2xl border p-5 text-left transition ${selectedFormat === format ? "border-amber-600 bg-white shadow-md" : "border-amber-200 bg-amber-50 hover:bg-white"}`}>
+                <p className="text-lg font-black text-slate-950">{getQuizUiCopy(locale, `school.format.${format}.label`)}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => onLaunchSchoolSession(selectedLevel, selectedFormat)} className={`${INTERACTIVE_FOCUS_RING} mt-5 inline-flex min-h-12 items-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>
+            {getQuizUiCopy(locale, "school.format.cta")}<ArrowLeft className="rotate-180" size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
