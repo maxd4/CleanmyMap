@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_ROUTE_OPTIONS } from "./route-draft-storage";
 import {
+  createRouteRequestGate,
   createRouteRecommendationRequest,
   fetchRouteRecommendation,
+  isRouteOriginUnavailableError,
 } from "./route-request";
 
 const responsePayload = {
@@ -94,5 +96,44 @@ describe("route recommendation request gate", () => {
     );
 
     expect(transport).toHaveBeenCalledTimes(2);
+  });
+
+  it("transports an ephemeral browser origin alongside, not inside, the options", async () => {
+    const origin = { latitude: 48.861, longitude: 2.361, source: "browser" } as const;
+    const request = createRouteRecommendationRequest(3, DEFAULT_ROUTE_OPTIONS, origin);
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(request, transport);
+
+    expect(request.options).toEqual(DEFAULT_ROUTE_OPTIONS);
+    expect(request.options).not.toHaveProperty("origin");
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual({
+      ...DEFAULT_ROUTE_OPTIONS,
+      origin,
+    });
+  });
+
+  it("maps HTTP 422 to the origin-unavailable error", async () => {
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "A route origin is required." }), { status: 422 }),
+    );
+
+    await expect(
+      fetchRouteRecommendation(
+        createRouteRecommendationRequest(4, DEFAULT_ROUTE_OPTIONS),
+        transport,
+      ),
+    ).rejects.toSatisfy((error: unknown) => isRouteOriginUnavailableError(error));
+  });
+
+  it("allows only one request while the explicit calculation is in flight", () => {
+    const gate = createRouteRequestGate();
+
+    expect(gate.start()).toBe(true);
+    expect(gate.start()).toBe(false);
+    gate.finish();
+    expect(gate.start()).toBe(true);
   });
 });

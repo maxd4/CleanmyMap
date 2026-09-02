@@ -19,6 +19,12 @@ export type RouteResponseOrigin = {
   source: "browser" | "map" | "approximate_saved_area";
 };
 
+export type RouteRecommendationOrigin = {
+  latitude: number;
+  longitude: number;
+  source: "browser" | "map";
+};
+
 export type RouteResponse = {
   status: "ok";
   dataStatus: RouteDataStatus;

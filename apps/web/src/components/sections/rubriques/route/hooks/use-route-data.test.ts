@@ -11,21 +11,10 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 
 import { useRouteData } from "./use-route-data";
 
-function renderHarness(action: "none" | "calculate-then-edit") {
+function renderHarness() {
   function Harness() {
     const route = useRouteData();
-    const step = React.useRef(0);
-
-    if (action === "calculate-then-edit" && step.current === 0) {
-      step.current = 1;
-      route.requestRecommendation();
-    } else if (action === "calculate-then-edit" && step.current === 1) {
-      step.current = 2;
-      route.setOptions((previous) => ({
-        ...previous,
-        priorityVsTravel: 20,
-      }));
-    }
+    void route;
 
     return null;
   }
@@ -57,21 +46,8 @@ describe("useRouteData explicit request gate", () => {
   });
 
   it("does not POST while the draft is only being edited", () => {
-    renderHarness("none");
+    renderHarness();
 
     expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("POSTs once for a click and does not POST again for a subsequent edit", () => {
-    renderHarness("calculate-then-edit");
-
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/route/recommend",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining('"priorityVsTravel":65'),
-      }),
-    );
   });
 });

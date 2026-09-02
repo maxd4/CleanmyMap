@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import { RouteOptions, RouteResponse } from "../route-types";
+import type { RouteOptions, RouteResponse } from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   DEFAULT_ROUTE_OPTIONS,
@@ -11,9 +11,11 @@ import {
 } from "../route-draft-storage";
 import {
   createRouteRecommendationRequest,
+  createRouteRequestGate,
   fetchRouteRecommendation,
   type RouteRecommendationRequest,
 } from "../route-request";
+import { resolveBrowserRouteOrigin } from "../route-geolocation";
 
 export function useRouteData() {
   const { locale } = useSitePreferences();
@@ -25,7 +27,10 @@ export function useRouteData() {
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequest, setRecommendationRequest] =
     useState<RouteRecommendationRequest | null>(null);
+  const [isResolvingOrigin, setIsResolvingOrigin] = useState(false);
+  const [isRequestInFlight, setIsRequestInFlight] = useState(false);
   const requestSequence = useRef(0);
+  const requestGate = useRef(createRouteRequestGate());
   const draftEditedBeforeHydration = useRef(false);
 
   const setOptions = useCallback<React.Dispatch<React.SetStateAction<RouteOptions>>>((update) => {
@@ -68,6 +73,14 @@ export function useRouteData() {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       shouldRetryOnError: false,
+      onSuccess: () => {
+        requestGate.current.finish();
+        setIsRequestInFlight(false);
+      },
+      onError: () => {
+        requestGate.current.finish();
+        setIsRequestInFlight(false);
+      },
     },
   );
 
@@ -93,10 +106,26 @@ export function useRouteData() {
     hasRoute,
     fr,
     recommendationRequested: recommendationRequest !== null,
-    requestRecommendation: () => {
+    isResolvingOrigin,
+    isRequestInFlight,
+    requestRecommendation: async () => {
+      if (!requestGate.current.start()) return;
+
+      setIsRequestInFlight(true);
+      setIsResolvingOrigin(true);
+
+      let origin;
+      try {
+        origin = await resolveBrowserRouteOrigin();
+      } catch {
+        origin = undefined;
+      } finally {
+        setIsResolvingOrigin(false);
+      }
+
       requestSequence.current += 1;
       setRecommendationRequest(
-        createRouteRecommendationRequest(requestSequence.current, options),
+        createRouteRecommendationRequest(requestSequence.current, options, origin),
       );
     },
   };

@@ -10,6 +10,10 @@ import { RouteSummaryCards } from "./route/components/route-summary-cards";
 import { RouteOptionsForm } from "./route/components/route-constraints-form";
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
+import {
+  getRouteOriginLabel,
+  getRouteRecommendationErrorMessage,
+} from "./route/route-origin";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,6 +39,8 @@ export function RouteSection() {
     hasRoute,
     fr,
     recommendationRequested,
+    isResolvingOrigin,
+    isRequestInFlight,
     requestRecommendation,
   } = useRouteData();
 
@@ -81,17 +87,28 @@ export function RouteSection() {
                {isLoaded && isSignedIn ? (
                  <button
                    type="button"
-                   onClick={requestRecommendation}
-                   disabled={isLoading}
+                   onClick={() => {
+                     void requestRecommendation();
+                   }}
+                   disabled={isLoading || isRequestInFlight}
+                   aria-busy={isResolvingOrigin || isLoading || isRequestInFlight}
                    className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
                  >
-                   {fr
-                     ? recommendationRequested
-                       ? "Recalculer la recommandation"
-                       : "Calculer la recommandation"
-                     : recommendationRequested
-                       ? "Recalculate recommendation"
-                       : "Calculate recommendation"}
+                   {isResolvingOrigin
+                     ? fr
+                       ? "Localisation en cours…"
+                       : "Locating…"
+                     : isLoading || isRequestInFlight
+                       ? fr
+                         ? "Calcul en cours…"
+                         : "Calculating…"
+                       : fr
+                         ? recommendationRequested
+                           ? "Recalculer la recommandation"
+                           : "Calculer la recommandation"
+                         : recommendationRequested
+                           ? "Recalculate recommendation"
+                           : "Calculate recommendation"}
                  </button>
                ) : (
                  <Link
@@ -129,9 +146,7 @@ export function RouteSection() {
                  <Info size={32} />
               </div>
               <p className="text-lg font-black text-white tracking-tight leading-snug">
-                {fr
-                  ? "Impossible de calculer les points prioritaires. Vérifiez les paramètres de géolocalisation."
-                  : "Unable to compute priority stops. Check location settings."}
+                {getRouteRecommendationErrorMessage(error, fr)}
               </p>
             </motion.div>
           )}
@@ -156,6 +171,17 @@ export function RouteSection() {
                 </p>
               ))}
             </div>
+          )}
+
+          {data && (
+            <p
+              role="status"
+              data-route-origin-source={data.origin.source}
+              className="rounded-2xl border border-blue-300/15 bg-blue-500/5 px-5 py-3 text-sm font-semibold text-blue-50"
+            >
+              {fr ? "Point de départ utilisé : " : "Starting point used: "}
+              {getRouteOriginLabel(data.origin.source, fr)}
+            </p>
           )}
 
           <AnimatePresence mode="wait">

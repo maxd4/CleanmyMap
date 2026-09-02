@@ -1,18 +1,59 @@
-import type { RouteOptions, RouteResponse } from "./route-types";
+import type {
+  RouteOptions,
+  RouteRecommendationOrigin,
+  RouteResponse,
+} from "./route-types";
 
 export type RouteRecommendationRequest = {
   id: number;
   options: RouteOptions;
+  origin?: RouteRecommendationOrigin;
 };
+
+export type RouteRequestGate = {
+  start: () => boolean;
+  finish: () => void;
+};
+
+export function createRouteRequestGate(): RouteRequestGate {
+  let inFlight = false;
+
+  return {
+    start: () => {
+      if (inFlight) return false;
+      inFlight = true;
+      return true;
+    },
+    finish: () => {
+      inFlight = false;
+    },
+  };
+}
 
 export function createRouteRecommendationRequest(
   id: number,
   options: RouteOptions,
+  origin?: RouteRecommendationOrigin,
 ): RouteRecommendationRequest {
   return {
     id,
     options: { ...options },
+    ...(origin ? { origin: { ...origin } } : {}),
   };
+}
+
+export class RouteRecommendationError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(status === 422 ? "Route origin unavailable" : "Route unavailable");
+    this.name = "RouteRecommendationError";
+    this.status = status;
+  }
+}
+
+export function isRouteOriginUnavailableError(error: unknown): boolean {
+  return error instanceof RouteRecommendationError && error.status === 422;
 }
 
 export async function fetchRouteRecommendation(
@@ -22,11 +63,14 @@ export async function fetchRouteRecommendation(
   const response = await transport("/api/route/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request.options),
+    body: JSON.stringify({
+      ...request.options,
+      ...(request.origin ? { origin: request.origin } : {}),
+    }),
   });
 
   if (!response.ok) {
-    throw new Error("Route unavailable");
+    throw new RouteRecommendationError(response.status);
   }
 
   return (await response.json()) as RouteResponse;
