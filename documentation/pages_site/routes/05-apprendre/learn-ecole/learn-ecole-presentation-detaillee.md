@@ -59,9 +59,11 @@ pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz 
 Dans `atelier-60`, le pré-quiz contient huit items couvrant les connaissances,
 idées reçues, ordres de grandeur et décisions. Le post-quiz reprend les mêmes
 huit concepts avec des formulations différentes et ajoute deux situations de
-transfert. Le bilan calcule uniquement les taux collectifs avant/après, la
-progression, les notions retenues ou fragiles, puis trois actions possibles
-dans le collège. Ces données restent en mémoire dans le navigateur.
+transfert. Le bilan calcule les taux avant/après et la progression uniquement
+sur les huit concepts appariés ; le score de transfert est affiché à part. Les
+notions retenues ou fragiles sont dérivées des réponses collectives : elles ne
+sont pas complétées artificiellement pour remplir trois emplacements. Ces
+données restent en mémoire dans le navigateur.
 
 Le bilan peut aussi proposer jusqu’à trois prolongements validés en
 Île-de-France, avec Paris prioritaire : l’Académie du Climat est une piste

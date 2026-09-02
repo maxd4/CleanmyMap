@@ -5,13 +5,16 @@ import type { QuizSchoolLevel } from "./quiz-school-types";
 
 export type QuizSchoolWorkshopSummary = {
   level: QuizSchoolLevel;
-  preCorrect: number;
-  preTotal: number;
-  preRate: number;
-  postCorrect: number;
-  postTotal: number;
-  postRate: number;
-  progress: number;
+  preConceptCorrect: number;
+  preConceptTotal: number;
+  preConceptRate: number;
+  postConceptCorrect: number;
+  postConceptTotal: number;
+  postConceptRate: number;
+  conceptProgress: number;
+  transferCorrect: number;
+  transferTotal: number;
+  transferRate: number;
   acquiredNotions: QuizSchoolAssessmentLocalizedText[];
   fragileNotions: QuizSchoolAssessmentLocalizedText[];
   retainedNotions: QuizSchoolAssessmentLocalizedText[];
@@ -29,13 +32,35 @@ function rate(correct: number, total: number): number {
   return total > 0 ? correct / total : 0;
 }
 
-function uniqueNotions(items: QuizSchoolAssessmentLocalizedText[]): QuizSchoolAssessmentLocalizedText[] {
+function uniqueNotions(items: readonly QuizSchoolAssessmentLocalizedText[]): QuizSchoolAssessmentLocalizedText[] {
   const seen = new Set<string>();
   return items.filter((notion) => {
     const key = `${notion.fr}\u0000${notion.en}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
+  });
+}
+
+type ComparableAssessmentPair = {
+  pre: ResolvedQuizSchoolWorkshopAssessmentItem;
+  post: ResolvedQuizSchoolWorkshopAssessmentItem;
+};
+
+function buildComparableAssessmentPairs(
+  preAssessment: readonly ResolvedQuizSchoolWorkshopAssessmentItem[],
+  postAssessment: readonly ResolvedQuizSchoolWorkshopAssessmentItem[],
+): ComparableAssessmentPair[] {
+  const preByPair = new Map(
+    preAssessment.filter((item) => !item.isTransfer).map((item) => [item.pairId, item]),
+  );
+  const postByPair = new Map(
+    postAssessment.filter((item) => !item.isTransfer).map((item) => [item.pairId, item]),
+  );
+
+  return [...preByPair].flatMap(([pairId, pre]) => {
+    const post = postByPair.get(pairId);
+    return post ? [{ pre, post }] : [];
   });
 }
 
@@ -67,43 +92,45 @@ export function buildQuizSchoolWorkshopSummary({
   activities: readonly ResolvedQuizSchoolActivity[];
   territorialResources?: readonly QuizSchoolTerritorialResource[];
 }): QuizSchoolWorkshopSummary {
-  const preByPair = new Map(preAssessment.map((item) => [item.pairId, item]));
-  const postPairs = postAssessment.filter((item) => preByPair.has(item.pairId));
-  const acquiredNotions = postPairs
-    .filter((item) => postAnswers[item.id] === true && preAnswers[preByPair.get(item.pairId)?.id ?? ""] !== true)
-    .map((item) => item.notion);
-  const fragileNotions = postPairs
-    .filter((item) => postAnswers[item.id] !== true)
-    .map((item) => item.notion);
-  const retainedNotions = postAssessment
-    .filter((item) => postAnswers[item.id] === true)
-    .map((item) => item.notion);
-
-  // A partially completed local session still has a useful, non-personal recap.
-  // Fill the three takeaway slots from the assessed concepts when no answer was recorded.
-  const fallbackNotions = postAssessment.map((item) => item.notion);
-  const threeTakeaways = uniqueNotions([...retainedNotions, ...fallbackNotions]).slice(0, 3);
+  const comparablePairs = buildComparableAssessmentPairs(preAssessment, postAssessment);
+  const transferItems = postAssessment.filter((item) => item.isTransfer === true);
+  const acquiredNotions = comparablePairs
+    .filter(({ pre, post }) => postAnswers[post.id] === true && preAnswers[pre.id] !== true)
+    .map(({ post }) => post.notion);
+  const fragileNotions = comparablePairs
+    .filter(({ post }) => postAnswers[post.id] !== true)
+    .map(({ post }) => post.notion);
+  const retainedNotions = uniqueNotions(
+    comparablePairs.filter(({ post }) => postAnswers[post.id] === true).map(({ post }) => post.notion),
+  ).slice(0, 3);
   const activityThemes = new Set(activities.map((activity) => activity.theme));
   const selectedResources = getQuizSchoolTerritorialResources("ile-de-france", territorialResources ? [...territorialResources] : undefined)
     .sort((left, right) => resourceRelevance(left, activityThemes) - resourceRelevance(right, activityThemes))
     .slice(0, 3);
-  const preCorrect = preAssessment.filter((item) => preAnswers[item.id] === true).length;
-  const postCorrect = postAssessment.filter((item) => postAnswers[item.id] === true).length;
-  const preRate = rate(preCorrect, preAssessment.length);
-  const postRate = rate(postCorrect, postAssessment.length);
+  const preConceptCorrect = comparablePairs.filter(({ pre }) => preAnswers[pre.id] === true).length;
+  const postConceptCorrect = comparablePairs.filter(({ post }) => postAnswers[post.id] === true).length;
+  const preConceptTotal = comparablePairs.length;
+  const postConceptTotal = comparablePairs.length;
+  const preConceptRate = rate(preConceptCorrect, preConceptTotal);
+  const postConceptRate = rate(postConceptCorrect, postConceptTotal);
+  const transferCorrect = transferItems.filter((item) => postAnswers[item.id] === true).length;
+  const transferTotal = transferItems.length;
 
   return {
     level,
-    preCorrect,
-    preTotal: preAssessment.length,
-    preRate,
-    postCorrect,
-    postTotal: postAssessment.length,
-    postRate,
-    progress: postRate - preRate,
+    preConceptCorrect,
+    preConceptTotal,
+    preConceptRate,
+    postConceptCorrect,
+    postConceptTotal,
+    postConceptRate,
+    conceptProgress: postConceptRate - preConceptRate,
+    transferCorrect,
+    transferTotal,
+    transferRate: rate(transferCorrect, transferTotal),
     acquiredNotions: uniqueNotions(acquiredNotions),
     fragileNotions: uniqueNotions(fragileNotions),
-    retainedNotions: threeTakeaways,
+    retainedNotions,
     collegeActions: [...COLLEGE_ACTIONS],
     territorialResources: selectedResources,
   };

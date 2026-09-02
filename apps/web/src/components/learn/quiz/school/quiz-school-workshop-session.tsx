@@ -20,7 +20,6 @@ import { buildQuizSchoolWorkshopSummary } from "@/lib/learning/quiz/school/quiz-
 import type { QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import {
   createQuizSchoolWorkshopState,
-  getQuizSchoolWorkshopProgress,
   nextQuizSchoolWorkshopPhase,
   previousQuizSchoolWorkshopPhase,
   recordQuizSchoolWorkshopAnswer,
@@ -70,7 +69,6 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
   const question = state.phase === "pre-quiz" || state.phase === "post-quiz" ? assessment[state.questionIndex] : undefined;
   const selected = question ? selectedAnswers[`${state.phase}:${question.id}`] : undefined;
   const isRevealed = question ? revealed[`${state.phase}:${question.id}`] === true : false;
-  const progress = getQuizSchoolWorkshopProgress(state, preAssessment.length, postAssessment.length);
   const summary = useMemo(
     () => buildQuizSchoolWorkshopSummary({ level, preAssessment, postAssessment, preAnswers: state.preAnswers, postAnswers: state.postAnswers, activities }),
     [activities, level, postAssessment, preAssessment, state.postAnswers, state.preAnswers],
@@ -175,15 +173,17 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
           <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{getQuizUiCopy(locale, "session.school.workshop.summary")}</p>
           <h2 className="mt-2 text-3xl font-black text-slate-950">{locale === "fr" ? "Ce que la classe a fait progresser" : "What the group improved"}</h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-700">{locale === "fr" ? "Ces résultats sont collectifs et restent dans ce navigateur : ils ne constituent ni un classement ni un profil d’élève." : "These results are collective and stay in this browser: they are neither a ranking nor a student profile."}</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black uppercase text-slate-500">{locale === "fr" ? "Taux avant" : "Before rate"}</p><p className="mt-2 text-3xl font-black text-slate-950">{progress.preCorrect}/{summary.preTotal} · {Math.round(summary.preRate * 100)} %</p></div>
-            <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-700">{locale === "fr" ? "Taux après" : "After rate"}</p><p className="mt-2 text-3xl font-black text-emerald-950">{progress.postCorrect}/{summary.postTotal} · {Math.round(summary.postRate * 100)} %</p></div>
-            <div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-black uppercase text-amber-700">{locale === "fr" ? "Progression" : "Progress"}</p><p className="mt-2 text-3xl font-black text-amber-950">{summary.progress > 0 ? "+" : ""}{Math.round(summary.progress * 100)} points</p></div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black uppercase text-slate-500">{locale === "fr" ? "Taux avant — concepts" : "Before rate — concepts"}</p><p className="mt-2 text-3xl font-black text-slate-950">{summary.preConceptCorrect}/{summary.preConceptTotal} · {Math.round(summary.preConceptRate * 100)} %</p></div>
+            <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-700">{locale === "fr" ? "Taux après — mêmes concepts" : "After rate — same concepts"}</p><p className="mt-2 text-3xl font-black text-emerald-950">{summary.postConceptCorrect}/{summary.postConceptTotal} · {Math.round(summary.postConceptRate * 100)} %</p></div>
+            <div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-black uppercase text-amber-700">{locale === "fr" ? "Progression conceptuelle" : "Concept progress"}</p><p className="mt-2 text-3xl font-black text-amber-950">{summary.conceptProgress > 0 ? "+" : ""}{Math.round(summary.conceptProgress * 100)} points</p></div>
+            <div className="rounded-2xl bg-sky-50 p-4"><p className="text-xs font-black uppercase text-sky-700">{locale === "fr" ? "Transfert — séparé" : "Transfer — separate"}</p><p className="mt-2 text-3xl font-black text-sky-950">{summary.transferCorrect}/{summary.transferTotal} · {Math.round(summary.transferRate * 100)} %</p></div>
           </div>
+          <p className="mt-3 text-sm text-slate-600">{locale === "fr" ? "Les deux situations de transfert ne modifient pas la progression conceptuelle." : "The two transfer situations do not change concept progress."}</p>
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <section aria-labelledby="workshop-takeaways">
-              <h3 id="workshop-takeaways" className="text-xl font-black text-slate-950">{locale === "fr" ? "Trois notions retenues" : "Three takeaways"}</h3>
-              <ul className="mt-3 space-y-2 text-sm font-medium text-slate-700">{summary.retainedNotions.map((notion) => <li key={notion.fr} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{notion[locale]}</span></li>)}</ul>
+              <h3 id="workshop-takeaways" className="text-xl font-black text-slate-950">{locale === "fr" ? "Notions retenues — jusqu’à 3" : "Retained notions — up to 3"}</h3>
+              {summary.retainedNotions.length > 0 ? <ul className="mt-3 space-y-2 text-sm font-medium text-slate-700">{summary.retainedNotions.map((notion) => <li key={notion.fr} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{notion[locale]}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-700">{locale === "fr" ? "Aucune notion retenue n’est démontrée par les réponses collectives." : "No retained notion is demonstrated by the collective answers."}</p>}
             </section>
             <section aria-labelledby="workshop-fragile">
               <h3 id="workshop-fragile" className="text-xl font-black text-slate-950">{locale === "fr" ? "Notions encore fragiles" : "Ideas to revisit"}</h3>

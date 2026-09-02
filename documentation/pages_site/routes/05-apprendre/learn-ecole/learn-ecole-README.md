@@ -31,9 +31,9 @@ Elle permet de :
   calcul, changement d’échelle jusqu’au territoire, puis action concrète à
   retenir ;
 - lancer une séance publique de 15 questions réparties automatiquement entre les catégories internes ;
-- pour `atelier-60`, mesurer localement 8 concepts avant puis 10 items après,
-  dont deux situations de transfert, avec taux avant, taux après, progression
-  et notions collectives à retenir ou à revoir ;
+- pour `atelier-60`, mesurer localement 8 concepts avant puis les mêmes 8
+  concepts après. Les deux situations de transfert supplémentaires produisent
+  un indicateur séparé et ne modifient pas la progression conceptuelle ;
 - sélectionner une banque unique où chaque question déclare ses niveaux éligibles, sa difficulté et les compétences mobilisées ;
 - préparer une séance collective ;
 - consulter une fiche enseignant ;
@@ -134,8 +134,11 @@ apps/web/src/lib/learning/quiz/school/README.md
   que le texte de la question reste unique.
 - Le pré/post de `atelier-60` mesure des résultats collectifs uniquement. Les
   huit concepts sont repris avec des formulations différentes au post-quiz,
-  complétés par deux situations de transfert ; aucune réponse n’est envoyée
-  ni encodée dans l’URL.
+  puis deux situations de transfert sont évaluées séparément. Les taux et la
+  progression portent uniquement sur les huit concepts appariés ; les notions
+  retenues sont limitées aux réponses post-quiz effectivement correctes et ne
+  sont pas inventées pour remplir trois emplacements. Aucune réponse n’est
+  envoyée ni encodée dans l’URL.
 - Le bilan propose trois notions, trois actions possibles dans le collège et
   jusqu’à trois ressources validées d’Île-de-France, Paris étant prioritaire.
   Les lieux et programmes sont des prolongements possibles, jamais des
