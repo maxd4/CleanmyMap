@@ -73,10 +73,12 @@ historique, et qu'une réécriture est interdite :
    `.gitignore` local : ces fichiers ne font jamais partie du lot et doivent
    être retirés de la sandbox avant son nettoyage.
 4. Si l'auteur historique invalide bloque encore la création, envoyer
-   exceptionnellement l'arbre vérifié sans son contexte Git, avec le projet
-   explicite et une métadonnée `gitCommitSha` égale au SHA vérifié. Cette
-   métadonnée ne remplace pas la preuve : conserver le `rev-parse HEAD` avant
-   l'envoi, puis vérifier le SHA dans le deployment Vercel.
+   exceptionnellement l'arbre Git exact du SHA vérifié, sans son contexte Git,
+   avec le projet explicite et une métadonnée `gitCommitSha` égale au SHA
+   vérifié. Cette métadonnée ne remplace pas la preuve : conserver le
+   `rev-parse HEAD` avant l'envoi, puis vérifier le SHA dans le deployment
+   Vercel. Cette récupération ne crée aucun commit artificiel et ne modifie
+   pas l'historique.
 5. Attendre `READY` et contrôler `readyStateReason`, `buildSkipped` et
    `meta.gitCommitSha`. Un deployment `BLOCKED` avec `buildSkipped=true` n'est
    pas un build réussi.
@@ -115,6 +117,21 @@ npx vercel logs --project <project-id> --environment production --since 15m --qu
 Une sortie vide signifie qu'aucune ligne correspondante n'a été observée dans
 la fenêtre demandée ; elle ne prouve pas qu'une route a reçu du trafic. Le
 rapport doit distinguer ces deux faits.
+
+## Probes synthétiques bornées
+
+Lorsque les logs passifs ne donnent aucune preuve exploitable, autoriser
+uniquement des probes synthétiques `HEAD` ou `GET` sûres, bornées et
+idempotentes, sur des URLs connues dont la lecture ne crée ni ne modifie de
+donnée. Elles servent à vérifier la disponibilité et le routage ; elles ne
+prouvent pas qu'un utilisateur réel a appelé la route.
+
+Pour cette validation, les probes mutantes `POST`, `PUT`, `PATCH` et `DELETE`
+sont interdites par défaut. Il est également interdit de contourner
+l'AuthN/AuthZ, de substituer une identité privilégiée ou de désactiver une
+protection pour obtenir une réponse positive. Playwright est aussi interdit
+par défaut pour cette validation ; une vérification navigateur nécessite une
+demande distincte et explicite.
 
 ## Nettoyage de la sandbox
 
