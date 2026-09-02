@@ -5,13 +5,18 @@ import { ArrowLeft, ArrowRight, CheckCircle, Lightbulb, School } from "lucide-re
 // This interactive flow is exclusively the public school atelier format.
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
-import { getQuizLocalizedTextFallback, getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
+import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
+import {
+  getQuizSchoolWorkshopAssessment,
+  type ResolvedQuizSchoolWorkshopAssessmentItem,
+} from "@/lib/learning/quiz/school/quiz-school-workshop-assessment";
 import {
   composeQuizSchoolWorkshopActivities,
   QUIZ_SCHOOL_ACTIVITY_THEME_LABELS,
   QUIZ_SCHOOL_ACTIVITY_TYPE_LABELS,
 } from "@/lib/learning/quiz/school/quiz-school-workshop-activities";
+import { buildQuizSchoolWorkshopSummary } from "@/lib/learning/quiz/school/quiz-school-workshop-summary";
 import type { QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import {
   createQuizSchoolWorkshopState,
@@ -32,16 +37,12 @@ type Props = {
   onChooseFormat: () => void;
 };
 
-function getChoices(question: QuizQuestion): string[] {
-  if (question.options?.length) return question.options;
-  if (question.type === "true-false") return ["Vrai", "Faux"];
-  return [Array.isArray(question.answer) ? question.answer.join(", ") : question.answer];
+function getChoices(question: ResolvedQuizSchoolWorkshopAssessmentItem, locale: SupportedLocale): Array<[string, string]> {
+  return Object.entries(question.options).map(([id, text]) => [id, text[locale]]);
 }
 
-function isCorrect(question: QuizQuestion, answer: string): boolean {
-  return Array.isArray(question.answer)
-    ? question.answer.length === 1 && question.answer[0] === answer
-    : question.answer === answer;
+function isCorrect(question: ResolvedQuizSchoolWorkshopAssessmentItem, answer: string): boolean {
+  return question.correctOptionId === answer;
 }
 
 function phaseLabel(locale: SupportedLocale, phase: QuizSchoolWorkshopPhase) {
@@ -55,16 +56,25 @@ function phaseLabel(locale: SupportedLocale, phase: QuizSchoolWorkshopPhase) {
 }
 
 export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart, onChooseFormat }: Props) {
-  const deck = useMemo(() => questions.slice(0, 5), [questions]);
+  // `questions` stays in the public props for compatibility with the generic launcher;
+  // atelier-60 deliberately uses its own validated concept pairs.
+  void questions;
+  const preAssessment = useMemo(() => getQuizSchoolWorkshopAssessment(level, "pre-quiz"), [level]);
+  const postAssessment = useMemo(() => getQuizSchoolWorkshopAssessment(level, "post-quiz"), [level]);
   const activities = useMemo(() => composeQuizSchoolWorkshopActivities(level), [level]);
   const [state, setState] = useState(createQuizSchoolWorkshopState);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
-  const question = state.phase === "pre-quiz" || state.phase === "post-quiz" ? deck[state.questionIndex] : undefined;
+  const assessment = state.phase === "pre-quiz" ? preAssessment : state.phase === "post-quiz" ? postAssessment : [];
+  const question = state.phase === "pre-quiz" || state.phase === "post-quiz" ? assessment[state.questionIndex] : undefined;
   const selected = question ? selectedAnswers[`${state.phase}:${question.id}`] : undefined;
   const isRevealed = question ? revealed[`${state.phase}:${question.id}`] === true : false;
-  const progress = getQuizSchoolWorkshopProgress(state);
+  const progress = getQuizSchoolWorkshopProgress(state, preAssessment.length, postAssessment.length);
+  const summary = useMemo(
+    () => buildQuizSchoolWorkshopSummary({ level, preAssessment, postAssessment, preAnswers: state.preAnswers, postAnswers: state.postAnswers, activities }),
+    [activities, level, postAssessment, preAssessment, state.postAnswers, state.preAnswers],
+  );
 
   const answerQuestion = (answer: string) => {
     if (!question || isRevealed) return;
@@ -78,8 +88,8 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
     setRevealed((current) => ({ ...current, [`${state.phase}:${question.id}`]: true }));
   };
 
-  const moveNext = () => setState((current) => nextQuizSchoolWorkshopPhase(current, deck.length, activities.length));
-  const movePrevious = () => setState((current) => previousQuizSchoolWorkshopPhase(current, deck.length, activities.length));
+  const moveNext = () => setState((current) => nextQuizSchoolWorkshopPhase(current, preAssessment.length, activities.length, postAssessment.length));
+  const movePrevious = () => setState((current) => previousQuizSchoolWorkshopPhase(current, preAssessment.length, activities.length, postAssessment.length));
   const activity = state.phase === "atelier" ? activities[state.activityIndex] : undefined;
   const restart = () => {
     setState(createQuizSchoolWorkshopState());
@@ -98,13 +108,13 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
       {question ? (
         <CmmCard tone="amber" variant="elevated" className="p-5 md:p-8" as="section">
           <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-            <span>{phaseLabel(locale, state.phase)}</span><span>{state.questionIndex + 1} / {deck.length}</span>
+            <span>{phaseLabel(locale, state.phase)}</span><span>{state.questionIndex + 1} / {assessment.length}</span>
           </div>
-          <h2 className="mt-6 text-2xl font-black leading-tight text-slate-950 md:text-4xl">{getQuizLocalizedTextFallback(locale, question.localized?.question, question.question)}</h2>
+          <h2 className="mt-6 text-2xl font-black leading-tight text-slate-950 md:text-4xl">{question.prompt[locale]}</h2>
           <p className="mt-4 text-sm font-medium text-slate-600">{getQuizUiCopy(locale, "session.school.workshop.vote")}</p>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
-            {getChoices(question).map((choice) => (
-              <button key={choice} type="button" disabled={isRevealed} aria-pressed={selected === choice} onClick={() => answerQuestion(choice)} className={`${FOCUS_RING} min-h-14 rounded-2xl border px-5 py-4 text-left text-lg font-bold transition ${selected === choice ? "border-amber-600 bg-amber-100 text-amber-950" : "border-slate-200 bg-white text-slate-800 hover:border-amber-300"}`}>
+            {getChoices(question, locale).map(([choiceId, choice]) => (
+              <button key={choiceId} type="button" disabled={isRevealed} aria-pressed={selected === choiceId} onClick={() => answerQuestion(choiceId)} className={`${FOCUS_RING} min-h-14 rounded-2xl border px-5 py-4 text-left text-lg font-bold transition ${selected === choiceId ? "border-amber-600 bg-amber-100 text-amber-950" : "border-slate-200 bg-white text-slate-800 hover:border-amber-300"}`}>
                 {choice}
               </button>
             ))}
@@ -115,7 +125,7 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
             </button>
             {isRevealed ? <button type="button" onClick={moveNext} className={`${FOCUS_RING} inline-flex min-h-12 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-emerald-700`}>{getQuizUiCopy(locale, "session.school.workshop.next")}<ArrowRight size={17} aria-hidden="true" /></button> : null}
           </div>
-          {isRevealed ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-950"><CheckCircle className="mr-2 inline-block h-5 w-5 text-emerald-600" aria-hidden="true" />{getQuizLocalizedTextFallback(locale, question.localized?.explanation, question.explanation)}</div> : null}
+          {isRevealed ? <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-950"><CheckCircle className="mr-2 inline-block h-5 w-5 text-emerald-600" aria-hidden="true" />{question.explanation[locale]}</div> : null}
         </CmmCard>
       ) : null}
 
@@ -164,7 +174,30 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
         <CmmCard tone="amber" variant="elevated" className="p-5 md:p-8" as="section">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{getQuizUiCopy(locale, "session.school.workshop.summary")}</p>
           <h2 className="mt-2 text-3xl font-black text-slate-950">{locale === "fr" ? "Ce que la classe a fait progresser" : "What the group improved"}</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3"><div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black uppercase text-slate-500">{getQuizUiCopy(locale, "session.school.workshop.preQuiz")}</p><p className="mt-2 text-3xl font-black text-slate-950">{progress.preCorrect}/{progress.total}</p></div><div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-700">{getQuizUiCopy(locale, "session.school.workshop.postQuiz")}</p><p className="mt-2 text-3xl font-black text-emerald-950">{progress.postCorrect}/{progress.total}</p></div><div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-black uppercase text-amber-700">{locale === "fr" ? "Progression collective" : "Collective progress"}</p><p className="mt-2 text-3xl font-black text-amber-950">{progress.postCorrect - progress.preCorrect > 0 ? "+" : ""}{progress.postCorrect - progress.preCorrect}</p></div></div>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-700">{locale === "fr" ? "Ces résultats sont collectifs et restent dans ce navigateur : ils ne constituent ni un classement ni un profil d’élève." : "These results are collective and stay in this browser: they are neither a ranking nor a student profile."}</p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs font-black uppercase text-slate-500">{locale === "fr" ? "Taux avant" : "Before rate"}</p><p className="mt-2 text-3xl font-black text-slate-950">{progress.preCorrect}/{summary.preTotal} · {Math.round(summary.preRate * 100)} %</p></div>
+            <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-700">{locale === "fr" ? "Taux après" : "After rate"}</p><p className="mt-2 text-3xl font-black text-emerald-950">{progress.postCorrect}/{summary.postTotal} · {Math.round(summary.postRate * 100)} %</p></div>
+            <div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-black uppercase text-amber-700">{locale === "fr" ? "Progression" : "Progress"}</p><p className="mt-2 text-3xl font-black text-amber-950">{summary.progress > 0 ? "+" : ""}{Math.round(summary.progress * 100)} points</p></div>
+          </div>
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="workshop-takeaways">
+              <h3 id="workshop-takeaways" className="text-xl font-black text-slate-950">{locale === "fr" ? "Trois notions retenues" : "Three takeaways"}</h3>
+              <ul className="mt-3 space-y-2 text-sm font-medium text-slate-700">{summary.retainedNotions.map((notion) => <li key={notion.fr} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{notion[locale]}</span></li>)}</ul>
+            </section>
+            <section aria-labelledby="workshop-fragile">
+              <h3 id="workshop-fragile" className="text-xl font-black text-slate-950">{locale === "fr" ? "Notions encore fragiles" : "Ideas to revisit"}</h3>
+              {summary.fragileNotions.length > 0 ? <ul className="mt-3 space-y-2 text-sm font-medium text-slate-700">{summary.fragileNotions.map((notion) => <li key={notion.fr} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">{notion[locale]}</li>)}</ul> : <p className="mt-3 text-sm text-slate-700">{locale === "fr" ? "Aucune notion signalée dans le post-quiz." : "No idea flagged in the post-quiz."}</p>}
+            </section>
+          </div>
+          <section aria-labelledby="workshop-actions" className="mt-8">
+            <h3 id="workshop-actions" className="text-xl font-black text-slate-950">{locale === "fr" ? "Trois actions possibles dans le collège" : "Three possible school actions"}</h3>
+            <ol className="mt-3 list-decimal space-y-2 pl-6 text-sm font-medium text-slate-700">{summary.collegeActions.map((action) => <li key={action.fr} className="pl-1">{action[locale]}</li>)}</ol>
+          </section>
+          <section aria-labelledby="workshop-territory" className="mt-8">
+            <h3 id="workshop-territory" className="text-xl font-black text-slate-950">{locale === "fr" ? "Lieux franciliens pour poursuivre" : "Places in Île-de-France to continue"}</h3>
+            {summary.territorialResources.length > 0 ? <ul className="mt-3 grid gap-3 md:grid-cols-3">{summary.territorialResources.map((resource) => <li key={resource.id} className="rounded-2xl border border-slate-200 bg-white p-4"><a className={`${FOCUS_RING} font-black text-amber-900 underline`} href={resource.officialUrl} target="_blank" rel="noreferrer">{resource.name[locale]}</a><p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{resource.territory[locale]}</p><p className="mt-2 text-sm text-slate-700">{resource.description[locale]}</p><p className="mt-2 text-xs text-slate-600">{resource.audience[locale]}</p></li>)}</ul> : <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{locale === "fr" ? "Aucune ressource locale validée n’est disponible pour le moment. Le professeur peut conserver les trois actions ci-dessus et rechercher une ressource officielle adaptée." : "No validated local resource is available at the moment. The teacher can keep the three actions above and look for a suitable official resource."}</p>}
+          </section>
           <ul className="mt-6 space-y-3 text-sm font-medium text-slate-700">{activities.map((item) => <li key={item.id} className="flex gap-2"><CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" /><span>{item.title[locale]} · {item.durationMinutes} min</span></li>)}</ul>
           <div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={restart} className={`${FOCUS_RING} inline-flex min-h-12 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-amber-700`}>{getQuizUiCopy(locale, "session.school.workshop.restart")}</button><button type="button" onClick={onChooseFormat} className={`${FOCUS_RING} inline-flex min-h-12 rounded-2xl border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 hover:bg-amber-50`}>{getQuizUiCopy(locale, "session.school.workshop.chooseFormat")}</button></div>
         </CmmCard>

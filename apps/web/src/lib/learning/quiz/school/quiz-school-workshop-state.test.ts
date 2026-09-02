@@ -38,7 +38,17 @@ describe("school/quiz-school-workshop-state", () => {
     for (let index = 0; index < 5; index += 1) state = nextQuizSchoolWorkshopPhase(state, 5);
     expect(previousQuizSchoolWorkshopPhase(state, 5).phase).toBe("pre-quiz");
     expect(state.preAnswers).toEqual({ q1: true });
-    expect(getQuizSchoolWorkshopProgress(state)).toMatchObject({ preCorrect: 1, postCorrect: 0, total: 5 });
+    expect(getQuizSchoolWorkshopProgress(state, 5, 5)).toMatchObject({ preCorrect: 1, postCorrect: 0, preTotal: 5, postTotal: 5, total: 5 });
+  });
+
+  it("supports distinct pre/post question counts", () => {
+    let state = createQuizSchoolWorkshopState();
+    for (let index = 0; index < 8; index += 1) state = nextQuizSchoolWorkshopPhase(state, 8, 1, 10);
+    state = nextQuizSchoolWorkshopPhase(state, 8, 1, 10);
+    expect(state.phase).toBe("post-quiz");
+    for (let index = 0; index < 10; index += 1) state = nextQuizSchoolWorkshopPhase(state, 8, 1, 10);
+    expect(state.phase).toBe("bilan");
+    expect(getQuizSchoolWorkshopProgress(state, 8, 10)).toMatchObject({ preTotal: 8, postTotal: 10, total: 10 });
   });
 
   it("keeps every pedagogical activity in the 30-minute phase before the post-quiz", () => {
@@ -60,5 +70,12 @@ describe("school/quiz-school-workshop-state", () => {
     expect(source).not.toContain("localStorage");
     expect(source).not.toContain("sessionStorage");
     expect(source).not.toContain("saveQuiz");
+    expect(source).not.toContain("studentName");
+    expect(source).not.toContain("classId");
+    expect(source).not.toContain("studentId");
+    expect(source).toContain("Taux avant");
+    expect(source).toContain("Taux après");
+    expect(source).toContain("Lieux franciliens pour poursuivre");
+    expect(source).toContain("territorialResources");
   });
 });

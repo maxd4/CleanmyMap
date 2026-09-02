@@ -49,6 +49,7 @@ peuvent rester incomplets, mais ne sont jamais considérés comme publiables.
 | Éclairages Gestes Propres | articles source | date de publication indiquée | moderate | synthèses reformulées, recommandations séparées |
 | Sobriété numérique — procédures Gmail | Aide Gmail officielle | consultation du document, 2026-09-01 | strong | chemin de gestion des abonnements, fallback de désabonnement, nettoyage du spam et de la corbeille |
 | Sobriété numérique — facteurs d’impact | Impact CO₂, données Base Empreinte ADEME | consultation des pages, 2026-09-01 | strong | facteurs de spam non lu, stockage cloud et voiture thermique moyenne essence |
+| Mode École — ressources territoriales | sites officiels Ville de Paris et Académie du Climat | revue des pages, 2026-09-02 | strong | description stable du lieu, territoire, public scolaire lorsque publié ; programmation et modalités à revérifier |
 
 Les pages d’aide et les pages de facteurs ne fournissent pas toutes une date de
 publication visible. Pour ces sources web vivantes, `source.date` conserve la
@@ -75,6 +76,16 @@ les données et dans le rendu. Les visuels ou images partenaires restent soumis 
 leur propre statut de permission ; ce statut n’est pas confondu avec la
 validation éditoriale du texte.
 
+Le registre territorial de `atelier-60` est centralisé dans
+`apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.ts`.
+Chaque ressource possède un `ContentValidationRecord` publié, une URL officielle,
+une date de revue et un statut scolaire explicite. Seules les ressources
+`validated` et publiées peuvent apparaître dans le bilan ; une ressource
+`needsReview` est conservée pour la revue éditoriale mais exclue du parcours
+public. Les descriptions ne codent pas en dur les créneaux, tarifs, ateliers ou
+réservations susceptibles de changer. L’Académie du Climat est présentée comme
+un prolongement possible, sans relation de partenariat avec CleanMyMap.
+
 ## Contrôles
 
 - `validateContentRecord` produit les anomalies structurées ;
@@ -90,3 +101,5 @@ responsable identifié, puis seulement passer à `published`. Les enregistrement
 de sobriété numérique sont centralisés dans
 `apps/web/src/lib/learning/practice/numerique.ts` et validés par
 `apps/web/src/lib/learning/practice/numerique.test.ts`.
+Les ressources territoriales du Mode École sont validées par
+`apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.test.ts`.
