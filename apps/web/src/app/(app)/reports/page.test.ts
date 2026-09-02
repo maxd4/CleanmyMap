@@ -291,6 +291,8 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-active-tab="generation"');
     expect(markup).toContain("Génération réservée");
     expect(markup).not.toContain('data-testid="csv-export"');
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
+    expect(mocks.loadCachedReportCommunityEvents).not.toHaveBeenCalled();
   });
 
   it("propagates a truncated generation dataset to the report document", async () => {

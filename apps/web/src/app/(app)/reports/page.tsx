@@ -282,7 +282,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         report,
         monthlyData,
         canAccessExports: canAccessDetailedReports,
-        exportRows: overview.contracts.map(toReportsExportRow),
+        exportRows: canAccessDetailedReports
+          ? overview.contracts.map(toReportsExportRow)
+          : null,
       });
     })()
   );
