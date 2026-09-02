@@ -492,7 +492,7 @@ Avant chaque commit, verifier :
 
 - **Locales** : `apps/web/src/locales/fr.json`, `en.json`
 - **Design System** : `documentation/design-system/`
-- **ESLint** : `documentation/development/LINT_CORRECTION_CHECKLIST.md`
+- **ESLint** : `documentation/development/lint-refactor-playbook.md`
 - **Contributing** : `documentation/development/CONTRIBUTING.md`
 - **Erreurs API** : `apps/web/src/lib/http/api-errors.ts`, `auth-responses.ts`
 

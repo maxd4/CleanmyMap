@@ -188,6 +188,4 @@ Ce tri garde la priorité sur les risques de comportement, puis sur la maintenab
 
 ## Références
 
-- [Checklist de correction ESLint](./LINT_CORRECTION_CHECKLIST.md)
-- [Priorité des warnings ESLint restants](./LINT_WARNING_PRIORITY.md)
 - [TypeScript Precision Policy](./typescript-precision-policy.md)
