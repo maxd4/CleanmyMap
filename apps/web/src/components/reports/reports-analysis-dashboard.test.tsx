@@ -11,8 +11,8 @@ vi.mock("@/components/ui/page-header", () => ({
     React.createElement("header", null, title, subtitle, action),
 }));
 
-vi.mock("@/components/reports/analytics-cockpit", () => ({
-  AnalyticsCockpit: () => React.createElement("div", { "data-testid": "analytics-cockpit" }),
+vi.mock("@/components/reports/deferred-analytics-cockpit", () => ({
+  DeferredAnalyticsCockpit: () => React.createElement("div", { "data-testid": "analytics-cockpit" }),
 }));
 
 const report = {
