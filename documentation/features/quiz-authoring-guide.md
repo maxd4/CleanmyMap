@@ -527,5 +527,4 @@ Une question est acceptable seulement si:
 ## Références associées
 
 - [Système de répétition espacée (SRS)](./quiz-srs.md)
-- [Guide qualité du projet](../development/QUALITY_GUIDE.md)
 - [Spécification des rappels cognitifs](../product/specification-rappels-cognitifs.md)
