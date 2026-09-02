@@ -119,5 +119,5 @@ Ces messages restent la référence par défaut. Les pages ne doivent les person
 ## Références associées
 
 - [`documentation/database/supabase-quota-audit.md`](../database/supabase-quota-audit.md)
-- [`documentation/development/supabase-refresh-strategy-audit.md`](./supabase-refresh-strategy-audit.md)
+- [`documentation/operations/audits/supabase-refresh-strategy-audit.md`](../operations/audits/supabase-refresh-strategy-audit.md)
 - [`documentation/development/vercel-quota-governance.md`](./vercel-quota-governance.md)

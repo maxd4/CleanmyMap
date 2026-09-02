@@ -6,7 +6,7 @@ Entrée principale pour tout ce qui touche aux requêtes, index, RLS, stockage e
 
 1. [Supabase quota audit](./supabase-quota-audit.md)
 2. [Guide développeur Supabase](../development/supabase-quota-guide.md)
-3. [Supabase refresh strategy audit](../development/supabase-refresh-strategy-audit.md)
+3. [Supabase refresh strategy audit](../operations/audits/supabase-refresh-strategy-audit.md)
 4. [Supabase table optimization playbook](./supabase-table-optimization-playbook.md)
 5. [Supabase query optimization playbook](../development/supabase-query-optimization-playbook.md)
 6. [Database query & index audit](./QUERY_INDEX_AUDIT.md)

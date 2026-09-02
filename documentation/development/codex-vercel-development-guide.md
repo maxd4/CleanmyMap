@@ -222,4 +222,4 @@ Lectures associées:
 - [Checklist Performance & Quotas Vercel](./performance-quotas-vercel-checklist.md)
 - [Playbook anti-régression Vercel](./vercel-anti-regression-playbook.md)
 - [Stratégie de répartition Vercel, Supabase et navigateur](./vercel-supabase-browser-strategy.md)
-- [Audit des routes les plus coûteuses](./vercel-route-cost-audit.md)
+- [Audit des routes les plus coûteuses](../operations/audits/vercel-route-cost-audit.md)
