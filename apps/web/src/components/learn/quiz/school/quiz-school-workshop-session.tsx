@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle, Lightbulb, School } from "lucide-react";
+// This interactive flow is exclusively the public school atelier format.
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizLocalizedTextFallback, getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";

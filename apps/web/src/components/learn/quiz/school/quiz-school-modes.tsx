@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Calculator, MapPin, Megaphone, Repeat2 } from "lucide-react";
+// School-only track labels and visual metadata live with the school UI family.
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizUiCopyKey } from "@/lib/learning/quiz/quiz-i18n";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";

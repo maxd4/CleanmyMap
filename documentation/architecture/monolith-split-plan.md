@@ -36,8 +36,8 @@ Règle : **un lot structurel par cible principale**, **API publique inchangée**
 | 🔴 CRITIQUE | 928 lignes / 29,1 KB | `components/chat/chat-shell.tsx` | Revalider le découpage du shell et des hooks |
 | 🔴 CRITIQUE | 700 lignes / 28,4 KB | `components/navigation/app-navigation-ribbon.tsx` | Nouveau signal ; séparer composition et rendu |
 | 🔴 CRITIQUE | 654 lignes / 27,9 KB | `components/sections/rubriques/weather-section.preparation.tsx` | Nouveau signal ; vérifier la frontière avec `weather-section.tsx` |
-| 🔴 CRITIQUE | 530 lignes / 27,5 KB | `components/learn/quiz/quiz-school-kit-page.tsx` | Nouveau signal ; qualifier données et rendu |
-| 🔴 CRITIQUE | 779 lignes / 27,3 KB | `components/learn/quiz/environmental-quiz.tsx` | À découper |
+| ✅ RÉSORBÉ | compositeur + sections `components/learn/quiz/school/` | `components/learn/quiz/quiz-school-kit-page.tsx` | Sections guide et banque extraites ; vérifier les frontières lors des prochaines évolutions |
+| ✅ RÉSORBÉ | orchestration + contrôleur `components/learn/quiz/session/` | `components/learn/quiz/environmental-quiz.tsx` | Bilan pur extrait dans `lib/learning/quiz/quiz-session-summary.ts` |
 | 🔴 CRITIQUE | 655 lignes / 27,1 KB | `components/admin/quiz-bank-admin-view.tsx` | Nouveau signal ; séparer orchestration et vues admin |
 | 🔴 CRITIQUE | 488 lignes / 26,9 KB | `components/sections/rubriques/elus-section.tsx` | Nouveau signal ; vérifier la densité de données statiques |
 | 🔴 CRITIQUE | 838 lignes / 26,6 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | À découper |

@@ -78,13 +78,19 @@ nécessaire.
 ```txt
 apps/web/src/app/learn/ecole/page.tsx
 apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
-apps/web/src/components/learn/quiz/quiz-school-level-launcher.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-workshop-session.tsx
+apps/web/src/components/learn/quiz/session/use-quiz-session-controller.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
 apps/web/src/lib/learning/quiz/quiz-selection-engine.ts
-apps/web/src/components/learn/quiz/quiz-school-modes.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-modes.tsx
 apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-eligibility.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
+apps/web/src/lib/learning/quiz/quiz-session-summary.ts
 apps/web/src/lib/learning/quiz/school/README.md
 ```
 

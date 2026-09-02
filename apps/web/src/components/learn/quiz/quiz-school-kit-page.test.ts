@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { QuizSchoolKitPage } from "./quiz-school-kit-page";
-import { getQuizSchoolLaunchHref } from "./quiz-school-level-launcher";
+import { getQuizSchoolLaunchHref } from "./school/quiz-school-level-launcher";
 
 describe("QuizSchoolKitPage", () => {
   it("builds shareable level and format URLs without answers", () => {
