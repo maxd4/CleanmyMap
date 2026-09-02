@@ -28,6 +28,11 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 - `clerk-supabase-audit.md`
 - `clerk-supabase-audit.md` sert aussi de point d'entrée vers `npm run data:audit:clerk-supabase`
 
+### Audits et diagnostics historiques
+- [`audits/`](./audits/) — audits opérationnels contextualisés ;
+- ces documents ne sont pas des sources `CURRENT` ;
+- les rapports entièrement générés et reproductibles restent sous `artifacts/`.
+
 ### Mémoire de session
 - `agent-memory-governance.md` - doctrine de mémoire persistante, cycle de travail autonome et clôture de session
 - résumé de clôture de la dernière session

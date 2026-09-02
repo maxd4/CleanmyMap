@@ -27,19 +27,19 @@ Sur les surfaces modifiées par la réduction Vercel, je n'ai pas identifié de 
 
 ## Fichiers vérifiés
 
-- [apps/web/src/proxy.ts](../../apps/web/src/proxy.ts)
-- [apps/web/src/app/layout.tsx](../../apps/web/src/app/layout.tsx)
-- [apps/web/src/components/actions/map/action-pollution-score-references-context.tsx](../../apps/web/src/components/actions/map/action-pollution-score-references-context.tsx)
-- [apps/web/src/lib/actions/pollution/pollution-score-references.ts](../../apps/web/src/lib/actions/pollution/pollution-score-references.ts)
-- [apps/web/src/lib/supabase/client.ts](../../apps/web/src/lib/supabase/client.ts)
-- [apps/web/src/lib/gamification/api.ts](../../apps/web/src/lib/gamification/api.ts)
-- [apps/web/src/lib/gamification/quiz-progress-storage.ts](../../apps/web/src/lib/gamification/quiz-progress-storage.ts)
-- [apps/web/src/lib/services/quiz-srs-service.ts](../../apps/web/src/lib/services/quiz-srs-service.ts)
-- [apps/web/src/app/api/gamification/quiz/progress/route.ts](../../apps/web/src/app/api/gamification/quiz/progress/route.ts)
-- [apps/web/supabase/migrations/20260402000001_initial_modern_schema.sql](../../apps/web/supabase/migrations/20260402000001_initial_modern_schema.sql)
-- [apps/web/supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql](../../apps/web/supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql)
-- [apps/web/supabase/migrations/20260612000002_actions_map_feed_rpc.sql](../../apps/web/supabase/migrations/20260612000002_actions_map_feed_rpc.sql)
-- [apps/web/supabase/migrations/20260427000019_quiz_srs.sql](../../apps/web/supabase/migrations/20260427000019_quiz_srs.sql)
+- [apps/web/src/proxy.ts](../../../apps/web/src/proxy.ts)
+- [apps/web/src/app/layout.tsx](../../../apps/web/src/app/layout.tsx)
+- [apps/web/src/components/actions/map/action-pollution-score-references-context.tsx](../../../apps/web/src/components/actions/map/action-pollution-score-references-context.tsx)
+- [apps/web/src/lib/actions/pollution/pollution-score-references.ts](../../../apps/web/src/lib/actions/pollution/pollution-score-references.ts)
+- [apps/web/src/lib/supabase/client.ts](../../../apps/web/src/lib/supabase/client.ts)
+- [apps/web/src/lib/gamification/api.ts](../../../apps/web/src/lib/gamification/api.ts)
+- [apps/web/src/lib/gamification/quiz-progress-storage.ts](../../../apps/web/src/lib/gamification/quiz-progress-storage.ts)
+- [apps/web/src/lib/services/quiz-srs-service.ts](../../../apps/web/src/lib/services/quiz-srs-service.ts)
+- [apps/web/src/app/api/gamification/quiz/progress/route.ts](../../../apps/web/src/app/api/gamification/quiz/progress/route.ts)
+- [apps/web/supabase/migrations/20260402000001_initial_modern_schema.sql](../../../apps/web/supabase/migrations/20260402000001_initial_modern_schema.sql)
+- [apps/web/supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql](../../../apps/web/supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql)
+- [apps/web/supabase/migrations/20260612000002_actions_map_feed_rpc.sql](../../../apps/web/supabase/migrations/20260612000002_actions_map_feed_rpc.sql)
+- [apps/web/supabase/migrations/20260427000019_quiz_srs.sql](../../../apps/web/supabase/migrations/20260427000019_quiz_srs.sql)
 
 ## Tests exécutés
 

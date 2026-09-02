@@ -131,8 +131,8 @@ Exemples acceptables:
 - [Checklist Performance & Quotas Vercel](./performance-quotas-vercel-checklist.md)
 - [Gouvernance des quotas Vercel](./vercel-quota-governance.md)
 - [Stratégie de répartition Vercel, Supabase et navigateur](./vercel-supabase-browser-strategy.md)
-- [Audit des routes les plus coûteuses](./vercel-route-cost-audit.md)
-- [Rapport automatique des surfaces Vercel](./vercel-surface-report.md)
+- [Audit des routes les plus coûteuses](../operations/audits/vercel-route-cost-audit.md)
+- [Rapport automatique des surfaces Vercel](../operations/audits/vercel-surface-report.md)
 
 ## Commandes utiles
 

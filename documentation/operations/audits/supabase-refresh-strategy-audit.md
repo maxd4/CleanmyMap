@@ -32,10 +32,10 @@ Reste à faire:
 
 Références locales:
 
-- [`documentation/database/supabase-quota-audit.md`](../database/supabase-quota-audit.md)
-- [`documentation/development/supabase-query-optimization-playbook.md`](./supabase-query-optimization-playbook.md)
-- [`artifacts/supabase/quota-audit/table-risk-report.md`](../../artifacts/supabase/quota-audit/table-risk-report.md)
-- [`artifacts/supabase/quota-audit/repo-audit.md`](../../artifacts/supabase/quota-audit/repo-audit.md)
+- [`documentation/database/supabase-quota-audit.md`](../../database/supabase-quota-audit.md)
+- [`documentation/development/supabase-query-optimization-playbook.md`](../../development/supabase-query-optimization-playbook.md)
+- [`artifacts/supabase/quota-audit/table-risk-report.md`](../../../artifacts/supabase/quota-audit/table-risk-report.md)
+- [`artifacts/supabase/quota-audit/repo-audit.md`](../../../artifacts/supabase/quota-audit/repo-audit.md)
 
 ## Résumé exécutif
 
@@ -76,14 +76,14 @@ La règle utile pour la suite est simple:
 
 Fichiers concernés:
 
-- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../apps/web/src/lib/actions/participation/group-participation.ts)
-- [`apps/web/src/lib/admin/audit/operation-audit.ts`](../../apps/web/src/lib/admin/audit/operation-audit.ts)
-- [`apps/web/src/lib/auth/sync.ts`](../../apps/web/src/lib/auth/sync.ts)
-- [`apps/web/src/lib/admin/role-management.ts`](../../apps/web/src/lib/admin/role-management.ts)
-- [`apps/web/src/lib/authz.ts`](../../apps/web/src/lib/authz.ts)
-- [`apps/web/src/lib/gamification/referrals.ts`](../../apps/web/src/lib/gamification/referrals.ts)
-- [`apps/web/src/app/api/chat/users/route.ts`](../../apps/web/src/app/api/chat/users/route.ts)
-- [`apps/web/src/app/api/users/profile/display-name-mode/route.ts`](../../apps/web/src/app/api/users/profile/display-name-mode/route.ts)
+- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../../apps/web/src/lib/actions/participation/group-participation.ts)
+- [`apps/web/src/lib/admin/audit/operation-audit.ts`](../../../apps/web/src/lib/admin/audit/operation-audit.ts)
+- [`apps/web/src/lib/auth/sync.ts`](../../../apps/web/src/lib/auth/sync.ts)
+- [`apps/web/src/lib/admin/role-management.ts`](../../../apps/web/src/lib/admin/role-management.ts)
+- [`apps/web/src/lib/authz.ts`](../../../apps/web/src/lib/authz.ts)
+- [`apps/web/src/lib/gamification/referrals.ts`](../../../apps/web/src/lib/gamification/referrals.ts)
+- [`apps/web/src/app/api/chat/users/route.ts`](../../../apps/web/src/app/api/chat/users/route.ts)
+- [`apps/web/src/app/api/users/profile/display-name-mode/route.ts`](../../../apps/web/src/app/api/users/profile/display-name-mode/route.ts)
 
 Problèmes observés:
 
@@ -113,10 +113,10 @@ Solution recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/app/api/community/events/route.ts`](../../apps/web/src/app/api/community/events/route.ts)
-- [`apps/web/src/app/api/community/events/ops/route.ts`](../../apps/web/src/app/api/community/events/ops/route.ts)
-- [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../apps/web/src/app/api/community/funnel.csv/route.ts)
-- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../apps/web/src/lib/actions/participation/group-participation.ts)
+- [`apps/web/src/app/api/community/events/route.ts`](../../../apps/web/src/app/api/community/events/route.ts)
+- [`apps/web/src/app/api/community/events/ops/route.ts`](../../../apps/web/src/app/api/community/events/ops/route.ts)
+- [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../../apps/web/src/app/api/community/funnel.csv/route.ts)
+- [`apps/web/src/lib/actions/participation/group-participation.ts`](../../../apps/web/src/lib/actions/participation/group-participation.ts)
 
 Problèmes observés:
 
@@ -145,10 +145,10 @@ Solution recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/app/api/community/events/route.ts`](../../apps/web/src/app/api/community/events/route.ts)
-- [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../apps/web/src/app/api/community/funnel.csv/route.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
+- [`apps/web/src/app/api/community/events/route.ts`](../../../apps/web/src/app/api/community/events/route.ts)
+- [`apps/web/src/app/api/community/funnel.csv/route.ts`](../../../apps/web/src/app/api/community/funnel.csv/route.ts)
+- [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
+- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
 
 Problèmes observés:
 
@@ -169,15 +169,15 @@ Fréquence recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
-- [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../apps/web/src/components/sections/rubriques/actors-section.tsx)
-- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
-- [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
-- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
-- [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
-- [`apps/web/src/app/(app)/dashboard/page.tsx`](../../apps/web/src/app/(app)/dashboard/page.tsx)
-- [`apps/web/src/app/(app)/reports/page.tsx`](../../apps/web/src/app/(app)/reports/page.tsx)
-- [`apps/web/src/app/(app)/pilotage/page.tsx`](../../apps/web/src/app/(app)/pilotage/page.tsx)
+- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
+- [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../../apps/web/src/components/sections/rubriques/actors-section.tsx)
+- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
+- [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
+- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
+- [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
+- [`apps/web/src/app/(app)/dashboard/page.tsx`](../../../apps/web/src/app/(app)/dashboard/page.tsx)
+- [`apps/web/src/app/(app)/reports/page.tsx`](../../../apps/web/src/app/(app)/reports/page.tsx)
+- [`apps/web/src/app/(app)/pilotage/page.tsx`](../../../apps/web/src/app/(app)/pilotage/page.tsx)
 
 Problèmes observés:
 
@@ -206,8 +206,8 @@ Solution recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/lib/gamification/badges/listing.ts`](../../apps/web/src/lib/gamification/badges/listing.ts)
-- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
+- [`apps/web/src/lib/gamification/badges/listing.ts`](../../../apps/web/src/lib/gamification/badges/listing.ts)
+- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
 
 Problèmes observés:
 
@@ -234,9 +234,9 @@ Solution recommandée:
 
 Fichiers concernés:
 
-- [`apps/web/src/app/api/gamification/analytics/points/route.ts`](../../apps/web/src/app/api/gamification/analytics/points/route.ts)
-- [`apps/web/src/lib/gamification/counters.ts`](../../apps/web/src/lib/gamification/counters.ts)
-- [`apps/web/src/lib/gamification/progression-data.ts`](../../apps/web/src/lib/gamification/progression-data.ts)
+- [`apps/web/src/app/api/gamification/analytics/points/route.ts`](../../../apps/web/src/app/api/gamification/analytics/points/route.ts)
+- [`apps/web/src/lib/gamification/counters.ts`](../../../apps/web/src/lib/gamification/counters.ts)
+- [`apps/web/src/lib/gamification/progression-data.ts`](../../../apps/web/src/lib/gamification/progression-data.ts)
 
 Problèmes observés:
 
@@ -263,12 +263,12 @@ Solution recommandée:
 
 Ces pages recalculent encore des agrégats au rendu:
 
-- [`apps/web/src/app/(app)/dashboard/page.tsx`](../../apps/web/src/app/(app)/dashboard/page.tsx)
-- [`apps/web/src/app/(app)/reports/page.tsx`](../../apps/web/src/app/(app)/reports/page.tsx)
-- [`apps/web/src/app/(app)/pilotage/page.tsx`](../../apps/web/src/app/(app)/pilotage/page.tsx)
-- [`apps/web/src/app/(app)/sponsor-portal/page.tsx`](../../apps/web/src/app/(app)/sponsor-portal/page.tsx)
-- [`apps/web/src/app/(app)/prints/report/page.tsx`](../../apps/web/src/app/(app)/prints/report/page.tsx)
-- [`apps/web/src/app/(app)/admin/page.tsx`](../../apps/web/src/app/(app)/admin/page.tsx)
+- [`apps/web/src/app/(app)/dashboard/page.tsx`](../../../apps/web/src/app/(app)/dashboard/page.tsx)
+- [`apps/web/src/app/(app)/reports/page.tsx`](../../../apps/web/src/app/(app)/reports/page.tsx)
+- [`apps/web/src/app/(app)/pilotage/page.tsx`](../../../apps/web/src/app/(app)/pilotage/page.tsx)
+- [`apps/web/src/app/(app)/sponsor-portal/page.tsx`](../../../apps/web/src/app/(app)/sponsor-portal/page.tsx)
+- [`apps/web/src/app/(app)/prints/report/page.tsx`](../../../apps/web/src/app/(app)/prints/report/page.tsx)
+- [`apps/web/src/app/(app)/admin/page.tsx`](../../../apps/web/src/app/(app)/admin/page.tsx)
 
 Stratégie recommandée:
 
@@ -281,19 +281,19 @@ Stratégie recommandée:
 
 Priorité de revue:
 
-- [`apps/web/src/components/sections/rubriques/use-weather-data.ts`](../../apps/web/src/components/sections/rubriques/use-weather-data.ts)
-- [`apps/web/src/components/chat/hooks/use-chat-data.ts`](../../apps/web/src/components/chat/hooks/use-chat-data.ts)
-- [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
-- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
-- [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
-- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
-- [`apps/web/src/components/sections/rubriques/elus-section.tsx`](../../apps/web/src/components/sections/rubriques/elus-section.tsx)
-- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
-- [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../apps/web/src/components/sections/rubriques/actors-section.tsx)
-- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
-- [`apps/web/src/components/sections/rubriques/use-kit-data.ts`](../../apps/web/src/components/sections/rubriques/use-kit-data.ts)
-- [`apps/web/src/components/sections/rubriques/guide-section.tsx`](../../apps/web/src/components/sections/rubriques/guide-section.tsx)
+- [`apps/web/src/components/sections/rubriques/use-weather-data.ts`](../../../apps/web/src/components/sections/rubriques/use-weather-data.ts)
+- [`apps/web/src/components/chat/hooks/use-chat-data.ts`](../../../apps/web/src/components/chat/hooks/use-chat-data.ts)
+- [`apps/web/src/components/actions/map-feed/use-map-feed-data.ts`](../../../apps/web/src/components/actions/map-feed/use-map-feed-data.ts)
+- [`apps/web/src/components/sections/rubriques/community/use-community-events.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-events.ts)
+- [`apps/web/src/components/sections/rubriques/community/use-community-highlights.ts`](../../../apps/web/src/components/sections/rubriques/community/use-community-highlights.ts)
+- [`apps/web/src/components/sections/rubriques/recycling-section.tsx`](../../../apps/web/src/components/sections/rubriques/recycling-section.tsx)
+- [`apps/web/src/components/dashboard/business-alerts-panel.tsx`](../../../apps/web/src/components/dashboard/business-alerts-panel.tsx)
+- [`apps/web/src/components/sections/rubriques/elus-section.tsx`](../../../apps/web/src/components/sections/rubriques/elus-section.tsx)
+- [`apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx`](../../../apps/web/src/components/sections/rubriques/homepage-stats-widget.tsx)
+- [`apps/web/src/components/sections/rubriques/actors-section.tsx`](../../../apps/web/src/components/sections/rubriques/actors-section.tsx)
+- [`apps/web/src/components/sections/rubriques/use-trash-spotter.ts`](../../../apps/web/src/components/sections/rubriques/use-trash-spotter.ts)
+- [`apps/web/src/components/sections/rubriques/use-kit-data.ts`](../../../apps/web/src/components/sections/rubriques/use-kit-data.ts)
+- [`apps/web/src/components/sections/rubriques/guide-section.tsx`](../../../apps/web/src/components/sections/rubriques/guide-section.tsx)
 
 Patterns à surveiller:
 

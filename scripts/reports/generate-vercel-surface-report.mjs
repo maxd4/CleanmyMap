@@ -9,8 +9,8 @@ import { scanVercelSurface } from "../vercel-audit-core.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const defaultOutputPath = path.join(
   repoRoot,
-  "documentation",
-  "development",
+  "artifacts",
+  "vercel",
   "vercel-surface-report.md",
 );
 

@@ -176,7 +176,7 @@ Mitigations déjà appliquées dans le code:
 
 Le backlog `vercel-reduction-backlog.md` a été consolidé dans la documentation courante et ne comporte plus de lot actif.
 
-Les points utiles à conserver sont désormais résumés ici, dans `vercel-route-cost-audit.md` et dans `vercel-surface-report.md`:
+Les points utiles à conserver sont désormais résumés ici, dans `../operations/audits/vercel-route-cost-audit.md` et dans `../operations/audits/vercel-surface-report.md`:
 
 - le proxy `apps/web/proxy.ts` ne couvre que les surfaces protégées, pas tout le site;
 - `/reports` ne prépare plus les deux branches coûteuses en même temps et le rendu serveur est piloté par l'onglet actif;
@@ -220,7 +220,7 @@ Le dépôt inclut maintenant un audit statique dédié:
 - script: `scripts/audits/audit-vercel-quota.mjs`
 - baseline: `scripts/audits/vercel-quota-audit-baseline.json`
 - commande: `npm run audit:vercel-quota`
-- audit par route: `documentation/development/vercel-route-cost-audit.md`
+- audit par route: `../operations/audits/vercel-route-cost-audit.md`
 - retour d'expérience: `documentation/development/vercel-anti-regression-playbook.md`
 - stratégie de répartition: `documentation/development/vercel-supabase-browser-strategy.md`
 
