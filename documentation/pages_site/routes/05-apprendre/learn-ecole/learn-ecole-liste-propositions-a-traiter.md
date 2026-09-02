@@ -2,14 +2,14 @@
 
 But : conserver uniquement les améliorations retenues mais non encore exécutées.
 
-## Proposition 1 — Tester la banque de 20 questions
+## Proposition 1 — Tester la banque scolaire
 
 Priorité : haute.
 
 Vérifier pour chaque question :
 
 - exactitude ;
-- formulation adaptée au niveau 4e/3e ;
+- formulation adaptée aux niveaux 6e/5e/4e/3e ;
 - réponse correcte ;
 - explication ;
 - source ;

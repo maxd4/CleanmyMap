@@ -7,8 +7,8 @@ import {
 } from "@/lib/learning/quiz/school/quiz-school-kit";
 
 const WORKSHOP_SUMMARY = [
-  { value: "20", label: { fr: "questions test", en: "test questions" } },
-  { value: "4", label: { fr: "sous-modes", en: "sub-modes" } },
+  { value: "30 min", label: { fr: "quiz collectif", en: "collective quiz" } },
+  { value: "60 min", label: { fr: "atelier complet", en: "full workshop" } },
 ] as const;
 
 export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) {

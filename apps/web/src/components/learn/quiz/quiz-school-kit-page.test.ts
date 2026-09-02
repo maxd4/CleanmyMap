@@ -3,14 +3,21 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
+import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import { QuizSchoolKitPage } from "./quiz-school-kit-page";
 import { getQuizSchoolLaunchHref } from "./school/quiz-school-level-launcher";
 
 describe("QuizSchoolKitPage", () => {
   it("builds shareable level and format URLs without answers", () => {
-    expect(getQuizSchoolLaunchHref("6e", "quiz-30")).toBe(
+    expect(getQuizUiCopy("fr", "school.format.cta")).toBe("Lancer la séance");
+    expect(
+      ["6e", "5e", "4e", "3e"].map((level) => getQuizSchoolLaunchHref(level as "6e" | "5e" | "4e" | "3e", "quiz-30")),
+    ).toEqual([
       "/learn/sentrainer?mode=ecole&level=6e&format=quiz-30",
-    );
+      "/learn/sentrainer?mode=ecole&level=5e&format=quiz-30",
+      "/learn/sentrainer?mode=ecole&level=4e&format=quiz-30",
+      "/learn/sentrainer?mode=ecole&level=3e&format=quiz-30",
+    ]);
     expect(getQuizSchoolLaunchHref("3e", "atelier-60")).toBe(
       "/learn/sentrainer?mode=ecole&level=3e&format=atelier-60",
     );
@@ -37,10 +44,12 @@ describe("QuizSchoolKitPage", () => {
     expect(markup).toContain("Fiche enseignant");
     expect(markup).toContain("Fiche élève");
     expect(markup).toContain("Aucun compte, nom d’élève ou donnée personnelle.");
-    expect(markup).toContain("20 questions, 5 par sous-mode");
+    expect(markup).toContain("Une banque partagée, sélectionnée selon le niveau");
     expect(markup).toContain("Banque en réserve");
     expect(markup).toContain("Sous-modes disponibles si besoin");
-    expect(markup).toContain("Ouvrir les 20 questions détaillées");
+    expect(markup).toContain("Ouvrir les questions détaillées");
+    expect(markup).not.toContain("20 questions");
+    expect(markup).not.toContain("Lancer ce format");
     expect(markup).toContain("focus-visible:ring-amber-300/70");
     expect(markup).toContain('href="#choisir-niveau"');
     expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");

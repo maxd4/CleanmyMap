@@ -308,7 +308,7 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.level.3e.description": { fr: "Des situations plus nuancées pour argumenter et estimer.", en: "More nuanced situations for arguing and estimating." },
   "school.levelChip": { fr: "Niveau", en: "Level" },
   "school.durationLabel": { fr: "30 ou 60 min", en: "30 or 60 min" },
-  "school.questionsLabel": { fr: "15 questions", en: "15 questions" },
+  "school.questionsLabel": { fr: "Questions adaptées", en: "Adapted questions" },
   "school.formatPrompt": { fr: "Choisissez le format", en: "Choose the format" },
   "school.format.quiz-30.label": { fr: "Quiz 30 min", en: "30-minute quiz" },
   "school.format.quiz-30.description": {
@@ -320,7 +320,7 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
     fr: "Pré-quiz 15 min, atelier pédagogique 30 min, post-quiz 15 min et bilan collectif.",
     en: "15-minute pre-quiz, 30-minute activity, 15-minute post-quiz and collective review.",
   },
-  "school.format.cta": { fr: "Lancer ce format", en: "Launch this format" },
+  "school.format.cta": { fr: "Lancer la séance", en: "Launch the session" },
   "school.format.back": { fr: "Changer de niveau", en: "Change grade" },
   "school.format.badge": { fr: "Format choisi", en: "Selected format" },
   "session.school.workshop.preQuiz": { fr: "Pré-quiz · 15 min", en: "Pre-quiz · 15 min" },

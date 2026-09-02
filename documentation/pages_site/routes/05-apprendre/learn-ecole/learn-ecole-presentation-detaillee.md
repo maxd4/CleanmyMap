@@ -41,6 +41,10 @@ Le lancement est prioritaire et propose d'abord le niveau (`6e`, `5e`, `4e` ou
 - fiche enseignant ;
 - fiche élève.
 
+Ces aides viennent après le bloc de lancement. La banque détaillée reste
+repliée et placée en dernier : elle sert à préparer ou prolonger une séance,
+mais n'est pas une étape préalable au choix du niveau et au lancement.
+
 ### Banque
 
 Le code expose une banque partagée, répartie en quatre tracks internes. Le
