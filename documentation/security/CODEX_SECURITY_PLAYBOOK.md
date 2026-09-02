@@ -43,16 +43,52 @@ doit être vérifiée localement puis, si nécessaire, en production.
 
 ### Local
 
-- Utiliser le bypass `CMM_DEV_AUTH_BYPASS_ROLE` uniquement sur un serveur local
-  ou de développement configuré pour ce mécanisme.
-- La matrice de rôles disponible est : `benevole`, `coordinateur`,
-  `scientifique`, `entreprise`, `elu`, `admin` et `max`.
-- Choisir le rôle correspondant à la capacité testée. Ne pas lancer tous les
-  rôles lorsque le chantier n'en nécessite que certains, et ne pas utiliser
-  `max` systématiquement comme identité de substitution.
-- Les handlers doivent continuer à appliquer leurs helpers centraux d'AuthN et
-  d'AuthZ ; le bypass local ne rend aucune route publique et ne modifie pas les
-  permissions métier.
+Pour une validation locale protégée, suivre cet arbre de décision dans l'ordre :
+
+1. Confirmer que la validation locale d'une surface protégée est demandée.
+2. Utiliser d'abord le bypass local officiel `CMM_DEV_AUTH_BYPASS` plutôt que
+   rechercher une vraie session Clerk.
+3. Choisir le rôle minimal adapté au scénario parmi `benevole`,
+   `coordinateur`, `scientifique`, `entreprise`, `elu`, `admin` et `max`.
+   `max` n'est pas le choix automatique pour une capacité bénévole ordinaire.
+4. Démarrer le web avec le protocole local canonique, en consultant
+   `.aLANCER_SITE_LOCAL_ROLE_MAX.bat`,
+   `apps/web/src/lib/auth/dev-auth.ts` et
+   `apps/web/.env.local.example` lorsque nécessaire.
+5. Si le serveur démarre, aucune vraie connexion Clerk n'est nécessaire pour
+   cette validation locale ; les handlers continuent d'appliquer leurs
+   contrôles centraux d'AuthN et d'AuthZ.
+6. Si `clerk-session-config.ts` refuse la configuration avant démarrage,
+   diagnostiquer `CLERK_BOOT_CONFIG`, vérifier la configuration Clerk
+   Development locale, ne pas basculer vers des clés de production et ne pas
+   basculer vers un Agent Task.
+7. Seulement si le scénario demandé est réellement un smoke production,
+   utiliser le workflow Clerk de production documenté ci-dessous.
+
+> **BYPASS AUTH != BYPASS DU BOOT CLERK**
+>
+> Le bypass simule l'identité et l'AuthZ locale. Le runtime peut néanmoins
+> exiger une configuration Clerk Development cohérente pour initialiser
+> l'application. Une erreur de boot `Invalid local Clerk configuration` est
+> donc `CLERK_BOOT_CONFIG`, et non « bypass indisponible ».
+
+Les handlers doivent continuer à appliquer leurs helpers centraux d'AuthN et
+d'AuthZ ; le bypass local ne rend aucune route publique et ne modifie pas les
+permissions métier.
+
+### Classification obligatoire des blocages
+
+Codex ne doit pas écrire simplement « authentification bloquée ». Le rapport
+doit classifier le blocage parmi :
+
+- `AUTH_SESSION` : identité/session locale non résolue après le protocole de
+  bypass ;
+- `CLERK_BOOT_CONFIG` : configuration Clerk Development refusée avant le
+  démarrage de l'application ;
+- `AUTHZ_ROLE` : rôle simulé insuffisant pour le scénario ;
+- `BROWSER_PERMISSION` : permission navigateur refusée, bloquée ou
+  indisponible ;
+- `HOST_ENVIRONMENT` : dépendance ou outil d'exécution absent ou inutilisable.
 
 ### Production
 
