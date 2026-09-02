@@ -15,8 +15,8 @@ import {
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
 
-// The landing page can be regenerated periodically while still showing fresh counters.
-export const revalidate = 300;
+// The landing page can be regenerated hourly; counters use a dedicated 60-minute snapshot.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   ...appMetadata,
