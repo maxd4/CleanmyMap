@@ -104,7 +104,9 @@ function compareCandidates(
   ) {
     return left.incrementalTravelMinutes - right.incrementalTravelMinutes;
   }
-  return left.candidate.id.localeCompare(right.candidate.id);
+  if (left.candidate.id < right.candidate.id) return -1;
+  if (left.candidate.id > right.candidate.id) return 1;
+  return 0;
 }
 
 export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
