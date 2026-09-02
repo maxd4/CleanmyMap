@@ -15,6 +15,23 @@ const responsePayload = {
     availableSources: ["spots"],
     warnings: [],
   },
+  origin: {
+    latitude: 48.86,
+    longitude: 2.36,
+    source: "approximate_saved_area",
+  },
+  travelDistanceKm: 2.4,
+  travelMinutes: 32,
+  travelBudgetMinutes: 60,
+  withinBudget: true,
+  serviceMinutesEstimate: null,
+  totalMinutesEstimate: null,
+  diagnostics: {
+    excludedUnsafe: 0,
+    excludedByTravelBudget: 1,
+  },
+  generatedAt: "2026-09-02T10:00:00.000Z",
+  engineVersion: "route-planner-v1",
   stops: [],
   routeGeometry: {
     coordinates: [],
@@ -43,7 +60,7 @@ describe("route recommendation request gate", () => {
     const submitted = createRouteRecommendationRequest(1, DEFAULT_ROUTE_OPTIONS);
     const editedOptions = {
       ...DEFAULT_ROUTE_OPTIONS,
-      priorityVsDistance: 20,
+      priorityVsTravel: 20,
     };
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(responsePayload), { status: 200 }),

@@ -13,9 +13,14 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
       note: fr ? "Parcours ciblé" : "Focused route",
     },
     {
-      label: fr ? "Priorité / distance" : "Priority / distance",
-      value: `${options.priorityVsDistance}% / ${100 - options.priorityVsDistance}%`,
+      label: fr ? "Priorité / déplacement" : "Priority / travel",
+      value: `${options.priorityVsTravel}% / ${100 - options.priorityVsTravel}%`,
       note: fr ? "Pondération opérationnelle" : "Operational weighting",
+    },
+    {
+      label: fr ? "Budget déplacement" : "Travel budget",
+      value: `${options.travelBudgetMinutes} min`,
+      note: fr ? "Temps maximal" : "Maximum time",
     },
   ] as const;
 
@@ -29,11 +34,11 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white">
         {fr
-          ? "La sélection combine la priorité opérationnelle disponible (fraîcheur des signalements) et la distance."
-          : "The selection combines the available operational priority (report freshness) and distance."}
+          ? "La sélection combine la priorité opérationnelle disponible (fraîcheur des signalements) et le déplacement."
+          : "The selection combines the available operational priority (report freshness) and travel."}
       </p>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
         {summaryCards.map((item) => (
           <div
             key={item.label}

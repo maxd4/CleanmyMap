@@ -23,7 +23,7 @@ function renderHarness(action: "none" | "calculate-then-edit") {
       step.current = 2;
       route.setOptions((previous) => ({
         ...previous,
-        priorityVsDistance: 20,
+        priorityVsTravel: 20,
       }));
     }
 
@@ -70,7 +70,7 @@ describe("useRouteData explicit request gate", () => {
       "/api/route/recommend",
       expect.objectContaining({
         method: "POST",
-        body: expect.stringContaining('"priorityVsDistance":65'),
+        body: expect.stringContaining('"priorityVsTravel":65'),
       }),
     );
   });

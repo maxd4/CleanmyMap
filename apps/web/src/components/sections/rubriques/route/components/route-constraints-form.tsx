@@ -33,24 +33,45 @@ export function RouteOptionsForm({
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
-          {fr ? "Pondération priorité / distance" : "Priority / distance weighting"}
+          {fr ? "Pondération priorité / déplacement" : "Priority / travel weighting"}
           <input
             type="range"
             min={0}
             max={100}
-            value={options.priorityVsDistance}
+            value={options.priorityVsTravel}
             onChange={(event) =>
               setOptions((prev) => ({
                 ...prev,
-                priorityVsDistance: Number(event.target.value || 65),
+                priorityVsTravel: Number(event.target.value || 65),
               }))
             }
             className="mt-1 accent-emerald-300"
           />
           <span className="text-xs font-medium text-emerald-100/64">
             {fr
-              ? `${options.priorityVsDistance}% priorité / ${100 - options.priorityVsDistance}% distance`
-              : `${options.priorityVsDistance}% priority / ${100 - options.priorityVsDistance}% distance`}
+              ? `${options.priorityVsTravel}% priorité / ${100 - options.priorityVsTravel}% déplacement`
+              : `${options.priorityVsTravel}% priority / ${100 - options.priorityVsTravel}% travel`}
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+          {fr ? "Budget de déplacement (minutes)" : "Travel budget (minutes)"}
+          <input
+            type="number"
+            min={1}
+            max={600}
+            step={1}
+            value={options.travelBudgetMinutes}
+            onChange={(event) =>
+              setOptions((prev) => ({
+                ...prev,
+                travelBudgetMinutes: Number(event.target.value || 60),
+              }))
+            }
+            className={buildInputClass()}
+          />
+          <span className="text-xs font-medium text-emerald-100/64">
+            {fr ? "Temps maximal de déplacement" : "Maximum travel time"}
           </span>
         </label>
 
@@ -58,7 +79,7 @@ export function RouteOptionsForm({
           {fr ? "Arrêts maximum" : "Max stops"}
           <input
             type="number"
-            min={2}
+            min={1}
             max={12}
             value={options.maxStops}
             onChange={(event) =>
