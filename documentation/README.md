@@ -100,12 +100,13 @@ architecture ou une spécification concurrente.
 
 ### Construire une fonctionnalité
 
-Lire l'architecture globale, la vue système, les frontières front/back, les
-modules concernés, puis les règles de régression et de qualité :
+Lire l'architecture globale, la vue système, les frontières front/back et les
+modules concernés, puis uniquement les règles spécialisées nécessaires :
 `architecture/master-architecture.md`, `architecture/system-overview.md`,
 `architecture/frontend-backend-boundaries.md`,
 `architecture/modules-cles-et-dependances.md`,
-`development/regression-gates.md` et `development/QUALITY_GUIDE.md`.
+`development/regression-gates.md`, `development/repo-quality-rules.md`,
+`development/TESTING.md` et, pour une surface UI, `design-system/README.md`.
 
 ### Modulariser ou refactorer
 
