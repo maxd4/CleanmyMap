@@ -1,7 +1,6 @@
 import { auth } from"@clerk/nextjs/server";
 import { z } from"zod";
 import { NextResponse } from"next/server";
-import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import { buildTrashSpotterActionableCandidates } from"@/lib/actions/trash-spotter-actionable-candidates";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
@@ -34,6 +33,7 @@ import {
   verifyRateLimit,
 } from "@/lib/rate-limit/server";
 import { resolveRouteDataStatus } from "@/lib/route/route-data-status";
+import { loadRouteRecommendationSource } from "@/lib/route/route-recommendation-loader";
 
 export const runtime ="nodejs";
 
@@ -106,14 +106,9 @@ export async function POST(request: Request) {
    eventPressurePromise,
  ]);
  const { items: contracts, isTruncated, sourceHealth } =
-   await fetchUnifiedActionContracts(supabase, {
+   await loadRouteRecommendationSource(supabase, {
  limit: 600,
- status:"approved",
- floorDate: defaultRouteRecommendationFloorDate(),
- requireCoordinates: true,
- // The source loader may still be shared with other action surfaces, but the
- // candidate capability below accepts only validated canonical spot records.
- types: ["spot"],
+  floorDate: defaultRouteRecommendationFloorDate(),
  });
 
  const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
