@@ -22,6 +22,7 @@ import { GESTES_PROPRES_CAMPAIGN } from "@/lib/learning/gestes-propres/gestes-pr
 import { LearnGestesPropresBarometer } from "@/components/learn/learn-gestes-propres-barometer";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { LearnIfopDepotsSection } from "@/components/learn/learn-ifop-depots-section";
+import { LearnNumeriqueThemePanel } from "@/components/learn/learn-numerique-theme-panel";
 import {
   LEARN_PRACTICE_THEME_ORDER,
   type LearnPracticeThemeId,
@@ -55,6 +56,13 @@ const THEME_LABELS: Record<
       en: "Plan the right outcome before acting.",
     },
   },
+  numerique: {
+    label: { fr: "Sobriété numérique", en: "Digital sobriety" },
+    hint: {
+      fr: "Éviter les futurs envois, puis nettoyer Gmail.",
+      en: "Avoid future messages, then clean Gmail.",
+    },
+  },
 };
 
 type LocalizedText = {
@@ -84,7 +92,7 @@ type ThemePanel = {
   accordion: ThemeAccordion;
 };
 
-const THEME_PANELS: Record<LearnPracticeThemeId, ThemePanel> = {
+const THEME_PANELS: Record<Exclude<LearnPracticeThemeId, "numerique">, ThemePanel> = {
   tri: {
     summary: {
       fr: "Le tri reste lisible quand le contexte est clair et que le doute est isolé.",
@@ -569,12 +577,12 @@ export function LearnPracticeThemeTabs({
     <section className="space-y-4 rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-4 shadow-sm md:p-5">
       <div className="space-y-3">
         <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-amber-700">
-          {locale === "fr" ? "Trois thèmes" : "Three themes"}
+          {locale === "fr" ? "Quatre thèmes" : "Four themes"}
         </p>
         <div
           role="tablist"
           aria-label={locale === "fr" ? "Thèmes des bonnes pratiques" : "Good practices themes"}
-          className="grid gap-2 sm:grid-cols-3"
+          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
         >
           {LEARN_PRACTICE_THEME_ORDER.map((theme, index) => {
             const isActive = activeTheme === theme;
@@ -642,7 +650,6 @@ export function LearnPracticeThemeTabs({
       </div>
 
       {LEARN_PRACTICE_THEME_ORDER.map((theme) => {
-        const panel = THEME_PANELS[theme];
         const meta = THEME_LABELS[theme];
         const isActive = activeTheme === theme;
         const tabId = `${baseId}-tab-${theme}`;
@@ -651,6 +658,19 @@ export function LearnPracticeThemeTabs({
         if (!isActive) {
           return null;
         }
+
+        if (theme === "numerique") {
+          return (
+            <LearnNumeriqueThemePanel
+              key={theme}
+              locale={locale}
+              tabId={tabId}
+              panelId={panelId}
+            />
+          );
+        }
+
+        const panel = THEME_PANELS[theme];
 
         return (
           <section

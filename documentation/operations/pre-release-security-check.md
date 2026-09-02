@@ -79,8 +79,7 @@ Le script `scripts/ci/pre-release-check.mjs` verifie :
 Le template de pull request impose deja :
 
 - une revue humaine des sorties IA ;
-- un controle du poids numerique ;
-- un renvoi vers `documentation/ai-guides/GOVERNANCE.md`.
+- un controle du poids numerique.
 
 ### 3. Verification des expositions
 

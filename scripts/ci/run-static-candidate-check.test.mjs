@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -54,9 +54,8 @@ function createDocumentationFixture() {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "cleanmymap-doc-candidate-"));
   const checkerRelativePath = "scripts/checks/check-documentation-governance.mjs";
   const viewRelativePath = "scripts/checks/repository-view.mjs";
-  const baselineRef = gitFromRepository(["rev-parse", "origin/main"]);
-  const checkerSource = gitFromRepository(["show", `${baselineRef}:${checkerRelativePath}`]);
-  const viewSource = gitFromRepository(["show", `${baselineRef}:${viewRelativePath}`]).replace(
+  const checkerSource = readFileSync(join(REPO_ROOT, ...checkerRelativePath.split("/")), "utf8");
+  const viewSource = readFileSync(join(REPO_ROOT, ...viewRelativePath.split("/")), "utf8").replace(
     '["ls-tree", "-r", "-z", ref, "--"]',
     '["ls-tree", "--full-tree", "-r", "-z", ref, "--"]',
   );
@@ -89,7 +88,7 @@ function createDocumentationFixture() {
   );
   writeFileSync(
     join(fixtureRoot, "documentation", "ai-guides", "AI_MODULARIZATION_PLAN.md"),
-    "Ce guide historique peut mentionner AGENTS.md sans être une documentation publique.\n",
+    "Ce guide de travail ne contient aucune référence interne interdite.\n",
   );
   git(fixtureRoot, ["add", "."]);
   git(fixtureRoot, ["commit", "--quiet", "-m", "candidate documentation checker"]);
@@ -137,10 +136,10 @@ test("candidate runner fails when the candidate checker itself fails", () => {
   }
 });
 
-test("candidate documentation checker ignores ai-guides while a dirty checker cannot change the verdict", () => {
+test("candidate documentation checker scans ai-guides while a dirty checker cannot change the verdict", () => {
   const { fixtureRoot, checkerSource, checkerRelativePath } = createDocumentationFixture();
   try {
-    assert.match(checkerSource, /documentation\/ai-guides\//);
+    assert.doesNotMatch(checkerSource, /documentation\/ai-guides\//);
     const candidateRef = git(fixtureRoot, ["rev-parse", "HEAD"]);
     assert.match(
       git(fixtureRoot, ["ls-tree", "-r", "--name-only", candidateRef]),

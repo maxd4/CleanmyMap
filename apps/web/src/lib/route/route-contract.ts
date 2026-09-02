@@ -65,3 +65,28 @@ export function applyRouteGeometryLegs(
     };
   });
 }
+
+/** Applies legs for a route whose first coordinate is the real origin. */
+export function applyOriginRouteGeometryLegs(
+  stops: RouteStop[],
+  geometry: RouteGeometry,
+): RouteStop[] {
+  if (
+    geometry.mode !== "network" ||
+    geometry.legs.length !== stops.length
+  ) {
+    return stops;
+  }
+
+  return stops.map((stop, index) => {
+    const leg = geometry.legs[index];
+    if (!leg || leg.toStopIndex !== index + 1) {
+      return stop;
+    }
+    return {
+      ...stop,
+      segmentKm: leg.distanceKm,
+      estimatedMinutes: leg.estimatedMinutes,
+    };
+  });
+}

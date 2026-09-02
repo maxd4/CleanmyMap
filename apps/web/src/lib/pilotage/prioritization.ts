@@ -220,7 +220,7 @@ function sobrietyPriority(
     impactEstimate: "Meilleure justification du projet devant les instances écologiques et baisse de l'empreinte carbone.",
     suggestedOwner: "Lead Architect / Sobriety Officer",
     recommendedAction: {
-      href: "/documentation/ai-guides/impact_IA.md",
+      href: "/docs/plans/rapport_impact/impact_IA.md",
       label: "Consulter l'audit",
     },
     evidence: [`IUR Actuel: ${iur.toFixed(2)}`, "Seuil cible: > 2.00"],

@@ -404,7 +404,6 @@ documentation/design-system/README.md
 documentation/design-system/PAGE_HEADER.md
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 documentation/design-system/UI_EXCEPTION_PAGES.md
-documentation/ai-guides/SOBRIETY_RULES.md
 documentation/architecture/technical-inventory.md
 ```
 

@@ -2,7 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type ThemeChange = "tri" | "compost" | "reduire";
+type ThemeChange = "tri" | "compost" | "reduire" | "numerique";
 
 type BehaviorProps = {
   id?: string;
@@ -118,6 +118,18 @@ describe("bonnes-pratiques page", () => {
 
     tabsCalls[0].onThemeChange("reduire");
     expect(replaceMock).toHaveBeenCalledWith("/learn/bonnes-pratiques?theme=reduire&origin=learn", {
+      scroll: false,
+    });
+  });
+
+  it("persists the numerique theme in the URL", () => {
+    searchParamsValue = new URLSearchParams("theme=tri");
+
+    renderToStaticMarkup(React.createElement(Page));
+
+    expect(tabsCalls).toHaveLength(1);
+    tabsCalls[0].onThemeChange("numerique");
+    expect(replaceMock).toHaveBeenCalledWith("/learn/bonnes-pratiques?theme=numerique", {
       scroll: false,
     });
   });
