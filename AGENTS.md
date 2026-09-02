@@ -66,6 +66,11 @@ intermédiaires ne doivent pas commencer par ce canari.
   produit des modifications doit se terminer par un commit ciblé sur `main`
   puis un push vers `origin/main` ; aucune modification ne justifie un commit
   artificiel ;
+- à chaque fin d'exécution ayant produit des modifications, clôturer
+  immédiatement le lot : vérifier son allowlist, committer uniquement ses
+  fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
+  exécution ; si le push est bloqué, conserver le commit local et signaler
+  explicitement le blocage ;
 - les modifications locales non stagées hors périmètre ne bloquent ni le commit
   ni le push d'un lot ; Codex délimite le lot, stage uniquement son allowlist
   explicite (jamais `git add -A`) et vérifie
