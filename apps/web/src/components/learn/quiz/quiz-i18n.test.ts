@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { QUIZ_ACCESS_TYPES } from "@/lib/learning/quiz/quiz-access-types";
-import { QUIZ_SCHOOL_TRACKS } from "@/components/learn/quiz/quiz-school-modes";
+import { QUIZ_SCHOOL_TRACKS } from "@/components/learn/quiz/school/quiz-school-modes";
 import {
   QUIZ_UI_COPY,
   getQuizLocalizedTextFallback,

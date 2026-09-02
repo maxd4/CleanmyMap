@@ -8,15 +8,13 @@ Donner à un enseignant ou animateur un kit immédiatement utilisable pour une s
 
 ```mermaid
 flowchart TD
-  A[Arrivée sur /learn/ecole] --> B[Lecture des repères]
-  B --> C{Besoin}
+  A[Arrivée sur /learn/ecole] --> B[Choisir le niveau]
+  B --> C[Choisir le format]
   C --> D[Lancer le mode École]
-  C --> E[Lancer la démo]
-  C --> F[Consulter la fiche enseignant]
-  C --> G[Consulter la fiche élève]
-  D --> H{Choix du format}
-  H --> I[/learn/sentrainer mode=ecole format=quiz-30]
-  H --> J[/learn/sentrainer mode=ecole format=atelier-60]
+  A --> E[Lancer la démo]
+  A --> F[Consulter les fiches et le déroulé]
+  D --> G[/learn/sentrainer mode=ecole level=... format=quiz-30]
+  D --> H[/learn/sentrainer mode=ecole level=... format=atelier-60]
 ```
 
 ## Contenu actuel
@@ -32,7 +30,8 @@ Quatre repères :
 
 ### Lancement
 
-Deux CTA :
+Le lancement est prioritaire et propose d'abord le niveau (`6e`, `5e`, `4e` ou
+`3e`), puis le format :
 
 - ouvrir le mode École ;
 - lancer la démo.
@@ -113,6 +112,10 @@ Ne pas masquer une incertitude.
 ```txt
 apps/web/src/app/learn/ecole/page.tsx
 apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-level-launcher.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-session-guide.tsx
+apps/web/src/components/learn/quiz/school/quiz-school-bank-section.tsx
+apps/web/src/components/learn/quiz/session/use-quiz-session-controller.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts

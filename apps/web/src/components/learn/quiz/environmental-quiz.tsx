@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Zap } from "lucide-react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
@@ -21,20 +21,19 @@ import {
 } from "@/lib/learning/quiz/quiz-selection-engine";
 import { QuizAccessPicker } from "@/components/learn/quiz/quiz-access-picker";
 import { QuizReasoningPicker } from "@/components/learn/quiz/quiz-reasoning-picker";
-import { QuizSchoolPicker } from "@/components/learn/quiz/quiz-school-picker";
-import { QuizSchoolWorkshopSession } from "@/components/learn/quiz/quiz-school-workshop-session";
+import { QuizSchoolPicker } from "@/components/learn/quiz/school/quiz-school-picker";
+import { QuizSchoolWorkshopSession } from "@/components/learn/quiz/school/quiz-school-workshop-session";
 import { QuizSessionPanel } from "@/components/learn/quiz/quiz-session-panel";
+import { useQuizSessionController } from "@/components/learn/quiz/session/use-quiz-session-controller";
 import { insertAdaptiveReinforcement } from "@/components/learn/quiz/quiz-adaptive";
 import { getQuizReviewTarget } from "@/lib/learning/quiz/quiz-review-targets";
-import { buildQuizErrorGrid, type QuizErrorTypeId } from "@/lib/learning/quiz/quiz-error-grid";
+import { buildQuizErrorGrid } from "@/lib/learning/quiz/quiz-error-grid";
 import {
   getNextReasoningType,
   type QuizReasoningType,
 } from "@/lib/learning/quiz/quiz-reasoning-types";
 import {
-  QUIZ_ACCESS_TYPES,
   matchesQuizAccessType,
-  getQuizAccessType,
   type QuizAccessTypeId,
 } from "@/lib/learning/quiz/quiz-access-types";
 import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
@@ -51,11 +50,7 @@ import {
 } from "@/lib/learning/quiz/quiz-personal-progress";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz/quiz-question-bank";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
-import type {
-  QuizModeRecommendation,
-  QuizSessionSummary,
-  QuizThemeSummary,
-} from "@/lib/learning/quiz/quiz-session-types";
+import { buildQuizSessionSummary } from "@/lib/learning/quiz/quiz-session-summary";
 
 export { QUIZ_QUESTIONS };
 export type { QuizQuestion };
@@ -98,19 +93,7 @@ export function EnvironmentalQuiz({
   const [selectedSchoolLevel, setSelectedSchoolLevel] = useState<QuizSchoolLevel | null>(initialSchoolLevel);
   const [selectedSchoolFormat, setSelectedSchoolFormat] = useState<QuizSchoolFormat>(initialSchoolFormat ?? DEFAULT_QUIZ_SCHOOL_FORMAT);
   const [isSchoolCollectiveMode, setIsSchoolCollectiveMode] = useState(initialCollectiveMode);
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([]);
-  const [selectedOption, setSelectedOption] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [showQuestionChoices, setShowQuestionChoices] = useState(false);
-  const [score, setScore] = useState(0);
-  const [correctStreak, setCorrectStreak] = useState(0);
-  const [lastCheckResult, setLastCheckResult] = useState<boolean | null>(null);
-  const [sessionResults, setSessionResults] = useState<Record<string, boolean>>({});
-  const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<string, number>>({});
-  const [sessionCompleted, setSessionCompleted] = useState(false);
-  const persistedSessionRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,6 +185,71 @@ export function EnvironmentalQuiz({
     return filteredQuestions;
   }, [demoQuestions, filteredQuestions, isDemoMode, loading, schoolQuestions, selectedAccessType]);
 
+  const handleSRSUpdate = async (quality: SRSQuality, questionForUpdate?: QuizQuestion) => {
+    if (isDemoMode || selectedAccessType === "ecole" || !questionForUpdate) return;
+
+    const currentStats = srsData[questionForUpdate.id] ?? createInitialSRSState(questionForUpdate.id);
+    const nextStats = computeNextSRSState(currentStats, quality);
+
+    setSrsData((prev) => ({ ...prev, [questionForUpdate.id]: nextStats }));
+    await saveQuizSRSState(
+      user?.id || null,
+      nextStats,
+      buildClerkSupabaseAccessTokenProvider(getToken),
+    );
+  };
+
+  const sessionController = useQuizSessionController({
+    sessionQuestions,
+    getErrorType: (item) => item.errorType ?? buildQuizErrorGrid(item).errorType,
+    onResetSessionQuestions: () => setSessionQuestions([]),
+    onCorrectAnswer: (answeredQuestion) => {
+      if (!isDemoMode && selectedAccessType !== "ecole") {
+        void recordQuizQuestionCorrectAnswer(
+          answeredQuestion.pedagogicalType ?? answeredQuestion.format ?? answeredQuestion.type,
+          answeredQuestion.id,
+          user?.id ?? null,
+        ).catch(() => undefined);
+      }
+    },
+    onIncorrectAnswer: ({ question: answeredQuestion, questionIndex, errorCount }) => {
+      setSessionQuestions((prev) =>
+        insertAdaptiveReinforcement(
+          prev,
+          questionIndex,
+          answeredQuestion,
+          errorCount,
+          (item) => item.reviewTarget?.href ?? getQuizReviewTarget(item.category, item.review, item.reasoningType).href,
+        ),
+      );
+    },
+    onSRSUpdate: handleSRSUpdate,
+  });
+  const {
+    currentQuestionIdx,
+    question,
+    selectedOption,
+    selectedOptions,
+    showAnswer,
+    showQuestionChoices,
+    score,
+    correctStreak,
+    lastCheckResult,
+    sessionResults,
+    sessionErrorCounts,
+    sessionCompleted,
+    persistedSessionRef,
+    setCurrentQuestionIdx,
+    setSelectedOption,
+    toggleSelectedOption,
+    checkAnswer,
+    revealAnswer,
+    revealChoices,
+    nextQuestion,
+    previousQuestion,
+    resetSessionState,
+    resetQuestionSequence,
+  } = sessionController;
   useEffect(() => {
     if (!selectedAccessType || (loading && selectedAccessType !== "ecole" && !isDemoMode) || sessionQuestions.length > 0) {
       return;
@@ -217,16 +265,13 @@ export function EnvironmentalQuiz({
 
     setSessionQuestions(initialQuestions);
     setCurrentQuestionIdx(0);
-  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolFormat, selectedSchoolLevel, sessionQuestions.length]);
-
-  const question = sessionQuestions[currentQuestionIdx];
+  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolFormat, selectedSchoolLevel, sessionQuestions.length, setCurrentQuestionIdx]);
   const quizSummary = useMemo(() => summarizeQuizStates(srsData, QUIZ_QUESTION_IDS), [srsData]);
   const currentQuestionStats = question ? srsData[question.id] : undefined;
   const currentQuestionState = useMemo(
     () => (question ? getQuizStateFromStats(currentQuestionStats) : null),
     [question, currentQuestionStats],
   );
-  const isMultipleSelectQuestion = question?.type === "multiple-select";
   const nextReasoningType = useMemo(() => getNextReasoningType(selectedReasoningType), [selectedReasoningType]);
   const nextReasoningTypeQuestions = useMemo(() => {
     if (!selectedAccessType || selectedAccessType === "mixte" || !nextReasoningType) {
@@ -252,125 +297,18 @@ export function EnvironmentalQuiz({
     }
     return currentQuestionStats.last_seen_at.includes(new Date().toISOString().split("T")[0]);
   }, [currentQuestionStats]);
-  const sessionSummary = useMemo<QuizSessionSummary | null>(() => {
-    if (!sessionCompleted) {
-      return null;
-    }
-
-    const answeredEntries = Object.entries(sessionResults);
-    if (answeredEntries.length === 0) {
-      return null;
-    }
-
-    const questionsById = new Map(QUIZ_QUESTIONS.map((item) => [item.id, item] as const));
-    const groupedThemes = new Map<string, QuizThemeSummary>();
-    const errorTypeCounts = new Map<QuizErrorTypeId, number>();
-    const reasoningTypeCounts = new Map<QuizReasoningType, number>();
-
-    for (const [questionId, isCorrect] of answeredEntries) {
-      const answeredQuestion = questionsById.get(questionId);
-      if (!answeredQuestion) {
-        continue;
-      }
-
-      const reviewTarget =
-        answeredQuestion.reviewTarget ??
-        getQuizReviewTarget(answeredQuestion.category, answeredQuestion.review, answeredQuestion.reasoningType);
-      const resolvedErrorType =
-        answeredQuestion.errorType ?? buildQuizErrorGrid(answeredQuestion).errorType;
-      if (!isCorrect) {
-        errorTypeCounts.set(resolvedErrorType, (errorTypeCounts.get(resolvedErrorType) ?? 0) + 1);
-        reasoningTypeCounts.set(
-          answeredQuestion.reasoningType,
-          (reasoningTypeCounts.get(answeredQuestion.reasoningType) ?? 0) + 1,
-        );
-      }
-      const currentTheme =
-        groupedThemes.get(reviewTarget.href) ??
-        ({
-          label: reviewTarget.label,
-          href: reviewTarget.href,
-          total: 0,
-          correct: 0,
-          accuracy: 0,
-        } satisfies QuizThemeSummary);
-
-      currentTheme.total += 1;
-      if (isCorrect) {
-        currentTheme.correct += 1;
-      }
-      currentTheme.accuracy = currentTheme.total > 0 ? currentTheme.correct / currentTheme.total : 0;
-      groupedThemes.set(reviewTarget.href, currentTheme);
-    }
-
-    const themes = Array.from(groupedThemes.values());
-    const themesSucceeded = themes.filter((theme) => theme.total > 0 && theme.correct === theme.total);
-    const themesToReview = themes
-      .filter((theme) => theme.total > 0 && theme.correct < theme.total)
-      .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total);
-    const nextReviewTarget = themesToReview[0]
-      ? { label: themesToReview[0].label, href: themesToReview[0].href }
-      : themesSucceeded[0]
-      ? { label: themesSucceeded[0].label, href: themesSucceeded[0].href }
-      : null;
-    const errorTypeEntries = Array.from(errorTypeCounts.entries()).sort(
-      (left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "fr"),
-    );
-    const frequentErrorTypes = errorTypeEntries
-      .slice(0, 3)
-      .map(([errorType, count]) => ({
-        label: errorType,
-        count,
-      }));
-
-    const reasoningTypeEntries = Array.from(reasoningTypeCounts.entries()).sort(
-      (left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "fr"),
-    );
-    const modeScores: Array<{ accessType: (typeof QUIZ_ACCESS_TYPES)[number]; score: number }> = QUIZ_ACCESS_TYPES.filter(
-      (accessType) => accessType.id !== "mixte",
-    ).map((accessType) => {
-      const matchedErrorCount = reasoningTypeEntries.reduce(
-        (sum, [reasoningType, count]) => sum + (accessType.reasoningTypes.includes(reasoningType) ? count : 0),
-        0,
-      );
-      return {
-        accessType,
-        score: matchedErrorCount,
-      };
-    });
-    const bestMode = modeScores.sort((left, right) => right.score - left.score || left.accessType.label.localeCompare(right.accessType.label, "fr"))[0];
-    const recommendedMode: QuizModeRecommendation =
-      bestMode && bestMode.score > 0
-        ? {
-            id: bestMode.accessType.id,
-            label: bestMode.accessType.label,
-            reason: `Ce mode couvre le mieux tes erreurs récentes (${bestMode.score} correspondance${bestMode.score > 1 ? "s" : ""}).`,
-          }
-        : selectedAccessType
-          ? {
-              id: selectedAccessType,
-              label: getQuizAccessType(selectedAccessType).label,
-              reason: "Poursuis sur ce mode pour consolider la session sans changer de cadre.",
-            }
-          : {
-              id: "mixte",
-              label: getQuizAccessType("mixte").label,
-              reason: "Le mode mixte reste le plus utile pour repartir sur un parcours équilibré.",
-            };
-    const recommendedLearningTarget = nextReviewTarget;
-
-    return {
-      score,
-      totalQuestions: sessionQuestions.length,
-      totalAnswered: answeredEntries.length,
-      themesSucceeded,
-      themesToReview,
-      frequentErrorTypes,
-      recommendedMode,
-      recommendedLearningTarget,
-      nextReviewTarget,
-    };
-  }, [score, selectedAccessType, sessionCompleted, sessionResults, sessionQuestions.length]);
+  const sessionSummary = useMemo(
+    () =>
+      buildQuizSessionSummary({
+        score,
+        selectedAccessType,
+        sessionCompleted,
+        sessionResults,
+        sessionQuestions,
+        questions: QUIZ_QUESTIONS,
+      }),
+    [score, selectedAccessType, sessionCompleted, sessionResults, sessionQuestions],
+  );
   const personalProgressSnapshot = useMemo(
     () => buildQuizPersonalProgressSnapshot(personalProgress),
     [personalProgress],
@@ -425,138 +363,8 @@ export function EnvironmentalQuiz({
     sessionQuestions,
     sessionResults,
     sessionSummary,
+    persistedSessionRef,
   ]);
-
-  const handleSRSUpdate = async (quality: SRSQuality) => {
-    if (isDemoMode || selectedAccessType === "ecole" || !question) return;
-
-    const currentStats = srsData[question.id] ?? createInitialSRSState(question.id);
-    const nextStats = computeNextSRSState(currentStats, quality);
-
-    setSrsData((prev) => ({ ...prev, [question.id]: nextStats }));
-    await saveQuizSRSState(
-      user?.id || null,
-      nextStats,
-      buildClerkSupabaseAccessTokenProvider(getToken),
-    );
-  };
-
-  const toggleSelectedOption = (option: string) => {
-    if (showAnswer || !isMultipleSelectQuestion) {
-      return;
-    }
-
-    setSelectedOptions((current) =>
-      current.includes(option)
-        ? current.filter((item) => item !== option)
-        : [...current, option],
-    );
-  };
-
-  const checkAnswer = () => {
-    if (!question) return;
-
-    const isCorrect = isMultipleSelectQuestion
-      ? Array.isArray(question.answer) &&
-        selectedOptions.length === question.answer.length &&
-        question.answer.every((item) => selectedOptions.includes(item))
-      : selectedOption === question.answer;
-    setLastCheckResult(isCorrect);
-    setShowAnswer(true);
-    setSessionResults((prev) =>
-      prev[question.id] === undefined ? { ...prev, [question.id]: isCorrect } : prev,
-    );
-
-    if (isCorrect) {
-      setScore((prev) => prev + 1);
-      setCorrectStreak((prev) => prev + 1);
-      if (!isDemoMode && selectedAccessType !== "ecole") {
-        void recordQuizQuestionCorrectAnswer(
-          question.pedagogicalType ?? question.format ?? question.type,
-          question.id,
-          user?.id ?? null,
-        ).catch(() => undefined);
-      }
-    } else {
-      setCorrectStreak(0);
-      const resolvedErrorType = question.errorType ?? buildQuizErrorGrid(question).errorType;
-      const nextErrorCount = (sessionErrorCounts[resolvedErrorType] ?? 0) + 1;
-      setSessionErrorCounts((prev) => ({
-        ...prev,
-        [resolvedErrorType]: nextErrorCount,
-      }));
-      setSessionQuestions((prev) =>
-        insertAdaptiveReinforcement(
-          prev,
-          currentQuestionIdx,
-          question,
-          nextErrorCount,
-          (item) => item.reviewTarget?.href ?? getQuizReviewTarget(item.category, item.review, item.reasoningType).href,
-        ),
-      );
-      void handleSRSUpdate(0);
-    }
-  };
-
-  const revealAnswer = () => {
-    if (!question) return;
-
-    const hasSelection = isMultipleSelectQuestion ? selectedOptions.length > 0 : Boolean(selectedOption);
-    if (hasSelection) {
-      checkAnswer();
-      return;
-    }
-
-    setLastCheckResult(null);
-    setShowAnswer(true);
-  };
-
-  const revealChoices = () => {
-    setShowQuestionChoices(true);
-  };
-
-  const nextQuestion = () => {
-    if (currentQuestionIdx < sessionQuestions.length - 1) {
-      setCurrentQuestionIdx((prev) => prev + 1);
-      setSelectedOption("");
-      setSelectedOptions([]);
-      setShowAnswer(false);
-      setLastCheckResult(null);
-      setShowQuestionChoices(false);
-      return;
-    }
-
-    setSessionCompleted(true);
-  };
-
-  const previousQuestion = () => {
-    if (currentQuestionIdx === 0) {
-      return;
-    }
-
-    setCurrentQuestionIdx((prev) => prev - 1);
-    setSelectedOption("");
-    setSelectedOptions([]);
-    setShowAnswer(false);
-    setShowQuestionChoices(false);
-    setLastCheckResult(null);
-  };
-
-  const resetSessionState = () => {
-    persistedSessionRef.current = false;
-    setCurrentQuestionIdx(0);
-    setSelectedOption("");
-    setSelectedOptions([]);
-    setShowAnswer(false);
-    setShowQuestionChoices(false);
-    setScore(0);
-    setCorrectStreak(0);
-    setLastCheckResult(null);
-    setSessionResults({});
-    setSessionErrorCounts({});
-    setSessionQuestions([]);
-    setSessionCompleted(false);
-  };
 
   const returnToAccessTypeSelection = () => {
     resetSessionState();
@@ -663,18 +471,7 @@ export function EnvironmentalQuiz({
     if (!nextReasoningType || selectedAccessType === "mixte") return;
 
     setSelectedReasoningType(nextReasoningType);
-    setCurrentQuestionIdx(0);
-    setSelectedOption("");
-    setSelectedOptions([]);
-    setShowAnswer(false);
-    setShowQuestionChoices(false);
-    setScore(0);
-    setCorrectStreak(0);
-    setLastCheckResult(null);
-    setSessionResults({});
-    setSessionErrorCounts({});
-    setSessionQuestions([]);
-    setSessionCompleted(false);
+    resetQuestionSequence();
   };
 
   if (

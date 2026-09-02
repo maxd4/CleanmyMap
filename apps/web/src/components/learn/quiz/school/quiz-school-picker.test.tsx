@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { QuizSchoolPicker } from "./quiz-school-picker";
 
-describe("QuizSchoolPicker", () => {
+describe("school/QuizSchoolPicker", () => {
   it("shows a link to the school workshop kit", () => {
     const markup = renderToStaticMarkup(
       React.createElement(QuizSchoolPicker, {

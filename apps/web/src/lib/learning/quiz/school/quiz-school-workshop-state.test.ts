@@ -42,7 +42,7 @@ describe("school/quiz-school-workshop-state", () => {
   });
 
   it("keeps the public workshop anonymous and memory-only", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/components/learn/quiz/quiz-school-workshop-session.tsx"), "utf8");
+    const source = readFileSync(resolve(process.cwd(), "src/components/learn/quiz/school/quiz-school-workshop-session.tsx"), "utf8");
     expect(source).not.toContain("useAuth");
     expect(source).not.toContain("localStorage");
     expect(source).not.toContain("sessionStorage");
