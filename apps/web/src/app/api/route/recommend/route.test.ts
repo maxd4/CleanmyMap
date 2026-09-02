@@ -8,9 +8,7 @@ const buildTrashSpotterActionableCandidatesMock = vi.hoisted(() => vi.fn());
 const getCurrentUserLocationPreferenceMock = vi.hoisted(() => vi.fn());
 const trackRouteRecommendationUseMock = vi.hoisted(() => vi.fn());
 const buildTrashSpotterRouteCandidatesMock = vi.hoisted(() => vi.fn());
-const distanceKmMock = vi.hoisted(() => vi.fn());
-const selectNextTrashSpotterStopMock = vi.hoisted(() => vi.fn());
-const applyRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
+const applyOriginRouteGeometryLegsMock = vi.hoisted(() => vi.fn());
 const createFallbackRouteGeometryMock = vi.hoisted(() => vi.fn());
 const routePolylineThroughFossgisFootMock = vi.hoisted(() => vi.fn());
 const buildHotspotsMock = vi.hoisted(() => vi.fn());
@@ -19,6 +17,10 @@ const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
 const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn());
 const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
+const planRouteMock = vi.hoisted(() => vi.fn());
+const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
+const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/rate-limit/server", () => ({
@@ -39,17 +41,24 @@ vi.mock("@/lib/gamification/progression", () => ({
 }));
 vi.mock("@/lib/route/trash-spotter-recommendation", () => ({
   buildTrashSpotterRouteCandidates: buildTrashSpotterRouteCandidatesMock,
-  distanceKm: distanceKmMock,
-  selectNextTrashSpotterStop: selectNextTrashSpotterStopMock,
 }));
 vi.mock("@/lib/route/route-contract", () => ({
-  applyRouteGeometryLegs: applyRouteGeometryLegsMock,
+  applyOriginRouteGeometryLegs: applyOriginRouteGeometryLegsMock,
 }));
 vi.mock("@/lib/geo/osrm-routing", () => ({
   createFallbackRouteGeometry: createFallbackRouteGeometryMock,
 }));
 vi.mock("@/lib/route/fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
+}));
+vi.mock("@/lib/geo/paris-arrondissements", () => ({
+  getTerritoryArrondissementCenter: getTerritoryArrondissementCenterMock,
+}));
+vi.mock("@/lib/route/route-planner", () => ({
+  fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
+  longestNetworkPrefixWithinBudget: longestNetworkPrefixWithinBudgetMock,
+  planRoute: planRouteMock,
+  ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v1",
 }));
 vi.mock("@/lib/route/recommendation-assistant", () => ({
   buildHotspots: buildHotspotsMock,
@@ -85,16 +94,19 @@ const candidate = {
   reason: "Signalement récent",
 };
 
-const fallbackGeometry = {
-  coordinates: [],
-  distanceKm: 0,
-  durationMinutes: 0,
+const fallbackGeometry = (
+  coordinates: [number, number][] = [],
+  durationMinutes = 0,
+) => ({
+  coordinates,
+  distanceKm: 1,
+  durationMinutes,
   legs: [],
   provider: "none",
   profile: null,
   mode: "fallback",
   estimated: true,
-};
+});
 
 function request(payload: unknown = {}) {
   return new Request("http://localhost/api/route/recommend", {
@@ -102,6 +114,15 @@ function request(payload: unknown = {}) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+function plannedStop(candidateValue = candidate, index = 0) {
+  return {
+    candidate: candidateValue,
+    incrementalDistanceKm: index + 1,
+    incrementalTravelMinutes: index + 5,
+    cumulativeTravelMinutes: (index + 1) * 5,
+  };
 }
 
 describe("POST /api/route/recommend", () => {
@@ -121,7 +142,11 @@ describe("POST /api/route/recommend", () => {
       (allowed: boolean) => (allowed ? null : new Response("limited", { status: 429 })),
     );
     getSupabaseServerClientMock.mockReturnValue({});
-    getCurrentUserLocationPreferenceMock.mockResolvedValue(null);
+    getCurrentUserLocationPreferenceMock.mockResolvedValue({
+      arrondissement: 4,
+      locationType: "residence",
+    });
+    getTerritoryArrondissementCenterMock.mockReturnValue({ lat: 48.86, lng: 2.36 });
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
     loadCachedEventPressureByArrondissementMock.mockResolvedValue({
       pressureByArrondissement: new Map(),
@@ -134,12 +159,11 @@ describe("POST /api/route/recommend", () => {
     });
     buildTrashSpotterActionableCandidatesMock.mockReturnValue([]);
     buildTrashSpotterRouteCandidatesMock.mockReturnValue([]);
-    createFallbackRouteGeometryMock.mockReturnValue(fallbackGeometry);
-    distanceKmMock.mockReturnValue(1);
-    selectNextTrashSpotterStopMock.mockReturnValue(null);
-    routePolylineThroughFossgisFootMock.mockResolvedValue(fallbackGeometry);
-    applyRouteGeometryLegsMock.mockImplementation((stops) => stops);
-    buildHotspotsMock.mockReturnValue([]);
+    createFallbackRouteGeometryMock.mockImplementation(
+      (coordinates: [number, number][]) => fallbackGeometry(coordinates),
+    );
+    routePolylineThroughFossgisFootMock.mockResolvedValue(fallbackGeometry());
+    applyOriginRouteGeometryLegsMock.mockImplementation((stops) => stops);
     defaultRouteAssistantPayloadMock.mockReturnValue({
       actNow: "",
       criticalNearby: "",
@@ -148,6 +172,17 @@ describe("POST /api/route/recommend", () => {
       upcomingEvents: [],
       hotspots: [],
     });
+    planRouteMock.mockImplementation((input) => ({
+      stops: input.candidates
+        .slice(0, input.maxStops)
+        .map((item: typeof candidate, index: number) => plannedStop(item, index)),
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+    }));
+    longestNetworkPrefixWithinBudgetMock.mockReturnValue(0);
+    fallbackRoutePrefixWithinBudgetMock.mockImplementation(
+      (_origin, stops) => stops,
+    );
+    buildHotspotsMock.mockReturnValue([]);
     buildProactiveAssistantMock.mockReturnValue({
       actNow: "",
       criticalNearby: "",
@@ -159,7 +194,7 @@ describe("POST /api/route/recommend", () => {
     trackRouteRecommendationUseMock.mockResolvedValue(undefined);
   });
 
-  it("applies the authenticated expensive-route quota and returns 429 when exceeded", async () => {
+  it("uses the authenticated expensive-route quota and returns 429 when exceeded", async () => {
     verifyRateLimitMock
       .mockResolvedValueOnce({ allowed: true, limit: 6, remaining: 5, reset: 1_000 })
       .mockResolvedValueOnce({ allowed: false, limit: 6, remaining: 0, reset: 1_000, retryAfter: 60 });
@@ -182,35 +217,6 @@ describe("POST /api/route/recommend", () => {
     expect(loadRouteRecommendationSourceMock).toHaveBeenCalledTimes(1);
   });
 
-  it("continues the main calculation when event pressure fails", async () => {
-    loadCachedEventPressureByArrondissementMock.mockRejectedValueOnce(
-      new Error("event source unavailable"),
-    );
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
-
-    const { POST } = await import("./route");
-    const response = await POST(request());
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(payload.dataStatus).toBe("complete");
-    expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
-    expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
-  });
-
-  it("uses the server pedestrian provider for a non-empty recommendation", async () => {
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
-
-    const { POST } = await import("./route");
-    const response = await POST(request());
-
-    expect(response.status).toBe(200);
-    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
-      [[candidate.latitude, candidate.longitude]],
-      {},
-    );
-  });
-
   it("ignores removed legacy route fields at the HTTP boundary", async () => {
     const { POST } = await import("./route");
     const response = await POST(
@@ -231,6 +237,227 @@ describe("POST /api/route/recommend", () => {
     expect(payload.constraintsApplied).toBeUndefined();
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
     expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith([]);
+  });
+
+  it("passes an explicit origin and all planner options to planRoute", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+    const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      request({
+        origin: explicitOrigin,
+        travelBudgetMinutes: 42,
+        maxStops: 1,
+        priorityVsTravel: 25,
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(planRouteMock).toHaveBeenCalledWith({
+      origin: explicitOrigin,
+      candidates: [candidate],
+      travelBudgetMinutes: 42,
+      maxStops: 1,
+      priorityVsTravel: 25,
+    });
+    expect((await response.json()).origin).toEqual(explicitOrigin);
+  });
+
+  it("falls back to the saved arrondissement center", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(getTerritoryArrondissementCenterMock).toHaveBeenCalledWith(4);
+    expect(planRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origin: {
+          latitude: 48.86,
+          longitude: 2.36,
+          source: "approximate_saved_area",
+        },
+      }),
+    );
+  });
+
+  it("returns 422 when neither an explicit nor saved origin exists", async () => {
+    getCurrentUserLocationPreferenceMock.mockResolvedValueOnce(null);
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(422);
+    expect(loadRouteRecommendationSourceMock).not.toHaveBeenCalled();
+    expect(planRouteMock).not.toHaveBeenCalled();
+  });
+
+  it("continues the main calculation when event pressure fails", async () => {
+    loadCachedEventPressureByArrondissementMock.mockRejectedValueOnce(
+      new Error("event source unavailable"),
+    );
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({ origin: { latitude: 48.85, longitude: 2.35, source: "browser" } }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.dataStatus).toBe("complete");
+    expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
+    expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
+  });
+
+  it("sends origin followed by stops to FOSSGIS and applies origin legs", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+    const networkGeometry = {
+      ...fallbackGeometry(),
+      coordinates: [[48.9, 2.4], [candidate.latitude, candidate.longitude]],
+      distanceKm: 2,
+      durationMinutes: 12,
+      legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 2, estimatedMinutes: 12 }],
+      provider: "fossgis-osrm",
+      profile: "foot",
+      mode: "network",
+      estimated: false,
+    } as const;
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(networkGeometry);
+    const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
+
+    const { POST } = await import("./route");
+    const response = await POST(request({ origin: explicitOrigin }));
+
+    expect(response.status).toBe(200);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
+      [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude]],
+      {},
+    );
+    expect(applyOriginRouteGeometryLegsMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      networkGeometry,
+    );
+  });
+
+  it("reduces an over-budget network route without a second FOSSGIS call", async () => {
+    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
+    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
+    planRouteMock.mockReturnValueOnce({
+      stops: plannedStops,
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+    });
+    const networkGeometry = {
+      ...fallbackGeometry(),
+      durationMinutes: 70,
+      mode: "network",
+      legs: [
+        { fromStopIndex: 0, toStopIndex: 1, distanceKm: 2, estimatedMinutes: 40 },
+        { fromStopIndex: 1, toStopIndex: 2, distanceKm: 2, estimatedMinutes: 30 },
+      ],
+      provider: "fossgis-osrm",
+      profile: "foot",
+      estimated: false,
+    } as const;
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(networkGeometry);
+    longestNetworkPrefixWithinBudgetMock.mockReturnValueOnce(1);
+    createFallbackRouteGeometryMock.mockImplementation(
+      (coordinates: [number, number][]) => fallbackGeometry(coordinates, 8),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
+      travelBudgetMinutes: 60,
+    }));
+    const payload = await response.json();
+
+    expect(longestNetworkPrefixWithinBudgetMock).toHaveBeenCalledWith(
+      networkGeometry.legs,
+      60,
+    );
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledOnce();
+    expect(payload.stops).toHaveLength(1);
+    expect(payload.travelMinutes).toBeLessThanOrEqual(payload.travelBudgetMinutes);
+  });
+
+  it("reduces an over-budget fallback route locally", async () => {
+    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
+    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
+    planRouteMock.mockReturnValueOnce({
+      stops: plannedStops,
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+    });
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
+    fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
+    createFallbackRouteGeometryMock.mockImplementation(
+      (coordinates: [number, number][]) => fallbackGeometry(coordinates, 9),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.9, longitude: 2.4, source: "browser" },
+      travelBudgetMinutes: 60,
+    }));
+    const payload = await response.json();
+
+    expect(fallbackRoutePrefixWithinBudgetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ latitude: 48.9, longitude: 2.4 }),
+      plannedStops.map(({ candidate: plannedCandidate }) => plannedCandidate),
+      60,
+      expect.any(Function),
+    );
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledOnce();
+    expect(payload.stops).toHaveLength(1);
+    expect(payload.travelMinutes).toBeLessThanOrEqual(60);
+  });
+
+  it("accepts priorityVsDistance as a temporary alias and maxStops = 1", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      priorityVsDistance: 20,
+      maxStops: 1,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(planRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({ priorityVsTravel: 20, maxStops: 1 }),
+    );
+  });
+
+  it("returns the planner diagnostics and budget-safe output fields", async () => {
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+    planRouteMock.mockReturnValueOnce({
+      stops: [plannedStop()],
+      diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
+    });
+    routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 8));
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      travelBudgetMinutes: 10,
+    }));
+    const payload = await response.json();
+
+    expect(payload).toEqual(expect.objectContaining({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      travelDistanceKm: expect.any(Number),
+      travelMinutes: expect.any(Number),
+      travelBudgetMinutes: 10,
+      withinBudget: true,
+      serviceMinutesEstimate: null,
+      totalMinutesEstimate: null,
+      diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
+      engineVersion: "route-planner-v1",
+      generatedAt: expect.any(String),
+    }));
+    expect(payload.travelMinutes).toBeLessThanOrEqual(payload.travelBudgetMinutes);
   });
 
   it("returns empty, partial and unavailable source states distinctly", async () => {
