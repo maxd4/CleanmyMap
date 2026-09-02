@@ -15,19 +15,23 @@ concurrente.
 - [Documentation Policy](./DOCUMENTATION_POLICY.md) — critère de documentation,
   choix de la source spécialisée et traitement de l'historique ;
 - [Testing](./TESTING.md) — stratégie et commandes de test ;
-- [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées
-  lorsqu'elles sont directement concernées.
+- [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées ;
+- [TypeScript Precision Policy](./typescript-precision-policy.md) — contrat
+  durable pour les frontières non fiables, types, casts et accès dynamiques ;
+- [Lint & Static Analysis Refactor Playbook](./lint-refactor-playbook.md) —
+  méthode de correction des diagnostics statiques sans masquer la cause racine ;
+- [Conventions de modularisation](./conventions-modularisation.md) — décision
+  d'extraction, cohésion, contrats et validation des refactors structurels ;
 - [Doctrine Kaizen](./kaizen/README.md) — amélioration continue, méthode d'audit
   et template canonique de développement.
 
 ## Routage rapide
 
-- Architecture et frontières : `../architecture/` ;
+- architecture, frontières et radar des monolithes : `../architecture/` ;
 - sécurité et autorisations : `../security/` ;
 - design system et pages : `../design-system/` et `../pages_site/` ;
-- exploitation et quotas : `../operations/`.
+- exploitation, services et quotas : `../operations/`.
 
-Pour une tâche, consulter d'abord les fichiers de gouvernance à la racine,
-puis uniquement les documents spécialisés réellement concernés. Ne pas
-recopier une règle générale dans ce dossier si une source canonique existe
-déjà.
+Pour une tâche, consulter uniquement les documents spécialisés réellement
+concernés. Ne pas recopier une règle générale dans ce dossier si une source
+canonique existe déjà.

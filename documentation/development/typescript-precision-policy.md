@@ -1,76 +1,148 @@
 # TypeScript Precision Policy
 
-Ce document définit les règles de précision de typage à appliquer dans le repo.
+## Objet
+
+Ce document définit le contrat durable de précision TypeScript pour CleanMyMap.
+Il ne maintient aucun backlog d'erreurs ni aucun état daté du `typecheck`.
+
+Les erreurs et warnings courants sont traités avec
+[`lint-refactor-playbook.md`](./lint-refactor-playbook.md). Les commandes et
+niveaux de validation restent définis dans [`TESTING.md`](./TESTING.md).
 
 ## Principes
 
 - `any` est interdit par défaut.
-- Les casts sont des outils de frontière, pas des outils de confort.
-- `Record<string, unknown>` est réservé aux payloads réellement non structurés.
-- Tout accès dynamique doit être normalisé avant d'entrer dans la logique métier.
+- `unknown` est préférable lorsqu'une forme n'est pas encore prouvée.
+- Un cast ne remplace jamais une validation.
+- `Record<string, unknown>` reste une représentation de frontière, pas un type métier.
+- Un accès dynamique doit être normalisé avant d'entrer dans la logique métier.
+- Une valeur potentiellement absente doit être explicitement traitée.
+- Les types internes stables doivent exprimer le contrat réellement attendu.
 
-## Règles
+## Frontières externes
 
-### 1. Pas de `any` par défaut
+Traiter comme non fiables tant qu'elles ne sont pas validées : JSON réseau,
+payloads API, métadonnées Clerk/Supabase non garanties, storage/cache hérités,
+paramètres externes, réponses tierces et données importées.
 
-Utilise `unknown`, une interface, une union ou une garde de type.
+```text
+unknown
+→ validation / garde / parseur
+→ type métier explicite
+→ logique métier
+```
 
-Autorisé uniquement aux frontières temporaires très locales, avec justification écrite et plan de suppression.
+`Record<string, unknown>` peut servir temporairement à inspecter une structure
+brute, mais ne doit pas se propager dans les services ou composants lorsque la
+forme est connue.
 
-### 2. Casts uniquement si la forme est prouvée
+## `any`
 
-Un cast est acceptable quand:
+Préférer une interface, une union, un générique borné, `unknown`, une garde ou
+un parseur. Un `any` n'est acceptable que si une contrainte externe l'impose
+réellement et qu'il reste limité à la plus petite frontière possible.
 
-- la donnée vient d'une frontière externe, puis a été validée;
-- le cast est encapsulé dans un helper de normalisation;
-- la forme est imposée par l'API tierce et le helper centralise ce contrat.
+Ne pas remplacer un `any` par `value as unknown as DomainType`.
 
-Un cast est à refuser quand:
+## Casts et assertions
 
-- il remplace une vraie modélisation;
-- il évite un `unknown` sans validation;
-- il masque un accès potentiellement absent.
+Un cast est acceptable lorsque la forme a déjà été prouvée par un validateur,
+une garde, un contrat de bibliothèque fiable ou une normalisation centralisée.
 
-### 3. `Record<string, unknown>` seulement aux frontières
+Refuser un cast qui masque une propriété potentiellement absente, contourne une
+erreur d'assignation, élargit le contrat ou laisse entrer une donnée brute dans
+le cœur métier.
 
-Cas légitimes:
+L'assertion non-null `!` suit la même règle : si la donnée peut réellement
+manquer, le code doit traiter ce cas explicitement.
 
-- JSON brut;
-- métadonnées Clerk ou Supabase non garanties;
-- payloads réseau ou stockage local hérités;
-- objets réellement libres de forme.
+## Accès dynamiques et indexation
 
-Cas à éviter:
+Pour une donnée non garantie :
 
-- objets internes déjà connus;
-- réponses déjà normalisées;
-- entités métier du domaine;
-- composants qui pourraient recevoir un type nommé.
+```text
+payload brut
+→ isRecord / parseur métier
+→ extraction contrôlée
+→ type stable
+```
 
-Si une structure est stable, définis un type dédié et migre l'appelant vers ce type.
+Éviter de multiplier les accès `obj["foo"]` dans la logique métier. Les
+centraliser dans un parseur ou adaptateur.
 
-### 4. Accès dynamiques normalisés
+`noUncheckedIndexedAccess` n'est pas activé par défaut. Son activation nécessite
+un lot dédié avec audit des usages et correction sémantique des accès
+incertains. Ne pas la préparer en ajoutant mécaniquement des `!`.
 
-Tout accès `obj["foo"]` ou `obj.foo` sur un objet non garanti doit passer par:
+## Erreurs TypeScript fréquentes
 
-- un helper `isRecord` / `toRecord`;
-- un parseur métier dédié;
-- une validation de schéma;
-- ou une normalisation centralisée.
+### `TS4111`
 
-Les fonctions métier ne doivent pas dépendre d'objets ouverts tant qu'une forme stable existe.
+Le type est trop ouvert. Préférer type nommé, parseur ou accès dynamique borné
+à une frontière.
 
-## Règle de correction
+### `TS2532` / `TS18048`
 
-Quand une erreur TypeScript apparaît:
+Traiter explicitement `undefined` avec guard clause, retour anticipé ou branche
+métier. Ne pas utiliser `!` sans preuve.
 
-1. Corriger la forme des données.
-2. Créer ou réutiliser un type explicite.
-3. Normaliser au bord du système.
-4. Éviter le contournement par `any` ou par cast aveugle.
+### `TS2322`
+
+Vérifier objet partiel, union mal affinée, donnée brute propagée trop loin ou
+type cible mal modélisé. Ne pas rendre le type artificiellement permissif.
+
+### `TS2345`
+
+Valider ou convertir avant l'appel. Une fonction métier doit recevoir une
+donnée déjà compatible avec son contrat.
+
+### `TS2488`
+
+Prouver présence et cardinalité avant déstructuration ou itération.
+
+## Stores, API et persistence
+
+Lorsqu'une correction touche un parseur, un store, une route API ou une
+persistence :
+
+- valider les champs obligatoires à la frontière ;
+- normaliser les champs optionnels ;
+- préserver les distinctions métier utiles (`null`, absent, valeur par défaut) ;
+- ne pas transformer une donnée invalide en donnée plausible ;
+- ajouter ou adapter un test lorsque le contrat change.
+
+## React
+
+- typer précisément props et retours publics ;
+- dériver les valeurs pures pendant le rendu lorsque possible ;
+- ne pas contourner une mauvaise modélisation d'état par un cast ;
+- normaliser les payloads externes avant le rendu.
+
+Les règles d'effets React et de lint sont dans
+[`lint-refactor-playbook.md`](./lint-refactor-playbook.md).
+
+## Méthode de correction
+
+1. Identifier le code d'erreur et la frontière concernée.
+2. Déterminer la forme réelle de la donnée.
+3. Chercher un type, helper ou parseur existant.
+4. Corriger la cause commune avant les symptômes locaux.
+5. Ajouter une validation ou un type explicite si nécessaire.
+6. Préserver le comportement métier.
+7. Relancer le contrôle ciblé puis les validations proportionnées au risque.
+
+## Critères de sortie
+
+- forme des données plus explicite ;
+- aucune assertion aveugle ajoutée ;
+- frontières non fiables bornées ;
+- contrat métier non élargi sans décision ;
+- cas d'absence traités selon leur sémantique ;
+- tests pertinents et typecheck applicable verts.
 
 ## Références
 
-- [Principes Kaizen](./kaizen/PRINCIPLES.md)
-- [Checklist de correction ESLint](./LINT_CORRECTION_CHECKLIST.md)
-- [TypeScript strict - rapport priorisé](./typescript-strict-priority-report.md)
+- [`lint-refactor-playbook.md`](./lint-refactor-playbook.md)
+- [`TESTING.md`](./TESTING.md)
+- [`repo-quality-rules.md`](./repo-quality-rules.md)
+- [`kaizen/PRINCIPLES.md`](./kaizen/PRINCIPLES.md)
