@@ -175,4 +175,22 @@ describe("buildOperationalPriorities", () => {
 
     expect(result.some((priority) => priority.id === "admin-backlog")).toBe(false);
   });
+
+  it("links the sobriety priority to the canonical impact report", () => {
+    const comparison = buildComparisonFixture();
+    comparison.current.iurIndex = 0.5;
+    comparison.current.pendingCount = 0;
+    comparison.current.moderationDelayDays = 0;
+    comparison.current.qualityScore = 100;
+    comparison.current.coverageRate = 100;
+    comparison.current.anomaliesCount = 0;
+
+    const sobriety = buildOperationalPriorities({ comparison, zones: [] }).find(
+      (priority) => priority.id === "sobriety",
+    );
+
+    expect(sobriety?.recommendedAction.href).toBe(
+      "/docs/plans/rapport_impact/impact_IA.md",
+    );
+  });
 });

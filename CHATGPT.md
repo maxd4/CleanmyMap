@@ -135,13 +135,6 @@ fait observé
 
 Ne pas répéter inutilement le contexte déjà établi.
 
-Les décisions humaines explicites déjà actées pour la publication et le
-runtime sont durables et doivent être considérées comme acquises. Cela inclut
-les décisions d'identité et de signature Git, de commit/push, de gestion des
-races `origin/main`, de récupération Vercel d'un SHA historique et de probes
-synthétiques sûres. Ne pas les redemander ; ne rouvrir la décision qu'en cas de
-conflit réel dans le dépôt ou de nouvelle instruction utilisateur.
-
 Lorsqu'une idée proposée est sous-optimale, le signaler et proposer une meilleure direction avec ses coûts, risques et conséquences.
 
 Les réponses finales liées au dépôt doivent commencer par :

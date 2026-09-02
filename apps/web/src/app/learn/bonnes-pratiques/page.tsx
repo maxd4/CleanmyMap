@@ -13,7 +13,7 @@ import type { LearnPracticeThemeId } from "@/lib/learning/practice/themes";
 import { LearnGestesPropresInsightsSection } from "@/components/learn/learn-gestes-propres-insights-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
-const VALID_THEMES: LearnPracticeThemeId[] = ["tri", "compost", "reduire"];
+const VALID_THEMES: LearnPracticeThemeId[] = ["tri", "compost", "reduire", "numerique"];
 
 function normalizeTheme(theme: string | null): LearnPracticeThemeId {
   return VALID_THEMES.includes(theme as LearnPracticeThemeId)

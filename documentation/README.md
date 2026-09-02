@@ -1,12 +1,13 @@
 # Documentation — CleanMyMap
 
-Point d'entrée de la documentation technique, produit et opérationnelle du projet.
+Point d'entrée de la documentation technique, produit et opérationnelle du
+projet.
 
 ## Source de vérité
 
 Avant toute modification ciblant le dépôt :
 
-1. lire les consignes d'agent locales applicables ;
+1. lire les consignes locales applicables ;
 2. vérifier le fichier courant sur GitHub `maxd4/CleanmyMap` ;
 3. lire uniquement la documentation canonique utile au périmètre ;
 4. ne pas appliquer un ancien plan sans le confronter au code actuel.
@@ -22,6 +23,7 @@ Avant toute modification ciblant le dépôt :
 | Sécurité | `security/README.md` |
 | Tests et validation | `development/TESTING.md` |
 | Développement | `development/README.md` |
+| Modularisation | `development/conventions-modularisation.md` puis `architecture/monolith-split-plan.md` |
 | Amélioration continue / Kaizen | `development/kaizen/README.md` |
 | Affichage des scores UI | `development/ui-score-formatting.md` |
 | Produit | `product/README.md` |
@@ -70,7 +72,6 @@ Pour un sujet mixte :
 
 ```txt
 documentation/
-├── ai-guides/
 ├── architecture/
 │   ├── adr/
 │   ├── master-architecture.md
@@ -80,6 +81,7 @@ documentation/
 ├── design-system/
 │   └── generated/board/
 ├── development/
+│   └── kaizen/
 ├── features/
 ├── operations/
 ├── pages_site/
@@ -90,9 +92,9 @@ documentation/
 └── specs/
 ```
 
-Les documents courants sont les sources de vérité. Les documents historiques
-et de session conservent le contexte sans
-devenir une architecture ou une spécification concurrente.
+Les documents courants sont les sources de vérité. Les documents historiques,
+audits et documents de session conservent le contexte sans devenir une
+architecture ou une spécification concurrente.
 
 ## Orientation par objectif
 
@@ -104,6 +106,13 @@ modules concernés, puis les règles de régression et de qualité :
 `architecture/frontend-backend-boundaries.md`,
 `architecture/modules-cles-et-dependances.md`,
 `development/regression-gates.md` et `development/QUALITY_GUIDE.md`.
+
+### Modulariser ou refactorer
+
+Partir de `development/conventions-modularisation.md` pour les règles durables,
+puis de `architecture/monolith-split-plan.md` pour le radar et les cibles
+actuelles. Ne pas maintenir une seconde liste de progression dans un guide
+d'agent.
 
 ### Vérifier le produit
 
@@ -128,7 +137,8 @@ canonique de la page. Pour les routes, permissions, exports ou données, lire
 
 ## Captures UX/UI
 
-Les captures canoniques sont centralisées par bloc ou famille documentaire, conformément à :
+Les captures canoniques sont centralisées par bloc ou famille documentaire,
+conformément à :
 
 ```txt
 documentation/pages_site/README.md
@@ -150,7 +160,7 @@ Une preuve visuelle ne remplace pas la vérification sémantique de la page.
 ### Avant de modifier
 
 ```txt
-□ Lire les consignes d'agent locales
+□ Lire les consignes locales applicables
 □ Vérifier le fichier actuel sur GitHub
 □ Identifier la source canonique
 □ Inspecter les dépendances directes
@@ -165,7 +175,7 @@ Validation ciblée :
 npm run checks:changed
 ```
 
-Validation complète :
+Validation complète lorsqu'elle est justifiée :
 
 ```bash
 npm run checks
@@ -216,10 +226,10 @@ npm run test:e2e
 
 ## Références prioritaires
 
-- les consignes d'agent locales
-- `README.md`
-- `architecture/README.md`
-- `security/README.md`
-- `development/TESTING.md`
-- `pages_site/README.md`
-- `pages_site/INDEX.md`
+- les consignes locales applicables ;
+- `README.md` ;
+- `architecture/README.md` ;
+- `security/README.md` ;
+- `development/TESTING.md` ;
+- `pages_site/README.md` ;
+- `pages_site/INDEX.md`.

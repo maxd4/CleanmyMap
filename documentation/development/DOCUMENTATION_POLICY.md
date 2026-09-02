@@ -41,6 +41,32 @@ Ne pas présenter une intention, une roadmap ou une proposition comme un
 comportement implémenté. Ne pas créer de placeholder durable ni de référence
 vers une source documentaire non canonique.
 
+## Schémas et documentation visuelle
+
+Ajouter un schéma lorsqu'il réduit réellement l'ambiguïté d'un flux, d'une
+architecture, d'une séquence ou d'une décision, ou lorsqu'un garde-fou du dépôt
+l'exige.
+
+Préférer une source éditable et versionnable, notamment Mermaid dans le
+document concerné, plutôt qu'une image qui devient une seconde source de
+vérité.
+
+Un schéma doit :
+
+- avoir un rôle et un titre explicites ;
+- utiliser des noms de nœuds compréhensibles ;
+- rester cohérent avec le texte et le code courant lorsqu'il décrit le présent ;
+- éviter les détails décoratifs qui n'aident ni la compréhension ni la
+  décision.
+
+Une image statique de fallback n'est pas obligatoire par principe. Elle n'est
+conservée que lorsqu'un usage réel l'exige, par exemple un export, une archive
+visuelle ou un rendu qui ne sait pas afficher la source éditable.
+
+Ne jamais créer un lien vers un fallback ou un asset qui n'existe pas. Les
+sorties générées restent des artefacts ou des preuves ; elles ne remplacent pas
+la source documentaire éditable.
+
 ## Vérification avant clôture
 
 Avant de clôturer un changement documenté :
@@ -68,7 +94,7 @@ compréhensible sans dépendre d'un contexte de session interne.
 
 Les chemins suivants ne doivent pas être exposés comme documentation publique :
 
-- `AGENTS.md` ;
+- les fichiers de gouvernance d'agent à la racine ou dans les sous-arbres ;
 - `documentation/sessions/` ;
 - `documentation/plans/` ;
 - `documentation/operations/agent-memory-governance.md` ;
@@ -80,8 +106,8 @@ Les chemins suivants ne doivent pas être exposés comme documentation publique 
 
 Les familles `architecture/`, `database/`, `design-system/`, `development/`,
 `features/`, `legal/`, `operations/`, `product/`, `security/` et `seo/` peuvent
-rester visibles dans la documentation publique,
-à condition de ne pas référencer les éléments strictement non publics.
+rester visibles dans la documentation publique, à condition de ne pas
+référencer les éléments strictement non publics.
 
 ## Sorties générées et archives visuelles
 

@@ -1,9 +1,9 @@
 # Layout & spacing canonique
 
-Ce document définit le shell et le rythme des pages web classiques
+Ce document définit le shell, la grille et le rythme des pages web classiques
 CleanMyMap. Il complète `PAGE_HEADER.md` : la page choisit son contenu métier,
 sa famille de couleur et, si nécessaire, son alignement de header, mais pas sa
-grille globale.
+géométrie globale.
 
 ## Primitives runtime
 
@@ -55,6 +55,47 @@ métier restent locaux lorsqu'ils décrivent la composition de ce composant et
 non le shell de la page. `cmm-content-group` peut être utilisé pour un groupe
 interne standard sans recréer une échelle locale.
 
+## Grilles internes de composition
+
+Une grille interne peut structurer une surface dense lorsqu'elle améliore
+réellement la lecture, notamment pour :
+
+- rapports et synthèses ;
+- KPI ;
+- tableaux de bord ;
+- vues de comparaison ;
+- pages éditoriales à forte densité.
+
+Cette grille reste une composition interne au contenu. Elle ne remplace jamais
+`CmmPageLayout`, ses gutters ou sa largeur maximale.
+
+Utiliser les tokens et primitives de grille déjà présents dans le runtime.
+Ne pas créer dans une page une seconde série de valeurs fixes pour les colonnes,
+gouttières, marges ou espacements lorsque les tokens canoniques couvrent le
+besoin.
+
+Les blocs doivent conserver une hiérarchie stable entre desktop, tablette et
+mobile. Ils se replient avant de réduire artificiellement la typographie ou de
+provoquer un scroll horizontal.
+
+Une grille stricte n'est pas une obligation. Pour une carte interactive, un
+formulaire complexe, un onboarding ou une séquence transactionnelle, la
+lisibilité du flux et les contraintes d'interaction priment sur l'alignement
+géométrique.
+
+## Alignement et rythme
+
+- `PageHeader` ouvre la page sur la même ligne de lecture que le contenu
+  principal.
+- Les titres et sous-titres suivent le contrat `PAGE_HEADER.md`.
+- Les KPI et tableaux peuvent s'aligner sur une grille interne lorsqu'elle aide
+  la comparaison.
+- Les cartes utilisent leurs primitives et espacements canoniques ; une page ne
+  redéfinit pas leur padding pour forcer un alignement.
+- Les zones d'action restent lisibles et ne cassent pas le rythme de lecture.
+- Les valeurs arbitraires de spacing structurel sont interdites lorsqu'un token
+  canonique existe.
+
 ## Exceptions structurelles
 
 Les surfaces suivantes ne sont pas des pages classiques et conservent leur
@@ -72,6 +113,17 @@ composition dédiée :
 Toute nouvelle exception doit être ajoutée à
 `documentation/design-system/UI_EXCEPTION_PAGES.md` avec sa raison avant de
 contourner le shell canonique.
+
+## Vérification
+
+Pour une modification de layout :
+
+- vérifier que la page utilise le shell canonique lorsqu'elle y est éligible ;
+- contrôler desktop, tablette et mobile selon les breakpoints existants ;
+- vérifier l'absence de débordement horizontal ;
+- vérifier l'alignement des blocs denses sans introduire de nouvelle échelle
+  locale ;
+- confirmer qu'une exception structurelle reste documentée.
 
 ## Garde-fou
 

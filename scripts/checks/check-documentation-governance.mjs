@@ -7,7 +7,6 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 
 const scanExtensions = new Set([".md", ".txt", ".yml", ".yaml", ".html", ".htm"]);
 const skippedPathParts = [
-  "documentation/ai-guides/",
   "documentation/operations/agent-memory-governance.md",
   "documentation/plans-perso/",
   "documentation/sessions/",
