@@ -36,6 +36,9 @@ Le lancement est prioritaire et propose d'abord le niveau (`6e`, `5e`, `4e` ou
 - ouvrir le mode École ;
 - lancer la démo.
 
+Après le niveau choisi, un encart rappelle la durée, le matériel minimal et le
+fonctionnement collectif du format sélectionné avant le CTA `Lancer la séance`.
+
 ### Aides de séance
 
 - fiche enseignant ;
