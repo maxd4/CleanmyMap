@@ -62,10 +62,14 @@ intermédiaires ne doivent pas commencer par ce canari.
   `maxd4/CleanmyMap`, branche `main` ;
 - lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
   pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
+- toute publication réelle vers `main` utilise l'identité canonique
+  `maxd4 <maxd4@users.noreply.github.com>` ; la signature Git est conservée
+  (`commit.gpgsign` et la clé de publication configurés) et Verified Commits
+  ne doit jamais être contourné ;
 - le checkout de travail reste directement sur `main` ; toute exécution qui
   produit des modifications doit se terminer par un commit ciblé sur `main`
-  puis un push vers `origin/main` ; aucune modification ne justifie un commit
-  artificiel ;
+  puis un push vers `origin/main`, sauf blocage explicite signalé ; aucune
+  modification ne justifie un commit artificiel ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
@@ -96,8 +100,10 @@ intermédiaires ne doivent pas commencer par ce canari.
   push, ne pas le publier silencieusement, conserver le lot et signaler
   précisément ce seul blocage ;
 - si `origin/main` avance, faire d'abord `git fetch origin main` ; une
-  évolution distante indépendante du lot autorise une resynchronisation sûre
-  sans écraser les changements parallèles, suivie des validations et du push ;
+  évolution distante indépendante du lot autorise une seule resynchronisation
+  sûre, sans écraser les changements parallèles, suivie des validations et du
+  push ; une nouvelle avance de `origin/main` après cette resynchronisation
+  impose un STOP explicite ;
   si cette resynchronisation n'est pas sûre dans le checkout partagé, utiliser
   la sandbox de publication éphémère ci-dessus ; un conflit réel sur les
   fichiers ou contrats du lot impose un STOP explicite ;
@@ -140,8 +146,9 @@ intermédiaires ne doivent pas commencer par ce canari.
   `STAGED` → commit → `git fetch origin main` → vérification d'ascendance et de
   périmètre → validation `PUSH_CANDIDATE` → push normal. En sandbox, transférer
   aussi les ajouts et suppressions de l'allowlist, vérifier l'absence de fichier
-  étranger, puis appliquer au plus une nouvelle tentative bornée après une
-  avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
+  étranger, puis appliquer, si nécessaire, l'unique resynchronisation bornée
+  autorisée après une avance indépendante de `main` ; ne jamais force-push ni
+  réécrire l'historique ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes, `git diff --cached --name-only` et l'ascendance réellement
   destinée au push ; après création du commit local, ne pas exiger l'égalité
