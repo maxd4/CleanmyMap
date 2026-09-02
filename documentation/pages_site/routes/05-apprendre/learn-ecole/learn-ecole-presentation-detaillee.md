@@ -14,7 +14,9 @@ flowchart TD
   C --> E[Lancer la démo]
   C --> F[Consulter la fiche enseignant]
   C --> G[Consulter la fiche élève]
-  D --> H[/learn/sentrainer mode=ecole]
+  D --> H{Choix du format}
+  H --> I[/learn/sentrainer mode=ecole format=quiz-30]
+  H --> J[/learn/sentrainer mode=ecole format=atelier-60]
 ```
 
 ## Contenu actuel
@@ -42,7 +44,15 @@ Deux CTA :
 
 ### Banque
 
-Le code expose une première banque de 20 questions réparties en quatre sous-modes.
+Le code expose une banque partagée, répartie en quatre tracks internes. Le
+professeur ne choisit pas un track : le moteur compose le lot selon le niveau.
+Le format `quiz-30` lance la séance courte. Le format `atelier-60` enchaîne un
+pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz de
+15 minutes et un bilan collectif.
+
+L’état de l’atelier et les réponses restent locaux et anonymes pendant la
+séance. Ils ne sont pas placés dans l’URL et ne sont pas persistés comme
+données personnelles.
 
 Les statuts de questions permettent notamment de distinguer :
 

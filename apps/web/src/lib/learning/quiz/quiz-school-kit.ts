@@ -61,7 +61,7 @@ export const QUIZ_SCHOOL_KIT_STEPS: QuizSchoolKitStep[] = [
 
 export const QUIZ_SCHOOL_TEACHER_GUIDE = [
   "Objectif: faire raisonner, argumenter et distinguer une intuition d'une règle fiable.",
-  "Durée conseillée: 30 à 45 minutes, avec une part importante de discussion.",
+  "Formats: quiz collectif de 30 minutes ou atelier de 60 minutes (pré-quiz 15 minutes, séquence 30 minutes, post-quiz 15 minutes).",
   "Matériel: vidéoprojecteur, tableau, quelques feuilles de vote ou doigts levés, et si besoin un minuteur.",
   "Animation: afficher une question, faire voter, demander une justification courte, puis révéler la réponse.",
   "Débat: faire reformuler l'idée d'un camarade avant de donner son avis aide à faire émerger les nuances.",

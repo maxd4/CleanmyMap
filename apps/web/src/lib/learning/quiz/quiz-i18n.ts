@@ -53,6 +53,17 @@ export type QuizUiCopyKey =
   | "session.errorTypesLabel"
   | "session.school.sessionLabel"
   | "session.school.workshopTitle"
+  | "session.school.workshop.preQuiz"
+  | "session.school.workshop.activity"
+  | "session.school.workshop.postQuiz"
+  | "session.school.workshop.summary"
+  | "session.school.workshop.vote"
+  | "session.school.workshop.reveal"
+  | "session.school.workshop.next"
+  | "session.school.workshop.startPost"
+  | "session.school.workshop.back"
+  | "session.school.workshop.restart"
+  | "session.school.workshop.chooseFormat"
   | "session.adaptiveTitle"
   | "session.progressSchoolLabel"
   | "session.progressSessionLabel"
@@ -132,6 +143,14 @@ export type QuizUiCopyKey =
   | "school.levelChip"
   | "school.durationLabel"
   | "school.questionsLabel"
+  | "school.formatPrompt"
+  | "school.format.quiz-30.label"
+  | "school.format.quiz-30.description"
+  | "school.format.atelier-60.label"
+  | "school.format.atelier-60.description"
+  | "school.format.cta"
+  | "school.format.back"
+  | "school.format.badge"
   | "school.takeawayLabel"
   | "school.debat-classe.label"
   | "school.mission-terrain.label"
@@ -224,10 +243,10 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "session.changeType": { fr: "Changer de type", en: "Change type" },
   "access.school.bannerLabel": { fr: "Mode École" },
   "access.school.ctaLabel": { fr: "Lancer le mode École" },
-  "access.school.ctaTitle": { fr: "Séance publique pour la 6e à la 3e", en: "Public session for grades 6 to 9" },
+  "access.school.ctaTitle": { fr: "Séance publique de 30 ou 60 min pour la 6e à la 3e", en: "30- or 60-minute public session for grades 6 to 9" },
   "access.school.ctaText": {
-    fr: "Séance collective de 30 minutes, sans compte, avec un niveau choisi avant le lancement.",
-    en: "A 30-minute collective session with no account and a grade chosen before launch.",
+    fr: "Séance collective de 30 ou 60 minutes, sans compte, avec un niveau et un format choisis avant le lancement.",
+    en: "A 30- or 60-minute collective session with no account, with a grade and format chosen before launch.",
   },
   "access.demo.bannerLabel": { fr: "Démo rapide" },
   "access.demo.ctaLabel": { fr: "Lancer la démo" },
@@ -263,8 +282,8 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.bannerLabel": { fr: "Mode École", en: "School mode" },
   "school.title": { fr: "Choisissez le niveau de la séance", en: "Choose the session level" },
   "school.description": {
-    fr: "Une séance publique de 30 minutes pour la 6e, la 5e, la 4e ou la 3e. Les questions sont équilibrées automatiquement et les catégories restent internes.",
-    en: "A 30-minute public session for grades 6 to 9. Questions are balanced automatically and categories remain internal.",
+    fr: "Une séance publique de 30 ou 60 minutes pour la 6e, la 5e, la 4e ou la 3e. Les questions sont équilibrées automatiquement et les catégories restent internes.",
+    en: "A 30- or 60-minute public session for grades 6 to 9. Questions are balanced automatically and categories remain internal.",
   },
   "school.collectiveTitle": { fr: "Mode collectif recommandé", en: "Recommended collective mode" },
   "school.collectiveDescription": {
@@ -276,8 +295,8 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.linkTeacherKit": { fr: "Voir le kit enseignant", en: "View teacher kit" },
   "school.levelPrompt": { fr: "Choisissez une classe avant de lancer", en: "Choose a grade before launching" },
   "school.levelNote": {
-    fr: "Le parcours mélange automatiquement les quatre catégories de questions. Aucun compte, nom d’élève ou classe à créer.",
-    en: "The path automatically mixes the four question categories. No account, student name or class to create.",
+    fr: "Le parcours mélange automatiquement les quatre catégories de questions. Choisissez ensuite le quiz-30 ou l’atelier-60. Aucun compte, nom d’élève ou classe à créer.",
+    en: "The path automatically mixes the four question categories. Then choose the 30-minute quiz or 60-minute workshop. No account, student name or class to create.",
   },
   "school.level.6e.label": { fr: "6e", en: "Grade 6" },
   "school.level.6e.description": { fr: "Repères concrets et questions directes pour démarrer.", en: "Concrete cues and direct questions to get started." },
@@ -288,8 +307,33 @@ export const QUIZ_UI_COPY: Record<QuizUiCopyKey, QuizLocalizedText> = {
   "school.level.3e.label": { fr: "3e", en: "Grade 9" },
   "school.level.3e.description": { fr: "Des situations plus nuancées pour argumenter et estimer.", en: "More nuanced situations for arguing and estimating." },
   "school.levelChip": { fr: "Niveau", en: "Level" },
-  "school.durationLabel": { fr: "30 min", en: "30 min" },
+  "school.durationLabel": { fr: "30 ou 60 min", en: "30 or 60 min" },
   "school.questionsLabel": { fr: "15 questions", en: "15 questions" },
+  "school.formatPrompt": { fr: "Choisissez le format", en: "Choose the format" },
+  "school.format.quiz-30.label": { fr: "Quiz 30 min", en: "30-minute quiz" },
+  "school.format.quiz-30.description": {
+    fr: "Une séance collective de 30 minutes, avec vote, révélation et explication.",
+    en: "A 30-minute collective session with voting, reveal and explanation.",
+  },
+  "school.format.atelier-60.label": { fr: "Atelier 60 min", en: "60-minute workshop" },
+  "school.format.atelier-60.description": {
+    fr: "Pré-quiz 15 min, atelier pédagogique 30 min, post-quiz 15 min et bilan collectif.",
+    en: "15-minute pre-quiz, 30-minute activity, 15-minute post-quiz and collective review.",
+  },
+  "school.format.cta": { fr: "Lancer ce format", en: "Launch this format" },
+  "school.format.back": { fr: "Changer de niveau", en: "Change grade" },
+  "school.format.badge": { fr: "Format choisi", en: "Selected format" },
+  "session.school.workshop.preQuiz": { fr: "Pré-quiz · 15 min", en: "Pre-quiz · 15 min" },
+  "session.school.workshop.activity": { fr: "Atelier · 30 min", en: "Activity · 30 min" },
+  "session.school.workshop.postQuiz": { fr: "Post-quiz · 15 min", en: "Post-quiz · 15 min" },
+  "session.school.workshop.summary": { fr: "Bilan collectif", en: "Collective review" },
+  "session.school.workshop.vote": { fr: "Faire voter la classe", en: "Invite the class to vote" },
+  "session.school.workshop.reveal": { fr: "Révéler la réponse", en: "Reveal the answer" },
+  "session.school.workshop.next": { fr: "Question suivante", en: "Next question" },
+  "session.school.workshop.startPost": { fr: "Lancer le post-quiz", en: "Start the post-quiz" },
+  "session.school.workshop.back": { fr: "Étape précédente", en: "Previous step" },
+  "session.school.workshop.restart": { fr: "Relancer au même niveau", en: "Restart at this grade" },
+  "session.school.workshop.chooseFormat": { fr: "Choisir un autre format", en: "Choose another format" },
   "school.takeawayLabel": { fr: "À retenir", en: "Key takeaway" },
   "school.debat-classe.label": { fr: "Débat en classe", en: "Class debate" },
   "school.mission-terrain.label": { fr: "Mission terrain", en: "Field mission" },
