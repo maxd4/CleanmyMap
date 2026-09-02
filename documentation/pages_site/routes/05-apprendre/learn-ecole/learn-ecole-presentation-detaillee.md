@@ -112,8 +112,10 @@ Ne pas masquer une incertitude.
 
 ```txt
 apps/web/src/app/learn/ecole/page.tsx
-apps/web/src/components/learn/quiz-school-kit-page.tsx
-apps/web/src/lib/learning/quiz-school-kit.ts
+apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
+apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
 documentation/pages_site/INDEX.md
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 ```

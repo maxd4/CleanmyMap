@@ -25,7 +25,7 @@ import {
   QUIZ_SCHOOL_STUDENT_SHEET,
   QUIZ_SCHOOL_TEACHER_GUIDE,
   groupQuizSchoolKitQuestionsByTrack,
-} from "@/lib/learning/quiz/quiz-school-kit";
+} from "@/lib/learning/quiz/school/quiz-school-kit";
 
 const bankByTrack = groupQuizSchoolKitQuestionsByTrack(QUIZ_SCHOOL_KIT_BANK);
 

@@ -9,7 +9,7 @@ import {
 } from "./quiz-school-kit";
 import { getWastePedagogicalProjection } from "@/lib/waste";
 
-describe("quiz-school-kit", () => {
+describe("school/quiz-school-kit", () => {
   it("keeps a compact starter bank of twenty questions", () => {
     expect(QUIZ_SCHOOL_KIT_BANK).toHaveLength(20);
     expect(QUIZ_SCHOOL_KIT_STEPS).toHaveLength(4);

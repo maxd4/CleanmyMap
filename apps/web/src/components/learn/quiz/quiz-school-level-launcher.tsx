@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ArrowRight, GraduationCap } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
-import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 
 const LEVEL_TONES: Record<QuizSchoolLevel, string> = {
   "6e": "border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100",

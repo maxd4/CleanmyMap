@@ -79,10 +79,13 @@ nécessaire.
 apps/web/src/app/learn/ecole/page.tsx
 apps/web/src/components/learn/quiz/quiz-school-kit-page.tsx
 apps/web/src/components/learn/quiz/quiz-school-level-launcher.tsx
-apps/web/src/lib/learning/quiz/quiz-school-types.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
 apps/web/src/lib/learning/quiz/quiz-selection-engine.ts
 apps/web/src/components/learn/quiz/quiz-school-modes.tsx
-apps/web/src/lib/learning/quiz/quiz-school-kit.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-eligibility.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
+apps/web/src/lib/learning/quiz/school/README.md
 ```
 
 ## Notes
