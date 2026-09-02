@@ -38,6 +38,32 @@ Les versions exactes restent celles de `apps/web/package.json`.
   apps/web/src/proxy.ts
   ```
 
+## Auth locale et validations navigateur
+
+- Pour toute validation locale d'une surface protégée, Codex doit utiliser en
+  priorité le bypass officiel `CMM_DEV_AUTH_BYPASS` plutôt que rechercher une
+  vraie session Clerk.
+- Sur `localhost` avec `NODE_ENV=development`, le bypass est prévu par le code
+  et doit être considéré avant de conclure à un blocage d'authentification.
+- Choisir le rôle minimal correspondant au scénario. Pour une capacité
+  bénévole ordinaire, utiliser `benevole` ; ne pas utiliser `max` par défaut.
+- Ne jamais demander une session Clerk de production ou un Agent Task
+  uniquement parce qu'une validation locale protégée nécessite une identité.
+- Ne jamais injecter de clés Clerk de production dans `localhost`.
+- Avant de déclarer une validation locale bloquée, rechercher et utiliser le
+  lanceur ou protocole local officiel du dépôt. Les références canoniques sont
+  `.aLANCER_SITE_LOCAL_ROLE_MAX.bat`,
+  `apps/web/src/lib/auth/dev-auth.ts`, `apps/web/.env.local.example` et
+  `documentation/security/CODEX_SECURITY_PLAYBOOK.md`.
+- Si le serveur échoue avant démarrage avec `Invalid local Clerk
+  configuration`, classifier séparément le problème : `AUTH_SESSION` relève
+  du bypass local ; `CLERK_BOOT_CONFIG` relève d'une configuration Clerk
+  Development cohérente nécessaire au démarrage. Une erreur
+  `CLERK_BOOT_CONFIG` ne doit jamais être décrite comme « bypass indisponible ».
+- Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
+  `CLERK_BOOT_CONFIG`, `AUTHZ_ROLE`, `BROWSER_PERMISSION` et
+  `HOST_ENVIRONMENT`.
+
 ## Frontières Server/Client
 
 - préserver la séparation entre Server Components, Client Components, Server
