@@ -3,8 +3,8 @@ import type { QuizQuestion, ResolvedQuizQuestion } from "./quiz-question-contrac
 import { buildQuizSourceMetadata } from "./quiz-source-metadata.ts";
 import { getQuizDifficulty, getQuizPedagogicalType } from "./quiz-taxonomy.ts";
 import { getQuizTrapLevel } from "./quiz-trap-levels.ts";
-import { buildQuizSchoolQuestionEligibility } from "./quiz-school-eligibility.ts";
-import { getQuizSchoolTrackId } from "./quiz-school-types";
+import { buildQuizSchoolQuestionEligibility } from "./school/quiz-school-eligibility.ts";
+import { getQuizSchoolTrackId } from "./school/quiz-school-types";
 
 export function stabilizeQuizQuestion(question: QuizQuestion): ResolvedQuizQuestion {
   const errorGrid = buildQuizErrorGrid(question);

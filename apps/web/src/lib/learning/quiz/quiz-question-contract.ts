@@ -12,7 +12,7 @@ import type { QuizDifficultyId, QuizPedagogicalTypeId, QuizSkillId } from "./qui
 import type {
   QuizSchoolQuestionEligibility,
   QuizSchoolTrackId,
-} from "./quiz-school-types";
+} from "./school/quiz-school-types";
 
 export type QuizQuestion = {
   id: string;

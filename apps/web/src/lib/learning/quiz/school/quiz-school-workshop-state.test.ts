@@ -11,7 +11,7 @@ import {
   QUIZ_SCHOOL_WORKSHOP_TIMING,
 } from "./quiz-school-workshop-state";
 
-describe("quiz-school-workshop-state", () => {
+describe("school/quiz-school-workshop-state", () => {
   it("keeps the exact public 60-minute sequence", () => {
     expect(QUIZ_SCHOOL_WORKSHOP_PHASES).toEqual(["pre-quiz", "atelier", "post-quiz", "bilan"]);
     expect(QUIZ_SCHOOL_WORKSHOP_TIMING).toEqual({

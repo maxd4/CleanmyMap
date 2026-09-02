@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle, GraduationCap, School } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { cn } from "@/lib/utils";
-import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import { QUIZ_SCHOOL_FORMAT_ORDER, QUIZ_SCHOOL_LEVEL_ORDER, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 
 const INTERACTIVE_FOCUS_RING =

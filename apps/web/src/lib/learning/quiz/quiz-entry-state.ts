@@ -6,7 +6,7 @@ import {
   type QuizSchoolLevel,
   type QuizSchoolFormat,
   type QuizSchoolTrackId,
-} from "./quiz-school-types";
+} from "./school/quiz-school-types";
 
 export type QuizSentrainerEntryState = {
   initialAccessType: QuizAccessTypeId | null;

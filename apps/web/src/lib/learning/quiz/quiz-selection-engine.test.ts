@@ -5,7 +5,7 @@ import type { QuizSelectionQuestionLike } from "./quiz-selection-engine";
 import { buildQuizDemoSessionDeck, buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { getQuizDifficulty } from "./quiz-taxonomy";
-import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_SESSION_DURATION_MINUTES, QUIZ_SCHOOL_SESSION_SIZE, QUIZ_SCHOOL_TRACK_ORDER } from "./quiz-school-types";
+import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_SESSION_DURATION_MINUTES, QUIZ_SCHOOL_SESSION_SIZE, QUIZ_SCHOOL_TRACK_ORDER } from "./school/quiz-school-types";
 
 it("keeps the public school session target explicit", () => {
   expect(QUIZ_SCHOOL_SESSION_DURATION_MINUTES).toBe(30);

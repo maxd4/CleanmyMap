@@ -5,7 +5,7 @@ import { QUIZ_ACCESS_TYPES, matchesQuizAccessType } from "./quiz-access-types";
 import { getQuizReviewTarget } from "./quiz-review-targets";
 import { QUIZ_QUESTIONS } from "./quiz-question-bank";
 import { buildQuizSchoolSessionDeck, buildQuizSessionDeck } from "./quiz-selection-engine";
-import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_TRACK_ORDER } from "./quiz-school-types";
+import { QUIZ_SCHOOL_LEVEL_ORDER, QUIZ_SCHOOL_TRACK_ORDER } from "./school/quiz-school-types";
 
 const NOW = new Date("2026-06-12T12:00:00.000Z");
 

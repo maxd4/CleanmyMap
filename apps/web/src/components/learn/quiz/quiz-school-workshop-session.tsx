@@ -7,7 +7,7 @@ import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import { getQuizLocalizedTextFallback, getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
 import type { QuizQuestion } from "@/lib/learning/quiz/quiz-question-contract";
 import { getQuizSchoolTrackLabel, QUIZ_SCHOOL_TRACKS } from "./quiz-school-modes";
-import type { QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import type { QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import {
   createQuizSchoolWorkshopState,
   getQuizSchoolWorkshopProgress,
@@ -15,7 +15,7 @@ import {
   previousQuizSchoolWorkshopPhase,
   recordQuizSchoolWorkshopAnswer,
   type QuizSchoolWorkshopPhase,
-} from "@/lib/learning/quiz/quiz-school-workshop-state";
+} from "@/lib/learning/quiz/school/quiz-school-workshop-state";
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2";
 

@@ -3,9 +3,9 @@ import { Calculator, MapPin, Megaphone, Repeat2 } from "lucide-react";
 import type { SupportedLocale } from "@/lib/learning/cognitive-principles";
 import type { QuizUiCopyKey } from "@/lib/learning/quiz/quiz-i18n";
 import { getQuizUiCopy } from "@/lib/learning/quiz/quiz-i18n";
-import type { QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
+import type { QuizSchoolTrackId } from "@/lib/learning/quiz/school/quiz-school-types";
 
-export type { QuizSchoolLevel, QuizSchoolTrackId } from "@/lib/learning/quiz/quiz-school-types";
+export type { QuizSchoolLevel, QuizSchoolTrackId } from "@/lib/learning/quiz/school/quiz-school-types";
 
 export type QuizSchoolTrackDefinition = {
   id: QuizSchoolTrackId;

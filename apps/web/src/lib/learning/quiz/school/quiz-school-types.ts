@@ -1,4 +1,4 @@
-import type { QuizDifficultyId, QuizSkillId } from "./quiz-taxonomy";
+import type { QuizDifficultyId, QuizSkillId } from "../quiz-taxonomy";
 
 export type QuizSchoolLevel = "6e" | "5e" | "4e" | "3e";
 

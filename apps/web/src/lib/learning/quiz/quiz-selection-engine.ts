@@ -33,8 +33,8 @@ import {
   type QuizSchoolLevel,
   type QuizSchoolQuestionLevelProfile,
   type QuizSchoolTrackId,
-} from "./quiz-school-types";
-import type { QuizSchoolQuestionEligibility } from "./quiz-school-types";
+} from "./school/quiz-school-types";
+import type { QuizSchoolQuestionEligibility } from "./school/quiz-school-types";
 
 export type QuizSelectionQuestionLike = {
   id: string;

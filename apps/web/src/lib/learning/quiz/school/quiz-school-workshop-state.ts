@@ -3,7 +3,7 @@ import {
   QUIZ_SCHOOL_WORKSHOP_DURATION_MINUTES,
   QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES,
   QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE,
-} from "./quiz-school-types";
+} from "./quiz-school-types.ts";
 
 export const QUIZ_SCHOOL_WORKSHOP_PHASES = ["pre-quiz", "atelier", "post-quiz", "bilan"] as const;
 export type QuizSchoolWorkshopPhase = (typeof QUIZ_SCHOOL_WORKSHOP_PHASES)[number];

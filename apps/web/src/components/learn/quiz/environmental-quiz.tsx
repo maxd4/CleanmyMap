@@ -38,7 +38,7 @@ import {
   type QuizAccessTypeId,
 } from "@/lib/learning/quiz/quiz-access-types";
 import { matchesQuizTrapLevel, type QuizTrapLevelId } from "@/lib/learning/quiz/quiz-trap-levels";
-import { DEFAULT_QUIZ_SCHOOL_FORMAT, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/quiz-school-types";
+import { DEFAULT_QUIZ_SCHOOL_FORMAT, type QuizSchoolFormat, type QuizSchoolLevel } from "@/lib/learning/quiz/school/quiz-school-types";
 import {
   getQuizUiCopy,
 } from "@/lib/learning/quiz/quiz-i18n";

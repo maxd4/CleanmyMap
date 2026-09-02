@@ -1,10 +1,10 @@
-import type { QuizQuestion } from "./quiz-question-contract";
+import type { QuizQuestion } from "../quiz-question-contract";
 import {
   QUIZ_SCHOOL_LEVEL_ORDER,
   type QuizSchoolLevel,
   type QuizSchoolQuestionEligibility,
 } from "./quiz-school-types";
-import { getQuizDifficulty, type QuizDifficultyId, type QuizSkillId } from "./quiz-taxonomy";
+import { getQuizDifficulty, type QuizDifficultyId, type QuizSkillId } from "../quiz-taxonomy";
 
 const LEVELS_BY_DIFFICULTY: Record<QuizDifficultyId, readonly QuizSchoolLevel[]> = {
   low: QUIZ_SCHOOL_LEVEL_ORDER,
