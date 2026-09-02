@@ -10,10 +10,10 @@ import {
 const bankByTrack = groupQuizSchoolKitQuestionsByTrack(QUIZ_SCHOOL_KIT_BANK);
 
 const BANK_SUMMARY = [
-  { value: "20", label: { fr: "questions test", en: "test questions" } },
-  { value: "4", label: { fr: "sous-modes", en: "sub-modes" } },
-  { value: "5", label: { fr: "questions par sous-mode", en: "questions per sub-mode" } },
-  { value: "1", label: { fr: "atelier prêt à lancer", en: "ready-to-run workshop" } },
+  { value: "1", label: { fr: "banque partagée", en: "shared bank" } },
+  { value: "4", label: { fr: "tracks internes", en: "internal tracks" } },
+  { value: "Auto", label: { fr: "sélection par niveau", en: "level-based selection" } },
+  { value: "30/60", label: { fr: "formats publics", en: "public formats" } },
 ] as const;
 
 function QuestionStatusBadge({
@@ -65,7 +65,7 @@ export function QuizSchoolBankSection({ locale }: { locale: SupportedLocale }) {
             {isFrench ? "Sous-modes disponibles si besoin" : "Sub-modes available if needed"}
           </h3>
           <p className="mt-2 text-sm font-bold text-slate-800 md:text-base">
-            {isFrench ? "20 questions, 5 par sous-mode" : "20 questions, 5 per sub-mode"}
+            {isFrench ? "Une banque partagée, sélectionnée selon le niveau" : "One shared bank, selected by level"}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-700 md:text-base">
             {isFrench
@@ -111,7 +111,7 @@ export function QuizSchoolBankSection({ locale }: { locale: SupportedLocale }) {
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 outline-none transition hover:bg-amber-50/60 focus-visible:bg-amber-50/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300/70 md:px-6">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">{isFrench ? "Détails de la banque" : "Bank details"}</p>
-            <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{isFrench ? "Ouvrir les 20 questions détaillées" : "Open the 20 detailed questions"}</h4>
+            <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{isFrench ? "Ouvrir les questions détaillées" : "Open the detailed questions"}</h4>
           </div>
           <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-800">Support</span>
         </summary>

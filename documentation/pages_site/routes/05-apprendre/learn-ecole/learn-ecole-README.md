@@ -36,7 +36,7 @@ Elle permet de :
 - préparer une séance collective ;
 - consulter une fiche enseignant ;
 - utiliser une fiche élève ;
-- parcourir une banque initiale de questions ;
+- ouvrir ensuite, si nécessaire, les détails de la banque de questions ;
 - conserver un fonctionnement sans compte professeur, sans compte élève, sans nom d’élève et sans donnée personnelle.
 
 ## Repères actuels
@@ -124,6 +124,9 @@ apps/web/src/lib/learning/quiz/school/README.md
 - Les catégories `debat-classe`, `mission-terrain`, `ordres-de-grandeur` et
   `gestes-du-quotidien` servent à équilibrer la séance en interne ; elles ne
   sont pas proposées comme choix principal.
+- La banque et ses détails restent en aval du lancement et des fiches : le
+  professeur choisit d’abord le niveau, puis lance la séance sans parcourir la
+  banque complète.
 - Une question peut être éligible à plusieurs niveaux sans être recopiée : le
   contrat porte les profils de difficulté et de compétences par niveau, tandis
   que le texte de la question reste unique.
