@@ -8,4 +8,10 @@ La logique, les contrats génériques, la taxonomy, la sélection, la progressio
 
 La banque de questions reste dans `apps/web/data/environmental-quiz-bank.ts`, tandis que `environmental-quiz.tsx` conserve les réexports publics déjà consommés. Les nouveaux modules placés ici doivent être des composants ou de la composition visuelle ; une règle pédagogique pure doit rejoindre `lib/learning/quiz/`.
 
+L’atelier `atelier-60` affiche dans son bilan les résultats collectifs avant/après,
+les notions retenues ou fragiles, trois actions collège et jusqu’à trois
+prolongements franciliens issus du registre validé du domaine École. La session
+reste publique, anonyme et en mémoire ; aucun classement ou profil individuel
+n’est affiché.
+
 Les tests UI restent dans ce dossier avec le composant testé ou dans sa famille (`school/`). Les routes Learning importent la surface UI depuis ce dossier et n'importent pas directement les anciens chemins plats.

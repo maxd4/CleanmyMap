@@ -49,6 +49,20 @@ Le format `quiz-30` lance la séance courte. Le format `atelier-60` enchaîne un
 pré-quiz de 15 minutes, une séquence pédagogique de 30 minutes, un post-quiz de
 15 minutes et un bilan collectif.
 
+Dans `atelier-60`, le pré-quiz contient huit items couvrant les connaissances,
+idées reçues, ordres de grandeur et décisions. Le post-quiz reprend les mêmes
+huit concepts avec des formulations différentes et ajoute deux situations de
+transfert. Le bilan calcule uniquement les taux collectifs avant/après, la
+progression, les notions retenues ou fragiles, puis trois actions possibles
+dans le collège. Ces données restent en mémoire dans le navigateur.
+
+Le bilan peut aussi proposer jusqu’à trois prolongements validés en
+Île-de-France, avec Paris prioritaire : l’Académie du Climat est une piste
+possible, au même titre que la Maison Paris Nature ou un lieu ressource
+« Apprendre dehors ». Il ne s’agit pas de partenaires CleanMyMap ; la
+programmation, les modalités d’accueil et les inscriptions sont à vérifier sur
+les sites officiels.
+
 La séquence centrale est composée par le domaine scolaire pour le niveau choisi.
 Elle part de la définition d’un éco-citoyen, passe par les habitudes utiles
 (déchets, consommation, alimentation, mobilité, eau, énergie et numérique),
@@ -133,6 +147,9 @@ apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-types.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-assessment.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-summary.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.ts
 documentation/pages_site/INDEX.md
 documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md
 ```

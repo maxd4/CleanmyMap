@@ -5,7 +5,7 @@ Ce dossier contient les modules de domaine, contrats et règles partagées par l
 ## Organisation
 
 - `quiz/` regroupe les contrats génériques, la logique pédagogique partagée, la taxonomy, la sélection, la progression, les audits et les tests du Quiz.
-- `quiz/school/` regroupe la capacité École : niveaux `6e | 5e | 4e | 3e`, formats scolaires, éligibilité, tracks internes, kit, état `atelier-60` et tests associés. Voir son [README](quiz/school/README.md).
+- `quiz/school/` regroupe la capacité École : niveaux `6e | 5e | 4e | 3e`, formats scolaires, éligibilité, tracks internes, kit, activités, évaluation pré/post, bilan collectif, registre territorial et tests associés. Voir son [README](quiz/school/README.md).
 - `gestes-propres/` regroupe les données éditoriales et validations de la capacité Gestes Propres.
 - `practice/themes.ts` contient le contrat neutre et l'ordre des thèmes de pratique.
 - Les autres fichiers à la racine portent les primitives Learning transverses, le progrès global, les ressources, le compost ou les ordres de grandeur lorsqu'ils ne forment pas une famille plus étroite.

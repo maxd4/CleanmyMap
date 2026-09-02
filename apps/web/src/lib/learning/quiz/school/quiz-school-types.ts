@@ -16,7 +16,11 @@ export const DEFAULT_QUIZ_SCHOOL_FORMAT: QuizSchoolFormat = "quiz-30";
 export const QUIZ_SCHOOL_WORKSHOP_DURATION_MINUTES = 60;
 export const QUIZ_SCHOOL_WORKSHOP_QUIZ_DURATION_MINUTES = 15;
 export const QUIZ_SCHOOL_WORKSHOP_ACTIVITY_DURATION_MINUTES = 30;
-export const QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE = 5;
+/** The pre-quiz keeps eight shared concepts; the post-quiz adds two transfers. */
+export const QUIZ_SCHOOL_WORKSHOP_PRE_QUIZ_SIZE = 8;
+export const QUIZ_SCHOOL_WORKSHOP_POST_QUIZ_SIZE = 10;
+/** @deprecated Use the explicit pre/post sizes for new code. */
+export const QUIZ_SCHOOL_WORKSHOP_QUIZ_SIZE = QUIZ_SCHOOL_WORKSHOP_PRE_QUIZ_SIZE;
 
 export function isQuizSchoolFormat(value: string | null | undefined): value is QuizSchoolFormat {
   return Boolean(value) && QUIZ_SCHOOL_FORMAT_ORDER.includes(value as QuizSchoolFormat);

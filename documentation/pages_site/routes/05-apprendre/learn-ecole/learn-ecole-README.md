@@ -29,6 +29,9 @@ Elle permet de :
   calcul, changement d’échelle jusqu’au territoire, puis action concrète à
   retenir ;
 - lancer une séance publique de 15 questions réparties automatiquement entre les catégories internes ;
+- pour `atelier-60`, mesurer localement 8 concepts avant puis 10 items après,
+  dont deux situations de transfert, avec taux avant, taux après, progression
+  et notions collectives à retenir ou à revoir ;
 - sélectionner une banque unique où chaque question déclare ses niveaux éligibles, sa difficulté et les compétences mobilisées ;
 - préparer une séance collective ;
 - consulter une fiche enseignant ;
@@ -42,7 +45,7 @@ Elle permet de :
 Public visé : 6e | 5e | 4e | 3e
 Formats : quiz-30 | atelier-60
 Durée cible : 30 min ou 60 min
-Questions par séance : 15
+Questions par séance : 15 pour `quiz-30` ; 8 avant et 10 après pour `atelier-60`
 Diversification interne : 4 catégories
 Compte professeur ou élève : non requis
 ```
@@ -95,6 +98,9 @@ apps/web/src/lib/learning/quiz/school/quiz-school-kit.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-eligibility.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-state.ts
 apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-assessment.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-workshop-summary.ts
+apps/web/src/lib/learning/quiz/school/quiz-school-territorial-resources.ts
 apps/web/src/lib/learning/quiz/quiz-session-summary.ts
 apps/web/src/lib/learning/quiz/school/README.md
 ```
@@ -121,5 +127,14 @@ apps/web/src/lib/learning/quiz/school/README.md
 - Une question peut être éligible à plusieurs niveaux sans être recopiée : le
   contrat porte les profils de difficulté et de compétences par niveau, tandis
   que le texte de la question reste unique.
+- Le pré/post de `atelier-60` mesure des résultats collectifs uniquement. Les
+  huit concepts sont repris avec des formulations différentes au post-quiz,
+  complétés par deux situations de transfert ; aucune réponse n’est envoyée
+  ni encodée dans l’URL.
+- Le bilan propose trois notions, trois actions possibles dans le collège et
+  jusqu’à trois ressources validées d’Île-de-France, Paris étant prioritaire.
+  Les lieux et programmes sont des prolongements possibles, jamais des
+  partenariats CleanMyMap ; disponibilités, tarifs et réservations doivent être
+  revérifiés sur leurs sites officiels.
 - Le lancement conserve la démo `mode=demo`. Les liens historiques avec
   `mode=ecole&track=...` retombent sur le niveau `4e` et restent utilisables.

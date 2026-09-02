@@ -17,11 +17,18 @@ la capacité scolaire.
 - les formats scolaires sont `quiz-30` et `atelier-60` ;
 - `atelier-60` compose automatiquement une séquence pédagogique d’environ
   30 minutes entre le pré-quiz et le post-quiz, à partir d’activités typées ;
+- `atelier-60` évalue huit concepts avant et après, avec deux situations de
+  transfert au post-quiz. Les taux, la progression, les notions et les trois
+  actions de collège sont calculés localement pour le collectif ;
 - les activités déclarent leurs niveaux autorisés, leur difficulté, leurs
   compétences, leur source et leur statut de validation ; les activités
   `needsReview` ne sont jamais composées pour le public ;
 - la progression 6e/5e/4e/3e est une adaptation pédagogique interne, sans
   déclaration d’alignement officiel aux programmes scolaires ;
+- le registre territorial commence par des ressources validées en
+  `ile-de-france`, avec Paris prioritaire. Les URLs officielles sont des pistes
+  à revérifier ; elles ne constituent pas un partenariat CleanMyMap et ne
+  figent pas les disponibilités ;
 - la présentation publique de référence est la documentation canonique de
   [`/learn/ecole`](../../../../../../../documentation/pages_site/routes/05-apprendre/learn-ecole/learn-ecole-README.md).
 
