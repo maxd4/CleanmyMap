@@ -1,5 +1,6 @@
 import { Gauge } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import {
   SystemStateAction,
   SystemStateDescription,
@@ -24,7 +25,7 @@ export default function RateLimitErrorPage() {
 
       <SystemStateLayout variant="warning" className="relative z-10">
         <SystemStateIcon variant="warning">
-          <Gauge className="h-7 w-7" />
+          <CmmIcon icon={Gauge} size="xl" />
         </SystemStateIcon>
 
         <SystemStateTitle variant="warning">Trop de requêtes</SystemStateTitle>

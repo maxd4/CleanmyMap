@@ -19,6 +19,7 @@ import {
 import { CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmBadge, type CmmBadgeTone } from "@/components/ui/cmm-badge";
 import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { cn } from "@/lib/utils";
 
 type SectionTitleSize = "sm" | "md" | "lg";
@@ -288,7 +289,7 @@ export function ActionCard({
             iconWrapClassName,
           )}
         >
-          <Icon className={cn("h-6 w-6", iconClassName)} />
+          <CmmIcon icon={Icon} size="lg" className={iconClassName} />
         </div>
 
         <SourceBadge
@@ -310,7 +311,11 @@ export function ActionCard({
 
       <div className="mt-4 inline-flex items-center gap-2 text-sm font-black text-stone-950">
         {footerLabel ?? "Ouvrir"}
-        <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
+        <CmmIcon
+          icon={ArrowRight}
+          size="sm"
+          className="transition-transform duration-300 group-hover:translate-x-1"
+        />
       </div>
     </>
   );

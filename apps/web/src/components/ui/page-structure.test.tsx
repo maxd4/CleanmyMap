@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { SourceBadge, StatCard } from "./page-structure";
+import { ActionCard, SourceBadge, StatCard } from "./page-structure";
 
 describe("SourceBadge", () => {
   it("keeps its public API while delegating to the canonical compact badge", () => {
@@ -39,5 +39,22 @@ describe("StatCard", () => {
     expect(markup).toContain("tabular-nums");
     expect(markup).toContain("70.0%");
     expect(markup).toContain("RSVP confirmés");
+  });
+});
+
+describe("ActionCard", () => {
+  it("uses canonical sizes for the main action icon and arrow", () => {
+    const markup = renderToStaticMarkup(
+      <ActionCard
+        icon="Activity"
+        title="Suivre"
+        description="Description"
+        badge="Nouveau"
+      />,
+    );
+
+    expect(markup).toContain('data-cmm-icon-size="lg"');
+    expect(markup).toContain('data-cmm-icon-size="sm"');
+    expect(markup).toContain("group-hover:translate-x-1");
   });
 });
