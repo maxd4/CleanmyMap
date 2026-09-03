@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasRequiredAccountIdentity,
   shouldRequireAccountSetup,
   shouldRequireAccountSetupRefresh,
 } from "@/lib/auth/account-setup";
@@ -33,5 +34,14 @@ describe("shouldRequireAccountSetupRefresh", () => {
 
   it("does not require refresh when the version is current", () => {
     expect(shouldRequireAccountSetupRefresh(ACCOUNT_SETUP_SCHEMA_VERSION)).toBe(false);
+  });
+});
+
+describe("hasRequiredAccountIdentity", () => {
+  it("requires non-empty trimmed first and last names", () => {
+    expect(hasRequiredAccountIdentity(" Sophie ", " Martin ")).toBe(true);
+    expect(hasRequiredAccountIdentity("  ", "Martin")).toBe(false);
+    expect(hasRequiredAccountIdentity("Sophie", " ")).toBe(false);
+    expect(hasRequiredAccountIdentity(null, "Martin")).toBe(false);
   });
 });

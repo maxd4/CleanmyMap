@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/system-state";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmField, CmmSelect } from "@/components/ui/cmm-field";
+import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
 import { cn } from "@/lib/utils";
@@ -155,6 +155,8 @@ export function AccountSetupForm({
   );
 
   const [selectedProfile, setSelectedProfile] = useState<AppProfile>(initialProfile);
+  const [firstNameOverride, setFirstNameOverride] = useState<string | null>(null);
+  const [lastNameOverride, setLastNameOverride] = useState<string | null>(null);
   const [locationType, setLocationType] = useState<"residence" | "work">(
     initialLocationType ?? "residence",
   );
@@ -166,6 +168,11 @@ export function AccountSetupForm({
   const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
+
+  const firstName = firstNameOverride ?? user?.firstName ?? "";
+  const lastName = lastNameOverride ?? user?.lastName ?? "";
+  const trimmedFirstName = firstName.trim();
+  const trimmedLastName = lastName.trim();
 
   useEffect(() => {
     if (!isLoaded || !user) {
@@ -198,10 +205,17 @@ export function AccountSetupForm({
   const profileError = !isProfileValid
     ? "Sélectionnez un rôle valide."
     : null;
+  const firstNameError = !trimmedFirstName ? "Renseignez votre prénom." : null;
+  const lastNameError = !trimmedLastName ? "Renseignez votre nom." : null;
   const territoryError = !territoryIsValid
     ? "Sélectionnez un territoire (pays, région, département, commune ou arrondissement)."
     : null;
-  const canSubmit = !profileError && !territoryError && !isSaving;
+  const canSubmit =
+    !firstNameError &&
+    !lastNameError &&
+    !profileError &&
+    !territoryError &&
+    !isSaving;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -220,6 +234,15 @@ export function AccountSetupForm({
         toAppError("Sélectionnez un rôle valide.", {
           kind: "validation",
           message: "Sélectionnez un rôle valide.",
+        }),
+      );
+      return;
+    }
+    if (!trimmedFirstName || !trimmedLastName) {
+      setError(
+        toAppError("Renseignez votre prénom et votre nom.", {
+          kind: "validation",
+          message: "Renseignez votre prénom et votre nom.",
         }),
       );
       return;
@@ -257,7 +280,11 @@ export function AccountSetupForm({
         );
       }
 
-      await user.update({ unsafeMetadata: metadata });
+      await user.update({
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        unsafeMetadata: metadata,
+      });
 
       if (submitMode === "refresh") {
         router.refresh();
@@ -355,6 +382,47 @@ export function AccountSetupForm({
               </p>
             </div>
           </header>
+
+          <section aria-labelledby="account-identity-title" className="space-y-3">
+            <div>
+              <h3 id="account-identity-title" className="text-sm font-bold text-slate-950">
+                Votre identité
+              </h3>
+              <p className="mt-1 cmm-text-caption text-slate-500">
+                Ces informations complètent votre identité CleanMyMap.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <CmmField
+                label="Prénom"
+                required
+                error={firstNameError}
+                className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500"
+              >
+                <CmmInput
+                  value={firstName}
+                  onChange={(event) => setFirstNameOverride(event.target.value)}
+                  autoComplete="given-name"
+                  placeholder="Votre prénom"
+                  className="w-full bg-white text-slate-900"
+                />
+              </CmmField>
+              <CmmField
+                label="Nom"
+                required
+                error={lastNameError}
+                className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500"
+              >
+                <CmmInput
+                  value={lastName}
+                  onChange={(event) => setLastNameOverride(event.target.value)}
+                  autoComplete="family-name"
+                  placeholder="Votre nom"
+                  className="w-full bg-white text-slate-900"
+                />
+              </CmmField>
+            </div>
+          </section>
 
           <section aria-labelledby="account-role-title" className="space-y-3">
             <div>

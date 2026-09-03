@@ -25,6 +25,13 @@ export function ClerkLocalizationProvider({
  ...props
 }: ClerkLocalizationProviderProps) {
  const { locale } = useSitePreferences();
+ const localization = locale === "fr"
+  ? {
+      ...frFR,
+      formFieldLabel__username: "Pseudo",
+      formFieldInputPlaceholder__username: "Pseudo",
+    }
+  : enUS;
 
  return (
  <ClerkProvider
@@ -32,7 +39,7 @@ export function ClerkLocalizationProvider({
  publishableKey={props.publishableKey}
  proxyUrl={props.proxyUrl}
  domain={props.proxyUrl ? undefined : props.domain}
-  localization={locale ==="fr" ? frFR : enUS}
+  localization={localization}
   appearance={{
  variables: {
  colorPrimary:"#10b981", // Emerald 500

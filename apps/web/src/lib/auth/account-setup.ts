@@ -14,6 +14,13 @@ export type AccountSetupRequirement = {
   reason: "initial_setup" | "schema_update" | null;
 };
 
+export function hasRequiredAccountIdentity(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+): boolean {
+  return Boolean(firstName?.trim() && lastName?.trim());
+}
+
 function extractSetupCompletionFlag(metadata: ClerkMetadata): boolean {
   if (!metadata) {
     return false;
@@ -107,13 +114,22 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<AccountSe
       extractSetupVersion(user.unsafeMetadata);
     const needsInitialSetup = shouldRequireAccountSetup(user.createdAt, setupCompleted);
     const needsSchemaUpdate = shouldRequireAccountSetupRefresh(setupVersion);
+    const needsIdentityCompletion = !hasRequiredAccountIdentity(
+      user.firstName,
+      user.lastName,
+    );
 
     return {
-      requiresSetup: needsInitialSetup || needsSchemaUpdate,
+      requiresSetup: needsInitialSetup || needsSchemaUpdate || needsIdentityCompletion,
       setupCompleted,
       createdAt: toCreatedAtTimestamp(user.createdAt),
       setupVersion,
-      reason: needsSchemaUpdate ? "schema_update" : needsInitialSetup ? "initial_setup" : null,
+      reason:
+        needsSchemaUpdate || needsIdentityCompletion
+          ? "schema_update"
+          : needsInitialSetup
+            ? "initial_setup"
+            : null,
     };
   } catch (error) {
     console.error("Current user setup requirement resolution failed", error);
