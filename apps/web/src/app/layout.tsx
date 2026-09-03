@@ -20,7 +20,6 @@ import { DisplayModeInitializer } from "@/components/ui/display-mode-initializer
 
 export const metadata: Metadata = appMetadata;
 
-export const revalidate = 3600; // 1 hour Cache for public landing page
 const clerkRuntime = getClerkRuntimeConfig();
 const useClerkProxy = Boolean(clerkRuntime.proxyUrl);
 
