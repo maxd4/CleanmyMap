@@ -19,16 +19,27 @@ import {
 } from "lucide-react";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { getEntryTrustState } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
+import {
+  buildPartnersNetworkEntriesModel,
+  formatCount,
+  getDomainLabel,
+  getInitials,
+  getKindLabel,
+  getKindTone,
+  getTerritoryLabel,
+  getTrustLabel,
+  getTrustTone,
+  localize,
+  type DomainFilter,
+  type PartnerKindFilter,
+  type TerritoryFilter,
+} from "./partners-network-section.model";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { cn } from "@/lib/utils";
 
-type Locale = "fr" | "en";
-type PartnerKindFilter = "all" | "association" | "collective" | "company" | "institution";
-type DomainFilter = "all" | "environnemental" | "social" | "humanitaire";
-type TerritoryFilter = "all" | "france" | "region" | "departement" | "ville";
 type CollaborationTone = "violet" | "indigo" | "sky" | "rose" | "amber";
 
 type CollaborationCard = {
@@ -168,207 +179,6 @@ const COLLABORATIONS: CollaborationCard[] = [
   },
 ];
 
-function formatCount(value: number): string {
-  return value.toLocaleString("fr-FR");
-}
-
-function localize(locale: Locale, value: { fr: string; en: string }): string {
-  return value[locale];
-}
-
-function normalizeText(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function isInstitution(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): boolean {
-  const text = normalizeText([entry.name, entry.legalIdentity, entry.description].join(" "));
-  return /mairie|ville de paris|ademe|gouv|universite|universite|minister|institution/.test(text);
-}
-
-function getKindLabel(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], fr: boolean): string {
-  if (isInstitution(entry)) {
-    return fr ? "Institution" : "Institution";
-  }
-
-  switch (entry.kind) {
-    case "association":
-      return fr ? "Association" : "Association";
-    case "groupe_parole":
-    case "evenement":
-      return fr ? "Collectif" : "Collective";
-    case "commerce":
-      return fr ? "Entreprise" : "Company";
-    case "entreprise":
-      return fr ? "Entreprise" : "Company";
-    default:
-      return fr ? "Partenaire" : "Partner";
-  }
-}
-
-function getTrustLabel(state: ReturnType<typeof getEntryTrustState>, fr: boolean): string {
-  switch (state) {
-    case "trusted":
-      return fr ? "Confirmée" : "Confirmed";
-    case "pending":
-      return fr ? "À confirmer" : "Pending";
-    case "incomplete":
-      return fr ? "À compléter" : "Incomplete";
-    default:
-      return fr ? "Partenaire" : "Partner";
-  }
-}
-
-function getTrustTone(state: ReturnType<typeof getEntryTrustState>): string {
-  switch (state) {
-    case "trusted":
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    case "pending":
-      return "border-amber-200 bg-amber-50 text-amber-600";
-    case "incomplete":
-      return "border-rose-200 bg-rose-50 text-rose-600";
-    default:
-      return "border-violet-200 bg-violet-50 text-violet-600";
-  }
-}
-
-function getKindTone(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): string {
-  if (isInstitution(entry)) {
-    return "border-sky-200 bg-sky-50 text-sky-700";
-  }
-
-  switch (entry.kind) {
-    case "association":
-      return "border-rose-200 bg-rose-50 text-rose-700";
-    case "groupe_parole":
-    case "evenement":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "commerce":
-      return "border-indigo-200 bg-indigo-50 text-indigo-700";
-    case "entreprise":
-      return "border-violet-200 bg-violet-50 text-violet-700";
-    default:
-      return "border-slate-200 bg-slate-50 text-slate-700";
-  }
-}
-
-function getTerritoryLabel(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): string {
-  if (entry.scope === "national" || entry.scope === "france" || /france/i.test(entry.location)) {
-    return "France entière";
-  }
-
-  if (entry.coveredArrondissements.length > 0) {
-    return `${formatCount(entry.coveredArrondissements.length)} arrondissements`;
-  }
-
-  return entry.location;
-}
-
-function getDomainLabel(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], locale: Locale): string {
-  const labels = entry.types.map((type) => {
-    switch (type) {
-      case "environnemental":
-        return locale === "fr" ? "Environnement" : "Environment";
-      case "social":
-        return locale === "fr" ? "Social" : "Social";
-      case "humanitaire":
-        return locale === "fr" ? "Humanitaire" : "Humanitarian";
-      default:
-        return type;
-    }
-  });
-
-  return labels.join(" • ");
-}
-
-function matchesQuery(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], query: string): boolean {
-  if (!query.trim()) {
-    return true;
-  }
-
-  const haystack = normalizeText(
-    [
-      entry.name,
-      entry.description,
-      entry.location,
-      entry.legalIdentity,
-      ...(entry.tags ?? []),
-    ].join(" "),
-  );
-
-  return normalizeText(query)
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((token) => haystack.includes(token));
-}
-
-function matchesKind(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], filter: PartnerKindFilter): boolean {
-  if (filter === "all") {
-    return true;
-  }
-
-  if (filter === "institution") {
-    return isInstitution(entry);
-  }
-
-  if (filter === "company") {
-    return entry.kind === "entreprise" || entry.kind === "commerce";
-  }
-
-  if (filter === "collective") {
-    return entry.kind === "groupe_parole" || entry.kind === "evenement";
-  }
-
-  return entry.kind === "association";
-}
-
-function getTerritoryBucket(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number]): Exclude<TerritoryFilter, "all"> {
-  const text = normalizeText(
-    [
-      entry.name,
-      entry.description,
-      entry.location,
-      entry.legalIdentity,
-      ...(entry.tags ?? []),
-    ].join(" "),
-  );
-
-  if (entry.scope === "national" || entry.scope === "france" || text.includes("france") || text.includes("national")) {
-    return "france";
-  }
-
-  if (text.includes("region") || text.includes("regional") || text.includes("ile de france")) {
-    return "region";
-  }
-
-  if (
-    entry.coveredArrondissements.length > 0
-    || /\b\d{1,2}e\b/.test(text)
-    || text.includes("arrondissement")
-    || text.includes("departement")
-  ) {
-    return "departement";
-  }
-
-  return "ville";
-}
-
-function matchesTerritory(entry: (typeof INITIAL_ANNUAIRE_ENTRIES)[number], filter: TerritoryFilter): boolean {
-  if (filter === "all") {
-    return true;
-  }
-
-  return getTerritoryBucket(entry) === filter;
-}
-
 export function PartnersNetworkSection({ fr }: { fr: boolean }) {
   const entries = INITIAL_ANNUAIRE_ENTRIES;
   const [query, setQuery] = useState("");
@@ -378,41 +188,17 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const collaborationsRef = useRef<HTMLDivElement | null>(null);
 
-  const sortedEntries = useMemo(
+  const { filteredEntries, visibleEntries } = useMemo(
     () =>
-      [...entries].sort((left, right) => {
-        const rightPriority = (right.isFeatured ? 3 : 0) + (getEntryTrustState(right) === "trusted" ? 2 : 0);
-        const leftPriority = (left.isFeatured ? 3 : 0) + (getEntryTrustState(left) === "trusted" ? 2 : 0);
-        return rightPriority - leftPriority || left.name.localeCompare(right.name, "fr");
+      buildPartnersNetworkEntriesModel({
+        entries,
+        query,
+        kindFilter,
+        domainFilter,
+        territoryFilter: zoneFilter,
       }),
-    [entries],
+    [domainFilter, entries, kindFilter, query, zoneFilter],
   );
-
-  const filteredEntries = useMemo(
-    () =>
-      sortedEntries.filter((entry) => {
-        if (!matchesQuery(entry, query)) {
-          return false;
-        }
-
-        if (!matchesKind(entry, kindFilter)) {
-          return false;
-        }
-
-        if (domainFilter !== "all" && !entry.types.includes(domainFilter)) {
-          return false;
-        }
-
-        if (!matchesTerritory(entry, zoneFilter)) {
-          return false;
-        }
-
-        return true;
-      }),
-    [domainFilter, kindFilter, query, sortedEntries, zoneFilter],
-  );
-
-  const visibleEntries = filteredEntries.slice(0, 6);
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   const handleSearch = () => {
