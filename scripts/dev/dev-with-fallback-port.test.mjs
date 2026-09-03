@@ -54,6 +54,18 @@ describe("dev-with-fallback-port", () => {
     await new Promise((resolveResult, rejectResult) => server.close((error) => (error ? rejectResult(error) : resolveResult())));
   });
 
+  it("cancels the readiness probe when requested", async () => {
+    const controller = new AbortController();
+    const pending = waitForServerReady(39_999, {
+      host: "127.0.0.1",
+      timeoutMs: 10_000,
+      retryDelayMs: 10,
+      signal: controller.signal,
+    });
+    controller.abort();
+    await assert.rejects(pending, /Attente de readiness annulée/);
+  });
+
   it("opens Chrome once when an executable is available", async () => {
     const calls = [];
     const spawnImpl = (command, args) => {
