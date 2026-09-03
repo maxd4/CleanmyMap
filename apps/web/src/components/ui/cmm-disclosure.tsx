@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { cn } from "@/lib/utils";
 
 export type DisclosureTone =
@@ -55,10 +56,10 @@ export function CmmDisclosure({
     >
       <summary className="cmm-disclosure__summary">
         <div className="cmm-disclosure__summary-content">{summary}</div>
-        <ChevronDown
-          aria-hidden="true"
+        <CmmIcon
+          icon={ChevronDown}
+          size="lg"
           className="cmm-disclosure__icon"
-          focusable="false"
         />
       </summary>
       <div className="cmm-disclosure__content">{children}</div>
