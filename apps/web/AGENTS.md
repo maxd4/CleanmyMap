@@ -74,6 +74,35 @@ Les versions exactes restent celles de `apps/web/package.json`.
 - préserver les contrats, composants et consommateurs existants avant toute
   modification de structure.
 
+## Modularité préventive web
+
+- un composant ou une fonctionnalité web qui combine des dérivations métier
+  significatives, de l'état ou des effets et un rendu JSX substantiel doit
+  être structuré dès le départ par responsabilités ;
+- lorsque ces frontières existent réellement :
+  - logique pure et dérivations : module `*.model.ts` ou domaine existant ;
+  - état, APIs navigateur, lifecycle et effets : hook, controller ou service
+    approprié ;
+  - rendu : composant ou vue ;
+  - accès réseau ou persistence : couche existante appropriée ;
+- ne pas imposer ces suffixes si une autre structure canonique du domaine est
+  meilleure ;
+- les APIs navigateur (`window`, `navigator`, `localStorage`, media queries,
+  downloads, clipboard, etc.) ne doivent pas contaminer inutilement la
+  logique pure ;
+- garder `"use client"` au plus près de la frontière réellement interactive ;
+- si une nouvelle page ou section comporte plusieurs panneaux autonomes ayant
+  des données, états ou évolutions indépendantes, les composer depuis un shell
+  plutôt que tout écrire dans le même composant ;
+- une façade publique légère est préférable lorsque plusieurs modules internes
+  composent une même fonctionnalité ;
+- ne pas déplacer du JSX dans des composants artificiels qui n'ont aucune
+  autonomie sémantique.
+
+La modularisation utile fait partie de l'implémentation de la fonctionnalité ;
+elle n'est pas un chantier facultatif à reporter après livraison lorsque les
+frontières sont déjà prévisibles.
+
 ## UI web
 
 - appliquer l'invariant global de textes publics en français à l'UI web ;
