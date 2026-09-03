@@ -36,6 +36,40 @@ describe("dev-with-fallback-port", () => {
     );
   });
 
+  it("passes the selected fallback port to Next and the browser", async () => {
+    let child;
+    let spawnCall;
+    let openedUrl;
+    const spawnImpl = (command, args, options) => {
+      child = new EventEmitter();
+      child.kill = () => {};
+      spawnCall = { command, args, options };
+      setTimeout(() => child.emit("exit", 0, null), 20);
+      return child;
+    };
+
+    const result = await runDevServer(["--open-browser", "--port", "3000"], {
+      env: { NODE_ENV: "development", PORT: "3000" },
+      choosePortImpl: async () => 3001,
+      spawnImpl,
+      waitForServerReadyImpl: async (port) => {
+        assert.equal(port, 3001);
+        await new Promise((resolveResult) => setTimeout(resolveResult, 1));
+        return { statusCode: 200 };
+      },
+      nextBinPath: "next",
+      openUrlInBrowserImpl: async (url) => {
+        openedUrl = url;
+        return { browser: "chrome" };
+      },
+    });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(spawnCall.args[5], "3001");
+    assert.equal(spawnCall.options.env.PORT, "3001");
+    assert.equal(openedUrl, "http://localhost:3001");
+  });
+
   it("waits for an HTTP connection before reporting readiness", async () => {
     const server = http.createServer((_request, response) => {
       response.writeHead(200);
