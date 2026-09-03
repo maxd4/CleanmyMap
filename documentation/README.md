@@ -105,7 +105,7 @@ modules concernés, puis uniquement les règles spécialisées nécessaires :
 `architecture/master-architecture.md`, `architecture/system-overview.md`,
 `architecture/frontend-backend-boundaries.md`,
 `architecture/modules-cles-et-dependances.md`,
-`development/regression-gates.md`, `development/repo-quality-rules.md`,
+`development/TESTING.md`, `development/repo-quality-rules.md`,
 `development/TESTING.md` et, pour une surface UI, `design-system/README.md`.
 
 ### Modulariser ou refactorer

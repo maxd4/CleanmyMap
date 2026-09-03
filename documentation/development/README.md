@@ -15,6 +15,7 @@ concurrente.
 - [Documentation Policy](./DOCUMENTATION_POLICY.md) — critère de documentation,
   choix de la source spécialisée et traitement de l'historique ;
 - [Testing](./TESTING.md) — stratégie et commandes de test ;
+- [Client/server bundle splitting](./client-server-bundle-splitting.md) — règles de découpage des frontières serveur/client et du bundle ;
 - [Repo quality rules](./repo-quality-rules.md) — règles qualité spécialisées ;
 - [TypeScript Precision Policy](./typescript-precision-policy.md) — contrat
   durable pour les frontières non fiables, types, casts et accès dynamiques ;

@@ -1,84 +1,137 @@
 # Découpage du bundle client et frontière serveur
 
-Dernière mise à jour: 2026-06-06
+Guide de développement pour préserver une frontière Server/Client explicite dans
+l'application web et limiter le JavaScript initial sans changer les contrats
+fonctionnels.
 
-Ce guide capture les erreurs qui ont gonflé les routes `learn` et `missions` afin d'éviter de les répéter.
+La vue architecturale générale reste définie dans
+[`../architecture/frontend-backend-boundaries.md`](../architecture/frontend-backend-boundaries.md).
 
-## Objectif
+## Principes
 
-Réduire le JavaScript initial sans changer le comportement fonctionnel:
-- garder les pages declaratives quand c'est possible,
-- sortir les widgets lourds du chemin critique,
-- éviter de transformer un serveur component en page client complète par accident,
-- garder les composants interactifs isolés dans de petits îlots client.
+Avec l'App Router :
 
-## Règles à retenir
+- garder une page ou un composant côté serveur lorsqu'il compose principalement
+  du contenu, lit des données serveur ou ne nécessite pas d'état navigateur ;
+- isoler l'interactivité dans le plus petit sous-arbre client cohérent ;
+- ne pas ajouter `"use client"` à une arborescence entière uniquement pour
+  simplifier un import ;
+- ne pas déplacer un secret, une AuthZ ou un accès privilégié côté client pour
+  réduire une frontière de composants.
 
-- Une page App Router n'a pas besoin de `"use client"` si son rendu principal est déclaratif.
-- Si une page a besoin de la langue, lire la locale côté serveur avec `getServerLocale()` au lieu de remonter un hook client.
-- Si une page doit tracer une visite ou déclencher un effet léger, extraire un composant client minuscule dédié à cet effet.
-- Les composants purement visuels qui ne lisent que leurs `props`, `Link` et des icônes peuvent rester côté serveur.
-- Les composants interactifs lourds doivent rester explicitement client et, si possible, être chargés via `next/dynamic` dans un wrapper client.
-- `ssr: false` doit vivre dans un composant client wrapper, pas directement dans une page serveur.
+## Locale et effets navigateur
 
-## Anti-patterns évités ici
+Une page déclarative n'a pas besoin de devenir client pour lire la locale si le
+mécanisme serveur existant couvre le besoin.
 
-- `page.tsx` marqué `"use client"` alors qu'il ne fait que composer du JSX et lire une locale.
-- `useSitePreferences()` utilisé dans une page entière pour un simple choix `fr/en`.
-- `recordLearnPageVisit()` appelé dans la page complète au lieu d'un tracker client indépendant.
-- composants de présentation gardés en client alors qu'ils n'avaient ni état ni effets.
-- gros widgets importés statiquement dans la page alors qu'ils ne sont visibles qu'après le premier écran.
-- `next/dynamic(..., { ssr: false })` déclaré dans un serveur component.
+Lorsqu'un comportement dépend uniquement d'un effet navigateur léger, par
+exemple un tracking ou une synchronisation locale, préférer un micro-composant
+client dédié plutôt que convertir toute la page.
 
-## Pattern recommandé
+Toujours réutiliser le mécanisme de locale et de préférences déjà canonique dans
+la zone concernée.
 
-### Pages
+## Widgets lourds
 
-- Garder la page en serveur si elle:
-  - assemble du contenu,
-  - lit la locale ou les données serveur,
-  - n'a pas d'état UI local complexe.
+Différer les composants lourds lorsqu'ils ne sont pas nécessaires au premier
+écran et que le chargement différé ne dégrade pas le contrat utilisateur.
 
-- Transformer la page en client seulement si:
-  - elle dépend de plusieurs hooks UI,
-  - elle pilote un comportement local complexe,
-  - la logique d'interaction ne peut pas être extraite proprement.
+Candidats typiques :
 
-### Widgets lourds
+- cartes Leaflet ou autres moteurs cartographiques ;
+- quiz fortement interactifs ;
+- éditeurs ou panneaux complexes à état local ;
+- visualisations lourdes ;
+- fonctionnalités rarement ouvertes sur la route.
 
-- Déporter en `dynamic`:
-  - cartes Leaflet,
-  - quiz interactifs,
-  - panneaux à état local et calculs répétés,
-  - blocs de contenu très lourds qui ne sont pas nécessaires au premier écran.
+Conserver en chargement normal les éléments structurants et légers :
 
-- Garder en statique:
-  - en-têtes de page,
-  - blocs explicatifs,
-  - cartes de navigation,
-  - panneaux d'introduction sans état.
+- en-têtes ;
+- navigation ;
+- contenu explicatif ;
+- cartes de navigation simples ;
+- panneaux de présentation sans état complexe.
 
-## Exemple concret
+## `next/dynamic` et SSR
 
-Dans cette base:
-- [`apps/web/src/app/learn/comprendre/page.tsx`](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/learn/comprendre/page.tsx)
-- [`apps/web/src/app/learn/sentrainer/page.tsx`](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/learn/sentrainer/page.tsx)
-- [`apps/web/src/app/(app)/missions/[id]/page.tsx`](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/missions/[id]/page.tsx)
+Lorsqu'un composant dépend strictement du navigateur, l'isoler derrière une
+frontière client adaptée.
 
-les gros widgets sont maintenant chargés par wrappers dédiés, ce qui garde le shell initial plus léger.
+`ssr: false` doit être utilisé dans un contexte client compatible avec Next.js ;
+ne pas transformer artificiellement une page serveur complète pour rendre
+possible un import dynamique.
 
-## Checklist avant de toucher une page lourde
+Avant d'introduire `ssr: false`, vérifier si le problème vient réellement d'une
+API navigateur ou d'une dépendance non compatible SSR.
 
-- Est-ce que la page a vraiment besoin d'être client ?
-- Est-ce que la locale peut venir du serveur ?
-- Est-ce que le tracking peut vivre dans un micro-composant client ?
-- Est-ce que les sous-blocs lourds peuvent être différés ?
-- Est-ce que le `ssr: false` est encapsulé dans un wrapper client ?
-- Est-ce que les composants visuels simples restent server-compatible ?
+## Données entre Server et Client Components
 
-## Validation conseillée
+Les props qui traversent la frontière doivent rester sérialisables et adaptées
+au contrat d'affichage.
 
-- `npx next build`
-- vérifier que la route concernée n'embarque plus un gros chunk unique
-- mesurer à nouveau le manifest de route après le split
+Préférer :
 
+- primitives ;
+- objets de données normalisés ;
+- identifiants ;
+- structures explicites et sérialisables.
+
+Éviter de transmettre arbitrairement :
+
+- fonctions serveur ;
+- objets non sérialisables ;
+- clients SDK ;
+- objets transportant un secret ou une capacité privilégiée.
+
+Reconstruire côté client uniquement ce qui relève réellement de l'interaction
+navigateur.
+
+## Fetch et hydratation
+
+Éviter :
+
+- plusieurs fetchs clients indépendants vers la même donnée ;
+- un gros objet hydraté alors que l'UI n'utilise qu'un sous-ensemble ;
+- un chargement client d'une donnée déjà disponible lors du rendu serveur ;
+- une page entière rendue dynamique pour un état local mineur.
+
+Pour le placement Vercel/Supabase et les coûts de plateforme, voir
+[`../operations/platform-cost-governance.md`](../operations/platform-cost-governance.md).
+
+## Cartographie
+
+Les dépendances cartographiques lourdes doivent rester confinées aux surfaces
+qui les utilisent.
+
+Ne pas importer le moteur cartographique dans un shell global. La stratégie de
+chargement doit rester compatible avec le SSR de la route et avec la
+progressivité de l'interface.
+
+## Méthode avant modification
+
+Pour une page ou un composant lourd :
+
+1. identifier ce qui exige réellement le client ;
+2. séparer rendu déclaratif, données serveur et interaction navigateur ;
+3. vérifier si un effet peut être isolé ;
+4. vérifier si un widget peut être différé ;
+5. préserver les props et contrats publics ;
+6. mesurer à nouveau le bundle ou le signal qui a motivé le changement.
+
+Ne pas faire un split uniquement pour atteindre une taille arbitraire.
+
+## Validation
+
+Selon le changement :
+
+```bash
+npm run typecheck -w apps/web
+npm run lint -w apps/web
+npm run test:regression-gates -w apps/web
+```
+
+Pour un changement destiné à réduire le bundle ou le coût d'une route, utiliser
+également le build ou l'audit courant qui mesure réellement cette surface.
+
+Ne pas documenter une amélioration de bundle sur la seule base d'une extraction
+de fichier : vérifier le résultat produit.
