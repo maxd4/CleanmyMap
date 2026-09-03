@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { List, Settings2, MessageSquare, LogIn, UserPlus } from "lucide-react";
+import {
+  Bug,
+  ChevronDown,
+  Lightbulb,
+  List,
+  LogIn,
+  MessageSquare,
+  Settings2,
+  UserPlus,
+  UsersRound,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
@@ -11,6 +21,7 @@ import { isProtectedRoutePath } from "@/lib/auth/protected-routes";
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   getActiveSpaceForPath,
@@ -258,15 +269,24 @@ function AppNavigationRibbonShell({
   const feedbackLinks = [
     {
       href: "/sections/feedback#bug",
-      label: "🐞 Bug",
+      label: "Bug",
+      description: "Signaler un problème technique",
+      icon: Bug,
+      iconClassName: "text-rose-300",
     },
     {
       href: "/sections/feedback#improvement",
-      label: "💡 Amélioration",
+      label: "Amélioration",
+      description: "Proposer une idée ou suggestion",
+      icon: Lightbulb,
+      iconClassName: "text-amber-300",
     },
     {
       href: "/sections/feedback#collaboration",
-      label: "🤝 Collaboration",
+      label: "Collaboration",
+      description: "Nous contacter pour travailler ensemble",
+      icon: UsersRound,
+      iconClassName: "text-emerald-300",
     },
   ] as const;
 
@@ -428,12 +448,13 @@ function AppNavigationRibbonShell({
                 aria-expanded={preferencesOpen}
                 aria-controls="preferences-menu-panel"
                 title={locale === "fr" ? "Réglages" : "Settings"}
-                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex h-11 min-w-11 list-none items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 sm:w-auto sm:px-3 [&::-webkit-details-marker]:hidden"
               >
                 <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                <span className="sr-only">
-                  {locale === "fr" ? "Réglages" : "Settings"}
+                <span className="hidden text-sm font-semibold sm:inline">
+                  {locale === "fr" ? "Préférences" : "Preferences"}
                 </span>
+                <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 sm:inline" aria-hidden="true" />
               </summary>
 
               <AnimatePresence initial={false}>
@@ -458,26 +479,37 @@ function AppNavigationRibbonShell({
                       exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-80 rounded-[1.35rem] border p-4 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-[min(22rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-4 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
                         preferencesPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         preferencesPlacement.alignRight ? "right-0" : "left-0",
                       )}
-                      style={{
-                        backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-                        backgroundColor: "rgba(5,46,22,0.98)",
-                        borderColor: "rgba(52,211,153,0.22)",
-                      }}
                     >
                       <SitePreferencesControls />
-                      <div className="mt-3 border-t border-white/10 pt-3">
-                        <Link
-                          href={buildOnboardingLocalisationHref(PROFIL_ROUTE)}
-                          prefetch={false}
-                          onClick={() => onTrackNavigation(buildOnboardingLocalisationHref(PROFIL_ROUTE), locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
-                          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                      <div className="mt-4 border-t border-white/12 pt-4">
+                        <CmmButton
+                          asChild
+                          tone="primary"
+                          size="md"
+                          className="w-full justify-center rounded-xl text-sm font-bold"
                         >
-                          {locale === "fr" ? "Préférences de compte" : "Account preferences"}
-                        </Link>
+                          <Link
+                            href={buildOnboardingLocalisationHref(PROFIL_ROUTE)}
+                            prefetch={false}
+                            onClick={() =>
+                              onTrackNavigation(
+                                buildOnboardingLocalisationHref(PROFIL_ROUTE),
+                                locale === "fr"
+                                  ? "Préférences de compte"
+                                  : "Account preferences",
+                                null,
+                              )
+                            }
+                          >
+                            {locale === "fr"
+                              ? "Préférences de compte"
+                              : "Account preferences"}
+                          </Link>
+                        </CmmButton>
                       </div>
                     </motion.div>
                   </>
@@ -505,12 +537,13 @@ function AppNavigationRibbonShell({
                 aria-expanded={feedbackOpen}
                 aria-controls="feedback-menu-panel"
                 title={locale === "fr" ? "Feedback" : "Feedback"}
-                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex h-11 min-w-11 list-none items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 sm:w-auto sm:px-3 [&::-webkit-details-marker]:hidden"
               >
                 <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                <span className="sr-only">
-                  {locale === "fr" ? "Feedback" : "Feedback"}
+                <span className="hidden text-sm font-semibold sm:inline">
+                  Feedback
                 </span>
+                <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 sm:inline" aria-hidden="true" />
               </summary>
 
               <AnimatePresence initial={false}>
@@ -535,30 +568,37 @@ function AppNavigationRibbonShell({
                       exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-72 rounded-[1.25rem] border p-2 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-[min(23rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
                         feedbackPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         feedbackPlacement.alignRight ? "right-0" : "left-0",
                       )}
-                      style={{
-                        backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-                        backgroundColor: "rgba(5,46,22,0.98)",
-                        borderColor: "rgba(52,211,153,0.22)",
-                      }}
                     >
-                      <div className="space-y-1">
+                      <div className="divide-y divide-white/12">
                         {feedbackLinks.map((item) => (
-                          <Link
+                          <CmmButton
                             key={item.href}
-                            href={item.href}
-                            prefetch={false}
-                            onClick={() => {
-                              onTrackNavigation(item.href, item.label, null);
-                              closeFeedbackMenu();
-                            }}
-                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white transition hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                            asChild
+                            tone="tertiary"
+                            className="group w-full justify-start gap-3 rounded-xl border-0 px-3 py-3 text-left text-white hover:border-transparent hover:bg-white/10 hover:text-white"
                           >
-                            {item.label}
-                          </Link>
+                            <Link
+                              href={item.href}
+                              prefetch={false}
+                              onClick={() => {
+                                onTrackNavigation(item.href, item.label, null);
+                                closeFeedbackMenu();
+                              }}
+                            >
+                              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/[0.06] ${item.iconClassName}`}>
+                                <item.icon className="h-5 w-5" aria-hidden="true" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-bold text-white">{item.label}</span>
+                                <span className="mt-0.5 block text-xs font-medium leading-relaxed text-slate-300">{item.description}</span>
+                              </span>
+                              <span className="text-lg leading-none text-slate-300 transition-transform group-hover:translate-x-0.5" aria-hidden="true">›</span>
+                            </Link>
+                          </CmmButton>
                         ))}
                       </div>
                     </motion.div>
