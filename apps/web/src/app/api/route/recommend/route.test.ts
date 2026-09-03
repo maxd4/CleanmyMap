@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authMock = vi.hoisted(() => vi.fn());
+const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const loadRouteRecommendationSourceMock = vi.hoisted(() => vi.fn());
@@ -22,7 +22,9 @@ const planRouteMock = vi.hoisted(() => vi.fn());
 const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
+vi.mock("@/lib/auth/safe-session", () => ({
+  getSafeAuthSession: getSafeAuthSessionMock,
+}));
 vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
   createServerRateLimitResponse: createServerRateLimitResponseMock,
@@ -130,7 +132,11 @@ describe("POST /api/route/recommend", () => {
     vi.resetModules();
     vi.clearAllMocks();
 
-    authMock.mockResolvedValue({ userId: "user-1" });
+    getSafeAuthSessionMock.mockResolvedValue({
+      userId: "user-1",
+      clerkReachable: true,
+      state: "authenticated",
+    });
     verifyRateLimitMock.mockResolvedValue({
       allowed: true,
       limit: 6,
@@ -192,6 +198,54 @@ describe("POST /api/route/recommend", () => {
       hotspots: [],
     });
     trackRouteRecommendationUseMock.mockResolvedValue(undefined);
+  });
+
+  it("uses the effective authenticated session before route work", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(getSafeAuthSessionMock).toHaveBeenCalledOnce();
+    expect(loadRouteRecommendationSourceMock).toHaveBeenCalledOnce();
+  });
+
+  it("returns 401 for an anonymous effective session before reading the source", async () => {
+    getSafeAuthSessionMock.mockResolvedValueOnce({
+      userId: null,
+      clerkReachable: true,
+      state: "anonymous",
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+    }));
+
+    expect(response.status).toBe(401);
+    expect(verifyRateLimitMock).not.toHaveBeenCalled();
+    expect(loadRouteRecommendationSourceMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the local bypass identity for the route and best-effort tracking", async () => {
+    getSafeAuthSessionMock.mockResolvedValueOnce({
+      userId: "dev-benevole",
+      clerkReachable: true,
+      state: "authenticated",
+    });
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(trackRouteRecommendationUseMock).toHaveBeenCalledWith(
+      {},
+      { userId: "dev-benevole" },
+    );
   });
 
   it("uses the authenticated expensive-route quota and returns 429 when exceeded", async () => {

@@ -1,7 +1,7 @@
-import { auth } from"@clerk/nextjs/server";
 import { z } from"zod";
 import { NextResponse } from"next/server";
 import { buildTrashSpotterActionableCandidates } from"@/lib/actions/trash-spotter-actionable-candidates";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
 import {
@@ -107,7 +107,8 @@ function fallbackGeometryForPrefix(
 }
 
 export async function POST(request: Request) {
- const { userId } = await auth();
+ const session = await getSafeAuthSession();
+ const userId = session.userId;
  if (!userId) {
  return unauthorizedJsonResponse();
  }
