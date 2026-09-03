@@ -285,9 +285,10 @@ Le projet doit minimiser les coûts involontaires.
 Références :
 
 ```txt
-documentation/development/vercel-quota-governance.md
-documentation/development/vercel-supabase-free-tier-rules.md
-documentation/development/supabase-quota-guide.md
+documentation/operations/platform-cost-governance.md
+documentation/database/supabase-table-optimization-playbook.md
+documentation/architecture/data-governance.md
+documentation/security/authorization-capabilities.md
 ```
 
 ## Architecture UI

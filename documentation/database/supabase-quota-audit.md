@@ -6,7 +6,7 @@ Il ne remplace pas les dashboards Supabase, mais il permet de repérer les régr
 
 Pour la stratégie d'accès qui évite d'exposer trop tôt les surfaces les plus coûteuses, voir aussi:
 
-- [`documentation/development/quota-access-tiering.md`](../development/quota-access-tiering.md)
+- [`documentation/security/authorization-capabilities.md`](../security/authorization-capabilities.md)
 
 ## Méthode
 
@@ -362,7 +362,7 @@ Si l'audit remonte une table ou une route coûteuse, la séquence de correction 
 
 Avant d'ouvrir une nouvelle table ou d'ajouter un nouveau flux Supabase, lire aussi le guide développeur:
 
-- [Guide développeur Supabase](../development/supabase-quota-guide.md)
+- [Playbook d'optimisation Supabase](./supabase-table-optimization-playbook.md)
 
 Les décisions attendues sont les suivantes:
 

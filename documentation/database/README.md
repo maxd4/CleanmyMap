@@ -1,51 +1,115 @@
-# Database - Guide de Référence
+# Database — Guide de référence
 
-Entrée principale pour tout ce qui touche aux requêtes, index, RLS, stockage et quotas Supabase.
+Point d'entrée pour les requêtes, index, RLS, stockage et diagnostics Supabase.
 
-## Ordre de lecture
+## Sources `CURRENT`
 
-1. [Supabase quota audit](./supabase-quota-audit.md)
-2. [Guide développeur Supabase](../development/supabase-quota-guide.md)
-3. [Supabase refresh strategy audit](../operations/audits/supabase-refresh-strategy-audit.md)
-4. [Supabase table optimization playbook](./supabase-table-optimization-playbook.md)
-5. [Supabase query optimization playbook](../development/supabase-query-optimization-playbook.md)
-6. [Database query & index audit](./QUERY_INDEX_AUDIT.md)
-7. [Supabase linked advisories report](../security/supabase-linked-advisories-2026-05-20.md)
+Lire d'abord :
 
-## Ce que couvre ce dossier
+1. [Gouvernance des données](../architecture/data-governance.md) — sources de
+   vérité, stockage et contrats ;
+2. [Supabase — optimisation des tables et requêtes](./supabase-table-optimization-playbook.md) —
+   méthode de correction des lectures, index, RPC et agrégats ;
+3. [Autorisation par capacités](../security/authorization-capabilities.md) —
+   contrat d'accès cible et scopes.
 
-- les quotas Supabase utilisés par CleanMyMap
-- la doctrine de stockage produit pour les nouvelles features
-- les tables les plus sollicitées
-- les requêtes les plus coûteuses
-- les risques Storage, Auth, Realtime et Edge Functions
-- les garde-fous pour éviter les régressions
-- les migrations de compatibilité, notamment la lecture des anciens champs de territoire et l'écriture des nouveaux champs nationaux
+Ces documents portent les règles durables. Les audits servent à mesurer ou
+contextualiser un état ; ils ne créent pas une seconde doctrine.
 
-## Tables centrales à garder en tête
+## Audits et preuves
 
-Ces tables peuvent rester très sollicitées sans être des problèmes en soi. Le bon réflexe est de borner les lectures, pas de les cacher.
+- [Supabase quota audit](./supabase-quota-audit.md) — audit de consommation et
+  de risques ;
+- [Supabase refresh strategy audit](../operations/audits/supabase-refresh-strategy-audit.md) —
+  photographie historique de stratégie de rafraîchissement ;
+- [Database query & index audit](./QUERY_INDEX_AUDIT.md) — audit requêtes/index ;
+- [Supabase linked advisories](../security/supabase-linked-advisories-2026-05-20.md) —
+  preuve liée aux advisors de sécurité.
 
-| Table | Usage principal | Garde-fou à retenir |
-| --- | --- | --- |
-| `profiles` | identité, rôles, préférences, signaux de notification | lecture par identifiant ou recherche exacte, jamais de scan large |
-| `actions` | carte, création, import, modération, analytics | filtrer par période, statut, zone ou type avant toute lecture large |
-| `progression_profiles` | progression persistante par utilisateur | lecture ciblée par utilisateur ou RPC dédié |
-| `progression_events` | journal de progression et d'audit | ne pas l'utiliser comme source de recalcul global au `GET` |
-| `user_points` | solde courant de points | lire un agrégat ou un résumé, pas l'historique complet |
-| `points_ledger` | historique des points | historique paginé ou agrégat persistant uniquement |
-| `community_events` | événements communautaires | toujours borner par date, statut ou géographie |
-| `event_rsvps` | réponses RSVP | lecture par événement ou par utilisateur, jamais en balayage complet |
-| `app_notifications` | notifications utilisateur | lecture par utilisateur courant avec `limit` et tri |
-| `quiz_type_progress` | progression de quiz par type | lecture ciblée par utilisateur et type, jamais une vue globale brute |
-| `quiz_srs` | répétition espacée des quiz | lecture par utilisateur et liste de questions limitée |
-| `checklist_progress` | état des checklists | lecture par couple `user_id` / `checklist_id` |
-| `runbook_checks` | état des runbooks | lecture par profil, pas de listing large |
-| `user_badge_totals` | agrégats de badges | lecture par utilisateur, pas pour recalculer un classement complet |
+Toujours confronter un audit daté au code et au schéma actuels avant d'en tirer
+une décision.
 
-Règle commune:
+## Ce que couvre ce domaine
 
-- une table centrale peut rester dans les audits si son usage est structurellement légitime;
-- elle ne doit jamais servir d'excuse pour une lecture non bornée ou un `select("*")` par défaut;
-- si plusieurs écrans réutilisent le même scan, la réponse doit passer par une vue, un RPC ou un agrégat persistant.
-- si une table sert déjà d'agrégat persistant, ne pas la transformer en source brute de recalcul dans les routes `GET`.
+- sources de vérité PostgreSQL ;
+- migrations ;
+- requêtes et index ;
+- RLS et relations de données ;
+- stockage Supabase ;
+- lectures bornées ;
+- vues, RPC et agrégats ;
+- diagnostics de quotas ;
+- compatibilités de schéma nécessaires au runtime.
+
+## Tables centrales
+
+Ces tables peuvent rester très sollicitées sans être des problèmes en soi. Le
+bon réflexe est de borner les lectures, pas de masquer leur usage.
+
+| Table | Usage principal | Garde-fou |
+|---|---|---|
+| `profiles` | identité, rôles, préférences | identifiant ou recherche ciblée, jamais scan large |
+| `actions` | carte, création, import, modération, analytics | période, statut, zone ou type avant lecture large |
+| `progression_profiles` | progression persistante | utilisateur ou RPC dédié |
+| `progression_events` | journal de progression/audit | ne pas recalculer tout le système depuis ce journal |
+| `user_points` | solde courant | résumé ou agrégat |
+| `points_ledger` | historique des points | pagination ou agrégat |
+| `community_events` | événements | date, statut ou géographie |
+| `event_rsvps` | RSVP | événement ou utilisateur |
+| `action_participants` | participations | action, utilisateur ou période |
+| `app_notifications` | notifications | utilisateur courant, limite et tri |
+| `quiz_type_progress` | progression quiz | utilisateur et type |
+| `quiz_srs` | répétition espacée | utilisateur et questions ciblées |
+| `checklist_progress` | checklists | `(user_id, checklist_id)` |
+| `runbook_checks` | runbooks | profil ciblé |
+| `user_badge_totals` | agrégats badges | utilisateur, pas scan de classement brut |
+
+Règle commune :
+
+- pas de `select("*")` par défaut sur un chemin croissant ;
+- pas de lecture complète pour un simple compteur ;
+- réutiliser une vue, RPC ou agrégat lorsqu'une synthèse existe ;
+- une table d'agrégat ne doit pas redevenir la matière première d'un recalcul
+  complet à chaque `GET`.
+
+## Migrations
+
+Le schéma versionné canonique reste celui défini par la gouvernance du dépôt et
+[`../architecture/data-governance.md`](../architecture/data-governance.md).
+
+Toute évolution doit préserver :
+
+- migration versionnée ;
+- types ;
+- RLS ;
+- consommateurs runtime ;
+- tests ;
+- compatibilités nécessaires.
+
+Ne jamais corriger un quota en modifiant directement la base distante sans
+migration associée.
+
+## Choix du stockage
+
+Ne pas maintenir une seconde matrice ici.
+
+La décision canonique est dans
+[`../architecture/data-governance.md`](../architecture/data-governance.md) :
+
+```txt
+Git / statique
+navigateur
+Supabase
+cache / ISR
+Storage / fichier préparé
+```
+
+## Validation
+
+Pour une modification Supabase :
+
+1. qualifier le chemin réel ;
+2. appliquer le playbook ;
+3. préserver la sécurité et les contrats ;
+4. exécuter les tests et audits pertinents du dépôt actuel ;
+5. ne pas utiliser un ancien rapport comme preuve de l'état présent.

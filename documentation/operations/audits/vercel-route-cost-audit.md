@@ -3,7 +3,7 @@
 Dernière vérification: 2026-07-13
 
 Ce document liste les routes qui concentrent le plus de coût potentiel sur Vercel.
-Il complète [la gouvernance Vercel](../../development/vercel-quota-governance.md) avec une lecture route par route.
+Il complète [la gouvernance des coûts plateforme](../platform-cost-governance.md) avec une lecture route par route.
 Il reprend aussi la synthèse opérationnelle utile de l'ancien backlog Vercel, désormais archivé.
 
 Méthode:

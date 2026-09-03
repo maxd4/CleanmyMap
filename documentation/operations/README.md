@@ -1,83 +1,98 @@
-# Operations - Guide IA
+# Operations — Guide IA
 
-Documentation opérationnelle pour agents IA.
+Point d'entrée de la documentation d'exploitation de CleanMyMap.
 
-Cette section reste utile pour le déploiement, le monitoring, la maintenance et les imports de données.
-Les documents de session et de mémoire interne sont gérés ailleurs et ne doivent pas être dupliqués ici.
+Les règles transversales de Git, de publication et de validation restent
+canoniques dans la gouvernance racine. Ce dossier contient les procédures,
+services, coûts, incidents et diagnostics opérationnels.
 
----
+## Plateforme et coûts
 
-## Fichiers essentiels
+- [Gouvernance des coûts plateforme](./platform-cost-governance.md) — source
+  `CURRENT` pour Vercel, Supabase, navigateur, cache, polling, exports et choix
+  de couche ;
+- [Diagnostic de build Vercel / Next.js](./vercel-build-troubleshooting.md) —
+  triage build, environnement, provisioning et bundler ;
+- [Services stack](./services-stack.md) — services externes et points de
+  configuration.
 
-### Déploiement
+Les décisions de stockage détaillées vivent dans
+`documentation/architecture/data-governance.md`. Les optimisations de requêtes
+Supabase vivent dans `documentation/database/`.
+
+## Déploiement
+
 - `runbook-deploiement.md`
 - `checklist-push-deploy.md`
 - `cloudflare-uptimerobot-checklist.md`
-- `fix_vercel_deploy.md` - note de travail sur les warnings de source maps Vercel
+- `fix_vercel_deploy.md`
 
-### Incidents & maintenance
+## Incidents et maintenance
+
 - `INCIDENT_RUNBOOK_SHORT.md`
 - `incidents-frequents-et-reprise.md`
 - `MAINTENANCE.md`
 
-### Monitoring & logs
+## Monitoring et logs
+
 - `runbook-monitoring-logs.md`
 - `CLERK_SESSION_DASHBOARD_CHECK.md`
 - `account-completion-modal.md`
-- la fenêtre de complétion de compte est branchée route par route, pas au niveau du shell global
 - `clerk-supabase-audit.md`
-- `clerk-supabase-audit.md` sert aussi de point d'entrée vers `npm run data:audit:clerk-supabase`
 
-### Audits et diagnostics historiques
-- [`audits/`](./audits/) — audits opérationnels contextualisés ;
-- ces documents ne sont pas des sources `CURRENT` ;
-- les rapports entièrement générés et reproductibles restent sous `artifacts/`.
+La fenêtre de complétion de compte est branchée route par route, pas au niveau
+du shell global. `clerk-supabase-audit.md` sert aussi de point d'entrée vers
+`npm run data:audit:clerk-supabase`.
 
-### Mémoire de session
-- `agent-memory-governance.md` - doctrine de mémoire persistante, cycle de travail autonome et clôture de session
-- résumé de clôture de la dernière session
-- contexte courant du projet
+## Audits et diagnostics historiques
 
-### Sécurité publication et config
-- [Configuration email](email-setup.md) - variables et procédure de configuration
+- [`audits/`](./audits/) — preuves contextualisées, non `CURRENT`.
+
+Les rapports entièrement générés et reproductibles restent sous `artifacts/`.
+
+## Sécurité publication et configuration
+
+- [Configuration email](./email-setup.md)
 - `pre-release-security-check.md`
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
-- `github-governance.md` - garde-fous GitHub et reproductibilité locale des workflows
-- `OPENAI_API_KEY` reste un secret local/serveur et ne doit jamais être traité comme un env public
-- les runbooks internes de mémoire et de session restent hors index public
-- `github-vercel-governance-audit.md` - audit synthétique de la gouvernance GitHub/Vercel
+- `github-governance.md`
+- `github-vercel-governance-audit.md`
 
-### Changelog
+`OPENAI_API_KEY` reste un secret local/serveur et ne doit jamais être traité
+comme une variable publique.
+
+## Mémoire de session
+
+- `agent-memory-governance.md`
+
+Les documents de session et de mémoire interne ne doivent pas être recopiés
+dans les sources opérationnelles courantes.
+
+## Changelog
+
 - `CHANGELOG.md`
 
-### Import de données
-- [Point d'entrée local](data-import/README.md)
-- `clerk-supabase-audit.sql` — script d'audit Supabase associé, hors du
-  parcours d'import documenté dans ce sous-dossier.
+Le changelog conserve l'historique. Il n'est pas une source de vérité pour une
+règle actuelle.
 
----
+## Import de données
 
-## Instructions
+- [Point d'entrée local](./data-import/README.md)
+- `clerk-supabase-audit.sql` — script d'audit associé, hors parcours d'import.
 
-### Avant déploiement
-1. Lire `checklist-push-deploy.md`
-2. Vérifier `runbook-deploiement.md`
-3. S'assurer que les tests passent
+## Workflow opérationnel
 
-### En cas d'incident
-1. Consulter `INCIDENT_RUNBOOK_SHORT.md`
-2. Vérifier `incidents-frequents-et-reprise.md`
-3. Documenter l'incident dans `CHANGELOG.md`
+Avant un déploiement :
 
-### Import de données
-1. Consulter [le point d'entrée local](data-import/README.md)
+1. consulter `checklist-push-deploy.md` ;
+2. utiliser `runbook-deploiement.md` ;
+3. exécuter les validations requises par le candidat courant ;
+4. vérifier les services ou quotas réellement concernés.
 
----
+En cas d'incident :
 
-## Workflow
-
-1. Vérifier la checklist de déploiement
-2. Lancer les tests
-3. Suivre le runbook adéquat
-4. Vérifier le monitoring
-5. Documenter dans le changelog
+1. qualifier la couche en échec ;
+2. consulter le runbook adapté ;
+3. vérifier les logs et diagnostics actuels ;
+4. ne pas appliquer une conclusion d'audit historique comme état présent ;
+5. documenter l'historique seulement lorsqu'il apporte une trace durable.

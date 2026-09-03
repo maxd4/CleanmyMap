@@ -39,6 +39,6 @@ _Si ce code a été généré ou assisté par IA :_
 ## Checklist
 
 - [ ] Mes changements respectent les [règles de qualité du dépôt](documentation/development/repo-quality-rules.md).
-- [ ] J'ai passé la [Checklist Performance & Quotas Vercel](documentation/development/performance-quotas-vercel-checklist.md) avant la revue.
+- [ ] J'ai passé la [Gouvernance des coûts plateforme](documentation/operations/platform-cost-governance.md) avant la revue.
 - [ ] J'ai ajouté des tests si nécessaire.
 - [ ] La documentation a été mise à jour.

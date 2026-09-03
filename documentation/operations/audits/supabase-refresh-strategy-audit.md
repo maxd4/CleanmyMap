@@ -33,7 +33,7 @@ Reste à faire:
 Références locales:
 
 - [`documentation/database/supabase-quota-audit.md`](../../database/supabase-quota-audit.md)
-- [`documentation/development/supabase-query-optimization-playbook.md`](../../development/supabase-query-optimization-playbook.md)
+- [`documentation/database/supabase-table-optimization-playbook.md`](../../database/supabase-table-optimization-playbook.md)
 - [`artifacts/supabase/quota-audit/table-risk-report.md`](../../../artifacts/supabase/quota-audit/table-risk-report.md)
 - [`artifacts/supabase/quota-audit/repo-audit.md`](../../../artifacts/supabase/quota-audit/repo-audit.md)
 

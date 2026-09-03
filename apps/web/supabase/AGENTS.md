@@ -19,7 +19,7 @@ Ces règles concernent la configuration et les migrations du workspace web.
 - vérifier les erreurs de chaque opération Supabase ;
 - régénérer ou réaligner les types lorsqu'un schéma change ;
 - avant une requête coûteuse, consulter
-  `documentation/development/supabase-query-optimization-playbook.md` ;
+  `documentation/database/supabase-table-optimization-playbook.md` ;
 - vérifier les permissions pour les chemins propriétaire/non-propriétaire,
   connecté/anonyme et privilégié.
 
