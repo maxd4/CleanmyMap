@@ -56,7 +56,8 @@ vi.mock("@/lib/route/fossgis-foot-routing", () => ({
 vi.mock("@/lib/geo/paris-arrondissements", () => ({
   getTerritoryArrondissementCenter: getTerritoryArrondissementCenterMock,
 }));
-vi.mock("@/lib/route/route-planner", () => ({
+vi.mock("@/lib/route/route-planner", async (importOriginal) => ({
+  ...(await importOriginal()),
   fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
   longestNetworkPrefixWithinBudget: longestNetworkPrefixWithinBudgetMock,
   planRoute: planRouteMock,
@@ -127,6 +128,30 @@ function plannedStop(candidateValue = candidate, index = 0) {
   };
 }
 
+function plannerAudit(stops: ReturnType<typeof plannedStop>[]) {
+  return {
+    evaluations: [],
+    selections: stops.map((stop, index) => ({
+      candidateId: stop.candidate.id,
+      step: index + 1,
+      incrementalDistanceKm: stop.incrementalDistanceKm,
+      incrementalTravelMinutes: stop.incrementalTravelMinutes,
+      cumulativeTravelMinutes: stop.cumulativeTravelMinutes,
+      normalizedPriority: stop.candidate.score / 100,
+      normalizedTravel: 0.5,
+      combinedScore: 0.5,
+      feasible: true,
+      selectionReason: `Étape ${index + 1}: test planner`,
+    })),
+    orderingCriteria: [
+      "combined_score_desc",
+      "priority_desc",
+      "incremental_travel_asc",
+      "id_lexicographic",
+    ],
+  } as const;
+}
+
 describe("POST /api/route/recommend", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -178,12 +203,16 @@ describe("POST /api/route/recommend", () => {
       upcomingEvents: [],
       hotspots: [],
     });
-    planRouteMock.mockImplementation((input) => ({
-      stops: input.candidates
+    planRouteMock.mockImplementation((input) => {
+      const stops = input.candidates
         .slice(0, input.maxStops)
-        .map((item: typeof candidate, index: number) => plannedStop(item, index)),
-      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-    }));
+        .map((item: typeof candidate, index: number) => plannedStop(item, index));
+      return {
+        stops,
+        diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+        audit: plannerAudit(stops),
+      };
+    });
     longestNetworkPrefixWithinBudgetMock.mockReturnValue(0);
     fallbackRoutePrefixWithinBudgetMock.mockImplementation(
       (_origin, stops) => stops,
@@ -401,6 +430,7 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(plannedStops),
     });
     const networkGeometry = {
       ...fallbackGeometry(),
@@ -443,6 +473,7 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(plannedStops),
     });
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
     fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
@@ -489,6 +520,7 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: [plannedStop()],
       diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
+      audit: plannerAudit([plannedStop()]),
     });
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 8));
 
@@ -510,6 +542,16 @@ describe("POST /api/route/recommend", () => {
       totalMinutesEstimate: null,
       engineVersion: "route-planner-v1",
       generatedAt: expect.any(String),
+      trace: expect.objectContaining({
+        engineVersion: "route-planner-v1",
+        parameters: expect.objectContaining({
+          travelBudgetMinutes: 10,
+          maxStops: 6,
+          priorityVsTravel: 65,
+        }),
+        origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+        selectedStops: expect.any(Array),
+      }),
     }));
     expect(payload.diagnostics).toEqual(expect.objectContaining({
       loaded: 0,
@@ -560,5 +602,8 @@ describe("POST /api/route/recommend", () => {
     expect(unavailablePayload.status).toBe("degraded");
     expect(unavailablePayload.dataStatus).toBe("unavailable");
     expect(unavailablePayload.sourceHealth.failedSources).toEqual(["spots"]);
+    expect(unavailablePayload.trace.candidates.excludedByReason).toEqual(
+      expect.objectContaining({ source_unavailable: 1 }),
+    );
   });
 });
