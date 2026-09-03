@@ -24,6 +24,7 @@ const EVENT_DEFAULTS: CommunityEventItem = {
   title: "Collecte Test",
   eventDate: "2026-04-05",
   locationLabel: "France",
+  location: { label: "France", latitude: null, longitude: null, source: null },
   description: "Description",
   capacityTarget: 20,
   attendanceCount: 10,

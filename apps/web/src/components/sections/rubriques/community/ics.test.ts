@@ -10,6 +10,7 @@ function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventI
  title:"Nettoyage berges",
  eventDate:"2026-07-10",
  locationLabel:"Canal Saint-Martin",
+ location: { label:"Canal Saint-Martin", latitude:null, longitude:null, source:null },
  description:"Collecte citoyenne",
  capacityTarget: 40,
  attendanceCount: null,

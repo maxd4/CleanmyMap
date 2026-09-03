@@ -17,6 +17,9 @@ type ReportCommunityEventRow = {
   title: string;
   event_date: string;
   location_label: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_source: import("./event-location").CommunityEventLocationSource | null;
   description: string | null;
 };
 
@@ -44,6 +47,12 @@ function toCommunityEventItem(
     title: event.title,
     eventDate: event.event_date,
     locationLabel: event.location_label,
+    location: {
+      label: event.location_label,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      source: event.location_source,
+    },
     description: parsedDescription.plainDescription,
     capacityTarget: ops.capacityTarget,
     attendanceCount: ops.attendanceCount,
@@ -73,7 +82,7 @@ export async function loadCachedReportCommunityEvents(
       const eventsResult = await supabase
         .from("community_events")
         .select(
-          "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+          "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
         )
         .order("event_date", { ascending: true })
         .order("created_at", { ascending: false })

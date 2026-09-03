@@ -15,6 +15,8 @@ export type CreateCommunityEventForm = {
   title: string;
   eventDate: string;
   locationLabel: string;
+  latitude: string;
+  longitude: string;
   description: string;
   capacityTarget: string;
   cleanupObjective: string;

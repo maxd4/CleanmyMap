@@ -11,6 +11,7 @@ const unstableCacheMock = vi.hoisted(() =>
 );
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
+const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 
@@ -46,7 +47,7 @@ vi.mock("@/lib/rate-limit/server", () => ({
 }));
 
 vi.mock("@/lib/community/discussion-rate-limit", () => ({
-  reserveDiscussionMessageSlot: vi.fn(),
+  reserveDiscussionMessageSlot: reserveDiscussionMessageSlotMock,
   toDiscussionRateLimitErrorPayload: vi.fn(),
 }));
 
@@ -69,6 +70,9 @@ const event = {
   title: "Collecte publique",
   event_date: "2026-09-10",
   location_label: "Paris",
+  latitude: 48.8566,
+  longitude: 2.3522,
+  location_source: "manual",
   description: null,
 };
 
@@ -129,6 +133,7 @@ describe("GET /api/community/events", () => {
     configurePublicRead();
     verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
     createServerRateLimitResponseMock.mockReturnValue(null);
+    reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 
   it("returns the public event projection anonymously with no personal RSVP status", async () => {
@@ -138,6 +143,12 @@ describe("GET /api/community/events", () => {
     expect(response.status).toBe(200);
     expect(body.items[0]).toMatchObject({
       id: "event-1",
+      location: {
+        label: "Paris",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        source: "manual",
+      },
       rsvpCounts: { yes: 2, maybe: 1, no: 0, total: 3 },
       myRsvpStatus: null,
     });
@@ -181,6 +192,7 @@ describe("POST /api/community/events", () => {
     authMock.mockResolvedValue({ userId: null });
     verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
     createServerRateLimitResponseMock.mockReturnValue(null);
+    reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 
   it("remains authenticated even though GET is public", async () => {
@@ -193,6 +205,72 @@ describe("POST /api/community/events", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("creates a geolocated event without deriving coordinates from its label", async () => {
+    authMock.mockResolvedValue({ userId: "organizer-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({
+      displayName: "Organisateur",
+      email: "not-provided",
+    });
+    const createdEvent = { ...event };
+    const single = vi.fn().mockResolvedValue({ data: createdEvent, error: null });
+    const insert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({ single }),
+    });
+    getSupabaseServerClientMock.mockReturnValue({ from: vi.fn().mockReturnValue({ insert }) });
+
+    const response = await POST(
+      new Request("http://localhost/api/community/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: "Collecte géolocalisée",
+          eventDate: "2026-09-10",
+          locationLabel: "Lieu sans arrondissement",
+          location: { latitude: 48.8566, longitude: 2.3522, source: "manual" },
+          cleanupObjective: "Nettoyer le quai",
+          cleanupZone: "Quai de Seine",
+          cleanupSupportLevel: "moyen",
+          cleanupWasteTypesExpected: ["plastique"],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location_label: "Lieu sans arrondissement",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        location_source: "manual",
+      }),
+    );
+    expect(single).toHaveBeenCalled();
+  });
+
+  it("rejects coordinates outside the geographic bounds", async () => {
+    authMock.mockResolvedValue({ userId: "organizer-1" });
+
+    const response = await POST(
+      new Request("http://localhost/api/community/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: "Collecte invalide",
+          eventDate: "2026-09-10",
+          locationLabel: "Paris",
+          location: { latitude: 91, longitude: 2.3522, source: "manual" },
+          cleanupObjective: "Nettoyer le quai",
+          cleanupZone: "Quai de Seine",
+          cleanupSupportLevel: "moyen",
+          cleanupWasteTypesExpected: ["plastique"],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(422);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

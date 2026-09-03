@@ -41,7 +41,7 @@ export async function loadCreatorInboxEvents(): Promise<CreatorInboxItem[]> {
   const eventsResult = await supabase
     .from("community_events")
     .select(
-      "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+      "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
     )
     .order("created_at", { ascending: false })
     .limit(60);
@@ -79,6 +79,9 @@ export async function loadCreatorInboxEvents(): Promise<CreatorInboxItem[]> {
         title: event.title,
         event_date: event.event_date,
         location_label: event.location_label,
+        latitude: event.latitude,
+        longitude: event.longitude,
+        location_source: event.location_source,
         description: event.description,
       },
       organizer,

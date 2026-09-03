@@ -183,6 +183,41 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
                 {locationError && <InlineFieldError message={locationError} />}
               </label>
             </div>
+
+            <div className="group space-y-2">
+              <label className={labelClasses}>
+                <span className="flex items-center gap-2"><MapPin size={12} /> Latitude (optionnelle)</span>
+                <input
+                  type="number"
+                  min={-90}
+                  max={90}
+                  step="any"
+                  value={createForm.latitude}
+                  onChange={(e) => updateCreateForm("latitude", e.target.value)}
+                  placeholder="Ex: 48.8566"
+                  className={inputClasses}
+                />
+              </label>
+            </div>
+
+            <div className="group space-y-2">
+              <label className={labelClasses}>
+                <span className="flex items-center gap-2"><MapPin size={12} /> Longitude (optionnelle)</span>
+                <input
+                  type="number"
+                  min={-180}
+                  max={180}
+                  step="any"
+                  value={createForm.longitude}
+                  onChange={(e) => updateCreateForm("longitude", e.target.value)}
+                  placeholder="Ex: 2.3522"
+                  className={inputClasses}
+                />
+              </label>
+              <p className="text-[10px] font-medium normal-case tracking-normal text-slate-500">
+                Laissez les deux champs vides si la position précise n&apos;est pas connue. Aucun arrondissement ne sera converti automatiquement.
+              </p>
+            </div>
           </div>
 
           <div className="md:col-span-2 h-px bg-white/5" />

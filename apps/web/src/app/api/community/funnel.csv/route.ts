@@ -65,14 +65,14 @@ export async function GET(request: Request) {
  ? await supabase
  .from("community_events")
  .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
  )
  .eq("id", eventId.trim())
  .limit(1)
  : await supabase
  .from("community_events")
  .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
  )
  .gte("event_date", floorDate)
  .order("event_date", { ascending: false })
@@ -103,6 +103,12 @@ export async function GET(request: Request) {
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,
+ location: {
+  label: event.location_label,
+  latitude: event.latitude,
+  longitude: event.longitude,
+  source: event.location_source,
+ },
  description: parseCommunityEventDescription(event.description)
  .plainDescription,
  capacityTarget: ops.capacityTarget,

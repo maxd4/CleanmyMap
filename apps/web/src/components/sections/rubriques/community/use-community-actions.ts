@@ -10,6 +10,7 @@ import {
 import { AppError, defaultMessageForKind, isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { standardPostMortemTemplate } from "@/lib/community/event-ops";
+import { isValidCommunityEventCoordinatePair } from "@/lib/community/event-location";
 import { parseOptionalInt, toRsvpLabel } from "./helpers";
 import { redirectToCommunitySignIn } from "./mutation-auth";
 import type { CreateCommunityEventForm, OpsDraft } from "./types";
@@ -21,6 +22,8 @@ function createDefaultForm(): CreateCommunityEventForm {
     title: "",
     eventDate: new Date().toISOString().slice(0, 10),
     locationLabel: "",
+    latitude: "",
+    longitude: "",
     description: "",
     capacityTarget: "",
     cleanupObjective: "",
@@ -130,12 +133,32 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
       return;
     }
 
+    const latitude = createForm.latitude.trim() === "" ? null : Number(createForm.latitude);
+    const longitude = createForm.longitude.trim() === "" ? null : Number(createForm.longitude);
+    if (
+      (latitude === null) !== (longitude === null) ||
+      (latitude !== null &&
+        longitude !== null &&
+        !isValidCommunityEventCoordinatePair(latitude, longitude))
+    ) {
+      setCommunityError(
+        toAppError("Les deux coordonnées doivent être renseignées et valides.", {
+          kind: "validation",
+          message: "Les deux coordonnées doivent être renseignées et valides.",
+        }),
+      );
+      return;
+    }
+
     setIsCreatingEvent(true);
     try {
       await createCommunityEvent({
         title: createForm.title.trim(),
         eventDate: createForm.eventDate.trim(),
         locationLabel: createForm.locationLabel.trim(),
+        ...(latitude !== null && longitude !== null
+          ? { location: { latitude, longitude, source: "manual" as const } }
+          : {}),
         description: createForm.description.trim() || undefined,
         capacityTarget: parsedCapacity ?? undefined,
         cleanupObjective: createForm.cleanupObjective.trim(),
@@ -148,6 +171,8 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
         ...previous,
         title: "",
         locationLabel: "",
+        latitude: "",
+        longitude: "",
         description: "",
         capacityTarget: "",
         cleanupObjective: "",

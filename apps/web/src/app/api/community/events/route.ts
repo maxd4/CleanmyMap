@@ -29,6 +29,11 @@ import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
+import {
+ communityEventLocationToDatabase,
+ isValidCommunityEventCoordinatePair,
+ type CommunityEventLocationInput,
+} from "@/lib/community/event-location";
 
 const COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS = {
  "Cache-Control": "public, max-age=20, stale-while-revalidate=60",
@@ -77,6 +82,12 @@ function toEventResponseItem(
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,
+ location: {
+  label: event.location_label,
+  latitude: event.latitude,
+  longitude: event.longitude,
+  source: event.location_source,
+ },
  description: parsedDescription.plainDescription,
  capacityTarget: ops.capacityTarget,
  attendanceCount: ops.attendanceCount,
@@ -125,7 +136,7 @@ async function loadCachedCommunityEvents(
    let eventsQuery = supabase
     .from("community_events")
     .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
     )
     .order("event_date", { ascending: true })
     .order("created_at", { ascending: false })
@@ -192,6 +203,13 @@ const createCommunityEventSchema = z.object({
  .string()
  .refine(isIsoDateString,"Date attendue au format YYYY-MM-DD"),
  locationLabel: z.string().trim().min(2).max(255),
+ location: z
+  .object({
+   latitude: z.number().finite().min(-90).max(90),
+   longitude: z.number().finite().min(-180).max(180),
+   source: z.enum(["manual", "import"]),
+  })
+  .optional(),
  description: z.string().trim().max(2000).optional(),
  capacityTarget: z.number().int().min(1).max(200000).optional(),
  cleanupObjective: z.string().trim().min(2).max(240),
@@ -267,6 +285,16 @@ export async function POST(request: Request) {
  return validationErrorResponse(parsed.error.flatten().fieldErrors);
  }
 
+ if (
+  parsed.data.location &&
+  !isValidCommunityEventCoordinatePair(
+   parsed.data.location.latitude,
+   parsed.data.location.longitude,
+  )
+ ) {
+  return validationErrorResponse({ location: ["Coordonnées invalides."] });
+ }
+
  const supabase = getSupabaseServerClient();
 
  try {
@@ -283,8 +311,11 @@ export async function POST(request: Request) {
  .insert({
  organizer_clerk_id: userId,
  title: parsed.data.title,
- event_date: parsed.data.eventDate,
- location_label: parsed.data.locationLabel,
+  event_date: parsed.data.eventDate,
+  location_label: parsed.data.locationLabel,
+  ...communityEventLocationToDatabase(
+   parsed.data.location as CommunityEventLocationInput | undefined,
+  ),
  description: serializeCommunityEventDescription(
   parsed.data.description ?? null,
   {
@@ -299,7 +330,7 @@ export async function POST(request: Request) {
  ),
  })
  .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
  )
  .single();
 

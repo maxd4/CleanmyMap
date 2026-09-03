@@ -1,4 +1,8 @@
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
+import type {
+  CommunityEventLocation,
+  CommunityEventLocationInput,
+} from "./event-location";
 
 export type CommunityRsvpStatus = "yes" | "maybe" | "no";
 
@@ -9,6 +13,7 @@ export type CommunityEventItem = {
   title: string;
   eventDate: string;
   locationLabel: string;
+  location: CommunityEventLocation;
   description: string | null;
   capacityTarget: number | null;
   attendanceCount: number | null;
@@ -53,6 +58,7 @@ export type CommunityCreateEventPayload = {
   title: string;
   eventDate: string;
   locationLabel: string;
+  location?: CommunityEventLocationInput;
   description?: string;
   capacityTarget?: number;
   cleanupObjective: string;
@@ -312,6 +318,7 @@ export async function updateCommunityEventOps(payload: {
   capacityTarget?: number | null;
   attendanceCount?: number | null;
   postMortem?: string | null;
+  location?: CommunityEventLocationInput | null;
 }): Promise<CommunityEventItem> {
   let response: Response;
   try {

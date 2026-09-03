@@ -121,6 +121,7 @@ it("filters contracts and community events by scope", () => {
           title: "Collecte Bastille",
           eventDate: "2026-04-10",
           locationLabel: "Paris 11e",
+          location: { label: "Paris 11e", latitude: null, longitude: null, source: null },
           description: "Collectif Test",
           capacityTarget: null,
           attendanceCount: null,

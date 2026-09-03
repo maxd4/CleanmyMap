@@ -61,6 +61,9 @@ function makeEvent(
     title: "Collecte test",
     event_date: "2026-08-30",
     location_label: "Lyon",
+    latitude: null,
+    longitude: null,
+    location_source: null,
     description: serializeCommunityEventDescription("Description privée", {
       ...defaultCommunityEventOps(),
       ...ops,
@@ -129,6 +132,26 @@ describe("POST /api/community/events/ops", () => {
     expect(trackCommunityOpsUpdateMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ userId: "organizer-1", eventId: "event-1" }),
+    );
+  });
+
+  it("allows an authorized event edit to add explicit coordinates", async () => {
+    const { table } = configureSupabase({ event: makeEvent("organizer-1") });
+
+    const response = await POST(
+      makeRequest({
+        eventId: "event-1",
+        location: { latitude: 45.764, longitude: 4.8357, source: "manual" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(table.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        latitude: 45.764,
+        longitude: 4.8357,
+        location_source: "manual",
+      }),
     );
   });
 

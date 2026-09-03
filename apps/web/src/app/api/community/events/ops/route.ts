@@ -15,6 +15,11 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
+import {
+ communityEventLocationToDatabase,
+ isValidCommunityEventCoordinatePair,
+ type CommunityEventLocationInput,
+} from "@/lib/community/event-location";
 
 export const runtime ="nodejs";
 const updateEventOpsSchema = z
@@ -23,6 +28,14 @@ const updateEventOpsSchema = z
  capacityTarget: z.number().int().min(1).max(200000).nullable().optional(),
  attendanceCount: z.number().int().min(0).max(200000).nullable().optional(),
  postMortem: z.string().trim().max(6000).nullable().optional(),
+ location: z
+  .object({
+   latitude: z.number().finite().min(-90).max(90),
+   longitude: z.number().finite().min(-180).max(180),
+   source: z.enum(["manual", "import"]),
+  })
+  .nullable()
+  .optional(),
  reason: z.string().trim().max(500).optional(),
  })
  .strict();
@@ -34,6 +47,9 @@ type CommunityEventRow = {
  title: string;
  event_date: string;
  location_label: string;
+ latitude: number | null;
+ longitude: number | null;
+ location_source: "manual" | "import" | null;
  description: string | null;
 };
 
@@ -78,6 +94,12 @@ function toEventResponseItem(
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,
+ location: {
+  label: event.location_label,
+  latitude: event.latitude,
+  longitude: event.longitude,
+  source: event.location_source,
+ },
  description: parsedDescription.plainDescription,
  capacityTarget: ops.capacityTarget,
  attendanceCount: ops.attendanceCount,
@@ -122,11 +144,24 @@ export async function POST(request: Request) {
  );
  }
 
+ if (
+  parsed.data.location &&
+  !isValidCommunityEventCoordinatePair(
+   parsed.data.location.latitude,
+   parsed.data.location.longitude,
+  )
+ ) {
+  return NextResponse.json(
+   { error: "Invalid event coordinates" },
+   { status: 400 },
+  );
+ }
+
  const supabase = getSupabaseServerClient();
  const eventResult = await supabase
  .from("community_events")
  .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
  )
  .eq("id", parsed.data.eventId)
  .maybeSingle();
@@ -187,10 +222,19 @@ export async function POST(request: Request) {
  try {
  updated = await supabase
  .from("community_events")
- .update({ description })
+ .update({
+  description,
+  ...(parsed.data.location === undefined
+   ? {}
+   : parsed.data.location === null
+     ? communityEventLocationToDatabase(null)
+     : communityEventLocationToDatabase(
+         parsed.data.location as CommunityEventLocationInput,
+       )),
+ })
  .eq("id", parsed.data.eventId)
  .select(
-"id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+"id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
  )
  .single();
  } catch (error) {

@@ -3,6 +3,7 @@ import type {
   ActionPhase,
   ActionPreparationData,
 } from "@/lib/actions/types";
+import type { CommunityEventLocationSource } from "@/lib/community/event-location";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -15,6 +16,9 @@ export type CommunityEventRow = {
   title: string;
   event_date: string;
   location_label: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_source: CommunityEventLocationSource | null;
   description: string | null;
 };
 
