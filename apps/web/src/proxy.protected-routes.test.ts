@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.hoisted(() => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
@@ -21,6 +22,7 @@ import {
   CLERK_CONTEXT_API_ROUTE_PREFIXES,
   CLERK_CONTEXT_ROUTE_PREFIXES,
   config,
+  isAnonymousSafeApiRequest,
   isClerkContextOnlyRoute,
   PROTECTED_APP_PAGE_ROUTE_PREFIXES,
   PROXY_MATCHER_PATTERNS,
@@ -113,6 +115,18 @@ describe("proxy protected routes", () => {
     expect(config.matcher).toContain("/api/legal-content-reports(.*)");
     expect(PROTECTED_ROUTE_PATTERNS).not.toContain("/api/legal-content-reports(.*)");
     expect(isProtectedRoutePath("/api/legal-content-reports")).toBe(false);
+  });
+
+  it("skips Clerk for anonymous community event reads but not mutations", () => {
+    const getRequest = new NextRequest("http://localhost/api/community/events", {
+      method: "GET",
+    });
+    const postRequest = new NextRequest("http://localhost/api/community/events", {
+      method: "POST",
+    });
+
+    expect(isAnonymousSafeApiRequest(getRequest)).toBe(true);
+    expect(isAnonymousSafeApiRequest(postRequest)).toBe(false);
   });
 
 });
