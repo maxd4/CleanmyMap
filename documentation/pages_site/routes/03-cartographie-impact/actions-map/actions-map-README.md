@@ -162,7 +162,7 @@ Estimation modélisée, pas une mesure en temps réel
 
 Les valeurs `S` et `P` restent calculées sur l'échelle interne `0–100`. Leur
 format d'affichage est défini par la règle commune
-[`ui-score-formatting.md`](../../../../development/ui-score-formatting.md).
+[`ui-score-formatting.md`](../../../../design-system/ui-score-formatting.md).
 
 Les résultats collectés restent présentés comme des résultats de l'action, et non comme une pollution résiduelle mesurée.
 

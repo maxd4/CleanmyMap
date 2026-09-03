@@ -25,7 +25,7 @@ Avant toute modification ciblant le dépôt :
 | Développement | `development/README.md` |
 | Modularisation | `development/conventions-modularisation.md` puis `architecture/monolith-split-plan.md` |
 | Amélioration continue / Kaizen | `development/kaizen/README.md` |
-| Affichage des scores UI | `development/ui-score-formatting.md` |
+| Affichage des scores UI | `design-system/ui-score-formatting.md` |
 | Produit | `product/README.md` |
 | Fonctionnalités | `features/README.md` |
 | Gamification | `features/GAMIFICATION_ENGINE.md` puis la spec canonique liée |

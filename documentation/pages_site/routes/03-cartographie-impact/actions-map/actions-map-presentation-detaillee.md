@@ -32,4 +32,4 @@ Estimation modélisée, pas une mesure en temps réel
 
 `S` et `P` conservent l'échelle interne `0–100`, mais tout rendu utilisateur
 utilise le format en pourcentage défini dans
-[`ui-score-formatting.md`](../../../../development/ui-score-formatting.md).
+[`ui-score-formatting.md`](../../../../design-system/ui-score-formatting.md).
