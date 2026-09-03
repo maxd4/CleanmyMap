@@ -2,6 +2,7 @@ import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import type {
   RouteGeometry,
   RouteGeometryLeg,
+  RouteGeometryStep,
 } from "./route-contract";
 import {
   routeDistanceKm,
@@ -36,6 +37,11 @@ export type RouteTraceSelectedStop = {
     travel: number;
   };
   combinedScore: number;
+  incrementalDistanceKm: number;
+  incrementalTravelMinutes: number;
+  cumulativeTravelMinutes: number;
+  budgetBeforeMinutes: number;
+  budgetAfterMinutes: number;
   reason: string;
 };
 
@@ -45,6 +51,7 @@ export type RouteTraceSegment = {
   distanceKm: number | null;
   durationMinutes: number | null;
   measured: boolean;
+  streetSteps: RouteGeometryStep[];
 };
 
 export type RouteRecommendationTrace = {
@@ -144,6 +151,7 @@ function buildSegments(
         distanceKm: leg.distanceKm,
         durationMinutes: leg.estimatedMinutes,
         measured: true,
+        streetSteps: leg.steps ?? [],
       };
     }
 
@@ -154,6 +162,7 @@ function buildSegments(
         distanceKm: null,
         durationMinutes: null,
         measured: false,
+        streetSteps: [],
       };
     }
 
@@ -166,6 +175,7 @@ function buildSegments(
       distanceKm: round(distanceKm),
       durationMinutes: round(travelMinutesForDistance(distanceKm)),
       measured: false,
+      streetSteps: [],
     };
   });
 }
@@ -192,6 +202,11 @@ function selectionForStop(
       travel: selection.normalizedTravel,
     },
     combinedScore: selection.combinedScore,
+    incrementalDistanceKm: selection.incrementalDistanceKm,
+    incrementalTravelMinutes: selection.incrementalTravelMinutes,
+    cumulativeTravelMinutes: selection.cumulativeTravelMinutes,
+    budgetBeforeMinutes: selection.budgetBeforeMinutes,
+    budgetAfterMinutes: selection.budgetAfterMinutes,
     reason: selection.selectionReason,
   };
 }

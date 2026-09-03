@@ -38,6 +38,8 @@ export type RoutePlannerCandidateEvaluation = {
 };
 
 export type RoutePlannerSelection = RoutePlannerCandidateEvaluation & {
+  budgetBeforeMinutes: number;
+  budgetAfterMinutes: number;
   selectionReason: string;
 };
 
@@ -245,6 +247,15 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
       normalizedTravel: next.normalizedTravel,
       combinedScore: next.combinedScore,
       feasible: true,
+      budgetBeforeMinutes: Math.max(
+        0,
+        budgetMinutes -
+          (next.cumulativeTravelMinutes - next.incrementalTravelMinutes),
+      ),
+      budgetAfterMinutes: Math.max(
+        0,
+        budgetMinutes - next.cumulativeTravelMinutes,
+      ),
       selectionReason:
         `Étape ${stops.length}: score combiné=${next.combinedScore.toFixed(3)}, ` +
         `priorité normalisée=${next.normalizedPriority.toFixed(3)}, ` +

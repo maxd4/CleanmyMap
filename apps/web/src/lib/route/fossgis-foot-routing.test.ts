@@ -77,7 +77,7 @@ describe("FOSSGIS pedestrian routing provider", () => {
     const result = await routePolylineThroughFossgisFoot(stops, { transport });
 
     expect(String(transport.mock.calls[0]?.[0])).toBe(
-      `${FOSSGIS_FOOT_BASE_URL}/route/v1/driving/2.352200,48.856600;2.353200,48.857600?geometries=geojson&overview=full&steps=false`,
+      `${FOSSGIS_FOOT_BASE_URL}/route/v1/driving/2.352200,48.856600;2.353200,48.857600?geometries=geojson&overview=full&steps=true`,
     );
     expect(result).toMatchObject({
       provider: FOSSGIS_FOOT_PROVIDER,

@@ -246,6 +246,41 @@ describe("route recommendation trace", () => {
     expect(trace.duration.networkMinutes).toBe(8);
   });
 
+  it("keeps provider street steps grouped on the corresponding network segment", () => {
+    const networkGeometry: RouteGeometry = {
+      coordinates: [[origin.latitude, origin.longitude], [48.86, 2.35]],
+      distanceKm: 1,
+      durationMinutes: 8,
+      legs: [{
+        fromStopIndex: 0,
+        toStopIndex: 1,
+        distanceKm: 1,
+        estimatedMinutes: 8,
+        steps: [{
+          name: "Rue de Test",
+          distanceKm: 1,
+          durationMinutes: 8,
+          maneuver: "depart",
+        }],
+      }],
+      provider: "fossgis-osrm",
+      profile: "foot",
+      mode: "network",
+      estimated: false,
+    };
+    const trace = buildRouteRecommendationTrace(traceInput({
+      routeGeometry: networkGeometry,
+      consumedTravelMinutes: 8,
+    }));
+
+    expect(trace.segments[0]?.streetSteps).toEqual([{
+      name: "Rue de Test",
+      distanceKm: 1,
+      durationMinutes: 8,
+      maneuver: "depart",
+    }]);
+  });
+
   it("changes the parameter snapshot and selected explanation when weighting changes", () => {
     const near = candidate("near", 48.857, 2.3522, 20);
     const far = candidate("far", 48.875, 2.3522, 100);
