@@ -10,6 +10,7 @@ import { RouteSummaryCards } from "./route/components/route-summary-cards";
 import { RouteOptionsForm } from "./route/components/route-constraints-form";
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
+import { RouteExplanation } from "./route/components/route-explanation";
 import {
   getRouteOriginLabel,
   getRouteRecommendationErrorMessage,
@@ -281,6 +282,8 @@ export function RouteSection() {
               {getRouteOriginLabel(data.origin.source, fr)}
             </p>
           )}
+
+          {data && <RouteExplanation data={data} fr={fr} />}
 
           <AnimatePresence mode="wait">
             {hasRoute && data && (

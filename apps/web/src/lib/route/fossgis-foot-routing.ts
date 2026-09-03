@@ -126,6 +126,7 @@ export async function routePolylineThroughFossgisFoot(
     profileSegment: FOSSGIS_FOOT_PROFILE_SEGMENT,
     provider: FOSSGIS_FOOT_PROVIDER,
     profile: FOSSGIS_FOOT_PROFILE,
+    steps: true,
     headers: {
       "User-Agent": FOSSGIS_FOOT_USER_AGENT,
       Referer: FOSSGIS_FOOT_REFERER,
