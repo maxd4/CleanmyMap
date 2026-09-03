@@ -68,6 +68,7 @@
     "check:disclosure": "node scripts/checks/check-disclosure-governance.mjs",
     "check:indicators": "node scripts/checks/check-indicators-governance.mjs",
     "check:data-display": "node scripts/checks/check-data-display-governance.mjs",
+    "check:icons": "node scripts/checks/check-icons-governance.mjs",
     "check:states": "node scripts/checks/check-states-governance.mjs",
     "check:overlays": "node scripts/checks/check-overlays-governance.mjs",
     "analyze:heavy-files": "node scripts/reports/analyze-heavy-files.mjs",
