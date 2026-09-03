@@ -13,6 +13,15 @@
   transform: translateY(1px);
 }
 
+/* Nudge horizontal explicite pour les icônes d'action. */
+.cmm-icon-nudge-x {
+  transition: transform 0.2s ease;
+}
+
+.group:hover .cmm-icon-nudge-x {
+  transform: translateX(0.25rem);
+}
+
 /* -----------------------------------------------------------
    Réduction de mouvement (accessibilité)
    ----------------------------------------------------------- */
@@ -26,8 +35,13 @@
     transition-duration: 0.01ms !important;
   }
 
+  .cmm-hover-lift,
+  .cmm-active-press,
+  .cmm-icon-nudge-x,
   .cmm-clickable:hover,
-  .cmm-hover-lift:hover {
+  .cmm-hover-lift:hover,
+  .group:hover .cmm-icon-nudge-x {
+    transition: none !important;
     transform: none !important;
   }
 }

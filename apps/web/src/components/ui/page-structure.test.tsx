@@ -55,6 +55,6 @@ describe("ActionCard", () => {
 
     expect(markup).toContain('data-cmm-icon-size="lg"');
     expect(markup).toContain('data-cmm-icon-size="sm"');
-    expect(markup).toContain("group-hover:translate-x-1");
+    expect(markup).toContain("cmm-icon-nudge-x");
   });
 });

@@ -12,10 +12,11 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 6. `FORMS_CONTROLS.md`
 7. `STATES_FEEDBACK.md`
 8. `ICONS.md`
-9. `charte-ui-pro-moderne-futuriste.md`
-10. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
-11. `UI_EXCEPTION_PAGES.md`
-12. fiche canonique de la page dans `documentation/pages_site/`
+9. `MOTION_TRANSITIONS.md`
+10. `charte-ui-pro-moderne-futuriste.md`
+11. `cleanmymap-ui-ux-pro-max.md` pour les écrans métier denses
+12. `UI_EXCEPTION_PAGES.md`
+13. fiche canonique de la page dans `documentation/pages_site/`
 
 ## Composants canoniques
 
@@ -93,6 +94,11 @@ Pour les glyphes Lucide standards, utiliser `CmmIcon` selon
 [`ICONS.md`](./ICONS.md). La primitive porte les tailles et l’accessibilité
 communes ; les usages spécialisés restent hors de ce contrat. Le garde-fou est
 `npm run check:icons`.
+
+Pour les transitions et retours Motion, suivre
+[`MOTION_TRANSITIONS.md`](./MOTION_TRANSITIONS.md). Les helpers CSS et le mode
+d’affichage bornent les effets, avec `prefers-reduced-motion` prioritaire. Le
+garde-fou est `npm run check:motion`.
 
 ## Architecture CSS runtime
 
