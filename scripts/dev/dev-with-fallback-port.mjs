@@ -101,11 +101,12 @@ export async function chooseAvailablePort(
 
 export function waitForServerReady(
   port,
-  { host = defaultHost, timeoutMs = 60_000, retryDelayMs = 250 } = {},
+  { host = defaultHost, timeoutMs = 60_000, retryDelayMs = 250, signal } = {},
 ) {
   return new Promise((resolveResult, rejectResult) => {
     const deadline = Date.now() + timeoutMs;
     let retryTimer = null;
+    let activeRequest = null;
     let settled = false;
 
     const finish = (error, result) => {
@@ -116,12 +117,27 @@ export function waitForServerReady(
       if (retryTimer) {
         clearTimeout(retryTimer);
       }
+      if (activeRequest) {
+        activeRequest.destroy();
+        activeRequest = null;
+      }
+      signal?.removeEventListener("abort", onAbort);
       if (error) {
         rejectResult(error);
       } else {
         resolveResult(result);
       }
     };
+
+    const onAbort = () => {
+      finish(new Error("[dev] Attente de readiness annulée."));
+    };
+
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
 
     const attempt = () => {
       if (settled) {
@@ -135,12 +151,19 @@ export function waitForServerReady(
       const request = http.get(
         { hostname: host, path: "/", port, method: "GET" },
         (response) => {
+          if (activeRequest === request) {
+            activeRequest = null;
+          }
           response.resume();
           finish(null, { statusCode: response.statusCode ?? 0 });
         },
       );
+      activeRequest = request;
       request.setTimeout(Math.min(1_000, timeoutMs), () => request.destroy());
       request.once("error", () => {
+        if (activeRequest === request) {
+          activeRequest = null;
+        }
         if (!settled) {
           retryTimer = setTimeout(attempt, retryDelayMs);
         }
@@ -335,10 +358,12 @@ export async function runDevServer(
   });
 
   if (openBrowser) {
+    const readinessAbort = new AbortController();
     try {
       await Promise.race([
-        waitForServerReadyImpl(chosenPort, { host }),
+        waitForServerReadyImpl(chosenPort, { host, signal: readinessAbort.signal }),
         childExit.then((result) => {
+          readinessAbort.abort();
           throw new Error(
             `[dev] Next.js a quitté avant d'être prêt (code=${result.code ?? "n/a"}, signal=${result.signal ?? "n/a"}).`,
           );
