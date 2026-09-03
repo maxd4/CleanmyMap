@@ -119,7 +119,7 @@ function isApiRoute(pathname: string): boolean {
   return pathname.startsWith("/api/");
 }
 
-function isAnonymousSafeApiRequest(req: NextRequest): boolean {
+export function isAnonymousSafeApiRequest(req: NextRequest): boolean {
   if (req.method !== "GET") {
     return false;
   }
@@ -129,6 +129,7 @@ function isAnonymousSafeApiRequest(req: NextRequest): boolean {
     "/api/actions/map/initial-nearest",
     "/api/actions/group-join",
     "/api/partners/published-directory",
+    "/api/community/events",
   ].some((pathname) => req.nextUrl.pathname === pathname);
 }
 
