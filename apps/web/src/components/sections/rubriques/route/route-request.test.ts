@@ -5,6 +5,7 @@ import {
   createRouteRecommendationRequest,
   fetchRouteRecommendation,
   isRouteOriginUnavailableError,
+  resolveRouteRequestOrigin,
 } from "./route-request";
 
 const responsePayload = {
@@ -29,6 +30,12 @@ const responsePayload = {
   serviceMinutesEstimate: null,
   totalMinutesEstimate: null,
   diagnostics: {
+    loaded: 0,
+    eligible: 0,
+    excluded: 0,
+    selected: 0,
+    sourcePartial: false,
+    truncated: false,
     excludedUnsafe: 0,
     excludedByTravelBudget: 1,
   },
@@ -135,5 +142,29 @@ describe("route recommendation request gate", () => {
     expect(gate.start()).toBe(false);
     gate.finish();
     expect(gate.start()).toBe(true);
+  });
+
+  it("uses a selected map origin without invoking browser geolocation", async () => {
+    const browserResolver = vi.fn();
+    const mapOrigin = { latitude: 48.87, longitude: 2.37, source: "map" as const };
+
+    await expect(
+      resolveRouteRequestOrigin("map", mapOrigin, browserResolver),
+    ).resolves.toEqual(mapOrigin);
+    expect(browserResolver).not.toHaveBeenCalled();
+  });
+
+  it("resolves browser geolocation only for the browser origin mode", async () => {
+    const browserOrigin = {
+      latitude: 48.8566,
+      longitude: 2.3522,
+      source: "browser" as const,
+    };
+    const browserResolver = vi.fn().mockResolvedValue(browserOrigin);
+
+    await expect(
+      resolveRouteRequestOrigin("browser", null, browserResolver),
+    ).resolves.toEqual(browserOrigin);
+    expect(browserResolver).toHaveBeenCalledOnce();
   });
 });

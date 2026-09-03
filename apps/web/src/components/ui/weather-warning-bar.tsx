@@ -5,7 +5,15 @@ import { fetchCurrentWeather, WeatherData } from"@/lib/pilotage/weather-service"
 import { CloudRain, Wind, AlertTriangle, X } from"lucide-react";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 
-export function WeatherWarningBar() {
+export function shouldRequestWeatherGeolocation(autoGeolocation: boolean): boolean {
+ return autoGeolocation && canRequestGeolocation();
+}
+
+export function WeatherWarningBar({
+  autoGeolocation = true,
+}: {
+  autoGeolocation?: boolean;
+}) {
 const [data, setData] = useState<WeatherData | null>(null);
 const [isVisible, setIsVisible] = useState(false);
  const barRef = useRef<HTMLDivElement | null>(null);
@@ -17,8 +25,8 @@ const [isVisible, setIsVisible] = useState(false);
  }, []);
 
  useEffect(() => {
- // Attempt only if geolocation is allowed on this page.
- if (canRequestGeolocation()) {
+ // Some surfaces resolve location only after an explicit user action.
+ if (shouldRequestWeatherGeolocation(autoGeolocation)) {
  navigator.geolocation.getCurrentPosition(
  async (position) => {
  try {
@@ -41,7 +49,7 @@ const [isVisible, setIsVisible] = useState(false);
  { timeout: 5000 },
  );
  }
- }, []);
+ }, [autoGeolocation]);
 
  useLayoutEffect(() => {
  const root = document.documentElement;

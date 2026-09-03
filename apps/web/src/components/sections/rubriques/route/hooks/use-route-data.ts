@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import type { RouteOptions, RouteResponse } from "../route-types";
+import type {
+  RouteOptions,
+  RouteRecommendationOrigin,
+  RouteResponse,
+  RouteOriginMode,
+} from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   DEFAULT_ROUTE_OPTIONS,
@@ -13,6 +18,7 @@ import {
   createRouteRecommendationRequest,
   createRouteRequestGate,
   fetchRouteRecommendation,
+  resolveRouteRequestOrigin,
   type RouteRecommendationRequest,
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
@@ -27,6 +33,10 @@ export function useRouteData() {
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequest, setRecommendationRequest] =
     useState<RouteRecommendationRequest | null>(null);
+  const [originMode, setOriginModeState] = useState<RouteOriginMode>("browser");
+  const [mapOrigin, setMapOriginState] =
+    useState<RouteRecommendationOrigin | null>(null);
+  const [originSelectionError, setOriginSelectionError] = useState(false);
   const [isResolvingOrigin, setIsResolvingOrigin] = useState(false);
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
   const requestSequence = useRef(0);
@@ -36,6 +46,21 @@ export function useRouteData() {
   const setOptions = useCallback<React.Dispatch<React.SetStateAction<RouteOptions>>>((update) => {
     draftEditedBeforeHydration.current = true;
     setOptionsState(update);
+  }, []);
+
+  const setOriginMode = useCallback((mode: RouteOriginMode) => {
+    setOriginModeState(mode);
+    setOriginSelectionError(false);
+  }, []);
+
+  const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
+    setMapOriginState(origin);
+    setOriginSelectionError(false);
+  }, []);
+
+  const clearMapOrigin = useCallback(() => {
+    setMapOriginState(null);
+    setOriginSelectionError(false);
   }, []);
 
   useEffect(() => {
@@ -106,17 +131,32 @@ export function useRouteData() {
     hasRoute,
     fr,
     recommendationRequested: recommendationRequest !== null,
+    originMode,
+    setOriginMode,
+    mapOrigin,
+    setMapOrigin,
+    clearMapOrigin,
+    originSelectionError,
     isResolvingOrigin,
     isRequestInFlight,
     requestRecommendation: async () => {
+      if (originMode === "map" && !mapOrigin) {
+        setOriginSelectionError(true);
+        return;
+      }
+
       if (!requestGate.current.start()) return;
 
       setIsRequestInFlight(true);
-      setIsResolvingOrigin(true);
+      setIsResolvingOrigin(originMode === "browser");
 
-      let origin;
+      let origin: RouteRecommendationOrigin | undefined;
       try {
-        origin = await resolveBrowserRouteOrigin();
+        origin = await resolveRouteRequestOrigin(
+          originMode,
+          mapOrigin,
+          resolveBrowserRouteOrigin,
+        );
       } catch {
         origin = undefined;
       } finally {

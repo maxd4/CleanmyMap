@@ -17,6 +17,18 @@ import {
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { RouteGeometry } from "@/lib/route/route-contract";
+
+const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
+  coordinates: [],
+  distanceKm: 0,
+  durationMinutes: 0,
+  legs: [],
+  provider: "none",
+  profile: null,
+  mode: "fallback",
+  estimated: true,
+};
 
 const RouteMap = dynamic(
   () => import("./route/components/route-map").then((module) => module.RouteMap),
@@ -39,25 +51,35 @@ export function RouteSection() {
     hasRoute,
     fr,
     recommendationRequested,
+    originMode,
+    setOriginMode,
+    mapOrigin,
+    setMapOrigin,
+    clearMapOrigin,
+    originSelectionError,
     isResolvingOrigin,
     isRequestInFlight,
     requestRecommendation,
   } = useRouteData();
 
   const dataStatusMessage = data
-    ? data.dataStatus === "empty"
+    ? data.status === "empty"
       ? fr
         ? "Aucune donnée géolocalisée exploitable n'est disponible pour cette recommandation."
         : "No usable geolocated data is available for this recommendation."
-      : data.dataStatus === "partial"
+      : data.status === "degraded"
         ? fr
-          ? "Données partielles : la recommandation repose sur un volume ou une source non exhaustif."
-          : "Partial data: the recommendation uses a non-exhaustive volume or source."
-        : data.dataStatus === "unavailable"
-          ? fr
-            ? "Source de signalements indisponible : aucun point n'est présenté comme s'il était réellement vide."
-            : "The report source is unavailable: no point is presented as genuinely empty."
-          : null
+          ? data.dataStatus === "unavailable"
+            ? "Recommandation dégradée : la source de signalements est indisponible."
+            : data.routeGeometry.mode === "fallback"
+              ? "Recommandation dégradée : l'itinéraire affiché est estimé."
+              : "Recommandation dégradée : les données disponibles ne sont pas exhaustives."
+          : data.dataStatus === "unavailable"
+            ? "Degraded recommendation: the report source is unavailable."
+            : data.routeGeometry.mode === "fallback"
+              ? "Degraded recommendation: the displayed route is estimated."
+              : "Degraded recommendation: the available data is not exhaustive."
+      : null
     : null;
 
   return (
@@ -82,6 +104,62 @@ export function RouteSection() {
              </div>
              
              <RouteSummaryCards options={options} fr={fr} />
+             <fieldset className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5">
+               <legend className="px-1 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+                 {fr ? "Point de départ" : "Starting point"}
+               </legend>
+               <div className="mt-3 grid gap-3">
+                 <label className="flex items-center gap-3 text-sm font-semibold text-white">
+                   <input
+                     type="radio"
+                     name="route-origin-mode"
+                     value="browser"
+                     checked={originMode === "browser"}
+                     onChange={() => setOriginMode("browser")}
+                     className="accent-emerald-300"
+                   />
+                   {fr ? "Ma position actuelle" : "My current position"}
+                 </label>
+                 <label className="flex items-center gap-3 text-sm font-semibold text-white">
+                   <input
+                     type="radio"
+                     name="route-origin-mode"
+                     value="map"
+                     checked={originMode === "map"}
+                     onChange={() => setOriginMode("map")}
+                     className="accent-emerald-300"
+                   />
+                   {fr ? "Choisir sur la carte" : "Choose on the map"}
+                 </label>
+               </div>
+               {originMode === "map" ? (
+                 <div
+                   role="status"
+                   className={`mt-4 rounded-2xl border px-4 py-3 text-xs font-semibold ${
+                     originSelectionError || !mapOrigin
+                       ? "border-amber-300/25 bg-amber-500/10 text-amber-50"
+                       : "border-emerald-300/20 bg-emerald-500/10 text-emerald-50"
+                   }`}
+                 >
+                   {mapOrigin
+                     ? fr
+                       ? "Point choisi sur la carte. Vous pouvez le déplacer en cliquant à nouveau."
+                       : "Point chosen on the map. Click again to move it."
+                     : fr
+                       ? "Cliquez sur la carte pour choisir un point de départ avant de calculer."
+                       : "Click the map to choose a starting point before calculating."}
+                   {mapOrigin ? (
+                     <button
+                       type="button"
+                       onClick={clearMapOrigin}
+                       className="ml-3 underline underline-offset-2"
+                     >
+                       {fr ? "Réinitialiser" : "Reset"}
+                     </button>
+                   ) : null}
+                 </div>
+               ) : null}
+             </fieldset>
              <RouteOptionsForm options={options} setOptions={setOptions} fr={fr} />
              <div className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
                {isLoaded && isSignedIn ? (
@@ -90,11 +168,19 @@ export function RouteSection() {
                    onClick={() => {
                      void requestRecommendation();
                    }}
-                   disabled={isLoading || isRequestInFlight}
+                   disabled={
+                     isLoading ||
+                     isRequestInFlight ||
+                     (originMode === "map" && !mapOrigin)
+                   }
                    aria-busy={isResolvingOrigin || isLoading || isRequestInFlight}
                    className="min-h-11 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
                  >
-                   {isResolvingOrigin
+                   {originMode === "map" && !mapOrigin
+                     ? fr
+                       ? "Choisir un point sur la carte"
+                       : "Choose a point on the map"
+                     : isResolvingOrigin
                      ? fr
                        ? "Localisation en cours…"
                        : "Locating…"
@@ -125,6 +211,17 @@ export function RouteSection() {
 
         {/* Main Content Area */}
         <div className="space-y-8">
+          {originMode === "map" && !hasRoute && (
+            <RouteMap
+              stops={[]}
+              routeGeometry={EMPTY_ROUTE_GEOMETRY}
+              origin={mapOrigin}
+              onSelectOrigin={setMapOrigin}
+              onClearOrigin={clearMapOrigin}
+              fr={fr}
+            />
+          )}
+
           {isLoading && (
             <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6">
               <CmmSkeleton className="h-12 w-1/3 rounded-xl bg-white/5" />
@@ -154,6 +251,7 @@ export function RouteSection() {
           {dataStatusMessage && data && (
             <div
               role="status"
+              data-route-status={data.status}
               data-route-data-status={data.dataStatus}
               className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-5 py-4 text-sm font-semibold text-amber-50"
             >
@@ -251,6 +349,9 @@ export function RouteSection() {
                 <RouteMap
                   stops={picks}
                   routeGeometry={data.routeGeometry}
+                  origin={data.origin}
+                  onSelectOrigin={originMode === "map" ? setMapOrigin : undefined}
+                  onClearOrigin={originMode === "map" ? clearMapOrigin : undefined}
                   selectedStopId={selectedStopId}
                   onSelectStop={setSelectedStopId}
                   fr={fr}

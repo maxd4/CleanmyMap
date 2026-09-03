@@ -1,6 +1,7 @@
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 
 export type RouteDataStatus = "complete" | "empty" | "partial" | "unavailable";
+export type RouteRecommendationStatus = "ok" | "empty" | "degraded";
 
 export function resolveRouteDataStatus(params: {
   candidateCount: number;
@@ -22,4 +23,24 @@ export function resolveRouteDataStatus(params: {
   }
 
   return params.candidateCount === 0 ? "empty" : "complete";
+}
+
+export function resolveRouteRecommendationStatus(params: {
+  dataStatus: RouteDataStatus;
+  selectedCount: number;
+  routeGeometryMode: "network" | "fallback";
+}): RouteRecommendationStatus {
+  if (
+    params.dataStatus === "partial" ||
+    params.dataStatus === "unavailable" ||
+    (params.selectedCount > 0 && params.routeGeometryMode === "fallback")
+  ) {
+    return "degraded";
+  }
+
+  if (params.dataStatus === "empty" || params.selectedCount === 0) {
+    return "empty";
+  }
+
+  return "ok";
 }

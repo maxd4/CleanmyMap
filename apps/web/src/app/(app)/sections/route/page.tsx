@@ -1,6 +1,5 @@
 import { Navigation, MapPin, History, FilePlus2 } from "lucide-react";
 import { RouteSection } from "@/components/sections/rubriques/route-section";
-import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
@@ -38,7 +37,7 @@ export default async function RoutePage() {
               <span>Où agir</span>
             </span>
           }
-          subtitle="Décidez vite où agir aujourd’hui selon la priorité opérationnelle, la distance et le nombre d’arrêts."
+          subtitle="Décidez vite où agir aujourd’hui selon la priorité opérationnelle, le déplacement et le nombre d’arrêts."
           action={
             <CmmButtonGroup>
               <CmmButton
@@ -88,8 +87,6 @@ export default async function RoutePage() {
             </CmmButtonGroup>
           }
         />
-
-        <WeatherWarningBar />
 
         <div className={cn("rounded-[3rem] p-1 border overflow-hidden", classes.surface, classes.shadow)}>
           <EffectiveAuthStateProvider localDevAuth={localDevAuth}>
