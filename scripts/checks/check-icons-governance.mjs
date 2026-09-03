@@ -45,6 +45,48 @@ function extractScope(source, startMarker, endMarker) {
   return source.slice(start, end === -1 ? source.length : end);
 }
 
+function extractObjectBody(source, declaration) {
+  const start = source.search(new RegExp(`const\\s+${declaration}\\b[^=]*=\\s*\\{`));
+  if (start === -1) return "";
+
+  const openingBrace = source.indexOf("{", start);
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(openingBrace + 1, index);
+    }
+  }
+
+  return "";
+}
+
+const CANONICAL_SIZE_CLASSES = new Map([
+  ["xs", "h-3.5 w-3.5"],
+  ["sm", "h-4 w-4"],
+  ["md", "h-5 w-5"],
+  ["lg", "h-6 w-6"],
+  ["xl", "h-7 w-7"],
+]);
+
+function readSizeClasses(source) {
+  const body = extractObjectBody(source, "sizeClasses");
+  return new Map(
+    [...body.matchAll(/^\s*([a-z]+)\s*:\s*["']([^"']+)["']\s*,?/gim)].map(
+      ([, size, classes]) => [size, classes],
+    ),
+  );
+}
+
+function sameMap(left, right) {
+  if (left.size !== right.size) return false;
+  for (const [key, value] of right) {
+    if (left.get(key) !== value) return false;
+  }
+  return true;
+}
+
 export function auditCmmIconSource(source, filePath = CMM_ICON_PATH) {
   const violations = [];
   const propsScope = extractScope(source, "export interface CmmIconProps", "}");
@@ -71,6 +113,15 @@ export function auditCmmIconSource(source, filePath = CMM_ICON_PATH) {
     requireText(source, filePath, marker, violations);
   }
 
+  const sizeType = source.match(/export type\s+CmmIconSize\s*=\s*([^;]+);/);
+  if (sizeType?.[1].replace(/\s+/g, " ").trim() !== '"xs" | "sm" | "md" | "lg" | "xl"') {
+    violations.push(`${filePath}: CmmIconSize must be exactly xs | sm | md | lg | xl`);
+  }
+
+  if (!sameMap(readSizeClasses(source), CANONICAL_SIZE_CLASSES)) {
+    violations.push(`${filePath}: CmmIcon sizeClasses must contain only the canonical sizes`);
+  }
+
   if (source.includes('"use client"')) {
     violations.push(`${filePath}: CmmIcon must remain Server-compatible without use client`);
   }
@@ -79,8 +130,8 @@ export function auditCmmIconSource(source, filePath = CMM_ICON_PATH) {
     /\btone\??\s*:/,
     /\bcolor\??\s*:/,
     /\bstrokeWidth\??\s*:/,
-    /\bsize\??\s*:\s*number/,
-    /\bsize\s*=\s*\d/,
+    /\bsize\??\s*:\s*(?:number|\d+(?:\.\d+)?)/,
+    /\bsize\s*=\s*(?:\d|["']\d|\{\s*\d)/,
     /\b(?:animation|transition|animate|motion)\b/,
   ]) {
     if (forbidden.test(propsScope) || forbidden.test(source)) {
