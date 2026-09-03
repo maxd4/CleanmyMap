@@ -3,57 +3,77 @@
 ## Fiche canonique
 
 - **Route** : `/sections/route`
-- **Fichier(s) source(s)** :
-- `apps/web/src/app/(app)/sections/route/page.tsx`
-- **Type fonctionnel** : page de bloc
-- **Famille / bloc fonctionnel** : Agir (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Permettre de choisir rapidement où agir.
-- **Action principale attendue** : Identifier une zone ou un contexte d'action.
-- **Palette attendue** : emerald
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
-- **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
-- **Niveau de surcharge textuelle** : moyen
-- **Textes à conserver** :
-- Titre de tâche
-- champs utiles
-- CTA principal
-- validation et erreurs
-- **Textes à réduire ou supprimer** :
-- Aides répétées
-- cartes descriptives redondantes
-- contextes décoratifs
-- **Bulles / cartes / contextes trop nombreux** : Les formulaires et cartes de guidance peuvent multiplier les micro-blocs.
-- **Composants UI concernés** :
-- Formulaires
-- cards d'aide
-- CTA
-- résultats de validation
-- navigation de section
-- **Captures attendues** : desktop, mobile
-- **Priorité de correction** : faible
+- **Fichier source** : `apps/web/src/app/(app)/sections/route/page.tsx`
+- **Type fonctionnel** : page protégée du bloc Agir
+- **Objectif** : proposer une liste déterministe de points Trash Spotter validés
+  à parcourir selon la priorité, le déplacement et le nombre d'arrêts.
+- **Action principale** : cliquer explicitement sur `Calculer la recommandation`.
+- **Statut V1** : livré et validé
 
+## Contrat V1
 
-## États à documenter
+Les seules préférences persistables sont :
 
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
-- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
+- `travelBudgetMinutes` : budget strict de déplacement, en minutes ;
+- `maxStops` : nombre maximal d'arrêts, borné de 1 à 12 ;
+- `priorityVsTravel` : arbitrage priorité / déplacement, de 0 à 100.
 
+Le planner est déterministe. Il part de l'origine, compte le déplacement vers
+le premier arrêt, estime la marche à 4,5 km/h et ne renvoie jamais une route au-
+delà du budget demandé. L'algorithme compare priorité et coût de déplacement
+sur des valeurs normalisées, puis applique des départages stables.
 
+## Origine et confidentialité
 
-## Références legacy
+L'origine est un contexte ponctuel du calcul, jamais une préférence enregistrée.
+Trois sources sont supportées dans la réponse :
 
-- [itineraire_ia.md](../../../../2-BLOC-AGIR/itineraire_ia.md)
+- `browser` : position actuelle, demandée uniquement après clic explicite ;
+- `map` : point choisi et modifiable sur la carte ;
+- `approximate_saved_area` : centre approximatif de la zone enregistrée, utilisé
+  par le serveur en l'absence d'origine explicite.
 
-## Notes d'audit
+La route ne demande pas la géolocalisation au chargement. Une position précise
+n'est conservée ni dans le draft `sessionStorage`, ni dans `localStorage`, ni
+dans l'URL, le hash ou un cookie de route.
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+## Données, sécurité et routage
+
+La source de candidats est constituée de données Trash Spotter validées, avec
+coordonnées obligatoires et hard gate de sécurité bénévole. Les points
+dangereux sont exclus fail-closed.
+
+Le routage piéton FOSSGIS est best-effort. Une géométrie `network` expose son
+provider et son profil ; lorsque le réseau est indisponible ou que le préfixe
+compatible avec le budget doit être réduit, la géométrie `fallback` est
+explicitement indiquée comme estimée. Aucune précision réseau n'est promise
+dans ce cas.
+
+Les réponses exposent `status: ok | empty | degraded` :
+
+- `ok` pour une réponse nominale ;
+- `empty` lorsqu'aucun arrêt exploitable n'est disponible ;
+- `degraded` pour une source partielle, tronquée ou un routage dégradé.
+
+Les diagnostics incluent notamment `loaded`, `eligible`, `excluded`,
+`selected`, `sourcePartial` et `truncated`. `selected` correspond toujours au
+nombre réel d'arrêts retournés. Les champs `serviceMinutesEstimate` et
+`totalMinutesEstimate` restent volontairement `null` : aucun temps de collecte
+ou de service n'est inventé.
+
+## Authentification et états
+
+La page et l'API de recommandation sont protégées. En développement local,
+l'identité de bypass officielle peut rendre le CTA disponible sans fabriquer de
+session ou de token Clerk ; en production, Clerk reste l'autorité d'identité.
+
+La page distingue les états de chargement, vide, erreur d'origine et réponse
+dégradée. Le calcul est toujours déclenché par l'utilisateur ; aucune
+recommandation automatique n'est lancée.
+
+## Références
+
+- [Présentation détaillée](./ou-agir-presentation-detaillee.md)
+- [Propositions à traiter](./ou-agir-liste-propositions-a-traiter.md)
+- [Objectifs non pertinents](./ou-agir-objectifs-non-pertinents.md)
+- [Itinéraire historique](../../../../2-BLOC-AGIR/itineraire_ia.md)
