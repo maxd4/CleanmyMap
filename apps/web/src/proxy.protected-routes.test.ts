@@ -84,9 +84,12 @@ describe("proxy protected routes", () => {
       "/partners/network",
       "/sections/annuaire",
       "/sections/rejoindre-un-formulaire",
+      "/sections/community",
     ]);
     expect(isClerkContextOnlyRoute("/pilotage")).toBe(true);
     expect(isClerkContextOnlyRoute("/reports/exports")).toBe(true);
+    expect(isClerkContextOnlyRoute("/sections/community")).toBe(true);
+    expect(isClerkContextOnlyRoute("/sections/community?tab=partners")).toBe(false);
     expect(isClerkContextOnlyRoute("/api/reports/actions.json")).toBe(false);
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
     expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");

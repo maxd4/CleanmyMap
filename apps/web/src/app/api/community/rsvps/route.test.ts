@@ -74,4 +74,20 @@ describe("POST /api/community/rsvps", () => {
       expect.objectContaining({ onConflict: "event_id,participant_clerk_id" }),
     );
   }, 10000);
+
+  it("keeps RSVP mutations authenticated for anonymous callers", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/community/rsvps", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ eventId: "event-1", status: "yes" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
 });

@@ -11,7 +11,7 @@ const SECTION_ACCESS_MODES: Record<string, ClerkAccessMode> = {
   funding: "visible",
   actors: "visible",
   annuaire: "visible",
-  community: "disabled",
+  community: "visible",
   gamification: "disabled",
   elus: "disabled",
   messagerie: "blur",

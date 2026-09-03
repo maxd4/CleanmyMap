@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import {
   createCommunityEvent,
   updateCommunityEventOps,
@@ -10,6 +11,7 @@ import { AppError, defaultMessageForKind, isAppError, toAppError } from "@/lib/e
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { standardPostMortemTemplate } from "@/lib/community/event-ops";
 import { parseOptionalInt, toRsvpLabel } from "./helpers";
+import { redirectToCommunitySignIn } from "./mutation-auth";
 import type { CreateCommunityEventForm, OpsDraft } from "./types";
 
 type OpsDraftByEventId = Record<string, OpsDraft>;
@@ -30,6 +32,8 @@ function createDefaultForm(): CreateCommunityEventForm {
 }
 
 export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { redirectToSignIn } = useClerk();
   const [createForm, setCreateForm] = useState<CreateCommunityEventForm>(createDefaultForm);
   const [isCreatingEvent, setIsCreatingEvent] = useState<boolean>(false);
   const [isUpdatingEventOpsId, setIsUpdatingEventOpsId] = useState<string | null>(null);
@@ -37,6 +41,19 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
   const [communitySuccessMessage, setCommunitySuccessMessage] = useState<string | null>(null);
   const [communityError, setCommunityError] = useState<AppError | null>(null);
   const [opsDraftByEventId, setOpsDraftByEventId] = useState<OpsDraftByEventId>({});
+
+  const redirectAnonymousToCommunity = useCallback(() => {
+    redirectToCommunitySignIn(redirectToSignIn);
+  }, [redirectToSignIn]);
+
+  const ensureAuthenticatedForMutation = useCallback((): boolean => {
+    if (isLoaded && isSignedIn) {
+      return true;
+    }
+
+    redirectAnonymousToCommunity();
+    return false;
+  }, [isLoaded, isSignedIn, redirectAnonymousToCommunity]);
 
   function updateCreateForm<K extends keyof CreateCommunityEventForm>(
     key: K,
@@ -76,6 +93,10 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
   }
 
   async function onCreateEvent(): Promise<void> {
+    if (!ensureAuthenticatedForMutation()) {
+      return;
+    }
+
     setCommunityError(null);
     setCommunitySuccessMessage(null);
 
@@ -142,8 +163,12 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
         ? error
         : toAppError(error, {
             kind: "server",
-            message: "Creation evenement impossible.",
+          message: "Creation evenement impossible.",
           });
+      if (appError.status === 401) {
+        redirectAnonymousToCommunity();
+        return;
+      }
       if (appError.kind === "network") {
         notifyNetworkToast({
           message: appError.message || defaultMessageForKind("network"),
@@ -161,6 +186,10 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
     eventId: string,
     status: CommunityRsvpStatus,
   ): Promise<void> {
+    if (!ensureAuthenticatedForMutation()) {
+      return;
+    }
+
     setCommunityError(null);
     setCommunitySuccessMessage(null);
     setRsvpLoadingEventId(eventId);
@@ -173,8 +202,12 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
         ? error
         : toAppError(error, {
             kind: "server",
-            message: "RSVP impossible.",
+          message: "RSVP impossible.",
           });
+      if (appError.status === 401) {
+        redirectAnonymousToCommunity();
+        return;
+      }
       if (appError.kind === "network") {
         notifyNetworkToast({
           message: appError.message || defaultMessageForKind("network"),
@@ -189,6 +222,10 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
   }
 
   async function onSaveEventOps(event: CommunityEventItem): Promise<void> {
+    if (!ensureAuthenticatedForMutation()) {
+      return;
+    }
+
     setCommunityError(null);
     setCommunitySuccessMessage(null);
     const draft = getOpsDraft(event);

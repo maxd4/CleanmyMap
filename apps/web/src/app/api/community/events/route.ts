@@ -14,6 +14,7 @@ import type { CommunityEventRow } from"@/types/database";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { getCurrentUserIdentity, getRoleBadge, getProfileBadge } from"@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
  reserveDiscussionMessageSlot,
  toDiscussionRateLimitErrorPayload,
@@ -29,8 +30,13 @@ import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/l
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
 
-const COMMUNITY_EVENTS_CACHE_HEADERS = {
+const COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS = {
+ "Cache-Control": "public, max-age=20, stale-while-revalidate=60",
+ "Vary": "Cookie",
+};
+const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
+ "Vary": "Cookie",
 };
 const COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS = 60;
 
@@ -92,11 +98,12 @@ function toEventResponseItem(
 }
 
 function buildCommunityEventsCacheKey(
- userId: string,
+ userId: string | null,
  limit: number,
  eventId: string | null,
 ): string {
- return [`user:${userId}`, `limit:${limit}`, `event:${eventId ?? "all"}`].join("|");
+ const cacheScope = userId ? `user:${userId}` : "anonymous";
+ return [cacheScope, `limit:${limit}`, `event:${eventId ?? "all"}`].join("|");
 }
 
 type CommunityEventsSuccessPayload = {
@@ -106,10 +113,11 @@ type CommunityEventsSuccessPayload = {
 };
 
 async function loadCachedCommunityEvents(
- userId: string,
+ userId: string | null,
  limit: number,
  eventId: string | null,
 ): Promise<CommunityEventsSuccessPayload> {
+ const cacheTagScope = userId ?? "anonymous";
  const cached = unstable_cache(
   async () => {
    const supabase = getSupabaseServerClient();
@@ -171,7 +179,7 @@ async function loadCachedCommunityEvents(
   ["community-events", buildCommunityEventsCacheKey(userId, limit, eventId)],
   {
    revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
-   tags: [`community-events:${userId}`, "community-events"],
+   tags: [`community-events:${cacheTagScope}`, "community-events"],
   },
  );
 
@@ -196,10 +204,10 @@ const createCommunityEventSchema = z.object({
 
 
 export async function GET(request: Request) {
- const { userId } = await auth();
- if (!userId) {
- return unauthorizedJsonResponse();
- }
+ // Public reads may use the current user only for their private RSVP status.
+ // If Clerk is unavailable, fail closed for that personal context and keep the
+ // public event/count projection available with myRsvpStatus: null.
+ const { userId } = await getSafeAuthSession();
  const url = new URL(request.url);
  const limit = parsePositiveInteger(
   url.searchParams.get("limit"),
@@ -217,7 +225,11 @@ export async function GET(request: Request) {
 
  try {
  const payload = await loadCachedCommunityEvents(userId, limit, requestedEventId);
- return NextResponse.json(payload, { headers: COMMUNITY_EVENTS_CACHE_HEADERS });
+ return NextResponse.json(payload, {
+  headers: userId
+   ? COMMUNITY_EVENTS_USER_CACHE_HEADERS
+   : COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS,
+ });
  } catch (error) {
  return handleApiError(error, "GET /api/community/events");
  }
