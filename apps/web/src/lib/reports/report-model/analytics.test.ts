@@ -125,6 +125,7 @@ function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventI
  title:"Nettoyage canal",
  eventDate:"2026-03-20",
  locationLabel:"Canal",
+ location: { label:"Canal", latitude:null, longitude:null, source:null },
  description: null,
  capacityTarget: 20,
  attendanceCount: 12,

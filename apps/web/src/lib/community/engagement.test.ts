@@ -32,6 +32,7 @@ const EVENT_DEFAULTS: CommunityEventItem = {
   title: "Collecte Test",
   eventDate: "2026-04-05",
   locationLabel: "Lyon 10e",
+  location: { label: "Lyon 10e", latitude: null, longitude: null, source: null },
   description: "Description",
   capacityTarget: 20,
   attendanceCount: 10,
