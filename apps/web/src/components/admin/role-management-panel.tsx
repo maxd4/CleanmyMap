@@ -195,8 +195,8 @@ export function RoleManagementPanel({
     const isAdminLike = item.roleLabel === "admin" || item.roleLabel === "elu";
 
     return (
-      <tr key={item.userId} className="border-b border-slate-100 last:border-b-0">
-        <td className="px-4 py-3 align-top">
+      <tr key={item.userId}>
+        <td>
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
               {item.displayName
@@ -220,7 +220,7 @@ export function RoleManagementPanel({
             </div>
           </div>
         </td>
-        <td className="px-4 py-3 align-top cmm-text-caption cmm-text-muted">
+        <td className="cmm-text-caption cmm-text-muted">
           <div className="space-y-1">
             <p className="font-mono text-[11px] leading-5 break-all">{item.userId}</p>
             {item.parisArrondissement ? (
@@ -230,14 +230,14 @@ export function RoleManagementPanel({
             ) : null}
           </div>
         </td>
-        <td className="px-4 py-3 align-top">
+        <td>
           <span
             className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${roleTone(item.roleLabel)}`}
           >
             {roleBadgeLabel(item.roleLabel, fr)}
           </span>
         </td>
-        <td className="px-4 py-3 align-top">
+        <td>
           <div className="flex flex-wrap gap-2">
             {isAdminLike ? (
               <button
@@ -385,20 +385,20 @@ export function RoleManagementPanel({
         <p className="mt-3 cmm-text-caption cmm-text-muted">{searchState.message}</p>
       ) : null}
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+      <div className="mt-5 cmm-data-table-wrap">
+        <table className="cmm-data-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+              <th scope="col">
                 {fr ? "Compte" : "Account"}
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+              <th scope="col">
                 {fr ? "Identifiant" : "ID"}
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+              <th scope="col">
                 {fr ? "Rôle" : "Role"}
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+              <th scope="col">
                 {fr ? "Actions" : "Actions"}
               </th>
             </tr>
@@ -408,7 +408,7 @@ export function RoleManagementPanel({
               accounts.map(renderRow)
             ) : (
               <tr>
-                <td className="px-4 py-5 cmm-text-caption cmm-text-muted" colSpan={4}>
+                <td className="cmm-text-caption cmm-text-muted" colSpan={4}>
                   {fr
                     ? "Aucun compte admin ou élu à afficher."
                     : "No admin or elected account to show."}
@@ -429,20 +429,20 @@ export function RoleManagementPanel({
               {searchResultsCount} {fr ? "résultat(s)" : "result(s)"}
             </p>
           </div>
-          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+          <div className="mt-3 cmm-data-table-wrap">
+            <table className="cmm-data-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+                  <th scope="col">
                     {fr ? "Compte" : "Account"}
                   </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+                  <th scope="col">
                     {fr ? "Identifiant" : "ID"}
                   </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+                  <th scope="col">
                     {fr ? "Rôle" : "Role"}
                   </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+                  <th scope="col">
                     {fr ? "Actions" : "Actions"}
                   </th>
                 </tr>

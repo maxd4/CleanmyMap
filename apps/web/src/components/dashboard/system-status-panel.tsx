@@ -226,16 +226,16 @@ export function SystemStatusPanel() {
  </article>
  )}
 
- <div className="overflow-x-auto">
- <table className="min-w-full text-left cmm-text-small">
+ <div className="cmm-data-table-wrap">
+ <table className="cmm-data-table cmm-text-small">
  <thead>
- <tr className="border-b border-slate-200 cmm-text-muted">
- <th className="px-2 py-2 font-medium">Service</th>
- <th className="px-2 py-2 font-medium">Description</th>
- <th className="px-2 py-2 font-medium">Criticite</th>
- <th className="px-2 py-2 font-medium">Niveau</th>
- <th className="px-2 py-2 font-medium">Lecture</th>
- <th className="px-2 py-2 font-medium">Etat brut</th>
+ <tr>
+ <th scope="col">Service</th>
+ <th scope="col">Description</th>
+ <th scope="col">Criticite</th>
+ <th scope="col">Niveau</th>
+ <th scope="col">Lecture</th>
+ <th scope="col">Etat brut</th>
  </tr>
  </thead>
  <tbody>
@@ -246,16 +246,16 @@ export function SystemStatusPanel() {
  return (
  <tr
  key={name}
- className="border-b border-slate-100 cmm-text-secondary"
+ className="cmm-text-secondary"
  >
- <td className="px-2 py-2 font-semibold">{service.label}</td>
- <td className="px-2 py-2 cmm-text-caption cmm-text-secondary">
+ <td className="font-semibold">{service.label}</td>
+ <td className="cmm-text-caption cmm-text-secondary">
  {service.description}
  </td>
- <td className="px-2 py-2 cmm-text-caption uppercase tracking-wide">
+ <td className="cmm-text-caption uppercase tracking-wide">
  {service.category}
  </td>
- <td className="px-2 py-2">
+ <td>
  <span
  className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide ${
  label ==="ok"
@@ -266,10 +266,10 @@ export function SystemStatusPanel() {
  {labelText}
  </span>
  </td>
- <td className="px-2 py-2 cmm-text-caption cmm-text-secondary">
+ <td className="cmm-text-caption cmm-text-secondary">
  {"statusMessage" in service ? service.statusMessage : ""}
  </td>
- <td className="px-2 py-2 font-mono cmm-text-caption">{service.state}</td>
+ <td className="font-mono cmm-text-caption">{service.state}</td>
  </tr>
  );
  },
