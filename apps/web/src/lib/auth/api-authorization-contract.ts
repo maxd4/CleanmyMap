@@ -569,8 +569,14 @@ export const API_AUTHORIZATION_CONTRACT = {
       expected: "Authenticated user requests a bounded route recommendation using their current location preference",
       dimensions: ["authentication"],
       actual:
-        "auth() + current-user location preference; approved spot candidates are bounded and progression tracking uses the same userId",
-      evidence: ["auth()", "getCurrentUserLocationPreference", "trackRouteRecommendationUse"],
+        "getSafeAuthSession() + session.userId with unauthorizedJsonResponse when the current user is absent; approved spot candidates are bounded and progression tracking uses the same userId",
+      evidence: [
+        "getSafeAuthSession",
+        "session.userId",
+        "if (!userId)",
+        "getCurrentUserLocationPreference",
+        "trackRouteRecommendationUse",
+      ],
     },
   },
   "partners/onboarding-requests": {
