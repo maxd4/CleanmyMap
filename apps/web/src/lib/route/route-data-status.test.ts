@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
-import { resolveRouteDataStatus } from "./route-data-status";
+import {
+  resolveRouteDataStatus,
+  resolveRouteRecommendationStatus,
+} from "./route-data-status";
 
 function sourceHealth(overrides: Partial<UnifiedSourceHealth> = {}): UnifiedSourceHealth {
   return {
@@ -46,5 +49,36 @@ describe("route data status", () => {
         }),
       }),
     ).toBe("unavailable");
+  });
+
+  it("summarizes healthy, empty and degraded route responses", () => {
+    expect(
+      resolveRouteRecommendationStatus({
+        dataStatus: "complete",
+        selectedCount: 2,
+        routeGeometryMode: "network",
+      }),
+    ).toBe("ok");
+    expect(
+      resolveRouteRecommendationStatus({
+        dataStatus: "empty",
+        selectedCount: 0,
+        routeGeometryMode: "fallback",
+      }),
+    ).toBe("empty");
+    expect(
+      resolveRouteRecommendationStatus({
+        dataStatus: "partial",
+        selectedCount: 2,
+        routeGeometryMode: "network",
+      }),
+    ).toBe("degraded");
+    expect(
+      resolveRouteRecommendationStatus({
+        dataStatus: "complete",
+        selectedCount: 1,
+        routeGeometryMode: "fallback",
+      }),
+    ).toBe("degraded");
   });
 });

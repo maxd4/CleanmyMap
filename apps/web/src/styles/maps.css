@@ -3,6 +3,49 @@
   font-family: inherit;
 }
 
+.cmm-route-stop-icon,
+.cmm-route-origin-icon {
+  background: transparent;
+  border: 0;
+}
+
+.cmm-route-stop-icon__body,
+.cmm-route-origin-icon__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #06261c;
+  font-weight: 900;
+  box-shadow: 0 10px 24px -12px rgba(6, 38, 28, 0.8);
+}
+
+.cmm-route-stop-icon__body {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ecfdf5;
+  border-radius: 9999px;
+  background: #6ee7b7;
+  font-size: 0.85rem;
+}
+
+.cmm-route-stop-icon__body--selected {
+  background: #fbbf24;
+  transform: scale(1.12);
+}
+
+.cmm-route-origin-icon__body {
+  min-width: 76px;
+  height: 28px;
+  padding: 0 8px;
+  border: 2px solid #fef3c7;
+  border-radius: 9999px;
+  background: #f59e0b;
+  color: #451a03;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* Glassmorphism Tooltip */
 .glass-tooltip {
   background: rgba(255, 255, 255, 0.2) !important;

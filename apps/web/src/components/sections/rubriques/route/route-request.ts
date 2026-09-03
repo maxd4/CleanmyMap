@@ -1,5 +1,6 @@
 import type {
   RouteOptions,
+  RouteOriginMode,
   RouteRecommendationOrigin,
   RouteResponse,
 } from "./route-types";
@@ -40,6 +41,18 @@ export function createRouteRecommendationRequest(
     options: { ...options },
     ...(origin ? { origin: { ...origin } } : {}),
   };
+}
+
+export async function resolveRouteRequestOrigin(
+  mode: RouteOriginMode,
+  mapOrigin: RouteRecommendationOrigin | null,
+  browserResolver: () => Promise<RouteRecommendationOrigin | undefined>,
+): Promise<RouteRecommendationOrigin | undefined> {
+  if (mode === "map") {
+    return mapOrigin ?? undefined;
+  }
+
+  return browserResolver();
 }
 
 export class RouteRecommendationError extends Error {

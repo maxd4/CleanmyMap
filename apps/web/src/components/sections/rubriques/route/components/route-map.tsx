@@ -10,20 +10,29 @@ import {
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import { divIcon } from "leaflet";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
+import type {
+  RouteRecommendationOrigin,
+  RouteResponseOrigin,
+} from "../route-types";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
 
 export function buildRouteMapCoordinates(
   stops: RouteStop[],
   routeGeometry: RouteGeometry,
+  origin?: RouteResponseOrigin | null,
 ): [number, number][] {
+  const originCoordinates = origin
+    ? ([[origin.latitude, origin.longitude]] as [number, number][])
+    : [];
   const stopCoordinates = stops.map(
     (stop) => [stop.latitude, stop.longitude] as [number, number],
   );
-  return [...routeGeometry.coordinates, ...stopCoordinates];
+  return [...originCoordinates, ...routeGeometry.coordinates, ...stopCoordinates];
 }
 
 function RouteMapViewport({ coordinates }: { coordinates: [number, number][] }) {
@@ -58,28 +67,63 @@ function buildStopIcon(index: number, selected: boolean) {
   });
 }
 
+function buildOriginIcon() {
+  return divIcon({
+    className: "cmm-route-origin-icon",
+    html: '<span class="cmm-route-origin-icon__body">Départ</span>',
+    iconSize: [76, 28],
+    iconAnchor: [38, 14],
+  });
+}
+
+function RouteOriginPicker({
+  onSelectOrigin,
+}: {
+  onSelectOrigin: (origin: RouteRecommendationOrigin) => void;
+}) {
+  useMapEvents({
+    click: ({ latlng }) => {
+      onSelectOrigin({
+        latitude: latlng.lat,
+        longitude: latlng.lng,
+        source: "map",
+      });
+    },
+  });
+
+  return null;
+}
+
 export function RouteMap({
   stops,
   routeGeometry,
   selectedStopId = null,
   onSelectStop,
+  origin = null,
+  onSelectOrigin,
+  onClearOrigin,
   fr,
 }: {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
   selectedStopId?: string | null;
   onSelectStop?: (stopId: string) => void;
+  origin?: RouteResponseOrigin | null;
+  onSelectOrigin?: (origin: RouteRecommendationOrigin) => void;
+  onClearOrigin?: () => void;
   fr: boolean;
 }) {
   const mapCoordinates = useMemo(
-    () => buildRouteMapCoordinates(stops, routeGeometry),
-    [routeGeometry, stops],
+    () => buildRouteMapCoordinates(stops, routeGeometry, origin),
+    [origin, routeGeometry, stops],
   );
   const routeCoordinates =
     routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
       : stops.map((stop) => [stop.latitude, stop.longitude] as [number, number]);
-  const center = routeCoordinates[0] ?? EMPTY_CENTER;
+  const center = origin
+    ? [origin.latitude, origin.longitude] as [number, number]
+    : routeCoordinates[0] ?? EMPTY_CENTER;
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
@@ -102,6 +146,37 @@ export function RouteMap({
           crossOrigin="anonymous"
         />
         <RouteMapViewport coordinates={mapCoordinates} />
+        {onSelectOrigin ? <RouteOriginPicker onSelectOrigin={onSelectOrigin} /> : null}
+        {origin ? (
+          <Marker
+            position={[origin.latitude, origin.longitude]}
+            icon={buildOriginIcon()}
+          >
+            <Tooltip direction="top" offset={[0, -12]}>
+              {origin.source === "map"
+                ? fr
+                  ? "Point choisi sur la carte"
+                  : "Point chosen on the map"
+                : fr
+                  ? "Point de départ utilisé"
+                  : "Starting point used"}
+            </Tooltip>
+            <Popup>
+              {origin.source === "map"
+                ? fr
+                  ? "Point choisi sur la carte"
+                  : "Point chosen on the map"
+                : fr
+                  ? "Point de départ utilisé"
+                  : "Starting point used"}
+              {onClearOrigin ? (
+                <button type="button" onClick={onClearOrigin}>
+                  {fr ? "Réinitialiser" : "Reset"}
+                </button>
+              ) : null}
+            </Popup>
+          </Marker>
+        ) : null}
         {routeCoordinates.length >= 2 ? (
           <Polyline
             positions={routeCoordinates}

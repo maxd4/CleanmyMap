@@ -3,7 +3,10 @@ import type {
   RouteStop,
 } from "@/lib/route/route-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
-import type { RouteDataStatus } from "@/lib/route/route-data-status";
+import type {
+  RouteDataStatus,
+  RouteRecommendationStatus,
+} from "@/lib/route/route-data-status";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
@@ -25,8 +28,10 @@ export type RouteRecommendationOrigin = {
   source: "browser" | "map";
 };
 
+export type RouteOriginMode = "browser" | "map";
+
 export type RouteResponse = {
-  status: "ok";
+  status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
   isTruncated: boolean;
   sourceHealth: UnifiedSourceHealth;
@@ -38,6 +43,12 @@ export type RouteResponse = {
   serviceMinutesEstimate: null;
   totalMinutesEstimate: null;
   diagnostics: {
+    loaded: number;
+    eligible: number;
+    excluded: number;
+    selected: number;
+    sourcePartial: boolean;
+    truncated: boolean;
     excludedUnsafe: number;
     excludedByTravelBudget: number;
   };

@@ -500,6 +500,7 @@ describe("POST /api/route/recommend", () => {
     const payload = await response.json();
 
     expect(payload).toEqual(expect.objectContaining({
+      status: "degraded",
       origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
       travelDistanceKm: expect.any(Number),
       travelMinutes: expect.any(Number),
@@ -507,9 +508,18 @@ describe("POST /api/route/recommend", () => {
       withinBudget: true,
       serviceMinutesEstimate: null,
       totalMinutesEstimate: null,
-      diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
       engineVersion: "route-planner-v1",
       generatedAt: expect.any(String),
+    }));
+    expect(payload.diagnostics).toEqual(expect.objectContaining({
+      loaded: 0,
+      eligible: 1,
+      excluded: 0,
+      selected: 1,
+      sourcePartial: false,
+      truncated: false,
+      excludedUnsafe: 1,
+      excludedByTravelBudget: 2,
     }));
     expect(payload.travelMinutes).toBeLessThanOrEqual(payload.travelBudgetMinutes);
   });
@@ -518,7 +528,9 @@ describe("POST /api/route/recommend", () => {
     const { POST } = await import("./route");
 
     const emptyResponse = await POST(request());
-    expect((await emptyResponse.json()).dataStatus).toBe("empty");
+    expect((await emptyResponse.json())).toEqual(
+      expect.objectContaining({ status: "empty", dataStatus: "empty" }),
+    );
 
     loadRouteRecommendationSourceMock.mockResolvedValueOnce({
       items: ["spot"],
@@ -528,6 +540,7 @@ describe("POST /api/route/recommend", () => {
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
     const partialResponse = await POST(request());
     const partialPayload = await partialResponse.json();
+    expect(partialPayload.status).toBe("degraded");
     expect(partialPayload.dataStatus).toBe("partial");
     expect(partialPayload.isTruncated).toBe(true);
 
@@ -544,6 +557,7 @@ describe("POST /api/route/recommend", () => {
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([]);
     const unavailableResponse = await POST(request());
     const unavailablePayload = await unavailableResponse.json();
+    expect(unavailablePayload.status).toBe("degraded");
     expect(unavailablePayload.dataStatus).toBe("unavailable");
     expect(unavailablePayload.sourceHealth.failedSources).toEqual(["spots"]);
   });

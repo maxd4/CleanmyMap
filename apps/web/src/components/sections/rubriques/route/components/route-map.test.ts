@@ -12,13 +12,20 @@ vi.mock("react-leaflet", () => {
     Marker: ({
       children,
       position,
+      icon,
     }: {
       children?: React.ReactNode;
       position?: [number, number];
+      icon?: { options?: { className?: string } };
     }) =>
       React.createElement(
         "div",
-        { "data-testid": "route-stop", "data-position": position?.join(",") },
+        {
+          "data-testid": icon?.options?.className?.includes("origin")
+            ? "route-origin"
+            : "route-stop",
+          "data-position": position?.join(","),
+        },
         children,
       ),
     Polyline: ({
@@ -37,14 +44,22 @@ vi.mock("react-leaflet", () => {
     TileLayer: passthrough,
     Tooltip: passthrough,
     useMap: () => ({ fitBounds: vi.fn() }),
+    useMapEvents: (handlers: unknown) => {
+      capturedMapHandlers = handlers as typeof capturedMapHandlers;
+      return null;
+    },
   };
 });
 
 vi.mock("leaflet", () => ({
-  divIcon: vi.fn(() => ({})),
+  divIcon: vi.fn((options) => ({ options })),
 }));
 
 import { buildRouteMapCoordinates, RouteMap } from "./route-map";
+
+let capturedMapHandlers: {
+  click?: (event: { latlng: { lat: number; lng: number } }) => void;
+} | null = null;
 
 const stops: RouteStop[] = [
   {
@@ -98,6 +113,38 @@ describe("RouteMap", () => {
     expect(markup).toContain('data-testid="route-line"');
     expect(markup).toContain("Réseau · OSRM · profil configuré: foot");
     expect(buildRouteMapCoordinates(stops, networkGeometry)).toHaveLength(5);
+  });
+
+  it("renders a distinct origin marker and reports map clicks as ephemeral origins", () => {
+    const onSelectOrigin = vi.fn();
+    const origin = { latitude: 48.87, longitude: 2.37, source: "map" as const };
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: {
+          ...networkGeometry,
+          coordinates: [],
+          mode: "fallback",
+          provider: "none",
+          profile: null,
+        },
+        origin,
+        onSelectOrigin,
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain('data-testid="route-origin"');
+    expect(buildRouteMapCoordinates([], networkGeometry, origin)).toEqual([
+      [48.87, 2.37],
+      ...networkGeometry.coordinates,
+    ]);
+    capturedMapHandlers?.click?.({ latlng: { lat: 48.88, lng: 2.38 } });
+    expect(onSelectOrigin).toHaveBeenCalledWith({
+      latitude: 48.88,
+      longitude: 2.38,
+      source: "map",
+    });
   });
 
   it("marks a fallback route explicitly and still renders the stop line", () => {

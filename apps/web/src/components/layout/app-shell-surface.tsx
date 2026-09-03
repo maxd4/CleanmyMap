@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { normalizeProfileRole, toProfile, type AppProfile } from "@/lib/profiles";
@@ -9,6 +10,10 @@ import { normalizeProfileRole, toProfile, type AppProfile } from "@/lib/profiles
 type AppShellSurfaceProps = {
   children: ReactNode;
 };
+
+export function isRouteRecommendationPath(pathname: string | null): boolean {
+  return pathname === "/sections/route";
+}
 
 function resolveProfileFromUser(
   user: ReturnType<typeof useUser>["user"] | null | undefined,
@@ -33,6 +38,7 @@ function resolveProfileFromUser(
 export function AppShellSurface({ children }: AppShellSurfaceProps) {
   const { displayMode } = useSitePreferences();
   const { user } = useUser();
+  const pathname = usePathname();
   const currentProfile = resolveProfileFromUser(user, "benevole");
 
   return (
@@ -41,7 +47,7 @@ export function AppShellSurface({ children }: AppShellSurfaceProps) {
       data-display-mode={displayMode}
       data-user-profile={currentProfile}
     >
-      <WeatherWarningBar />
+      <WeatherWarningBar autoGeolocation={!isRouteRecommendationPath(pathname)} />
       <main className="flex-1">{children}</main>
     </div>
   );

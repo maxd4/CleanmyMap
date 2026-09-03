@@ -34,7 +34,10 @@ import {
   createServerRateLimitResponse,
   verifyRateLimit,
 } from "@/lib/rate-limit/server";
-import { resolveRouteDataStatus } from "@/lib/route/route-data-status";
+import {
+  resolveRouteDataStatus,
+  resolveRouteRecommendationStatus,
+} from "@/lib/route/route-data-status";
 import { loadRouteRecommendationSource } from "@/lib/route/route-recommendation-loader";
 import {
   fallbackRoutePrefixWithinBudget,
@@ -200,9 +203,14 @@ export async function POST(request: Request) {
   let plannedStops = plannerResult.stops;
   let routeGeometry = createFallbackRouteGeometry([]);
 
-  if (plannedStops.length === 0) {
+ if (plannedStops.length === 0) {
+    const status = resolveRouteRecommendationStatus({
+      dataStatus,
+      selectedCount: 0,
+      routeGeometryMode: routeGeometry.mode,
+    });
     return NextResponse.json({
-      status: "ok",
+      status,
       dataStatus,
       isTruncated,
       sourceHealth,
@@ -213,7 +221,15 @@ export async function POST(request: Request) {
       withinBudget: true,
       serviceMinutesEstimate: null,
       totalMinutesEstimate: null,
-      diagnostics: plannerResult.diagnostics,
+      diagnostics: {
+        loaded: contracts.length,
+        eligible: candidates.length,
+        excluded: Math.max(0, contracts.length - candidates.length),
+        selected: 0,
+        sourcePartial: sourceHealth.partial,
+        truncated: isTruncated,
+        ...plannerResult.diagnostics,
+      },
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
@@ -299,6 +315,11 @@ export async function POST(request: Request) {
  hotspots,
  eventSignals: eventPressureContext.eventSignals,
  });
+ const status = resolveRouteRecommendationStatus({
+   dataStatus,
+   selectedCount: plannedStops.length,
+   routeGeometryMode: routeGeometry.mode,
+ });
 
  try {
  await trackRouteRecommendationUse(supabase, { userId });
@@ -313,7 +334,7 @@ export async function POST(request: Request) {
  }
 
  return NextResponse.json({
- status:"ok",
+ status,
  dataStatus,
  isTruncated,
  sourceHealth,
@@ -324,7 +345,15 @@ export async function POST(request: Request) {
  withinBudget: travelMinutes <= options.travelBudgetMinutes,
  serviceMinutesEstimate: null,
  totalMinutesEstimate: null,
- diagnostics: plannerResult.diagnostics,
+ diagnostics: {
+   loaded: contracts.length,
+   eligible: candidates.length,
+   excluded: Math.max(0, contracts.length - candidates.length),
+   selected: plannedStops.length,
+   sourcePartial: sourceHealth.partial,
+   truncated: isTruncated,
+   ...plannerResult.diagnostics,
+ },
  generatedAt: new Date().toISOString(),
  engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
  stops,
@@ -334,7 +363,7 @@ export async function POST(request: Request) {
  distance: Number(distanceScore.toFixed(1)),
  },
  tradeoffs: [
- `Pondération opérationnelle: ${priorityVsTravel}% priorité / ${100 - priorityVsTravel}% distance.`,
+   `Pondération opérationnelle: ${priorityVsTravel}% priorité / ${100 - priorityVsTravel}% déplacement.`,
  ],
  proactiveAssistant,
  });
