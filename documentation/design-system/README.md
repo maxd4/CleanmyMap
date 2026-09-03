@@ -82,6 +82,12 @@ sémantique neutre, expose ses variantes par `data-badge-tone`,
 `data-badge-size` et `data-badge-shape`, et ne doit pas être le seul vecteur
 d’une information.
 
+Pour les KPI, utiliser `StatCard`. Pour les tables runtime, conserver les
+éléments natifs et appliquer les classes `cmm-data-table-*` ; il n’existe pas
+de `CmmTable` volontairement. Le contrat détaillé est documenté dans
+[`DATA_DISPLAY_TABLES_KPI.md`](./DATA_DISPLAY_TABLES_KPI.md) et contrôlé par
+`npm run check:data-display`.
+
 ## Architecture CSS runtime
 
 `apps/web/src/app/globals.css` reste le point d’entrée unique du CSS web. Il
@@ -102,6 +108,7 @@ et les pages ne doivent pas recréer ces responsabilités localement.
 | `display-modes.css` | adaptations `exhaustif`, `minimaliste` et `sobre` |
 | `overlays.css` | modales, dialogs, drawers, popovers, tooltips et backdrops |
 | `indicators.css` | badges, pills, chips, statuts, progress et compteurs |
+| `data-display.css` | shell et géométrie des tables runtime |
 | `maps.css` | Leaflet, markers, clusters et cartographie |
 | `print.css` | impression, rapports et surfaces Print & Export |
 | `utilities.css` | helpers globaux ne relevant pas d’un module spécialisé |
