@@ -3,234 +3,155 @@
 Point d'entrée de la documentation technique, produit et opérationnelle du
 projet.
 
+L'objectif est une structure lisible et durable, pas une arborescence figée.
+La documentation continuera d'évoluer avec le produit.
+
 ## Source de vérité
 
 Avant toute modification ciblant le dépôt :
 
 1. lire les consignes locales applicables ;
-2. vérifier le fichier courant sur GitHub `maxd4/CleanmyMap` ;
-3. lire uniquement la documentation canonique utile au périmètre ;
-4. ne pas appliquer un ancien plan sans le confronter au code actuel.
+2. vérifier l'état courant sur GitHub `maxd4/CleanmyMap`, branche `main` ;
+3. consulter uniquement les sources canoniques utiles au périmètre ;
+4. confronter tout plan ou audit ancien au code et aux contrats actuels.
+
+## Domaines documentaires
+
+| Domaine | Responsabilité principale |
+|---|---|
+| `architecture/` | architecture, frontières, ADR et décisions structurelles |
+| `database/` | données, Supabase, migrations, requêtes et index |
+| `design-system/` | design system et règles UI transversales |
+| `development/` | développement, tests, qualité et modularisation |
+| `features/` | fonctionnalités et moteurs transverses |
+| `legal/` | juridique et conformité |
+| `operations/` | exploitation, déploiement, plateformes et runbooks |
+| `pages_site/` | documentation fonctionnelle route-first |
+| `product/` | vision, parcours et décisions produit |
+| `security/` | AuthN, AuthZ, RLS et sécurité applicative |
+| `seo/` | stratégie et maintenance SEO |
+
+Les zones internes de planification, de session, de spécification temporaire et
+les outils de publication sont gouvernés par
+`documentation/development/DOCUMENTATION_POLICY.md` ; ils ne constituent pas de nouveaux
+domaines métier.
 
 ## Où chercher
 
 | Besoin | Référence |
 |---|---|
 | Architecture globale | `architecture/master-architecture.md` |
-| Inventaire technique | `architecture/technical-inventory.md` |
-| Vue système rapide | `architecture/system-overview.md` |
-| Décisions majeures | `architecture/adr/` |
-| Sécurité | `security/README.md` |
-| Tests et validation | `development/TESTING.md` |
-| Développement | `development/README.md` |
-| Modularisation | `development/conventions-modularisation.md` puis `architecture/monolith-split-plan.md` |
-| Amélioration continue / Kaizen | `development/kaizen/README.md` |
-| Affichage des scores UI | `design-system/ui-score-formatting.md` |
-| Produit | `product/README.md` |
-| Fonctionnalités | `features/README.md` |
-| Gamification | `features/GAMIFICATION_ENGINE.md` puis la spec canonique liée |
-| Design system | `design-system/README.md` |
-| Pages et routes | `pages_site/INDEX.md` |
-| Exploitation | `operations/README.md` |
+| Vue système | `architecture/system-overview.md` |
+| ADR | `architecture/adr/` |
+| Refactors structurels | `architecture/refactor-priorities-plan.md` et `architecture/monolith-split-plan.md` |
 | Données | `database/README.md` |
+| Design system | `design-system/README.md` |
+| Développement | `development/README.md` |
+| Tests et validation | `development/TESTING.md` |
+| Fonctionnalités | `features/README.md` |
+| Produit | `product/README.md` |
+| Exploitation | `operations/README.md` |
+| Sécurité | `security/README.md` |
+| Pages et routes | `pages_site/README.md` puis `pages_site/INDEX.md` |
+| SEO | `seo/README.md` |
 
-## Règle de classement
+## Règles de classement
 
-### `documentation/pages_site/`
-
-Source de vérité fonctionnelle du point de vue utilisateur pour :
-
-- rôle de la page ;
-- contenu ;
-- parcours ;
-- états ;
-- UX/UI ;
-- captures ;
-- améliorations propres à la page.
-
-### Dossiers techniques transversaux
-
-Utiliser le dossier adapté :
-
-```txt
-architecture/
-database/
-development/
-features/
-operations/
-security/
-```
+Une règle durable doit avoir une seule source canonique.
 
 Pour un sujet mixte :
 
-- résumé fonctionnel dans la fiche de page ;
-- détail technique dans le dossier technique ;
-- lien entre les deux ;
-- aucune copie miroir.
-
-## Structure principale
-
-```txt
-documentation/
-├── architecture/
-│   ├── adr/
-│   ├── master-architecture.md
-│   ├── system-overview.md
-│   └── ...
-├── database/
-├── design-system/
-│   └── generated/board/
-├── development/
-│   └── kaizen/
-├── features/
-├── operations/
-├── pages_site/
-│   ├── INDEX.md
-│   └── routes/
-├── product/
-├── security/
-└── specs/
+```text
+résumé dans le domaine utilisateur concerné
+→ détail dans le domaine technique responsable
+→ lien entre les deux
+→ pas de copie miroir
 ```
 
-Les documents courants sont les sources de vérité. Les documents historiques,
-audits et documents de session conservent le contexte sans devenir une
-architecture ou une spécification concurrente.
+Un README oriente. Il ne doit pas reproduire un guide entier.
 
-## Orientation par objectif
+Un document daté, un audit, un plan ou un historique ne doit pas être présenté
+comme l'état courant.
 
-### Construire une fonctionnalité
+## `pages_site/`
 
-Lire l'architecture globale, la vue système, les frontières front/back et les
-modules concernés, puis uniquement les règles spécialisées nécessaires :
-`architecture/master-architecture.md`, `architecture/system-overview.md`,
-`architecture/frontend-backend-boundaries.md`,
-`architecture/modules-cles-et-dependances.md`,
-`development/TESTING.md`, `development/repo-quality-rules.md`,
-`development/TESTING.md` et, pour une surface UI, `design-system/README.md`.
+`pages_site/` décrit les pages du point de vue utilisateur : rôle, contenu,
+parcours, états et UX/UI.
 
-### Modulariser ou refactorer
+`pages_site/README.md` porte les conventions locales et `pages_site/INDEX.md`
+reste l'inventaire maître.
 
-Partir de `development/conventions-modularisation.md` pour les règles durables,
-puis de `architecture/monolith-split-plan.md` pour le radar et les cibles
-actuelles. Ne pas maintenir une seconde liste de progression dans un guide
-d'agent.
+Le sous-arbre `pages_site/routes/` est un espace de travail personnel protégé :
+il peut être lu pour comprendre le contexte, mais il n'est modifié que sur
+demande explicite de l'utilisateur.
 
-### Vérifier le produit
+La maintenance structurelle de `pages_site/` concerne donc par défaut sa racine,
+pas `routes/`.
 
-Partir de `product/vision-et-objectifs.md`, puis consulter
-`product/parcours-utilisateurs.md`, `product/matrice-rubriques.md`,
-`product/coherence-mobile-first.md`, `product/SCIENTIFIC_PROTOCOL.md` et
-`product/roadmap-priorisee.md`.
+## Documentation courante et historique
 
-### Publier et maintenir
+Les statuts utiles sont :
 
-Consulter `operations/checklist-push-deploy.md`,
-`operations/incidents-frequents-et-reprise.md`,
-`architecture/traceability-matrix.md` et le runbook de session approprié.
-
-### UI, sécurité et zones sensibles
-
-Pour l'UI, lire `design-system/README.md`,
-`design-system/BLOC_COLOR_SYSTEM_PREMIUM.md`, `pages_site/INDEX.md` et la fiche
-canonique de la page. Pour les routes, permissions, exports ou données, lire
-`security/api-vigilance.md`, `security/authz-authn-regles.md` et
-`operations/pre-release-security-check.md`, en plus du document de domaine.
-
-## Captures UX/UI
-
-Les captures canoniques sont centralisées par bloc ou famille documentaire,
-conformément à :
-
-```txt
-documentation/pages_site/README.md
+```text
+CURRENT
+PLAN
+AUDIT
+HISTORY
+SNAPSHOT
+ADR
+GENERATED
 ```
 
-Règles :
+Ils peuvent être matérialisés par le nom, le dossier ou une mention explicite
+dans le document.
 
-- format WebP ;
-- dossier photo centralisé au niveau du bloc ;
-- nom contenant bloc, page ou route et date ;
-- pas de miroir par page ;
-- capture desktop par défaut ;
-- mobile uniquement sur instruction explicite.
+Il n'est pas nécessaire de déplacer un ancien document uniquement pour rendre
+l'arborescence plus esthétique. Le classement doit surtout éviter qu'il soit
+pris pour une source `CURRENT`.
 
-Une preuve visuelle ne remplace pas la vérification sémantique de la page.
+## Workflow de modification
 
-## Workflow agent
+Avant :
 
-### Avant de modifier
-
-```txt
-□ Lire les consignes locales applicables
-□ Vérifier le fichier actuel sur GitHub
+```text
+□ Lire les consignes applicables
+□ Vérifier `main`
+□ Identifier le domaine responsable
 □ Identifier la source canonique
-□ Inspecter les dépendances directes
-□ Définir le plus petit périmètre sûr
+□ Définir le plus petit périmètre utile
 ```
 
-### Après modification
+Après :
 
-Validation ciblée :
-
-```bash
-npm run checks:changed
+```text
+□ Vérifier les références actives
+□ Vérifier le diff exact
+□ Exécuter les checks documentaires pertinents
+□ Ne pas annoncer de validation non exécutée
 ```
 
-Validation complète lorsqu'elle est justifiée :
+Commandes usuelles :
 
 ```bash
-npm run checks
-```
-
-Contrôles spécialisés :
-
-```bash
-npm run security:secrets
-npm run test:security
-npm run test:regression-gates
-npm run check:root-files
 npm run check:doc-governance
 npm run check:stack-doc-drift
 npm run check:agent-skills
+git diff --check
 ```
 
-E2E explicite :
+Les validations plus larges sont exécutées seulement lorsque le périmètre les
+justifie.
 
-```bash
-npm run test:e2e
-```
+## Principes de maintenance
 
-## Principes
-
-### Sécurité
-
-- valider les entrées ;
-- vérifier l'autorisation côté serveur ;
-- ne jamais exposer `service_role` au client ;
-- ne pas désactiver RLS pour contourner un bug ;
-- ne jamais committer un secret.
-
-### Documentation
-
+- une responsabilité claire par dossier ;
 - une règle durable = une source canonique ;
-- préférer un lien à une duplication ;
-- éviter les nombres de fichiers codés en dur ;
-- éviter les dates factices ;
-- ne pas conserver un backlog terminé comme source active.
+- préférer les liens aux duplications ;
+- ne pas créer un nouveau dossier racine pour un besoin ponctuel ;
+- ne pas conserver un backlog terminé comme source active ;
+- ne pas réécrire l'historique pour le faire ressembler au présent ;
+- ne pas poursuivre une restructuration pour atteindre une perfection
+  documentaire artificielle.
 
-### Qualité
-
-- ne pas annoncer un test non exécuté ;
-- corriger la cause racine ;
-- éviter les refontes opportunistes ;
-- documenter les décisions majeures dans un ADR.
-
-## Références prioritaires
-
-- les consignes locales applicables ;
-- `README.md` ;
-- `architecture/README.md` ;
-- `security/README.md` ;
-- `development/TESTING.md` ;
-- `pages_site/README.md` ;
-- `pages_site/INDEX.md`.
+Pour les règles complètes de classement :
+`documentation/development/DOCUMENTATION_POLICY.md`.
