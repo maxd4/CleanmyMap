@@ -1,126 +1,175 @@
 # Documentation Policy
 
-## Scope
+## Objet
 
-Documenter un changement uniquement lorsqu'il modifie une connaissance durable
-pertinente, notamment :
+Cette politique définit quand documenter, où placer une connaissance et comment
+gérer son cycle de vie.
 
-- un contrat ;
-- un comportement ;
-- l'architecture ou une frontière de responsabilité ;
-- l'exploitation ou une procédure de validation ;
-- la sécurité ;
-- une limite ou une décision qui doit être conservée.
+La structure canonique des dossiers est définie dans
+`documentation/AGENTS.md`.
 
-Une modification interne sans effet durable sur ces éléments ne crée pas, à
-elle seule, une obligation documentaire.
+## Quand documenter
 
-## Règle de sélection
+Documenter uniquement une connaissance durable pertinente, notamment :
 
-Modifier uniquement la documentation spécialisée réellement concernée par le
-changement. Maintenir une source canonique par règle, relier les documents
-complémentaires lorsque nécessaire et ne pas dupliquer le même contenu dans
-plusieurs index, guides ou rapports.
+- contrat ;
+- comportement ;
+- architecture ou frontière ;
+- sécurité ;
+- données ;
+- exploitation ;
+- validation ;
+- décision produit ;
+- limite ou hypothèse utile.
 
-Les documents historiques restent historiques. Ils peuvent être annotés pour
-éviter une confusion avec l'état courant, mais ne doivent pas être réécrits
-uniquement pour refléter le présent.
+Une modification interne sans conséquence durable ne crée pas, à elle seule,
+une obligation documentaire.
 
-## Contenu attendu
+## Où documenter
 
-Lorsqu'une documentation est requise, elle doit permettre de comprendre, selon
-le cas :
+Choisir d'abord le domaine responsable :
 
-- ce qui change et pourquoi ;
-- le contrat, le comportement ou la décision concernés ;
-- les fichiers ou surfaces impactés ;
-- les limites et hypothèses utiles ;
-- les validations effectuées lorsqu'elles apportent une preuve pertinente.
+```text
+architecture/
+database/
+design-system/
+development/
+features/
+legal/
+operations/
+pages_site/
+product/
+security/
+seo/
+```
 
-Ne pas présenter une intention, une roadmap ou une proposition comme un
-comportement implémenté. Ne pas créer de placeholder durable ni de référence
-vers une source documentaire non canonique.
+Ne pas créer un nouveau domaine lorsqu'un emplacement existant convient.
 
-## Schémas et documentation visuelle
+Pour un sujet mixte :
 
-Ajouter un schéma lorsqu'il réduit réellement l'ambiguïté d'un flux, d'une
-architecture, d'une séquence ou d'une décision, ou lorsqu'un garde-fou du dépôt
-l'exige.
+- résumé fonctionnel dans la source utilisateur ou produit concernée ;
+- détail technique dans le domaine responsable ;
+- lien entre les deux ;
+- aucune copie miroir.
 
-Préférer une source éditable et versionnable, notamment Mermaid dans le
-document concerné, plutôt qu'une image qui devient une seconde source de
-vérité.
+## États documentaires
 
-Un schéma doit :
+Toujours distinguer :
 
-- avoir un rôle et un titre explicites ;
-- utiliser des noms de nœuds compréhensibles ;
-- rester cohérent avec le texte et le code courant lorsqu'il décrit le présent ;
-- éviter les détails décoratifs qui n'aident ni la compréhension ni la
-  décision.
+- `CURRENT` : état ou contrat applicable ;
+- `PLAN` : travail ou décision encore ouverte ;
+- `AUDIT` : preuve contextualisée ;
+- `HISTORY` : contexte historique ;
+- `SNAPSHOT` : photographie figée ;
+- `ADR` : décision d'architecture ;
+- `GENERATED` : sortie reproductible.
 
-Une image statique de fallback n'est pas obligatoire par principe. Elle n'est
-conservée que lorsqu'un usage réel l'exige, par exemple un export, une archive
-visuelle ou un rendu qui ne sait pas afficher la source éditable.
+Ne jamais présenter un `PLAN`, un audit ou un snapshot comme comportement
+implémenté.
 
-Ne jamais créer un lien vers un fallback ou un asset qui n'existe pas. Les
-sorties générées restent des artefacts ou des preuves ; elles ne remplacent pas
-la source documentaire éditable.
+Un historique reste historique. Il n'est pas réécrit uniquement pour refléter
+le présent.
+
+## Zones internes et temporaires
+
+Les chemins suivants ne constituent pas des sources publiques `CURRENT` :
+
+- `documentation/sessions/` — mémoire et continuité de session ;
+- `documentation/plans/` — plans transverses ou projet ;
+- `documentation/specs/` — spécifications temporaires de chantier ;
+- `documentation/operations/agent-memory-governance.md` ;
+- `documentation/operations/session-standard-runbook.md`.
+
+Règles :
+
+- une spec terminée doit céder sa connaissance durable au domaine canonique ;
+- un plan terminé ne reste pas présenté comme backlog actif ;
+- une mémoire de session ne devient jamais un contrat produit ou runtime ;
+- ces zones ne doivent pas être utilisées comme raccourci pour éviter de
+  choisir un domaine responsable.
+
+## `pages_site/`
+
+`documentation/pages_site/` reste route-first.
+
+`README.md` porte les conventions locales et `INDEX.md` l'inventaire maître.
+
+`documentation/pages_site/routes/` est un espace de travail personnel protégé.
+Sa lecture est autorisée pour comprendre les pages et leurs références, mais
+aucune mutation n'y est effectuée sans demande explicite de l'utilisateur.
+
+Une restructuration documentaire globale peut modifier les fichiers à la racine
+de `pages_site/`, mais ne doit pas normaliser automatiquement `routes/`.
+
+## README et index
+
+Un README :
+
+- explique le rôle du dossier ;
+- oriente vers les sources canoniques ;
+- peut résumer la structure ;
+- ne duplique pas les règles détaillées.
+
+Après une réorganisation significative, mettre à jour uniquement les README et
+index réellement concernés.
+
+## Schémas et visuels
+
+Ajouter un schéma lorsqu'il réduit réellement l'ambiguïté.
+
+Préférer une source éditable et versionnable, notamment Mermaid, lorsqu'elle
+convient.
+
+Une image statique n'est pas une seconde source de vérité.
+
+Les captures et assets sous `documentation/pages_site/routes/` suivent la règle
+de protection de ce sous-arbre et les règles Git du dépôt.
+
+## Génération et publication
+
+`documentation/quarto-templates/` et `_quarto*.yml` sont de l'outillage de
+publication.
+
+Les sorties générées doivent rester identifiées comme telles et ne remplacent
+pas la source éditable.
+
+Les rapports reproductibles destinés à la validation ou au diagnostic vivent
+dans l'emplacement d'artefact prévu par le dépôt, sauf exception explicitement
+documentée.
+
+## Public et interne
+
+Les domaines publics peuvent être orientés depuis `documentation/README.md`.
+
+Les documents de session, mémoires internes, plans internes, secrets, tokens,
+backups et dumps ne doivent pas être exposés comme documentation publique.
+
+Ne jamais inventer une source, une mesure, un chiffre ou une validation.
+
+## Suppression et déplacement
+
+Avant de déplacer ou supprimer :
+
+1. identifier l'état du document ;
+2. vérifier s'il porte encore une connaissance unique ;
+3. rechercher les références actives ;
+4. déplacer seulement si cela clarifie réellement la responsabilité ;
+5. préserver les références historiques qui décrivent volontairement l'ancien
+   état.
+
+Ne pas lancer de réorganisation cosmétique globale.
 
 ## Vérification avant clôture
 
-Avant de clôturer un changement documenté :
+Pour un document `CURRENT`, vérifier sa cohérence avec le code ou le contrat
+actuel lorsque pertinent.
 
-- vérifier que le document spécialisé correspond au code et aux contrats
-  actuels lorsqu'il décrit le présent ;
-- conserver explicitement les limites ou l'état historique lorsqu'ils sont
-  nécessaires à l'interprétation ;
-- exécuter les checks documentaires pertinents pour le périmètre ;
-- contrôler les liens et le diff du lot.
+Puis :
 
-## Publication et visibilité
+- contrôler les liens actifs ;
+- contrôler le diff ;
+- exécuter les checks documentaires du périmètre ;
+- signaler explicitement les validations non exécutées.
 
-Les documents publics peuvent être indexés dans `documentation/README.md`. Les
-documents internes, sensibles ou liés aux sessions ne doivent pas être listés
-dans les index publics. Les sorties générées doivent être identifiées comme
-telles et ne doivent pas devenir une source concurrente du code ou de la
-documentation source.
-
-Un même contenu ne doit pas être dupliqué dans un chemin public et un chemin
-interne sans décision explicite. Toute documentation publique doit rester
-compréhensible sans dépendre d'un contexte de session interne.
-
-## Inventaire strictement non public
-
-Les chemins suivants ne doivent pas être exposés comme documentation publique :
-
-- les fichiers de gouvernance d'agent à la racine ou dans les sous-arbres ;
-- `documentation/sessions/` ;
-- `documentation/plans/` ;
-- `documentation/operations/agent-memory-governance.md` ;
-- `documentation/operations/session-standard-runbook.md` ;
-- `documentation/rapport_IA/` ;
-- `.codex-remote-attachments/` ;
-- `backups/` et `scratch/` ;
-- les archives Python historiques et leurs dumps.
-
-Les familles `architecture/`, `database/`, `design-system/`, `development/`,
-`features/`, `legal/`, `operations/`, `product/`, `security/` et `seo/` peuvent
-rester visibles dans la documentation publique, à condition de ne pas
-référencer les éléments strictement non publics.
-
-## Sorties générées et archives visuelles
-
-Les sorties suivantes peuvent être conservées dans le dépôt lorsqu'elles sont
-identifiées comme générées ou archivées :
-
-- `documentation/design-system/generated/board/design-system-board.dynamic.html` ;
-- `documentation/design-system/generated/board/design-system-board.html` ;
-- `documentation/design-system/generated/board/design-system-board.data.json` ;
-- `actions-map-current.png` ;
-- `photo/` ;
-- `liberte-UX-UI/`.
-
-Un index public ne doit jamais créer de lien direct vers un élément strictement
-non public. Tout nouveau fichier de mémoire, de session, de backup ou de dump
-doit être évalué par cet inventaire avant publication.
+Le critère de réussite est une documentation compréhensible et correctement
+classée, pas une arborescence parfaite.

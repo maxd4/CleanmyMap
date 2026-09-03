@@ -2,15 +2,47 @@
 
 Point d'entrée du registre documentaire route-first.
 
-- `INDEX.md` — inventaire maître ;
-- `charte-pages-hors-blocs.md` — familles autonomes ;
-- `PAGE_FAMILIES.md` — contrat courant des familles de pages ;
-- `PAGE_FAMILIES_PLAN.md` — décisions et travail résiduel uniquement ;
-- `routes/` — arborescence canonique.
+## Racine de `pages_site/`
 
-## Périmètre
+Les rôles principaux sont :
 
-`documentation/pages_site/` décrit chaque page du point de vue utilisateur :
+| Élément | État / rôle |
+|---|---|
+| `README.md` | `CURRENT` — conventions locales |
+| `INDEX.md` | `CURRENT` — inventaire maître |
+| `PAGE_FAMILIES.md` | `CURRENT` — contrat des familles de pages |
+| `charte-pages-hors-blocs.md` | `CURRENT` — règles des pages hors blocs |
+| `PAGE_FAMILIES_PLAN.md` | `PLAN` — décisions encore ouvertes |
+| `plan-correction-ui-contenu.md` | `PLAN` — travail UI/contenu résiduel |
+| `AUDIT_BLOCS_RUBRIQUES.md` | `AUDIT` |
+| `AUDIT_PAGES_SITE_CODE.md` | `AUDIT` |
+| `generate-canonical-pages.mjs` | outil de contrôle / génération documentaire |
+| `routes/` | espace de travail route-first protégé |
+
+Les audits et plans peuvent rester à la racine tant que leur statut est
+explicite. Il n'est pas nécessaire de créer une hiérarchie supplémentaire
+uniquement pour les ranger.
+
+## Zone protégée — `routes/`
+
+`documentation/pages_site/routes/` est un **espace de travail personnel**.
+
+Par défaut :
+
+- il peut être lu pour comprendre une page, une route ou une référence ;
+- il ne doit pas être restructuré ;
+- aucun fichier n'y est déplacé, supprimé, renommé ou réécrit ;
+- aucun asset n'y est normalisé ou nettoyé.
+
+Toute mutation sous `routes/` exige une demande explicite de l'utilisateur pour
+ce périmètre.
+
+Les travaux de gouvernance documentaire sur `pages_site/` concernent donc la
+racine du dossier sauf instruction contraire.
+
+## Périmètre fonctionnel
+
+`documentation/pages_site/` décrit les pages du point de vue utilisateur :
 
 - rôle ;
 - contenu ;
@@ -20,122 +52,101 @@ Point d'entrée du registre documentaire route-first.
 - captures ;
 - améliorations propres à la page.
 
-Les sujets techniques transversaux restent dans :
+Les sujets techniques transversaux restent dans leurs domaines :
 
-```txt
+```text
 documentation/architecture/
-documentation/development/
-documentation/security/
 documentation/database/
+documentation/development/
+documentation/design-system/
 documentation/operations/
+documentation/security/
 ```
 
 Pour un sujet mixte :
 
-- résumé fonctionnel ici ;
-- détail technique dans le dossier adapté ;
-- lien entre les deux ;
-- aucune duplication.
+```text
+résumé fonctionnel ici
+→ détail technique dans le domaine responsable
+→ lien entre les deux
+→ aucune duplication
+```
 
 ## Une route, une fiche canonique
 
-Règle :
+Principe :
 
-```txt
+```text
 une route canonique
 → un dossier canonique
 → un nom stable
 → une documentation fonctionnelle unique
 ```
 
-Les alias et redirections restent inventoriés mais ne deviennent pas des pages
-autonomes artificielles.
+Les alias et redirections peuvent être inventoriés sans créer artificiellement
+une nouvelle source fonctionnelle.
 
-## Noyau documentaire d'une page canonique
+Cette règle décrit le modèle documentaire ; elle n'autorise pas une mutation
+automatique du sous-arbre `routes/`.
 
-Chaque page ou rubrique canonique conserve quatre fichiers de base :
+## Noyau documentaire historique des routes
 
-```txt
+Le modèle utilisé dans l'espace route-first repose principalement sur :
+
+```text
 nom-de-page-README.md
 nom-de-page-presentation-detaillee.md
 nom-de-page-liste-propositions-a-traiter.md
 nom-de-page-objectifs-non-pertinents.md
 ```
 
-Ces quatre fichiers sont le noyau stable.
+Des fichiers complémentaires peuvent exister lorsqu'une page possède un besoin
+réel : sources, protocole, étude, exception UI, backlog local ou document
+partenaire.
 
-Les fichiers supplémentaires restent optionnels :
-
-- exception UI ;
-- étude spécifique ;
-- sources ;
-- protocole ;
-- backlog temporaire local ;
-- document partenaire.
-
-Ne pas créer un fichier optionnel vide uniquement par anticipation.
-
-## Propositions et idées écartées
-
-### `liste-propositions-a-traiter`
-
-Contient uniquement les propositions :
-
-- retenues ;
-- pas encore exécutées ;
-- spécifiques à la page.
-
-Quand une proposition est terminée :
-
-- la retirer de la liste active ;
-- documenter son résultat dans la fiche canonique si nécessaire.
-
-### `objectifs-non-pertinents`
-
-Mémoire locale des idées explicitement écartées.
-
-But :
-
-- éviter de reproposer les mêmes idées ;
-- conserver la raison du rejet ;
-- rester court.
+Ne pas créer de fichier optionnel vide par anticipation.
 
 ## Familles de pages
 
-Le contrat de famille est séparé du contenu propre à chaque route.
+[`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md) porte le contrat courant :
 
-[`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md) documente :
+- sources de vérité runtime ;
+- taxonomie ;
+- routes structurantes ;
+- exceptions ;
+- invariants ;
+- contrôles de dérive.
 
-- les sources de vérité runtime ;
-- la taxonomie ;
-- les routes structurantes ;
-- les exceptions ;
-- les invariants de non-régression ;
-- les contrôles de dérive.
+[`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md) contient uniquement le travail
+encore ouvert. Il peut être supprimé lorsque ce travail est fermé.
 
-[`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md) ne contient que les décisions
-encore ouvertes et doit être supprimé lorsque ce travail est terminé.
+Une fiche de route ne doit pas devenir une seconde source du mécanisme global de
+résolution des familles.
 
-Une fiche de page ne doit pas recopier la logique globale de résolution.
+## Propositions et idées écartées
+
+Dans le modèle route-first :
+
+- `liste-propositions-a-traiter` contient les propositions retenues mais non
+  exécutées ;
+- `objectifs-non-pertinents` conserve brièvement les idées explicitement
+  écartées et leur raison.
+
+Ces conventions n'imposent aucune réorganisation automatique des fichiers déjà
+présents sous `routes/`.
 
 ## Captures
 
-Les captures officielles sont centralisées au niveau du bloc ou de la famille.
+Les règles actuelles privilégient :
 
-Règles :
-
-- un dossier photo centralisé par bloc ou famille ;
-- format `.webp` ;
-- nom contenant bloc, page ou route et date ;
-- pas de dossier photo dupliqué dans chaque page enfant ;
+- WebP ;
+- centralisation par bloc ou famille lorsque le travail concerné le prévoit ;
+- nom explicite incluant page ou route ;
 - desktop par défaut ;
-- mobile seulement sur instruction explicite.
+- mobile uniquement lorsque demandé.
 
-Exemple :
-
-```txt
-03-cartographie-impact__gamification__2026-07-11.webp
-```
+Les captures déjà présentes sous `routes/` appartiennent à la zone protégée :
+aucun nettoyage ou déplacement automatique.
 
 ## Vérification UI
 
@@ -148,60 +159,21 @@ Lorsqu'une vérification visuelle est explicitement demandée :
 
 Une capture seule ne suffit pas.
 
-## Sobriété
+## Maintenance de la racine
 
-Les pages doivent privilégier :
+La maintenance structurelle autorisée par défaut peut :
 
-- chargement utile seulement ;
-- détails à la demande ;
-- calculs lourds différés ;
-- absence de polling inutile ;
-- stabilité du layout ;
-- interface lisible.
+- mettre à jour ce README ;
+- maintenir `INDEX.md` lorsqu'une modification autorisée l'exige ;
+- maintenir les contrats et plans racine ;
+- clarifier le statut d'un audit ou d'un plan ;
+- maintenir l'outil de contrôle documentaire.
 
-Cette règle est particulièrement importante pour :
+Elle ne doit pas dériver en nettoyage de `routes/`.
 
-- carte ;
-- supervision ;
-- rapports ;
-- admin ;
-- données externes.
+## Références
 
-## Convention de nommage
-
-Le dossier et les fichiers doivent reprendre le nom de la page ou rubrique.
-
-Exemple :
-
-```txt
-gamification/
-├── gamification-README.md
-├── gamification-presentation-detaillee.md
-├── gamification-liste-propositions-a-traiter.md
-└── gamification-objectifs-non-pertinents.md
-```
-
-## Mémoire de non-régression
-
-- une route canonique garde un nom unique ;
-- runtime et documentation partagent les sources prévues par le contrat ;
-- les anciens fichiers de compatibilité supprimés ne sont pas recréés sans
-  besoin ;
-- une exception nouvelle est déclarée, testée et documentée ;
-- une modification de famille traverse runtime, documentation et test de
-  cohérence.
-
-Le détail canonique de ces invariants reste dans
-[`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md).
-
-## Style
-
-Les fichiers de `routes/` utilisent :
-
-- phrases courtes ;
-- une idée par phrase ;
-- chiffres exacts ;
-- unités abrégées ;
-- listes directes ;
-- pas de verbiage ;
-- pas de source inventée.
+- [`INDEX.md`](./INDEX.md)
+- [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md)
+- [`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md)
+- [`charte-pages-hors-blocs.md`](./charte-pages-hors-blocs.md)
