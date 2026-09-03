@@ -4,7 +4,6 @@ import path from "node:path";
 export const CANONICAL_DIALOG_PATH = "apps/web/src/components/ui/cmm-dialog.tsx";
 
 export const LEGACY_MODAL_ALLOWLIST = new Set([
-  "apps/web/src/components/account/account-completion-modal.tsx",
   "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
   "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
 ]);

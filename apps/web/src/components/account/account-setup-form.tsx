@@ -3,7 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LogIn, WifiOff } from "lucide-react";
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  Check,
+  Eye,
+  FlaskConical,
+  House,
+  Landmark,
+  LogIn,
+  ShieldCheck,
+  UserRound,
+  UsersRound,
+  WifiOff,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -27,6 +42,8 @@ import {
   SystemStateTitle,
 } from "@/components/ui/system-state";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmField, CmmSelect } from "@/components/ui/cmm-field";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
 import { cn } from "@/lib/utils";
@@ -79,11 +96,51 @@ async function updateProfileRole(profile: AppProfile) {
   }
 }
 
+const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
+  benevole: UserRound,
+  coordinateur: UsersRound,
+  scientifique: FlaskConical,
+  entreprise: Briefcase,
+  elu: Landmark,
+  admin: ShieldCheck,
+  max: Building2,
+};
+
+const PROFILE_DETAILS: Record<AppProfile, Record<Locale, string>> = {
+  benevole: {
+    fr: "Vous participez à des actions de nettoyage, signalez des déchets et contribuez à améliorer votre environnement.",
+    en: "You take part in clean-up actions, report waste and help improve your environment.",
+  },
+  coordinateur: {
+    fr: "Vous organisez des actions collectives et accompagnez les équipes dans leur réalisation.",
+    en: "You organize collective actions and support teams as they carry them out.",
+  },
+  scientifique: {
+    fr: "Vous collectez, analysez et mettez en perspective les données issues des actions de terrain.",
+    en: "You collect, analyze and contextualize data from field actions.",
+  },
+  entreprise: {
+    fr: "Vous soutenez des actions locales et valorisez l’engagement environnemental de votre entreprise.",
+    en: "You support local actions and highlight your company's environmental commitment.",
+  },
+  elu: {
+    fr: "Vous suivez les actions menées sur votre territoire et facilitez la coordination locale.",
+    en: "You follow actions in your territory and help coordinate local efforts.",
+  },
+  admin: {
+    fr: "Vous coordonnez la modération, la qualité des données et l’accompagnement des utilisateurs.",
+    en: "You coordinate moderation, data quality and user support.",
+  },
+  max: {
+    fr: "Vous supervisez la plateforme et arbitrez les décisions qui nécessitent un accès propriétaire.",
+    en: "You supervise the platform and arbitrate decisions requiring owner access.",
+  },
+};
+
 export function AccountSetupForm({
   nextPath,
   initialProfile,
   clerkReachable,
-  isLocalHost,
   initialArrondissement = null,
   initialLocationType = null,
   submitMode = "navigate",
@@ -106,7 +163,6 @@ export function AccountSetupForm({
   );
   const hasHydratedTerritorySelection = useRef(Boolean(initialArrondissement));
   const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
-  const [acceptExhaustiveMode, setAcceptExhaustiveMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -143,10 +199,7 @@ export function AccountSetupForm({
   const territoryError = !territoryIsValid
     ? "Sélectionnez un territoire (pays, région, département, commune ou arrondissement)."
     : null;
-  const displayModeError = acceptExhaustiveMode
-    ? null
-    : "Confirmez le mode exhaustif pour continuer.";
-  const canSubmit = !profileError && !territoryError && !displayModeError && !isSaving;
+  const canSubmit = !profileError && !territoryError && !isSaving;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -165,15 +218,6 @@ export function AccountSetupForm({
         toAppError("Sélectionnez un rôle valide.", {
           kind: "validation",
           message: "Sélectionnez un rôle valide.",
-        }),
-      );
-      return;
-    }
-    if (!acceptExhaustiveMode) {
-      setError(
-        toAppError("Confirmez le mode exhaustif pour continuer.", {
-          kind: "validation",
-          message: "Confirmez le mode exhaustif pour continuer.",
         }),
       );
       return;
@@ -247,16 +291,15 @@ export function AccountSetupForm({
           <SystemStateIcon variant="offline">
             <WifiOff className="h-7 w-7" />
           </SystemStateIcon>
-          <SystemStateMeta variant="offline" label="Contexte local">
-            Clerk n&apos;est pas joignable dans cette session locale.
+          <SystemStateMeta variant="offline" label="Connexion">
+            Clerk n&apos;est pas joignable dans cette session.
           </SystemStateMeta>
           <SystemStateTitle variant="offline">
             Session Clerk indisponible
           </SystemStateTitle>
           <SystemStateDescription variant="offline">
-            La configuration initiale nécessite une session Clerk valide. Sur
-            ce poste local, utilisez le domaine autorisé ou activez le
-            contournement de développement pour poursuivre.
+            La configuration initiale nécessite une session Clerk valide.
+            Vérifiez votre connexion puis réessayez.
           </SystemStateDescription>
           <SystemStateAction>
             <CmmButton href="/" tone="secondary">
@@ -273,13 +316,9 @@ export function AccountSetupForm({
     }
 
     return (
-      <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.55)] backdrop-blur-xl">
-        <p className="cmm-text-small text-violet-100/80">
-          {isLocalHost
-            ? "Chargement du compte local..."
-            : "Chargement du compte..."}
-        </p>
-      </div>
+      <CmmCard variant="outlined" size="sm" className="max-w-none">
+        <p className="cmm-text-small text-slate-600">Chargement du compte...</p>
+      </CmmCard>
     );
   }
 
@@ -295,199 +334,209 @@ export function AccountSetupForm({
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="space-y-5 rounded-[2.25rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.9)_48%,rgba(88,28,135,0.86)_100%)] p-6 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.6)] backdrop-blur-2xl"
+      className="flex min-h-0 flex-1 flex-col text-slate-900"
     >
-      <div className="space-y-2">
-        <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-emerald-200/90">
-          Configuration initiale
-        </p>
-        <h1 className="text-2xl font-black text-white">
-          Finalisez votre compte
-        </h1>
-        <p className="cmm-text-small text-violet-100/78">
-          Choisissez votre rôle, votre lieu principal, votre langue et votre mode
-          d&apos;affichage. Ces réglages restent modifiables plus tard dans
-          &quot;Réglages&quot; du ruban.
-        </p>
-      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="space-y-7 px-5 py-5 sm:px-8 sm:py-7">
+          <header className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+              <UserRound className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <h2 id="account-completion-modal-title" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                Mettre à jour votre compte
+              </h2>
+              <p id="account-completion-modal-description" className="cmm-text-small text-slate-600">
+                Une information supplémentaire est nécessaire pour continuer.
+              </p>
+            </div>
+          </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-3 lg:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="cmm-text-small font-medium text-white">Rôle</span>
-            <p className="cmm-text-caption text-violet-100/65">
-              {selectedLocale === "fr"
-                ? "Choisis le rôle le plus proche de ton usage actuel."
-                : "Choose the role closest to your current use case."}
-            </p>
-          </div>
+          <section aria-labelledby="account-role-title" className="space-y-3">
+            <div>
+              <h3 id="account-role-title" className="text-sm font-bold text-slate-950">
+                1. Quel est votre rôle ?
+              </h3>
+              <p className="mt-1 cmm-text-caption text-slate-500">
+                Cela nous aide à vous proposer l&apos;expérience la plus adaptée.
+              </p>
+            </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {profileOptions.map((profile) => {
-              const isSelected = selectedProfile === profile;
-              return (
-                <button
-                  key={profile}
-                  type="button"
-                  onClick={() => setSelectedProfile(profile)}
-                  aria-pressed={isSelected}
-                  className={cn(
-                    "flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-all",
-                    isSelected
-                      ? "border-emerald-300/50 bg-emerald-300/15 shadow-[0_18px_32px_-24px_rgba(16,185,129,0.7)]"
-                      : "border-white/10 bg-white/[0.06] hover:border-white/20 hover:bg-white/[0.09]",
-                  )}
-                >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                    i
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-white">
-                        {getProfileLabel(profile, selectedLocale)}
-                      </span>
-                      {isSelected ? (
-                        <span className="rounded-full border border-emerald-300/30 bg-emerald-300/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100">
-                          {selectedLocale === "fr" ? "Sélectionné" : "Selected"}
-                        </span>
-                      ) : null}
+            <div role="radiogroup" aria-labelledby="account-role-title" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {profileOptions.map((profile) => {
+                const isSelected = selectedProfile === profile;
+                const Icon = PROFILE_ICONS[profile];
+                return (
+                  <button
+                    key={profile}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => setSelectedProfile(profile)}
+                    className={cn(
+                      "group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors",
+                      isSelected
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40",
+                    )}
+                  >
+                    <span className={cn("flex h-9 w-9 items-center justify-center rounded-full", isSelected ? "bg-emerald-100 text-emerald-700" : "bg-slate-50 text-emerald-600")}>
+                      <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
-                    <span className="mt-1 block text-[11px] leading-5 text-violet-100/72">
+                    <span className="text-sm font-semibold leading-tight">
+                      {getProfileLabel(profile, selectedLocale)}
+                    </span>
+                    <span className="line-clamp-2 text-[11px] leading-4 text-slate-500">
                       {getProfileSubtitle(profile, selectedLocale)}
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {profileError ? <InlineFieldError message={profileError} /> : null}
+
+            <CmmCard tone="emerald" variant="outlined" size="sm" className="flex items-start gap-3 border-emerald-200 bg-emerald-50/70 p-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <Check className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="cmm-text-caption font-bold text-emerald-700">
+                  Rôle sélectionné : {getProfileLabel(selectedProfile, selectedLocale)}
+                </p>
+                <p className="mt-1 cmm-text-small text-slate-600">
+                  {PROFILE_DETAILS[selectedProfile][selectedLocale]}
+                </p>
+              </div>
+            </CmmCard>
+          </section>
+
+          <div className="grid gap-7 lg:grid-cols-[1.08fr_0.92fr] lg:divide-x lg:divide-slate-200">
+            <section aria-labelledby="account-territory-title" className="space-y-4 lg:pr-7">
+              <div>
+                <h3 id="account-territory-title" className="text-sm font-bold text-slate-950">
+                  2. Quel est votre territoire principal ?
+                </h3>
+                <p className="mt-1 cmm-text-caption text-slate-500">
+                  Choisissez votre lieu de résidence ou d&apos;activité principale.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="Type de territoire">
+                {([
+                  ["residence", "Résidence", House],
+                  ["work", "Travail", Briefcase],
+                ] as const).map(([value, label, Icon]) => {
+                  const isSelected = locationType === value;
+                  return (
+                    <label key={value} className={cn("flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 cmm-text-small transition-colors", isSelected ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300")}>
+                      <input
+                        type="radio"
+                        name="locationType"
+                        value={value}
+                        checked={isSelected}
+                        onChange={() => setLocationType(value)}
+                        className="accent-emerald-600"
+                      />
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      {label}
+                    </label>
+                  );
+                })}
+              </div>
+
+              <label className="block space-y-2">
+                <span className="cmm-text-small font-medium text-slate-800">
+                  Pays, région, département, commune ou arrondissement
+                </span>
+                <GreaterParisSelect
+                  value={territorySelection}
+                  onChange={setTerritorySelection}
+                  placeholder="Rechercher une commune, une région..."
+                  appearance="light"
+                />
+                {territoryError ? <InlineFieldError message={territoryError} /> : null}
+              </label>
+              <p className="cmm-text-caption text-slate-500">
+                Cette information sert à vous présenter les actions proches de chez vous.
+              </p>
+            </section>
+
+            <div className="grid content-start gap-7 lg:pl-7">
+              <section aria-labelledby="account-language-title" className="space-y-3">
+                <div>
+                  <h3 id="account-language-title" className="text-sm font-bold text-slate-950">
+                    3. Langue
+                  </h3>
+                  <p className="mt-1 cmm-text-caption text-slate-500">
+                    Choisissez votre langue de préférence.
+                  </p>
+                </div>
+                <CmmField label="Langue" className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500">
+                  <CmmSelect
+                    value={selectedLocale}
+                    onChange={(event) => setSelectedLocale(event.target.value === "en" ? "en" : "fr")}
+                    className="w-full bg-white text-slate-900"
+                  >
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                  </CmmSelect>
+                </CmmField>
+              </section>
+
+              <section aria-labelledby="account-display-mode-title" className="space-y-3">
+                <div>
+                  <h3 id="account-display-mode-title" className="text-sm font-bold text-slate-950">
+                    4. Mode d&apos;affichage initial
+                  </h3>
+                  <p className="mt-1 cmm-text-caption text-slate-500">
+                    Vous pourrez le modifier à tout moment dans Réglages.
+                  </p>
+                </div>
+                <CmmCard tone="emerald" variant="outlined" size="sm" className="flex items-start gap-3 border-emerald-200 bg-emerald-50/70 p-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                    <Eye className="h-4 w-4" aria-hidden="true" />
                   </span>
-                </button>
-              );
-            })}
+                  <div>
+                    <p className="cmm-text-small font-semibold text-slate-900">Exhaustif</p>
+                    <p className="cmm-text-caption text-slate-600">
+                      Toutes les informations et options sont activées par défaut.
+                    </p>
+                  </div>
+                </CmmCard>
+              </section>
+            </div>
           </div>
 
-          {profileError ? <InlineFieldError message={profileError} /> : null}
-
-          <p className="max-w-3xl text-[11px] leading-5 text-violet-100/70">
-            {selectedLocale === "fr"
-              ? "Tu peux changer de rôle à tout moment depuis le badge de profil puis le menu « Changer de rôle ». Pour demander une promotion vers Elu ou Administration, utilise le formulaire de la rubrique « Retours & Qualité » (collaboration)."
-              : "You can change your role at any time from your profile badge and the \"Switch role\" menu. To request a promotion to Elected or Administration, use the form in the \"Feedback & Quality\" section (collaboration)."}
-          </p>
+          {error ? (
+            error.kind === "permission" ? (
+              <PermissionErrorState
+                title="Connexion requise"
+                message={error.message}
+              />
+            ) : (
+              <ErrorMessage
+                kind={error.kind}
+                title="Les réglages n'ont pas pu être enregistrés"
+                message={error.message}
+                actions={
+                  <CmmButton type="button" tone="secondary" size="sm" onClick={() => window.location.reload()}>
+                    Réessayer
+                  </CmmButton>
+                }
+              />
+            )
+          ) : null}
         </div>
-
-        <label className="block space-y-2">
-          <span className="cmm-text-small font-medium text-white">
-            Langue
-          </span>
-          <select
-            className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2 cmm-text-small text-white shadow-none outline-none placeholder:text-violet-100/40 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
-            value={selectedLocale}
-            onChange={(event) =>
-              setSelectedLocale(event.target.value === "en" ? "en" : "fr")
-            }
-          >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-
-        <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 lg:col-span-2">
-          <legend className="cmm-text-small font-medium text-white">
-            Mode d&apos;affichage
-          </legend>
-          <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-            <input
-              type="checkbox"
-              checked={acceptExhaustiveMode}
-              onChange={(event) => setAcceptExhaustiveMode(event.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-white/20 accent-emerald-400 focus:ring-emerald-300"
-            />
-            <span className="block">
-              <span className="block cmm-text-small font-medium text-white">
-                {selectedLocale === "fr" ? "Mode Exhaustif" : "Exhaustive mode"}
-              </span>
-              <span className="mt-1 block cmm-text-small text-violet-100/70">
-                {selectedLocale === "fr"
-                  ? "Les modes Sobre et Minimaliste sont disponibles dans vos préférences."
-                  : "Calm and Minimalist modes are available in your preferences."}
-              </span>
-            </span>
-          </label>
-        </fieldset>
-
-        <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <legend className="cmm-text-small font-medium text-white">
-            Territoire principal
-          </legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 cmm-text-small text-violet-100/76">
-              <input
-                type="radio"
-                name="locationType"
-                value="residence"
-                checked={locationType === "residence"}
-                onChange={() => setLocationType("residence")}
-                className="accent-emerald-400"
-              />
-              Résidence
-            </label>
-            <label className="flex items-center gap-2 cmm-text-small text-violet-100/76">
-              <input
-                type="radio"
-                name="locationType"
-                value="work"
-                checked={locationType === "work"}
-                onChange={() => setLocationType("work")}
-                className="accent-emerald-400"
-              />
-              Travail
-            </label>
-          </div>
-
-          <label className="block space-y-2">
-            <span className="cmm-text-small font-medium text-white">
-              Pays, région, département, commune ou arrondissement
-            </span>
-            <GreaterParisSelect
-              value={territorySelection}
-              onChange={setTerritorySelection}
-              placeholder="Rechercher un territoire..."
-            />
-            {territoryError ? <InlineFieldError message={territoryError} /> : null}
-          </label>
-        </fieldset>
       </div>
 
-      {error ? (
-        error.kind === "permission" ? (
-          <PermissionErrorState
-            title="Connexion requise"
-            message={error.message}
-          />
-        ) : (
-          <ErrorMessage
-            kind={error.kind}
-            title="Les réglages n'ont pas pu être enregistrés"
-            message={error.message}
-            actions={
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="rounded-full border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_14px_28px_-18px_rgba(15,23,42,0.6)] transition-all hover:border-emerald-300/30"
-              >
-                Réessayer
-              </button>
-            }
-          />
-        )
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="inline-flex items-center rounded-xl border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] px-5 py-3 cmm-text-small font-semibold text-white shadow-[0_18px_34px_-18px_rgba(15,23,42,0.55)] transition-all hover:border-emerald-300/30 hover:shadow-[0_22px_40px_-20px_rgba(79,70,229,0.45)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSaving ? "Enregistrement..." : "Valider et continuer"}
-        </button>
-        <p className="cmm-text-caption text-violet-100/65">
-          Les modifications restent accessibles plus tard dans le ruban.
+      <div className="sticky bottom-0 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p className="cmm-text-caption max-w-md text-slate-500">
+          Vos préférences restent modifiables à tout moment dans les paramètres de votre compte.
         </p>
+        <CmmButton type="submit" tone="primary" size="md" disabled={!canSubmit} loading={isSaving}>
+          {isSaving ? "Enregistrement..." : "Valider et continuer"}
+        </CmmButton>
       </div>
     </form>
   );

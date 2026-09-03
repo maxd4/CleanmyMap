@@ -229,10 +229,12 @@ export function TerritoryLocationSelector({
   value,
   onChange,
   placeholder = "Rechercher un lieu...",
+  appearance = "dark",
 }: {
   value: TerritoryLocationSelection | null;
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
+  appearance?: "dark" | "light";
 }) {
   const [selectedLevel, setSelectedLevel] = useState<TerritoryLocationLevel>(
     value?.level ?? "commune",
@@ -337,38 +339,48 @@ export function TerritoryLocationSelector({
     [arrondissementCity],
   );
 
+  const isLight = appearance === "light";
+  const controlClassName = isLight
+    ? "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+    : "w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2.5 cmm-text-small text-white outline-none focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30";
+
   return (
-    <div className="space-y-4 rounded-[1.75rem] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.62)] backdrop-blur-xl">
+    <div className={cn(
+      "space-y-3 rounded-xl p-3",
+      isLight
+        ? "border border-slate-200 bg-slate-50"
+        : "border border-white/10 bg-white/[0.05] shadow-[0_18px_50px_-38px_rgba(15,23,42,0.62)] backdrop-blur-xl",
+    )}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-emerald-200/90">
+          <p className={cn("cmm-text-caption font-bold uppercase tracking-[0.14em]", isLight ? "text-emerald-700" : "text-emerald-200/90")}>
             Territoire
           </p>
-          <p className="mt-1 text-sm leading-6 text-violet-100/78">
+          <p className={cn("mt-1 text-sm leading-6", isLight ? "text-slate-600" : "text-violet-100/78")}>
             Choisis le niveau de territoire à enregistrer, puis sélectionne le lieu voulu.
           </p>
         </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-white">
+        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", isLight ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-white/10 bg-white/[0.08] text-white")}>
           <Globe className="h-5 w-5" />
         </span>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
-        <label className="block space-y-2">
-          <span className="cmm-text-small font-medium text-white">Pays</span>
-          <select
+          <label className="block space-y-2">
+            <span className={cn("cmm-text-small font-medium", isLight ? "text-slate-800" : "text-white")}>Pays</span>
+            <select
             value="France"
             onChange={() => {
               /* France only for now */
             }}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2.5 cmm-text-small text-white outline-none focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
+              className={controlClassName}
           >
             <option value="France">France</option>
           </select>
         </label>
 
         <fieldset className="space-y-2">
-          <legend className="cmm-text-small font-medium text-white">
+          <legend className={cn("cmm-text-small font-medium", isLight ? "text-slate-800" : "text-white")}>
             Niveau de territoire
           </legend>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -380,14 +392,18 @@ export function TerritoryLocationSelector({
                   type="button"
                   onClick={() => handleLevelChange(option.value)}
                   className={cn(
-                    "rounded-2xl border px-3 py-3 text-left transition-all",
+                    "rounded-xl border px-3 py-2.5 text-left transition-colors",
                     isSelected
-                      ? "border-emerald-300/40 bg-emerald-300/15 shadow-[0_16px_30px_-22px_rgba(16,185,129,0.8)]"
-                      : "border-white/10 bg-white/[0.06] hover:border-white/20 hover:bg-white/[0.1]",
+                      ? isLight
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                        : "border-emerald-300/40 bg-emerald-300/15 shadow-[0_16px_30px_-22px_rgba(16,185,129,0.8)]"
+                      : isLight
+                        ? "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40"
+                        : "border-white/10 bg-white/[0.06] hover:border-white/20 hover:bg-white/[0.1]",
                   )}
                 >
-                  <span className="block text-sm font-semibold text-white">{option.label}</span>
-                  <span className="mt-1 block text-[11px] leading-4 text-violet-100/68">
+                  <span className={cn("block text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{option.label}</span>
+                  <span className={cn("mt-1 block text-[11px] leading-4", isLight ? "text-slate-500" : "text-violet-100/68")}>
                     {option.description}
                   </span>
                 </button>
@@ -398,7 +414,7 @@ export function TerritoryLocationSelector({
       </div>
 
       {selectedLevel === "country" ? (
-        <div className="rounded-[1.35rem] border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-50">
+        <div className={cn("rounded-xl border px-4 py-3 text-sm", isLight ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-emerald-300/20 bg-emerald-300/10 text-emerald-50")}>
           La couverture nationale est active. Tu peux enregistrer la France entière ou
           changer de niveau à tout moment.
         </div>
@@ -406,7 +422,7 @@ export function TerritoryLocationSelector({
         <div className="space-y-3">
           <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
             <label className="block space-y-2">
-              <span className="cmm-text-small font-medium text-white">
+              <span className={cn("cmm-text-small font-medium", isLight ? "text-slate-800" : "text-white")}>
                 Ville
               </span>
               <select
@@ -428,7 +444,7 @@ export function TerritoryLocationSelector({
                     }
                   }
                 }}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.08] px-3 py-3 text-sm text-white outline-none focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
+                className={controlClassName}
               >
                 {getArrondissementCityOptions().map((city) => (
                   <option key={city.value} value={city.value} className="text-slate-900">
@@ -439,7 +455,7 @@ export function TerritoryLocationSelector({
             </label>
 
             <label className="block space-y-2">
-              <span className="cmm-text-small font-medium text-white">
+              <span className={cn("cmm-text-small font-medium", isLight ? "text-slate-800" : "text-white")}>
                 Arrondissement
               </span>
               <select
@@ -461,7 +477,7 @@ export function TerritoryLocationSelector({
                     onChange({ ...value, arrondissement: null, arrondissementCity });
                   }
                 }}
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.08] px-3 py-3 text-sm text-white outline-none focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
+                className={controlClassName}
               >
                 <option value="" className="text-slate-900">
                   Choisir le numéro
@@ -478,7 +494,7 @@ export function TerritoryLocationSelector({
                 )}
               </select>
               {arrondissementCity === "Marseille" && arrondissementValue ? (
-                <p className="cmm-text-caption text-violet-100/64">
+              <p className={cn("cmm-text-caption", isLight ? "text-slate-500" : "text-violet-100/64")}>
                   {getArrondissementHelpLabel(arrondissementCity, Number(arrondissementValue)) ||
                     "Mairie de secteur"}
                 </p>
@@ -493,7 +509,7 @@ export function TerritoryLocationSelector({
       ) : (
         <div className="space-y-3">
           <div className="relative">
-            <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-violet-100/55">
+            <div className={cn("pointer-events-none absolute left-4 top-1/2 -translate-y-1/2", isLight ? "text-slate-400" : "text-violet-100/55")}>
               <Search className="h-4 w-4" />
             </div>
             <input
@@ -505,12 +521,17 @@ export function TerritoryLocationSelector({
               }}
               onFocus={() => setIsSearchOpen(true)}
               placeholder={currentConfig.placeholder || placeholder}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.08] py-3 pl-10 pr-10 text-sm text-white outline-none placeholder:text-violet-100/38 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
+              className={cn(
+                "w-full rounded-lg border py-2.5 pl-10 pr-10 text-sm outline-none focus:ring-2",
+                isLight
+                  ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  : "border-white/10 bg-white/[0.08] text-white placeholder:text-violet-100/38 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-emerald-300/30",
+              )}
             />
             <button
               type="button"
               onClick={() => setIsSearchOpen((current) => !current)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-violet-100/60 transition hover:bg-white/[0.06] hover:text-white"
+              className={cn("absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors", isLight ? "text-slate-500 hover:bg-slate-100 hover:text-slate-900" : "text-violet-100/60 hover:bg-white/[0.06] hover:text-white")}
               title="Afficher les suggestions"
             >
               <ChevronDown className="h-4 w-4" />
@@ -518,22 +539,22 @@ export function TerritoryLocationSelector({
           </div>
 
           {isSearchOpen ? (
-            <div className="overflow-hidden rounded-[1.4rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.9)_55%,rgba(88,28,135,0.84)_100%)] shadow-[0_20px_50px_-34px_rgba(15,23,42,0.6)]">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/64">
+            <div className={cn("overflow-hidden rounded-xl border", isLight ? "border-slate-200 bg-white shadow-sm" : "border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.9)_55%,rgba(88,28,135,0.84)_100%)] shadow-[0_20px_50px_-34px_rgba(15,23,42,0.6)]")}>
+              <div className={cn("flex items-center justify-between border-b px-4 py-2", isLight ? "border-slate-200" : "border-white/10")}>
+                <p className={cn("text-[10px] font-bold uppercase tracking-[0.22em]", isLight ? "text-slate-500" : "text-violet-100/64")}>
                   Suggestions
                 </p>
                 {isLoading ? (
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/80">
+                    <p className={cn("text-[10px] font-semibold uppercase tracking-[0.18em]", isLight ? "text-emerald-700" : "text-emerald-200/80")}>
                     Recherche...
                   </p>
                 ) : null}
               </div>
 
               {errorMessage ? (
-                <p className="px-4 py-3 text-sm text-rose-200">{errorMessage}</p>
+                <p className="px-4 py-3 text-sm text-rose-700">{errorMessage}</p>
               ) : suggestions.length === 0 ? (
-                <p className="px-4 py-4 text-sm text-violet-100/64">
+                <p className={cn("px-4 py-4 text-sm", isLight ? "text-slate-500" : "text-violet-100/64")}>
                   {trimmedQuery.length < 2
                     ? "Tape au moins deux caractères pour lancer la recherche."
                     : "Aucune suggestion trouvée."}
@@ -548,16 +569,16 @@ export function TerritoryLocationSelector({
                         event.preventDefault();
                         handlePickSuggestion(suggestion);
                       }}
-                      className="flex w-full items-start gap-3 rounded-[1.1rem] px-3 py-3 text-left transition hover:bg-white/[0.07]"
+                      className={cn("flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.07]")}
                     >
-                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-violet-100/72">
+                      <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border", isLight ? "border-slate-200 bg-slate-50 text-emerald-700" : "border-white/10 bg-white/[0.06] text-violet-100/72")}>
                         <MapPin className="h-4 w-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-white">
+                        <span className={cn("block truncate text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
                           {suggestion.label}
                         </span>
-                        <span className="mt-0.5 block text-xs text-violet-100/64">
+                        <span className={cn("mt-0.5 block text-xs", isLight ? "text-slate-500" : "text-violet-100/64")}>
                           {suggestion.subtitle || selectedLevelLabel}
                         </span>
                       </span>
@@ -570,20 +591,20 @@ export function TerritoryLocationSelector({
         </div>
       )}
 
-      <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] px-4 py-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/64">
+      <div className={cn("rounded-xl border px-4 py-3", isLight ? "border-slate-200 bg-white" : "border-white/10 bg-white/[0.06]")}>
+        <p className={cn("text-[10px] font-bold uppercase tracking-[0.22em]", isLight ? "text-slate-500" : "text-violet-100/64")}>
           Lieu retenu
         </p>
         {hasSelection ? (
           <div className="mt-2 space-y-1">
-            <p className="text-sm font-semibold text-white">{value?.label}</p>
-            <p className="text-xs text-violet-100/68">
+            <p className={cn("text-sm font-semibold", isLight ? "text-slate-900" : "text-white")}>{value?.label}</p>
+            <p className={cn("text-xs", isLight ? "text-slate-500" : "text-violet-100/68")}>
               {value?.subtitle || selectedLevelLabel}
               {value?.arrondissement ? ` · ${value.arrondissement}e arrondissement` : ""}
             </p>
           </div>
         ) : (
-          <p className="mt-2 text-sm text-violet-100/62">
+            <p className={cn("mt-2 text-sm", isLight ? "text-slate-500" : "text-violet-100/62")}>
             Sélectionne un lieu dans les suggestions pour l’enregistrer.
           </p>
         )}
@@ -596,6 +617,7 @@ export function GreaterParisLocationSelector(props: {
   value: TerritoryLocationSelection | null;
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
+  appearance?: "dark" | "light";
 }) {
   return <TerritoryLocationSelector {...props} />;
 }
@@ -604,6 +626,7 @@ export function GreaterParisSelect(props: {
   value: TerritoryLocationSelection | null;
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
+  appearance?: "dark" | "light";
 }) {
   return <TerritoryLocationSelector {...props} />;
 }
