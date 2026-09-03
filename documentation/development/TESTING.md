@@ -232,10 +232,10 @@ Pour une page visible modifiée, seulement lorsque demandé :
 4. comparer visuel et sémantique ;
 5. vérifier CTA, titres, statistiques, sources, états et accessibilité.
 
-Référence :
+Référence : la section `Vérification UI` de `documentation/pages_site/README.md`.
 
 ```txt
-documentation/development/page-by-page-ui-qa.md
+documentation/pages_site/README.md
 ```
 
 ## Smoke de production

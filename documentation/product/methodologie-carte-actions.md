@@ -62,7 +62,7 @@ Les quantités collectées servent de proxy de l'état rencontré avant ou penda
 
 Dans l'interface, ce score reste une valeur interne comprise entre 0 et 100,
 mais il est affiché en pourcentage (`x %`). La règle commune de formatage est
-documentée dans [`ui-score-formatting.md`](../development/ui-score-formatting.md).
+documentée dans [`ui-score-formatting.md`](../design-system/ui-score-formatting.md).
 
 ## 3. État post-action
 
