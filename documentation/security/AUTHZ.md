@@ -13,6 +13,19 @@ approprié selon la classification canonique. Une page publique peut donc
 présenter un CTA qui demande une connexion au moment où l'action nécessite une
 identité, une donnée privée ou une mutation.
 
+Pour la Communauté, cette règle s'applique à `/sections/community` et à
+`GET /api/community/events` : la liste, les compteurs RSVP publics et les
+données d'événement `public-safe` sont lisibles sans session. Le contexte Clerk
+reste optionnel pour enrichir la réponse connectée avec le seul
+`myRsvpStatus` de l'utilisateur courant ; il vaut `null` pour un anonyme. Les
+créations d'événement et les RSVP restent des mutations authentifiées et ne
+doivent pas être ouvertes par le GET public.
+
+Les réponses anonymes et personnalisées utilisent des clés et des tags de
+cache distincts. Une réponse contenant un état RSVP personnel est privée et ne
+doit jamais être servie par un cache partagé ; la lecture anonyme ne contient
+aucune donnée Clerk privée.
+
 Règle de vocabulaire : **IMU = super-admin = rôle interne `max`**. `max` est
 l'identifiant technique canonique, `IMU` le libellé produit et `super-admin` un
 alias entrant ; les trois termes ont strictement les mêmes permissions.
