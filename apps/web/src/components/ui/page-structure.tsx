@@ -314,14 +314,14 @@ export function ActionCard({
         <CmmIcon
           icon={ArrowRight}
           size="sm"
-          className="transition-transform duration-300 group-hover:translate-x-1"
+          className="cmm-icon-nudge-x"
         />
       </div>
     </>
   );
 
   const classes = cn(
-    "group flex h-full flex-col justify-between rounded-[1.75rem] border p-5 transition-all duration-300 hover:-translate-y-0.5",
+    "group cmm-hover-lift flex h-full flex-col justify-between rounded-[1.75rem] border p-5",
     actionToneClasses[tone],
     className,
   );

@@ -92,6 +92,13 @@
   background-color: var(--bg-muted);
 }
 
+/* Les helpers Motion canoniques restent plats en mode minimaliste. */
+[data-display-mode="minimaliste"] .cmm-hover-lift:hover,
+[data-display-mode="minimaliste"] .cmm-active-press:active,
+[data-display-mode="minimaliste"] .group:hover .cmm-icon-nudge-x {
+  transform: none;
+}
+
 /* -----------------------------------------------------------
    MODE SOBRE
    Accessibilité cognitive: aucun effet, statique, contrastes élevés
@@ -171,6 +178,17 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
   transform: none !important;
   box-shadow: none !important;
   border-color: var(--text-primary) !important;
+}
+
+/* Les helpers Motion canoniques sont statiques en mode sobre. */
+[data-display-mode="sobre"] .cmm-hover-lift,
+[data-display-mode="sobre"] .cmm-active-press,
+[data-display-mode="sobre"] .cmm-icon-nudge-x,
+[data-display-mode="sobre"] .cmm-hover-lift:hover,
+[data-display-mode="sobre"] .cmm-active-press:active,
+[data-display-mode="sobre"] .group:hover .cmm-icon-nudge-x {
+  transition: none !important;
+  transform: none !important;
 }
 
 /* Focus visible uniquement */
