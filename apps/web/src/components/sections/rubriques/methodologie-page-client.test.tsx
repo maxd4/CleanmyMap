@@ -88,6 +88,12 @@ describe("ActionMapMethodologySection", () => {
     );
 
     expect(markup).toContain("Méthode de calcul");
+    expect(markup).toContain('id="modes-affichage"');
+    expect(markup).toContain("Modes d’affichage");
+    expect(markup).toContain("Expérience visuelle CleanMyMap complète.");
+    expect(markup).toContain("Mêmes données, fonctions et contenus, mais fonds simplifiés");
+    expect(markup).toContain("contraste renforcé, surfaces plates");
+    expect(markup).toContain("Le mode change la présentation, jamais les fonctionnalités, permissions ou données.");
     expect(markup).toContain("Plans et quotas");
     expect(markup).toContain("Empreinte technique des services suivis");
     expect(markup).not.toContain("Terraink");

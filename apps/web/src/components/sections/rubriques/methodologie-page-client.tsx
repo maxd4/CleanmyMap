@@ -251,6 +251,71 @@ export function MethodologiePageClient({
 
         <ActionMapMethodologySection isFrench={isFrench} />
 
+        <section
+          id="modes-affichage"
+          aria-labelledby="modes-affichage-title"
+          className="scroll-mt-28 space-y-6 rounded-[2.5rem] border border-white/10 bg-slate-950/75 p-6 text-white shadow-[0_24px_60px_-42px_rgba(15,23,42,0.9)] sm:p-8 lg:p-10"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-300/25 bg-red-400/10 text-red-300">
+              <Info className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200/65">
+                {isFrench ? "Présentation" : "Presentation"}
+              </p>
+              <h2 id="modes-affichage-title" className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+                {isFrench ? "Modes d’affichage" : "Display modes"}
+              </h2>
+            </div>
+          </div>
+
+          <p className="max-w-4xl text-sm font-medium leading-relaxed text-red-100/75 sm:text-base">
+            {isFrench
+              ? "Les trois modes changent la présentation, pas le produit."
+              : "The three modes change presentation, not the product."}
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                title: isFrench ? "Exhaustif" : "Exhaustive",
+                description: isFrench
+                  ? "Expérience visuelle CleanMyMap complète."
+                  : "The complete CleanMyMap visual experience.",
+              },
+              {
+                title: isFrench ? "Minimaliste" : "Minimal",
+                description: isFrench
+                  ? "Mêmes données, fonctions et contenus, mais fonds simplifiés, pas de blur ni de textures, moins d’ombres et d’animations."
+                  : "Same data, features and content, with simplified backgrounds, no blur or textures, and fewer shadows and animations.",
+              },
+              {
+                title: isFrench ? "Sobre" : "Calm",
+                description: isFrench
+                  ? "Mêmes données, fonctions et contenus, mais priorité à la lisibilité et à l’accessibilité cognitive : contraste renforcé, surfaces plates, aucune animation décorative, effets supprimés et police système."
+                  : "Same data, features and content, with priority given to readability and cognitive accessibility: stronger contrast, flat surfaces, no decorative animation, removed effects and a system font.",
+              },
+            ].map((mode) => (
+              <article
+                key={mode.title}
+                className="rounded-2xl border border-white/12 bg-white/[0.04] p-5"
+              >
+                <h3 className="text-base font-bold text-white">{mode.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                  {mode.description}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <p className="rounded-2xl border border-red-300/25 bg-red-400/10 px-4 py-3 text-sm font-semibold leading-relaxed text-white">
+            {isFrench
+              ? "Le mode change la présentation, jamais les fonctionnalités, permissions ou données."
+              : "The mode changes presentation, never features, permissions or data."}
+          </p>
+        </section>
+
         <div
           className={cn(
             "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
