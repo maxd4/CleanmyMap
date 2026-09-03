@@ -88,6 +88,11 @@ de `CmmTable` volontairement. Le contrat détaillé est documenté dans
 [`DATA_DISPLAY_TABLES_KPI.md`](./DATA_DISPLAY_TABLES_KPI.md) et contrôlé par
 `npm run check:data-display`.
 
+Pour les glyphes Lucide standards, utiliser `CmmIcon` selon
+[`ICONS.md`](./ICONS.md). La primitive porte les tailles et l’accessibilité
+communes ; les usages spécialisés restent hors de ce contrat. Le garde-fou est
+`npm run check:icons`.
+
 ## Architecture CSS runtime
 
 `apps/web/src/app/globals.css` reste le point d’entrée unique du CSS web. Il
