@@ -26,22 +26,22 @@ const REQUESTABLE_ROLES: Record<
   { requestedRole: "elu" | "admin"; label: string }[]
 > = {
   benevole: [
-    { requestedRole: "elu", label: "Demander le rôle Elu" },
-    { requestedRole: "admin", label: "Demander le rôle admin" },
+    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
+    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
   ],
   coordinateur: [
-    { requestedRole: "elu", label: "Demander le rôle Elu" },
-    { requestedRole: "admin", label: "Demander le rôle admin" },
+    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
+    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
   ],
   scientifique: [
-    { requestedRole: "elu", label: "Demander le rôle Elu" },
-    { requestedRole: "admin", label: "Demander le rôle admin" },
+    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
+    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
   ],
   entreprise: [
-    { requestedRole: "elu", label: "Demander le rôle Elu" },
-    { requestedRole: "admin", label: "Demander le rôle admin" },
+    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
+    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
   ],
-  elu: [{ requestedRole: "admin", label: "Demander le rôle admin" }],
+  elu: [{ requestedRole: "admin", label: "Demander le rôle Administrateur" }],
   admin: [],
   max: [],
 };

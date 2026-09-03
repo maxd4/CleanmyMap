@@ -22,10 +22,10 @@ type SearchState =
 
 function roleBadgeLabel(roleLabel: RoleAccountRecord["roleLabel"], fr: boolean) {
   if (roleLabel === "admin") {
-    return fr ? "Admin" : "Admin";
+    return fr ? "Administrateur" : "Administrator";
   }
   if (roleLabel === "elu") {
-    return fr ? "Elu" : "Elected";
+    return fr ? "Élu·e" : "Elected representative";
   }
   if (roleLabel === "entreprise") {
     return fr ? "Entreprise" : "Business";
