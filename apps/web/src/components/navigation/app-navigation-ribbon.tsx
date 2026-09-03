@@ -27,7 +27,11 @@ import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
 } from "@/lib/navigation";
-import type { AppProfile } from "@/lib/profiles";
+import {
+  resolveActiveProfile,
+  type AppProfile,
+} from "@/lib/profiles";
+import type { Role } from "@/lib/domain-language";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
 import {
@@ -43,7 +47,6 @@ import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
   getProfileLabel,
   normalizeProfileRole,
-  toProfile,
 } from "@/lib/profiles";
 import type { Locale } from "@/lib/ui/preferences";
 
@@ -63,7 +66,7 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   showAccountActions: boolean;
 };
 
-function readProfileRole(metadata: unknown): AppProfile | null {
+function readProfileRole(metadata: unknown): Role | null {
   if (!metadata || typeof metadata !== "object") {
     return null;
   }
@@ -79,6 +82,18 @@ function readProfileRole(metadata: unknown): AppProfile | null {
         : null;
 
   return rawValue ? normalizeProfileRole(rawValue) : null;
+}
+
+function readActiveProfile(metadata: unknown, role: Role): AppProfile {
+  if (!metadata || typeof metadata !== "object") {
+    return role;
+  }
+
+  const value = (metadata as Record<string, unknown>)["activeProfile"];
+  return resolveActiveProfile({
+    metadataActiveProfile: typeof value === "string" ? value : null,
+    role,
+  });
 }
 
 function readProfileBadges(metadata: unknown): string[] {
@@ -114,7 +129,8 @@ function buildProfileBadge(profile: AppProfile, locale: Locale) {
 
 function buildIdentityFromUser(
   user: ClerkUserLike,
-  effectiveProfile: AppProfile,
+  role: Role,
+  activeProfile: AppProfile,
   locale: Locale,
 ): UserIdentity {
   const firstName = user.firstName?.trim() ?? null;
@@ -124,8 +140,8 @@ function buildIdentityFromUser(
     user.primaryEmailAddress?.emailAddress?.trim() ||
     user.id;
   const displayName = `${firstName ?? ""} ${lastName}`.trim() || username;
-  const roleBadge = buildRoleBadge(effectiveProfile, locale);
-  const profileBadge = buildProfileBadge(effectiveProfile, locale);
+  const roleBadge = buildRoleBadge(role, locale);
+  const profileBadge = buildProfileBadge(activeProfile, locale);
   const publicBadges = readProfileBadges(user.publicMetadata);
   const mergedBadges = Array.from(
     new Set([...publicBadges, roleBadge.id, profileBadge.id]),
@@ -140,7 +156,8 @@ function buildIdentityFromUser(
     email: user.primaryEmailAddress?.emailAddress?.trim() ?? null,
     currentLevel: 1,
     actorNameOptions: [displayName, username, user.id],
-    role: effectiveProfile,
+    role,
+    activeProfile,
     badges: mergedBadges.map((badgeId) =>
       badgeId === roleBadge.id
         ? roleBadge
@@ -149,6 +166,49 @@ function buildIdentityFromUser(
           : { id: badgeId, label: badgeId.replace(/_/g, " "), icon: "award" },
     ),
   };
+}
+
+function AccountUserBubble({
+  user,
+  identity,
+  isActive,
+}: {
+  user: ClerkUserLike;
+  identity: UserIdentity;
+  isActive: boolean;
+}) {
+  const username = user.username?.trim() || identity.username;
+  const fullName = [user.firstName?.trim(), user.lastName?.trim()]
+    .filter((part): part is string => Boolean(part))
+    .join(" ") || identity.displayName;
+
+  return (
+    <div className="flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
+      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80">
+        <UserButton
+          appearance={{
+            elements: {
+              userButtonTrigger: "h-10 w-10 rounded-full",
+              userButtonAvatarBox: "h-10 w-10 rounded-full ring-1 ring-white/20",
+            },
+          }}
+        />
+        <span
+          className={cn(
+            "pointer-events-none absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900",
+            isActive ? "bg-emerald-400" : "bg-rose-400",
+          )}
+          aria-label={isActive ? "Statut : actif" : "Statut : indisponible"}
+        />
+      </div>
+      <div className="hidden min-w-0 flex-1 leading-tight sm:block">
+        <p className="truncate text-sm font-bold text-white">
+          {username} · Niv. {identity.currentLevel}
+        </p>
+        <p className="truncate text-xs font-medium text-slate-300">{fullName}</p>
+      </div>
+    </div>
+  );
 }
 
 function AppNavigationRibbonShell({
@@ -176,13 +236,18 @@ function AppNavigationRibbonShell({
   const feedbackOpen = isFeedbackOpen && feedbackOwnerPath === pathname;
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(user?.publicMetadata);
-  const effectiveProfile = identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
+  const effectiveProfile = identity?.activeProfile ?? (userRole ? readActiveProfile(user?.publicMetadata, userRole) : fallbackProfile);
   const effectiveProfileLabel =
     profileLabel ?? getProfileLabel(effectiveProfile, locale);
   const effectiveIdentity: UserIdentity | null = identity
     ? identity
     : showAccountActions && isLoaded && isSignedIn && user
-      ? buildIdentityFromUser(user, effectiveProfile, locale)
+      ? buildIdentityFromUser(
+          user,
+          userRole ?? fallbackProfile,
+          effectiveProfile,
+          locale,
+        )
       : null;
 
   const ribbonChrome = useAdaptiveRibbonChrome(
@@ -198,6 +263,16 @@ function AppNavigationRibbonShell({
   const activeSpaceId = getActiveSpaceForPath(effectiveProfile, pathname, displayMode);
   const isAuthenticated =
     showAccountActions && (Boolean(effectiveIdentity) || (isLoaded && isSignedIn));
+  const identityForBubble =
+    effectiveIdentity ??
+    (user
+      ? buildIdentityFromUser(
+          user,
+          userRole ?? fallbackProfile,
+          effectiveProfile,
+          locale,
+        )
+      : null);
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
@@ -638,19 +713,17 @@ function AppNavigationRibbonShell({
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2 lg:gap-3">
-                <div className="rounded-full border border-white/10 bg-white/8 px-1.5 py-1">
-                  {effectiveIdentity ? <AccountIdentityChip identity={effectiveIdentity} /> : null}
-                </div>
                 <NotificationBell />
-                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
-                  <UserButton
-                    appearance={{
-                      elements: {
-                        userButtonAvatarBox: "h-9 w-9 ring-2 ring-emerald-500/20 shadow-lg",
-                      },
-                    }}
+                {effectiveIdentity ? (
+                  <AccountIdentityChip identity={effectiveIdentity} />
+                ) : null}
+                {user && identityForBubble ? (
+                  <AccountUserBubble
+                    user={user}
+                    identity={identityForBubble}
+                    isActive={isLoaded && isSignedIn}
                   />
-                </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -672,11 +745,11 @@ function AppNavigationRibbonPublic({
   const authSignedIn = Boolean(isSignedIn);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
-  const effectiveProfile =
-    userRole ? toProfile(userRole) : fallbackProfile;
+  const effectiveRole = userRole ?? fallbackProfile;
+  const effectiveProfile = readActiveProfile(userResource?.publicMetadata, effectiveRole);
   const effectiveIdentity =
     authLoaded && authSignedIn && userResource
-      ? buildIdentityFromUser(userResource, effectiveProfile, locale)
+      ? buildIdentityFromUser(userResource, effectiveRole, effectiveProfile, locale)
       : null;
 
   return (
@@ -707,11 +780,17 @@ function AppNavigationRibbonProtected({
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
   const effectiveProfile =
-    identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
+    identity?.activeProfile ??
+    (userRole ? readActiveProfile(user?.publicMetadata, userRole) : fallbackProfile);
   const effectiveIdentity =
     identity ??
     (authLoaded && authSignedIn && userResource
-      ? buildIdentityFromUser(userResource, effectiveProfile, locale)
+      ? buildIdentityFromUser(
+          userResource,
+          userRole ?? fallbackProfile,
+          effectiveProfile,
+          locale,
+        )
       : null);
 
   return (

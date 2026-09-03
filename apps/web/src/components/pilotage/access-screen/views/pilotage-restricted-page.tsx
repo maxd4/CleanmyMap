@@ -51,8 +51,8 @@ export function PilotageRestrictedPage({
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-white">
                   {locale === "fr"
-                    ? "Le cockpit complet reste réservé aux profils Coordination, IMU et arbitrage final."
-                    : "The full cockpit remains reserved for Coordination, IMU and final arbitration profiles."}
+                    ? "Le cockpit complet reste réservé aux profils Association, IMU et arbitrage final."
+                    : "The full cockpit remains reserved for Association, IMU and final arbitration profiles."}
                 </p>
               </div>
             </div>

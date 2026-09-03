@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import {
   getRoleSwitchTargetPath,
 } from "@/lib/account/role-switch-navigation";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { IdentityBadge } from "@/components/ui/identity-badge";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
 import { usePathname, useRouter } from "next/navigation";
@@ -17,7 +15,6 @@ import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
   getProfileEntryPath,
   getProfileLabel,
-  getProfileSubtitle,
   getSwitchableProfiles,
   type AppProfile,
 } from "@/lib/profiles";
@@ -32,11 +29,8 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
-  const roleBadge = identity.badges.find((badge) =>
-    badge.id.startsWith("role_"),
-  );
-  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
-  const [roleError, setRoleError] = useState<string | null>(null);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const gamificationBadges = identity.badges.filter(
@@ -46,7 +40,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       !badge.id.startsWith("profile_"),
   );
 
-  const roleOptions = useMemo(() => {
+  const profileOptions = useMemo(() => {
     return getSwitchableProfiles(identity.role);
   }, [identity.role]);
   const roleMenuRef = useRef<HTMLDetailsElement | null>(null);
@@ -111,28 +105,28 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     };
   }, []);
 
-  const handleRoleMutation = async (targetProfile: AppProfile | null) => {
-    if (!targetProfile || isUpdatingRole) {
+  const handleActiveProfileMutation = async (targetProfile: AppProfile | null) => {
+    if (!targetProfile || isUpdatingProfile) {
       return;
     }
-    setIsUpdatingRole(true);
-    setRoleError(null);
+    setIsUpdatingProfile(true);
+    setProfileError(null);
 
     try {
-      const response = await fetch("/api/account/profile-role", {
+      const response = await fetch("/api/account/active-profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ profile: targetProfile }),
+        body: JSON.stringify({ activeProfile: targetProfile }),
       });
 
       const payload = (await response.json().catch(() => null)) as
-        | { role?: string; profilePath?: string; error?: string }
+        | { role?: string; activeProfile?: string; profilePath?: string; error?: string }
         | null;
 
       if (!response.ok) {
-        throw new Error(payload?.error ?? "Mutation de rôle refusée.");
+        throw new Error(payload?.error ?? "Mutation de profil refusée.");
       }
 
       if (user) {
@@ -149,175 +143,114 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Mutation de rôle refusée.";
-      setRoleError(message);
+        setProfileError(message);
     } finally {
-      setIsUpdatingRole(false);
+      setIsUpdatingProfile(false);
     }
   };
 
   return (
     <div className="flex items-center gap-2">
-      <div className="text-right hidden sm:block">
-        <p className="cmm-text-small font-semibold cmm-text-primary">
-          {identity.displayName}
-        </p>
-        <p className="cmm-text-caption cmm-text-muted">
-          @{identity.username} · Niv. {identity.currentLevel}
-        </p>
-      </div>
-
-      {roleBadge ? (
-        roleOptions.length > 0 ? (
-          <details
-            ref={roleMenuRef}
-            open={isRoleMenuOpen}
-            onToggle={(event) => setIsRoleMenuOpen(event.currentTarget.open)}
-            onMouseEnter={openRoleMenu}
-            onMouseLeave={closeRoleMenuAfterHover}
-            className="relative"
+      {profileOptions.length > 0 ? (
+        <details
+          ref={roleMenuRef}
+          open={isRoleMenuOpen}
+          onToggle={(event) => setIsRoleMenuOpen(event.currentTarget.open)}
+          onMouseEnter={openRoleMenu}
+          onMouseLeave={closeRoleMenuAfterHover}
+          className="relative"
+        >
+          <summary
+            aria-haspopup="menu"
+            aria-expanded={isRoleMenuOpen}
+            aria-controls="account-role-menu-panel"
+            className="cmm-dropdown-trigger inline-flex min-h-11 max-w-[13rem] cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99] [&::-webkit-details-marker]:hidden"
           >
-            <summary
-              aria-haspopup="menu"
-              aria-expanded={isRoleMenuOpen}
-              aria-controls="account-role-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 active:scale-95 [&::-webkit-details-marker]:hidden"
-          >
-            <IdentityBadge
-              icon={roleBadge.icon}
-              label={roleBadge.label}
-              tone="role"
-              className={`${isUpdatingRole ? "opacity-60" : ""}`}
-            />
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 transition-transform duration-150",
-                  isRoleMenuOpen && "rotate-180",
-                )}
-                aria-hidden="true"
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
+              <BadgePictogram
+                name={getAccountBadgeIconName(`role_${identity.activeProfile}`)}
+                size={16}
               />
-            </summary>
-            <div
+            </span>
+            <span className="hidden truncate text-sm font-bold sm:inline">
+              {getProfileLabel(identity.activeProfile, locale)}
+            </span>
+            <ChevronDown
               className={cn(
-                "absolute z-40 h-3 w-full",
-                roleMenuPlacement.openUp ? "bottom-full" : "top-full",
+                "h-4 w-4 shrink-0 text-slate-300 transition-transform duration-150",
+                isRoleMenuOpen && "rotate-180",
               )}
-              onMouseEnter={openRoleMenu}
               aria-hidden="true"
             />
-            <div
-              id="account-role-menu-panel"
-              onMouseEnter={openRoleMenu}
-              onMouseLeave={closeRoleMenuAfterHover}
-              className={cn(
-                "absolute z-40 w-72 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl",
-                roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-                roleMenuPlacement.alignRight ? "right-0" : "left-0",
-              )}
-              style={{
-                backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-                backgroundColor: "rgba(5,46,22,0.98)",
-              }}
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white">
-                {locale === "fr" ? "Changer de rôle" : "Switch role"}
-              </p>
-              <ul className="mt-2 space-y-1">
-                {roleOptions.map((profile) => {
-                  const isActive = profile === identity.role;
-                  return (
-                    <li key={profile}>
-                      <button
-                        type="button"
-                        disabled={isUpdatingRole}
-                        onClick={() => {
-                          if (isActive) {
-                            setIsRoleMenuOpen(false);
-                            return;
-                          }
-                          void handleRoleMutation(profile);
-                        }}
-                        className={cn(
-                          "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
-                          isActive
-                            ? "bg-emerald-400/20 text-white shadow-sm ring-1 ring-emerald-300/40"
-                            : "text-white hover:bg-white/10 hover:text-white disabled:opacity-40",
-                        )}
-                      >
-                        <span className="flex min-w-0 items-start gap-2">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[9px] font-black uppercase leading-none text-white">
-                            i
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-[13px] font-bold text-white">
-                              {getProfileLabel(profile, locale)}
-                            </span>
-                            <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide text-white/70">
-                              {getProfileSubtitle(profile, locale)}
-                            </span>
-                          </span>
-                        </span>
-                        {isActive ? (
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M20 6 9 17l-5-5" />
-                            </svg>
-                          </div>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] leading-5 text-white/78">
-                {locale === "fr" ? (
-                  <>
-                    Tu peux changer de rôle à tout moment depuis ce menu.
-                    Pour le faire, rouvre le badge de profil puis choisis un
-                    autre rôle. Pour demander une promotion vers Elu ou
-                    Administration, utilise le formulaire de la rubrique{" "}
-                    <Link
-                      href="/sections/feedback#collaboration"
-                      className="font-bold text-emerald-200 underline underline-offset-2 hover:text-white"
-                    >
-                      Retour et amélioration
-                    </Link>
-                    .
-                  </>
-                ) : (
-                  <>
-                    You can change your role at any time from this menu.
-                    To do it, reopen the profile badge and choose another role.
-                    To request a promotion to Elected or Administration, use
-                    the form in the{" "}
-                    <Link
-                      href="/sections/feedback#collaboration"
-                      className="font-bold text-emerald-200 underline underline-offset-2 hover:text-white"
-                    >
-                      Feedback &amp; improvement
-                    </Link>
-                    section.
-                  </>
-                )}
-              </div>
-            </div>
-          </details>
-        ) : (
-          <IdentityBadge
-            icon={roleBadge.icon}
-            label={roleBadge.label}
-            tone="role"
+          </summary>
+          <div
+            className={cn(
+              "absolute z-40 h-3 w-full",
+              roleMenuPlacement.openUp ? "bottom-full" : "top-full",
+            )}
+            onMouseEnter={openRoleMenu}
+            aria-hidden="true"
           />
-        )
+          <div
+            id="account-role-menu-panel"
+            role="menu"
+            aria-label={locale === "fr" ? "Profils accessibles" : "Accessible profiles"}
+            onMouseEnter={openRoleMenu}
+            onMouseLeave={closeRoleMenuAfterHover}
+            className={cn(
+              "absolute z-40 w-[min(19rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]",
+              roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
+              roleMenuPlacement.alignRight ? "right-0" : "left-0",
+            )}
+          >
+            <p className="px-2 pb-2 text-sm font-semibold text-slate-200">
+              {locale === "fr" ? "Je représente un/une :" : "I represent:"}
+            </p>
+            <ul className="space-y-1" role="none">
+              {profileOptions.map((profile) => {
+                const isActive = profile === identity.activeProfile;
+                return (
+                  <li key={profile} role="none">
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      disabled={isUpdatingProfile}
+                      onClick={() => {
+                        if (isActive) {
+                          setIsRoleMenuOpen(false);
+                          return;
+                        }
+                        void handleActiveProfileMutation(profile);
+                      }}
+                      className={cn(
+                        "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",
+                        isActive
+                          ? "bg-emerald-400/12 text-white ring-1 ring-emerald-300/30"
+                          : "text-slate-100 hover:bg-white/10 hover:text-white",
+                      )}
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-emerald-200">
+                        <BadgePictogram
+                          name={getAccountBadgeIconName(`role_${profile}`)}
+                          size={17}
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {getProfileLabel(profile, locale)}
+                      </span>
+                      {isActive ? (
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/80 text-slate-950" aria-hidden="true">
+                          ✓
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </details>
       ) : null}
 
       {gamificationBadges.length > 0 ? (
@@ -392,9 +325,9 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
         </details>
       ) : null}
 
-      {roleError ? (
+      {profileError ? (
         <span className="max-w-32 cmm-text-caption leading-tight text-rose-600" aria-live="polite">
-          {roleError}
+          {profileError}
         </span>
       ) : null}
     </div>
