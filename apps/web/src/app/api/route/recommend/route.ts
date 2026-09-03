@@ -25,7 +25,6 @@ import {
   buildProactiveAssistant,
   defaultRouteAssistantPayload,
   defaultRouteRecommendationFloorDate,
-  loadCachedEventPressureByArrondissement,
 } from"@/lib/route/recommendation-assistant";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -47,6 +46,8 @@ import {
   type RoutePlannerOrigin,
 } from "@/lib/route/route-planner";
 import { buildRouteRecommendationTrace } from "@/lib/route/route-trace";
+import { loadCachedRouteEventSignalContext } from "@/lib/route/route-event-pressure-loader";
+import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 
 export const runtime ="nodejs";
 
@@ -69,9 +70,14 @@ const ROUTE_RECOMMENDATION_RATE_LIMIT = {
   window: 60,
 } as const;
 
-const EMPTY_EVENT_PRESSURE_CONTEXT = {
-  pressureByArrondissement: new Map<number, number>(),
-  eventSignals: [],
+const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
+  candidatePressureById: new Map(),
+  completedEventsConsidered: 0,
+  geolocatedCompletedEvents: 0,
+  eventsWithoutCoordinates: 0,
+  futureEventSignals: [],
+  sourceAvailable: false,
+  warnings: ["Le signal événementiel est indisponible pour ce calcul."],
 };
 
 function resolveRouteOrigin(
@@ -193,21 +199,7 @@ export async function POST(request: Request) {
 
  try {
  const supabase = getSupabaseServerClient();
- const eventPressurePromise = loadCachedEventPressureByArrondissement(() => supabase).catch(
-   (eventPressureError: unknown) => {
-     console.warn("Route recommendation event pressure unavailable; continuing without it", {
-       message:
-         eventPressureError instanceof Error
-           ? eventPressureError.message
-           : String(eventPressureError),
-     });
-     return EMPTY_EVENT_PRESSURE_CONTEXT;
-   },
- );
- const [locationPreference, eventPressureContext] = await Promise.all([
-   getCurrentUserLocationPreference(),
-   eventPressurePromise,
- ]);
+ const locationPreference = await getCurrentUserLocationPreference();
  const origin = resolveRouteOrigin(
    options.origin,
    locationPreference?.arrondissement,
@@ -226,8 +218,22 @@ export async function POST(request: Request) {
  });
 
  const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
+ const eventSignalContext = await loadCachedRouteEventSignalContext(
+   () => supabase,
+   actionableCandidates,
+ ).catch((eventSignalError: unknown) => {
+   console.warn("Route recommendation event signal unavailable; continuing without it", {
+     message:
+       eventSignalError instanceof Error
+         ? eventSignalError.message
+         : String(eventSignalError),
+   });
+   return EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT;
+ });
  const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
  actionableCandidates,
+ new Date(),
+ eventSignalContext.candidatePressureById,
  );
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
@@ -294,6 +300,7 @@ export async function POST(request: Request) {
         consumedTravelMinutes: 0,
         budgetPrefixApplied,
         sourceHealth,
+        eventSignalContext,
       }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
@@ -369,9 +376,9 @@ export async function POST(request: Request) {
    : 0;
  const distanceScore = Math.max(0, 100 - totalDistance * 5);
  const hotspots = buildHotspots({
- candidates,
- pressureByArrondissement: eventPressureContext.pressureByArrondissement,
- userArrondissement: locationPreference?.arrondissement ?? null,
+   candidates,
+   pressureByArrondissement: new Map(),
+   userArrondissement: locationPreference?.arrondissement ?? null,
  });
  const proactiveAssistant = buildProactiveAssistant({
  stops: plannedStops.map(({ candidate }) => ({
@@ -379,7 +386,7 @@ export async function POST(request: Request) {
    score: candidate.score,
  })),
  hotspots,
- eventSignals: eventPressureContext.eventSignals,
+ eventSignals: eventSignalContext.futureEventSignals,
  });
  const status = resolveRouteRecommendationStatus({
    dataStatus,
@@ -400,6 +407,7 @@ export async function POST(request: Request) {
    consumedTravelMinutes: travelMinutes,
    budgetPrefixApplied,
    sourceHealth,
+   eventSignalContext,
  });
 
  try {

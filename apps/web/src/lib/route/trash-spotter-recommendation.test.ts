@@ -99,4 +99,24 @@ describe("Trash Spotter route recommendation", () => {
     expect(result?.reason).not.toContain("météo");
     expect(result?.reason).not.toContain("sécurité");
   });
+
+  it("adds bounded post-event pressure without bypassing the volunteer gate", () => {
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    const candidate = buildCandidate({ observedAt: "2026-06-26T00:00:00.000Z" });
+    const eventPressure = {
+      combinedPressure: 1,
+      scoreBoost: 20,
+      contributions: [],
+    };
+    const [result] = buildTrashSpotterRouteCandidates(
+      [candidate],
+      now,
+      new Map([[candidate.id, eventPressure]]),
+    );
+
+    expect(result?.baseScore).toBe(50);
+    expect(result?.score).toBe(70);
+    expect(result?.eventPressure).toEqual(eventPressure);
+    expect(result?.reason).toContain("pression post-événement=1.000");
+  });
 });

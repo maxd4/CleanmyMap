@@ -11,6 +11,10 @@ import {
   type RoutePlannerOrigin,
   type RoutePlannerResult,
 } from "./route-planner";
+import type {
+  RouteEventPressureContribution,
+  RouteEventSignalContext,
+} from "./route-event-pressure";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -43,6 +47,8 @@ export type RouteTraceSelectedStop = {
   budgetBeforeMinutes: number;
   budgetAfterMinutes: number;
   reason: string;
+  eventContributions: RouteEventPressureContribution[];
+  eventScoreContribution: number;
 };
 
 export type RouteTraceSegment = {
@@ -105,6 +111,16 @@ export type RouteRecommendationTrace = {
   warnings: string[];
   approximations: string[];
   fallbacks: string[];
+  eventSignal: {
+    completedEventsConsidered: number;
+    geolocatedCompletedEvents: number;
+    eventsWithoutCoordinates: number;
+    sourceAvailable: boolean;
+    recentWindowDays: number;
+    signalHorizonDays: number;
+    spatialRadiusKm: number;
+    maxScoreBoost: number;
+  };
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -120,6 +136,17 @@ export type BuildRouteRecommendationTraceInput = {
   consumedTravelMinutes: number;
   budgetPrefixApplied: boolean;
   sourceHealth: UnifiedSourceHealth;
+  eventSignalContext?: RouteEventSignalContext;
+};
+
+const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
+  candidatePressureById: new Map(),
+  completedEventsConsidered: 0,
+  geolocatedCompletedEvents: 0,
+  eventsWithoutCoordinates: 0,
+  futureEventSignals: [],
+  sourceAvailable: true,
+  warnings: [],
 };
 
 function round(value: number): number {
@@ -184,6 +211,7 @@ function selectionForStop(
   stop: PlannedRouteStop,
   step: number,
   plannerResult: RoutePlannerResult,
+  eventSignalContext: RouteEventSignalContext,
 ): RouteTraceSelectedStop {
   const selection = plannerResult.audit?.selections.find(
     (item) => item.candidateId === stop.candidate.id && item.step === step,
@@ -208,12 +236,24 @@ function selectionForStop(
     budgetBeforeMinutes: selection.budgetBeforeMinutes,
     budgetAfterMinutes: selection.budgetAfterMinutes,
     reason: selection.selectionReason,
+    eventContributions:
+      eventSignalContext.candidatePressureById.get(stop.candidate.id)
+        ?.contributions ?? [],
+    eventScoreContribution:
+      typeof (stop.candidate as { eventScoreContribution?: unknown })
+        .eventScoreContribution === "number"
+        ? (stop.candidate as unknown as { eventScoreContribution: number })
+            .eventScoreContribution
+        : eventSignalContext.candidatePressureById.get(stop.candidate.id)
+              ?.scoreBoost ?? 0,
   };
 }
 
 export function buildRouteRecommendationTrace(
   input: BuildRouteRecommendationTraceInput,
 ): RouteRecommendationTrace {
+  const eventSignalContext =
+    input.eventSignalContext ?? EMPTY_EVENT_SIGNAL_CONTEXT;
   const orderingCriteria = input.plannerResult.audit?.orderingCriteria ?? [
     "combined_score_desc",
     "priority_desc",
@@ -225,11 +265,16 @@ export function buildRouteRecommendationTrace(
       stop,
       index + 1,
       input.plannerResult,
+      eventSignalContext,
     ),
   );
   const fallbacks: string[] = [];
   const approximations: string[] = [];
-  const warnings = [...input.sourceHealth.warnings];
+  const warnings = [
+    ...input.sourceHealth.warnings,
+    ...eventSignalContext.warnings,
+  ];
+  const eventSignalUnavailable = !eventSignalContext.sourceAvailable;
 
   if (input.origin.source === "approximate_saved_area") {
     approximations.push("origine = centre approximatif de la zone enregistrée");
@@ -247,6 +292,11 @@ export function buildRouteRecommendationTrace(
       "Le choix précis du tracé routier et les mesures de ses segments sont fournis par le fournisseur externe.",
     );
   }
+  if (eventSignalContext.eventsWithoutCoordinates > 0) {
+    warnings.push(
+      `${eventSignalContext.eventsWithoutCoordinates} événement(s) terminé(s) sans coordonnées n’ont pas influencé la proximité.`,
+    );
+  }
 
   const segments = buildSegments(
     input.origin,
@@ -260,6 +310,10 @@ export function buildRouteRecommendationTrace(
   )
     ? round(knownSegmentDistances.reduce((total, distanceKm) => total + distanceKm, 0))
     : null;
+
+  if (eventSignalUnavailable) {
+    fallbacks.push("event_signal_unavailable");
+  }
 
   return {
     engineVersion: input.engineVersion,
@@ -318,5 +372,15 @@ export function buildRouteRecommendationTrace(
     warnings: [...new Set(warnings)],
     approximations,
     fallbacks,
+    eventSignal: {
+      completedEventsConsidered: eventSignalContext.completedEventsConsidered,
+      geolocatedCompletedEvents: eventSignalContext.geolocatedCompletedEvents,
+      eventsWithoutCoordinates: eventSignalContext.eventsWithoutCoordinates,
+      sourceAvailable: eventSignalContext.sourceAvailable,
+      recentWindowDays: 16,
+      signalHorizonDays: 56,
+      spatialRadiusKm: 2,
+      maxScoreBoost: 20,
+    },
   };
 }
