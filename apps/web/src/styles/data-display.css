@@ -1,0 +1,61 @@
+@layer components {
+  /* Contrat commun des tables runtime : aucune ombre, blur ou décoration de shell. */
+  .cmm-data-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+  }
+
+  .cmm-data-table {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    color: var(--text-primary);
+    font-size: var(--size-small);
+    text-align: left;
+  }
+
+  .cmm-data-table th,
+  .cmm-data-table td {
+    padding: var(--space-1) var(--space-2);
+    vertical-align: top;
+  }
+
+  .cmm-data-table thead {
+    background: var(--bg-muted);
+    color: var(--text-muted);
+  }
+
+  .cmm-data-table thead th {
+    font-size: var(--size-caption);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cmm-data-table tbody tr {
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .cmm-data-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .cmm-data-table[data-density="compact"] th,
+  .cmm-data-table[data-density="compact"] td {
+    padding: calc(var(--space-1) / 2) var(--space-1);
+  }
+
+  .cmm-data-table__numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cmm-data-table__end {
+    text-align: end;
+  }
+
+  .cmm-data-table__nowrap {
+    white-space: nowrap;
+  }
+}
