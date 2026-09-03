@@ -42,6 +42,7 @@ export const CLERK_CONTEXT_ROUTE_PREFIXES = [
   "/partners/network",
   "/sections/annuaire",
   "/sections/rejoindre-un-formulaire",
+  "/sections/community",
 ] as const;
 
 // These API families need Clerk request context for auth() or centralized
@@ -267,6 +268,7 @@ export const config = {
     "/partners/network(.*)",
     "/sections/annuaire(.*)",
     "/sections/rejoindre-un-formulaire(.*)",
+    "/sections/community(.*)",
     "/api/account(.*)",
     "/api/actions(.*)",
     "/api/admin(.*)",

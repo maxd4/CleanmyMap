@@ -393,10 +393,10 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "community/events": {
     GET: {
-      expected: "Authenticated community read with current-user RSVP context",
-      dimensions: ["authentication", "ownership"],
-      actual: "auth() + user-scoped RSVP summary",
-      evidence: ["auth()", "loadCachedCommunityEvents"],
+      expected: "Public-safe community read with optional current-user RSVP context",
+      dimensions: ["public-safe", "ownership"],
+      actual: "getSafeAuthSession() with nullable userId; public counts remain available and personal RSVP context is optional",
+      evidence: ["getSafeAuthSession", "loadCachedCommunityEvents", "userId", "myRsvpStatus"],
     },
     POST: {
       expected: "Authenticated user creates an event owned by current user",
