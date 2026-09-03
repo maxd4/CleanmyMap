@@ -34,6 +34,34 @@ tracée. Un admin qui rejoint normalement l'action d'un tiers suit la file
 normale. La règle détaillée est documentée dans
 `documentation/security/authz-authn-regles.md`.
 
+## Routes API modulaires dès la conception
+
+- `route.ts` reste prioritairement une frontière HTTP/Next et non le conteneur
+  de tout le domaine ;
+- une route simple peut rester dans un fichier ;
+- lorsqu'une route combine plusieurs responsabilités durables parmi :
+  - schema, parsing et validation ;
+  - AuthN, AuthZ et contexte ;
+  - accès DB ou provider ;
+  - normalisation ou enrichissement ;
+  - orchestration métier ;
+  - pagination ;
+  - plusieurs handlers `GET`, `POST`, `PATCH`, etc.,
+  elle doit être structurée dès le premier développement ;
+- utiliser des frontières locales telles que `route.shared.ts`,
+  `route.data.ts`, `route.get.ts`, `route.post.ts` seulement lorsqu'elles
+  reflètent les responsabilités réelles ;
+- `route.ts` peut devenir une façade ou un réexport lorsque cela préserve
+  clairement le contrat Next ;
+- séparer autant que possible les fonctions pures des opérations Supabase ou
+  provider ;
+- ne pas construire une abstraction repository ou service générique sans besoin
+  démontré ;
+- préserver AuthN, AuthZ, RLS, codes HTTP, payloads, ordre des effets et
+  contrats publics ;
+- les tests de route continuent à couvrir le contrat HTTP public même si
+  l'implémentation devient modulaire.
+
 ## Tests de frontière
 
 Maintenir les tests AuthZ, de validation, d'erreur, de rate limiting et de

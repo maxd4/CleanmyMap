@@ -239,13 +239,99 @@ Server/Client. Toute restructuration importante suit :
 2. architecture logique, dépendances, responsabilités et testabilité ;
 3. garde-fous de gouvernance, dépendances et documentation canonique.
 
-La taille seule n'impose pas une extraction. Rechercher activement les
-frontières au-delà de 1200 lignes, revoir un module de 900 à 1200 lignes lors
-d'une modification significative, et éviter les micro-extractions artificielles
-ou les façades qui ne préservent pas les contrats, l'ordre d'exécution, les
-exceptions et les effets de bord. Pour le réseau, SQL, concurrence,
-transactions, navigateur, lifecycle et orchestration, caractériser d'abord le
-comportement avant toute extraction.
+La taille seule n'impose pas une extraction. Les seuils de 900 à 1200 lignes
+et de 1200 lignes sont des garde-fous tardifs complémentaires, pas le point de
+départ de la modularisation. Rechercher activement les frontières au-delà de
+1200 lignes, revoir un module de 900 à 1200 lignes lors d'une modification
+significative, et éviter les micro-extractions artificielles ou les façades qui
+ne préservent pas les contrats, l'ordre d'exécution, les exceptions et les
+effets de bord. Pour le réseau, SQL, concurrence, transactions, navigateur,
+lifecycle et orchestration, caractériser d'abord le comportement avant toute
+extraction.
+
+### Modularité préventive
+
+#### Conception avant dette
+
+Avant une implémentation substantielle, identifier les responsabilités que le
+changement introduit. Codex ne doit pas :
+
+- implémenter sciemment plusieurs responsabilités durables dans un seul
+  fichier avec l'intention de « refactorer plus tard » ;
+- considérer qu'un fichier doit d'abord devenir lourd avant de pouvoir être
+  modularisé ;
+- laisser un TODO ou un backlog de modularisation pour une dette structurelle
+  créée par le lot courant lorsque les frontières sont déjà identifiables.
+
+Considérer notamment les familles suivantes :
+
+1. contrats, parsing et validation ;
+2. logique métier, calculs, normalisation et dérivations ;
+3. accès données, persistence, réseau et providers ;
+4. orchestration, état, lifecycle et effets ;
+5. présentation, rendu, sérialisation et export.
+
+Si un nouveau module doit porter au moins trois de ces familles de
+responsabilités, définir des frontières cohésives dès le premier lot, avant ou
+pendant l'implémentation.
+
+#### Déclencheurs précoces de revue
+
+Les déclencheurs suivants imposent une décision d'architecture avant de
+poursuivre :
+
+- nouveau fichier raisonnablement attendu autour de 500 lignes ou davantage ;
+- lot ajoutant environ 250 lignes ou davantage dans un même fichier ;
+- fichier existant au-dessus d'environ 600 lignes auquel le lot ajoute une
+  nouvelle responsabilité indépendante ;
+- plusieurs sous-flux pouvant être testés ou modifiés indépendamment ;
+- présence simultanée de logique pure et d'effets, de provider ou d'UI
+  importants dans le même module.
+
+Ces valeurs sont des déclencheurs de revue d'architecture, jamais des tailles
+cibles ni une obligation de créer de petits fichiers artificiels. Lorsqu'un
+déclencheur est rencontré, choisir avant de poursuivre :
+
+`PROACTIVE_SPLIT`
+
+ou
+
+`COHESIVE_SINGLE_FILE`
+
+`COHESIVE_SINGLE_FILE` exige une justification fondée sur la cohésion, le
+couplage, la testabilité et le nombre réel de raisons de changement. « Le
+fichier fonctionne » ou « il reste sous le seuil heavy-files » ne sont pas des
+justifications suffisantes.
+
+#### Qualité d'un découpage
+
+- chaque module extrait possède une responsabilité dominante identifiable ;
+- préserver un point d'entrée ou une façade lorsque cela protège l'API
+  publique, sans utiliser une façade pour masquer de la logique dupliquée ;
+- diriger les dépendances vers les responsabilités spécialisées et éviter les
+  cycles ;
+- placer les tests de logique autour des frontières pures ou métier nouvellement
+  créées ;
+- ne pas créer mécaniquement `model`, `controller`, `service`, `utils`,
+  `shared` ou des sous-composants lorsque la responsabilité correspondante
+  n'existe pas ;
+- préférer une architecture petite mais extensible à un gros fichier contenant
+  toutes les futures variantes.
+
+#### Rapport des lots substantiels
+
+Le rapport d'un lot substantiel doit indiquer :
+
+`ARCHITECTURE_DECISION: PROACTIVE_SPLIT | COHESIVE_SINGLE_FILE`
+
+Lorsqu'un déclencheur précoce a été rencontré, fournir une justification
+courte. Si une dette structurelle est volontairement différée pour une raison
+de sécurité, de compatibilité ou de manque de caractérisation, la signaler
+explicitement :
+
+`STRUCTURAL_DEBT_DEFERRED: <raison précise>`
+
+Il est interdit de différer silencieusement cette dette.
 
 ## Sécurité et validation globales
 
