@@ -50,6 +50,24 @@ test("rejects a forbidden strokeWidth prop", () => {
   assert.match(violations[0], /forbidden/);
 });
 
+test("rejects a non-canonical icon size", () => {
+  const violations = auditCmmIconSource(canonicalIcon.replace(
+    'xl: "h-7 w-7"',
+    'xl: "h-8 w-8"',
+  ));
+
+  assert.ok(violations.some((violation) => /canonical sizes/.test(violation)));
+});
+
+test("rejects a numeric icon size", () => {
+  const violations = auditCmmIconSource(canonicalIcon.replace(
+    'size = "md"',
+    "size = 20",
+  ));
+
+  assert.ok(violations.some((violation) => /forbidden/.test(violation)));
+});
+
 test("rejects a canonical consumer that renders Lucide directly", () => {
   const violations = auditCanonicalConsumer(
     "apps/web/src/components/ui/cmm-disclosure.tsx",
