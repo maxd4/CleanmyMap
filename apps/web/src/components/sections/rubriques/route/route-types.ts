@@ -7,6 +7,7 @@ import type {
   RouteDataStatus,
   RouteRecommendationStatus,
 } from "@/lib/route/route-data-status";
+import type { RouteRecommendationTrace } from "@/lib/route/route-trace";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
@@ -42,6 +43,7 @@ export type RouteResponse = {
   withinBudget: boolean;
   serviceMinutesEstimate: null;
   totalMinutesEstimate: null;
+  trace: RouteRecommendationTrace;
   diagnostics: {
     loaded: number;
     eligible: number;

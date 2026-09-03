@@ -46,6 +46,7 @@ import {
   ROUTE_PLANNER_ENGINE_VERSION,
   type RoutePlannerOrigin,
 } from "@/lib/route/route-planner";
+import { buildRouteRecommendationTrace } from "@/lib/route/route-trace";
 
 export const runtime ="nodejs";
 
@@ -107,6 +108,48 @@ function fallbackGeometryForPrefix(
       (stop) => [stop.latitude, stop.longitude] as [number, number],
     ),
   ]);
+}
+
+function buildRouteTraceCandidateSummary(
+  loaded: number,
+  actionableCandidates: Array<{
+    safety: { specializationReason: string | null };
+  }>,
+  admissible: number,
+  plannerResult: { diagnostics: { excludedByTravelBudget: number } },
+  sourceHealth: { partial: boolean },
+) {
+  const excludedByReason: Record<string, number> = {
+    not_admissible: Math.max(0, loaded - actionableCandidates.length),
+    unsafe_trained_only: 0,
+    unsafe_no_pickup: 0,
+    unsafe_missing_categories: 0,
+    unsafe_unknown_categories: 0,
+    travel_budget: plannerResult.diagnostics.excludedByTravelBudget,
+  };
+
+  for (const candidate of actionableCandidates) {
+    const reason = candidate.safety.specializationReason;
+    if (reason) {
+      const key = `unsafe_${reason}`;
+      excludedByReason[key] = (excludedByReason[key] ?? 0) + 1;
+    }
+  }
+
+  if (sourceHealth.partial) {
+    excludedByReason.source_unavailable = 1;
+  }
+
+  return {
+    loaded,
+    admissible,
+    excluded: Object.entries(excludedByReason).reduce(
+      (total, [reason, count]) =>
+        total + (reason === "source_unavailable" ? 0 : count),
+      0,
+    ),
+    excludedByReason,
+  };
 }
 
 export async function POST(request: Request) {
@@ -202,6 +245,14 @@ export async function POST(request: Request) {
   });
   let plannedStops = plannerResult.stops;
   let routeGeometry = createFallbackRouteGeometry([]);
+  let budgetPrefixApplied = false;
+  const candidateSummary = buildRouteTraceCandidateSummary(
+    contracts.length,
+    actionableCandidates,
+    candidates.length,
+    plannerResult,
+    sourceHealth,
+  );
 
  if (plannedStops.length === 0) {
     const status = resolveRouteRecommendationStatus({
@@ -228,8 +279,22 @@ export async function POST(request: Request) {
         selected: 0,
         sourcePartial: sourceHealth.partial,
         truncated: isTruncated,
-        ...plannerResult.diagnostics,
+      ...plannerResult.diagnostics,
       },
+      trace: buildRouteRecommendationTrace({
+        engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+        origin,
+        travelBudgetMinutes: options.travelBudgetMinutes,
+        maxStops: options.maxStops,
+        priorityVsTravel,
+        candidateSummary,
+        plannerResult,
+        selectedStops: [],
+        routeGeometry,
+        consumedTravelMinutes: 0,
+        budgetPrefixApplied,
+        sourceHealth,
+      }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
@@ -257,6 +322,7 @@ export async function POST(request: Request) {
   );
 
   if (routeGeometry.durationMinutes > options.travelBudgetMinutes) {
+    budgetPrefixApplied = true;
     if (routeGeometry.mode === "network") {
       const prefixLength = longestNetworkPrefixWithinBudget(
         routeGeometry.legs,
@@ -321,6 +387,21 @@ export async function POST(request: Request) {
    routeGeometryMode: routeGeometry.mode,
  });
 
+ const trace = buildRouteRecommendationTrace({
+   engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+   origin,
+   travelBudgetMinutes: options.travelBudgetMinutes,
+   maxStops: options.maxStops,
+   priorityVsTravel,
+   candidateSummary,
+   plannerResult,
+   selectedStops: plannedStops,
+   routeGeometry,
+   consumedTravelMinutes: travelMinutes,
+   budgetPrefixApplied,
+   sourceHealth,
+ });
+
  try {
  await trackRouteRecommendationUse(supabase, { userId });
  } catch (progressionError) {
@@ -345,6 +426,7 @@ export async function POST(request: Request) {
  withinBudget: travelMinutes <= options.travelBudgetMinutes,
  serviceMinutesEstimate: null,
  totalMinutesEstimate: null,
+ trace,
  diagnostics: {
    loaded: contracts.length,
    eligible: candidates.length,
