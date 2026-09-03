@@ -13,6 +13,10 @@ import {
   buildRouteRecommendationTrace,
   type RouteTraceCandidateSummary,
 } from "./route-trace";
+import type {
+  RouteEventPressureContribution,
+  RouteEventSignalContext,
+} from "./route-event-pressure";
 
 const origin: RoutePlannerOrigin = {
   latitude: 48.8566,
@@ -168,6 +172,55 @@ describe("route recommendation trace", () => {
         unsafe_no_pickup: 1,
         travel_budget: 2,
       },
+    }));
+  });
+
+  it("carries exact event pressure evidence into each selected stop", () => {
+    const contribution: RouteEventPressureContribution = {
+      eventId: "event-1",
+      title: "Événement récent",
+      eventDate: "2026-09-02",
+      ageDays: 1,
+      distanceKm: 0.3,
+      recencyFactor: 0.96875,
+      proximityFactor: 0.85,
+      attendanceFactor: 0.75,
+      attendanceEvidence: {
+        yes: 4,
+        maybe: 1,
+        capacityTarget: 60,
+        known: true,
+      },
+      pressure: 0.618984375,
+      scoreContribution: 12.3796875,
+    };
+    const eventSignalContext: RouteEventSignalContext = {
+      candidatePressureById: new Map([[
+        "a",
+        {
+          combinedPressure: contribution.pressure,
+          scoreBoost: contribution.scoreContribution,
+          contributions: [contribution],
+        },
+      ]]),
+      completedEventsConsidered: 1,
+      geolocatedCompletedEvents: 1,
+      eventsWithoutCoordinates: 0,
+      futureEventSignals: [],
+      sourceAvailable: true,
+      warnings: [],
+    };
+    const trace = buildRouteRecommendationTrace(traceInput({ eventSignalContext }));
+
+    expect(trace.selectedStops[0]).toEqual(expect.objectContaining({
+      id: "a",
+      eventContributions: [contribution],
+      eventScoreContribution: contribution.scoreContribution,
+    }));
+    expect(trace.eventSignal).toEqual(expect.objectContaining({
+      completedEventsConsidered: 1,
+      geolocatedCompletedEvents: 1,
+      sourceAvailable: true,
     }));
   });
 

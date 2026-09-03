@@ -15,7 +15,7 @@ const buildHotspotsMock = vi.hoisted(() => vi.fn());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
 const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn());
-const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn());
+const loadCachedRouteEventSignalContextMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
@@ -68,7 +68,9 @@ vi.mock("@/lib/route/recommendation-assistant", () => ({
   buildProactiveAssistant: buildProactiveAssistantMock,
   defaultRouteAssistantPayload: defaultRouteAssistantPayloadMock,
   defaultRouteRecommendationFloorDate: defaultRouteRecommendationFloorDateMock,
-  loadCachedEventPressureByArrondissement: loadCachedEventPressureByArrondissementMock,
+}));
+vi.mock("@/lib/route/route-event-pressure-loader", () => ({
+  loadCachedRouteEventSignalContext: loadCachedRouteEventSignalContextMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -179,9 +181,14 @@ describe("POST /api/route/recommend", () => {
     });
     getTerritoryArrondissementCenterMock.mockReturnValue({ lat: 48.86, lng: 2.36 });
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
-    loadCachedEventPressureByArrondissementMock.mockResolvedValue({
-      pressureByArrondissement: new Map(),
-      eventSignals: [],
+    loadCachedRouteEventSignalContextMock.mockResolvedValue({
+      candidatePressureById: new Map(),
+      completedEventsConsidered: 0,
+      geolocatedCompletedEvents: 0,
+      eventsWithoutCoordinates: 0,
+      futureEventSignals: [],
+      sourceAvailable: true,
+      warnings: [],
     });
     loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
@@ -319,7 +326,11 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(payload.constraintsApplied).toBeUndefined();
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
-    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith([]);
+    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
+      [],
+      expect.any(Date),
+      expect.any(Map),
+    );
   });
 
   it("passes an explicit origin and all planner options to planRoute", async () => {
@@ -345,6 +356,44 @@ describe("POST /api/route/recommend", () => {
       priorityVsTravel: 25,
     });
     expect((await response.json()).origin).toEqual(explicitOrigin);
+  });
+
+  it("forwards geospatial event pressure to the route candidate scoring step", async () => {
+    const eventPressure = {
+      combinedPressure: 0.75,
+      scoreBoost: 15,
+      contributions: [],
+    };
+    const pressureByCandidateId = new Map([[candidate.id, eventPressure]]);
+    const actionableCandidate = {
+      ...candidate,
+      safety: { specializationReason: null },
+    };
+    buildTrashSpotterActionableCandidatesMock.mockReturnValueOnce([
+      actionableCandidate,
+    ]);
+    loadCachedRouteEventSignalContextMock.mockResolvedValueOnce({
+      candidatePressureById: pressureByCandidateId,
+      completedEventsConsidered: 1,
+      geolocatedCompletedEvents: 1,
+      eventsWithoutCoordinates: 0,
+      futureEventSignals: [],
+      sourceAvailable: true,
+      warnings: [],
+    });
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
+      [actionableCandidate],
+      expect.any(Date),
+      pressureByCandidateId,
+    );
   });
 
   it("falls back to the saved arrondissement center", async () => {
@@ -378,7 +427,7 @@ describe("POST /api/route/recommend", () => {
   });
 
   it("continues the main calculation when event pressure fails", async () => {
-    loadCachedEventPressureByArrondissementMock.mockRejectedValueOnce(
+    loadCachedRouteEventSignalContextMock.mockRejectedValueOnce(
       new Error("event source unavailable"),
     );
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
@@ -390,6 +439,10 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(payload.dataStatus).toBe("complete");
     expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
+    expect(payload.trace.eventSignal).toEqual(expect.objectContaining({
+      sourceAvailable: false,
+    }));
+    expect(payload.trace.fallbacks).toContain("event_signal_unavailable");
     expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
   });
 
