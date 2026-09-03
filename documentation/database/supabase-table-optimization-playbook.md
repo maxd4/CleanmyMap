@@ -1,164 +1,262 @@
-# Supabase Table Optimization Playbook
+# Supabase — optimisation des tables et requêtes
 
-Guide central de marche à suivre pour optimiser une table Supabase sans casser le métier, l'UX ou la lisibilité du modèle.
+## Objet
 
-## Quand l'utiliser
+Ce document est la source `CURRENT` pour optimiser une table ou une requête
+Supabase sans casser le métier, l'UX, la sécurité ni la traçabilité.
 
-Utiliser ce guide avant de toucher une table qui:
+Il consolide les règles de requête, de quota et d'optimisation auparavant
+dispersées dans plusieurs guides de développement.
 
-- apparaît souvent dans les audits de quotas;
-- reçoit des lectures répétées ou non bornées;
-- sert à plusieurs features à la fois;
-- est branchée à un nouveau flux produit;
-- remonte des warnings que l'on pourrait être tenté de "faire baisser" artificiellement.
+Le choix de l'emplacement d'une donnée reste défini dans
+[`../architecture/data-governance.md`](../architecture/data-governance.md).
+Les audits ponctuels ne remplacent pas ce contrat.
 
-## Ce qu'on perd si on optimise mal
+## Invariants
 
-Une mauvaise optimisation fait perdre surtout:
+Une optimisation ne doit jamais :
 
-- du temps de débogage, parce qu'on ne sait plus où la vérité métier vit;
-- de la flexibilité produit, parce que la table est simplifiée avant d'avoir été comprise;
-- de la lisibilité technique, parce qu'on masque une vraie charge derrière un faux gain;
-- de la robustesse, si une règle métier disparaît juste pour faire baisser un warning;
-- de la traçabilité, si on corrige un symptôme au lieu du chemin de lecture ou d'écriture.
+- affaiblir RLS ;
+- introduire `service_role` sur un chemin qui n'en a pas besoin ;
+- supprimer une donnée métier utile uniquement pour réduire un warning ;
+- déplacer un filtre métier de la base vers React ou Node ;
+- transformer un cache en source de vérité ;
+- remplacer un contrat explicite par un cast ou un fallback arbitraire.
 
-Le but n'est pas de faire baisser les warnings à tout prix. Le but est de réduire le coût réel sans perdre le sens métier.
+Une table centrale peut rester visible comme coûteuse si son usage est
+légitime, borné et correctement indexé.
 
-## Règles à réutiliser pendant le développement
+## 1. Qualifier la table
 
-### 1. Quand on branche autre chose à la table
+Avant toute modification, déterminer son rôle :
 
-Avant de raccorder une nouvelle feature:
+```txt
+centrale
+support
+administrative
+dérivée / agrégée
+archive
+recherche
+```
 
-- identifier si elle lit, écrit, compte, recherche, exporte ou agrège la table;
-- vérifier si elle ajoute une fréquence d'accès;
-- vérifier si elle change les colonnes nécessaires;
-- vérifier si elle introduit une recherche partielle ou un tri qui aura besoin d'index.
+Puis inventorier les chemins qui :
 
-Si la feature se branche sur la table, elle hérite aussi de ses contraintes de quota.
+- lisent ;
+- écrivent ;
+- comptent ;
+- recherchent ;
+- exportent ;
+- agrègent ;
+- chargent automatiquement la table ;
+- utilisent un accès privilégié.
 
-### 2. Quand on gère les requêtes de la table
+Le problème à résoudre est le coût réel d'un chemin, pas la présence du nom de
+la table dans un audit.
 
-Chaque requête doit être:
+## 2. Ordre d'optimisation
 
-- bornée;
-- projetée sur les colonnes utiles;
-- indexable si elle sert au runtime;
-- testée sur le chemin réel, pas seulement sur un mock théorique.
+Appliquer cet ordre avant de revoir le modèle :
 
-Bon réflexe:
+1. sélectionner uniquement les colonnes nécessaires ;
+2. borner la cardinalité avec filtre, `limit`, `range`, curseur, période,
+   utilisateur, scope ou bbox ;
+3. déplacer le filtre dans PostgreSQL ;
+4. ajouter ou corriger l'index adapté ;
+5. utiliser une RPC ou une vue stable si la logique est partagée ou coûteuse ;
+6. utiliser un agrégat persistant ou un snapshot lorsque la fraîcheur immédiate
+   n'est pas nécessaire ;
+7. revoir le schéma seulement si le besoin métier le justifie réellement.
 
-- `eq`, `in`, `range`, `limit`, `head: true`;
-- index btree sur les colonnes exactes;
-- trigram ou index d'expression pour les recherches partielles;
-- RPC stable si la logique est partagée ou coûteuse.
+## 3. Anti-patterns
 
-Mauvais réflexe:
+À éviter :
 
-- charger toute la table puis filtrer en mémoire;
-- ajouter un `ilike` sans index adapté;
-- multiplier les requêtes au montage;
-- compenser un problème de requête par une simplification de table.
+```ts
+supabase.from("table").select("*")
+```
 
-### 3. Quand une table remonte des warnings
+sur un chemin runtime susceptible de croître sans borne.
 
-Ne pas supprimer artificiellement les warnings en:
+À éviter également :
 
-- retirant des colonnes métier utiles;
-- fusionnant des concepts distincts;
-- dénormalisant sans besoin réel;
-- dégradant une règle métier pour "faire passer" un audit;
-- cachant le problème derrière une pagination cosmétique.
+```ts
+const rows = await supabase.from("table").select("...");
+return rows.filter(...);
+```
 
-La vraie question est:
+lorsque PostgreSQL peut appliquer le filtre lui-même.
 
-1. quelle requête coûte trop cher;
-2. quel index manque;
-3. quelle partie de la logique peut devenir un RPC;
-4. quelle colonne ne sert pas et peut être retirée;
-5. quelle fréquence d'accès est vraiment nécessaire.
+Autres signaux :
 
-## Marche à suivre
+- recherche partielle sans index adapté ;
+- même scan répété par plusieurs écrans ;
+- lecture complète pour un compteur ;
+- pagination cosmétique après chargement d'un gros jeu de données ;
+- requêtes au montage sans besoin de fraîcheur ;
+- export qui reconstruit un dataset déjà agrégé ailleurs.
 
-### Étape 1. Qualifier la table
+## 4. Projection et bornes
 
-Déterminer si la table est:
+Toute requête runtime croissante doit rendre visibles ses limites.
 
-- centrale et très utilisée;
-- de support;
-- administrative;
-- dérivée;
-- archive;
-- de recherche.
+Exemples de bornes valides :
 
-Une table centrale peut rester visible dans les audits si son usage est légitime. On ne cherche pas à la rendre "petite" à tout prix.
+- `eq` sur propriétaire ou ressource ;
+- `in` sur un ensemble borné ;
+- période ;
+- statut ;
+- territoire ;
+- bbox ;
+- `limit` ;
+- `range` ;
+- curseur ;
+- RPC d'agrégation ;
+- `head: true` pour un comptage adapté.
 
-### Étape 2. Qualifier les chemins
+Une borne doit correspondre au contrat produit. Ne pas ajouter arbitrairement
+un `limit` qui tronque silencieusement le résultat attendu.
 
-Lister:
+## 5. Index
 
-- les lectures;
-- les écritures;
-- les compteurs;
-- les exports;
-- les recherches;
-- les agrégations;
-- les appels répétés au montage;
-- les accès admin.
+Créer un index lorsque le chemin runtime le justifie, notamment pour :
 
-### Étape 3. Réduire le coût
+- filtres fréquents ;
+- tris fréquents sur un ensemble croissant ;
+- relations propriétaire/ressource ;
+- recherche partielle ;
+- expression JSONB normalisée utilisée comme filtre.
 
-Appliquer cet ordre:
+Choisir l'index pour le prédicat réellement exécuté.
 
-1. projection minimale;
-2. borne explicite;
-3. filtre déplacé dans la base;
-4. index adapté;
-5. RPC dédiée si la logique revient souvent;
-6. seulement ensuite, revoir le modèle de données si le besoin réel le justifie.
+Un index inutile augmente aussi les coûts d'écriture et de maintenance ; ne pas
+indexer chaque colonne par réflexe.
 
-### Étape 4. Garder le sens métier
+## 6. RPC, vues et agrégats
 
-Ne pas simplifier la table si cela:
+Préférer une RPC ou une vue lorsque :
 
-- supprime une information utile;
-- rend les règles plus floues;
-- force une logique cachée ailleurs;
-- crée une dette plus grosse que le warning initial.
+- plusieurs écrans réutilisent la même agrégation ;
+- un calcul nécessite plusieurs tables ;
+- le client n'a besoin que d'un résumé ;
+- la logique doit rester cohérente entre web, export et reporting.
 
-## Règle de décision
+Préférer un agrégat persistant ou snapshot lorsque :
 
-Accepter une table qui reste "high" ou "critical" si:
+- le résultat est informatif ;
+- une fraîcheur à la seconde n'est pas requise ;
+- le recalcul live provoque plusieurs lectures coûteuses ;
+- un mécanisme explicite de rafraîchissement existe.
 
-- elle est centrale;
-- les requêtes sont bornées;
-- la colonne filtrée est indexée;
-- le comportement visible reste correct;
-- la table n'a pas été artificiellement appauvrie.
+Pattern :
 
-Corriger en priorité si:
+```txt
+lecture du snapshot / agrégat
+→ fallback live uniquement si nécessaire
+→ recalcul sur chemin d'écriture, cron ou opération explicite
+```
 
-- un scan complet est filtré côté application;
-- une recherche partielle n'a pas d'index adapté;
-- une table est lue à chaque montage sans limite;
-- une simplification du modèle a été faite juste pour faire baisser un warning.
+## 7. Données et stockage
 
-## Checklist de validation
+Ne pas créer une table uniquement parce qu'une fonctionnalité peut être
+persistée.
 
-- [ ] la table est qualifiée: centrale, support, admin, dérivée ou archive;
-- [ ] les chemins d'accès sont listés;
-- [ ] chaque requête runtime est bornée;
-- [ ] les colonnes retournées sont minimales;
-- [ ] les filtres sont faits dans la base;
-- [ ] les index nécessaires existent;
-- [ ] une RPC a été ajoutée si la logique est réutilisée;
-- [ ] aucun changement de modèle n'a été fait uniquement pour faire baisser les warnings;
-- [ ] un test protège le chemin optimisé;
-- [ ] la documentation est reliée au guide Supabase principal.
+Rappels :
 
-## Références à réutiliser
+- contenu pédagogique et documentation durable → Git ;
+- préférence UI ou brouillon non critique → navigateur ;
+- donnée métier partagée, persistante ou sécurisée → Supabase ;
+- fichier réutilisable → Storage / fichier préparé ;
+- donnée recalculable → cache ou agrégat selon le contrat.
 
-- `documentation/development/supabase-quota-guide.md`
-- `documentation/development/supabase-query-optimization-playbook.md`
-- `documentation/database/supabase-quota-audit.md`
-- `documentation/development/supabase-query-optimization-playbook.md` section "Special case: dynamic pollution score for actions" when a table feeds a relative 100% score based on the current database maximum
+La matrice canonique complète est dans
+[`../architecture/data-governance.md`](../architecture/data-governance.md).
+
+## 8. Tables centrales
+
+La liste et les règles synthétiques des tables centrales sont maintenues dans
+[`README.md`](./README.md).
+
+Elles doivent être interrogées par un motif clair :
+
+```txt
+utilisateur
+ressource
+période
+zone
+statut
+agrégat
+```
+
+Une table centrale n'autorise jamais un scan global par défaut.
+
+## 9. Cas spécial : score de pollution relatif
+
+Le score de pollution des actions dépend d'une référence dynamique, pas d'un
+seuil fixe.
+
+Contrat existant :
+
+- la RPC `action_pollution_score_references` calcule la référence à partir des
+  actions approuvées ;
+- `apps/web/src/lib/actions/pollution/pollution-score.ts` normalise chaque
+  action contre cette référence ;
+- `100 %` représente la plus grande action approuvée disponible pour l'axe
+  concerné ;
+- la sévérité conserve la règle métier existante fondée sur le maximum des
+  composantes utiles.
+
+Une optimisation de ce chemin doit préserver :
+
+- la source de référence dynamique ;
+- la normalisation relative ;
+- la règle de sévérité ;
+- les tests qui verrouillent ce comportement.
+
+Ne pas remplacer ce calcul par une constante uniquement pour simplifier la
+requête ou l'audit.
+
+## 10. Sécurité
+
+Pour tout changement de requête ou de schéma :
+
+- préserver l'ownership et le scope ;
+- tester les accès propriétaire / non-propriétaire pertinents ;
+- préserver les rôles privilégiés et les refus attendus ;
+- ne pas utiliser `service_role` comme substitut d'une RLS correcte ;
+- versionner toute évolution de schéma avec la migration canonique.
+
+Les règles AuthN/AuthZ vivent dans `documentation/security/`.
+
+## 11. Validation
+
+Après optimisation :
+
+- vérifier que la surface lit réellement moins ou plus précisément ;
+- vérifier que le résultat visible reste conforme ;
+- ajouter ou adapter un test de la requête, RPC ou agrégat concerné ;
+- exécuter les tests RLS si le contrat d'accès change ou est touché ;
+- relancer l'audit Supabase pertinent ;
+- vérifier qu'aucun scan équivalent n'a été recréé ailleurs.
+
+Commandes et scripts exacts : utiliser ceux présents sur `main` au moment du
+chantier plutôt qu'un inventaire documentaire figé.
+
+## Critères de sortie
+
+Une optimisation est terminée lorsque :
+
+- le chemin est borné ;
+- les colonnes sont proportionnées au besoin ;
+- les filtres utiles sont exécutés au bon endroit ;
+- les index correspondent aux prédicats réels ;
+- les agrégats partagés ne sont pas recalculés inutilement ;
+- la RLS et le métier sont préservés ;
+- les tests pertinents passent.
+
+## Références
+
+- [`README.md`](./README.md)
+- [`../architecture/data-governance.md`](../architecture/data-governance.md)
+- [`supabase-quota-audit.md`](./supabase-quota-audit.md)
+- [`../operations/audits/supabase-refresh-strategy-audit.md`](../operations/audits/supabase-refresh-strategy-audit.md)
+- [`../security/authorization-capabilities.md`](../security/authorization-capabilities.md)

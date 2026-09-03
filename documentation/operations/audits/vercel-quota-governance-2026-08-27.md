@@ -130,8 +130,8 @@ Conséquences côté quota:
 - moins de dépendance à un plan image plus coûteux.
 
 Exemples dans CleanMyMap:
-- [apps/web/src/app/learn/ressources/learn-ressources-client.tsx](../../apps/web/src/app/learn/ressources/learn-ressources-client.tsx) affiche des références artistiques distantes sans optimisation serveur à la volée;
-- [apps/web/src/components/chat/ui/chat-message-item.tsx](../../apps/web/src/components/chat/ui/chat-message-item.tsx) rend les avatars et pièces jointes sans pipeline d'optimisation Vercel.
+- [apps/web/src/app/learn/ressources/learn-ressources-client.tsx](../../../apps/web/src/app/learn/ressources/learn-ressources-client.tsx) affiche des références artistiques distantes sans optimisation serveur à la volée;
+- [apps/web/src/components/chat/ui/chat-message-item.tsx](../../../apps/web/src/components/chat/ui/chat-message-item.tsx) rend les avatars et pièces jointes sans pipeline d'optimisation Vercel.
 
 ### Crons et tâches planifiées
 
@@ -176,7 +176,7 @@ Mitigations déjà appliquées dans le code:
 
 Le backlog `vercel-reduction-backlog.md` a été consolidé dans la documentation courante et ne comporte plus de lot actif.
 
-Les points utiles à conserver sont désormais résumés ici, dans `../operations/audits/vercel-route-cost-audit.md` et dans `../operations/audits/vercel-surface-report.md`:
+Les points utiles à conserver sont désormais résumés ici, dans `./vercel-route-cost-audit.md` et dans `./vercel-surface-report.md`:
 
 - le proxy `apps/web/proxy.ts` ne couvre que les surfaces protégées, pas tout le site;
 - `/reports` ne prépare plus les deux branches coûteuses en même temps et le rendu serveur est piloté par l'onglet actif;
@@ -197,21 +197,21 @@ Les composants chargés en `dynamic(..., { ssr: false })` protègent parfois le 
 
 | Fichier | Pourquoi c'est sensible | Lecture pratique |
 | --- | --- | --- |
-| [apps/web/src/app/page.tsx](../../apps/web/src/app/page.tsx) | La page d'accueil est en ISR avec `revalidate = 300` et recharge périodiquement ses compteurs. | Chaque visite ne passe plus par un rendu dynamique permanent, mais la régénération périodique et les lectures serveur restent à surveiller. |
-| [apps/web/src/app/(app)/reports/page.tsx](../../apps/web/src/app/(app)/reports/page.tsx) | La page agrège Supabase + météo externe avec un fetch météo en `revalidate: 900`. | Chaque rendu déclenche des lectures serveur et une requête externe cacheable, donc le coût vient surtout du volume de données et des doublons de chargement. |
-| [apps/web/src/lib/actions/http.ts](../../apps/web/src/lib/actions/http.ts) + RPC `actions_map_feed` | La carte lit directement Supabase avec bounding box, zoom, filtres et limite. | Le coût Vercel baisse, mais il faut surveiller la taille des réponses et la fréquence des rerenders côté client. |
-| [apps/web/src/app/api/actions/[actionId]/group-join/route.ts](../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Route dynamique de rapprochement d'actions groupées. | Chaque adhésion ou synchronisation déclenche une exécution serveur supplémentaire. |
-| [apps/web/src/app/api/actions/route.ts](../../apps/web/src/app/api/actions/route.ts) | GET dynamique pour la vue liste + POST de création avec rate limit. | C'est une surface de forte activité: lecture, écriture et déclencheurs d'événements. |
-| [apps/web/src/app/api/reports/actions.csv/route.ts](../../apps/web/src/app/api/reports/actions.csv/route.ts) | Export CSV admin avec artefact cache-first et borne stricte. | Chaque téléchargement ajoute du `Fast Data Transfer`, mais le cache court limite les reconstructions. |
-| [apps/web/src/app/api/reports/actions.json/route.ts](../../apps/web/src/app/api/reports/actions.json/route.ts) | Export JSON admin avec artefact cache-first et borne stricte. | Le format JSON est pratique mais coûteux si les filtres et les bornes ne restent pas serrés, même avec cache court. |
-| [apps/web/src/app/api/reports/elus-dossier/route.ts](../../apps/web/src/app/api/reports/elus-dossier/route.ts) | Dossier élus en markdown, JSON et PDF précompilé. | Le markdown et le JSON restent dynamiques mais court-cachés, le PDF passe par un artefact stocké. |
-| [apps/web/src/app/api/reports/governance-monthly/route.ts](../../apps/web/src/app/api/reports/governance-monthly/route.ts) | Rapport mensuel gouvernance avec JSON court-caché et PDF précompilé. | La lecture reste serveur, mais la réponse JSON et la redirection PDF ne doivent plus être no-store. |
-| [apps/web/src/app/api/geo/address-suggestions/route.ts](../../apps/web/src/app/api/geo/address-suggestions/route.ts) | Appel de géocodage à la demande pendant la saisie. | Les appels répétitifs sur la frappe peuvent produire beaucoup d'invocations très courtes. |
-| [apps/web/src/app/api/geo/reverse-location/route.ts](../../apps/web/src/app/api/geo/reverse-location/route.ts) | Reverse geocoding au clic / déplacement de carte. | Très utile UX, mais sensible au volume de clics et de drag sur la carte. |
-| [apps/web/src/app/api/documentation/[slug]/route.ts](../../apps/web/src/app/api/documentation/[slug]/route.ts) | Téléchargement de documents Markdown avec cache CDN. | Les fichiers restent statiques, donc le cache Vercel absorbe la majorité des téléchargements et réduit l'origine. |
-| [apps/web/src/app/api/gamification/analytics/funnel/route.ts](../../apps/web/src/app/api/gamification/analytics/funnel/route.ts) | Route analytique avec `revalidate = 300`. | Coût plus contrôlé qu'un `no-store`, mais toujours à surveiller si le trafic grimpe. |
-| [apps/web/src/lib/gamification/badges/badge-list-client.ts](../../apps/web/src/lib/gamification/badges/badge-list-client.ts) | Client de badges qui fetch `/api/gamification/badges/list` en `cache: "no-store"`. | La liste est simple, mais l'appel côté client ajoute des hits Vercel répétés si la page se recharge souvent. |
-| [apps/web/vercel.json](../../apps/web/vercel.json) | Un cron Vercel appelle `/api/cron/storage-usage`, qui exécute aussi la capture environnementale utile au rapport de gouvernance. | Chaque exécution planifiée crée des invocations sans trafic utilisateur, donc réduire le nombre de schedules reste le levier principal. |
+| [apps/web/src/app/page.tsx](../../../apps/web/src/app/page.tsx) | La page d'accueil est en ISR avec `revalidate = 300` et recharge périodiquement ses compteurs. | Chaque visite ne passe plus par un rendu dynamique permanent, mais la régénération périodique et les lectures serveur restent à surveiller. |
+| [apps/web/src/app/(app)/reports/page.tsx](../../../apps/web/src/app/(app)/reports/page.tsx) | La page agrège Supabase + météo externe avec un fetch météo en `revalidate: 900`. | Chaque rendu déclenche des lectures serveur et une requête externe cacheable, donc le coût vient surtout du volume de données et des doublons de chargement. |
+| [apps/web/src/lib/actions/http.ts](../../../apps/web/src/lib/actions/http.ts) + RPC `actions_map_feed` | La carte lit directement Supabase avec bounding box, zoom, filtres et limite. | Le coût Vercel baisse, mais il faut surveiller la taille des réponses et la fréquence des rerenders côté client. |
+| [apps/web/src/app/api/actions/[actionId]/group-join/route.ts](../../../apps/web/src/app/api/actions/[actionId]/group-join/route.ts) | Route dynamique de rapprochement d'actions groupées. | Chaque adhésion ou synchronisation déclenche une exécution serveur supplémentaire. |
+| [apps/web/src/app/api/actions/route.ts](../../../apps/web/src/app/api/actions/route.ts) | GET dynamique pour la vue liste + POST de création avec rate limit. | C'est une surface de forte activité: lecture, écriture et déclencheurs d'événements. |
+| [apps/web/src/app/api/reports/actions.csv/route.ts](../../../apps/web/src/app/api/reports/actions.csv/route.ts) | Export CSV admin avec artefact cache-first et borne stricte. | Chaque téléchargement ajoute du `Fast Data Transfer`, mais le cache court limite les reconstructions. |
+| [apps/web/src/app/api/reports/actions.json/route.ts](../../../apps/web/src/app/api/reports/actions.json/route.ts) | Export JSON admin avec artefact cache-first et borne stricte. | Le format JSON est pratique mais coûteux si les filtres et les bornes ne restent pas serrés, même avec cache court. |
+| [apps/web/src/app/api/reports/elus-dossier/route.ts](../../../apps/web/src/app/api/reports/elus-dossier/route.ts) | Dossier élus en markdown, JSON et PDF précompilé. | Le markdown et le JSON restent dynamiques mais court-cachés, le PDF passe par un artefact stocké. |
+| [apps/web/src/app/api/reports/governance-monthly/route.ts](../../../apps/web/src/app/api/reports/governance-monthly/route.ts) | Rapport mensuel gouvernance avec JSON court-caché et PDF précompilé. | La lecture reste serveur, mais la réponse JSON et la redirection PDF ne doivent plus être no-store. |
+| [apps/web/src/app/api/geo/address-suggestions/route.ts](../../../apps/web/src/app/api/geo/address-suggestions/route.ts) | Appel de géocodage à la demande pendant la saisie. | Les appels répétitifs sur la frappe peuvent produire beaucoup d'invocations très courtes. |
+| [apps/web/src/app/api/geo/reverse-location/route.ts](../../../apps/web/src/app/api/geo/reverse-location/route.ts) | Reverse geocoding au clic / déplacement de carte. | Très utile UX, mais sensible au volume de clics et de drag sur la carte. |
+| [apps/web/src/app/api/documentation/[slug]/route.ts](../../../apps/web/src/app/api/documentation/[slug]/route.ts) | Téléchargement de documents Markdown avec cache CDN. | Les fichiers restent statiques, donc le cache Vercel absorbe la majorité des téléchargements et réduit l'origine. |
+| [apps/web/src/app/api/gamification/analytics/funnel/route.ts](../../../apps/web/src/app/api/gamification/analytics/funnel/route.ts) | Route analytique avec `revalidate = 300`. | Coût plus contrôlé qu'un `no-store`, mais toujours à surveiller si le trafic grimpe. |
+| [apps/web/src/lib/gamification/badges/badge-list-client.ts](../../../apps/web/src/lib/gamification/badges/badge-list-client.ts) | Client de badges qui fetch `/api/gamification/badges/list` en `cache: "no-store"`. | La liste est simple, mais l'appel côté client ajoute des hits Vercel répétés si la page se recharge souvent. |
+| [apps/web/vercel.json](../../../apps/web/vercel.json) | Un cron Vercel appelle `/api/cron/storage-usage`, qui exécute aussi la capture environnementale utile au rapport de gouvernance. | Chaque exécution planifiée crée des invocations sans trafic utilisateur, donc réduire le nombre de schedules reste le levier principal. |
 
 ## Garde-fous mis en place
 
@@ -220,7 +220,7 @@ Le dépôt inclut maintenant un audit statique dédié:
 - script: `scripts/audits/audit-vercel-quota.mjs`
 - baseline: `scripts/audits/vercel-quota-audit-baseline.json`
 - commande: `npm run audit:vercel-quota`
-- audit par route: `../operations/audits/vercel-route-cost-audit.md`
+- audit par route: `./vercel-route-cost-audit.md`
 - retour d'expérience: `documentation/development/vercel-anti-regression-playbook.md`
 - stratégie de répartition: `documentation/development/vercel-supabase-browser-strategy.md`
 
@@ -283,7 +283,7 @@ Si une fonctionnalité ne peut pas expliquer quel quota elle augmente, elle n'es
 
 Pour les surfaces qui coûtent cher, ne pas seulement compter sur le cache: réserver aussi l'accès.
 
-Le modèle à appliquer est détaillé dans [`documentation/development/quota-access-tiering.md`](./quota-access-tiering.md). En pratique:
+Le modèle à appliquer est détaillé dans [`documentation/security/authorization-capabilities.md`](../../security/authorization-capabilities.md). En pratique:
 
 - le niveau `Public léger` doit rester cacheable et borné;
 - le niveau `Connecté standard` doit rester personnel et limité à la session;
@@ -305,7 +305,7 @@ Quand une fonctionnalité peut attendre un compte connecté ou un rôle privilé
 - `npm run audit:vercel:polling`
 - `npm run report:vercel-surface`
 
-Ces commandes s'appuient sur [`scripts/vercel-audit-core.mjs`](../../scripts/vercel-audit-core.mjs), [`scripts/reports/generate-vercel-surface-report.mjs`](../../scripts/reports/generate-vercel-surface-report.mjs) et la baseline [`scripts/vercel-api-routes-baseline.json`](../../scripts/vercel-api-routes-baseline.json).
+Ces commandes s'appuient sur [`scripts/vercel-audit-core.mjs`](../../../scripts/vercel-audit-core.mjs), [`scripts/reports/generate-vercel-surface-report.mjs`](../../../scripts/reports/generate-vercel-surface-report.mjs) et la baseline [`scripts/vercel-api-routes-baseline.json`](../../../scripts/vercel-api-routes-baseline.json).
 
 Lectures associées:
-- [Stratégie de répartition Vercel, Supabase et navigateur](./vercel-supabase-browser-strategy.md)
+- [Gouvernance des coûts plateforme](../platform-cost-governance.md)
