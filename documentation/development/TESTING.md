@@ -112,6 +112,40 @@ npm run build
 npm run typecheck -w apps/mobile
 ```
 
+## Regression gates
+
+La commande canonique est :
+
+```bash
+npm run test:regression-gates
+```
+
+La composition exacte de cette suite est définie par le code courant dans :
+
+```text
+scripts/checks/validation-policy.mjs
+```
+
+Ne pas maintenir dans la documentation une deuxième liste de fichiers de test.
+
+Cette suite protège notamment les contrats à fort risque autour :
+
+- du contrat unifié des actions ;
+- de la cohérence registry/navigation ;
+- des invariants Vercel explicitement couverts ;
+- des routes protégées et du proxy.
+
+Lorsqu'un chantier migre un contrat déjà protégé par ces gates :
+
+1. ajouter ou adapter le garde-fou ;
+2. préférer un changement additif et compatible lorsque la migration l'exige ;
+3. migrer les consommateurs par périmètre cohérent ;
+4. supprimer l'ancien chemin uniquement après validation du contrat cible.
+
+Une baseline, une fixture ou un test de garde ne doit pas être modifié uniquement
+pour faire disparaître un échec. Vérifier d'abord si le changement fonctionnel
+attendu justifie réellement l'évolution de la preuve.
+
 ## E2E
 
 Lister les tests :
@@ -234,7 +268,7 @@ Pour une page visible modifiée, seulement lorsque demandé :
 
 Référence : la section `Vérification UI` de `documentation/pages_site/README.md`.
 
-```txt
+```text
 documentation/pages_site/README.md
 ```
 
@@ -242,7 +276,7 @@ documentation/pages_site/README.md
 
 Après déploiement significatif :
 
-```txt
+```text
 /sign-in
 /dashboard
 /admin

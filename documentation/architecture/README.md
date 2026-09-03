@@ -24,6 +24,7 @@ Lire d'abord :
 | `section-ownership-boundaries.md` | Ownership app/registry/UI |
 | `traceability-matrix.md` | Rattachement code/documentation |
 | `monolith-split-plan.md` | Plan courant de modularisation |
+| `refactor-priorities-plan.md` | Plan courant des priorités de refactoring |
 
 ## ADR
 
