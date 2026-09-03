@@ -45,6 +45,11 @@ import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
+  readActivityStatus,
+  toggleActivityStatus,
+  type ActivityStatus,
+} from "@/lib/account/activity-status";
+import {
   getProfileLabel,
   normalizeProfileRole,
 } from "@/lib/profiles";
@@ -171,19 +176,27 @@ function buildIdentityFromUser(
 function AccountUserBubble({
   user,
   identity,
-  isActive,
+  activityStatus,
+  isUpdatingActivityStatus,
+  activityStatusError,
+  onActivityStatusChange,
 }: {
   user: ClerkUserLike;
   identity: UserIdentity;
-  isActive: boolean;
+  activityStatus: ActivityStatus;
+  isUpdatingActivityStatus: boolean;
+  activityStatusError: string | null;
+  onActivityStatusChange: () => void;
 }) {
   const username = user.username?.trim() || identity.username;
   const fullName = [user.firstName?.trim(), user.lastName?.trim()]
     .filter((part): part is string => Boolean(part))
     .join(" ") || identity.displayName;
+  const activityStatusLabel =
+    activityStatus === "active" ? "Statut : actif" : "Statut : inactif";
 
   return (
-    <div className="flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
+    <div className="relative flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
       <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80">
         <UserButton
           appearance={{
@@ -193,12 +206,18 @@ function AccountUserBubble({
             },
           }}
         />
-        <span
+        <button
+          type="button"
+          title={activityStatusLabel}
+          aria-label={activityStatusLabel}
+          aria-pressed={activityStatus === "active"}
+          disabled={isUpdatingActivityStatus}
+          onClick={onActivityStatusChange}
           className={cn(
-            "pointer-events-none absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900",
-            isActive ? "bg-emerald-400" : "bg-rose-400",
+            "absolute bottom-0 right-0 z-10 h-4 w-4 rounded-full border-2 border-slate-900 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900",
+            activityStatus === "active" ? "bg-emerald-400" : "bg-rose-400",
+            isUpdatingActivityStatus && "cursor-wait opacity-70",
           )}
-          aria-label={isActive ? "Statut : actif" : "Statut : indisponible"}
         />
       </div>
       <div className="hidden min-w-0 flex-1 leading-tight sm:block">
@@ -207,6 +226,15 @@ function AccountUserBubble({
         </p>
         <p className="truncate text-xs font-medium text-slate-300">{fullName}</p>
       </div>
+      {activityStatusError ? (
+        <span
+          role="alert"
+          aria-live="assertive"
+          className="absolute right-2 top-[calc(100%+0.35rem)] z-20 max-w-64 rounded-md border border-rose-300/40 bg-slate-950 px-2 py-1 text-[0.7rem] font-medium text-rose-100 shadow-lg"
+        >
+          {activityStatusError}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -234,6 +262,11 @@ function AppNavigationRibbonShell({
   const preferencesOpen = isPreferencesOpen && preferencesOwnerPath === pathname;
   const [feedbackOwnerPath, setFeedbackOwnerPath] = useState(pathname);
   const feedbackOpen = isFeedbackOpen && feedbackOwnerPath === pathname;
+  const persistedActivityStatus = readActivityStatus(user?.unsafeMetadata);
+  const [activityStatus, setActivityStatus] =
+    useState<ActivityStatus>(persistedActivityStatus);
+  const [isUpdatingActivityStatus, setIsUpdatingActivityStatus] = useState(false);
+  const [activityStatusError, setActivityStatusError] = useState<string | null>(null);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(user?.publicMetadata);
   const effectiveProfile = identity?.activeProfile ?? (userRole ? readActiveProfile(user?.publicMetadata, userRole) : fallbackProfile);
@@ -273,6 +306,11 @@ function AppNavigationRibbonShell({
           locale,
         )
       : null);
+
+  useEffect(() => {
+    setActivityStatus(persistedActivityStatus);
+    setActivityStatusError(null);
+  }, [persistedActivityStatus, user?.id]);
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
@@ -292,6 +330,52 @@ function AppNavigationRibbonShell({
       href,
       label,
     });
+  }
+
+  async function handleActivityStatusToggle() {
+    if (!user || isUpdatingActivityStatus) {
+      return;
+    }
+
+    const previousStatus = activityStatus;
+    const nextStatus = toggleActivityStatus(previousStatus);
+    setActivityStatus(nextStatus);
+    setActivityStatusError(null);
+    setIsUpdatingActivityStatus(true);
+
+    try {
+      const response = await fetch("/api/account/activity-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activityStatus: nextStatus }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        activityStatus?: unknown;
+        error?: unknown;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === "string"
+            ? payload.error
+            : "Impossible de mettre à jour le statut.",
+        );
+      }
+
+      setActivityStatus(
+        payload?.activityStatus === "inactive" ? "inactive" : "active",
+      );
+      void user.reload().catch(() => undefined);
+    } catch (error) {
+      setActivityStatus(previousStatus);
+      setActivityStatusError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de mettre à jour le statut.",
+      );
+    } finally {
+      setIsUpdatingActivityStatus(false);
+    }
   }
 
   function closeFeedbackMenu() {
@@ -721,7 +805,10 @@ function AppNavigationRibbonShell({
                   <AccountUserBubble
                     user={user}
                     identity={identityForBubble}
-                    isActive={isLoaded && isSignedIn}
+                    activityStatus={activityStatus}
+                    isUpdatingActivityStatus={isUpdatingActivityStatus}
+                    activityStatusError={activityStatusError}
+                    onActivityStatusChange={handleActivityStatusToggle}
                   />
                 ) : null}
               </div>
