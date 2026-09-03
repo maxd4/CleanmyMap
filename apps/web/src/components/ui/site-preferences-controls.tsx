@@ -2,8 +2,9 @@
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { ENABLED_DISPLAY_MODES, type DisplayMode } from "@/lib/ui/preferences";
-import { ChevronDown, CheckCircle2, Languages, LayoutPanelLeft } from "lucide-react";
+import { ChevronDown, CheckCircle2, Info, Languages, LayoutPanelLeft } from "lucide-react";
 import { CmmSelect } from "@/components/ui/cmm-field";
+import Link from "next/link";
 
 type SitePreferencesControlsProps = {
   variant?: "full" | "locale";
@@ -72,8 +73,16 @@ export function SitePreferencesControls({
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold text-white">
-          {locale === "fr" ? "Mode d'affichage" : "Display mode"}
+        <legend className="flex items-center gap-2 text-sm font-semibold text-white">
+          <span>{locale === "fr" ? "Mode d'affichage" : "Display mode"}</span>
+          <Link
+            href="/methodologie#modes-affichage"
+            aria-label="Comprendre les modes d'affichage"
+            title="Comprendre les modes d'affichage"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-emerald-300/70 text-[0.7rem] font-black leading-none text-emerald-200 transition-colors hover:bg-emerald-300/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            <Info className="h-3 w-3" aria-hidden="true" />
+          </Link>
         </legend>
         <div className="space-y-2">
           {ENABLED_DISPLAY_MODES.map((mode) => {
