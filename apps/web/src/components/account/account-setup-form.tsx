@@ -161,6 +161,7 @@ export function AccountSetupForm({
   const [territorySelection, setTerritorySelection] = useState<TerritoryLocationSelection | null>(
     createInitialTerritorySelection(initialArrondissement),
   );
+  const [isTerritorySkipped, setIsTerritorySkipped] = useState(false);
   const hasHydratedTerritorySelection = useRef(Boolean(initialArrondissement));
   const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
   const [isSaving, setIsSaving] = useState(false);
@@ -170,7 +171,7 @@ export function AccountSetupForm({
     if (!isLoaded || !user) {
       return;
     }
-    if (territorySelection) {
+    if (isTerritorySkipped || territorySelection) {
       hasHydratedTerritorySelection.current = true;
       return;
     }
@@ -185,14 +186,15 @@ export function AccountSetupForm({
       setTerritorySelection(existingSelection);
     }
     hasHydratedTerritorySelection.current = true;
-  }, [isLoaded, territorySelection, user]);
+  }, [isLoaded, isTerritorySkipped, territorySelection, user]);
 
   const isProfileValid =
     profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
   const territoryIsValid =
-    Boolean(territorySelection?.label.trim()) &&
-    (territorySelection?.level !== "arrondissement" ||
-      territorySelection.arrondissement != null);
+    isTerritorySkipped ||
+    (Boolean(territorySelection?.label.trim()) &&
+      (territorySelection?.level !== "arrondissement" ||
+        territorySelection.arrondissement != null));
   const profileError = !isProfileValid
     ? "Sélectionnez un rôle valide."
     : null;
@@ -222,7 +224,7 @@ export function AccountSetupForm({
       );
       return;
     }
-    if (!territoryIsValid || !territorySelection) {
+    if (!territoryIsValid || (!isTerritorySkipped && !territorySelection)) {
       setError(
         toAppError("Sélectionnez un territoire (pays, région, département, commune ou arrondissement).", {
           kind: "validation",
@@ -248,10 +250,12 @@ export function AccountSetupForm({
         profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
       };
 
-      Object.assign(
-        metadata,
-        createTerritoryLocationMetadata(territorySelection, locationType),
-      );
+      if (!isTerritorySkipped && territorySelection) {
+        Object.assign(
+          metadata,
+          createTerritoryLocationMetadata(territorySelection, locationType),
+        );
+      }
 
       await user.update({ unsafeMetadata: metadata });
 
@@ -365,6 +369,7 @@ export function AccountSetupForm({
             <div role="radiogroup" aria-labelledby="account-role-title" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {profileOptions.map((profile) => {
                 const isSelected = selectedProfile === profile;
+                const isPromotionOnlyProfile = profile === "admin";
                 const Icon = PROFILE_ICONS[profile];
                 return (
                   <button
@@ -372,22 +377,32 @@ export function AccountSetupForm({
                     type="button"
                     role="radio"
                     aria-checked={isSelected}
-                    onClick={() => setSelectedProfile(profile)}
+                    aria-disabled={isPromotionOnlyProfile}
+                    disabled={isPromotionOnlyProfile}
+                    onClick={() => {
+                      if (!isPromotionOnlyProfile) {
+                        setSelectedProfile(profile);
+                      }
+                    }}
                     className={cn(
                       "group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors",
                       isSelected
                         ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40",
+                        : isPromotionOnlyProfile
+                          ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-75"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40",
                     )}
                   >
-                    <span className={cn("flex h-9 w-9 items-center justify-center rounded-full", isSelected ? "bg-emerald-100 text-emerald-700" : "bg-slate-50 text-emerald-600")}>
+                    <span className={cn("flex h-9 w-9 items-center justify-center rounded-full", isSelected ? "bg-emerald-100 text-emerald-700" : isPromotionOnlyProfile ? "bg-slate-100 text-slate-400" : "bg-slate-50 text-emerald-600")}>
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <span className="text-sm font-semibold leading-tight">
                       {getProfileLabel(profile, selectedLocale)}
                     </span>
                     <span className="line-clamp-2 text-[11px] leading-4 text-slate-500">
-                      {getProfileSubtitle(profile, selectedLocale)}
+                      {isPromotionOnlyProfile
+                        ? "Rôle acquis par promotion"
+                        : getProfileSubtitle(profile, selectedLocale)}
                     </span>
                   </button>
                 );
@@ -415,7 +430,7 @@ export function AccountSetupForm({
             <section aria-labelledby="account-territory-title" className="space-y-4 lg:pr-7">
               <div>
                 <h3 id="account-territory-title" className="text-sm font-bold text-slate-950">
-                  2. Quel est votre territoire principal ?
+                  2. Quel est votre territoire d&apos;action principal ?
                 </h3>
                 <p className="mt-1 cmm-text-caption text-slate-500">
                   Choisissez votre lieu de résidence ou d&apos;activité principale.
@@ -451,15 +466,40 @@ export function AccountSetupForm({
                 </span>
                 <GreaterParisSelect
                   value={territorySelection}
-                  onChange={setTerritorySelection}
+                  onChange={(selection) => {
+                    setTerritorySelection(selection);
+                    setIsTerritorySkipped(false);
+                  }}
                   placeholder="Rechercher une commune, une région..."
                   appearance="light"
                 />
                 {territoryError ? <InlineFieldError message={territoryError} /> : null}
               </label>
-              <p className="cmm-text-caption text-slate-500">
-                Cette information sert à vous présenter les actions proches de chez vous.
-              </p>
+              <div className="space-y-2">
+                <p className="cmm-text-caption text-slate-500">
+                  Cette information sert à vous présenter les actions proches de chez vous.
+                </p>
+                <CmmButton
+                  type="button"
+                  tone={isTerritorySkipped ? "primary" : "secondary"}
+                  variant="ghost"
+                  size="sm"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setTerritorySelection(null);
+                    setIsTerritorySkipped(true);
+                    hasHydratedTerritorySelection.current = true;
+                  }}
+                  className="justify-start px-0 text-left"
+                >
+                  Je ne veux pas renseigner ces informations
+                </CmmButton>
+                {isTerritorySkipped ? (
+                  <p className="cmm-text-caption text-emerald-700">
+                    Vous pourrez renseigner votre territoire plus tard dans les paramètres de votre compte.
+                  </p>
+                ) : null}
+              </div>
             </section>
 
             <div className="grid content-start gap-7 lg:pl-7">
