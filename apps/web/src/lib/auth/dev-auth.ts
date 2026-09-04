@@ -1,5 +1,5 @@
 const LOCALHOST_HOSTNAME_RE =
-  /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\]|::1)(?::\d+)?$/i;
+  /^(localhost|127\.0\.0\.1|\[::1\]|::1)(?::\d+)?$/i;
 
 function readEnvFlag(name: string): boolean {
   return process.env[name] === "1" || process.env[name] === "true";
@@ -23,8 +23,11 @@ export function isLocalhostHost(hostname: string | null | undefined): boolean {
 }
 
 export function isDevAuthBypassEnabled(hostname: string | null | undefined): boolean {
-  void hostname;
   if (process.env.NODE_ENV !== "development") {
+    return false;
+  }
+
+  if (!isLocalhostHost(hostname)) {
     return false;
   }
 
@@ -52,7 +55,8 @@ export function shouldUseDevAuthBypass(params: {
 }
 
 export function getDevAuthBypassRole(): string {
-  return readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
+  const role = readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
+  return role === "benevole" || role === "admin" || role === "max" ? role : "benevole";
 }
 
 export function getDevAuthBypassUserId(): string {

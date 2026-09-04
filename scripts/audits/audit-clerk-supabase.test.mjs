@@ -2,53 +2,48 @@ import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 
 import {
-  isExclusiveMaxUserId,
   parseAdminUserIds,
-  parseMaxUserIds,
   resolveStoredRoleLabel,
 } from "./audit-clerk-supabase.mjs";
 
 describe("audit-clerk-supabase role contract", () => {
-  it("keeps the max allowlist independent from the admin allowlist", () => {
+  it("uses only the configured owner identity for max", () => {
     const adminIds = parseAdminUserIds("secondary");
-    const maxIds = parseMaxUserIds("");
 
-    assert.equal(isExclusiveMaxUserId("secondary", maxIds, adminIds), false);
+    assert.equal(resolveStoredRoleLabel({
+      metadataRole: null,
+      userId: "owner",
+      email: "owner@example.test",
+      primaryEmailVerified: true,
+      adminUserIds: adminIds,
+      ownerUserId: "owner",
+      ownerEmail: "owner@example.test",
+    }), "max");
+  });
+
+  it("rejects metadata, creator email and Supabase-shaped identity as IMU", () => {
+    const context = {
+      userId: "other",
+      email: "creator@example.test",
+      primaryEmailVerified: true,
+      adminUserIds: parseAdminUserIds("secondary"),
+      ownerUserId: "owner",
+      ownerEmail: "owner@example.test",
+    };
+
+    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max" }), "benevole");
+    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max", email: "owner@example.test" }), "benevole");
+  });
+
+  it("keeps admin allowlist separate from the owner identity", () => {
     assert.equal(resolveStoredRoleLabel({
       metadataRole: null,
       userId: "secondary",
       email: null,
-      adminUserIds: adminIds,
-      maxUserIds: maxIds,
-      creatorInboxEmail: null,
-    }), "admin");
-  });
-
-  it("does not let an active profile influence the stored role audit", () => {
-    const context = {
-      userId: "principal",
-      email: null,
+      primaryEmailVerified: false,
       adminUserIds: parseAdminUserIds("secondary"),
-      maxUserIds: parseMaxUserIds("principal"),
-      creatorInboxEmail: null,
-    };
-
-    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max", activeProfile: "benevole" }), "max");
-    assert.equal(resolveStoredRoleLabel({ ...context, userId: "secondary", metadataRole: "admin", activeProfile: "max" }), "admin");
-  });
-
-  it("fails closed to admin when allowlists intersect", () => {
-    const adminIds = parseAdminUserIds("secondary, principal");
-    const maxIds = parseMaxUserIds("principal");
-
-    assert.equal(isExclusiveMaxUserId("principal", maxIds, adminIds), false);
-    assert.equal(resolveStoredRoleLabel({
-      metadataRole: null,
-      userId: "principal",
-      email: null,
-      adminUserIds: adminIds,
-      maxUserIds: maxIds,
-      creatorInboxEmail: null,
+      ownerUserId: "owner",
+      ownerEmail: "owner@example.test",
     }), "admin");
   });
 });

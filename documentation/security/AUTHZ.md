@@ -26,9 +26,21 @@ cache distincts. Une réponse contenant un état RSVP personnel est privée et n
 doit jamais être servie par un cache partagé ; la lecture anonyme ne contient
 aucune donnée Clerk privée.
 
-Règle de vocabulaire : **IMU = super-admin = rôle interne `max`**. `max` est
-l'identifiant technique canonique, `IMU` le libellé produit et `super-admin` un
-alias entrant ; les trois termes ont strictement les mêmes permissions.
+Règle de vocabulaire : **IMU = rôle interne `max`**, mais `max` n'est pas une
+preuve d'identité. En production et en développement Clerk, l'IMU réel est
+uniquement l'utilisateur dont l'ID propriétaire et l'email principal vérifié
+correspondent aux variables serveur `CLERK_IMU_OWNER_USER_ID` et
+`CLERK_IMU_OWNER_EMAIL` de l'instance concernée. Les métadonnées Clerk, la
+ligne Supabase `profiles.role_label`, `CREATOR_INBOX_EMAIL` et les allowlists
+générales ne peuvent pas accorder ce rôle.
+
+Les alias historiques (`owner`, `godmode`, `creator`, `super_admin`, etc.) sont
+acceptés seulement comme valeurs d'entrée legacy et sont ignorés pour
+l'autorisation IMU lorsqu'ils ne correspondent pas à l'identité propriétaire.
+Le bypass `dev-max` est une identité synthétique réservée à `NODE_ENV=development`
+sur `localhost`, `127.0.0.1` ou `[::1]`; il ne peut pas fonctionner sur Preview,
+Production ou un hôte distant. `dev-admin` couvre le test admin sans utiliser
+l'identité IMU.
 
 ## 1. Glossaire Technique
 

@@ -14,6 +14,8 @@ describe("dev auth bypass helpers", () => {
   it("recognizes localhost hosts", () => {
     expect(isLocalhostHost("localhost:3000")).toBe(true);
     expect(isLocalhostHost("127.0.0.1:3000")).toBe(true);
+    expect(isLocalhostHost("0.0.0.0:3000")).toBe(false);
+    expect(isLocalhostHost("preview.example.com:3000")).toBe(false);
     expect(isLocalhostHost("example.com")).toBe(false);
   });
 
@@ -24,13 +26,21 @@ describe("dev auth bypass helpers", () => {
     expect(isDevAuthBypassEnabled("example.com")).toBe(false);
   });
 
-  it("allows forcing the bypass from env", () => {
+  it("allows forcing the bypass only on strict localhost", () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
     vi.stubEnv("CMM_DEV_AUTH_BYPASS_ROLE", "admin");
 
-    expect(isDevAuthBypassEnabled("example.com")).toBe(true);
+    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(true);
+    expect(isDevAuthBypassEnabled("example.com")).toBe(false);
     expect(getDevAuthBypassRole()).toBe("admin");
+  });
+
+  it("rejects the bypass outside development even on localhost", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+
+    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
   });
 
   it("does not use the automatic localhost bypass when Clerk has a session", () => {
