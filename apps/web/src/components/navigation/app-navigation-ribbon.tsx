@@ -517,15 +517,17 @@ function AppNavigationRibbonShell({
           <Link
             href="/"
             prefetch={false}
-            onClick={() => onTrackNavigation("/", "CleanMyMap", null)}
+            onClick={() => onTrackNavigation("/", "Accueil", null)}
             className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-            aria-label="CleanMyMap"
+            aria-label="Accueil"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12 text-[10px] font-black tracking-[0.24em]">
-              CMM
-            </span>
+            <span
+              aria-hidden="true"
+              data-site-logo-slot
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12"
+            />
             <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
-              CleanMyMap
+              Accueil
             </span>
           </Link>
 
