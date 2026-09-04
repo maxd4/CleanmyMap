@@ -42,6 +42,26 @@ sur `localhost`, `127.0.0.1` ou `[::1]`; il ne peut pas fonctionner sur Preview,
 Production ou un hôte distant. `dev-admin` couvre le test admin sans utiliser
 l'identité IMU.
 
+## Attribution des rôles privilégiés
+
+`elu` et `admin` sont des niveaux obtenus (`GRANTED_ROLE`), jamais des rôles
+self-service. Les rôles ouverts ne contiennent que `benevole`, `coordinateur`,
+`scientifique` et `entreprise`; `activeRole` ne peut jamais augmenter le rôle
+obtenu.
+
+Les seuls parcours d'attribution sont :
+
+- une demande authentifiée `elu` ou `admin`, créée avec le statut
+  `pending_owner_review` et sans nouveau droit;
+- une décision de l'IMU actif pour accepter/refuser la demande, ou attribuer/
+  révoquer directement `elu` ou `admin` dans `/api/admin/role-accounts`.
+
+Les deux décisions synchronisent Clerk vers Supabase et sont auditées. La
+surface directe exige `ACTIVE_ROLE=max`; un `admin` ou un `elu` ne peut donc pas
+attribuer ces rôles. Aucune route ne peut attribuer `max`. `CLERK_ADMIN_USER_IDS`
+reste une donnée de diagnostic/configuration et ne confère pas `admin` à elle
+seule; les écritures Clerk `role`/`profile` sont limitées à ces parcours.
+
 ## 1. Glossaire Technique
 
 ### GRANTED_ROLE et ACTIVE_ROLE

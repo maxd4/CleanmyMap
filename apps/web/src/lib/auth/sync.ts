@@ -2,10 +2,7 @@ import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
-import {
-  resolveClerkRole,
-  parseUserIds,
-} from "@/lib/auth/role-resolution";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -140,12 +137,10 @@ function extractProfileMetadata(user: User): Record<string, unknown> {
 
 function resolveSyncRoleContext(
   user: User,
-  adminUserIds: Set<string>,
 ): SyncRoleContext {
   return {
     role: resolveClerkRole({
       user,
-      adminUserIds,
       ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
       ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
     }),
@@ -507,8 +502,7 @@ export async function syncClerkUserToSupabase(
   if (!supabase) {
     return null;
   }
-  const adminUserIds = parseUserIds(env.CLERK_ADMIN_USER_IDS);
-  const { role: profile } = resolveSyncRoleContext(user, adminUserIds);
+  const { role: profile } = resolveSyncRoleContext(user);
   const persistedProfile = resolvePersistedProfileLabel(profile);
   const profileMetadata = extractProfileMetadata(user);
   const existingProfile = await loadExistingProfile(supabase, user.id);

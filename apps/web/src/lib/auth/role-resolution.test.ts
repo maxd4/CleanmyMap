@@ -60,23 +60,25 @@ describe("role resolution", () => {
     expect(
       resolveClerkRole({
         user: owner,
-        adminUserIds: parseAdminUserIds("secondary"),
         ownerUserId: ownerId,
         ownerEmail,
       }),
     ).toBe("max");
     expect(
       resolveClerkRole({
-        user: { ...owner, id: "secondary" },
-        adminUserIds: parseAdminUserIds("secondary"),
+        user: {
+          ...owner,
+          id: "secondary",
+          publicMetadata: {},
+          privateMetadata: {},
+        },
         ownerUserId: ownerId,
         ownerEmail,
       }),
-    ).toBe("admin");
+    ).toBe("benevole");
     expect(
       resolveClerkRole({
         user: owner,
-        adminUserIds: parseAdminUserIds("secondary"),
         ownerUserId: ownerId,
         ownerEmail: "other@example.test",
       }),
@@ -95,5 +97,22 @@ describe("role resolution", () => {
         },
       }),
     ).toBe(false);
+  });
+
+  it("does not let an admin allowlist grant a role", () => {
+    const user = {
+      id: "secondary",
+      primaryEmailAddress: null,
+      publicMetadata: {},
+      privateMetadata: {},
+    };
+
+    expect(
+      resolveClerkRole({
+        user,
+        ownerUserId: "owner",
+        ownerEmail: "owner@example.test",
+      }),
+    ).toBe("benevole");
   });
 });

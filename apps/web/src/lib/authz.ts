@@ -21,7 +21,6 @@ import {
 import {
   extractRole,
   isCanonicalImuOwner,
-  parseAdminUserIds,
   resolveClerkRole,
   type ClerkMetadata,
 } from "./auth/role-resolution";
@@ -134,7 +133,6 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
     const user = await getClerkUser(client, userId);
     return resolveClerkRole({
       user,
-      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
       ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
       ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
     });
@@ -170,7 +168,6 @@ export async function getCurrentUserEffectiveAccess(): Promise<EffectiveAccess> 
 }
 
 export const __authz_testables = {
-  parseAdminUserIds,
   extractRole,
   extractBadgeIds,
   mapBadgeIdsToBadges,

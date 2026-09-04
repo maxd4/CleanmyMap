@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const requireCreatorAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const syncClerkUserToSupabaseMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
@@ -19,7 +19,7 @@ vi.mock("@/lib/authz", async () => {
   );
   return {
     ...actual,
-    requireAdminAccess: requireAdminAccessMock,
+    requireCreatorAccess: requireCreatorAccessMock,
     getCurrentUserIdentity: getCurrentUserIdentityMock,
   };
 });
@@ -40,7 +40,7 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 
 describe("GET/POST /api/admin/role-accounts", () => {
   beforeEach(() => {
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
+    requireCreatorAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "owner-1",
       displayName: "Owner",
@@ -112,13 +112,11 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
   });
 
-  it("allows an active admin to reach role management", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "admin-1",
-      displayName: "Admin",
-      role: "admin",
-      activeRole: "admin",
-      activeProfile: "admin",
+  it("rejects an active admin from direct role management", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
     });
     const { POST } = await import("./route");
     const response = await POST(
@@ -129,6 +127,49 @@ describe("GET/POST /api/admin/role-accounts", () => {
           action: "assign",
           role: "admin",
           reason: "Admin manages an assigned role",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an active elected role from direct role management", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "Elected role denial",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("allows only an active IMU to reach direct role management", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "IMU direct assignment",
         }),
       }),
     );

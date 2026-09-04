@@ -238,7 +238,9 @@ export function resolveStoredRoleLabel({
     return "max";
   }
 
-  if (adminUserIds.has(userId) || normalizeRole(metadataRole) === "admin") {
+  // CLERK_ADMIN_USER_IDS is retained as an audit input only. It must not
+  // create a GRANTED_ROLE outside the application attribution workflows.
+  if (normalizeRole(metadataRole) === "admin") {
     return "admin";
   }
 

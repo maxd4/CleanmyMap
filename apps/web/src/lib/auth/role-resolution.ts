@@ -31,6 +31,7 @@ export function parseUserIds(raw: string | undefined): Set<string> {
   );
 }
 
+/** Parses the legacy operator list; it is never an AuthZ role grant. */
 export function parseAdminUserIds(raw: string | undefined): Set<string> {
   return parseUserIds(raw);
 }
@@ -96,7 +97,6 @@ export function isCanonicalImuOwner(params: {
 
 export function resolveClerkRole(params: {
   user: ClerkUserForRole;
-  adminUserIds: Set<string>;
   ownerUserId: string | null | undefined;
   ownerEmail: string | null | undefined;
 }): Role {
@@ -111,7 +111,9 @@ export function resolveClerkRole(params: {
     return "max";
   }
 
-  if (params.adminUserIds.has(params.user.id) || isAdminRole(params.user)) {
+  // Admin metadata is written only by the two audited role-attribution flows.
+  // Environment allowlists are intentionally not an AuthZ grant mechanism.
+  if (isAdminRole(params.user)) {
     return "admin";
   }
 

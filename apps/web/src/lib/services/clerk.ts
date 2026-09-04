@@ -1,10 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getRoleBadge, getProfileBadge } from "@/lib/authz";
-import {
-  parseAdminUserIds,
-  resolveClerkRole,
-} from "@/lib/auth/role-resolution";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
 import type { AppProfile } from "@/lib/profiles";
 
 export type ClerkUserIdentity = {
@@ -31,11 +28,9 @@ function resolveClerkServiceRole(params: {
     privateMetadata: ClerkMetadata;
     primaryEmailAddress?: { emailAddress?: string | null } | null;
   };
-  adminUserIds: Set<string>;
 }): AppProfile {
   return resolveClerkRole({
     user: { ...params.user, id: params.id },
-    adminUserIds: params.adminUserIds,
     ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
     ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
@@ -56,7 +51,6 @@ function buildClerkDisplayName(user: {
  */
 export async function getClerkService() {
   const client = await clerkClient();
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
 
   return {
     /**
@@ -73,7 +67,6 @@ export async function getClerkService() {
             const profile = resolveClerkServiceRole({
               id,
               user,
-              adminUserIds,
             });
             const displayName = buildClerkDisplayName(user);
 
