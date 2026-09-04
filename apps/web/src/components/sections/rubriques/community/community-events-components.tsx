@@ -15,6 +15,7 @@ import { PermissionErrorState } from "@/components/ui/permission-error-state";
 import { ServerErrorCard } from "@/components/ui/server-error-card";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { AppError } from "@/lib/errors/app-errors";
+import { hasPreciseCommunityEventLocation } from "@/lib/community/event-location";
 import { EventReminder, EventConversionRow } from "@/lib/community/engagement";
 import { CommunityTab, OpsDraft } from "./types";
 
@@ -35,6 +36,23 @@ export function cleanupNeedLabel(event: CommunityEventItem): string | null {
     return null;
   }
   return `Besoin de bénévoles · ${formatCleanupSupportLabel(event.cleanupSupportLevel)}`;
+}
+
+function eventCenteredRouteHref(eventId: string): string {
+  return `/sections/route?planningMode=event-centered&eventId=${encodeURIComponent(eventId)}`;
+}
+
+function EventCenteredRouteLink({ event }: { event: CommunityEventItem }) {
+  if (!hasPreciseCommunityEventLocation(event.location)) return null;
+
+  return (
+    <Link
+      href={eventCenteredRouteHref(event.id)}
+      className="flex w-full items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-500/10 px-3 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-emerald-100 transition hover:bg-emerald-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+    >
+      Créer un itinéraire autour de cet événement
+    </Link>
+  );
 }
 
 // UI Components
@@ -324,6 +342,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
           >
             🧾 {fr ? "Caractériser" : "Characterize"}
           </Link>
+          <EventCenteredRouteLink event={event} />
           <CmmButton
             onClick={() => onShare(event)}
             tone="tertiary"
@@ -360,6 +379,9 @@ export const EventArticleMine = memo(function EventArticleMine({
           <MapPin size={12} className="text-rose-500" />
           {event.locationLabel}
         </span>
+      </div>
+      <div className="mt-4 max-w-sm">
+        <EventCenteredRouteLink event={event} />
       </div>
     </article>
   );
@@ -470,6 +492,7 @@ export const EventArticlePast = memo(function EventArticlePast({
             >
               Déclarer une action
             </Link>
+            <EventCenteredRouteLink event={event} />
           </div>
         </div>
       </div>

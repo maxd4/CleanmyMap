@@ -8,6 +8,9 @@ import type {
   RouteRecommendationStatus,
 } from "@/lib/route/route-data-status";
 import type { RouteRecommendationTrace } from "@/lib/route/route-trace";
+import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+
+export type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
@@ -32,6 +35,7 @@ export type RouteRecommendationOrigin = {
 export type RouteOriginMode = "browser" | "map";
 
 export type RouteResponse = {
+  planningMode: RoutePlanningMode;
   status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
   isTruncated: boolean;

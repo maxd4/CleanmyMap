@@ -7,6 +7,7 @@ import type {
   RouteRecommendationOrigin,
   RouteResponse,
   RouteOriginMode,
+  RoutePlanningMode,
 } from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -23,7 +24,9 @@ import {
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
 
-export function useRouteData() {
+export function useRouteData(
+  initialPlanningMode: RoutePlanningMode = { type: "free" },
+) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
@@ -39,6 +42,8 @@ export function useRouteData() {
   const [originSelectionError, setOriginSelectionError] = useState(false);
   const [isResolvingOrigin, setIsResolvingOrigin] = useState(false);
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
+  const [planningMode, setPlanningModeState] =
+    useState<RoutePlanningMode>(initialPlanningMode);
   const requestSequence = useRef(0);
   const requestGate = useRef(createRouteRequestGate());
   const draftEditedBeforeHydration = useRef(false);
@@ -51,6 +56,12 @@ export function useRouteData() {
   const setOriginMode = useCallback((mode: RouteOriginMode) => {
     setOriginModeState(mode);
     setOriginSelectionError(false);
+  }, []);
+
+  const setPlanningMode = useCallback((mode: RoutePlanningMode) => {
+    setPlanningModeState(
+      mode.type === "event-centered" ? { ...mode } : { type: "free" },
+    );
   }, []);
 
   const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
@@ -131,6 +142,8 @@ export function useRouteData() {
     hasRoute,
     fr,
     recommendationRequested: recommendationRequest !== null,
+    planningMode,
+    setPlanningMode,
     originMode,
     setOriginMode,
     mapOrigin,
@@ -165,7 +178,12 @@ export function useRouteData() {
 
       requestSequence.current += 1;
       setRecommendationRequest(
-        createRouteRecommendationRequest(requestSequence.current, options, origin),
+        createRouteRecommendationRequest(
+          requestSequence.current,
+          options,
+          origin,
+          planningMode,
+        ),
       );
     },
   };

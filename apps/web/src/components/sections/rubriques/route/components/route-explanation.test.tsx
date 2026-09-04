@@ -6,6 +6,7 @@ import { RouteExplanation } from "./route-explanation";
 
 function dataFor(mode: "network" | "fallback"): RouteResponse {
   return {
+    planningMode: { type: "free" },
     origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
     travelDistanceKm: 1.2,
     travelMinutes: 16,
@@ -17,6 +18,7 @@ function dataFor(mode: "network" | "fallback"): RouteResponse {
     }],
     trace: {
       engineVersion: "route-planner-v1",
+      planningMode: { type: "free" },
       parameters: { travelBudgetMinutes: 60, maxStops: 6, priorityVsTravel: 65 },
       origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
       candidates: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
@@ -32,6 +34,8 @@ function dataFor(mode: "network" | "fallback"): RouteResponse {
         budgetBeforeMinutes: 60,
         budgetAfterMinutes: 44,
         reason: "Étape 1: sélection dans le budget.",
+        eventContributions: [],
+        eventScoreContribution: 0,
       }] : [],
       ordering: {
         stopIds: mode === "network" ? ["spot-1"] : [],
@@ -88,5 +92,41 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("aucune liste fictive de rues");
     expect(markup).not.toContain("Rue de Test");
     expect(markup).toContain("estimé");
+  });
+
+  it("distinguishes an event-centered route from a free route", () => {
+    const data = dataFor("network");
+    const eventMode = {
+      type: "event-centered",
+      eventId: "event-1",
+    } as const;
+    data.planningMode = eventMode;
+    data.trace.planningMode = eventMode;
+    data.trace.eventCentered = {
+      event: {
+        id: "event-1",
+        title: "Fête de quartier",
+        eventDate: "2026-09-03",
+        locationLabel: "Place de test",
+        latitude: 48.8566,
+        longitude: 2.3522,
+      },
+      temporalStatus: "past",
+      ageDays: 1,
+      distanceFromOriginKm: 0.4,
+      role: "post_event_anchor",
+      radiusKm: 2,
+      anchorWeight: 0.55,
+      favoredCandidateIds: ["spot-1"],
+      outsideAnchorRadiusCandidateIds: [],
+      selectedCandidateIds: ["spot-1"],
+      candidateImpacts: [],
+    };
+
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Itinéraire construit autour de cet événement");
+    expect(markup).toContain("Fête de quartier");
+    expect(markup).toContain("Rôle : ancrage post-événement");
   });
 });

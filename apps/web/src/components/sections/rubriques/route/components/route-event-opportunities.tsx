@@ -169,6 +169,14 @@ export function RouteEventOpportunities({
                 >
                   {fr ? "Créer une action" : "Create an action"}
                 </Link>
+                <Link
+                  href={`/sections/route?planningMode=event-centered&eventId=${encodeURIComponent(contribution.eventId)}`}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-200/30 px-3 py-2 text-xs font-black text-amber-100 transition hover:bg-amber-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-100 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                >
+                  {fr
+                    ? "Créer un itinéraire autour de cet événement"
+                    : "Create an event-centered route"}
+                </Link>
               </div>
             </li>
           ))}
