@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 type DropdownPlacement = {
   openUp: boolean;
   alignRight: boolean;
+  triggerRect: Pick<DOMRect, "top" | "bottom"> | null;
 };
 
 type UseDropdownPlacementOptions = {
@@ -23,6 +24,7 @@ export function useDropdownPlacement({
   const [placement, setPlacement] = useState<DropdownPlacement>({
     openUp: false,
     alignRight: false,
+    triggerRect: null,
   });
 
   const updatePlacement = useCallback(() => {
@@ -40,6 +42,10 @@ export function useDropdownPlacement({
     setPlacement({
       openUp,
       alignRight,
+      triggerRect: {
+        top: rect.top,
+        bottom: rect.bottom,
+      },
     });
   }, [minPanelWidth, triggerRef, verticalGap]);
 
