@@ -193,7 +193,7 @@ export function ActionsMapExportButton({
         <div
           role="menu"
           aria-label="Formats d'export"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-30 min-w-[18rem] overflow-hidden rounded-3xl border border-sky-200/90 bg-white p-2 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]"
+          className="absolute left-1/2 top-[calc(100%+0.5rem)] z-30 min-w-[18rem] -translate-x-1/2 overflow-hidden rounded-3xl border border-sky-200/90 bg-white p-2 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]"
         >
           {EXPORT_ACTIONS.map((action) => (
             <button

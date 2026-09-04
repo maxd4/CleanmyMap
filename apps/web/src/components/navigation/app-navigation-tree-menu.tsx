@@ -59,7 +59,6 @@ export function AppNavigationTreeMenu({
   const placement = useDropdownPlacement({
     isOpen,
     triggerRef,
-    minPanelWidth: 420,
   });
 
   const panelStyle = getNavigationDropdownPanelStyle(activeSpaceId ?? spaces[0]?.id ?? null);
@@ -194,15 +193,15 @@ export function AppNavigationTreeMenu({
                     : "Summary of sections and pages"
                 }
               tabIndex={-1}
-              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
+              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className={cn(
                 "fixed inset-x-4 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-[1.75rem] border text-black shadow-[0_28px_70px_-30px_rgba(15,23,42,0.24)] lg:absolute lg:inset-x-auto lg:max-h-[min(72vh,42rem)] lg:w-[min(34rem,calc(100vw-5rem))]",
                 "top-[calc(var(--app-ribbon-top-offset,0.5rem)+4.75rem)] lg:top-full",
                 placement.openUp ? "lg:bottom-full lg:top-auto lg:mb-3" : "lg:mt-3",
-                placement.alignRight ? "lg:right-0" : "lg:left-0",
+                "lg:left-1/2 lg:-translate-x-1/2",
               )}
               onMouseEnter={openMenu}
               onMouseLeave={closeMenuAfterHover}

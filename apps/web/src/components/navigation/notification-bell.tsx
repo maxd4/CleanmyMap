@@ -52,7 +52,6 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const placement = useDropdownPlacement({
     isOpen,
     triggerRef,
-    minPanelWidth: 340,
   });
   const triggerRect = placement.triggerRect;
   const mobilePanelTop =
@@ -296,7 +295,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
             aria-label={locale === "fr" ? "Notifications" : "Notifications"}
             onMouseEnter={canHover ? openNotificationMenu : undefined}
             onMouseLeave={canHover ? closeNotificationMenuSoon : undefined}
-            className={`absolute z-50 w-[min(21.25rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:fixed max-sm:inset-x-2 max-sm:left-2 max-sm:right-2 max-sm:w-auto max-sm:max-w-none max-sm:translate-x-0 max-sm:top-[var(--notifications-mobile-top)] max-sm:bottom-[var(--notifications-mobile-bottom)] ${placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]"} ${placement.alignRight ? "right-0" : "left-0"}`}
+            className={`absolute left-1/2 z-50 w-[min(21.25rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] -translate-x-1/2 overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:fixed max-sm:left-1/2 max-sm:right-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-[calc(100vw-1rem)] max-sm:-translate-x-1/2 max-sm:top-[var(--notifications-mobile-top)] max-sm:bottom-[var(--notifications-mobile-bottom)] ${placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]"}`}
             style={
               {
                 ...(ribbonChrome
@@ -313,7 +312,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
           >
             <span
               aria-hidden="true"
-              className={`pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15 max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2 ${placement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2"} ${placement.alignRight ? "right-10" : "left-10"}`}
+              className={`pointer-events-none absolute left-1/2 right-auto h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-white/15 ${placement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2"}`}
               style={
                 ribbonChrome
                   ? {

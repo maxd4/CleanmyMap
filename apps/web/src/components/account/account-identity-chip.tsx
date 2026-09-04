@@ -48,14 +48,12 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const roleMenuPlacement = useDropdownPlacement({
     isOpen: isRoleMenuOpen,
     triggerRef: roleMenuRef,
-    minPanelWidth: 288,
   });
   const badgeMenuRef = useRef<HTMLDetailsElement | null>(null);
   const badgeCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const badgeMenuPlacement = useDropdownPlacement({
     isOpen: isBadgeMenuOpen,
     triggerRef: badgeMenuRef,
-    minPanelWidth: 272,
   });
 
   const openRoleMenu = () => {
@@ -200,7 +198,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             className={cn(
               "absolute z-40 w-[min(19rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]",
               roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-              roleMenuPlacement.alignRight ? "right-0" : "left-0",
+              "left-1/2 -translate-x-1/2",
             )}
           >
             <p className="px-2 pb-2 text-sm font-semibold text-slate-200">
@@ -294,7 +292,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             className={cn(
               "absolute z-40 w-64 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl",
               badgeMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-              badgeMenuPlacement.alignRight ? "right-0" : "left-0",
+              "left-1/2 -translate-x-1/2",
             )}
             style={{
               backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",

@@ -66,6 +66,33 @@ feedback inline ne devient pas une modale parce qu’il possède une surface.
 `app-navigation-tree-menu.tsx` utilise `aria-modal="false"` pour une
 navigation non modale et reste volontairement hors de `CmmDialog`.
 
+## Dropdowns flottants
+
+Tout menu déroulant flottant ouvert par un bouton, une icône ou un chip doit
+être centré horizontalement sous son déclencheur :
+
+```text
+trigger center = trigger left + (trigger width / 2)
+panel          = left: 50% + translateX(-50%)
+```
+
+Le panneau et sa flèche doivent partager ce même axe central. Les menus
+peuvent s'ouvrir au-dessus du déclencheur uniquement lorsque la place
+disponible sous celui-ci est insuffisante ; le centrage horizontal reste
+obligatoire dans les deux cas.
+
+Le placement vertical et la détection de collision sont portés par
+`apps/web/src/components/ui/use-dropdown-placement.ts`. Les consommateurs ne
+doivent pas réintroduire `right-0`, `left-0` ou un décalage mobile spécifique
+pour aligner un panneau sur un bord du déclencheur. Une animation Framer Motion
+doit également porter `x: "-50%"` lorsque son transform animé remplace le
+transform CSS.
+
+Ce contrat s'applique notamment aux menus de navigation, préférences, feedback,
+profil, badges, notifications et export de carte. Il ne transforme pas les
+`<select>` natifs, les accordéons `<details>` intégrés au contenu ni les
+dialogs/drawers plein écran en dropdowns.
+
 ## Tailles, focus et accessibilité
 
 Le nom accessible est obligatoire pour chaque `CmmDialog` ouvert. Préférer

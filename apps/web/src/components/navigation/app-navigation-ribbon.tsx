@@ -314,13 +314,11 @@ function AppNavigationRibbonShell({
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
-    minPanelWidth: 576,
   });
 
   const feedbackPlacement = useDropdownPlacement({
     isOpen: feedbackOpen,
     triggerRef: feedbackTriggerRef,
-    minPanelWidth: 544,
   });
 
   function onTrackNavigation(href: string, label: string, spaceId: string | null) {
@@ -630,15 +628,14 @@ function AppNavigationRibbonShell({
                       aria-label={locale === "fr" ? "Préférences d'affichage et langue" : "Display and language preferences"}
                       onMouseEnter={openPreferencesMenu}
                       onMouseLeave={closePreferencesMenu}
-                      initial={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      initial={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98, x: "-50%" }}
+                      animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                      exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98, x: "-50%" }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
                         "cmm-dropdown-panel absolute z-50 w-[min(36rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-4 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:w-[calc(100vw-1.5rem)]",
                         preferencesPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-                        preferencesPlacement.alignRight ? "right-0" : "left-0",
-                        "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                        "left-1/2 -translate-x-1/2",
                       )}
                       style={{
                         backgroundImage: ribbonChrome.backgroundImage,
@@ -651,8 +648,7 @@ function AppNavigationRibbonShell({
                         className={cn(
                           "pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15",
                           preferencesPlacement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2",
-                          preferencesPlacement.alignRight ? "right-10" : "left-10",
-                          "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                          "left-1/2 right-auto -translate-x-1/2",
                         )}
                         style={{
                           backgroundImage: ribbonChrome.backgroundImage,
@@ -739,17 +735,14 @@ function AppNavigationRibbonShell({
                       aria-label={locale === "fr" ? "Options de feedback" : "Feedback options"}
                       onMouseEnter={openFeedbackMenu}
                       onMouseLeave={closeFeedbackMenuOnHover}
-                      initial={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      initial={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98, x: "-50%" }}
+                      animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                      exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98, x: "-50%" }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
                         "cmm-dropdown-panel absolute z-50 w-[min(34rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:w-[calc(100vw-1.5rem)]",
                         feedbackPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-                        feedbackPlacement.alignRight ? "right-0" : "left-0",
-                        feedbackPlacement.alignRight
-                          ? "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-[calc(50%+4rem)]"
-                          : "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                        "left-1/2 -translate-x-1/2",
                       )}
                       style={{
                         backgroundImage: ribbonChrome.backgroundImage,
@@ -762,10 +755,7 @@ function AppNavigationRibbonShell({
                         className={cn(
                           "pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15",
                           feedbackPlacement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2",
-                          feedbackPlacement.alignRight ? "right-10" : "left-10",
-                          feedbackPlacement.alignRight
-                            ? "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-[calc(50%+4rem)]"
-                            : "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                          "left-1/2 right-auto -translate-x-1/2",
                         )}
                         style={{
                           backgroundImage: ribbonChrome.backgroundImage,
