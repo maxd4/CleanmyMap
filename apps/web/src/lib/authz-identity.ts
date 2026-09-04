@@ -3,10 +3,12 @@ import { headers } from "next/headers";
 import { env } from "./env";
 import {
   normalizeProfileRole,
+  resolveActiveProfile,
   resolveProfile,
   type AppProfile,
   type DisplayNameMode,
 } from "./profiles";
+import type { Role } from "@/lib/domain-language";
 import {
   getProfileBadgeId,
   getRoleBadgeId,
@@ -56,7 +58,10 @@ export type UserIdentity = {
   email: string | null;
   currentLevel: number;
   actorNameOptions: string[];
-  role: AppProfile;
+  /** Real authorization role. Never derived from activeProfile. */
+  role: Role;
+  /** UX persona/navigation lens. Never grants permissions. */
+  activeProfile: AppProfile;
   badges: AccountBadge[];
   locationPreference?: UserLocationPreference | null;
 };
@@ -264,6 +269,7 @@ async function buildDevBypassIdentity(devBypass: {
     currentLevel: 1,
     actorNameOptions: [devBypass.displayName, devBypass.username, devBypass.userId],
     role,
+    activeProfile: role,
     badges: mapBadgeIdsToBadges([getRoleBadgeId(role), getProfileBadgeId(role)]),
     locationPreference: null,
   };
@@ -291,6 +297,7 @@ function buildFallbackIdentity(
     currentLevel: 1,
     actorNameOptions: [userId],
     role: resolvedRole,
+    activeProfile: resolvedRole,
     badges: mapBadgeIdsToBadges([
       ...(maxUserIds.has(userId) ? ["max"] : adminUserIds.has(userId) ? ["admin"] : []),
       getRoleBadgeId(resolvedRole),
@@ -362,7 +369,7 @@ function resolveIdentityRole(
   user: User,
   isAdmin: boolean,
   isMax: boolean,
-): AppProfile {
+): Role {
   const metadataRole = extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
   return resolveProfile({
     metadataRole,
@@ -375,7 +382,8 @@ function resolveIdentityBadges(
   user: User,
   isAdmin: boolean,
   isMax: boolean,
-  role: AppProfile,
+  role: Role,
+  activeProfile: AppProfile,
 ): AccountBadge[] {
   const badgeIds = [
     ...extractBadgeIds(user.publicMetadata),
@@ -383,7 +391,23 @@ function resolveIdentityBadges(
     ...(isMax ? ["max"] : isAdmin ? ["admin"] : []),
   ];
 
-  return mapBadgeIdsToBadges([...badgeIds, getRoleBadgeId(role), getProfileBadgeId(role)]);
+  return mapBadgeIdsToBadges([
+    ...badgeIds,
+    getRoleBadgeId(role),
+    getProfileBadgeId(activeProfile),
+  ]);
+}
+
+export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
+  const metadataActiveProfile =
+    (typeof user.publicMetadata?.["activeProfile"] === "string"
+      ? user.publicMetadata["activeProfile"]
+      : null) ??
+    (typeof user.privateMetadata?.["activeProfile"] === "string"
+      ? user.privateMetadata["activeProfile"]
+      : null);
+
+  return resolveActiveProfile({ metadataActiveProfile, role });
 }
 
 function resolveIdentityLocationPreference(user: User) {
@@ -415,6 +439,7 @@ function buildResolvedIdentity(params: {
     actorNameOptions,
   } = resolveIdentityNames(user, userId, storedProfile);
   const resolvedRole = resolveIdentityRole(user, isAdmin, isMax);
+  const activeProfile = resolveIdentityActiveProfile(user, resolvedRole);
 
   return {
     userId,
@@ -427,7 +452,8 @@ function buildResolvedIdentity(params: {
     currentLevel,
     actorNameOptions,
     role: resolvedRole,
-    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole),
+    activeProfile,
+    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole, activeProfile),
     locationPreference: resolveIdentityLocationPreference(user),
   };
 }
