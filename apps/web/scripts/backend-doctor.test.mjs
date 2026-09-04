@@ -118,6 +118,20 @@ describe("backend-doctor", () => {
     assert.equal(report.checks.localEnvHasValidRequired, false);
   });
 
+  it("normalise les valeurs entre guillemets avant de vérifier leur forme", () => {
+    const appRoot = createFixture({
+      localEnv: completeLocalEnv
+        .replace("https://fixture.supabase.co", '"https://fixture.supabase.co"')
+        .replace("SUPABASE_SERVICE_ROLE_KEY=fixture-service-key", 'SUPABASE_SERVICE_ROLE_KEY="fixture-service-key"'),
+    });
+
+    const report = checkBackendEnvironment(appRoot);
+
+    assert.deepEqual(report.missingLocal, []);
+    assert.deepEqual(report.invalidLocal, []);
+    assert.equal(report.checks.localEnvHasValidRequired, true);
+  });
+
   it("retourne un code d'échec et un rapport sans valeurs sensibles", () => {
     const appRoot = createFixture({ localEnv: "NEXT_PUBLIC_SUPABASE_URL=not-a-url\n" });
     const output = [];
