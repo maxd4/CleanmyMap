@@ -51,9 +51,11 @@ Les proxies géométriques sont issus des jeux Paris Data suivants :
 
 Les licences et millésimes sont conservés dans
 `data/geospatial/paris-municipal-cleaning-serviceability-snapshot.json`.
-L'absence d'un export zone→objet à la date du snapshot laisse la couverture
-en `unavailable`; cela rend l'incertitude visible au lieu d'inventer des
-valeurs.
+Le snapshot courant contient 992 zones IRIS, dont 711 avec un proxy dérivé
+des trois exports géométriques PVP capturés le 2026-09-04 et 281 en
+`unknown`. Sa couverture est donc `partial`. L'absence de fréquence actuelle
+rue par rue laisse `documentedCleaningFrequency` à `null` au lieu d'inventer
+une tournée.
 
 ## Contrat spatial
 
