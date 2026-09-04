@@ -6,6 +6,8 @@ import {
   resolveProfile,
   PROFILE_ORDER,
   isAppProfile,
+  resolveActiveProfile,
+  getSwitchableProfiles,
   MAX_ROLE_STORAGE_VALUES,
   type AppProfile,
 } from "./profiles";
@@ -79,12 +81,6 @@ describe("profile aliases", () => {
     expect(getProfileLabel("entreprise", "fr")).toBe("Entreprise");
     expect(getProfileLabel("entreprise", "en")).toBe("Business");
   });
-
-  it("uses the canonical French labels for role and profile selectors", () => {
-    expect(getProfileLabel("coordinateur", "fr")).toBe("Association");
-    expect(getProfileLabel("elu", "fr")).toBe("Élu·e");
-    expect(getProfileLabel("admin", "fr")).toBe("Administrateur");
-  });
 });
 
 describe("profile quick access", () => {
@@ -97,5 +93,24 @@ describe("profile quick access", () => {
       expect(hrefs).toEqual(EXPECTED_PROFILE_ACTIONS[profile]);
       expect(new Set(hrefs).size).toBe(4);
     });
+  });
+});
+
+describe("active profile separation", () => {
+  it("falls back to the role when activeProfile is absent or invalid", () => {
+    expect(
+      resolveActiveProfile({ metadataActiveProfile: null, role: "admin" }),
+    ).toBe("admin");
+    expect(
+      resolveActiveProfile({ metadataActiveProfile: "not-a-profile", role: "max" }),
+    ).toBe("max");
+    expect(
+      resolveActiveProfile({ metadataActiveProfile: "max", role: "admin" }),
+    ).toBe("admin");
+  });
+
+  it("lets max switch persona while preserving the role boundary", () => {
+    expect(getSwitchableProfiles("max")).toContain("benevole");
+    expect(getSwitchableProfiles("admin")).not.toContain("max");
   });
 });

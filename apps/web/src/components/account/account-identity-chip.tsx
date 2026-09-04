@@ -29,8 +29,8 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
-  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
-  const [roleError, setRoleError] = useState<string | null>(null);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const gamificationBadges = identity.badges.filter(
@@ -105,28 +105,28 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     };
   }, []);
 
-  const handleRoleMutation = async (targetProfile: AppProfile | null) => {
-    if (!targetProfile || isUpdatingRole) {
+  const handleActiveProfileMutation = async (targetProfile: AppProfile | null) => {
+    if (!targetProfile || isUpdatingProfile) {
       return;
     }
-    setIsUpdatingRole(true);
-    setRoleError(null);
+    setIsUpdatingProfile(true);
+    setProfileError(null);
 
     try {
-      const response = await fetch("/api/account/profile-role", {
+      const response = await fetch("/api/account/active-profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ profile: targetProfile }),
+        body: JSON.stringify({ activeProfile: targetProfile }),
       });
 
       const payload = (await response.json().catch(() => null)) as
-        | { role?: string; profilePath?: string; error?: string }
+        | { role?: string; activeProfile?: string; profilePath?: string; error?: string }
         | null;
 
       if (!response.ok) {
-        throw new Error(payload?.error ?? "Mutation de rôle refusée.");
+        throw new Error(payload?.error ?? "Mutation de profil refusée.");
       }
 
       if (user) {
@@ -143,9 +143,9 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Mutation de rôle refusée.";
-      setRoleError(message);
+      setProfileError(message);
     } finally {
-      setIsUpdatingRole(false);
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -168,12 +168,12 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
               <BadgePictogram
-                name={getAccountBadgeIconName(`role_${identity.role}`)}
+                name={getAccountBadgeIconName(`role_${identity.activeProfile}`)}
                 size={16}
               />
             </span>
             <span className="hidden truncate text-sm font-bold sm:inline">
-              {getProfileLabel(identity.role, locale)}
+              {getProfileLabel(identity.activeProfile, locale)}
             </span>
             <ChevronDown
               className={cn(
@@ -208,20 +208,20 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             </p>
             <ul className="space-y-1" role="none">
               {profileOptions.map((profile) => {
-                const isActive = profile === identity.role;
+                const isActive = profile === identity.activeProfile;
                 return (
                   <li key={profile} role="none">
                     <button
                       type="button"
                       role="menuitemradio"
                       aria-checked={isActive}
-                      disabled={isUpdatingRole}
+                      disabled={isUpdatingProfile}
                       onClick={() => {
                         if (isActive) {
                           setIsRoleMenuOpen(false);
                           return;
                         }
-                        void handleRoleMutation(profile);
+                        void handleActiveProfileMutation(profile);
                       }}
                       className={cn(
                         "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",
@@ -325,9 +325,9 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
         </details>
       ) : null}
 
-      {roleError ? (
+      {profileError ? (
         <span className="max-w-32 cmm-text-caption leading-tight text-rose-600" aria-live="polite">
-          {roleError}
+          {profileError}
         </span>
       ) : null}
     </div>

@@ -77,7 +77,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   coordinateur: {
     id: "coordinateur",
-    label: { fr: "Association", en: "Association" },
+    label: { fr: "Coordination", en: "Coordination" },
     subtitle: {
       fr: "Organisation des actions collectives",
       en: "Collective action coordination",
@@ -104,7 +104,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   elu: {
     id: "elu",
-    label: { fr: "Élu·e", en: "Elected representative" },
+    label: { fr: "Elu", en: "Local authority" },
     subtitle: {
       fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
@@ -113,7 +113,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   admin: {
     id: "admin",
-    label: { fr: "Administrateur", en: "Administrator" },
+    label: { fr: "Administration", en: "Administration" },
     subtitle: {
       fr: "Modération et supervision",
       en: "Moderation and supervision",
@@ -179,18 +179,32 @@ export function isAdminLikeProfile(profile: AppProfile): boolean {
 }
 
 export function getSwitchableProfiles(
-  profile: AppProfile,
+  role: Role,
 ): AppProfile[] {
-  if (profile === "max") {
+  if (role === "max") {
     return [...PROFILE_ORDER];
   }
-  if (profile === "admin") {
+  if (role === "admin") {
     return PROFILE_ORDER.filter((item) => item !== "max");
   }
-  if (isSelfServiceProfile(profile)) {
+  if (isSelfServiceProfile(role)) {
     return [...SELF_SERVICE_PROFILE_ORDER];
   }
-  return [profile];
+  return [role];
+}
+
+/**
+ * Resolves the UX persona independently from the authorization role.
+ * Invalid or non-switchable persisted values fail closed to the real role.
+ */
+export function resolveActiveProfile(params: {
+  metadataActiveProfile: string | null | undefined;
+  role: Role;
+}): AppProfile {
+  const candidate = normalizeProfileRole(params.metadataActiveProfile);
+  return candidate && getSwitchableProfiles(params.role).includes(candidate)
+    ? candidate
+    : params.role;
 }
 
 export function getProfileEntryPath(profile: AppProfile): string {
