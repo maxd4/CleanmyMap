@@ -7,7 +7,10 @@ export type ActionModerationRole = (typeof ACTION_MODERATION_ROLES)[number];
 
 export type ActionPermissionIdentity = {
   userId: string;
+  /** GRANTED_ROLE, retained for audit and attribution only. */
   role: AppProfile | null | undefined;
+  /** ACTIVE_ROLE, the only role used for capability decisions. */
+  activeRole: AppProfile | null | undefined;
 };
 
 export type ActionPermissionTarget = {
@@ -28,13 +31,13 @@ export function isActionModerationRole(
 }
 
 export function canUseAdminOverride(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return Boolean(identity && isActionModerationRole(identity.role));
+  return Boolean(identity && isActionModerationRole(identity.activeRole));
 }
 
 export function canModerateAnyAction(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canUseAdminOverride(identity);
 }
@@ -94,13 +97,13 @@ export function canEditValidatedImpact(
 }
 
 export function canChangeActionStatus(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canModerateAnyAction(identity);
 }
 
 export function canViewModerationAudit(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canModerateAnyAction(identity);
 }

@@ -2,12 +2,12 @@ import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { env } from "./env";
 import {
-  resolveActiveProfile,
+  resolveActiveRole,
   resolveProfile,
   type AppProfile,
   type DisplayNameMode,
 } from "./profiles";
-import type { Role } from "@/lib/domain-language";
+import type { ActiveRole, Role } from "@/lib/domain-language";
 import {
   getProfileBadgeId,
   getRoleBadgeId,
@@ -56,7 +56,9 @@ export type UserIdentity = {
   actorNameOptions: string[];
   /** Real authorization role. Never derived from activeProfile. */
   role: Role;
-  /** UX persona/navigation lens. Never grants permissions. */
+  /** Role used for effective capabilities. Always allowed by `role`. */
+  activeRole: ActiveRole;
+  /** Navigation lens derived from activeRole. Never grants permissions. */
   activeProfile: AppProfile;
   badges: AccountBadge[];
   locationPreference?: UserLocationPreference | null;
@@ -217,6 +219,7 @@ async function buildDevBypassIdentity(devBypass: {
     currentLevel: 1,
     actorNameOptions: [devBypass.displayName, devBypass.username, devBypass.userId],
     role,
+    activeRole: role,
     activeProfile: role,
     badges: mapBadgeIdsToBadges([getRoleBadgeId(role), getProfileBadgeId(role)]),
     locationPreference: null,
@@ -237,6 +240,7 @@ function buildFallbackIdentity(userId: string): UserIdentity {
     currentLevel: 1,
     actorNameOptions: [userId],
     role: resolvedRole,
+    activeRole: resolvedRole,
     activeProfile: resolvedRole,
     badges: mapBadgeIdsToBadges([getRoleBadgeId(resolvedRole), getProfileBadgeId(resolvedRole)]),
     locationPreference: null,
@@ -296,16 +300,34 @@ function resolveIdentityBadges(
   ]);
 }
 
-export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
-  const metadataActiveProfile =
-    (typeof user.publicMetadata?.["activeProfile"] === "string"
-      ? user.publicMetadata["activeProfile"]
+export function resolveIdentityActiveRole(user: User, role: Role): ActiveRole {
+  const publicMetadata = user.publicMetadata as Record<string, unknown> | null | undefined;
+  const privateMetadata = user.privateMetadata as Record<string, unknown> | null | undefined;
+  const metadataActiveRole =
+    (typeof publicMetadata?.["activeRole"] === "string"
+      ? publicMetadata["activeRole"]
       : null) ??
-    (typeof user.privateMetadata?.["activeProfile"] === "string"
-      ? user.privateMetadata["activeProfile"]
+    // Read the previous UX key only as a compatibility input. New writes use
+    // activeRole, so there is one canonical active-role mutation.
+    (typeof publicMetadata?.["activeProfile"] === "string"
+      ? publicMetadata["activeProfile"]
+      : null) ??
+    (typeof privateMetadata?.["activeRole"] === "string"
+      ? privateMetadata["activeRole"]
+      : null) ??
+    (typeof privateMetadata?.["activeProfile"] === "string"
+      ? privateMetadata["activeProfile"]
       : null);
 
-  return resolveActiveProfile({ metadataActiveProfile, role });
+  return resolveActiveRole({
+    metadataActiveRole,
+    grantedRole: role,
+  });
+}
+
+/** @deprecated Navigation now follows ACTIVE_ROLE. */
+export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
+  return resolveIdentityActiveRole(user, role);
 }
 
 function resolveIdentityLocationPreference(user: User) {
@@ -342,7 +364,7 @@ function buildResolvedIdentity(params: {
   });
   const isMax = resolvedRole === "max";
   const isAdmin = resolvedRole === "admin" || isMax;
-  const activeProfile = resolveIdentityActiveProfile(user, resolvedRole);
+  const activeRole = resolveIdentityActiveRole(user, resolvedRole);
 
   return {
     userId,
@@ -355,8 +377,9 @@ function buildResolvedIdentity(params: {
     currentLevel,
     actorNameOptions,
     role: resolvedRole,
-    activeProfile,
-    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole, activeProfile),
+    activeRole,
+    activeProfile: activeRole,
+    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole, activeRole),
     locationPreference: resolveIdentityLocationPreference(user),
   };
 }

@@ -15,6 +15,7 @@ import {
   buildActorNameOptions,
   getClerkUser,
   getDevAuthBypassSession,
+  getCurrentUserIdentity,
   resolveActorNameFromClerk,
 } from "./authz-identity";
 import {
@@ -73,8 +74,8 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const role = await getCurrentUserRoleLabel();
-  return role === "admin" || role === "max"
+  const activeRole = await getCurrentUserActiveRole();
+  return activeRole === "admin" || activeRole === "max"
     ? { ok: true, userId }
     : { ok: false, status: 403, error: "Forbidden" };
 }
@@ -92,8 +93,8 @@ export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
-  if (role === "max") {
+  const activeRole = await getCurrentUserActiveRole().catch(() => "anonymous" as const);
+  if (activeRole === "max") {
     return { ok: true, userId };
   }
 
@@ -143,9 +144,29 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
   }
 }
 
+/** Returns GRANTED_ROLE, kept explicit for code that needs the obtained level. */
+export async function getCurrentUserGrantedRoleLabel(): Promise<AppRoleLabel> {
+  return getCurrentUserRoleLabel();
+}
+
+/** Returns ACTIVE_ROLE, the only role allowed to drive effective capabilities. */
+export async function getCurrentUserActiveRole(): Promise<AppRoleLabel> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    return resolveProfile({
+      metadataRole: devBypass.role,
+      isAdmin: devBypass.role === "admin",
+      isMax: devBypass.role === "max",
+    });
+  }
+
+  const identity = await getCurrentUserIdentity();
+  return identity?.activeRole ?? "anonymous";
+}
+
 export async function getCurrentUserEffectiveAccess(): Promise<EffectiveAccess> {
-  const role = await getCurrentUserRoleLabel();
-  return getEffectiveAccessForSessionRole(role);
+  const activeRole = await getCurrentUserActiveRole();
+  return getEffectiveAccessForSessionRole(activeRole);
 }
 
 export const __authz_testables = {

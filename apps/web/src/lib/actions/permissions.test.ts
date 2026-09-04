@@ -21,6 +21,7 @@ describe("action permissions", () => {
         {
           userId: "user-1",
           role: "admin",
+          activeRole: "admin",
         },
         {
           createdByClerkId: "user-1",
@@ -33,6 +34,7 @@ describe("action permissions", () => {
         {
           userId: "user-1",
           role: "admin",
+          activeRole: "admin",
         },
         {
           createdByClerkId: "user-2",
@@ -42,8 +44,8 @@ describe("action permissions", () => {
   });
 
   it("lets admin-like users review action participants", () => {
-    expect(canUseAdminOverride({ role: "elu" })).toBe(true);
-    expect(canModerateAnyAction({ role: "max" })).toBe(true);
+    expect(canUseAdminOverride({ activeRole: "elu" })).toBe(true);
+    expect(canModerateAnyAction({ activeRole: "max" })).toBe(true);
   });
 
   it("lets creators, organizers and coorganizers review their action participants", () => {
@@ -52,6 +54,7 @@ describe("action permissions", () => {
         {
           userId: "creator-1",
           role: "benevole",
+          activeRole: "benevole",
         },
         {
           createdByClerkId: "creator-1",
@@ -65,6 +68,7 @@ describe("action permissions", () => {
         {
           userId: "organizer-1",
           role: "benevole",
+          activeRole: "benevole",
         },
         {
           createdByClerkId: "creator-1",
@@ -78,6 +82,7 @@ describe("action permissions", () => {
         {
           userId: "coorganizer-1",
           role: "benevole",
+          activeRole: "benevole",
         },
         {
           createdByClerkId: "creator-1",
@@ -93,6 +98,7 @@ describe("action permissions", () => {
         {
           userId: "outside-1",
           role: "benevole",
+          activeRole: "benevole",
         },
         {
           createdByClerkId: "creator-1",
@@ -103,6 +109,6 @@ describe("action permissions", () => {
   });
 
   it("rejects non moderation roles for global moderation", () => {
-    expect(canModerateAnyAction({ role: "benevole" })).toBe(false);
+    expect(canModerateAnyAction({ activeRole: "benevole" })).toBe(false);
   });
 });

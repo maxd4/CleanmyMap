@@ -2,13 +2,14 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { extractRole } from "@/lib/auth/role-resolution";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { env } from "@/lib/env";
+import { parseAdminUserIds, resolveClerkRole } from "@/lib/auth/role-resolution";
+import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { normalizeProfileRole, type AppProfile } from "@/lib/profiles";
+import type { AppProfile } from "@/lib/profiles";
 import {
   getPromotionRequestById,
   listPromotionRequests,
@@ -24,18 +25,21 @@ const reviewSchema = z.object({
 });
 
 function resolveCanonicalTargetRole(user: {
+  id: string;
+  primaryEmailAddress?: { emailAddress?: string | null; verification?: { status?: string | null } | null } | null;
   publicMetadata?: Record<string, unknown> | null;
   privateMetadata?: Record<string, unknown> | null;
 }): AppProfile {
-  return (
-    normalizeProfileRole(extractRole(user.publicMetadata)) ??
-    normalizeProfileRole(extractRole(user.privateMetadata)) ??
-    "benevole"
-  );
+  return resolveClerkRole({
+    user,
+    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+  });
 }
 
 export async function GET() {
-  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
+  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
   if (role !== "max") {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
@@ -49,7 +53,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
+  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
   if (role !== "max") {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
@@ -106,7 +110,7 @@ export async function POST(request: Request) {
         requestId: requestRecord.id,
         status: "rejected",
         reviewedByUserId: identity.userId,
-        reviewedByRole: identity.role,
+        reviewedByRole: identity.activeRole,
       });
       if (!updated) {
         throw new Error("Promotion request status was not persisted.");
@@ -225,7 +229,7 @@ export async function POST(request: Request) {
       requestId: requestRecord.id,
       status: "accepted",
       reviewedByUserId: identity.userId,
-      reviewedByRole: identity.role,
+      reviewedByRole: identity.activeRole,
     });
     if (!updated) {
       throw new Error("Promotion request status was not persisted.");

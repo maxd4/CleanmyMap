@@ -88,7 +88,7 @@ export default async function NewActionPage({
   const identity = userId ? await getCurrentUserIdentity() : null;
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const fallbackActorName = userId ?? "Visiteur";
-  const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
+  const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.activeRole));
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions

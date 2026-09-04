@@ -53,6 +53,13 @@ Ces deux usages localhost sont volontairement distincts :
   identité sert aux validations locales uniquement et ne modifie aucune
   allowlist Clerk ni métadonnée distante.
 
+Dans les deux cas, `GRANTED_ROLE` reste l'identité réellement obtenue et
+`ACTIVE_ROLE` est le seul rôle courant utilisé pour calculer les capacités.
+Le menu peut écrire uniquement `activeRole` via
+`/api/account/active-profile`; il ne peut jamais modifier le niveau obtenu.
+`dev-max` n'est donc qu'un bypass synthétique de localhost, et ne représente
+aucun compte Clerk ou profil Supabase.
+
 Changer `CMM_DEV_AUTH_BYPASS_ROLE` à la main ne donne pas de rôle en
 Production : le bypass est refusé hors développement.
 

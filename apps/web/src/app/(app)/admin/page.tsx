@@ -17,7 +17,7 @@ import {
   ModerationByBlockPanel,
 } from "@/components/admin/moderation-by-block-panel";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import {
@@ -80,13 +80,13 @@ export default async function AdminPage({
     clerkReachable,
   }).catch(() => null);
 
-  const role = await getCurrentUserRoleLabel();
+  const identity = await getCurrentUserIdentity().catch(() => null);
+  const role = identity?.activeRole ?? "benevole";
+  const grantedRole = identity?.role ?? "benevole";
   const profile = toProfile(role);
   const pageFamily = resolvePageFamily("/admin");
   const creatorIdentity =
-    role === "max"
-      ? await getCurrentUserIdentity().catch(() => null)
-      : null;
+    role === "max" ? identity : null;
   const creatorDisplayName =
     creatorIdentity?.displayName?.trim() ||
     creatorIdentity?.firstName?.trim() ||
@@ -107,7 +107,7 @@ export default async function AdminPage({
   const adminSources = await loadAdminSources();
   const adminAlert = buildAdminAlert(adminSources);
   const metricItems = buildAdminMetricItems(adminSources);
-  const switchableProfiles = getSwitchableProfiles(profile);
+  const switchableProfiles = getSwitchableProfiles(grantedRole);
   const profileLink = buildProfileRoute(profile);
   const profileCountLabel =
     switchableProfiles.length > 1

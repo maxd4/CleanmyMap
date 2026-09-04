@@ -116,6 +116,32 @@ commissioning actuel.
 
 ## 2. Vocabulaire canonique
 
+### Niveau obtenu et rôle actif
+
+Le contrat d'identité est volontairement non linéaire :
+
+```txt
+GRANTED_ROLE = identity.role       // privilège maximal obtenu, immuable par le menu
+ACTIVE_ROLE  = identity.activeRole // rôle courant, source des capacités effectives
+```
+
+Les rôles librement sélectionnables sont `benevole`, `coordinateur`,
+`scientifique` et `entreprise`. Les niveaux obtenus `elu`, `admin` et `max`
+ouvrent respectivement les ensembles suivants :
+
+| GRANTED_ROLE | ACTIVE_ROLE autorisés |
+|---|---|
+| standard / rôle ouvert | les quatre rôles ouverts |
+| `elu` | rôles ouverts + `elu` |
+| `admin` | rôles ouverts + `elu` + `admin` |
+| `max` | rôles ouverts + `elu` + `admin` + `max` |
+
+Les capacités privilégiées sont calculées sur `ACTIVE_ROLE`. Ainsi un compte
+`admin` actuellement `benevole` n'a aucune capacité admin/élu pendant cette
+session, mais conserve `GRANTED_ROLE=admin` et peut réactiver `admin`. Le champ
+UX historique `activeProfile` est un alias de lecture/migration et ne donne
+aucun droit.
+
 Les rôles métier sont définis dans :
 
 ```txt
@@ -138,8 +164,9 @@ max
 Conserver la distinction :
 
 ```txt
-Role        = attribution métier
-Parcours    = projection UX du rôle
+Role        = GRANTED_ROLE, attribution métier réellement obtenue
+ACTIVE_ROLE = rôle actuellement utilisé pour les capacités
+Parcours    = projection UX de l'ACTIVE_ROLE
 Capability  = action métier autorisable
 Scope       = périmètre dans lequel cette capacité peut s'exercer
 Ownership   = relation directe utilisateur ↔ ressource
@@ -162,7 +189,7 @@ l'identité owner Clerk canonique de l'instance.
 - l'accès `max` exige `CLERK_IMU_OWNER_USER_ID` et
   `CLERK_IMU_OWNER_EMAIL`, avec l'email principal Clerk vérifié et exactement
   correspondant ;
-- `activeProfile=max`, `profiles.role_label=max`, une allowlist admin ou
+- `ACTIVE_ROLE=max`, `activeProfile=max`, `profiles.role_label=max`, une allowlist admin ou
   `CREATOR_INBOX_EMAIL` ne peuvent pas accorder `max`.
 
 Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont

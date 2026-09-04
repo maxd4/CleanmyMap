@@ -271,7 +271,7 @@ export async function GET(
 
     const identity = await getCurrentUserIdentity();
     const permissionIdentity = identity
-      ? { userId, role: identity.role }
+      ? { userId, role: identity.role, activeRole: identity.activeRole }
       : null;
     const organizerIds = await loadActionOrganizerIdsForAction(
       supabase,
@@ -367,7 +367,7 @@ export async function PATCH(
 
     const identity = await getCurrentUserIdentity();
     const permissionIdentity = identity
-      ? { userId, role: identity.role }
+      ? { userId, role: identity.role, activeRole: identity.activeRole }
       : null;
     const organizerIds = await loadActionOrganizerIdsForAction(
       supabase,

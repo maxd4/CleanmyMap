@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, ChevronRight } from "lucide-react";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getNavigationSpacesForProfile,
@@ -174,7 +174,7 @@ export default async function ExplorerPage() {
     getSafeAuthSession(),
   ]);
   const role = session.state === "authenticated"
-    ? await getCurrentUserRoleLabel()
+    ? await getCurrentUserActiveRole()
     : "anonymous" as const;
   const currentProfile = toProfile(role);
   const spaces = getNavigationSpacesForProfile(currentProfile, displayModePreference.displayMode, locale);

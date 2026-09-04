@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
 const loadPilotageOverviewMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -9,7 +9,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
+  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
 }));
 
 vi.mock("@/lib/actions/unified-source", () => ({
@@ -25,7 +25,7 @@ describe("GET /api/pilotage/overview authorization", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
-    getCurrentUserRoleLabelMock.mockResolvedValue("coordinateur");
+    getCurrentUserActiveRoleMock.mockResolvedValue("coordinateur");
     loadPilotageOverviewMock.mockResolvedValue({ generatedAt: "2026-08-26T00:00:00.000Z" });
   });
 
@@ -40,7 +40,7 @@ describe("GET /api/pilotage/overview authorization", () => {
   });
 
   it("rejects authenticated roles outside the pilotage contract", async () => {
-    getCurrentUserRoleLabelMock.mockResolvedValueOnce("benevole");
+    getCurrentUserActiveRoleMock.mockResolvedValueOnce("benevole");
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview"));
@@ -50,7 +50,7 @@ describe("GET /api/pilotage/overview authorization", () => {
   });
 
   it.each(["coordinateur", "max"])("allows the %s pilotage role", async (role) => {
-    getCurrentUserRoleLabelMock.mockResolvedValueOnce(role);
+    getCurrentUserActiveRoleMock.mockResolvedValueOnce(role);
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview?days=30"));

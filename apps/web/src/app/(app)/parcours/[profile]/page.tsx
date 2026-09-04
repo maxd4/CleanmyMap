@@ -1,6 +1,6 @@
 import { notFound, redirect } from"next/navigation";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
-import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { getCurrentUserActiveRole } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { isAppProfile, toProfile } from"@/lib/profiles";
 import {
@@ -63,7 +63,7 @@ export default async function ParcoursProfilePage({
  );
  }
 
- const activeRole = await getCurrentUserRoleLabel().catch(
+ const activeRole = await getCurrentUserActiveRole().catch(
  () =>"anonymous" as const,
  );
  const activeProfile = toProfile(activeRole);
