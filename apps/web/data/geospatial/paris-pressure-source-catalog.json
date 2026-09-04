@@ -3,6 +3,16 @@
   "scope": "Paris / 992 IRIS",
   "sources": [
     {
+      "family": "geography",
+      "publisher": "IGN / OpenData Île-de-France",
+      "dataset": "Contours IRIS Paris",
+      "url": "https://data.iledefrance.fr/explore/dataset/iris/",
+      "license": "Licence Ouverte Etalab",
+      "geographicLevel": "iris",
+      "refreshPolicy": "annuel ou nouveau millésime",
+      "limitations": ["contours de référence, pas une mesure de pression"]
+    },
+    {
       "family": "resident_population",
       "publisher": "Insee",
       "dataset": "Population en 2021 - Base infracommunale IRIS",

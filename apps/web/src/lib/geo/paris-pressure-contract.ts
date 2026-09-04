@@ -17,6 +17,7 @@ export type ParisPressureSourceStatus =
   | "unavailable";
 
 export type ParisPressureSignalFamily =
+  | "geography"
   | "resident_population"
   | "transport"
   | "tourism"
