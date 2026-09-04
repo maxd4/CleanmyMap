@@ -38,6 +38,7 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
     "--candidate-ref=",
     "--candidate-range=",
     "run-static-candidate-check.mjs",
+    "scripts/checks/check-env-contract.mjs",
     "scripts/checks/validation-policy.mjs",
     "scripts/checks/check-root-file-hygiene.mjs",
     "scripts/checks/check-documentation-governance.mjs",

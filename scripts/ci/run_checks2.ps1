@@ -159,6 +159,7 @@ $pythonRelevant = [bool]$policy.pythonRelevant
 # Always-on repository and security governance are read-only and independent.
 Invoke-ParallelSteps @(
     [pscustomobject]@{ Label = "security:secrets"; Command = "npm run security:secrets" },
+    [pscustomobject]@{ Label = "check:env-contract"; Command = "npm run check:env-contract" },
     [pscustomobject]@{ Label = "check:root-files"; Command = "npm run check:root-files" },
     [pscustomobject]@{ Label = "check:gitnexus-hygiene"; Command = "npm run check:gitnexus-hygiene" },
     [pscustomobject]@{ Label = "check:doc-governance"; Command = "npm run check:doc-governance" },

@@ -17,6 +17,7 @@ declare namespace NodeJS {
     CLERK_SATELLITE_AUTO_SYNC?: string;
     CLERK_SECRET_KEY?: string;
     CLOUDFLARE_API_TOKEN?: string;
+    CLEANMYMAP_SHEET_URL?: string;
     CONTACT_EMAIL?: string;
     CREATOR_INBOX_EMAIL?: string;
     EMAIL_FROM?: string;

@@ -4,6 +4,7 @@ import test from "node:test";
 
 const ref = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
 const checks = [
+  "scripts/checks/check-env-contract.mjs",
   "scripts/checks/check-root-file-hygiene.mjs",
   "scripts/checks/check-gitnexus-hygiene.mjs",
   "scripts/checks/check-documentation-governance.mjs",
