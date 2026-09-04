@@ -1,11 +1,14 @@
 import { expect, it } from "vitest";
 import {
+  clearLocationPreferenceMetadata,
+  createLocationPreferencesMetadata,
   createTerritoryLocationMetadata,
   createGreaterParisMetadataFromZoneName,
   extractGreaterParisLocationPreferenceFromMetadata,
   extractTerritoryLocationPreferenceFromMetadata,
   extractResidenceLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
+  extractLocationPreferencesFromMetadata,
 } from "./user-location-preference";
 
 it("extracts a complete preference from metadata", () => {
@@ -157,4 +160,48 @@ it("excludes work preference from the map fallback reference", () => {
       territoryLabel: "Lyon",
     })?.locationType,
   ).toBe("residence");
+});
+
+it("reads independent residence and work selections from the canonical object", () => {
+  const result = extractLocationPreferencesFromMetadata({
+    ...createLocationPreferencesMetadata({
+      residence: {
+        country: "France",
+        level: "commune",
+        label: "Lyon",
+        subtitle: null,
+        arrondissement: null,
+        arrondissementCity: "Lyon",
+      },
+      work: {
+        country: "France",
+        level: "arrondissement",
+        label: "Paris 11e",
+        subtitle: "Paris",
+        arrondissement: 11,
+        arrondissementCity: "Paris",
+      },
+    }),
+  });
+
+  expect(result.residence?.label).toBe("Lyon");
+  expect(result.work?.arrondissement).toBe(11);
+});
+
+it("maps the legacy single preference to its matching independent field", () => {
+  const result = extractLocationPreferencesFromMetadata({
+    territoryLabel: "Lyon",
+    territoryLocationType: "work",
+  });
+  expect(result).toMatchObject({ residence: null, work: { label: "Lyon" } });
+});
+
+it("clears location keys without touching unrelated Clerk metadata", () => {
+  const result = clearLocationPreferenceMetadata({
+    keepMe: "yes",
+    territoryPreferences: { residence: null, work: null },
+    territoryLabel: "Paris 1er",
+    territoryLocationType: "residence",
+  });
+  expect(result).toEqual({ keepMe: "yes" });
 });

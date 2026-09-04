@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hasRequiredAccountIdentity,
+  hasRequiredAccountPseudo,
   shouldRequireAccountSetup,
   shouldRequireAccountSetupRefresh,
 } from "@/lib/auth/account-setup";
@@ -43,5 +44,18 @@ describe("hasRequiredAccountIdentity", () => {
     expect(hasRequiredAccountIdentity("  ", "Martin")).toBe(false);
     expect(hasRequiredAccountIdentity("Sophie", " ")).toBe(false);
     expect(hasRequiredAccountIdentity(null, "Martin")).toBe(false);
+  });
+
+  it("does not require names when the pseudonym display mode is selected", () => {
+    expect(hasRequiredAccountIdentity(null, null, "pseudo")).toBe(true);
+    expect(hasRequiredAccountIdentity("  ", "  ", "pseudo")).toBe(true);
+  });
+});
+
+describe("hasRequiredAccountPseudo", () => {
+  it("requires a non-empty Clerk username", () => {
+    expect(hasRequiredAccountPseudo(" Vert_Tige ")).toBe(true);
+    expect(hasRequiredAccountPseudo("  ")).toBe(false);
+    expect(hasRequiredAccountPseudo(null)).toBe(false);
   });
 });

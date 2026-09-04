@@ -81,6 +81,12 @@ describe("profile aliases", () => {
     expect(getProfileLabel("entreprise", "fr")).toBe("Entreprise");
     expect(getProfileLabel("entreprise", "en")).toBe("Business");
   });
+
+  it("uses the canonical French labels for role and profile selectors", () => {
+    expect(getProfileLabel("coordinateur", "fr")).toBe("Association");
+    expect(getProfileLabel("elu", "fr")).toBe("Élu·e");
+    expect(getProfileLabel("admin", "fr")).toBe("Administrateur");
+  });
 });
 
 describe("profile quick access", () => {
@@ -112,5 +118,24 @@ describe("active profile separation", () => {
   it("lets max switch persona while preserving the role boundary", () => {
     expect(getSwitchableProfiles("max")).toContain("benevole");
     expect(getSwitchableProfiles("admin")).not.toContain("max");
+  });
+
+  it("exposes the five self-service onboarding profiles without IMU", () => {
+    expect(getSwitchableProfiles("benevole")).toEqual([
+      "benevole",
+      "coordinateur",
+      "scientifique",
+      "entreprise",
+      "elu",
+    ]);
+    expect(getSwitchableProfiles("admin")).toEqual([
+      "benevole",
+      "coordinateur",
+      "scientifique",
+      "entreprise",
+      "elu",
+      "admin",
+    ]);
+    expect(getSwitchableProfiles("benevole")).not.toContain("max");
   });
 });

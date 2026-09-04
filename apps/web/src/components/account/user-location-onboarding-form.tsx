@@ -19,7 +19,9 @@ import {
   type TerritoryLocationSelection,
 } from "@/lib/geo/greater-paris-select";
 import {
-  createTerritoryLocationMetadata,
+  clearLocationPreferenceMetadata,
+  createLocationPreferencesMetadata,
+  extractLocationPreferencesFromMetadata,
   extractTerritoryLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
   type UserLocationType,
@@ -128,13 +130,23 @@ export function UserLocationOnboardingForm({
       return;
     }
 
-    const metadata: Record<string, unknown> = {
-      ...(user.unsafeMetadata ?? {}),
-    };
+    const existingPreferences = extractLocationPreferencesFromMetadata(
+      user.unsafeMetadata as Record<string, unknown> | undefined,
+    );
+    const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
 
     Object.assign(
       metadata,
-      createTerritoryLocationMetadata(territorySelection, locationType),
+      createLocationPreferencesMetadata({
+        residence:
+          locationType === "residence"
+            ? territorySelection
+            : existingPreferences.residence,
+        work:
+          locationType === "work"
+            ? territorySelection
+            : existingPreferences.work,
+      }),
     );
 
     try {

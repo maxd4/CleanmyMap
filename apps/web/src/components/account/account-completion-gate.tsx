@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AccountCompletionModal } from "@/components/account/account-completion-modal";
+import { AccountCompletionPage } from "@/components/account/account-completion-modal";
 import type { AccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
 type AccountCompletionGateProps = {
@@ -18,22 +18,17 @@ export function AccountCompletionGate({
   }
 
   return (
-    <div className="relative">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none select-none blur-sm opacity-55"
-      >
-        {children}
-      </div>
-
-      <AccountCompletionModal
-        reason={state.requirement.reason}
-        initialProfile={state.currentProfile}
-        clerkReachable={state.clerkReachable}
-        isLocalHost={state.isLocalHost}
-        initialArrondissement={state.initialArrondissement}
-        initialLocationType={state.initialLocationType}
-      />
-    </div>
+    <AccountCompletionPage
+      reason={state.requirement.reason}
+      initialRole={state.role === "anonymous" ? undefined : state.role}
+      initialProfile={state.currentProfile}
+      clerkReachable={state.clerkReachable}
+      isLocalHost={state.isLocalHost}
+      initialResidence={state.initialResidence}
+      initialWork={state.initialWork}
+      initialArrondissement={state.initialArrondissement}
+      initialLocationType={state.initialLocationType}
+      submitMode="refresh"
+    />
   );
 }

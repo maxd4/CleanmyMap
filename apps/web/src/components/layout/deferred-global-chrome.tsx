@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 
 const DeferredNetworkToastHost = dynamic(
   () => import("@/components/ui/network-toast").then((module) => module.NetworkToastHost),
@@ -63,5 +64,9 @@ const DeferredHomeFooter = dynamic(
 );
 
 export function DeferredGlobalFooter() {
+  const pathname = usePathname();
+  if (pathname === "/onboarding") {
+    return null;
+  }
   return <DeferredHomeFooter />;
 }

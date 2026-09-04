@@ -1,46 +1,60 @@
 "use client";
 
-import { CmmDialog } from "@/components/ui/cmm-dialog";
 import type { AppProfile } from "@/lib/profiles";
+import type { Role } from "@/lib/domain-language";
+import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import { AccountSetupForm } from "@/components/account/account-setup-form";
 
 type AccountSetupReason = "initial_setup" | "schema_update" | null;
 
-type AccountCompletionModalProps = {
-  reason: AccountSetupReason;
+export type AccountCompletionPageProps = {
+  reason?: AccountSetupReason;
+  nextPath?: string;
+  initialRole?: Role;
   initialProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
+  initialResidence?: TerritoryLocationSelection | null;
+  initialWork?: TerritoryLocationSelection | null;
   initialArrondissement?: number | null;
   initialLocationType?: "residence" | "work" | null;
+  submitMode?: "navigate" | "refresh";
 };
 
-export function AccountCompletionModal({
+/** Full-page onboarding surface used by both /onboarding and the blocking gate. */
+export function AccountCompletionPage({
+  nextPath,
+  initialRole,
   initialProfile,
   clerkReachable,
   isLocalHost,
-  initialArrondissement = null,
-  initialLocationType = null,
-}: AccountCompletionModalProps) {
+  initialResidence,
+  initialWork,
+  initialArrondissement,
+  initialLocationType,
+  submitMode = "navigate",
+}: AccountCompletionPageProps) {
   return (
-    <CmmDialog
-      open
-      dismissible={false}
-      closeOnEscape={false}
-      closeOnBackdrop={false}
-      size="xl"
-      ariaLabelledBy="account-completion-modal-title"
-      ariaDescribedBy="account-completion-modal-description"
-      panelClassName="flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.42)] sm:rounded-3xl"
-    >
-      <AccountSetupForm
-        submitMode="refresh"
-        initialProfile={initialProfile}
-        clerkReachable={clerkReachable}
-        isLocalHost={isLocalHost}
-        initialArrondissement={initialArrondissement}
-        initialLocationType={initialLocationType}
-      />
-    </CmmDialog>
+    <div className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_84%_12%,rgba(139,92,246,0.2),transparent_30%),radial-gradient(circle_at_18%_24%,rgba(167,243,208,0.98),transparent_42%),linear-gradient(135deg,#d1fae5_0%,#a7f3d0_45%,#6ee7b7_100%)] px-4 py-6 sm:px-8 sm:py-8">
+      <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col">
+        <AccountSetupForm
+          nextPath={nextPath}
+          submitMode={submitMode}
+          initialRole={initialRole}
+          initialProfile={initialProfile}
+          clerkReachable={clerkReachable}
+          isLocalHost={isLocalHost}
+          initialResidence={initialResidence}
+          initialWork={initialWork}
+          initialArrondissement={initialArrondissement}
+          initialLocationType={initialLocationType}
+        />
+      </div>
+    </div>
   );
+}
+
+/** Compatibility export for older callers; it no longer renders a dialog. */
+export function AccountCompletionModal(props: AccountCompletionPageProps) {
+  return <AccountCompletionPage {...props} />;
 }

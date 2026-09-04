@@ -61,6 +61,7 @@ export const SELF_SERVICE_PROFILE_ORDER = [
   "coordinateur",
   "scientifique",
   "entreprise",
+  "elu",
 ] as const satisfies readonly AppProfile[];
 
 export type SelfServiceProfile = (typeof SELF_SERVICE_PROFILE_ORDER)[number];
@@ -77,7 +78,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   coordinateur: {
     id: "coordinateur",
-    label: { fr: "Coordination", en: "Coordination" },
+    label: { fr: "Association", en: "Association" },
     subtitle: {
       fr: "Organisation des actions collectives",
       en: "Collective action coordination",
@@ -104,7 +105,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   elu: {
     id: "elu",
-    label: { fr: "Elu", en: "Local authority" },
+    label: { fr: "Élu·e", en: "Elected representative" },
     subtitle: {
       fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
@@ -113,7 +114,7 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   admin: {
     id: "admin",
-    label: { fr: "Administration", en: "Administration" },
+    label: { fr: "Administrateur", en: "Administrator" },
     subtitle: {
       fr: "Modération et supervision",
       en: "Moderation and supervision",

@@ -1,8 +1,9 @@
 import { headers } from "next/headers";
 import type { AccountSetupRequirement } from "@/lib/auth/account-setup";
 import { getCurrentUserAccountSetupRequirement } from "@/lib/auth/account-setup";
-import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserLocationPreferences } from "@/lib/auth/user-location";
+import type { UserLocationPreferences } from "@/lib/user-location-preference";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isLocalhostHost } from "@/lib/auth/dev-auth";
 import type { AppProfile, AppRoleLabel } from "@/lib/profiles";
 import { toProfile } from "@/lib/profiles";
@@ -16,6 +17,8 @@ export type AccountCompletionGateState = {
   isLocalHost: boolean;
   initialArrondissement: number | null;
   initialLocationType: "residence" | "work" | null;
+  initialResidence?: UserLocationPreferences["residence"];
+  initialWork?: UserLocationPreferences["work"];
 };
 
 const NO_SETUP_REQUIRED: AccountSetupRequirement = {
@@ -40,34 +43,43 @@ export async function loadAccountCompletionGateState(
   const requestHeaders = await headers();
   const isLocalHost = isLocalhostHost(requestHeaders.get("host"));
 
-  const role = resolvedSession.clerkReachable
+  const identity = resolvedSession.clerkReachable
+    ? await getCurrentUserIdentity({ userId: resolvedSession.userId }).catch(() => null)
+    : null;
+  const role = identity?.role ?? (resolvedSession.clerkReachable
     ? await getCurrentUserRoleLabel().catch(() => ("anonymous" as const))
-    : ("anonymous" as const);
+    : ("anonymous" as const));
+  const currentProfile = identity?.activeProfile ?? toProfile(role);
 
   if (!resolvedSession.clerkReachable) {
     return {
       requirement: NO_SETUP_REQUIRED,
       role,
-      currentProfile: toProfile(role),
+       currentProfile,
       clerkReachable: resolvedSession.clerkReachable,
       isLocalHost,
       initialArrondissement: null,
       initialLocationType: null,
+      initialResidence: null,
+      initialWork: null,
     };
   }
 
-  const [requirement, existingPreference] = await Promise.all([
+  const [requirement, locationPreferences] = await Promise.all([
     getCurrentUserAccountSetupRequirement().catch(() => NO_SETUP_REQUIRED),
-    getCurrentUserLocationPreference().catch(() => null),
+    getCurrentUserLocationPreferences().catch(() => ({ residence: null, work: null })),
   ]);
+  const existingPreference = locationPreferences.residence ?? locationPreferences.work;
 
   return {
     requirement,
     role,
-    currentProfile: toProfile(role),
+    currentProfile,
     clerkReachable: resolvedSession.clerkReachable,
     isLocalHost,
     initialArrondissement: existingPreference?.arrondissement ?? null,
     initialLocationType: existingPreference?.locationType ?? null,
+    initialResidence: locationPreferences.residence,
+    initialWork: locationPreferences.work,
   };
 }

@@ -23,7 +23,10 @@ import {
   getParisArrondissementLabel,
   parseParisArrondissement,
 } from "@/lib/geo/paris-arrondissements";
-import { createTerritoryLocationMetadataFromLabel } from "@/lib/user-location-preference";
+import {
+  createTerritoryLocationMetadataFromLabel,
+  extractTerritoryLocationPreferenceFromMetadata,
+} from "@/lib/user-location-preference";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -86,6 +89,7 @@ function extractProfileMetadataFromSource(
   }
 
   const keys = [
+    "territoryPreferences",
     "territoryCountry",
     "territoryLevel",
     "territoryLabel",
@@ -167,8 +171,11 @@ function resolveSyncRoleContext(
 function resolveProfileArrondissement(
   profileMetadata: Record<string, unknown>,
 ): number | null {
+  const primaryLocation = extractTerritoryLocationPreferenceFromMetadata(profileMetadata);
   const rawArrondissement =
-    profileMetadata["territoryArrondissement"] ?? profileMetadata["parisArrondissement"];
+    profileMetadata["territoryArrondissement"] ??
+    profileMetadata["parisArrondissement"] ??
+    primaryLocation?.arrondissement;
 
   const parsedArrondissement =
     typeof rawArrondissement === "number"
@@ -182,7 +189,7 @@ function resolveProfileArrondissement(
       ? profileMetadata["territoryLabel"]
       : typeof profileMetadata["zoneName"] === "string"
         ? profileMetadata["zoneName"]
-        : null;
+        : primaryLocation?.label ?? null;
   const inferredArrondissement = metadataZoneName
     ? extractParisArrondissementFromLabel(metadataZoneName)
     : null;
@@ -236,10 +243,12 @@ function buildCompatibilityProfileMetadata(
   const resolvedSubtitle =
     readMeaningfulMetadataString(mergedMetadata, "territorySubtitle") ??
     readMeaningfulMetadataString(mergedMetadata, "zoneDepartment") ??
-    readMeaningfulMetadataString(mergedMetadata, "zoneAreaType");
+    readMeaningfulMetadataString(mergedMetadata, "zoneAreaType") ??
+    extractTerritoryLocationPreferenceFromMetadata(mergedMetadata)?.subtitle;
   const resolvedLabel =
     readMeaningfulMetadataString(mergedMetadata, "territoryLabel") ??
     readMeaningfulMetadataString(mergedMetadata, "zoneName") ??
+    extractTerritoryLocationPreferenceFromMetadata(mergedMetadata)?.label ??
     (isParisArrondissement(resolvedParisArrondissement)
       ? getParisArrondissementLabel(resolvedParisArrondissement)
       : null);
