@@ -18,6 +18,21 @@
   },
   "sources": [
     {
+      "family": "geography",
+      "publisher": "IGN / OpenData Île-de-France",
+      "dataset": "Contours IRIS Paris",
+      "url": "https://data.iledefrance.fr/explore/dataset/iris/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "géographie 2024",
+      "observedAt": "2024",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "iris",
+      "status": "available",
+      "notes": [
+        "Référentiel géographique IGN/OpenData Île-de-France ; 992 IRIS du département 75."
+      ]
+    },
+    {
       "family": "resident_population",
       "publisher": "Insee",
       "dataset": "Population en 2021 - Base infracommunale IRIS",

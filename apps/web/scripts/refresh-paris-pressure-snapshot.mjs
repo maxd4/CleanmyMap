@@ -241,6 +241,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
       ],
     },
     sources: [
+      source("geography", "Contours IRIS Paris", "https://data.iledefrance.fr/explore/dataset/iris/", "Licence Ouverte Etalab", "géographie 2024", "iris", "available", now, ["Référentiel géographique IGN/OpenData Île-de-France ; 992 IRIS du département 75."]),
       source("resident_population", "Population en 2021 - Base infracommunale IRIS", "https://www.insee.fr/fr/statistiques/8268806", "Licence ouverte Etalab", "2021 / géographie 2023", "iris", "available", now, [], "Insee", "2021"),
       source("transport", "Trafic annuel entrant par station du réseau ferré 2021", "https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2021/", "Licence Ouverte Etalab", "2021", "iris", transportRows.length ? "partial" : "unavailable", now, transportRows.length ? ["Rattachement station→IRIS par centroïde ; indicateur annuel, non temps réel."] : ["La source annuelle est cataloguée mais aucun export station géolocalisé n'a été fourni à ce rafraîchissement."], "RATP / Île-de-France Mobilités", "2021"),
       source(
