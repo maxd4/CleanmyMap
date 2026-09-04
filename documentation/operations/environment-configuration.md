@@ -41,6 +41,21 @@ noms de variables.
 | Tests | Fixtures, mocks et variables injectées par le runner | Pas de lecture implicite de secrets locaux; les tests doivent utiliser des valeurs fictives non sensibles. |
 | Expo mobile | Configuration Expo du projet mobile, uniquement variables publiques nécessaires au bundle | Les secrets restent côté API web; aucune clé serveur dans `EXPO_PUBLIC_*`. Le checkout courant ne contient pas de consommateur Expo d’environnement versionné. |
 
+### Localhost humain et Codex
+
+Ces deux usages localhost sont volontairement distincts :
+
+- `HUMAN_LOCAL` : session Clerk réelle, `CMM_DEV_AUTH_BYPASS` absent ou à `0`.
+  Aucun rôle privilégié n’est déduit de l’hôte `localhost` et l’absence de
+  session reste une absence d’authentification.
+- `CODEX` : lanceur local explicite avec `CMM_DEV_AUTH_BYPASS=1` et une
+  identité synthétique (`dev-max`, `dev-admin` ou `dev-benevole`). Cette
+  identité sert aux validations locales uniquement et ne modifie aucune
+  allowlist Clerk ni métadonnée distante.
+
+Changer `CMM_DEV_AUTH_BYPASS_ROLE` à la main ne donne pas de rôle en
+Production : le bypass est refusé hors développement.
+
 ### Commandes de contrôle
 
 Depuis la racine :
@@ -168,7 +183,10 @@ au contrat.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
 - Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
-  contrôles AuthZ opératoires; elles ne sont pas des personas UX.
+  contrôles AuthZ opératoires indépendants et disjoints ; aucune valeur de la
+  première n’est utilisée comme repli de la seconde. En cas de configuration
+  accidentellement intersectée, le résolveur n’élève pas l’entrée à `max` et
+  l’audit doit signaler l’intersection. Ces listes ne sont pas des personas UX.
 
 ### Supabase
 

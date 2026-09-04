@@ -110,6 +110,25 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
   });
 
+  it("allows only max to reach role management", async () => {
+    getCurrentUserRoleLabelMock.mockResolvedValueOnce("admin");
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "Admin must not manage roles",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
   it("searches accounts by query", async () => {
     const { GET } = await import("./route");
     const response = await GET(
@@ -199,6 +218,25 @@ describe("GET/POST /api/admin/role-accounts", () => {
         }),
       }),
     );
+  });
+
+  it("rejects max as an assignable target", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "max",
+          reason: "The owner role is never assigned here",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
   it.each([undefined, "nope"]) (

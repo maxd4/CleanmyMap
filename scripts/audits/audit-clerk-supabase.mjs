@@ -122,6 +122,13 @@ function extractRole(metadata) {
   return normalizeRole(value);
 }
 
+function extractActiveProfile(metadata) {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+  return normalizeRole(metadata.activeProfile);
+}
+
 function extractBadgeIds(metadata) {
   if (!metadata || typeof metadata !== "object") {
     return [];
@@ -173,7 +180,7 @@ function csvEscape(value) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
-function parseUserIds(raw) {
+export function parseUserIds(raw) {
   if (!raw) {
     return new Set();
   }
@@ -186,16 +193,21 @@ function parseUserIds(raw) {
   );
 }
 
-function parseMaxUserIds(raw, fallbackRaw) {
-  const parsed = parseUserIds(raw);
-  if (parsed.size > 0) {
-    return parsed;
-  }
-  return parseUserIds(fallbackRaw);
+export function parseAdminUserIds(raw) {
+  return parseUserIds(raw);
+}
+
+export function parseMaxUserIds(raw) {
+  return parseUserIds(raw);
+}
+
+export function isExclusiveMaxUserId(userId, maxUserIds, adminUserIds) {
+  return maxUserIds.has(userId) && !adminUserIds.has(userId);
 }
 
 function isCreatorInboxEmail(value, creatorInboxEmail) {
-  return normalizeEmail(value) === normalizeEmail(creatorInboxEmail);
+  const normalizedCreatorInboxEmail = normalizeEmail(creatorInboxEmail);
+  return Boolean(normalizedCreatorInboxEmail) && normalizeEmail(value) === normalizedCreatorInboxEmail;
 }
 
 function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
@@ -208,7 +220,7 @@ function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
   return normalizeRole(metadataRole) ?? "benevole";
 }
 
-function resolveStoredRoleLabel({
+export function resolveStoredRoleLabel({
   metadataRole,
   userId,
   email,
@@ -218,8 +230,7 @@ function resolveStoredRoleLabel({
 }) {
   const isMaxByAllowlist =
     isCreatorInboxEmail(email, creatorInboxEmail) ||
-    maxUserIds.has(userId) ||
-    (maxUserIds.size === 0 && adminUserIds.has(userId));
+    isExclusiveMaxUserId(userId, maxUserIds, adminUserIds);
 
   const isMaxByMetadata = normalizeRole(metadataRole) === "max";
   const isMax = isMaxByAllowlist || isMaxByMetadata;
@@ -227,7 +238,7 @@ function resolveStoredRoleLabel({
     return "max";
   }
 
-  if (metadataRole === "admin") {
+  if (adminUserIds.has(userId) || normalizeRole(metadataRole) === "admin") {
     return "admin";
   }
 
@@ -324,6 +335,8 @@ async function fetchClerkUsers(secretKey, limit) {
           unsafeMetadata,
           metadataRole:
             extractRole(publicMetadata) ?? extractRole(privateMetadata),
+          metadataActiveProfile:
+            extractActiveProfile(publicMetadata) ?? extractActiveProfile(privateMetadata),
           metadataBadgeIds: Array.from(
             new Set([
               ...extractBadgeIds(publicMetadata),
@@ -401,8 +414,7 @@ function buildRowSummary({
           isMax:
             normalizeRole(metadataRole) === "max" ||
             isCreatorInboxEmail(clerkUser.primaryEmail, context.creatorInboxEmail) ||
-            context.maxUserIds.has(id) ||
-            (context.maxUserIds.size === 0 && context.adminUserIds.has(id)),
+            isExclusiveMaxUserId(id, context.maxUserIds, context.adminUserIds),
         })
       : null);
 
@@ -439,6 +451,7 @@ function buildRowSummary({
     clerk_display_name:
       clerkUser && `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim(),
     clerk_metadata_role: metadataRole ?? "",
+    clerk_active_profile: clerkUser?.metadataActiveProfile ?? "",
     clerk_metadata_badges: metadataBadgeIds,
     derived_badges: derivedBadgeIds,
     expected_app_profile: expectedAppProfile ?? "",
@@ -473,6 +486,7 @@ function toCsv(rows) {
     "clerk_username",
     "clerk_display_name",
     "clerk_metadata_role",
+    "clerk_active_profile",
     "clerk_metadata_badges",
     "derived_badges",
     "expected_app_profile",
@@ -519,10 +533,10 @@ async function main() {
   const supabaseUrl = resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL", envFiles);
   const serviceRoleKey = resolveEnvValue("SUPABASE_SERVICE_ROLE_KEY", envFiles);
   const adminUserIds = parseUserIds(resolveEnvValue("CLERK_ADMIN_USER_IDS", envFiles));
-  const maxUserIds = parseMaxUserIds(
-    resolveEnvValue("CLERK_MAX_USER_IDS", envFiles),
-    resolveEnvValue("CLERK_ADMIN_USER_IDS", envFiles),
-  );
+  const maxUserIds = parseMaxUserIds(resolveEnvValue("CLERK_MAX_USER_IDS", envFiles));
+  const allowlistOverlapCount = Array.from(adminUserIds).filter((id) =>
+    maxUserIds.has(id),
+  ).length;
   const creatorInboxEmail = resolveEnvValue("CREATOR_INBOX_EMAIL", envFiles);
 
   if (!clerkSecretKey) {
@@ -635,6 +649,7 @@ async function main() {
       orphanProfiles: findings.orphanProfiles.length,
       roleMismatches: findings.roleMismatches.length,
       legacyActivityOnly: findings.legacyActivityOnly.length,
+      allowlistOverlap: allowlistOverlapCount,
     },
   };
 
@@ -659,10 +674,12 @@ async function main() {
   console.log(`CSV:  ${resolve(`${outputBase}.csv`)}`);
 }
 
-main().catch((error) => {
-  console.error(
-    "clerk-supabase-audit failed:",
-    error instanceof Error ? error.message : String(error),
-  );
-  process.exit(1);
-});
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error) => {
+    console.error(
+      "clerk-supabase-audit failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+    process.exit(1);
+  });
+}

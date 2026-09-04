@@ -25,7 +25,7 @@ const mutationSchema = z.object({
 });
 
 function isAdminLikeRole(role: RoleAccountRecord["roleLabel"]) {
-  return role === "admin" || role === "elu" || role === "max";
+  return role === "admin" || role === "elu";
 }
 
 function resolveCanonicalTargetRole(user: {

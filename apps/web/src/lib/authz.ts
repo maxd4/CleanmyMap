@@ -22,6 +22,7 @@ import {
 import {
   extractRole,
   isAdminRole,
+  isExclusiveMaxUserId,
   isMaxRole,
   parseAdminUserIds,
   parseMaxUserIds,
@@ -75,11 +76,8 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
   }
 
   const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(
-    env.CLERK_MAX_USER_IDS,
-    env.CLERK_ADMIN_USER_IDS,
-  );
-  if (adminUserIds.has(userId) || maxUserIds.has(userId)) {
+  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
+  if (adminUserIds.has(userId) || isExclusiveMaxUserId(userId, maxUserIds, adminUserIds)) {
     return { ok: true, userId };
   }
 
@@ -157,12 +155,10 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
       client,
       await getClerkUser(client, userId),
     );
-    const maxUserIds = parseMaxUserIds(
-      env.CLERK_MAX_USER_IDS,
-      env.CLERK_ADMIN_USER_IDS,
-    );
+    const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
+    const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
     if (
-      maxUserIds.has(userId) ||
+      isExclusiveMaxUserId(userId, maxUserIds, adminUserIds) ||
       isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
       isMaxRole({
         publicMetadata: user.publicMetadata,
@@ -172,7 +168,6 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
       return "max" as const;
     }
 
-    const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
     if (
       adminUserIds.has(userId) ||
       isAdminRole({

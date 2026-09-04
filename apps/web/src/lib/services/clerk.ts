@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
 import {
   extractRole,
+  isExclusiveMaxUserId,
   parseAdminUserIds,
   parseMaxUserIds,
 } from "@/lib/auth/role-resolution";
@@ -43,7 +44,7 @@ function resolveClerkRole(params: {
       privateMetadata: params.user.privateMetadata,
     });
   const isMax =
-    params.maxUserIds.has(params.id) ||
+    isExclusiveMaxUserId(params.id, params.maxUserIds, params.adminUserIds) ||
     isCreatorInboxEmail(params.user.primaryEmailAddress?.emailAddress) ||
     isMaxRole({
       publicMetadata: params.user.publicMetadata,
@@ -72,10 +73,7 @@ function buildClerkDisplayName(user: {
 export async function getClerkService() {
   const client = await clerkClient();
   const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(
-    env.CLERK_MAX_USER_IDS,
-    env.CLERK_ADMIN_USER_IDS,
-  );
+  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
 
   return {
     /**

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractRole,
   isAdminRole,
+  isExclusiveMaxUserId,
   isMaxRole,
   parseAdminUserIds,
   parseMaxUserIds,
@@ -15,11 +16,19 @@ describe("role resolution", () => {
     expect(parseAdminUserIds(undefined)).toEqual(new Set());
   });
 
-  it("uses admin ids as the max ids fallback when no max ids are configured", () => {
-    expect(parseMaxUserIds("", "admin_1, admin_2")).toEqual(
-      new Set(["admin_1", "admin_2"]),
-    );
-    expect(parseMaxUserIds("max_1", "admin_1")).toEqual(new Set(["max_1"]));
+  it("keeps max ids independent from admin ids", () => {
+    expect(parseMaxUserIds("")).toEqual(new Set());
+    expect(parseMaxUserIds("max_1")).toEqual(new Set(["max_1"]));
+  });
+
+  it("fails closed to admin when the two allowlists overlap", () => {
+    expect(
+      isExclusiveMaxUserId(
+        "principal",
+        parseMaxUserIds("principal"),
+        parseAdminUserIds("secondary, principal"),
+      ),
+    ).toBe(false);
   });
 
   it("extracts and normalizes Clerk role metadata", () => {
