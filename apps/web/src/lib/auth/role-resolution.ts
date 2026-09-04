@@ -24,12 +24,17 @@ export function parseAdminUserIds(raw: string | undefined): Set<string> {
   return parseUserIds(raw);
 }
 
-export function parseMaxUserIds(
-  raw: string | undefined,
-  fallbackRaw?: string | undefined,
-): Set<string> {
-  const parsed = parseUserIds(raw);
-  return parsed.size > 0 ? parsed : parseUserIds(fallbackRaw);
+export function parseMaxUserIds(raw: string | undefined): Set<string> {
+  return parseUserIds(raw);
+}
+
+/** Keep an accidental overlap from promoting an admin entry to max. */
+export function isExclusiveMaxUserId(
+  userId: string,
+  maxUserIds: Set<string>,
+  adminUserIds: Set<string>,
+): boolean {
+  return maxUserIds.has(userId) && !adminUserIds.has(userId);
 }
 
 export function extractRole(metadata: ClerkMetadata): string | null {

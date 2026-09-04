@@ -872,10 +872,18 @@ function AppNavigationRibbonPublic({
   const authSignedIn = Boolean(isSignedIn);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
-  const effectiveProfile = userRole\n    ? readActiveProfile(userResource?.publicMetadata, userRole)\n    : fallbackProfile;
+  const effectiveProfile = userRole
+    ? readActiveProfile(userResource?.publicMetadata, userRole)
+    : fallbackProfile;
   const effectiveIdentity =
     authLoaded && authSignedIn && userResource
-      ? buildIdentityFromUser(\n          userResource,\n          userRole ?? fallbackProfile,\n          effectiveProfile,\n          locale,\n        )\n      : null;
+      ? buildIdentityFromUser(
+          userResource,
+          userRole ?? fallbackProfile,
+          effectiveProfile,
+          locale,
+        )
+      : null;
 
   return (
     <AppNavigationRibbonShell
@@ -906,7 +914,9 @@ function AppNavigationRibbonProtected({
   const userRole = readProfileRole(userResource?.publicMetadata);
   const effectiveProfile =
     identity?.activeProfile ??
-    (userRole\n      ? readActiveProfile(userResource?.publicMetadata, userRole)\n      : fallbackProfile);
+    (userRole
+      ? readActiveProfile(userResource?.publicMetadata, userRole)
+      : fallbackProfile);
   const effectiveIdentity =
     identity ??
     (authLoaded && authSignedIn && userResource

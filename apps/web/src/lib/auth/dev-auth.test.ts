@@ -17,10 +17,10 @@ describe("dev auth bypass helpers", () => {
     expect(isLocalhostHost("example.com")).toBe(false);
   });
 
-  it("enables the bypass automatically on localhost during development", () => {
+  it("keeps the human localhost flow on real Clerk by default", () => {
     vi.stubEnv("NODE_ENV", "development");
 
-    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(true);
+    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
     expect(isDevAuthBypassEnabled("example.com")).toBe(false);
   });
 
@@ -44,12 +44,12 @@ describe("dev auth bypass helpers", () => {
     ).toBe(false);
   });
 
-  it("uses the automatic localhost bypass when Clerk has no session", () => {
+  it("does not bypass a missing human Clerk session automatically", () => {
     vi.stubEnv("NODE_ENV", "development");
 
     expect(
       shouldUseDevAuthBypass({ hostname: "localhost:3000", clerkUserId: null }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("keeps an explicitly forced bypass ahead of a Clerk session", () => {

@@ -39,25 +39,17 @@ type ApiAuthorizationContract = Record<
  * made by each handler.
  */
 export const API_AUTHORIZATION_CONTRACT = {
-  "account/profile-role": {
+  "account/active-profile": {
     POST: {
-      expected: "Authenticated current account; self-service role changes or admin/max-gated elevated targets only",
-      dimensions: [
-        "authentication",
-        "admin/creator role",
-        "business permission",
-        "ownership",
-      ],
+      expected: "Authenticated current account; active persona is limited by the real role and never changes authorization",
+      dimensions: ["authentication", "ownership"],
       actual:
-        "auth() + session.userId for the current Clerk account; isSelfServiceProfile/isAdminRole/isMaxRole constrain the target and sync the same account",
+        "requireAuthenticatedAccess + getCurrentUserRoleLabel + getSwitchableProfiles; Clerk update writes only publicMetadata.activeProfile",
       evidence: [
-        "auth()",
-        "session.userId",
+        "requireAuthenticatedAccess",
         "getCurrentUserRoleLabel",
-        "isSelfServiceProfile",
-        "isAdminRole",
-        "isMaxRole",
-        "syncClerkUserToSupabase",
+        "getSwitchableProfiles",
+        "activeProfile",
       ],
     },
   },

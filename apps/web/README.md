@@ -64,7 +64,11 @@ cp apps/web/.env.local.example apps/web/.env.local
 npm run dev
 ```
 
-Le bypass d'auth local est réservé au développement.
+Le bypass d'auth local est réservé au développement et doit être explicite.
+Le parcours humain sur localhost utilise une vraie session Clerk avec le bypass
+désactivé. Les lanceurs Codex `.aLANCER_SITE_LOCAL_ROLE_*.bat` activent
+explicitement une identité de test (`max`, `admin` ou `benevole`) ; ils ne
+représentent jamais un compte Clerk réel.
 
 Exemple :
 

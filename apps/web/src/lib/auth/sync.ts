@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
 import {
   isAdminRole,
+  isExclusiveMaxUserId,
   isMaxRole,
   parseUserIds,
 } from "@/lib/auth/role-resolution";
@@ -153,17 +154,19 @@ function resolveSyncRoleContext(
     readMetadataString(user.publicMetadata as MetadataSource, "profile") ??
     readMetadataString(user.privateMetadata as MetadataSource, "role") ??
     readMetadataString(user.privateMetadata as MetadataSource, "profile");
-  const isAdmin = isAdminRole({
-    publicMetadata: user.publicMetadata,
-    privateMetadata: user.privateMetadata,
-  });
+  const isAdmin =
+    adminUserIds.has(user.id) ||
+    isAdminRole({
+      publicMetadata: user.publicMetadata,
+      privateMetadata: user.privateMetadata,
+    });
   const isMax =
     isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
     isMaxRole({
       publicMetadata: user.publicMetadata,
       privateMetadata: user.privateMetadata,
     }) ||
-    (maxUserIds.size > 0 ? maxUserIds.has(user.id) : adminUserIds.has(user.id));
+    isExclusiveMaxUserId(user.id, maxUserIds, adminUserIds);
 
   return { metadataRole, isAdmin, isMax };
 }

@@ -38,12 +38,11 @@ import {
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
   getDevAuthBypassUsername,
-  isDevAuthBypassForced,
-  isLocalhostHost,
   shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
   extractRole,
+  isExclusiveMaxUserId,
   parseAdminUserIds,
   parseMaxUserIds,
   type ClerkMetadata,
@@ -226,28 +225,13 @@ export async function getDevAuthBypassSession() {
     host = null;
   }
 
-  const bypassForced = isDevAuthBypassForced();
-  let clerkUserId: string | null = null;
-  if (!bypassForced && isLocalhostHost(host)) {
-    try {
-      clerkUserId = (await auth()).userId ?? null;
-    } catch {
-      clerkUserId = null;
-    }
-  }
-
-  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId })) {
+  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId: null })) {
     return null;
   }
 
-  const bypassRole =
-    isLocalhostHost(host) && !process.env["CMM_DEV_AUTH_BYPASS_ROLE"]?.trim()
-      ? "max"
-      : getDevAuthBypassRole();
-
   return {
     userId: getDevAuthBypassUserId(),
-    role: bypassRole,
+    role: getDevAuthBypassRole(),
     displayName: getDevAuthBypassDisplayName(),
     username: getDevAuthBypassUsername(),
   };
@@ -294,7 +278,7 @@ function buildFallbackIdentity(
   const resolvedRole = resolveProfile({
     metadataRole: null,
     isAdmin: adminUserIds.has(userId),
-    isMax: maxUserIds.has(userId),
+    isMax: isExclusiveMaxUserId(userId, maxUserIds, adminUserIds),
   });
 
   return {
@@ -310,7 +294,11 @@ function buildFallbackIdentity(
     role: resolvedRole,
     activeProfile: resolvedRole,
     badges: mapBadgeIdsToBadges([
-      ...(maxUserIds.has(userId) ? ["max"] : adminUserIds.has(userId) ? ["admin"] : []),
+      ...(isExclusiveMaxUserId(userId, maxUserIds, adminUserIds)
+        ? ["max"]
+        : adminUserIds.has(userId)
+          ? ["admin"]
+          : []),
       getRoleBadgeId(resolvedRole),
       getProfileBadgeId(resolvedRole),
     ]),
@@ -337,7 +325,7 @@ function resolveIdentityFlags(
       creatorInbox ||
       metadataSources.some((metadata) => hasAnyRole(metadata, ["admin", "max"])),
     isMax:
-      maxUserIds.has(userId) ||
+      isExclusiveMaxUserId(userId, maxUserIds, adminUserIds) ||
       creatorInbox ||
       metadataSources.some((metadata) => hasAnyRole(metadata, ["max"])),
   };
@@ -518,7 +506,7 @@ export async function getCurrentUserIdentity(
   }
 
   const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS, env.CLERK_ADMIN_USER_IDS);
+  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
   return buildAuthenticatedIdentity(userId, adminUserIds, maxUserIds);
 }
 

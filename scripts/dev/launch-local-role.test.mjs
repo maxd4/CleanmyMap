@@ -26,10 +26,18 @@ describe("launch-local-role", () => {
       displayName: "Dev Benevole",
       username: "dev-benevole",
     });
+    assert.deepEqual(getRoleConfig("admin"), {
+      role: "admin",
+      userId: "dev-admin",
+      displayName: "Dev Admin",
+      username: "dev-admin",
+    });
     assert.equal(buildRoleEnvironment("max", { KEEP_ME: "1" }).CMM_DEV_AUTH_BYPASS, "1");
     assert.equal(buildRoleEnvironment("max").CMM_DEV_AUTH_BYPASS_ROLE, "max");
     assert.equal(buildRoleEnvironment("benevole").CMM_DEV_AUTH_BYPASS_ROLE, "benevole");
     assert.equal(buildRoleEnvironment("benevole").CMM_DEV_AUTH_BYPASS_USER_ID, "dev-benevole");
+    assert.equal(buildRoleEnvironment("admin").CMM_DEV_AUTH_BYPASS_ROLE, "admin");
+    assert.equal(buildRoleEnvironment("admin").CMM_DEV_AUTH_BYPASS_USER_ID, "dev-admin");
   });
 
   it("uses a non-interactive Vercel Development pull without Claude tooling", () => {
@@ -89,6 +97,7 @@ describe("launch-local-role", () => {
     for (const [file, role] of [
       [".aLANCER_SITE_LOCAL_ROLE_MAX.bat", "max"],
       [".aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat", "benevole"],
+      [".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat", "admin"],
     ]) {
       const content = readFileSync(file, "utf8");
       assert.match(content, /launch-local-role\.mjs/);

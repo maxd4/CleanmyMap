@@ -23,6 +23,7 @@ export function isLocalhostHost(hostname: string | null | undefined): boolean {
 }
 
 export function isDevAuthBypassEnabled(hostname: string | null | undefined): boolean {
+  void hostname;
   if (process.env.NODE_ENV !== "development") {
     return false;
   }
@@ -31,11 +32,8 @@ export function isDevAuthBypassEnabled(hostname: string | null | undefined): boo
     return false;
   }
 
-  if (isDevAuthBypassForced()) {
-    return true;
-  }
-
-  return isLocalhostHost(hostname);
+  // Human localhost sessions use real Clerk. Codex launchers opt in explicitly.
+  return isDevAuthBypassForced();
 }
 
 export function shouldUseDevAuthBypass(params: {
