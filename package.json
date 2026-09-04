@@ -175,7 +175,6 @@
     "rpc-websockets": {
       "uuid": "14.0.2"
     },
-    "@xmldom/xmldom": "0.8.13",
     "@expo/cli": {
       "tar": "7.5.22",
       "undici": "6.27.0"

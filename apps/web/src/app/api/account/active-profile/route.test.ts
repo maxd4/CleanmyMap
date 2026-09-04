@@ -12,14 +12,17 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: clerkClientMock }));
 vi.mock("@/lib/auth/sync", () => ({ syncClerkUserToSupabase: syncMock }));
 
-function setupClerk(initialPublicMetadata: Record<string, unknown>) {
+function setupClerk(
+  initialPublicMetadata: Record<string, unknown>,
+  userId = "user-1",
+) {
   const getUser = vi.fn().mockResolvedValue({
-    id: "user-1",
+    id: userId,
     publicMetadata: initialPublicMetadata,
     privateMetadata: { role: initialPublicMetadata.role },
   });
   const updateUser = vi.fn().mockImplementation(async (_id, patch) => ({
-    id: "user-1",
+    id: userId,
     publicMetadata: patch.publicMetadata,
     privateMetadata: { role: initialPublicMetadata.role },
   }));
@@ -110,6 +113,36 @@ describe("POST /api/account/active-profile", () => {
       },
     });
     expect(syncMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the authenticated Clerk user id on localhost without mutating the real role", async () => {
+    authzMock.mockResolvedValue({ ok: true, userId: "user_clerk_local" });
+    roleMock.mockResolvedValue("benevole");
+    const { getUser, updateUser } = setupClerk(
+      {
+        role: "benevole",
+        activeProfile: "benevole",
+        preserved: "metadata",
+      },
+      "user_clerk_local",
+    );
+
+    const response = await post({ activeProfile: "scientifique" });
+
+    expect(response.status).toBe(200);
+    expect(getUser).toHaveBeenCalledWith("user_clerk_local");
+    expect(updateUser).toHaveBeenCalledWith("user_clerk_local", {
+      publicMetadata: {
+        role: "benevole",
+        activeProfile: "scientifique",
+        preserved: "metadata",
+      },
+    });
+    expect(updateUser.mock.calls[0][1]).not.toHaveProperty("privateMetadata");
+    expect(await response.json()).toMatchObject({
+      role: "benevole",
+      activeProfile: "scientifique",
+    });
   });
 
   it.each([
