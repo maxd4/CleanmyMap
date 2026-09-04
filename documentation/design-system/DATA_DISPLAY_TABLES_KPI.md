@@ -64,6 +64,7 @@ Les consommateurs runtime canoniques actuels sont :
 - `apps/web/src/components/dashboard/system-status-panel.tsx` ;
 - `apps/web/src/components/actions/actions-map-table.tsx`.
 
-Le legacy restant est une dette bornée, explicitement inventoriée par
-`check:data-display`. Il n'est pas une seconde convention autorisée et doit
-être retiré de l'allowlist au moment de sa migration.
+La dette runtime raw-table est désormais vide : les tables runtime couvertes
+par le checker utilisent le shell et la géométrie canoniques. Print/Export
+reste un contrat spécialisé séparé, avec son exclusion dédiée dans
+`check:data-display`, et ne doit pas être assimilé aux tables runtime.

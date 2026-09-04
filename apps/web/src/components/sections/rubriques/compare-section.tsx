@@ -148,15 +148,15 @@ export function CompareSection() {
                   </div>
                 </div>
                 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                <div className="cmm-data-table-wrap">
+                  <table className="cmm-data-table">
                     <thead>
                       <tr className="border-b border-white/5 bg-slate-950/20">
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Secteur</th>
-                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Activités</th>
-                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">KG/Action</th>
-                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Écart/Médiane</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Priorité</th>
+                        <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Secteur</th>
+                        <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Activités</th>
+                        <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">KG/Action</th>
+                        <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Écart/Médiane</th>
+                        <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Priorité</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">

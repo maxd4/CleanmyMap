@@ -144,11 +144,11 @@ export function QuizSchoolWorkshopSession({ locale, level, questions, onRestart,
               <p className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-base font-bold leading-relaxed text-slate-900">{activity.instruction[locale]}</p>
               <p className="mt-4 text-sm font-medium leading-relaxed text-slate-700"><span className="font-black text-slate-950">{locale === "fr" ? "Adaptation" : "Adaptation"} :</span> {activity.adaptation[locale]}</p>
               {activity.dataPoints ? (
-                <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                  <table className="w-full min-w-[18rem] text-left text-sm">
+                <div className="cmm-data-table-wrap mt-5">
+                  <table className="cmm-data-table min-w-[18rem]">
                     <caption className="sr-only">{locale === "fr" ? "Données d’exemple de l’activité" : "Example data for the activity"}</caption>
-                    <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-600"><tr><th scope="col" className="px-4 py-3">{locale === "fr" ? "Repère" : "Label"}</th><th scope="col" className="px-4 py-3">{locale === "fr" ? "Valeur" : "Value"}</th></tr></thead>
-                    <tbody>{activity.dataPoints.map((point) => <tr key={point.label.en} className="border-t border-slate-100"><th scope="row" className="px-4 py-3 font-bold text-slate-800">{point.label[locale]}</th><td className="px-4 py-3 text-slate-700">{point.value}</td></tr>)}</tbody>
+                    <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.12em] text-slate-600"><tr><th scope="col">{locale === "fr" ? "Repère" : "Label"}</th><th scope="col">{locale === "fr" ? "Valeur" : "Value"}</th></tr></thead>
+                    <tbody>{activity.dataPoints.map((point) => <tr key={point.label.en}><th scope="row" className="font-bold text-slate-800">{point.label[locale]}</th><td className="text-slate-700">{point.value}</td></tr>)}</tbody>
                   </table>
                 </div>
               ) : null}

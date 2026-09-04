@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
@@ -217,18 +218,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
       />
 
       {showRestrictionDialog ? (
-        <div
-          className="cmm-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="action-restriction-title"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowRestrictionDialog(false);
-            }
-          }}
+        <CmmDialog
+          open={showRestrictionDialog}
+          onClose={() => setShowRestrictionDialog(false)}
+          ariaLabelledBy="action-restriction-title"
+          size="lg"
+          panelClassName="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-amber-200/80 bg-[#FFF8EE]/98 shadow-[0_28px_72px_-28px_rgba(217,119,6,0.28)] backdrop-blur-xl"
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-amber-200/80 bg-[#FFF8EE]/98 shadow-[0_28px_72px_-28px_rgba(217,119,6,0.28)] backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4 border-b border-amber-200/70 bg-gradient-to-r from-amber-50 via-[#FFF6E7] to-[#FFF3DB] px-6 py-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-200/80 bg-white text-amber-700 shadow-sm">
@@ -282,7 +278,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
               </button>
             </div>
           </div>
-        </div>
+        </CmmDialog>
       ) : null}
 
       <div

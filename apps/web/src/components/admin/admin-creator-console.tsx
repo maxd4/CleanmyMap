@@ -78,41 +78,41 @@ export function AdminCreatorConsole({
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/5">
-              <table className="w-full text-left text-sm">
+            <div className="cmm-data-table-wrap">
+              <table className="cmm-data-table">
                 <thead>
                   <tr className="border-b border-white/5 bg-white/5">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                       Acteur
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                       Rôle
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                       Connexion
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                       État
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody>
                   <tr className="group transition-colors hover:bg-white/5">
-                    <td className="px-6 py-6">
+                    <td>
                       <p className="font-bold text-white transition-colors group-hover:text-slate-200">
                         {displayName}
                       </p>
                       <p className="mt-1 text-[10px] italic text-slate-500">Compte IMU (super-admin)</p>
                     </td>
-                    <td className="px-6 py-6">
+                    <td>
                       <span className="rounded-full border border-slate-400/20 bg-slate-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
                         Sous-partie cachée
                       </span>
                     </td>
-                    <td className="px-6 py-6 text-xs font-medium tracking-tight text-slate-500">
+                    <td className="text-xs font-medium tracking-tight text-slate-500">
                       Il y a 2 min
                     </td>
-                    <td className="px-6 py-6">
+                    <td>
                       <div className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">

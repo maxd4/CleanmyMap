@@ -60,6 +60,7 @@ export function auditDisplayModesCss(source, filePath = MOTION_PATHS.displayMode
     '[data-display-mode="minimaliste"] .group:hover .cmm-icon-nudge-x',
     '[data-display-mode="sobre"] .cmm-hover-lift',
     '[data-display-mode="sobre"] .cmm-icon-nudge-x',
+    '[data-display-mode="sobre"] .cmm-sober-animate',
     "transition: none !important",
     "transform: none !important",
   ]) {
@@ -94,6 +95,9 @@ export function auditPunchySlogan(source, filePath = MOTION_PATHS.punchySlogan) 
   const violations = auditConsumer(source, filePath);
   for (const marker of ["isSober", "isMinimal", "duration: 0.2"]) {
     requireText(source, filePath, marker, violations);
+  }
+  if (/isSober\s*=.*shouldReduceMotion/.test(source)) {
+    violations.push(`${filePath}: shouldReduceMotion must not be assimilated to isSober`);
   }
   return violations;
 }

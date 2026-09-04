@@ -96,15 +96,9 @@ Ces fichiers sont des exceptions actuelles explicitement allowlistées par
 `check:overlays`. Ils ne constituent pas des patrons recommandés et ne
 doivent pas être recopiés pour de nouveaux dialogs :
 
-- `apps/web/src/components/account/account-completion-modal.tsx` — modal
-  historique d’onboarding avec une surface et un flux de complétion spécifiques
-  encore non migrés ;
 - `apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx` —
   présentation gamification historique dépendante de Framer Motion et de ses
   ornements propres ;
-- `apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx` —
-  dialog de restriction intégré au flux métier, conservé hors de la migration
-  des confirmations et exports.
 
 Toute nouvelle modale générique doit utiliser `CmmDialog`. Lorsqu’une
 exception legacy devient canonique, son fichier doit être retiré de

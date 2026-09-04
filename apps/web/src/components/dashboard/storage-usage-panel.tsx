@@ -539,20 +539,20 @@ export function StorageUsagePanel() {
               <HardDrive size={16} className="text-white/20" />
             </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+            <div className="cmm-data-table-wrap mt-4">
+              <table className="cmm-data-table" data-density="compact">
                 <thead className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
                   <tr className="border-b border-white/5">
-                    <th className="px-3 py-2">Fichier</th>
-                    <th className="px-3 py-2">Bucket</th>
-                    <th className="px-3 py-2">Type</th>
-                    <th className="px-3 py-2">Poids</th>
+                    <th scope="col">Fichier</th>
+                    <th scope="col">Bucket</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Poids</th>
                   </tr>
                 </thead>
                 <tbody>
                   {current.largestFiles.slice(0, 8).map((file) => (
-                    <tr key={`${file.bucketId}-${file.name}`} className="border-b border-white/5 text-white">
-                      <td className="max-w-[280px] px-3 py-3">
+                    <tr key={`${file.bucketId}-${file.name}`} className="text-white">
+                      <td className="max-w-[280px]">
                         <p className="truncate font-semibold text-white">
                           {file.name}
                         </p>
@@ -560,9 +560,9 @@ export function StorageUsagePanel() {
                           {file.businessLabel}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-white/50">{file.bucketLabel}</td>
-                      <td className="px-3 py-3 text-white/50">{file.fileTypeLabel}</td>
-                      <td className="px-3 py-3 font-black text-white">{file.sizeLabel}</td>
+                      <td className="text-white/50">{file.bucketLabel}</td>
+                      <td className="text-white/50">{file.fileTypeLabel}</td>
+                      <td className="font-black text-white">{file.sizeLabel}</td>
                     </tr>
                   ))}
                 </tbody>

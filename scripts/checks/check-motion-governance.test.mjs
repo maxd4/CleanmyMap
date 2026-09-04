@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   auditActionCard,
+  auditDisplayModesCss,
   auditMotionCss,
   auditPageTransition,
   auditPunchySlogan,
@@ -32,6 +33,18 @@ test("rejects a Motion stylesheet without prefers-reduced-motion", () => {
   assert.ok(violations.some((violation) => /prefers-reduced-motion/.test(violation)));
 });
 
+test("accepts a static sobre helper contract", () => {
+  const source = `
+  [data-display-mode="minimaliste"] .cmm-hover-lift:hover { transform: none; }
+  [data-display-mode="minimaliste"] .group:hover .cmm-icon-nudge-x { transform: none; }
+  [data-display-mode="sobre"] .cmm-hover-lift { transition: none !important; transform: none !important; }
+  [data-display-mode="sobre"] .cmm-icon-nudge-x { transition: none !important; transform: none !important; }
+  [data-display-mode="sobre"] .cmm-sober-animate { animation: none !important; transition: none !important; }
+  `;
+
+  assert.deepEqual(auditDisplayModesCss(source), []);
+});
+
 test("rejects PageTransition without useReducedMotion", () => {
   const source = `
   import { motion } from "framer-motion";
@@ -57,6 +70,17 @@ test("rejects PunchySlogan without displayMode", () => {
   const violations = auditPunchySlogan(source);
 
   assert.ok(violations.some((violation) => /displayMode/.test(violation)));
+});
+
+test("rejects reduced motion being assimilated to the sobre display mode", () => {
+  const source = `
+  const shouldReduceMotion = useReducedMotion();
+  const isSober = displayMode === "sobre" || shouldReduceMotion;
+  const isMinimal = displayMode === "minimaliste";
+  `;
+  const violations = auditPunchySlogan(source);
+
+  assert.ok(violations.some((violation) => /assimilated to isSober/.test(violation)));
 });
 
 test("rejects ActionCard local lift and icon nudge recipes", () => {

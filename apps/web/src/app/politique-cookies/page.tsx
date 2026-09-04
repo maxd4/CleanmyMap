@@ -147,30 +147,30 @@ export default function PolitiqueCookiesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             4. Durées de conservation
           </h2>
-          <div className="overflow-hidden rounded-3xl border border-slate-200">
-            <table className="w-full border-collapse text-left text-sm">
+          <div className="cmm-data-table-wrap">
+            <table className="cmm-data-table">
               <thead className="bg-slate-100 text-slate-900">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Élément</th>
-                  <th className="px-4 py-3 font-semibold">Durée</th>
+                  <th scope="col" className="font-semibold">Élément</th>
+                  <th scope="col" className="font-semibold">Durée</th>
                 </tr>
               </thead>
               <tbody className="text-slate-600">
-                <tr className="border-t border-slate-200">
-                  <td className="px-4 py-3">Consentement</td>
-                  <td className="px-4 py-3">6 mois</td>
+                <tr>
+                  <td>Consentement</td>
+                  <td>6 mois</td>
                 </tr>
-                <tr className="border-t border-slate-200">
-                  <td className="px-4 py-3">Cookies analytiques</td>
-                  <td className="px-4 py-3">6 mois lorsque le consentement est donné</td>
+                <tr>
+                  <td>Cookies analytiques</td>
+                  <td>6 mois lorsque le consentement est donné</td>
                 </tr>
-                <tr className="border-t border-slate-200">
-                  <td className="px-4 py-3">Sessions d&apos;authentification</td>
-                  <td className="px-4 py-3">Durée de session ou limite du fournisseur</td>
+                <tr>
+                  <td>Sessions d&apos;authentification</td>
+                  <td>Durée de session ou limite du fournisseur</td>
                 </tr>
-                <tr className="border-t border-slate-200">
-                  <td className="px-4 py-3">Préférences de site</td>
-                  <td className="px-4 py-3">Jusqu&apos;à suppression locale par l&apos;utilisateur</td>
+                <tr>
+                  <td>Préférences de site</td>
+                  <td>Jusqu&apos;à suppression locale par l&apos;utilisateur</td>
                 </tr>
               </tbody>
             </table>

@@ -169,13 +169,13 @@ export default function PolitiqueConfidentialitePage() {
             <Pill>Finalités</Pill>
             <h2 className="text-2xl font-bold text-slate-950">5. Finalités et bases légales</h2>
           </div>
-          <div className="overflow-hidden rounded-3xl border border-slate-200">
-            <table className="w-full border-collapse text-left text-sm">
+          <div className="cmm-data-table-wrap">
+            <table className="cmm-data-table">
               <thead className="bg-slate-100 text-slate-900">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Traitement</th>
-                  <th className="px-4 py-3 font-semibold">Finalité</th>
-                  <th className="px-4 py-3 font-semibold">Base légale</th>
+                  <th scope="col" className="font-semibold">Traitement</th>
+                  <th scope="col" className="font-semibold">Finalité</th>
+                  <th scope="col" className="font-semibold">Base légale</th>
                 </tr>
               </thead>
               <tbody className="text-slate-600">
@@ -190,10 +190,10 @@ export default function PolitiqueConfidentialitePage() {
                   ["Sentry et sécurité", "Détecter, diagnostiquer et prévenir les erreurs, abus et incidents", "Intérêt légitime"],
                   ["Parrainage et progression", "Relier les invitations et afficher les éléments de progression du service", "Exécution du service ; intérêt légitime d'animation de la communauté"],
                 ].map(([treatment, purpose, basis]) => (
-                  <tr key={treatment} className="border-t border-slate-200">
-                    <td className="px-4 py-3 font-medium text-slate-900">{treatment}</td>
-                    <td className="px-4 py-3">{purpose}</td>
-                    <td className="px-4 py-3">{basis}</td>
+                  <tr key={treatment}>
+                    <td className="font-medium text-slate-900">{treatment}</td>
+                    <td>{purpose}</td>
+                    <td>{basis}</td>
                   </tr>
                 ))}
               </tbody>

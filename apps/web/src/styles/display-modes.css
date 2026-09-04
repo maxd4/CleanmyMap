@@ -161,7 +161,7 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 /* Aucune animation */
 [data-display-mode="sobre"] .cmm-sober-animate {
   animation: none !important;
-  transition: opacity 0.1s ease-out !important;
+  transition: none !important;
 }
 
 /* Typographie plate */

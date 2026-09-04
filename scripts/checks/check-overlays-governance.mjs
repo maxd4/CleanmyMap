@@ -5,7 +5,6 @@ export const CANONICAL_DIALOG_PATH = "apps/web/src/components/ui/cmm-dialog.tsx"
 
 export const LEGACY_MODAL_ALLOWLIST = new Set([
   "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx",
-  "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
 ]);
 
 const MIGRATED_CONSUMERS = new Map([
@@ -24,12 +23,20 @@ const MIGRATED_CONSUMERS = new Map([
     ],
   ],
   [
-    "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.tsx",
+    "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
     [
       "@/components/ui/cmm-dialog",
       "<CmmDialog",
       "open={isOpen}",
       "ariaLabelledBy=\"action-declaration-export-title\"",
+    ],
+  ],
+  [
+    "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+    [
+      "@/components/ui/cmm-dialog",
+      "<CmmDialog",
+      "ariaLabelledBy=\"action-restriction-title\"",
     ],
   ],
 ]);

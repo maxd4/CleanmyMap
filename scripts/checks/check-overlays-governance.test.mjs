@@ -20,21 +20,22 @@ test("accepts the canonical primitive and migrated consumers", () => {
     ...[
       "apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section-dialog.tsx",
       "apps/web/src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
-      "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.tsx",
+      "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
     ].map((path) => ({ path, source: read(path) })),
   ];
 
   assert.deepEqual(auditModalSources(entries), []);
 });
 
-test("accepts exactly the three bounded legacy modal exceptions", () => {
+test("accepts exactly the one bounded legacy modal exception", () => {
   const entries = [...LEGACY_MODAL_ALLOWLIST].map((path) => ({
     path,
     source: read(path),
   }));
 
   assert.deepEqual(auditModalSources(entries), []);
-  assert.equal(LEGACY_MODAL_ALLOWLIST.size, 3);
+  assert.equal(LEGACY_MODAL_ALLOWLIST.size, 1);
 });
 
 test("rejects a new raw modal dialog", () => {
@@ -62,7 +63,7 @@ test("accepts a non-modal dialog with aria-modal=false", () => {
 });
 
 test("removing an exception from the allowlist exposes its raw modal", () => {
-  const legacyPath = [...LEGACY_MODAL_ALLOWLIST][0];
+  const legacyPath = "apps/web/src/components/gamification/infinite-badges/BadgeModal.tsx";
   const reducedAllowlist = new Set(LEGACY_MODAL_ALLOWLIST);
   reducedAllowlist.delete(legacyPath);
 
@@ -76,7 +77,7 @@ test("removing an exception from the allowlist exposes its raw modal", () => {
 });
 
 test("allows a former exception after its migration to CmmDialog", () => {
-  const legacyPath = [...LEGACY_MODAL_ALLOWLIST][0];
+  const legacyPath = "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx";
   const reducedAllowlist = new Set(LEGACY_MODAL_ALLOWLIST);
   reducedAllowlist.delete(legacyPath);
 

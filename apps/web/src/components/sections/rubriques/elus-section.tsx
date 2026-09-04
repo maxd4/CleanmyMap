@@ -321,17 +321,17 @@ export function ElusSection() {
                       </div>
                    </div>
 
-                   <div className="overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-950/40 backdrop-blur-3xl shadow-2xl">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse min-w-[900px]">
+                   <div className="cmm-data-table-wrap">
+                      <div>
+                        <table className="cmm-data-table min-w-[900px]">
                            <thead>
                               <tr className="bg-white/[0.02] border-b border-white/10">
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Secteur Opérationnel" : "Operational Sector"}</th>
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Volume Actions" : "Action Volume"}</th>
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Tonnage Net" : "Net Tonnage"}</th>
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Couverture" : "Coverage"}</th>
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "P-Score" : "P-Score"}</th>
-                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] text-center">{fr ? "Indice Urgence" : "Urgency Index"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Secteur Opérationnel" : "Operational Sector"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Volume Actions" : "Action Volume"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Tonnage Net" : "Net Tonnage"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Couverture" : "Coverage"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "P-Score" : "P-Score"}</th>
+                                 <th scope="col" className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] text-center">{fr ? "Indice Urgence" : "Urgency Index"}</th>
                               </tr>
                            </thead>
                            <tbody>
