@@ -29,7 +29,7 @@
     "backend:supabase:quota-audit": "node scripts/supabase-quota-audit.mjs",
     "backend:supabase:quota-audit:db": "node scripts/supabase-quota-audit.mjs --with-db",
     "backend:supabase:preview:ensure": "node scripts/supabase-preview-branch.mjs",
-    "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development,production",
+    "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development",
     "backend:supabase:push": "npx supabase db push --workdir . --yes",
     "backend:bootstrap": "node scripts/backend-bootstrap.mjs",
     "gamification:backfill:actions": "node scripts/backfill-action-gamification.mjs"

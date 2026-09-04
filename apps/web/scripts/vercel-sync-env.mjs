@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { filterSyncableEnvEntries, isSensitiveEnvKey } from "./lib/vercel-env-policy.mjs";
 
 /**
  * CleanMyMap - Vercel Env Sync Tool
- * Version: 1.1.0 (Auto-branch & Dry-run support)
+ * Version: 1.1.0 (Explicit target & Dry-run support)
  */
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const out = {
     file: ".env.local",
     environments: ["development"],
@@ -49,16 +50,32 @@ function parseArgs(argv) {
   return out;
 }
 
-function getGitBranch() {
-  try {
-    const git = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" });
-    if (git.status === 0) {
-      return git.stdout.trim();
-    }
-  } catch (e) {
-    // Git not available
+export function isLocalEnvSource(file) {
+  return basename(file) === ".env.local";
+}
+
+export function validateEnvironmentTargets({ file, environments, previewBranch }) {
+  const targets = new Set(environments);
+  const unsupported = [...targets].filter(
+    (target) => !["development", "preview", "production"].includes(target),
+  );
+  if (unsupported.length > 0) {
+    throw new Error(
+      `[backend] Unsupported Vercel environment target(s): ${unsupported.join(", ")}.`,
+    );
   }
-  return null;
+
+  if (isLocalEnvSource(file) && targets.has("production")) {
+    throw new Error(
+      "[backend] Refusing to sync .env.local to Vercel Production. Use a non-local source and an explicit production procedure.",
+    );
+  }
+
+  if (targets.has("preview") && !previewBranch?.trim()) {
+    throw new Error(
+      "[backend] Preview sync requires an explicit --preview-branch=<branch>.",
+    );
+  }
 }
 
 function parseDotEnv(content) {
@@ -110,88 +127,87 @@ function runCommand(command, args, options = {}) {
 }
 
 // MAIN LOGIC
-const args = parseArgs(process.argv.slice(2));
-const cwd = process.cwd();
-const envPath = resolve(cwd, args.file);
-const examplePath = resolve(cwd, ".env.local.example");
+export function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const cwd = process.cwd();
+  const envPath = resolve(cwd, args.file);
+  const examplePath = resolve(cwd, ".env.local.example");
 
-if (args.dryRun) {
-  console.log("--- DRY RUN MODE (No changes will be applied) ---");
-}
-
-if (!existsSync(envPath)) {
-  console.error(`[backend] Env source file missing: ${envPath}`);
-  process.exit(1);
-}
-
-const source = parseDotEnv(readFileSync(envPath, "utf8"));
-const allowed = loadAllowedKeysFromExample(examplePath);
-
-if (allowed.size === 0) {
-  console.error("[backend] .env.local.example not found or empty. Cannot determine allowed keys.");
-  process.exit(1);
-}
-
-const allowedEntries = [...source.entries()].filter(([key]) => allowed.has(key));
-const toSync = filterSyncableEnvEntries(allowedEntries, {
-  includeSecrets: args.includeSecrets,
-});
-const skippedSensitive = allowedEntries.filter(([key, value]) => {
-  if (args.includeSecrets) {
-    return false;
-  }
-  if (!value || value.trim().length === 0) {
-    return false;
-  }
-  return isSensitiveEnvKey(key);
-}).length;
-
-if (toSync.length === 0) {
-  console.log(
-    args.includeSecrets
-      ? "[backend] No non-empty env var to sync."
-      : "[backend] No public env var to sync. Use --include-secrets only when you explicitly need to sync sensitive keys.",
-  );
-  process.exit(0);
-}
-
-const failures = [];
-let synced = 0;
-let skipped = 0;
-
-for (const target of args.environments) {
-  let previewBranch = target === "preview" ? args.previewBranch : "";
-  
-  // Auto-detect branch if target is preview and no branch provided
-  if (target === "preview" && !previewBranch) {
-    const detected = getGitBranch();
-    if (detected) {
-      previewBranch = detected;
-      console.log(`[backend] Auto-detected git branch for preview: ${previewBranch}`);
-    } else {
-      console.warn(`[backend] Warning: No branch provided for 'preview' environment and Git detection failed. Skipping.`);
-      skipped += toSync.length;
-      continue;
-    }
+  try {
+    validateEnvironmentTargets({
+      file: args.file,
+      environments: args.environments,
+      previewBranch: args.previewBranch,
+    });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
   }
 
-  console.log(`[backend] Syncing [${target}] ${previewBranch ? `(Branch: ${previewBranch})` : ""}...`);
+  if (args.dryRun) {
+    console.log("--- DRY RUN MODE (No changes will be applied) ---");
+  }
 
-  for (const [key, value] of toSync) {
-    if (
-      key === "NEXT_PUBLIC_APP_URL" &&
-      target !== "development" &&
-      /localhost|127\.0\.0\.1/i.test(value)
-    ) {
-      skipped += 1;
-      continue;
-    }
+  if (!existsSync(envPath)) {
+    console.error(`[backend] Env source file missing: ${envPath}`);
+    return 1;
+  }
 
-    if (args.dryRun) {
-      console.log(`  [DRY] + ${key} (${target})`);
-      synced += 1;
-      continue;
+  const source = parseDotEnv(readFileSync(envPath, "utf8"));
+  const allowed = loadAllowedKeysFromExample(examplePath);
+
+  if (allowed.size === 0) {
+    console.error("[backend] .env.local.example not found or empty. Cannot determine allowed keys.");
+    return 1;
+  }
+
+  const allowedEntries = [...source.entries()].filter(([key]) => allowed.has(key));
+  const toSync = filterSyncableEnvEntries(allowedEntries, {
+    includeSecrets: args.includeSecrets,
+  });
+  const skippedSensitive = allowedEntries.filter(([key, value]) => {
+    if (args.includeSecrets) {
+      return false;
     }
+    if (!value || value.trim().length === 0) {
+      return false;
+    }
+    return isSensitiveEnvKey(key);
+  }).length;
+
+  if (toSync.length === 0) {
+    console.log(
+      args.includeSecrets
+        ? "[backend] No non-empty env var to sync."
+        : "[backend] No public env var to sync. Use --include-secrets only when you explicitly need to sync sensitive keys.",
+    );
+    return 0;
+  }
+
+  const failures = [];
+  let synced = 0;
+  let skipped = 0;
+
+  for (const target of args.environments) {
+    const previewBranch = target === "preview" ? args.previewBranch.trim() : "";
+
+    console.log(`[backend] Syncing [${target}] ${previewBranch ? `(Branch: ${previewBranch})` : ""}...`);
+
+    for (const [key, value] of toSync) {
+      if (
+        key === "NEXT_PUBLIC_APP_URL" &&
+        target !== "development" &&
+        /localhost|127\.0\.0\.1/i.test(value)
+      ) {
+        skipped += 1;
+        continue;
+      }
+
+      if (args.dryRun) {
+        console.log(`  [DRY] + ${key} (${target})`);
+        synced += 1;
+        continue;
+      }
 
     const addArgs =
       target === "preview"
@@ -199,51 +215,60 @@ for (const target of args.environments) {
         : ["vercel", "env", "add", key, target, "--value", value, "--yes", "--force"];
     
     // Using npx vercel ensures the latest CLI or project local one is used
-    const add = runCommand("npx", addArgs, { cwd });
+      const add = runCommand("npx", addArgs, { cwd });
 
-    if (add.status === 0) {
-      synced += 1;
-      continue;
-    }
+      if (add.status === 0) {
+        synced += 1;
+        continue;
+      }
 
-    const addLog = `${add.stdout || ""}\n${add.stderr || ""}`;
-    if (add.error) {
-      failures.push(`[${target}] add ${key}: ${add.error.message}`.trim());
-      continue;
-    }
+      const addLog = `${add.stdout || ""}\n${add.stderr || ""}`;
+      if (add.error) {
+        failures.push(`[${target}] add ${key}: ${add.error.message}`.trim());
+        continue;
+      }
     
     // If it exists, we try to remove and re-add (clean replace)
-    if (!/already exists|was found|exists/i.test(addLog)) {
-      failures.push(`[${target}] add ${key}: ${addLog}`.trim());
-      continue;
-    }
+      if (!/already exists|was found|exists/i.test(addLog)) {
+        failures.push(`[${target}] add ${key}: ${addLog}`.trim());
+        continue;
+      }
 
     const rmArgs =
       target === "preview"
         ? ["vercel", "env", "rm", key, "preview", previewBranch, "--yes"]
         : ["vercel", "env", "rm", key, target, "--yes"];
-    runCommand("npx", rmArgs, { cwd });
+      runCommand("npx", rmArgs, { cwd });
 
-    const addAgain = runCommand("npx", addArgs, { cwd });
-    if (addAgain.error) {
-      failures.push(`[${target}] replace ${key}: ${addAgain.error.message}`.trim());
-      continue;
+      const addAgain = runCommand("npx", addArgs, { cwd });
+      if (addAgain.error) {
+        failures.push(`[${target}] replace ${key}: ${addAgain.error.message}`.trim());
+        continue;
+      }
+      if (addAgain.status !== 0) {
+        failures.push(`[${target}] replace ${key}: ${(addAgain.stderr || addAgain.stdout || "").trim()}`.trim());
+        continue;
+      }
+      synced += 1;
     }
-    if (addAgain.status !== 0) {
-      failures.push(`[${target}] replace ${key}: ${(addAgain.stderr || addAgain.stdout || "").trim()}`.trim());
-      continue;
-    }
-    synced += 1;
   }
+
+  console.log(
+    `[backend] Vercel env sync done. synced=${synced} skipped=${skipped} skippedSensitive=${skippedSensitive} failures=${failures.length}`,
+  );
+  if (failures.length > 0) {
+    console.log("--- Failures (first 20) ---");
+    for (const failure of failures.slice(0, 20)) {
+      console.error(`  - ${failure}`);
+    }
+    return 1;
+  }
+  return 0;
 }
 
-console.log(
-  `[backend] Vercel env sync done. synced=${synced} skipped=${skipped} skippedSensitive=${skippedSensitive} failures=${failures.length}`,
-);
-if (failures.length > 0) {
-  console.log("--- Failures (first 20) ---");
-  for (const failure of failures.slice(0, 20)) {
-    console.error(`  - ${failure}`);
-  }
-  process.exit(1);
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  process.exitCode = main();
 }
