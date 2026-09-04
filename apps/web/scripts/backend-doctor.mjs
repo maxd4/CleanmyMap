@@ -1,8 +1,23 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-function parseDotEnv(filePath) {
+export const REQUIRED_LOCAL_ENV_KEYS = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+  "CLERK_SECRET_KEY",
+];
+
+const URL_ENV_KEYS = new Set(["NEXT_PUBLIC_SUPABASE_URL"]);
+const LOCAL_KEY_PREFIXES = new Map([
+  ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_"],
+  ["CLERK_SECRET_KEY", "sk_test_"],
+]);
+
+export function parseDotEnv(filePath) {
   if (!existsSync(filePath)) {
     return new Map();
   }
@@ -22,31 +37,62 @@ function parseDotEnv(filePath) {
   return entries;
 }
 
-const cwd = process.cwd();
-const appRoot = existsSync(resolve(cwd, "apps", "web", "package.json")) ? resolve(cwd, "apps", "web") : cwd;
-const required = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-  "CLERK_SECRET_KEY",
-];
+function isValidLocalEnvValue(key, value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return false;
+  }
 
-const localEnv = parseDotEnv(resolve(appRoot, ".env.local"));
-const vercelPulledEnv = parseDotEnv(resolve(appRoot, ".env.vercel.local"));
+  if (!URL_ENV_KEYS.has(key)) {
+    const requiredPrefix = LOCAL_KEY_PREFIXES.get(key);
+    return !requiredPrefix || value.trim().startsWith(requiredPrefix);
+  }
 
-const missingLocal = required.filter((key) => !localEnv.get(key));
-const missingVercelPulled = required.filter((key) => !vercelPulledEnv.get(key));
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
-const checks = {
-  vercelLinked: existsSync(resolve(appRoot, ".vercel", "project.json")),
-  supabaseLinked: existsSync(resolve(appRoot, "supabase", ".temp", "linked-project.json")),
-  localEnvHasRequired: missingLocal.length === 0,
-  pulledVercelEnvHasRequired: missingVercelPulled.length === 0,
-};
+export function getAppRoot(cwd = process.cwd()) {
+  const resolvedCwd = resolve(cwd);
+  return existsSync(resolve(resolvedCwd, "apps", "web", "package.json"))
+    ? resolve(resolvedCwd, "apps", "web")
+    : resolvedCwd;
+}
 
-console.log(JSON.stringify({ checks, missingLocal, missingVercelPulled }, null, 2));
+export function checkBackendEnvironment(appRoot) {
+  const localEnv = parseDotEnv(resolve(appRoot, ".env.local"));
+  const missingLocal = REQUIRED_LOCAL_ENV_KEYS.filter((key) => !localEnv.get(key)?.trim());
+  const invalidLocal = REQUIRED_LOCAL_ENV_KEYS.filter(
+    (key) => !missingLocal.includes(key) && !isValidLocalEnvValue(key, localEnv.get(key)),
+  );
 
-if (!checks.vercelLinked || !checks.supabaseLinked || !checks.localEnvHasRequired || !checks.pulledVercelEnvHasRequired) {
-  process.exit(1);
+  const checks = {
+    vercelLinked: existsSync(resolve(appRoot, ".vercel", "project.json")),
+    supabaseLinked: existsSync(resolve(appRoot, "supabase", ".temp", "linked-project.json")),
+    localEnvHasRequired: missingLocal.length === 0,
+    localEnvHasValidRequired: missingLocal.length === 0 && invalidLocal.length === 0,
+  };
+
+  return { checks, missingLocal, invalidLocal };
+}
+
+export function runDoctor({ cwd = process.cwd(), appRoot = null, log = console.log } = {}) {
+  const report = checkBackendEnvironment(appRoot ?? getAppRoot(cwd));
+  log(JSON.stringify(report, null, 2));
+
+  const { checks } = report;
+  return checks.vercelLinked &&
+    checks.supabaseLinked &&
+    checks.localEnvHasRequired &&
+    checks.localEnvHasValidRequired
+    ? 0
+    : 1;
+}
+
+const isMainModule = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMainModule) {
+  process.exitCode = runDoctor();
 }
