@@ -78,7 +78,11 @@ export async function loadAccountCompletionGateState(
     clerkReachable: resolvedSession.clerkReachable,
     isLocalHost,
     initialArrondissement: existingPreference?.arrondissement ?? null,
-    initialLocationType: existingPreference?.locationType ?? null,
+    initialLocationType: locationPreferences.residence
+      ? "residence"
+      : locationPreferences.work
+        ? "work"
+        : null,
     initialResidence: locationPreferences.residence,
     initialWork: locationPreferences.work,
   };
