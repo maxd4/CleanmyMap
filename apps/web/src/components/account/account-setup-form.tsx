@@ -278,28 +278,28 @@ export function AccountSetupForm({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto flex min-h-full w-full max-w-7xl flex-col text-white">
-      <header className="mb-6 flex items-start gap-4 sm:mb-8">
+    <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto flex min-h-full w-full max-w-7xl flex-col pb-2 text-white">
+      <header className="mb-7 flex items-start gap-4 sm:mb-9">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-300/50 bg-violet-300/20 text-violet-50 shadow-[0_0_24px_-8px_rgba(139,92,246,0.9)]">
           <UserRound className="h-6 w-6" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-emerald-950 sm:text-4xl">Complétez votre profil en une seule étape</h1>
+          <h1 className="text-4xl font-black tracking-tight text-emerald-950 sm:text-5xl">Complétez votre profil en une seule étape</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
         </div>
       </header>
 
       <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
         <div className="space-y-4">
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Qui êtes-vous ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
-            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">1</span><div><h2 id="account-identity-title" className="text-xl font-bold">Qui êtes-vous&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez l’identité affichée dans CleanMyMap.</p></div></div>
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Qui êtes-vous ?" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">1</span><div><h2 id="account-identity-title" className="text-2xl font-bold">Qui êtes-vous&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez l’identité affichée dans CleanMyMap.</p></div></div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <CmmField label="Pseudo" required error={pseudoError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100">
-                <CmmInput value={pseudo} onChange={(event) => setPseudoOverride(event.target.value)} autoComplete="username" placeholder="Vert_Tige" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" />
+              <CmmField label="Pseudo" required error={pseudoError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100">
+                <CmmInput value={pseudo} onChange={(event) => setPseudoOverride(event.target.value)} autoComplete="username" placeholder="Vert_Tige" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" />
               </CmmField>
               {!isPseudonymous ? <>
-                <CmmField label="Prénom" required error={firstNameError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100"><CmmInput value={firstName} onChange={(event) => setFirstNameOverride(event.target.value)} autoComplete="given-name" placeholder="Marie" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" /></CmmField>
-                <CmmField label="Nom" required error={lastNameError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100"><CmmInput value={lastName} onChange={(event) => setLastNameOverride(event.target.value)} autoComplete="family-name" placeholder="Curie" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" /></CmmField>
+                <CmmField label="Prénom" required error={firstNameError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100"><CmmInput value={firstName} onChange={(event) => setFirstNameOverride(event.target.value)} autoComplete="given-name" placeholder="Marie" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" /></CmmField>
+                <CmmField label="Nom" required error={lastNameError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100"><CmmInput value={lastName} onChange={(event) => setLastNameOverride(event.target.value)} autoComplete="family-name" placeholder="Curie" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" /></CmmField>
               </> : null}
             </div>
             <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm font-semibold text-white">
@@ -308,25 +308,25 @@ export function AccountSetupForm({
             </label>
           </CmmCard>
 
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Quel profil vous correspond le mieux ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
-            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">2</span><div><h2 id="account-profile-title" className="text-xl font-bold">Quel profil vous correspond le mieux&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Ce choix modifie votre parcours, jamais vos permissions.</p></div></div>
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Quel profil vous correspond le mieux ?" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">2</span><div><h2 id="account-profile-title" className="text-2xl font-bold">Quel profil vous correspond le mieux&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Ce choix modifie votre parcours, jamais vos permissions.</p></div></div>
             <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={setSelectedProfile} error={profileError} />
           </CmmCard>
         </div>
 
         <div className="space-y-4">
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Où agissez-vous principalement ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
-            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">3</span><div><h2 id="account-location-title" className="text-xl font-bold">Où agissez-vous principalement&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez votre domicile et votre lieu de travail, séparément.</p></div></div>
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Où agissez-vous principalement ?" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">3</span><div><h2 id="account-location-title" className="text-2xl font-bold">Où agissez-vous principalement&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez votre domicile et votre lieu de travail, séparément.</p></div></div>
             <AccountSetupLocationFields residence={residence} work={work} residenceEnabled={residenceEnabled} workEnabled={workEnabled} noneSelected={noneSelected} setResidence={setResidence} setWork={setWork} setResidenceEnabled={setResidenceEnabled} setWorkEnabled={setWorkEnabled} setNoneSelected={setNoneSelected} error={locationError} />
           </CmmCard>
 
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Mode d’affichage initial" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
-            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">4</span><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-xl font-bold">Mode d’affichage initial</h2><p className="mt-1 text-sm text-emerald-50/80">Le mode change la présentation, jamais les fonctionnalités, permissions ou données.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-200/80 text-sm font-black text-violet-100 transition hover:bg-violet-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Mode d’affichage initial" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">4</span><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-2xl font-bold">Mode d’affichage initial</h2><p className="mt-1 text-sm text-emerald-50/80">Le mode change la présentation, jamais les fonctionnalités, permissions ou données.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-200/80 text-sm font-black text-violet-100 transition hover:bg-violet-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
             <div role="radiogroup" aria-labelledby="account-display-mode-title" className="grid gap-3 sm:grid-cols-3">
               {DISPLAY_MODES.map((mode) => {
                 const selected = selectedDisplayMode === mode;
                 const copy = DISPLAY_MODE_COPY[mode];
-                return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setSelectedDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700" : "border-emerald-100/40 bg-emerald-950/20 text-white hover:border-violet-200/70"}`}>
+                return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setSelectedDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]" : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60"}`}>
                   {selected ? <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white"><Check className="h-4 w-4" aria-hidden="true" /></span> : null}
                   <Eye className="h-7 w-7" aria-hidden="true" />
                   <span className="text-sm font-bold">{copy.label}</span>
@@ -341,7 +341,7 @@ export function AccountSetupForm({
       {error ? <div className="mt-4"><ErrorMessage kind={error.kind} title="Les réglages n’ont pas pu être enregistrés" message={error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => window.location.reload()}>Réessayer</CmmButton>} /></div> : null}
       <footer className="sticky bottom-0 z-10 mt-5 flex flex-col gap-3 rounded-2xl border border-emerald-100/35 bg-emerald-950/65 px-4 py-4 shadow-[0_-16px_35px_-30px_rgba(6,78,59,0.9)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="max-w-xl text-sm text-emerald-50/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
-        <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving}>{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
+        <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving} className="!border-violet-300 !bg-violet-500 !text-white hover:!bg-violet-600">{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
       </footer>
     </form>
   );

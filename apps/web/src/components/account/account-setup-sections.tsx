@@ -62,12 +62,12 @@ export function AccountSetupProfileGrid({
               aria-checked={isSelected}
               onClick={() => onChange(profile)}
               className={cn(
-                "group relative flex min-h-32 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 sm:col-span-2",
+                "group relative flex min-h-36 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 sm:col-span-2",
                 isFiveCardSecondRow && "sm:col-start-2",
                 options.length === 6 && index === 3 && "sm:col-start-1",
                 isSelected
                   ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]"
-                  : "border-emerald-100/40 bg-emerald-950/20 text-white hover:border-violet-200/70 hover:bg-emerald-950/35",
+                  : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
               )}
             >
               {isSelected ? (
@@ -156,10 +156,10 @@ export function AccountSetupLocationFields({
             <label
               key={value}
               className={cn(
-                "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
+                "relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
                 selected
                   ? "border-violet-300 bg-white text-violet-700"
-                  : "border-emerald-100/40 bg-emerald-950/20 text-white hover:border-violet-200/70",
+                  : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
               )}
             >
               <input
@@ -181,10 +181,10 @@ export function AccountSetupLocationFields({
         })}
         <label
           className={cn(
-            "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
+            "relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
             noneSelected
               ? "border-violet-300 bg-white text-violet-700"
-              : "border-emerald-100/40 bg-emerald-950/20 text-white hover:border-violet-200/70",
+              : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
           )}
         >
           <input
