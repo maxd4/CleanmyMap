@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "paris-pressure-source-catalog-v1",
+  "scope": "Paris / 992 IRIS",
+  "sources": [
+    {
+      "family": "resident_population",
+      "publisher": "Insee",
+      "dataset": "Population en 2021 - Base infracommunale IRIS",
+      "url": "https://www.insee.fr/fr/statistiques/8268806",
+      "license": "Licence ouverte Etalab",
+      "geographicLevel": "iris",
+      "refreshPolicy": "nouveau millésime"
+    },
+    {
+      "family": "transport",
+      "publisher": "RATP",
+      "dataset": "Trafic annuel entrant par station du réseau ferré 2021",
+      "url": "https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2021/",
+      "license": "Licence Ouverte Etalab",
+      "geographicLevel": "iris après rattachement station géolocalisée",
+      "refreshPolicy": "annuel",
+      "limitations": ["entrant annuel, pas temps réel", "station sans coordonnées rejetée"]
+    },
+    {
+      "family": "tourism",
+      "publisher": "OpenStreetMap contributors",
+      "dataset": "OpenStreetMap tourism points",
+      "url": "https://www.openstreetmap.org/",
+      "license": "ODbL",
+      "geographicLevel": "site géolocalisé puis IRIS",
+      "refreshPolicy": "ponctuel / changement de snapshot",
+      "limitations": ["tourismPresenceProxy uniquement", "visitorAttendance null sans mesure institutionnelle géolocalisée", "attribution ODbL requise"]
+    },
+    {
+      "family": "tourism",
+      "publisher": "Ministère de la Culture",
+      "dataset": "Fréquentation des monuments nationaux",
+      "url": "https://data.culture.gouv.fr/explore/dataset/frequentation-des-monuments-nationaux/",
+      "license": "Licence ouverte Etalab",
+      "geographicLevel": "site géolocalisé puis IRIS",
+      "refreshPolicy": "nouveau millésime",
+      "status": "not-retained-current-snapshot",
+      "limitations": ["source institutionnelle non retenue sans export géolocalisé exploitable", "visitorAttendance seulement si fourni", "tourismPresenceProxy distinct"]
+    },
+    {
+      "family": "public_activity",
+      "publisher": "Ville de Paris",
+      "dataset": "Terrasses et étalages : Autorisations / Marchés découverts",
+      "url": "https://opendata.paris.fr/",
+      "license": "Licence Ouverte Etalab",
+      "geographicLevel": "objet géolocalisé puis IRIS",
+      "refreshPolicy": "mensuel ou trimestriel"
+    },
+    {
+      "family": "cleanliness",
+      "publisher": "Ville de Paris",
+      "dataset": "Dans Ma Rue - Anomalies signalées",
+      "url": "https://opendata.paris.fr/explore/dataset/dans-ma-rue/",
+      "license": "Licence Ouverte Etalab",
+      "geographicLevel": "IRIS si coordonnées ; arrondissement sinon",
+      "refreshPolicy": "fenêtre publiée par la source",
+      "limitations": ["signalement citoyen, pas mesure exhaustive", "aucun proxy socio-économique"]
+    }
+  ],
+  "refused": [
+    {
+      "family": "tourism",
+      "reason": "Les sources touristiques institutionnelles sans point géographique exploitable ne sont pas transformées en proximité IRIS."
+    },
+    {
+      "family": "cleanliness",
+      "reason": "Les revenus, prix immobiliers et catégories sociales sont exclus comme proxies de propreté."
+    }
+  ]
+}

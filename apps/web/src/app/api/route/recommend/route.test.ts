@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
@@ -355,7 +357,12 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(planRouteMock).toHaveBeenCalledWith({
       origin: explicitOrigin,
-      candidates: [candidate],
+      candidates: [
+        expect.objectContaining({
+          id: candidate.id,
+          parisPressure: expect.objectContaining({ zoneId: expect.any(String) }),
+        }),
+      ],
       travelBudgetMinutes: 42,
       maxStops: 1,
       priorityVsTravel: 25,

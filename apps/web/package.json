@@ -19,6 +19,7 @@
     "data:geometry:backfill": "node --experimental-strip-types scripts/backfill-derived-geometry.mjs",
     "data:sheet:push": "node scripts/push-google-sheet-from-form-like.mjs",
     "data:validated:sync": "node scripts/sync-validated-local-store.mjs",
+    "data:pressure:refresh": "node scripts/refresh-paris-pressure-snapshot.mjs",
     "data:archive:supabase": "node scripts/export-supabase-archive.mjs",
     "data:cleanup:supabase": "node scripts/cleanup-supabase-retention.mjs",
     "analyze:bundle": "node scripts/analyze-bundle.mjs",
