@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Bell, Check, MessageSquare, ShieldCheck, UserCheck, AlertTriangle } from "lucide-react";
@@ -15,6 +15,8 @@ import {
   markNotificationAsReadForCurrentUser,
   type AppNotification,
 } from "@/lib/notifications/client";
+import type { RibbonChrome } from "./app-navigation-ribbon-theme";
+import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -31,15 +33,34 @@ function getNotificationIcon(type: AppNotification["type"]) {
   }
 }
 
-export function NotificationBell() {
+type NotificationBellProps = {
+  ribbonChrome?: RibbonChrome;
+};
+
+export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const { getToken, isLoaded, isSignedIn, userId } = useAuth();
   const router = useRouter();
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const fetchInFlightRef = useRef(false);
   const markReadInFlightRef = useRef(false);
+  const placement = useDropdownPlacement({
+    isOpen,
+    triggerRef,
+    minPanelWidth: 340,
+  });
+  const triggerRect = placement.triggerRect;
+  const mobilePanelTop =
+    !placement.openUp && triggerRect && typeof window !== "undefined"
+      ? `${triggerRect.bottom + 12}px`
+      : "auto";
+  const mobilePanelBottom =
+    placement.openUp && triggerRect && typeof window !== "undefined"
+      ? `${window.innerHeight - triggerRect.top + 12}px`
+      : "auto";
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
@@ -182,11 +203,13 @@ export function NotificationBell() {
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((current) => !current)}
         className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40"
         aria-label={`Notifications (${unreadCount} non lues)`}
         aria-expanded={isOpen}
+        aria-controls="notifications-menu-panel"
       >
         <Bell
           className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`}
@@ -210,10 +233,41 @@ export function NotificationBell() {
             onClick={() => setIsOpen(false)}
             aria-label={locale === "fr" ? "Fermer les notifications" : "Close notifications"}
           />
-          <div className="absolute right-0 z-50 mt-2 w-80 max-h-[32rem] overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/88 shadow-[0_32px_70px_-34px_rgba(2,6,23,0.96)] backdrop-blur-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 p-4">
-              <h3 className="font-bold uppercase tracking-widest cmm-text-caption cmm-text-primary dark:text-white">
-                {locale === "fr" ? "Centre de notifications" : "Notifications"}
+          <div
+            id="notifications-menu-panel"
+            role="dialog"
+            aria-label={locale === "fr" ? "Notifications" : "Notifications"}
+            className={`absolute z-50 w-[min(21.25rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:fixed max-sm:inset-x-2 max-sm:left-2 max-sm:right-2 max-sm:w-auto max-sm:max-w-none max-sm:translate-x-0 max-sm:top-[var(--notifications-mobile-top)] max-sm:bottom-[var(--notifications-mobile-bottom)] ${placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]"} ${placement.alignRight ? "right-0" : "left-0"}`}
+            style={
+              {
+                ...(ribbonChrome
+                  ? {
+                      backgroundImage: ribbonChrome.backgroundImage,
+                      backgroundColor: ribbonChrome.backgroundColor,
+                      borderColor: ribbonChrome.borderColor,
+                    }
+                  : {}),
+                "--notifications-mobile-top": mobilePanelTop,
+                "--notifications-mobile-bottom": mobilePanelBottom,
+              } as CSSProperties
+            }
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15 max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2 ${placement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2"} ${placement.alignRight ? "right-10" : "left-10"}`}
+              style={
+                ribbonChrome
+                  ? {
+                      backgroundImage: ribbonChrome.backgroundImage,
+                      backgroundColor: ribbonChrome.backgroundColor,
+                      borderColor: ribbonChrome.borderColor,
+                    }
+                  : undefined
+              }
+            />
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
+              <h3 className="text-sm font-bold text-white">
+                {locale === "fr" ? "Notifications" : "Notifications"}
               </h3>
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
@@ -222,17 +276,12 @@ export function NotificationBell() {
 
             <div className="max-h-96 overflow-y-auto custom-scrollbar">
               {notifications.length === 0 ? (
-                <div className="space-y-2 p-12 text-center">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/50">
+                <div className="space-y-2 p-6 text-center">
+                  <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/55">
                     <Check size={24} />
                   </div>
-                  <p className="font-bold uppercase tracking-tighter cmm-text-caption text-white">
-                    {locale === "fr" ? "Aucune notification active" : "No active notifications"}
-                  </p>
-                  <p className="cmm-text-caption text-white/54">
-                    {locale === "fr"
-                      ? "Vous n'avez rien de nouveau à traiter pour le moment."
-                      : "You have nothing new to review right now."}
+                  <p className="text-sm font-semibold text-white">
+                    {locale === "fr" ? "Aucune notification" : "No notifications"}
                   </p>
                 </div>
               ) : (
@@ -244,16 +293,19 @@ export function NotificationBell() {
                       key={notification.id}
                       type="button"
                       onClick={() => void handleNotificationClick(notification)}
-                      className={`flex w-full border-b border-white/6 p-4 text-left transition-colors hover:bg-white/6 ${
-                        isUnread ? "bg-pink-400/6" : ""
+                      className={`relative flex w-full border-b border-white/10 px-3.5 py-3 text-left transition-colors hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-300/70 ${
+                        isUnread ? "bg-white/[0.05]" : "bg-white/[0.015]"
                       }`}
                     >
+                      {isUnread ? (
+                        <span className="absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-label={locale === "fr" ? "Non lue" : "Unread"} />
+                      ) : null}
                       <div className="mr-3 mt-1 flex-shrink-0">
                         <div
-                          className={`rounded-xl p-2 ${
+                          className={`rounded-xl border border-white/10 p-2 ${
                             isUnread
-                              ? "bg-white/10 shadow-sm"
-                              : "bg-white/6 opacity-70"
+                              ? "bg-white/[0.06]"
+                              : "bg-white/[0.03] opacity-70"
                           }`}
                         >
                           {getNotificationIcon(notification.type)}
@@ -284,12 +336,6 @@ export function NotificationBell() {
                         >
                           {notification.content}
                         </p>
-                        {!isUnread ? null : (
-                          <span className="mt-2 inline-flex items-center gap-1 font-bold uppercase tracking-widest text-pink-300 cmm-text-caption">
-                            <MessageSquare size={12} />
-                            {locale === "fr" ? "Ouvrir" : "Open"}
-                          </span>
-                        )}
                       </div>
                     </button>
                   );
@@ -297,10 +343,10 @@ export function NotificationBell() {
               )}
             </div>
 
-            <div className="border-t border-white/10 bg-white/4 p-4 text-center">
+            <div className="border-t border-white/10 bg-white/[0.03] px-4 py-3 text-center">
               <button
                 type="button"
-                className="font-bold uppercase tracking-widest cmm-text-caption text-white/60 transition-colors hover:text-white"
+                className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 onClick={() => setIsOpen(false)}
               >
                 {locale === "fr" ? "Fermer" : "Close"}
