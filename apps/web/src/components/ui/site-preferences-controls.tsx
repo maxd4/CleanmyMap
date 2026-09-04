@@ -1,8 +1,12 @@
 "use client";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { ENABLED_DISPLAY_MODES, type DisplayMode } from "@/lib/ui/preferences";
-import { ChevronDown, CheckCircle2, Info, Languages, LayoutPanelLeft } from "lucide-react";
+import {
+  DISPLAY_MODE_DESCRIPTIONS,
+  ENABLED_DISPLAY_MODES,
+  type DisplayMode,
+} from "@/lib/ui/preferences";
+import { ChevronDown, CheckCircle2, Info, Languages } from "lucide-react";
 import { CmmSelect } from "@/components/ui/cmm-field";
 import Link from "next/link";
 
@@ -38,16 +42,9 @@ export function SitePreferencesControls({
   }
 
   return (
-    <div className="space-y-4 text-white">
-      <div className="flex items-center gap-2 border-b border-white/12 pb-3">
-        <LayoutPanelLeft className="h-5 w-5 text-emerald-300" aria-hidden="true" />
-        <h2 className="text-base font-bold tracking-tight">
-          {locale === "fr" ? "Préférences d'interface" : "Interface preferences"}
-        </h2>
-      </div>
-
+    <div className="space-y-5 text-white">
       <div className="space-y-2">
-        <label htmlFor="locale-switch" className="block text-sm font-semibold text-white">
+        <label htmlFor="locale-switch" className="block text-base font-semibold text-white">
           {locale === "fr" ? "Langue" : "Language"}
         </label>
         <div className="relative">
@@ -59,7 +56,7 @@ export function SitePreferencesControls({
             id="locale-switch"
             value={locale}
             onChange={(event) => setLocale(event.target.value === "en" ? "en" : "fr")}
-            className="cmm-select-control cursor-pointer rounded-xl bg-slate-900/80 py-2.5 pl-10 pr-10 text-sm font-semibold text-white"
+            className="cmm-select-control min-h-12 w-full cursor-pointer rounded-xl border-white/15 bg-slate-900/70 py-2.5 pl-10 pr-10 text-sm font-semibold text-white"
             aria-label={locale === "fr" ? "Choisir la langue" : "Choose language"}
           >
             <option value="fr">Français</option>
@@ -72,38 +69,19 @@ export function SitePreferencesControls({
         </div>
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="flex items-center gap-2 text-sm font-semibold text-white">
-          <span>{locale === "fr" ? "Mode d'affichage" : "Display mode"}</span>
-          <Link
-            href="/methodologie#modes-affichage"
-            aria-label="Comprendre les modes d'affichage"
-            title="Comprendre les modes d'affichage"
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-emerald-300/70 text-[0.7rem] font-black leading-none text-emerald-200 transition-colors hover:bg-emerald-300/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-          >
-            <Info className="h-3 w-3" aria-hidden="true" />
-          </Link>
+      <fieldset className="space-y-3 border-t border-white/12 pt-4">
+        <legend className="text-base font-semibold text-white">
+          {locale === "fr" ? "Mode d'affichage" : "Display mode"}
         </legend>
         <div className="space-y-2">
           {ENABLED_DISPLAY_MODES.map((mode) => {
             const isActive = displayMode === mode;
-            const description =
-              mode === "exhaustif"
-                ? locale === "fr"
-                  ? "Toutes les informations et détails."
-                  : "All information and details."
-                : mode === "sobre"
-                  ? locale === "fr"
-                    ? "Information essentielle uniquement."
-                    : "Essential information only."
-                  : locale === "fr"
-                    ? "Aperçus très simplifiés."
-                    : "Highly simplified overviews.";
+            const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
 
             return (
               <label
                 key={mode}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors ${
                   isActive
                     ? "border-emerald-400 bg-emerald-400/10"
                     : "border-white/16 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
@@ -134,12 +112,18 @@ export function SitePreferencesControls({
         </div>
       </fieldset>
 
-      <p className="text-xs leading-relaxed text-slate-300">
-        {locale === "fr"
-          ? "Vous pourrez modifier ce choix à tout moment dans Réglages."
-          : "You can change this choice at any time in Settings."}
-      </p>
-
+      <Link
+        href="/methodologie#modes-affichage"
+        aria-label="Comprendre les modes d'affichage"
+        className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-200 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+      >
+        <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>
+          {locale === "fr"
+            ? "En savoir plus sur les modes d'affichage"
+            : "Learn more about display modes"}
+        </span>
+      </Link>
     </div>
   );
 }

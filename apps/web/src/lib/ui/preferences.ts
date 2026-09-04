@@ -14,6 +14,24 @@ export const DISPLAY_MODES = ["exhaustif", "minimaliste", "sobre"] as const;
 export type DisplayMode = (typeof DISPLAY_MODES)[number];
 export const ENABLED_DISPLAY_MODES = ["exhaustif", "minimaliste", "sobre"] as const;
 
+export const DISPLAY_MODE_DESCRIPTIONS: Record<
+  DisplayMode,
+  { fr: string; en: string }
+> = {
+  exhaustif: {
+    fr: "Expérience CleanMyMap complète.",
+    en: "Complete CleanMyMap experience.",
+  },
+  minimaliste: {
+    fr: "Allez droit au but sans contenu superflu",
+    en: "Go straight to the point without unnecessary content.",
+  },
+  sobre: {
+    fr: "Adaptez le rendu visuel pour réduire la fatigue visuelle et cognitive sans modification du contenu.",
+    en: "Adapt the visual presentation to reduce visual and cognitive fatigue without changing the content.",
+  },
+};
+
 export const STORAGE_KEYS = {
   locale: "cleanmymap.locale",
   theme: "cleanmymap.theme",

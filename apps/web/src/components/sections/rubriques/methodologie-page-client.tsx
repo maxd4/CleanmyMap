@@ -17,6 +17,7 @@ import {
 import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getBlockClasses } from "@/lib/ui/block-accents";
+import { DISPLAY_MODE_DESCRIPTIONS } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { PageHeader } from "@/components/ui/page-header";
@@ -277,33 +278,18 @@ export function MethodologiePageClient({
           </p>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {[
-              {
-                title: isFrench ? "Exhaustif" : "Exhaustive",
-                description: isFrench
-                  ? "Expérience visuelle CleanMyMap complète."
-                  : "The complete CleanMyMap visual experience.",
-              },
-              {
-                title: isFrench ? "Minimaliste" : "Minimal",
-                description: isFrench
-                  ? "Mêmes données, fonctions et contenus, mais fonds simplifiés, pas de blur ni de textures, moins d’ombres et d’animations."
-                  : "Same data, features and content, with simplified backgrounds, no blur or textures, and fewer shadows and animations.",
-              },
-              {
-                title: isFrench ? "Sobre" : "Calm",
-                description: isFrench
-                  ? "Mêmes données, fonctions et contenus, mais priorité à la lisibilité et à l’accessibilité cognitive : contraste renforcé, surfaces plates, aucune animation décorative, effets supprimés et police système."
-                  : "Same data, features and content, with priority given to readability and cognitive accessibility: stronger contrast, flat surfaces, no decorative animation, removed effects and a system font.",
-              },
-            ].map((mode) => (
+            {([
+              ["exhaustif", isFrench ? "Exhaustif" : "Exhaustive"],
+              ["minimaliste", isFrench ? "Minimaliste" : "Minimal"],
+              ["sobre", isFrench ? "Sobre" : "Calm"],
+            ] as const).map(([mode, title]) => (
               <article
-                key={mode.title}
+                key={mode}
                 className="rounded-2xl border border-white/12 bg-white/[0.04] p-5"
               >
-                <h3 className="text-base font-bold text-white">{mode.title}</h3>
+                <h3 className="text-base font-bold text-white">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                  {mode.description}
+                  {DISPLAY_MODE_DESCRIPTIONS[mode][locale]}
                 </p>
               </article>
             ))}

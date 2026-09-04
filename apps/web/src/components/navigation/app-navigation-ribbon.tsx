@@ -314,13 +314,13 @@ function AppNavigationRibbonShell({
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
-    minPanelWidth: 320,
+    minPanelWidth: 576,
   });
 
   const feedbackPlacement = useDropdownPlacement({
     isOpen: feedbackOpen,
     triggerRef: feedbackTriggerRef,
-    minPanelWidth: 256,
+    minPanelWidth: 544,
   });
 
   function onTrackNavigation(href: string, label: string, spaceId: string | null) {
@@ -428,22 +428,19 @@ function AppNavigationRibbonShell({
   const feedbackLinks = [
     {
       href: "/sections/feedback#bug",
-      label: "Bug",
-      description: "Signaler un problème technique",
+      label: "Signaler un problème technique",
       icon: Bug,
       iconClassName: "text-rose-300",
     },
     {
       href: "/sections/feedback#improvement",
-      label: "Amélioration",
-      description: "Proposer une idée ou suggestion",
+      label: "Proposer une idée ou suggestion",
       icon: Lightbulb,
       iconClassName: "text-amber-300",
     },
     {
       href: "/sections/feedback#collaboration",
-      label: "Collaboration",
-      description: "Nous contacter pour travailler ensemble",
+      label: "Nous contacter pour travailler ensemble",
       icon: UsersRound,
       iconClassName: "text-emerald-300",
     },
@@ -638,11 +635,31 @@ function AppNavigationRibbonShell({
                       exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-[min(22rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-4 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-[min(36rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-4 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:w-[calc(100vw-1.5rem)]",
                         preferencesPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         preferencesPlacement.alignRight ? "right-0" : "left-0",
+                        "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
                       )}
+                      style={{
+                        backgroundImage: ribbonChrome.backgroundImage,
+                        backgroundColor: ribbonChrome.backgroundColor,
+                        borderColor: ribbonChrome.borderColor,
+                      }}
                     >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15",
+                          preferencesPlacement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2",
+                          preferencesPlacement.alignRight ? "right-10" : "left-10",
+                          "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                        )}
+                        style={{
+                          backgroundImage: ribbonChrome.backgroundImage,
+                          backgroundColor: ribbonChrome.backgroundColor,
+                          borderColor: ribbonChrome.borderColor,
+                        }}
+                      />
                       <SitePreferencesControls />
                       <div className="mt-4 border-t border-white/12 pt-4">
                         <CmmButton
@@ -727,18 +744,42 @@ function AppNavigationRibbonShell({
                       exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-[min(23rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-[min(34rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:w-[calc(100vw-1.5rem)]",
                         feedbackPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         feedbackPlacement.alignRight ? "right-0" : "left-0",
+                        feedbackPlacement.alignRight
+                          ? "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-[calc(50%+4rem)]"
+                          : "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
                       )}
+                      style={{
+                        backgroundImage: ribbonChrome.backgroundImage,
+                        backgroundColor: ribbonChrome.backgroundColor,
+                        borderColor: ribbonChrome.borderColor,
+                      }}
                     >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute h-4 w-4 rotate-45 border-l border-t border-white/15",
+                          feedbackPlacement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2",
+                          feedbackPlacement.alignRight ? "right-10" : "left-10",
+                          feedbackPlacement.alignRight
+                            ? "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-[calc(50%+4rem)]"
+                            : "max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2",
+                        )}
+                        style={{
+                          backgroundImage: ribbonChrome.backgroundImage,
+                          backgroundColor: ribbonChrome.backgroundColor,
+                          borderColor: ribbonChrome.borderColor,
+                        }}
+                      />
                       <div className="divide-y divide-white/12">
                         {feedbackLinks.map((item) => (
                           <CmmButton
                             key={item.href}
                             asChild
                             tone="tertiary"
-                            className="group w-full justify-start gap-3 rounded-xl border-0 px-3 py-3 text-left text-white hover:border-transparent hover:bg-white/10 hover:text-white"
+                            className="group w-full justify-start gap-3 rounded-xl border-0 px-3.5 py-4 text-left text-white hover:border-transparent hover:bg-white/10 hover:text-white"
                           >
                             <Link
                               href={item.href}
@@ -753,7 +794,6 @@ function AppNavigationRibbonShell({
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-bold text-white">{item.label}</span>
-                                <span className="mt-0.5 block text-xs font-medium leading-relaxed text-slate-300">{item.description}</span>
                               </span>
                               <span className="text-lg leading-none text-slate-300 transition-transform group-hover:translate-x-0.5" aria-hidden="true">›</span>
                             </Link>
@@ -832,18 +872,10 @@ function AppNavigationRibbonPublic({
   const authSignedIn = Boolean(isSignedIn);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
-  const effectiveProfile = userRole
-    ? readActiveProfile(userResource?.publicMetadata, userRole)
-    : fallbackProfile;
+  const effectiveProfile = userRole\n    ? readActiveProfile(userResource?.publicMetadata, userRole)\n    : fallbackProfile;
   const effectiveIdentity =
     authLoaded && authSignedIn && userResource
-      ? buildIdentityFromUser(
-          userResource,
-          userRole ?? fallbackProfile,
-          effectiveProfile,
-          locale,
-        )
-      : null;
+      ? buildIdentityFromUser(\n          userResource,\n          userRole ?? fallbackProfile,\n          effectiveProfile,\n          locale,\n        )\n      : null;
 
   return (
     <AppNavigationRibbonShell
@@ -874,9 +906,7 @@ function AppNavigationRibbonProtected({
   const userRole = readProfileRole(userResource?.publicMetadata);
   const effectiveProfile =
     identity?.activeProfile ??
-    (userRole
-      ? readActiveProfile(userResource?.publicMetadata, userRole)
-      : fallbackProfile);
+    (userRole\n      ? readActiveProfile(userResource?.publicMetadata, userRole)\n      : fallbackProfile);
   const effectiveIdentity =
     identity ??
     (authLoaded && authSignedIn && userResource
