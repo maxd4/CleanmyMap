@@ -51,4 +51,17 @@ describe("clerk supabase token helpers", () => {
     await expect(provider()).resolves.toBe("default-token");
     expect(getTokenMock).toHaveBeenCalledWith();
   });
+
+  it("rejects a required flow when Clerk cannot provide a token", async () => {
+    getTokenMock.mockResolvedValue(null);
+
+    const { buildRequiredClerkSupabaseAccessTokenProvider } = await import(
+      "./clerk-supabase-token"
+    );
+    const provider = buildRequiredClerkSupabaseAccessTokenProvider(getTokenMock);
+
+    await expect(provider()).rejects.toThrow(
+      "Clerk/Supabase JWT accessToken unavailable for a required browser RLS flow.",
+    );
+  });
 });

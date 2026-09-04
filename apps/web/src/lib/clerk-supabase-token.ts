@@ -9,6 +9,13 @@ export type ClerkSupabaseTokenGetter = (
   options?: ClerkSupabaseTokenOptions,
 ) => Promise<string | null>;
 
+export class ClerkSupabaseTokenUnavailableError extends Error {
+  constructor() {
+    super("Clerk/Supabase JWT accessToken unavailable for a required browser RLS flow.");
+    this.name = "ClerkSupabaseTokenUnavailableError";
+  }
+}
+
 export function getClerkSupabaseJwtTemplate(): string | undefined {
   const template = env.NEXT_PUBLIC_CLERK_SUPABASE_JWT_TEMPLATE?.trim();
   return template && template.length > 0 ? template : undefined;
@@ -24,4 +31,19 @@ export function buildClerkSupabaseAccessTokenProvider(
   }
 
   return () => getToken({ template }).catch(() => null);
+}
+
+export function buildRequiredClerkSupabaseAccessTokenProvider(
+  getToken: ClerkSupabaseTokenGetter,
+): () => Promise<string> {
+  const provider = buildClerkSupabaseAccessTokenProvider(getToken);
+
+  return async () => {
+    const token = await provider();
+    if (!token) {
+      throw new ClerkSupabaseTokenUnavailableError();
+    }
+
+    return token;
+  };
 }
