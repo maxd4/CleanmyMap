@@ -4,6 +4,11 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { isAdminLikeProfile } from "@/lib/profiles";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  isValidCommunityEventCoordinatePair,
+} from "@/lib/community/event-location";
+import type { ActionEventPrefill } from "@/lib/actions/action-event-prefill";
 
 export const metadata: Metadata = {
   title: "Déclarer une action - CleanMyMap",
@@ -42,12 +47,40 @@ function resolveSingleSearchParam(
   return value;
 }
 
+async function loadActionEventPrefill(
+  eventId: string | undefined,
+): Promise<ActionEventPrefill | null> {
+  if (!eventId) return null;
+
+  try {
+    const result = await getSupabaseServerClient()
+      .from("community_events")
+      .select("location_label, latitude, longitude")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (result.error || !result.data) return null;
+
+    if (!isValidCommunityEventCoordinatePair(result.data.latitude, result.data.longitude)) {
+      return null;
+    }
+
+    return {
+      locationLabel: result.data.location_label,
+      latitude: result.data.latitude,
+      longitude: result.data.longitude,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
+  const eventPrefill = await loadActionEventPrefill(fromEventId);
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId });
   const { userId } = await getSafeAuthSession();
 
@@ -77,6 +110,7 @@ export default async function NewActionPage({
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
+          eventPrefill={eventPrefill}
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
           isAutoApprovedSubmission={isAutoApprovedSubmission}
@@ -94,6 +128,7 @@ export default async function NewActionPage({
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
+        eventPrefill={eventPrefill}
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
         isAutoApprovedSubmission={isAutoApprovedSubmission}

@@ -297,6 +297,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         isAutoApprovedSubmission={props.isAutoApprovedSubmission}
         userMetadata={props.userMetadata}
         linkedEventId={props.linkedEventId}
+        eventPrefill={props.eventPrefill}
         initialRecordType={props.initialRecordType}
         onReturnToChoice={backToChoice}
         onPassToComplete={(actionId) => transitionToComplete(actionId)}

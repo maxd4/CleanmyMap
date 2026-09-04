@@ -38,6 +38,9 @@ export type RouteEventPressureContribution = {
   eventId: string;
   title: string;
   eventDate: string;
+  locationLabel: string;
+  latitude: number;
+  longitude: number;
   ageDays: number;
   distanceKm: number;
   recencyFactor: number;
@@ -202,6 +205,9 @@ export function calculateRouteEventPressure(
     eventId: event.id,
     title: event.title,
     eventDate: event.eventDate,
+    locationLabel: event.locationLabel,
+    latitude: eventLatitude,
+    longitude: eventLongitude,
     ageDays,
     distanceKm,
     recencyFactor,

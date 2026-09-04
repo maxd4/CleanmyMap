@@ -5,6 +5,7 @@ import {
   extractEntrepriseName,
   normalizeAssociationSelectionForPrefill,
 } from "@/lib/actions/association-options";
+import type { ActionEventPrefill } from "@/lib/actions/action-event-prefill";
 
 export type SelectOption = {
   value: string;
@@ -23,6 +24,7 @@ export type ActionBeforeDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
+  eventPrefill?: ActionEventPrefill | null;
   initialRecordType?: "action";
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;

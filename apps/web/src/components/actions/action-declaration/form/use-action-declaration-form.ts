@@ -32,6 +32,10 @@ import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geom
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
+import {
+  applyActionEventPrefill,
+  type ActionEventPrefill,
+} from "@/lib/actions/action-event-prefill";
 import type {
   FormState,
   PostActionRetentionLoop,
@@ -50,6 +54,7 @@ type UseActionDeclarationFormProps = {
   };
   initialActionId?: string | null;
   linkedEventId?: string;
+  eventPrefill?: ActionEventPrefill | null;
   initialRecordType?: "action";
 };
 
@@ -60,6 +65,7 @@ export function useActionDeclarationForm({
   userMetadata,
   initialActionId = null,
   linkedEventId,
+  eventPrefill,
   initialRecordType = "action",
 }: UseActionDeclarationFormProps) {
   const resolvedActorOptions = actorNameOptions;
@@ -73,7 +79,9 @@ export function useActionDeclarationForm({
     [initialRecordType, resolvedDefaultActorName],
   );
 
-  const [form, setForm] = useState<FormState>(() => createCleanForm());
+  const [form, setForm] = useState<FormState>(() =>
+    applyActionEventPrefill(createCleanForm(), eventPrefill),
+  );
   const pendingDraft = useSyncExternalStore(
     subscribeToDraftChanges,
     () => {
