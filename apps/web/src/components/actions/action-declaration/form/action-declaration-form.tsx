@@ -277,7 +277,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 Fermer
               </button>
             </div>
-          </div>
         </CmmDialog>
       ) : null}
 
