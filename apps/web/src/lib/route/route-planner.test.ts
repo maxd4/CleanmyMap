@@ -43,7 +43,7 @@ function candidate(
   if (!actionable) {
     throw new Error(`Expected actionable candidate: ${id}`);
   }
-  return { ...actionable, score, reason: `Priorité ${id}` };
+  return { ...actionable, score, reason: `Priorité ${id}`, family: "observed" };
 }
 
 function plannerInput(overrides: Partial<RoutePlannerInput> = {}): RoutePlannerInput {
@@ -74,6 +74,30 @@ function fallbackGeometry(
 }
 
 describe("route planner V1", () => {
+  it("accepte une zone prédite comme cible distincte sans la faire passer pour un spot observé", () => {
+    const predicted = {
+      family: "predicted" as const,
+      id: "predicted:station",
+      label: "Zone prédite · station",
+      latitude: 0.001,
+      longitude: 0,
+      score: 78,
+      reason: "Zone prédite, facteurs calculés.",
+      evidence: { family: "predicted" as const } as never,
+    } satisfies RoutePlannerCandidate;
+    const result = planRoute(plannerInput({ candidates: [predicted], maxStops: 1 }));
+
+    expect(result.stops[0]?.candidate.family).toBe("predicted");
+    expect(result.diagnostics.excludedUnsafe).toBe(0);
+
+    const observed = candidate("observed:equivalent", 0.001, 0, 78);
+    const tie = planRoute(plannerInput({
+      candidates: [predicted, observed],
+      maxStops: 1,
+    }));
+    expect(tie.stops[0]?.candidate.family).toBe("observed");
+  });
+
   it("can change the first stop when the origin changes", () => {
     const candidates = [
       candidate("near-origin-a", 0.01, 0, 50),

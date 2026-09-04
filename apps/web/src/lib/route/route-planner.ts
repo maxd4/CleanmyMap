@@ -3,6 +3,7 @@ import {
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry, RouteGeometryLeg } from "./route-contract";
+import type { RoutePredictedCandidate } from "./route-predicted-targets";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v1" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -13,10 +14,14 @@ export type RoutePlannerOrigin = {
   source: "browser" | "map" | "approximate_saved_area";
 };
 
-export type RoutePlannerCandidate = TrashSpotterActionableCandidate & {
-  score: number;
-  reason: string;
-};
+export type RoutePlannerCandidate =
+  | (TrashSpotterActionableCandidate & {
+      score: number;
+      reason: string;
+      family?: "observed";
+      evidence?: import("./route-predicted-targets").RouteObservedEvidence;
+    })
+  | RoutePredictedCandidate;
 
 export type PlannedRouteStop = {
   candidate: RoutePlannerCandidate;
@@ -154,6 +159,11 @@ function compareCandidates(
   if (Math.abs(leftCombined - rightCombined) > Number.EPSILON) {
     return rightCombined - leftCombined;
   }
+  const leftIsObserved = left.candidate.family !== "predicted";
+  const rightIsObserved = right.candidate.family !== "predicted";
+  if (leftIsObserved !== rightIsObserved) {
+    return leftIsObserved ? -1 : 1;
+  }
   if (Math.abs(leftPriority - rightPriority) > Number.EPSILON) {
     return rightPriority - leftPriority;
   }
@@ -171,7 +181,10 @@ function compareCandidates(
 export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const budgetMinutes = Math.max(0, input.travelBudgetMinutes);
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
-  const safeCandidates = input.candidates.filter(isVolunteerRouteEligible);
+  const safeCandidates = input.candidates.filter(
+    (candidate) =>
+      candidate.family === "predicted" || isVolunteerRouteEligible(candidate),
+  );
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
   const evaluations: RoutePlannerCandidateEvaluation[] = [];

@@ -145,8 +145,39 @@ describe("route recommendation trace", () => {
       },
       combinedScore: expect.any(Number),
       reason: expect.stringContaining("Étape 1"),
+      targetFamily: "observed",
     }));
     expect(trace.selectedStops[0]?.reason).toContain("score combiné=");
+  });
+
+  it("conserve une preuve prédite et le résumé du modèle dans la trace", () => {
+    const trace = buildRouteRecommendationTrace(traceInput({
+      predictionSummary: {
+        status: "partial",
+        source: "urban-pressure-model",
+        modelVersion: "paris-pressure-risk-v1",
+        snapshot: {
+          snapshotId: "snapshot-test",
+          schemaVersion: "paris-pressure-v1",
+          generatedAt: "2026-09-04T00:00:00.000Z",
+          refreshedAt: "2026-09-04T00:00:00.000Z",
+        },
+        riskFocus: "all",
+        zonesConsidered: 2,
+        candidatesConsidered: 1,
+        selectedCandidateIds: [],
+        excludedByCorridor: 1,
+        deduplicated: 0,
+        excludedByBudget: 0,
+        warnings: ["Snapshot partiel"],
+      },
+    }));
+
+    expect(trace.prediction).toEqual(expect.objectContaining({
+      source: "urban-pressure-model",
+      modelVersion: "paris-pressure-risk-v1",
+      status: "partial",
+    }));
   });
 
   it("keeps exclusion counts and reasons explicit", () => {

@@ -24,6 +24,7 @@ const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
 const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
+const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
@@ -52,6 +53,9 @@ vi.mock("@/lib/route/route-contract", () => ({
 }));
 vi.mock("@/lib/geo/osrm-routing", () => ({
   createFallbackRouteGeometry: createFallbackRouteGeometryMock,
+}));
+vi.mock("@/lib/geo/paris-pressure-loader", () => ({
+  loadParisPressureSnapshot: loadParisPressureSnapshotMock,
 }));
 vi.mock("@/lib/route/fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
@@ -197,6 +201,7 @@ describe("POST /api/route/recommend", () => {
       warnings: [],
     });
     loadRouteEventCenteredAnchorMock.mockResolvedValue(null);
+    loadParisPressureSnapshotMock.mockReturnValue(null);
     loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
       isTruncated: false,
@@ -359,9 +364,8 @@ describe("POST /api/route/recommend", () => {
       origin: explicitOrigin,
       candidates: [
         expect.objectContaining({
-          id: candidate.id,
-          parisPressure: expect.objectContaining({ zoneId: expect.any(String) }),
-        }),
+        id: candidate.id,
+      }),
       ],
       travelBudgetMinutes: 42,
       maxStops: 1,

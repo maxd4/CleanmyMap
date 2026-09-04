@@ -2,14 +2,17 @@ import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotte
 import { isVolunteerRouteEligible } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { RouteEventCandidatePressure } from "./route-event-pressure";
+import type { RouteObservedEvidence } from "./route-predicted-targets";
 
 export type TrashSpotterRouteCandidate =
   TrashSpotterActionableCandidate & {
     score: number;
     reason: string;
     baseScore: number;
-    eventPressure: RouteEventCandidatePressure | null;
-    eventScoreContribution: number;
+  eventPressure: RouteEventCandidatePressure | null;
+  eventScoreContribution: number;
+  family?: "observed";
+  evidence?: RouteObservedEvidence;
   };
 
 export function distanceKm(
@@ -69,6 +72,13 @@ export function buildTrashSpotterRouteCandidates(
         baseScore: freshness,
         eventPressure,
         eventScoreContribution: score - freshness,
+        family: "observed" as const,
+        evidence: {
+          family: "observed" as const,
+          source: "trash_spotter_spots" as const,
+          proof: "validated" as const,
+          observedAt: candidate.observedAt,
+        },
         reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}.${eventReason}`,
       };
     })

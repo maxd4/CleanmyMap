@@ -57,6 +57,10 @@ import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-l
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
 import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
+import {
+  buildPredictedRouteCandidates,
+  type RouteRiskFocus,
+} from "@/lib/route/route-predicted-targets";
 
 export const runtime ="nodejs";
 
@@ -79,6 +83,7 @@ const requestSchema = z.object({
      eventId: z.string().uuid(),
    }),
  ]).default({ type: "free" }),
+ riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
 }).strip();
 
 const ROUTE_RECOMMENDATION_RATE_LIMIT = {
@@ -213,6 +218,7 @@ export async function POST(request: Request) {
  const priorityVsTravel =
    options.priorityVsTravel ?? options.priorityVsDistance ?? 65;
  const planningMode = options.planningMode as RoutePlanningMode;
+ const riskFocus = options.riskFocus as RouteRiskFocus;
 
  try {
  const supabase = getSupabaseServerClient();
@@ -278,12 +284,41 @@ export async function POST(request: Request) {
  const spatialCandidates = parisPressureSnapshot
    ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
    : candidates;
+ const predictionEvents = new Map<string, {
+   latitude: number;
+   longitude: number;
+   ageDays: number;
+   attendancePressure: number | null;
+ }>();
+ for (const pressure of eventSignalContext.candidatePressureById.values()) {
+   for (const contribution of pressure.contributions) {
+     if (!predictionEvents.has(contribution.eventId)) {
+       predictionEvents.set(contribution.eventId, {
+         latitude: contribution.latitude,
+         longitude: contribution.longitude,
+         ageDays: contribution.ageDays,
+         attendancePressure: contribution.attendanceFactor,
+       });
+     }
+   }
+ }
+ const predictionBuild = buildPredictedRouteCandidates({
+   snapshot: parisPressureSnapshot,
+   origin,
+   observedCandidates: spatialCandidates,
+   travelBudgetMinutes: options.travelBudgetMinutes,
+   riskFocus,
+   recentEvents: [...predictionEvents.values()],
+ });
  const eventCenteredCandidates = eventAnchor
-   ? buildEventCenteredCandidates(spatialCandidates, eventAnchor)
+   ? buildEventCenteredCandidates(
+       [...spatialCandidates, ...predictionBuild.candidates],
+       eventAnchor,
+     )
    : null;
  const planningCandidates = eventCenteredCandidates
    ? eventCenteredCandidates.candidates
-   : spatialCandidates;
+   : [...spatialCandidates, ...predictionBuild.candidates];
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
    isTruncated,
@@ -299,6 +334,15 @@ export async function POST(request: Request) {
     priorityVsTravel,
   });
   let plannedStops = plannerResult.stops;
+  let predictionSummary = {
+    ...predictionBuild.summary,
+    excludedByBudget: predictionBuild.candidates.filter((candidate) =>
+      plannerResult.audit.evaluations.some(
+        (evaluation) =>
+          evaluation.candidateId === candidate.id && !evaluation.feasible,
+      ),
+    ).length,
+  };
   let routeGeometry = createFallbackRouteGeometry([]);
   let budgetPrefixApplied = false;
   const candidateSummary = buildRouteTraceCandidateSummary(
@@ -361,10 +405,12 @@ export async function POST(request: Request) {
             )
           : null,
         spatialPrior,
+        predictionSummary,
       }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
+      prediction: predictionSummary,
       routeGeometry,
       scoreBreakdown: { priority: 0, distance: 0 },
       tradeoffs: [
@@ -419,8 +465,9 @@ export async function POST(request: Request) {
      longitude: candidate.longitude,
      segmentKm: Number(incrementalDistanceKm.toFixed(2)),
      estimatedMinutes: Math.max(0, Math.round(incrementalTravelMinutes)),
-     priorityReason: candidate.reason,
-     score: Number(candidate.score.toFixed(2)),
+    priorityReason: candidate.reason,
+    score: Number(candidate.score.toFixed(2)),
+    evidence: candidate.evidence,
    }),
  );
  const stops = applyOriginRouteGeometryLegs(estimatedStops, routeGeometry);
@@ -453,6 +500,12 @@ export async function POST(request: Request) {
    selectedCount: plannedStops.length,
    routeGeometryMode: routeGeometry.mode,
  });
+ predictionSummary = {
+   ...predictionSummary,
+   selectedCandidateIds: plannedStops
+     .filter(({ candidate }) => candidate.family === "predicted")
+     .map(({ candidate }) => candidate.id),
+ };
 
  const trace = buildRouteRecommendationTrace({
    engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
@@ -478,6 +531,7 @@ export async function POST(request: Request) {
        )
      : null,
    spatialPrior,
+   predictionSummary,
  });
 
  try {
@@ -506,6 +560,7 @@ export async function POST(request: Request) {
  serviceMinutesEstimate: null,
  totalMinutesEstimate: null,
  trace,
+ prediction: predictionSummary,
  diagnostics: {
    loaded: contracts.length,
    eligible: candidates.length,
