@@ -84,12 +84,13 @@ export default async function Page({
       />
       <section>
         <h2>Totals per day</h2>
-        <table>
+        <div className="cmm-data-table-wrap">
+        <table className="cmm-data-table" data-density="compact">
           <thead>
             <tr>
-              <th>user_id</th>
-              <th>day</th>
-              <th>xp_total</th>
+              <th scope="col">user_id</th>
+              <th scope="col">day</th>
+              <th scope="col">xp_total</th>
             </tr>
           </thead>
           <tbody>
@@ -102,17 +103,19 @@ export default async function Page({
             ))}
           </tbody>
         </table>
+        </div>
       </section>
       <section>
         <h2>Audit entries</h2>
-        <table>
+        <div className="cmm-data-table-wrap">
+        <table className="cmm-data-table" data-density="compact">
           <thead>
             <tr>
-              <th>when</th>
-              <th>user</th>
-              <th>actor</th>
-              <th>xp</th>
-              <th>reason</th>
+              <th scope="col">when</th>
+              <th scope="col">user</th>
+              <th scope="col">actor</th>
+              <th scope="col">xp</th>
+              <th scope="col">reason</th>
             </tr>
           </thead>
           <tbody>
@@ -127,6 +130,7 @@ export default async function Page({
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </div>
   );

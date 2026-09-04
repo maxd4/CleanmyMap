@@ -42,28 +42,28 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
         <Trophy size={100} className="text-white" />
       </div>
 
-      <div className="overflow-x-auto relative z-10">
-        <table className="min-w-full text-left border-collapse">
+      <div className="cmm-data-table-wrap relative z-10">
+        <table className="cmm-data-table">
           <thead>
             <tr className="border-b border-white/5 bg-white/[0.02]">
               {scope === "individual" ? (
                 <>
-                  <th className="px-8 py-6 w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Identité</th>
-                  <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">XP progression</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Score</th>
+                  <th scope="col" className="w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
+                  <th scope="col" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Identité</th>
+                  <th scope="col" className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
+                  <th scope="col" className="text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">XP progression</th>
+                  <th scope="col" className="text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
+                  <th scope="col" className="text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Score</th>
                 </>
               ) : (
                 <>
-                  <th className="px-8 py-6 w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Structure</th>
-                  <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
-                  <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Membres</th>
-                  <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Actions</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Score</th>
+                  <th scope="col" className="w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
+                  <th scope="col" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Structure</th>
+                  <th scope="col" className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
+                  <th scope="col" className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Membres</th>
+                  <th scope="col" className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Actions</th>
+                  <th scope="col" className="text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
+                  <th scope="col" className="text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Score</th>
                 </>
               )}
             </tr>

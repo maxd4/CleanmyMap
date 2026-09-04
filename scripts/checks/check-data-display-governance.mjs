@@ -7,21 +7,7 @@ export const CANONICAL_CONSUMERS = new Set([
   "apps/web/src/components/dashboard/system-status-panel.tsx",
 ]);
 
-export const LEGACY_RUNTIME_TABLE_ALLOWLIST = new Set([
-  "apps/web/src/app/admin/gamification/xp-audit/page.tsx",
-  "apps/web/src/app/politique-cookies/page.tsx",
-  "apps/web/src/app/politique-confidentialite/page.tsx",
-  "apps/web/src/components/reports/admin-workflow/step-preview.tsx",
-  "apps/web/src/components/admin/admin-creator-console.tsx",
-  "apps/web/src/components/dashboard/storage-usage-panel.tsx",
-  "apps/web/src/components/actions/actions-history-list-table.tsx",
-  "apps/web/src/components/sections/rubriques/elus-section.tsx",
-  "apps/web/src/components/sections/rubriques/compare-section.tsx",
-  "apps/web/src/components/sections/rubriques/recycling-components.tsx",
-  "apps/web/src/components/reports/web-document/reports-web-document-delivery.tsx",
-  "apps/web/src/components/sections/rubriques/gamification/leaderboard-table.tsx",
-  "apps/web/src/components/learn/quiz/school/quiz-school-workshop-session.tsx",
-]);
+export const LEGACY_RUNTIME_TABLE_ALLOWLIST = new Set();
 
 export const PRINT_EXPORT_EXCLUSIONS = new Set([
   "apps/web/src/components/reports/web-document/ui.tsx",

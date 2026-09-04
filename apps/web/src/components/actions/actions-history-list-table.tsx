@@ -90,19 +90,19 @@ export function ActionsHistoryListTable({
 
   return (
     <div className="mt-5">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left cmm-text-small">
+      <div className="cmm-data-table-wrap">
+        <table className="cmm-data-table" data-density="compact">
           <thead>
             <tr className="border-b border-slate-200 cmm-text-muted">
-              <th className="px-2 py-2 font-medium">Date</th>
-              <th className="px-2 py-2 font-medium">Bénévole</th>
-              <th className="px-2 py-2 font-medium">Lieu</th>
-              <th className="px-2 py-2 font-medium">Type</th>
-              <th className="px-2 py-2 font-medium">Kg</th>
-              <th className="px-2 py-2 font-medium">Mégots</th>
-              <th className="px-2 py-2 font-medium">Statut</th>
-              <th className="px-2 py-2 font-medium">Qualité</th>
-              <th className="px-2 py-2 font-medium">Jonction</th>
+              <th scope="col" className="font-medium">Date</th>
+              <th scope="col" className="font-medium">Bénévole</th>
+              <th scope="col" className="font-medium">Lieu</th>
+              <th scope="col" className="font-medium">Type</th>
+              <th scope="col" className="font-medium">Kg</th>
+              <th scope="col" className="font-medium">Mégots</th>
+              <th scope="col" className="font-medium">Statut</th>
+              <th scope="col" className="font-medium">Qualité</th>
+              <th scope="col" className="font-medium">Jonction</th>
             </tr>
           </thead>
           <tbody>
@@ -111,35 +111,35 @@ export function ActionsHistoryListTable({
               return (
                 <tr
                   key={item.id}
-                  className={`cursor-pointer border-b border-slate-100 cmm-text-secondary ${rowTone(
+                  className={`cursor-pointer cmm-text-secondary ${rowTone(
                     quality?.grade ?? null,
                   )}`}
                   onClick={() => onSelectItem(item.id)}
                 >
-                  <td className="px-2 py-2">{formatDate(item.action_date)}</td>
-                  <td className="px-2 py-2">{item.actor_name || "Anonyme"}</td>
-                  <td className="px-2 py-2">{item.location_label}</td>
-                  <td className="px-2 py-2">{formatRecordType(item)}</td>
-                  <td className="px-2 py-2">
+                  <td>{formatDate(item.action_date)}</td>
+                  <td>{item.actor_name || "Anonyme"}</td>
+                  <td>{item.location_label}</td>
+                  <td>{formatRecordType(item)}</td>
+                  <td>
                     {mapItemWasteKg(item as ActionMapItem) !== null ? (
                       Number(mapItemWasteKg(item as ActionMapItem)).toFixed(1)
                     ) : (
                       <span className="text-slate-300">-</span>
                     )}
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     {mapItemCigaretteButts(item as ActionMapItem) !== null ? (
                       mapItemCigaretteButts(item as ActionMapItem)
                     ) : (
                       <span className="text-slate-300">-</span>
                     )}
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">
                       {item.status}
                     </span>
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     {quality ? (
                       <div className="space-y-1">
                         <span
@@ -160,7 +160,7 @@ export function ActionsHistoryListTable({
                       <span className="cmm-text-caption cmm-text-muted">n/a</span>
                     )}
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
                     {item.status === "approved" && item.record_type === "action" ? (
                       <div className="flex flex-col items-start gap-2">
                         {isJoinableAction(item) ? (

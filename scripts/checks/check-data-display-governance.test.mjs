@@ -42,7 +42,7 @@ test("ignores React table components such as Table2", () => {
 });
 
 test("detects a stale legacy exception after its raw table is migrated", () => {
-  const legacyPath = [...LEGACY_RUNTIME_TABLE_ALLOWLIST][0];
+  const legacyPath = "apps/web/src/components/example-legacy-table.tsx";
   const violations = auditRuntimeTables([
     {
       path: legacyPath,
@@ -52,6 +52,10 @@ test("detects a stale legacy exception after its raw table is migrated", () => {
 
   assert.equal(violations.length, 1);
   assert.match(violations[0], /stale legacy table exception/);
+});
+
+test("keeps the runtime legacy table allowlist empty", () => {
+  assert.equal(LEGACY_RUNTIME_TABLE_ALLOWLIST.size, 0);
 });
 
 test("keeps the specialized Print/Export exclusion separate from runtime legacy", () => {

@@ -54,18 +54,18 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     <p className="mt-2 cmm-text-small text-red-700">{fr ? "Aperçu indisponible." : "Preview unavailable."}</p>
     ) : null}
     {!workflow.previewLoading && !workflow.previewError ? (
-    <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-    <table className="min-w-full text-left cmm-text-caption">
+    <div className="cmm-data-table-wrap mt-3">
+    <table className="cmm-data-table" data-density="compact">
     <thead className="bg-slate-50 cmm-text-secondary">
     <tr>
-    <th className="px-2 py-2">{fr ? "ID" : "ID"}</th>
-    <th className="px-2 py-2">{fr ? "Date" : "Date"}</th>
-    <th className="px-2 py-2">{fr ? "Lieu" : "Location"}</th>
-    <th className="px-2 py-2">{fr ? "Compte" : "Account"}</th>
-    <th className="px-2 py-2">{fr ? "Type de record" : "Record type"}</th>
-    <th className="px-2 py-2">{fr ? "Statut" : "Status"}</th>
-    <th className="px-2 py-2">{fr ? "Qualité" : "Quality"}</th>
-    <th className="px-2 py-2">{fr ? "Action" : "Action"}</th>
+    <th scope="col">{fr ? "ID" : "ID"}</th>
+    <th scope="col">{fr ? "Date" : "Date"}</th>
+    <th scope="col">{fr ? "Lieu" : "Location"}</th>
+    <th scope="col">{fr ? "Compte" : "Account"}</th>
+    <th scope="col">{fr ? "Type de record" : "Record type"}</th>
+    <th scope="col">{fr ? "Statut" : "Status"}</th>
+    <th scope="col">{fr ? "Qualité" : "Quality"}</th>
+    <th scope="col">{fr ? "Action" : "Action"}</th>
     </tr>
     </thead>
  <tbody>
@@ -74,22 +74,22 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  key={row.item.id}
  className="border-t border-slate-100 cmm-text-secondary"
  >
- <td className="px-2 py-2 font-mono">{row.item.id.slice(0, 8)}...</td>
- <td className="px-2 py-2">{row.item.action_date}</td>
- <td className="px-2 py-2">{row.item.location_label}</td>
- <td className="px-2 py-2 font-mono text-[11px]">
+ <td className="font-mono">{row.item.id.slice(0, 8)}...</td>
+ <td>{row.item.action_date}</td>
+ <td>{row.item.location_label}</td>
+ <td className="font-mono text-[11px]">
  {row.item.created_by_clerk_id?.trim() || "anonymous"}
  </td>
- <td className="px-2 py-2 font-semibold">{formatPreviewRecordType(row.item)}</td>
- <td className="px-2 py-2">{row.item.status}</td>
- <td className="px-2 py-2">
+ <td className="font-semibold">{formatPreviewRecordType(row.item)}</td>
+ <td>{row.item.status}</td>
+ <td>
  <span
  className={`rounded-full border px-2 py-0.5 ${qualityTone(row.quality.grade)}`}
  >
  {row.quality.grade} ({row.quality.score})
  </span>
  </td>
- <td className="px-2 py-2">
+ <td>
  <button
  onClick={() => workflow.selectActionForModeration(row.item)}
  className="rounded border border-slate-300 px-2 py-0.5 cmm-text-caption hover:bg-slate-100"
@@ -101,7 +101,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  ))}
 {workflow.previewRows.length === 0 ? (
  <tr className="border-t border-slate-100">
- <td className="px-2 py-3 cmm-text-muted" colSpan={8}>
+ <td className="cmm-text-muted" colSpan={8}>
   Aucun élément ne correspond au filtre de modération.
  </td>
  </tr>

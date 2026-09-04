@@ -145,14 +145,14 @@ export const RecyclingStreamTable = memo(function RecyclingStreamTable({
         </div>
       </div>
       
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
+      <div className="cmm-data-table-wrap">
+        <table className="cmm-data-table">
           <thead>
             <tr className="border-b border-white/5 bg-slate-950/20">
-              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Catégorie</th>
-              <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Volume (KG)</th>
-              <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Part (%)</th>
-              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Occurrences</th>
+              <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Catégorie</th>
+              <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Volume (KG)</th>
+              <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Part (%)</th>
+              <th scope="col" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Occurrences</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">

@@ -146,12 +146,12 @@ export function ReportsWebDocumentDeliveryHistory({
           <SystemStateTitle variant="empty">Aucun rapport généré</SystemStateTitle>
         </SystemStateLayout>
       ) : (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
-          <table className="w-full min-w-full border-separate border-spacing-0 text-left">
+        <div className="cmm-data-table-wrap mt-4">
+          <table className="cmm-data-table">
             <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
               <tr>
                 {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
-                  <th key={header} className="border-b border-slate-200 px-4 py-3 font-black">
+                  <th key={header} scope="col" className="font-black">
                     {header}
                   </th>
                 ))}
@@ -159,8 +159,8 @@ export function ReportsWebDocumentDeliveryHistory({
             </thead>
             <tbody>
               {recentRows.map((row) => (
-                <tr key={row.id} className="bg-white">
-                  <td className="border-b border-slate-100 px-4 py-3">
+                <tr key={row.id}>
+                  <td>
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
                         <FileText size={16} />
@@ -168,19 +168,19 @@ export function ReportsWebDocumentDeliveryHistory({
                       <p className="text-sm font-semibold text-slate-900">{row.report}</p>
                     </div>
                   </td>
-                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                  <td className="text-sm text-slate-600">
                     {row.period}
                   </td>
-                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                  <td className="text-sm text-slate-600">
                     {row.perimeter}
                   </td>
-                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                  <td className="text-sm text-slate-600">
                     {row.detail}
                   </td>
-                  <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
+                  <td className="text-sm text-slate-600">
                     {row.generatedAt}
                   </td>
-                  <td className="border-b border-slate-100 px-4 py-3">
+                  <td>
                     <div className="flex flex-wrap gap-2">
                       <CmmButton
                         disabled={actionStateById[row.id]?.state === "pending"}
