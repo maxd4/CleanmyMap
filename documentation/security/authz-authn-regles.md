@@ -66,12 +66,24 @@ Scope
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
 
-Le vocabulaire du rôle privilégié est unifié : **IMU = super-admin = rôle
-interne `max`**. `max` est la valeur technique canonique, `IMU` le libellé
-produit, et `super-admin` (ainsi que `super_admin` et `superadmin`) un alias
-entrant normalisé vers `max`. Aucun de ces termes ne représente un niveau de
-permission différent. Les alias historiques `owner`, `godmode` et `creator`
-restent limités à la compatibilité d'entrée.
+Le vocabulaire du rôle privilégié est unifié : **IMU = rôle interne `max`**.
+L'autorité d'IMU est toutefois une identité Clerk canonique, pas une valeur de
+rôle. Chaque instance Clerk configure un couple serveur distinct
+`CLERK_IMU_OWNER_USER_ID` / `CLERK_IMU_OWNER_EMAIL`; l'accès `max` exige l'ID
+exact et l'email principal exactement correspondant avec le statut
+`verified`. Une erreur Clerk, une absence de configuration ou un mismatch
+refuse le privilège. Les métadonnées Clerk, `profiles.role_label` dans
+Supabase, `CREATOR_INBOX_EMAIL`, `CLERK_ADMIN_USER_IDS` et les alias historiques
+(`owner`, `godmode`, `creator`, `super_admin`, etc.) ne sont jamais des preuves
+suffisantes. Les alias restent uniquement acceptés à la frontière de lecture
+legacy pour les rôles non privilégiés.
+
+Le bypass `CMM_DEV_AUTH_BYPASS` est accepté seulement avec
+`NODE_ENV=development` et un hostname strictement local (`localhost`,
+`127.0.0.1` ou `[::1]`). `dev-max` est synthétique et local; `dev-admin` sert
+à tester l'administration sans réutiliser l'identité IMU. Aucun de ces comptes
+ne représente un utilisateur Clerk ou Supabase et aucun n'est accepté sur
+Preview, Production ou un hôte distant.
 
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 

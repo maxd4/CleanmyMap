@@ -10,25 +10,21 @@ import {
   getEffectiveAccessForSessionRole,
   type EffectiveAccess,
 } from "./domain-language";
-import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import { mapBadgeIdsToBadges } from "./authz-badges";
 import {
   buildActorNameOptions,
   getClerkUser,
   getDevAuthBypassSession,
-  normalizeLegacyOwnerMetadata,
   resolveActorNameFromClerk,
 } from "./authz-identity";
 import {
   extractRole,
-  isAdminRole,
-  isExclusiveMaxUserId,
-  isMaxRole,
+  isCanonicalImuOwner,
   parseAdminUserIds,
-  parseMaxUserIds,
+  resolveClerkRole,
   type ClerkMetadata,
 } from "./auth/role-resolution";
-export { isAdminRole, isMaxRole } from "./auth/role-resolution";
+export { isAdminRole } from "./auth/role-resolution";
 export type { AccountBadge } from "./authz-badges";
 export type { UserIdentity } from "./authz-identity";
 export { getCurrentUserIdentity, pickTraceableActorName } from "./authz-identity";
@@ -67,7 +63,9 @@ function extractBadgeIds(metadata: ClerkMetadata): string[] {
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return { ok: true, userId: devBypass.userId };
+    return devBypass.role === "admin" || devBypass.role === "max"
+      ? { ok: true, userId: devBypass.userId }
+      : { ok: false, status: 403, error: "Forbidden" };
   }
 
   const { userId } = await auth();
@@ -75,37 +73,18 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
-  if (adminUserIds.has(userId) || isExclusiveMaxUserId(userId, maxUserIds, adminUserIds)) {
-    return { ok: true, userId };
-  }
-
-  try {
-    const client = await clerkClient();
-    const user = await getClerkUser(client, userId);
-    if (isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress)) {
-      return { ok: true, userId };
-    }
-    if (
-      isAdminRole({
-        publicMetadata: user.publicMetadata,
-        privateMetadata: user.privateMetadata,
-      })
-    ) {
-      return { ok: true, userId };
-    }
-  } catch (error) {
-    console.error("Admin role resolution failed", error);
-  }
-
-  return { ok: false, status: 403, error: "Forbidden" };
+  const role = await getCurrentUserRoleLabel();
+  return role === "admin" || role === "max"
+    ? { ok: true, userId }
+    : { ok: false, status: 403, error: "Forbidden" };
 }
 
 export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return { ok: true, userId: devBypass.userId };
+    return devBypass.role === "max"
+      ? { ok: true, userId: devBypass.userId }
+      : { ok: false, status: 403, error: "Forbidden" };
   }
 
   const { userId } = await auth();
@@ -151,36 +130,13 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
 
   try {
     const client = await clerkClient();
-    const user = await normalizeLegacyOwnerMetadata(
-      client,
-      await getClerkUser(client, userId),
-    );
-    const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-    const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
-    if (
-      isExclusiveMaxUserId(userId, maxUserIds, adminUserIds) ||
-      isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
-      isMaxRole({
-        publicMetadata: user.publicMetadata,
-        privateMetadata: user.privateMetadata,
-      })
-    ) {
-      return "max" as const;
-    }
-
-    if (
-      adminUserIds.has(userId) ||
-      isAdminRole({
-        publicMetadata: user.publicMetadata,
-        privateMetadata: user.privateMetadata,
-      })
-    ) {
-      return "admin" as const;
-    }
-
-    const metadataRole =
-      extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
-    return resolveProfile({ metadataRole, isAdmin: false, isMax: false });
+    const user = await getClerkUser(client, userId);
+    return resolveClerkRole({
+      user,
+      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+      ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+      ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+    });
   } catch (error) {
     console.error("Current user role resolution failed", error);
     return "benevole";
@@ -197,9 +153,10 @@ export const __authz_testables = {
   extractRole,
   extractBadgeIds,
   mapBadgeIdsToBadges,
+  resolveClerkRole,
+  isCanonicalImuOwner,
   buildActorNameOptions,
   resolveActorNameFromClerk,
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
-  normalizeLegacyOwnerMetadata,
 };

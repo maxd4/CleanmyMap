@@ -47,6 +47,14 @@ describe("getDevAuthBypassSession", () => {
     expect(mocks.auth).not.toHaveBeenCalled();
   });
 
+  it("does not expose a synthetic bypass on a remote host", async () => {
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+    mocks.headers.mockResolvedValue(new Headers({ host: "preview.example.com" }));
+
+    await expect(getDevAuthBypassSession()).resolves.toBeNull();
+    expect(mocks.auth).not.toHaveBeenCalled();
+  });
+
   it("does not use the bypass when it is explicitly disabled", async () => {
     vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
     vi.stubEnv("CMM_DISABLE_DEV_AUTH_BYPASS", "1");

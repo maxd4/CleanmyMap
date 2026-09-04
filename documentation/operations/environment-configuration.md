@@ -104,6 +104,8 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
 | `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
 | `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
+| `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | owner IMU exact par instance |
+| `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | email principal owner vérifié |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
 | `RESEND_FROM_EMAIL` | Resend | CONFIG | O | O | O | O | Resend / Vercel | expéditeur email |
 | `RESEND_REPLY_TO` | Resend | CONFIG | O | O | O | O | Resend / Vercel | réponse email |
@@ -182,11 +184,11 @@ au contrat.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
-- Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
-  contrôles AuthZ opératoires indépendants et disjoints ; aucune valeur de la
-  première n’est utilisée comme repli de la seconde. En cas de configuration
-  accidentellement intersectée, le résolveur n’élève pas l’entrée à `max` et
-  l’audit doit signaler l’intersection. Ces listes ne sont pas des personas UX.
+- `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` restent des listes opératoires
+  indépendantes et disjointes, mais aucune liste, métadonnée, email creator ou
+  ligne Supabase ne peut accorder IMU. Le rôle `max` exige le couple owner
+  exact de l’instance et l’email principal Clerk `verified`. Production et
+  Development ont chacun leur propre ID owner.
 
 ### Supabase
 
