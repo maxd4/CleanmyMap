@@ -20,6 +20,7 @@
     "lint": "npm run lint -w apps/web",
     "lint:audit": "node scripts/checks/lint-audit-direct.js",
     "security:secrets": "node scripts/checks/secret-audit.mjs",
+    "check:env-contract": "node scripts/checks/check-env-contract.mjs",
     "audit:gitnexus": "node scripts/audits/audit-gitnexus.mjs",
     "audit:gitnexus:cycles": "node scripts/audits/audit-gitnexus.mjs --cycles",
     "audit:vercel-quota": "node scripts/audits/audit-vercel-quota.mjs",

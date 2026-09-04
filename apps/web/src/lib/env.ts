@@ -81,6 +81,7 @@ const envSchema = z.object({
   CLERK_IS_SATELLITE: optionalBoolean,
   CLERK_SATELLITE_AUTO_SYNC: optionalBoolean,
   NEXT_PUBLIC_CLERK_PROXY_URL: z.string().optional(),
+  CLEANMYMAP_SHEET_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SENTRY_DSN: optionalUrl,
   SENTRY_ORG: z.string().optional(),

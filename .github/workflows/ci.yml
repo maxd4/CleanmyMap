@@ -125,6 +125,9 @@ jobs:
       - name: Secret audit
         run: npm run security:secrets
 
+      - name: Environment contract
+        run: npm run check:env-contract
+
       - name: Root file hygiene
         run: npm run check:root-files
 
