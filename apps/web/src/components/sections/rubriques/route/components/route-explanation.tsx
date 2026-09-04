@@ -73,6 +73,11 @@ function PredictionEvidence({
         <div><dt className="text-amber-100/65">Distance au corridor</dt><dd className="font-bold">{formatDistance(evidence.distanceToCorridorKm)}</dd></div>
         <div><dt className="text-amber-100/65">Détour évalué</dt><dd className="font-bold">{formatDistance(evidence.detourDistanceKm)} · {formatDuration(evidence.detourMinutes)}</dd></div>
       </dl>
+      {evidence.admission ? (
+        <p className="mt-3 text-xs text-amber-100/85">
+          Décision d’admission : {evidence.admission.reason === "corridor" ? "proximité raisonnable du corridor" : `opportunité forte (seuil ${riskLabel(evidence.admission.riskThreshold)}, détour maximal ${formatDuration(evidence.admission.detourLimitMinutes)})`}.
+        </p>
+      ) : null}
       {factors.length > 0 ? (
         <div className="mt-3">
           <p className="text-xs font-bold text-white">Facteurs disponibles ayant contribué</p>

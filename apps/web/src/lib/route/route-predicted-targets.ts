@@ -46,6 +46,13 @@ export type RoutePredictedEvidence = {
   distanceToCorridorKm: number;
   detourDistanceKm: number;
   detourMinutes: number;
+  admission?: {
+    nearCorridor: boolean;
+    strongOpportunity: boolean;
+    reason: "corridor" | "strong_opportunity";
+    riskThreshold: number;
+    detourLimitMinutes: number;
+  };
   riskFocus: RouteRiskFocus;
   dominantRisk: "waste" | "cigaretteButts";
   wasteRisk: number;
@@ -94,6 +101,8 @@ export type RoutePredictionAvailability = {
   excludedByCorridor: number;
   deduplicated: number;
   excludedByBudget: number;
+  excludedZoneIds?: string[];
+  deduplicatedZoneIds?: string[];
   warnings: string[];
 };
 
@@ -234,6 +243,8 @@ function emptySummary(
     excludedByCorridor: 0,
     deduplicated: 0,
     excludedByBudget: 0,
+    excludedZoneIds: [],
+    deduplicatedZoneIds: [],
     warnings: [warning],
   };
 }
@@ -272,6 +283,7 @@ export function buildPredictedRouteCandidates(input: {
   const rawCandidates: Array<RoutePredictedCandidate & { selectedRisk: number }> =
     [];
   let excludedByCorridor = 0;
+  const excludedZoneIds: string[] = [];
 
   for (const zone of input.snapshot.zones) {
     const recentEvents: ParisPressureRiskEvent[] | undefined = input.recentEvents?.map(
@@ -306,6 +318,7 @@ export function buildPredictedRouteCandidates(input: {
 
     if (!nearCorridor && !strongOpportunity) {
       excludedByCorridor += 1;
+      excludedZoneIds.push(zone.id);
       continue;
     }
 
@@ -336,6 +349,19 @@ export function buildPredictedRouteCandidates(input: {
       distanceToCorridorKm: round(distanceToCorridorKm),
       detourDistanceKm: round(detourDistanceKm),
       detourMinutes: round(detourMinutes, 1),
+      admission: {
+        nearCorridor,
+        strongOpportunity,
+        reason: nearCorridor ? "corridor" : "strong_opportunity",
+        riskThreshold: PREDICTED_STRONG_RISK_THRESHOLD,
+        detourLimitMinutes: round(
+          Math.min(
+            PREDICTED_MAX_DETOUR_MINUTES,
+            Math.max(0, input.travelBudgetMinutes * 0.35),
+          ),
+          1,
+        ),
+      },
       riskFocus,
       dominantRisk,
       wasteRisk: estimate.wasteRisk,
@@ -381,6 +407,7 @@ export function buildPredictedRouteCandidates(input: {
 
   const deduplicated: RoutePredictedCandidate[] = [];
   let deduplicatedCount = 0;
+  const deduplicatedZoneIds: string[] = [];
   for (const candidate of rawCandidates) {
     const isNearExisting = deduplicated.some(
       (existing) =>
@@ -392,6 +419,7 @@ export function buildPredictedRouteCandidates(input: {
     );
     if (isNearExisting) {
       deduplicatedCount += 1;
+      deduplicatedZoneIds.push(candidate.evidence.zoneId);
       continue;
     }
     deduplicated.push(candidate);
@@ -424,6 +452,8 @@ export function buildPredictedRouteCandidates(input: {
       excludedByCorridor,
       deduplicated: deduplicatedCount,
       excludedByBudget: 0,
+      excludedZoneIds,
+      deduplicatedZoneIds,
       warnings:
         snapshotStatus === "partial"
           ? [

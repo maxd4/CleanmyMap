@@ -59,6 +59,12 @@ de chaque stop. Pour une prédiction, la trace conserve :
 - confiance, provenance, `snapshotId`, millésime et `modelVersion` ;
 - distance au corridor, détour, score planner et décision budget.
 
+La preuve de chaque candidate admise nomme aussi le garde qui l'a admise
+(`corridor` ou `strong_opportunity`), le seuil de risque et la limite de détour.
+Le résumé conserve les identifiants des zones écartées par corridor et des
+cellules dédoublonnées ; l'absence d'un identifiant de zone dans les stops ne
+peut donc pas être interprétée comme un signalement observé.
+
 Un snapshot absent produit `status: unavailable`, un avertissement explicite et
 aucun candidat prédit ; les observations continuent à être planifiées. Un
 snapshot incomplet produit `status: partial` et conserve la même séparation.
