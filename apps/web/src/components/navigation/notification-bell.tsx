@@ -44,7 +44,9 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [canHover, setCanHover] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchInFlightRef = useRef(false);
   const markReadInFlightRef = useRef(false);
   const placement = useDropdownPlacement({
@@ -67,6 +69,56 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
     [notifications],
   );
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+    const updateCanHover = () => {
+      setCanHover(mediaQuery.matches);
+    };
+
+    updateCanHover();
+    mediaQuery.addEventListener("change", updateCanHover);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateCanHover);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  function openNotificationMenu() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsOpen(true);
+  }
+
+  function closeNotificationMenuSoon() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = setTimeout(() => {
+      setIsOpen(false);
+      closeTimerRef.current = null;
+    }, 140);
+  }
+
+  function handleBellClick() {
+    if (canHover) {
+      openNotificationMenu();
+      return;
+    }
+
+    setIsOpen((current) => !current);
+  }
 
   const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {
@@ -201,11 +253,16 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   };
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onMouseEnter={canHover ? openNotificationMenu : undefined}
+      onMouseLeave={canHover ? closeNotificationMenuSoon : undefined}
+      onFocus={canHover ? openNotificationMenu : undefined}
+    >
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={handleBellClick}
         className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40"
         aria-label={`Notifications (${unreadCount} non lues)`}
         aria-expanded={isOpen}
@@ -237,6 +294,8 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
             id="notifications-menu-panel"
             role="dialog"
             aria-label={locale === "fr" ? "Notifications" : "Notifications"}
+            onMouseEnter={canHover ? openNotificationMenu : undefined}
+            onMouseLeave={canHover ? closeNotificationMenuSoon : undefined}
             className={`absolute z-50 w-[min(21.25rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:fixed max-sm:inset-x-2 max-sm:left-2 max-sm:right-2 max-sm:w-auto max-sm:max-w-none max-sm:translate-x-0 max-sm:top-[var(--notifications-mobile-top)] max-sm:bottom-[var(--notifications-mobile-bottom)] ${placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]"} ${placement.alignRight ? "right-0" : "left-0"}`}
             style={
               {
