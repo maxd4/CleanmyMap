@@ -1,0 +1,170 @@
+{
+  "schemaVersion": "paris-municipal-cleaning-serviceability-v1",
+  "predictionModelVersion": "municipal-cleaning-serviceability-v1",
+  "snapshotId": "paris-iris-municipal-cleaning-serviceability-r1",
+  "generatedAt": "2026-09-04T00:00:00.000Z",
+  "refreshedAt": "2026-09-04T00:00:00.000Z",
+  "geographicLevel": "iris",
+  "coverage": {
+    "country": "FR",
+    "department": "75",
+    "commune": "75056",
+    "zoneCount": 0,
+    "complete": false,
+    "status": "unavailable",
+    "notes": [
+      "Le catalogue des sources est versionné, mais aucun export géométrique zone→objet n'a été fourni à ce rafraîchissement.",
+      "Aucune fréquence actuelle rue par rue n'a été trouvée dans les sources publiques consultées.",
+      "Les résultats de zone sont matérialisés en unknown jusqu'à l'import d'un snapshot PVP pré-agrégé."
+    ]
+  },
+  "sources": [
+    {
+      "id": "paris-proprete-service-current",
+      "evidenceType": "municipal_coverage",
+      "publisher": "Ville de Paris",
+      "dataset": "Propreté : comment la Ville de Paris entretient ses rues",
+      "url": "https://www.paris.fr/pages/la-proprete-239",
+      "license": "Information publique Ville de Paris",
+      "datasetVersion": "page actualisée 2026-06-10",
+      "observedAt": "2026-06-10",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "paris",
+      "status": "available",
+      "notes": [
+        "Décrit l'organisation et des fréquences globales ou par types de voies, pas une fréquence par IRIS.",
+        "Ne doit pas être projeté automatiquement sur chaque zone."
+      ]
+    },
+    {
+      "id": "paris-proprete-operations-current",
+      "evidenceType": "scheduled_operation",
+      "publisher": "Ville de Paris",
+      "dataset": "Opérations programmées de propreté",
+      "url": "https://www.paris.fr/pages/fete-de-la-musique-les-agents-de-la-proprete-mobilises-pour-remettre-paris-en-etat-35634",
+      "license": "Information publique Ville de Paris",
+      "datasetVersion": "opérations publiées jusqu'au 2026-09-04",
+      "observedAt": "2026-09-04",
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Une opération documentée est une preuve contextuelle, pas une tournée permanente."
+      ]
+    },
+    {
+      "id": "pvp-stairs",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Plan de voirie - Voies en escalier",
+      "url": "https://opendata.paris.fr/explore/dataset/plan-de-voirie-voies-en-escalier/map/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Décrit des voies en escalier et non leur fréquence de nettoyage.",
+        "Le producteur indique que la mise à jour n'est pas exhaustive."
+      ]
+    },
+    {
+      "id": "pvp-metro-parking-access",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Plan de voirie - Accès piétons Métro et Parkings",
+      "url": "https://opendata.paris.fr/explore/dataset/plan-de-voirie-acces-pietons-metro-et-parkings/map/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Représente l'emprise des accès, escaliers et murets, pas la station entière ni son nettoiement."
+      ]
+    },
+    {
+      "id": "pvp-pedestrian-areas",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Aires piétonnes et assimilées",
+      "url": "https://opendata.paris.fr/explore/dataset/aires-pietonnes/information/",
+      "license": "ODbL",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Décrit les zones piétonnes permanentes ; ne mesure pas la couverture municipale."
+      ]
+    },
+    {
+      "id": "pvp-planters-benches-bins",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Plan de voirie - Jardinières, bancs et corbeilles de rue",
+      "url": "https://opendata.paris.fr/explore/dataset/plan-de-voirie-mobiliers-urbains-jardinieres-bancs-corbeilles-de-rue/export/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Inventaire de mobilier ; les objets servent uniquement à construire un proxy de complexité."
+      ]
+    },
+    {
+      "id": "pvp-barriers-bollards",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Plan de voirie - Bornes, barrières et potelets",
+      "url": "https://opendata.paris.fr/explore/dataset/plan-de-voirie-mobiliers-urbains-bornes-barrieres-potelets/map/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Obstacles et séparateurs décrits comme géométrie, sans inférence d'abandon ou de non-nettoiement."
+      ]
+    },
+    {
+      "id": "pvp-bus-shelters-stops",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Plan de voirie - Abris voyageurs et points d'arrêts bus",
+      "url": "https://opendata.paris.fr/explore/dataset/plan-de-voirie-mobiliers-urbains-abris-voyageurs-points-darrets-bus/table/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Les arrêts et équipements sont des contraintes géométriques possibles, pas une mesure de propreté."
+      ]
+    },
+    {
+      "id": "paris-vegetaliser",
+      "evidenceType": "geometry_proxy",
+      "publisher": "Ville de Paris",
+      "dataset": "Permis de végétaliser",
+      "url": "https://opendata.paris.fr/explore/dataset/permis-de-vegetaliser/table/",
+      "license": "Licence Ouverte Etalab",
+      "datasetVersion": "snapshot catalogue 2026-09-04",
+      "observedAt": null,
+      "refreshedAt": "2026-09-04T00:00:00.000Z",
+      "geographicLevel": "site",
+      "status": "partial",
+      "notes": [
+        "Les pieds d'arbres et jardinières peuvent indiquer une surface complexe ; aucune couverture municipale n'est déduite."
+      ]
+    }
+  ],
+  "zones": []
+}
