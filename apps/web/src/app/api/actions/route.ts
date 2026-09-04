@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/permissions";
 import {
   getCurrentUserIdentity,
-  getCurrentUserRoleLabel,
+  getCurrentUserActiveRole,
   pickTraceableActorName,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
@@ -240,8 +240,8 @@ async function requireGlobalActionsModerationAccess(): Promise<
     return authenticated;
   }
 
-  const role = await getCurrentUserRoleLabel();
-  if (role === "anonymous" || !canModerateAnyAction({ role })) {
+  const activeRole = await getCurrentUserActiveRole();
+  if (activeRole === "anonymous" || !canModerateAnyAction({ activeRole })) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 

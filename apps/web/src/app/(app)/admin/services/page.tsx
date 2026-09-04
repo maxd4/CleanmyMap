@@ -6,7 +6,7 @@ import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
-import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { getCurrentUserActiveRole } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { listGovernanceMonthlyReports } from"@/lib/governance/governance-monthly-report-store";
 import { formatStorageBytes } from"@/lib/supabase/storage-usage";
@@ -26,7 +26,7 @@ export default async function AdminServicesPage() {
  );
  }
 
- const role = await getCurrentUserRoleLabel();
+ const role = await getCurrentUserActiveRole();
  const governanceReports = await listGovernanceMonthlyReports(3).catch(() => []);
  const latestGovernanceReport = governanceReports[0] ?? null;
 

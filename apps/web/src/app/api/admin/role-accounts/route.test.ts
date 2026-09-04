@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const syncClerkUserToSupabaseMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
@@ -19,7 +19,7 @@ vi.mock("@/lib/authz", async () => {
   );
   return {
     ...actual,
-    getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
+    requireAdminAccess: requireAdminAccessMock,
     getCurrentUserIdentity: getCurrentUserIdentityMock,
   };
 });
@@ -40,11 +40,13 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 
 describe("GET/POST /api/admin/role-accounts", () => {
   beforeEach(() => {
-    getCurrentUserRoleLabelMock.mockResolvedValue("max");
+    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "owner-1",
       displayName: "Owner",
       role: "max",
+      activeRole: "max",
+      activeProfile: "max",
     });
     syncClerkUserToSupabaseMock.mockResolvedValue({ id: "user-2", role_label: "admin" });
     appendAdminOperationAuditMock.mockResolvedValue(null);
@@ -110,8 +112,14 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
   });
 
-  it("allows only max to reach role management", async () => {
-    getCurrentUserRoleLabelMock.mockResolvedValueOnce("admin");
+  it("allows an active admin to reach role management", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      displayName: "Admin",
+      role: "admin",
+      activeRole: "admin",
+      activeProfile: "admin",
+    });
     const { POST } = await import("./route");
     const response = await POST(
       new Request("http://localhost/api/admin/role-accounts", {
@@ -120,13 +128,13 @@ describe("GET/POST /api/admin/role-accounts", () => {
           userId: "user-2",
           action: "assign",
           role: "admin",
-          reason: "Admin must not manage roles",
+          reason: "Admin manages an assigned role",
         }),
       }),
     );
 
-    expect(response.status).toBe(403);
-    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
   });
 
   it("searches accounts by query", async () => {

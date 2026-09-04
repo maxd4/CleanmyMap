@@ -41,16 +41,24 @@ type ApiAuthorizationContract = Record<
 export const API_AUTHORIZATION_CONTRACT = {
   "account/active-profile": {
     POST: {
-      expected: "Authenticated current account; active persona is limited by the real role and never changes authorization",
+      expected: "Authenticated current account; ACTIVE_ROLE is limited by GRANTED_ROLE and never changes authorization level",
       dimensions: ["authentication", "ownership"],
       actual:
-        "requireAuthenticatedAccess + getCurrentUserRoleLabel + getSwitchableProfiles; Clerk update writes only publicMetadata.activeProfile",
+        "requireAuthenticatedAccess + getCurrentUserIdentity + getSwitchableProfiles; Clerk update writes only publicMetadata.activeRole",
       evidence: [
         "requireAuthenticatedAccess",
-        "getCurrentUserRoleLabel",
+        "getCurrentUserIdentity",
         "getSwitchableProfiles",
-        "activeProfile",
+        "activeRole",
       ],
+    },
+  },
+  "account/activity-status": {
+    PATCH: {
+      expected: "Authenticated current account updates only its own activity status",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + Clerk update scoped to access.userId",
+      evidence: ["requireAuthenticatedAccess", "access.userId", "updateUser"],
     },
   },
   "analytics/funnel": {
@@ -313,16 +321,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/promotion-requests": {
     GET: {
-      expected: "Max role",
+      expected: "ACTIVE_ROLE=max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserRoleLabel must resolve max",
-      evidence: ["getCurrentUserRoleLabel"],
+      actual: "getCurrentUserActiveRole must resolve max",
+      evidence: ["getCurrentUserActiveRole"],
     },
     POST: {
-      expected: "Max role plus operation audit",
+      expected: "ACTIVE_ROLE=max plus operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
+      evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
     },
   },
   "admin/referrals.csv": {
@@ -335,16 +343,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/role-accounts": {
     GET: {
-      expected: "Max role",
+      expected: "ACTIVE_ROLE=admin or max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserRoleLabel must resolve max",
-      evidence: ["getCurrentUserRoleLabel"],
+      actual: "requireAdminAccess checks ACTIVE_ROLE",
+      evidence: ["requireAdminAccess"],
     },
     POST: {
-      expected: "Max role plus operation audit and self-target protection",
+      expected: "ACTIVE_ROLE=admin or max plus operation audit and self-target protection",
       dimensions: ["admin/creator role", "ownership", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "requireAdminAccess checks ACTIVE_ROLE + appendAdminOperationAudit",
+      evidence: ["requireAdminAccess", "appendAdminOperationAudit"],
     },
   },
   "admin/storage-usage": {
@@ -371,8 +379,8 @@ export const API_AUTHORIZATION_CONTRACT = {
     PATCH: {
       expected: "Max role plus operation audit for status moderation",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
+      evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
     },
   },
   "community/events/ops": {
@@ -598,8 +606,8 @@ export const API_AUTHORIZATION_CONTRACT = {
     GET: {
       expected: "Authenticated coordinateur/max pilotage access",
       dimensions: ["authentication", "business permission"],
-      actual: "auth() + getCurrentUserRoleLabel restricted to coordinateur or max",
-      evidence: ["auth()", "getCurrentUserRoleLabel", "forbiddenJsonResponse"],
+      actual: "auth() + getCurrentUserActiveRole restricted to coordinateur or max",
+      evidence: ["auth()", "getCurrentUserActiveRole", "forbiddenJsonResponse"],
     },
   },
   "reports/actions.csv": {

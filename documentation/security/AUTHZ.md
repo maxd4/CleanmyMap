@@ -44,11 +44,33 @@ l'identité IMU.
 
 ## 1. Glossaire Technique
 
+### GRANTED_ROLE et ACTIVE_ROLE
+
+L'identité serveur expose deux niveaux distincts :
+
+| Champ | Contrat |
+| :--- | :--- |
+| `identity.role` (**GRANTED_ROLE**) | niveau réellement obtenu (`benevole`, `coordinateur`, `scientifique`, `entreprise`, `elu`, `admin` ou `max`). Il ne peut pas être modifié par le menu utilisateur. |
+| `identity.activeRole` (**ACTIVE_ROLE**) | rôle actuellement utilisé ; il détermine les capacités effectives de la requête. |
+| `identity.activeProfile` | alias de compatibilité pour l'UX ; il ne constitue jamais une source d'AuthZ. |
+
+Les rôles ouverts sont `benevole`, `coordinateur`, `scientifique` et
+`entreprise`. Un compte `elu` peut activer ces rôles ou `elu`, un compte
+`admin` peut aussi activer `admin`, et seul un compte `max` peut activer `max`.
+Un changement d'`ACTIVE_ROLE` ne change jamais le `GRANTED_ROLE` ; un retour
+vers le rôle obtenu reste possible via le même contrat.
+
+Les capacités serveur doivent toujours être calculées depuis
+`activeRole`/`EffectiveAccess`, jamais depuis le rôle obtenu seul. La route
+`/api/account/active-profile` conserve son nom historique mais ne persiste que
+`publicMetadata.activeRole`. Elle ne peut ni attribuer ni élever un rôle.
+
 | Terme | Définition |
 | :--- | :--- |
-| **Role** | Attribution métier technique (`admin`, `benevole`, etc.) qui contribue à la décision sans suffire à elle seule. |
+| **Role / GRANTED_ROLE** | Niveau métier réellement obtenu et autorité d'attribution ; il ne doit pas être confondu avec le rôle actif. |
+| **ACTIVE_ROLE** | Rôle sélectionné pour la session UX et la décision des capacités effectives. |
 | **SessionRole** | État d'authentification de la session en cours (inclut `anonymous`). |
-| **Parcours** | (ou **Profile**) Projection UX du rôle (priorité des menus, CTAs, dashboard). |
+| **Parcours** | (ou **Profile**) Projection UX de l'`ACTIVE_ROLE` (priorité des menus, CTAs, dashboard). |
 | **Espace** | Groupe de navigation transverse (`execute`, `supervise`, `decide`, `prepare`). |
 | **Capability** | Opération métier autorisable. |
 | **Scope** | Périmètre dans lequel une capacité peut s'exercer. |

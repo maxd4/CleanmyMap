@@ -6,7 +6,7 @@ import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { getServerLocale } from "@/lib/server-preferences";
@@ -144,7 +144,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : null;
   const role =
     userId && clerkReachable
-      ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
+      ? await getCurrentUserActiveRole().catch(() => "anonymous" as const)
       : ("anonymous" as const);
   const profile = toProfile(role);
   const canAccessReportsPage = Boolean(userId);

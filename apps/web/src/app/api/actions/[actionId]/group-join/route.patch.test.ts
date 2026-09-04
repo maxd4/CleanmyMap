@@ -85,7 +85,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
 
   it("lets an admin close an older group form even without organizer rows", async () => {
     authMock.mockResolvedValueOnce({ userId: "admin-1" });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({
@@ -137,6 +137,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "admin-1",
       role: "admin",
+      activeRole: "admin",
     });
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({
@@ -174,6 +175,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "admin-1",
       role: "admin",
+      activeRole: "admin",
     });
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({
@@ -209,6 +211,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "admin-1",
       role: "admin",
+      activeRole: "admin",
     });
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({

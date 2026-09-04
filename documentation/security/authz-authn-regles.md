@@ -66,6 +66,31 @@ Scope
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
 
+Le contrat courant sépare explicitement le niveau obtenu du rôle utilisé :
+
+```txt
+GRANTED_ROLE = identity.role       // niveau obtenu, non modifiable par le menu
+ACTIVE_ROLE  = identity.activeRole // rôle courant, source des capacités effectives
+```
+
+Les rôles ouverts sont `benevole`, `coordinateur`, `scientifique` et
+`entreprise`. Les rôles obtenus `elu`, `admin` et `max` n'ajoutent que les
+profils suivants à la liste commutable :
+
+| GRANTED_ROLE | ACTIVE_ROLE commutables |
+|---|---|
+| standard / ouvert | les quatre rôles ouverts |
+| `elu` | ouverts + `elu` |
+| `admin` | ouverts + `elu` + `admin` |
+| `max` | ouverts + `elu` + `admin` + `max` |
+
+Chaque API sensible doit évaluer `ACTIVE_ROLE` et ses capabilities effectives.
+Passer d'`admin` à `benevole`, ou d'`elu` à `scientifique`, retire
+immédiatement les capacités privilégiées sans modifier le niveau obtenu. Le
+retour vers le rôle obtenu reste autorisé par le même ensemble commutable.
+`activeProfile` est uniquement un alias UX de compatibilité et ne peut jamais
+accorder un privilège.
+
 Le vocabulaire du rôle privilégié est unifié : **IMU = rôle interne `max`**.
 L'autorité d'IMU est toutefois une identité Clerk canonique, pas une valeur de
 rôle. Chaque instance Clerk configure un couple serveur distinct

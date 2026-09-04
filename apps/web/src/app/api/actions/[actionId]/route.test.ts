@@ -80,6 +80,7 @@ describe("PATCH /api/actions/:actionId", () => {
     });
     getCurrentUserIdentityMock.mockResolvedValue({
       role: "benevole",
+      activeRole: "benevole",
     });
     extractActionMetadataFromNotesMock.mockReturnValue({
       cleanNotes: null,
@@ -203,6 +204,7 @@ describe("PATCH /api/actions/:actionId", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       role: "admin",
+      activeRole: "admin",
     });
 
     const { PATCH } = await import("./route");
@@ -232,6 +234,7 @@ describe("PATCH /api/actions/:actionId", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       role: "admin",
+      activeRole: "admin",
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
@@ -273,6 +276,7 @@ describe("PATCH /api/actions/:actionId", () => {
   it("lets an organizer edit the action even when they are not the creator", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       role: "benevole",
+      activeRole: "benevole",
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-test-2"]);
     loadActionByIdMock.mockResolvedValueOnce({
@@ -301,6 +305,7 @@ describe("PATCH /api/actions/:actionId", () => {
   it("logs admin overrides when an admin edits another user's action", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       role: "admin",
+      activeRole: "admin",
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
@@ -334,7 +339,7 @@ describe("PATCH /api/actions/:actionId", () => {
   });
 
   it("records one allowlisted before/after snapshot for an admin override", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
@@ -492,7 +497,7 @@ describe("PATCH /api/actions/:actionId", () => {
   });
 
   it("audits an admin action update failure with partialMutation false", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
@@ -545,7 +550,7 @@ describe("PATCH /api/actions/:actionId", () => {
   });
 
   it("audits participant sync failures after the action update with partialMutation true", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
@@ -594,7 +599,7 @@ describe("PATCH /api/actions/:actionId", () => {
   });
 
   it("audits post-update failures after the action update with partialMutation true", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",

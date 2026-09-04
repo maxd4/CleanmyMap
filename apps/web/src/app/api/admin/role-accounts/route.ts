@@ -2,8 +2,13 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { extractRole } from "@/lib/auth/role-resolution";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { env } from "@/lib/env";
+import { getCurrentUserIdentity, requireAdminAccess } from "@/lib/authz";
+import {
+  parseAdminUserIds,
+  resolveClerkRole,
+  type ClerkUserForRole,
+} from "@/lib/auth/role-resolution";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
@@ -13,7 +18,6 @@ import {
   searchManagedRoleAccounts,
   type RoleAccountRecord,
 } from "@/lib/admin/role-management";
-import { normalizeProfileRole } from "@/lib/profiles";
 
 export const runtime = "nodejs";
 
@@ -29,18 +33,23 @@ function isAdminLikeRole(role: RoleAccountRecord["roleLabel"]) {
 }
 
 function resolveCanonicalTargetRole(user: {
+  id: string;
+  primaryEmailAddress?: ClerkUserForRole["primaryEmailAddress"];
   publicMetadata?: Record<string, unknown> | null;
   privateMetadata?: Record<string, unknown> | null;
 }): RoleAccountRecord["roleLabel"] {
-  const metadataRole =
-    extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
-  return normalizeProfileRole(metadataRole) ?? "benevole";
+  return resolveClerkRole({
+    user,
+    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+  });
 }
 
 export async function GET(request: Request) {
-  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
-  if (role !== "max") {
-    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
   }
 
   const { searchParams } = new URL(request.url);
@@ -56,9 +65,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
-  if (role !== "max") {
-    return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
   }
 
   const identity = await getCurrentUserIdentity();
@@ -139,6 +148,14 @@ export async function POST(request: Request) {
     const client = await clerkClient();
     const currentUser = await client.users.getUser(parsed.data.userId);
     previousRole = resolveCanonicalTargetRole(currentUser);
+
+    if (previousRole === "max") {
+      await appendRoleManagementErrorAudit();
+      return NextResponse.json(
+        { error: "Le compte IMU owner ne peut pas être modifié ici." },
+        { status: 403 },
+      );
+    }
 
     stage = "clerk_update";
     const updatedUser = await client.users.updateUser(parsed.data.userId, {

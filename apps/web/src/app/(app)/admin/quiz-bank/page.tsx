@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { QUIZ_QUESTIONS } from "@/lib/learning/quiz/quiz-question-bank";
 import { buildQuizBankAdminSnapshot } from "@/lib/learning/quiz/quiz-bank-admin";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default async function QuizBankAdminPage() {
   const { userId } = await getSafeAuthSession();
-  const role = await getCurrentUserRoleLabel();
+  const role = await getCurrentUserActiveRole();
 
   if (!userId || role !== "admin") {
     notFound();

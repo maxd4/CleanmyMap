@@ -121,6 +121,7 @@ async function resolveReviewerAccess(params: {
   const permissionIdentity = {
     userId: params.actorUserId,
     role: identity?.role ?? null,
+    activeRole: identity?.activeRole ?? null,
   };
   const organizerIds = await loadActionOrganizerIdsForAction(
     params.supabase,

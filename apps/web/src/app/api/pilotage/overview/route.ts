@@ -7,7 +7,7 @@ import {
   unauthorizedJsonResponse,
 } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 
 export const runtime ="nodejs";
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
  return unauthorizedJsonResponse();
  }
 
- const role = await getCurrentUserRoleLabel().catch(() => "anonymous" as const);
+ const role = await getCurrentUserActiveRole().catch(() => "anonymous" as const);
  if (role !== "coordinateur" && role !== "max") {
   return forbiddenJsonResponse();
  }

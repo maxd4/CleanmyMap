@@ -59,11 +59,11 @@ type AccountSetupFormProps = {
 
 type SetupUpdate = Parameters<NonNullable<ReturnType<typeof useUser>["user"]>["update"]>[0];
 
-async function updateActiveProfile(activeProfile: AppProfile) {
+async function updateActiveRole(activeRole: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ activeProfile }),
+    body: JSON.stringify({ activeRole }),
   });
   const payload = (await response.json().catch(() => null)) as { error?: string } | null;
   if (!response.ok) {
@@ -201,7 +201,7 @@ export function AccountSetupForm({
     try {
       setIsSaving(true);
       if (selectedProfile !== initialProfile) {
-        await updateActiveProfile(selectedProfile);
+        await updateActiveRole(selectedProfile);
       }
       setDisplayMode(selectedDisplayMode);
 

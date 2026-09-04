@@ -106,7 +106,8 @@ super-admin = alias legacy d'entrée, jamais une preuve d'autorisation
 ```
 
 L'owner IMU exige l'ID Clerk configuré et l'email principal vérifié
-correspondant. `activeProfile`, les métadonnées et Supabase ne peuvent pas
+correspondant. `GRANTED_ROLE=max` est dérivé de cette identité uniquement ;
+`ACTIVE_ROLE`/`activeProfile`, les métadonnées et Supabase ne peuvent pas
 l'accorder. `service_role` reste une identité technique serveur distincte.
 
 ## Règles de placement

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { __authz_testables, isAdminRole } from "./authz";
-import { resolveIdentityActiveProfile } from "./authz-identity";
+import { resolveIdentityActiveRole } from "./authz-identity";
 
 describe("authz helpers", () => {
   it.each([
@@ -10,10 +10,10 @@ describe("authz helpers", () => {
     ["admin", undefined, "admin"],
     ["max", "invalid-profile", "max"],
   ] as const)(
-    "resolves activeProfile independently from role (%s, %s)",
+    "resolves ACTIVE_ROLE independently from GRANTED_ROLE (%s, %s)",
     (role, activeProfile, expected) => {
       expect(
-        resolveIdentityActiveProfile(
+        resolveIdentityActiveRole(
           {
             publicMetadata: activeProfile === undefined ? {} : { activeProfile },
             privateMetadata: {},
@@ -26,7 +26,7 @@ describe("authz helpers", () => {
 
   it("falls back to the real role when the public activeProfile is invalid", () => {
     expect(
-      resolveIdentityActiveProfile(
+      resolveIdentityActiveRole(
         {
           publicMetadata: { activeProfile: "not-a-profile" },
           privateMetadata: { activeProfile: "scientifique" },

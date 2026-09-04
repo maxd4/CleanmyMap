@@ -65,7 +65,7 @@ export default async function OnboardingPage({
   }
 
   const locationPreferences = await getCurrentUserLocationPreferences();
-  const profile = identity.activeProfile;
+  const profile = identity.activeRole;
   const nextPath = sanitizeNextPath(resolvedSearchParams.next);
 
   return (

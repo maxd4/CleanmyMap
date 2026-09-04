@@ -1,7 +1,7 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
+import { getCurrentUserActiveRole, getCurrentUserIdentity } from"@/lib/authz";
 import { appendAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import {
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
- const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
+ const role = await getCurrentUserActiveRole().catch(() => "anonymous");
  if (role !== "max") {
  return NextResponse.json({ error:"Forbidden" }, { status: 403 });
  }

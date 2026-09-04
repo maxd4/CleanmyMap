@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -28,7 +28,7 @@ export default async function PilotageAccessPage() {
   }
 
   const role = userId
-    ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
+    ? await getCurrentUserActiveRole().catch(() => "anonymous" as const)
     : ("anonymous" as const);
   const profile = toProfile(role);
 

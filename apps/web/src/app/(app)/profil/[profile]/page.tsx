@@ -3,15 +3,13 @@ import { RolePrimaryActions } from "@/components/navigation/role-primary-actions
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getProfileLabel,
   getProfileSubtitle,
   getSwitchableProfiles,
-  isAdminLikeProfile,
   isAppProfile,
-  toProfile,
 } from "@/lib/profiles";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
@@ -62,20 +60,16 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     );
   }
 
-  const activeRole = await getCurrentUserRoleLabel().catch(
-    () => "benevole" as const,
-  );
-  const activeProfile = toProfile(activeRole);
-  const isAdmin = isAdminLikeProfile(activeProfile);
+  const identity = await getCurrentUserIdentity().catch(() => null);
+  const grantedRole = identity?.role ?? "benevole";
+  const activeProfile = identity?.activeRole ?? "benevole";
 
-  if (!isAdmin && normalized !== activeProfile)
+  if (normalized !== activeProfile)
     redirect(buildProfileRoute(activeProfile));
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const switchableProfiles = isAdmin
-    ? getSwitchableProfiles(activeProfile)
-    : [activeProfile];
+  const switchableProfiles = getSwitchableProfiles(grantedRole);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -191,7 +185,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           <FamilyRubriqueCard
             withTopBar={true}
             topBarContent={
-              isAdmin ? "Switch de Profil (Admin)" : "Identité Active"
+              "Rôles actifs autorisés"
             }
             className="p-12"
           >

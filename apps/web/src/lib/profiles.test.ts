@@ -6,11 +6,12 @@ import {
   resolveProfile,
   PROFILE_ORDER,
   isAppProfile,
-  resolveActiveProfile,
+  resolveActiveRole,
   getSwitchableProfiles,
   MAX_ROLE_STORAGE_VALUES,
   type AppProfile,
 } from "./profiles";
+import { getEffectiveAccessForSessionRole } from "./domain-language";
 import {
   ADMIN_GODMODE_ROUTE,
   ADMIN_ROUTE,
@@ -67,14 +68,14 @@ describe("profile aliases", () => {
     expect(MAX_ROLE_STORAGE_VALUES).not.toContain("local_authority");
   });
 
-  it("maps IMU metadata back to the internal top profile", () => {
+  it("does not grant IMU from metadata alone", () => {
     expect(
       resolveProfile({
         metadataRole: "imu",
         isAdmin: false,
         isMax: false,
       }),
-    ).toBe("max");
+    ).toBe("benevole");
   });
 
   it("labels the enterprise profile consistently", () => {
@@ -103,30 +104,27 @@ describe("profile quick access", () => {
 });
 
 describe("active profile separation", () => {
-  it("falls back to the role when activeProfile is absent or invalid", () => {
+  it("falls back to the granted role when activeRole is absent or invalid", () => {
     expect(
-      resolveActiveProfile({ metadataActiveProfile: null, role: "admin" }),
+      resolveActiveRole({ metadataActiveRole: null, grantedRole: "admin" }),
     ).toBe("admin");
     expect(
-      resolveActiveProfile({ metadataActiveProfile: "not-a-profile", role: "max" }),
+      resolveActiveRole({ metadataActiveRole: "not-a-profile", grantedRole: "max" }),
     ).toBe("max");
     expect(
-      resolveActiveProfile({ metadataActiveProfile: "max", role: "admin" }),
+      resolveActiveRole({ metadataActiveRole: "max", grantedRole: "admin" }),
     ).toBe("admin");
   });
 
   it("lets max switch persona while preserving the role boundary", () => {
-    expect(getSwitchableProfiles("max")).toContain("benevole");
-    expect(getSwitchableProfiles("admin")).not.toContain("max");
-  });
-
-  it("exposes the five self-service onboarding profiles without IMU", () => {
-    expect(getSwitchableProfiles("benevole")).toEqual([
+    expect(getSwitchableProfiles("max")).toEqual([
       "benevole",
       "coordinateur",
       "scientifique",
       "entreprise",
       "elu",
+      "admin",
+      "max",
     ]);
     expect(getSwitchableProfiles("admin")).toEqual([
       "benevole",
@@ -136,6 +134,68 @@ describe("active profile separation", () => {
       "elu",
       "admin",
     ]);
+  });
+
+  it("exposes only open roles to standard accounts", () => {
+    expect(getSwitchableProfiles("benevole")).toEqual([
+      "benevole",
+      "coordinateur",
+      "scientifique",
+      "entreprise",
+    ]);
+    expect(getSwitchableProfiles("elu")).toContain("elu");
+    expect(getSwitchableProfiles("elu")).not.toContain("admin");
     expect(getSwitchableProfiles("benevole")).not.toContain("max");
+  });
+
+  it.each([
+    ["benevole", "elu"],
+    ["benevole", "admin"],
+    ["benevole", "max"],
+    ["elu", "admin"],
+    ["elu", "max"],
+    ["admin", "max"],
+  ] as const)("rejects %s -> %s privilege escalation", (grantedRole, targetRole) => {
+    expect(
+      resolveActiveRole({ metadataActiveRole: targetRole, grantedRole }),
+    ).toBe(grantedRole);
+  });
+
+  it.each([
+    ["elu", "scientifique"],
+    ["admin", "benevole"],
+    ["max", "admin"],
+  ] as const)("allows %s to activate %s and later reactivate the obtained role", (grantedRole, targetRole) => {
+    expect(
+      resolveActiveRole({ metadataActiveRole: targetRole, grantedRole }),
+    ).toBe(targetRole);
+    expect(
+      resolveActiveRole({ metadataActiveRole: grantedRole, grantedRole }),
+    ).toBe(grantedRole);
+  });
+
+  it.each([
+    ["benevole", false, false],
+    ["elu", false, true],
+    ["admin", true, true],
+    ["max", true, true],
+  ] as const)(
+    "derives effective capabilities from ACTIVE_ROLE=%s",
+    (activeRole, canAccessAdminPage, canModerate) => {
+      const access = getEffectiveAccessForSessionRole(activeRole);
+      expect(access.canAccessAdminPage).toBe(canAccessAdminPage);
+      expect(access.canModerate).toBe(canModerate);
+    },
+  );
+
+  it("removes privileged capabilities while an obtained admin or elu account is active as open role", () => {
+    const adminAsVolunteer = getEffectiveAccessForSessionRole("benevole");
+    const electedAsScientist = getEffectiveAccessForSessionRole("scientifique");
+
+    expect(adminAsVolunteer.canAccessAdminPage).toBe(false);
+    expect(adminAsVolunteer.canModerate).toBe(false);
+    expect(electedAsScientist.canModerate).toBe(false);
+    expect(getEffectiveAccessForSessionRole("admin").canAccessAdminPage).toBe(true);
+    expect(getEffectiveAccessForSessionRole("elu").canModerate).toBe(true);
   });
 });
