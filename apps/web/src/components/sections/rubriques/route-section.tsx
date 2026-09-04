@@ -11,6 +11,7 @@ import { RouteOptionsForm } from "./route/components/route-constraints-form";
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
 import { RouteExplanation } from "./route/components/route-explanation";
+import { RouteEventOpportunities } from "./route/components/route-event-opportunities";
 import {
   getRouteOriginLabel,
   getRouteRecommendationErrorMessage,
@@ -284,6 +285,8 @@ export function RouteSection() {
           )}
 
           {data && <RouteExplanation data={data} fr={fr} />}
+
+          {data && <RouteEventOpportunities data={data} fr={fr} />}
 
           <AnimatePresence mode="wait">
             {hasRoute && data && (

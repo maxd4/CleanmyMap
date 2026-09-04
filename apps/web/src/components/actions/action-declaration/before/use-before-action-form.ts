@@ -15,11 +15,16 @@ import {
   type BeforeActionFieldUpdater,
 } from "./model";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
+import {
+  applyActionEventPrefill,
+  type ActionEventPrefill,
+} from "@/lib/actions/action-event-prefill";
 
 function buildPrefillForm(
   actorNameOptions: string[],
   defaultActorName: string,
   initialRecordType: "action",
+  eventPrefill?: ActionEventPrefill | null,
 ): FormState {
   const fallback = createInitialFormState(
     actorNameOptions.includes(defaultActorName)
@@ -29,7 +34,9 @@ function buildPrefillForm(
   );
 
   const snapshot = loadDraftSnapshot(fallback, initialRecordType);
-  return sanitizePreActionForm(snapshot?.form ?? fallback);
+  return sanitizePreActionForm(
+    snapshot?.form ?? applyActionEventPrefill(fallback, eventPrefill),
+  );
 }
 
 export function useBeforeActionForm({
@@ -39,6 +46,7 @@ export function useBeforeActionForm({
   isAutoApprovedSubmission = false,
   userMetadata,
   linkedEventId,
+  eventPrefill,
   initialRecordType = "action",
   onPassToComplete,
 }: ActionBeforeDeclarationFormProps) {
@@ -46,7 +54,12 @@ export function useBeforeActionForm({
     ? defaultActorName
     : (actorNameOptions[0] ?? userMetadata.userId);
   const [form, setForm] = useState<FormState>(() =>
-    buildPrefillForm(actorNameOptions, resolvedDefaultActorName, initialRecordType),
+    buildPrefillForm(
+      actorNameOptions,
+      resolvedDefaultActorName,
+      initialRecordType,
+      eventPrefill,
+    ),
   );
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

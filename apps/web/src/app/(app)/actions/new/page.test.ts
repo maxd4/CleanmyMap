@@ -8,6 +8,11 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
   isAdminLikeProfile: vi.fn(),
+  eventRecord: null as {
+    location_label: string;
+    latitude: number;
+    longitude: number;
+  } | null,
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -26,6 +31,18 @@ vi.mock("@/lib/profiles", () => ({
   isAdminLikeProfile: mocks.isAdminLikeProfile,
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: () => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({ data: mocks.eventRecord, error: null }),
+        }),
+      }),
+    }),
+  }),
+}));
+
 vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
   ActionDeclarationEntryFlow: (props: Record<string, unknown>) =>
     React.createElement("div", {
@@ -34,6 +51,10 @@ vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
       "data-auto-approved": String(props.isAutoApprovedSubmission),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
+      "data-event-prefill-location": String(
+        (props.eventPrefill as { locationLabel?: string } | null | undefined)
+          ?.locationLabel ?? "",
+      ),
       "data-sign-in-href": String(props.signInHref ?? ""),
       "data-sign-up-href": String(props.signUpHref ?? ""),
     }),
@@ -53,6 +74,7 @@ describe("action creation entry point", () => {
     });
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
     mocks.isAdminLikeProfile.mockReturnValue(false);
+    mocks.eventRecord = null;
   });
 
   it("does not expose the former clean-place mode", () => {
@@ -117,6 +139,29 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-event-id="event-42"');
     expect(html).not.toContain("public-preview");
     expect(html).not.toContain("Aperçu public");
+  });
+
+  it("passes a validated event location as action prefill without proposing an action date", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({
+      userId: "user-1",
+      clerkReachable: true,
+      state: "authenticated",
+    });
+    mocks.getCurrentUserIdentity.mockResolvedValue(null);
+    mocks.eventRecord = {
+      location_label: "Place de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+    };
+
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({ fromEventId: "event-42" }),
+      }),
+    );
+
+    expect(html).toContain('data-event-prefill-location="Place de test"');
+    expect(html).not.toContain("data-event-prefill-date");
   });
 
   it("does not block the authenticated complete form by viewport", () => {
