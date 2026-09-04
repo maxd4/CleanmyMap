@@ -10,7 +10,7 @@ Objectif : detecter avant commit ou en CI les valeurs sensibles exposees par err
 
 ## Perimetre
 
-Le scan couvre les fichiers `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.json`, `.env.example`, `.md`, `.yml` et `.yaml`.
+Le scan couvre les fichiers `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.json`, les templates `.env*.example`, `.md`, `.yml` et `.yaml`.
 
 Les dossiers et fichiers generes sont exclus : `node_modules`, `.git`, `.next`, `.playwright-mcp`, `dist`, `build`, `coverage`, `artifacts`, lockfiles et fichiers `generated`. Les sorties Playwright sont centralisees dans `artifacts/playwright/report` et `artifacts/playwright/results`.
 

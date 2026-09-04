@@ -17,7 +17,7 @@ const SCANNED_EXTENSIONS = new Set([
   ".yml",
   ".yaml",
 ]);
-const EXACT_SCANNED_FILES = new Set([".env.example"]);
+const EXACT_SCANNED_FILES = new Set([".env.example", ".env.local.example"]);
 const GENERATED_UNTRACKED_PATHS = [
   /(^|\/)\.next-codex-[^/]+(?:\/|$)/,
   /(^|\/)\.artifacts\/apps-web-node_modules-incomplete-0830(?:\/|$)/,
@@ -321,7 +321,11 @@ function shouldScan(relativePath) {
   if (normalized.includes("/generated/") || normalized.includes("__generated__")) {
     return false;
   }
-  if (EXACT_SCANNED_FILES.has(normalized) || normalized.endsWith("/.env.example")) {
+  if (
+    EXACT_SCANNED_FILES.has(normalized) ||
+    normalized.endsWith("/.env.example") ||
+    normalized.endsWith("/.env.local.example")
+  ) {
     return true;
   }
 

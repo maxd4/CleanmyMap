@@ -113,7 +113,7 @@ function runCommand(command, args, options = {}) {
 const args = parseArgs(process.argv.slice(2));
 const cwd = process.cwd();
 const envPath = resolve(cwd, args.file);
-const examplePath = resolve(cwd, ".env.example");
+const examplePath = resolve(cwd, ".env.local.example");
 
 if (args.dryRun) {
   console.log("--- DRY RUN MODE (No changes will be applied) ---");
@@ -128,7 +128,7 @@ const source = parseDotEnv(readFileSync(envPath, "utf8"));
 const allowed = loadAllowedKeysFromExample(examplePath);
 
 if (allowed.size === 0) {
-  console.error("[backend] .env.example not found or empty. Cannot determine allowed keys.");
+  console.error("[backend] .env.local.example not found or empty. Cannot determine allowed keys.");
   process.exit(1);
 }
 

@@ -70,6 +70,8 @@ const envSchema = z.object({
   NEXT_PUBLIC_SENTRY_RELEASE: z.string().optional(),
   NEXT_PUBLIC_SENTRY_ENVIRONMENT: z.enum(["production", "preview", "development"]).optional(),
   NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
+  NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME: optionalBoolean,
+  NEXT_PUBLIC_GAMIFICATION_WS: z.string().optional(),
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
@@ -95,6 +97,7 @@ const envSchema = z.object({
   SUPABASE_STORAGE_QUOTA_BYTES: z.string().optional(),
   SUPABASE_STORAGE_QUOTA_GB: z.string().optional(),
   CRON_SECRET: z.string().optional(),
+  IMPORT_DRY_RUN_SECRET: z.string().optional(),
   VISION_TRAINING_ENABLED: optionalBoolean,
   RESEND_TEST_TOKEN: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
@@ -105,6 +108,9 @@ const envSchema = z.object({
   QSTASH_TOKEN: z.string().optional(),
   UPTIMEROBOT_API_KEY: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
+  GITHUB_TOKEN: z.string().optional(),
+  GH_TOKEN: z.string().optional(),
+  GITHUB_API_TOKEN: z.string().optional(),
   ALLOW_LOCAL_FILE_STORE_FALLBACK: optionalBoolean,
   ALLOW_LOCAL_ACTION_STORE_IN_PROD: optionalBoolean,
   IMPACT_PROXY_VERSION: z.string().optional(),
@@ -112,6 +118,12 @@ const envSchema = z.object({
   IMPACT_PROXY_CO2_KG_PER_WASTE_KG: z.string().optional(),
   IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG: z.string().optional(),
   IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE: z.string().optional(),
+  CMM_DEV_AUTH_BYPASS: optionalBoolean,
+  CMM_DISABLE_DEV_AUTH_BYPASS: optionalBoolean,
+  CMM_DEV_AUTH_BYPASS_ROLE: z.string().optional(),
+  CMM_DEV_AUTH_BYPASS_DISPLAY_NAME: z.string().optional(),
+  CMM_DEV_AUTH_BYPASS_USERNAME: z.string().optional(),
+  CMM_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
 });
 
 const candidate = {

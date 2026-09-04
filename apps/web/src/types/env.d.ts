@@ -2,8 +2,13 @@
 
 declare namespace NodeJS {
   interface ProcessEnv {
-    CLEANMYMAP_SHEET_URL?: string;
     CI?: string;
+    CMM_DEV_AUTH_BYPASS?: string;
+    CMM_DEV_AUTH_BYPASS_DISPLAY_NAME?: string;
+    CMM_DEV_AUTH_BYPASS_ROLE?: string;
+    CMM_DEV_AUTH_BYPASS_USER_ID?: string;
+    CMM_DEV_AUTH_BYPASS_USERNAME?: string;
+    CMM_DISABLE_DEV_AUTH_BYPASS?: string;
     CLERK_ALLOWED_PARTIES?: string;
     CLERK_ADMIN_USER_IDS?: string;
     CLERK_DOMAIN?: string;
@@ -13,7 +18,13 @@ declare namespace NodeJS {
     CLERK_SECRET_KEY?: string;
     CLOUDFLARE_API_TOKEN?: string;
     CONTACT_EMAIL?: string;
+    CREATOR_INBOX_EMAIL?: string;
     EMAIL_FROM?: string;
+    GH_TOKEN?: string;
+    GITHUB_API_TOKEN?: string;
+    GITHUB_TOKEN?: string;
+    GIT_COMMIT_SHA?: string;
+    IMPORT_DRY_RUN_SECRET?: string;
     IMPACT_PROXY_CO2_KG_PER_WASTE_KG?: string;
     IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE?: string;
     IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG?: string;
@@ -24,6 +35,8 @@ declare namespace NodeJS {
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string;
     NEXT_PUBLIC_CLERK_PROXY_URL?: string;
     NEXT_PUBLIC_CONTACT_EMAIL?: string;
+    NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME?: string;
+    NEXT_PUBLIC_GAMIFICATION_WS?: string;
     NEXT_PUBLIC_POSTHOG_HOST?: string;
     NEXT_PUBLIC_POSTHOG_KEY?: string;
     NEXT_PUBLIC_POSTHOG_REGION?: "eu" | "us";
@@ -31,10 +44,11 @@ declare namespace NodeJS {
     NEXT_PUBLIC_SENTRY_DSN?: string;
     NEXT_PUBLIC_SENTRY_RELEASE?: string;
     NEXT_PUBLIC_SENTRY_ENVIRONMENT?: "production" | "preview" | "development";
-    NEXT_PUBLIC_SITE_URL?: string;
     NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
     NEXT_PUBLIC_SUPABASE_URL?: string;
     NODE_ENV?: "development" | "production" | "test";
+    ALLOW_LOCAL_ACTION_STORE_IN_PROD?: string;
+    ALLOW_LOCAL_FILE_STORE_FALLBACK?: string;
     PINECONE_API_KEY?: string;
     QSTASH_TOKEN?: string;
     RESEND_API_KEY?: string;

@@ -12,7 +12,7 @@ const ENDPOINTS_TO_CHECK = [
   { path: "/api/reports/elus-dossier", expectedStatus: 401, desc: "Rapports Elus (Admin/Elu exigé)" }
 ];
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 async function runSmokeTests() {
   console.log(`\n🚀 Lancement des Smoke Checks sur ${BASE_URL}\n`);

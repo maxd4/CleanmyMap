@@ -350,7 +350,7 @@ Les variables sensibles ne doivent pas être recopiées en dur dans le code.
 
 - les variables publiques commencent par `NEXT_PUBLIC_`;
 - les secrets serveur restent hors client;
-- le template de référence est [apps/web/.env.example](../../apps/web/.env.example);
+- le template local de référence est [apps/web/.env.local.example](../../apps/web/.env.local.example);
 - la liste des variables sensibles est maintenue dans [documentation/operations/pre-release-security-check.md](pre-release-security-check.md).
 
 ## Diagnostic minimal
