@@ -44,6 +44,8 @@ export type RouteStop = {
   estimatedMinutes: number;
   priorityReason: string;
   score: number;
+  /** Evidence family; predicted zones are never represented as observed spots. */
+  evidence?: RouteTargetEvidence;
 };
 
 /** Applies provider legs without ever changing the stop count or order. */
@@ -98,3 +100,4 @@ export function applyOriginRouteGeometryLegs(
     };
   });
 }
+import type { RouteTargetEvidence } from "./route-predicted-targets";

@@ -7,6 +7,7 @@ vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
     React.createElement("div", null, children);
   return {
+    Circle: passthrough,
     CircleMarker: passthrough,
     MapContainer: passthrough,
     Marker: ({

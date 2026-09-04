@@ -21,6 +21,10 @@ import type {
 import type { RoutePlanningMode } from "./route-planning-mode";
 import type { ParisPressureAtPoint } from "@/lib/geo/paris-pressure-lookup";
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
+import type {
+  RoutePredictionSummary,
+  RouteTargetEvidence,
+} from "./route-predicted-targets";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -56,6 +60,8 @@ export type RouteTraceSelectedStop = {
   eventContributions: RouteEventPressureContribution[];
   eventScoreContribution: number;
   parisPressure?: ParisPressureAtPoint | null;
+  targetFamily?: "observed" | "predicted";
+  evidence?: RouteTargetEvidence;
 };
 
 export type RouteTraceSegment = {
@@ -137,6 +143,7 @@ export type RouteRecommendationTrace = {
     sourceStatus: Record<string, ParisPressureSnapshot["sources"][number]["status"]>;
     note: string;
   } | null;
+  prediction?: RoutePredictionSummary | null;
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -156,6 +163,7 @@ export type BuildRouteRecommendationTraceInput = {
   eventSignalContext?: RouteEventSignalContext;
   eventCenteredContext?: RouteEventCenteredContext | null;
   spatialPrior?: RouteRecommendationTrace["spatialPrior"];
+  predictionSummary?: RoutePredictionSummary | null;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -268,6 +276,9 @@ function selectionForStop(
     parisPressure:
       ((stop.candidate as { parisPressure?: ParisPressureAtPoint | null })
         .parisPressure ?? null),
+    targetFamily:
+      stop.candidate.family === "predicted" ? "predicted" : "observed",
+    evidence: stop.candidate.evidence,
   };
 }
 
@@ -407,5 +418,6 @@ export function buildRouteRecommendationTrace(
     },
     eventCentered: input.eventCenteredContext ?? null,
     spatialPrior: input.spatialPrior ?? null,
+    prediction: input.predictionSummary ?? null,
   };
 }

@@ -247,3 +247,114 @@ test("un événement peut être sélectionné puis utilisé pour calculer et exp
   await page.getByText("Détail du trajet").click();
   await expect(page.getByText("Rue des Tests")).toBeVisible();
 });
+
+test("une zone prédite reste distincte puis est expliquée avec ses facteurs", async ({ page }) => {
+  const email = process.env.E2E_CLERK_USER_EMAIL;
+  if (!email) throw new Error("The official Clerk E2E user email was not provisioned.");
+
+  const predictedEvidence = {
+    family: "predicted",
+    source: "urban-pressure-model",
+    modelVersion: "paris-pressure-risk-v1",
+    zoneId: "iris-predicted-1",
+    zoneLabel: "Hotspot touristique",
+    geographicLevel: "iris",
+    centroid: { latitude: 48.86, longitude: 2.35 },
+    radiusKm: 0.2,
+    areaKm2: 0.12,
+    distanceToCorridorKm: 0.2,
+    detourDistanceKm: 0.1,
+    detourMinutes: 1.3,
+    riskFocus: "all",
+    dominantRisk: "cigaretteButts",
+    wasteRisk: 58,
+    cigaretteButtRisk: 82,
+    confidence: {
+      waste: { level: "medium" },
+      cigaretteButts: { level: "high" },
+    },
+    contributions: {
+      waste: [{ key: "tourismPressure", label: "Pression touristique", points: 16, available: true }],
+      cigaretteButts: [{ key: "terracePressure", label: "Terrasses", points: 21, available: true }],
+    },
+    cleanlinessCorrection: {
+      waste: { available: true, points: -4 },
+      cigaretteButts: { available: true, points: -4 },
+    },
+    snapshot: {
+      snapshotId: "snapshot-route-e2e",
+      schemaVersion: "paris-pressure-v1",
+      generatedAt: "2026-09-04T00:00:00.000Z",
+      refreshedAt: "2026-09-04T00:00:00.000Z",
+    },
+    provenance: [],
+  };
+  const predictedResponse = {
+    ...routeResponse,
+    stops: [{
+      ...routeResponse.stops[0],
+      id: "predicted:iris-predicted-1",
+      label: "Zone prédite · Hotspot touristique",
+      evidence: predictedEvidence,
+    }],
+    prediction: {
+      status: "partial",
+      source: "urban-pressure-model",
+      modelVersion: "paris-pressure-risk-v1",
+      snapshot: predictedEvidence.snapshot,
+      riskFocus: "all",
+      zonesConsidered: 4,
+      candidatesConsidered: 1,
+      selectedCandidateIds: ["predicted:iris-predicted-1"],
+      excludedByCorridor: 2,
+      deduplicated: 1,
+      excludedByBudget: 0,
+      warnings: ["Snapshot partiel : la confiance reste explicite."],
+    },
+    trace: {
+      ...routeResponse.trace,
+      selectedStops: [{
+        ...routeResponse.trace.selectedStops[0],
+        id: "predicted:iris-predicted-1",
+        targetFamily: "predicted",
+        evidence: predictedEvidence,
+      }],
+      prediction: {
+        status: "partial",
+        source: "urban-pressure-model",
+        modelVersion: "paris-pressure-risk-v1",
+        snapshot: predictedEvidence.snapshot,
+        riskFocus: "all",
+        zonesConsidered: 4,
+        candidatesConsidered: 1,
+        selectedCandidateIds: ["predicted:iris-predicted-1"],
+        excludedByCorridor: 2,
+        deduplicated: 1,
+        excludedByBudget: 0,
+        warnings: ["Snapshot partiel : la confiance reste explicite."],
+      },
+    },
+  };
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await clerk.signIn({ page, emailAddress: email });
+  await page.waitForFunction(() => Boolean(window.Clerk?.user && window.Clerk?.session));
+  await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+  await page.route("**/api/route/recommend", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(predictedResponse),
+    });
+  });
+
+  await page.getByRole("button", { name: "Calculer la recommandation" }).click();
+  await expect(page.locator('[data-route-target-family="predicted"]')).toBeVisible();
+  await expect(page.getByText("Zone prédite · Hotspot touristique").first()).toBeVisible();
+  await expect(page.getByText("Couche prédictive")).toBeVisible();
+  await page.getByText("Comprendre cet itinéraire").click();
+  await expect(page.locator("[data-route-prediction-details]")).toBeVisible();
+  await expect(page.getByText("Zone prédite · pas un signalement observé")).toBeVisible();
+  await expect(page.getByText("Pression touristique : +16 points")).toBeVisible();
+  await expect(page.getByText(/Correction de propreté appliquée/)).toBeVisible();
+});

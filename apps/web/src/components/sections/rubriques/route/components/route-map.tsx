@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import {
+  Circle,
   CircleMarker,
   MapContainer,
   Marker,
@@ -58,9 +59,9 @@ function RouteMapViewport({ coordinates }: { coordinates: [number, number][] }) 
   return null;
 }
 
-function buildStopIcon(index: number, selected: boolean) {
+function buildStopIcon(index: number, selected: boolean, predicted: boolean) {
   return divIcon({
-    className: "cmm-route-stop-icon",
+    className: `cmm-route-stop-icon${predicted ? " cmm-route-stop-icon--predicted" : ""}`,
     html: `<span class="cmm-route-stop-icon__body${selected ? " cmm-route-stop-icon__body--selected" : ""}">${index + 1}</span>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
@@ -202,13 +203,55 @@ export function RouteMap({
             </Tooltip>
           </Polyline>
         ) : null}
+        {stops.map((stop) => {
+          const evidence = stop.evidence;
+          if (!evidence || evidence.family !== "predicted") return null;
+          const color = evidence.dominantRisk === "cigaretteButts" ? "#a78bfa" : "#f59e0b";
+          return (
+            <Circle
+              key={`predicted-zone-${stop.id}`}
+              center={[evidence.centroid.latitude, evidence.centroid.longitude]}
+              radius={Math.max(50, evidence.radiusKm * 1000)}
+              pathOptions={{
+                className: "cmm-route-predicted-zone",
+                color,
+                fillColor: color,
+                fillOpacity: 0.18,
+                weight: 3,
+                dashArray: "6 6",
+              }}
+            >
+              <Tooltip sticky>
+                {evidence.dominantRisk === "cigaretteButts"
+                  ? "Zone prédite mégots"
+                  : "Zone prédite déchets"}
+              </Tooltip>
+              <Popup>
+                <strong>
+                  {evidence.dominantRisk === "cigaretteButts"
+                    ? "Zone prédite mégots"
+                    : "Zone prédite déchets"}
+                </strong>
+                <br />
+                {stop.label} · risques déchets {evidence.wasteRisk}/100 · mégots {evidence.cigaretteButtRisk}/100
+                <br />
+                Confiance : {evidence.confidence.waste.level} / {evidence.confidence.cigaretteButts.level} · détour estimé {evidence.detourMinutes} min
+                <br />
+                {fr
+                  ? "Prédiction du modèle, pas un signalement observé."
+                  : "Model prediction, not an observed report."}
+              </Popup>
+            </Circle>
+          );
+        })}
         {stops.map((stop, index) => {
           const selected = selectedStopId === stop.id;
+          const predicted = stop.evidence?.family === "predicted";
           return (
             <Marker
               key={stop.id}
               position={[stop.latitude, stop.longitude]}
-              icon={buildStopIcon(index, selected)}
+              icon={buildStopIcon(index, selected, predicted)}
               eventHandlers={{
                 click: () => onSelectStop?.(stop.id),
               }}
@@ -220,6 +263,10 @@ export function RouteMap({
                 <strong>{index + 1}. {stop.label}</strong>
                 <br />
                 {stop.segmentKm.toFixed(2)} km · {stop.estimatedMinutes} min
+                <br />
+                {predicted
+                  ? "Zone prédite : ce n’est pas un signalement observé."
+                  : "Signalement terrain validé."}
               </Popup>
             </Marker>
           );
