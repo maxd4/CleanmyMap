@@ -72,7 +72,6 @@ declare namespace NodeJS {
     UPSTASH_REDIS_REST_URL?: string;
     VERCEL?: string;
     VERCEL_ENV?: string;
-    VERCEL_GIT_COMMIT_REF?: string;
     VISION_TRAINING_ENABLED?: string;
   }
 }
