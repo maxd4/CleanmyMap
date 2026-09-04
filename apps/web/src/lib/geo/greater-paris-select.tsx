@@ -17,6 +17,7 @@ import {
   inferArrondissementCityFromLabel,
   parseTerritoryArrondissement,
   type ArrondissementCity,
+  type ParisArrondissement,
 } from "@/lib/geo/paris-arrondissements";
 import type {
   TerritoryLocationLevel,
@@ -117,14 +118,14 @@ function buildSelectionFromSuggestion(
 
 function getCompactArrondissement(
   suggestion: GeoAddressSuggestion,
-): { city: ArrondissementCity; arrondissement: number } | null {
+): { city: ArrondissementCity; arrondissement: ParisArrondissement } | null {
   const sources = [suggestion.subtitle, suggestion.label];
   for (const source of sources) {
     const match = source.match(/\b(Paris|Lyon|Marseille)\s+(\d{1,2})(?:er|e|ème|eme)?\b/i);
     if (match) {
-      const arrondissement = Number.parseInt(match[2], 10);
+      const arrondissement = parseTerritoryArrondissement(Number.parseInt(match[2], 10));
       const city = parseSelectedArrondissementCity(match[1]);
-      if (city && arrondissement >= 1 && arrondissement <= getArrondissementCityCount(city)) {
+      if (city && arrondissement && arrondissement <= getArrondissementCityCount(city)) {
         return { city, arrondissement };
       }
     }
@@ -137,8 +138,8 @@ function getCompactArrondissement(
       : postalMatch[1] === "69"
         ? "Lyon"
         : "Marseille";
-    const arrondissement = Number.parseInt(postalMatch[2].slice(1), 10);
-    if (arrondissement >= 1 && arrondissement <= getArrondissementCityCount(city)) {
+    const arrondissement = parseTerritoryArrondissement(Number.parseInt(postalMatch[2].slice(1), 10));
+    if (arrondissement && arrondissement <= getArrondissementCityCount(city)) {
       return { city, arrondissement };
     }
   }
