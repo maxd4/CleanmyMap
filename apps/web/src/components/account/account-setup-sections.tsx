@@ -211,26 +211,34 @@ export function AccountSetupLocationFields({
       </div>
 
       {residenceActive ? (
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-white">Domicile — Ville / arrondissement</span>
-          <GreaterParisSelect
-            value={residence}
-            onChange={setResidence}
-            placeholder="Rechercher une ville ou un arrondissement..."
-            appearance="dark"
-          />
-        </label>
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold text-white">Domicile</h3>
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-white">Ville / arrondissement</span>
+            <GreaterParisSelect
+              value={residence}
+              onChange={setResidence}
+              placeholder="Rechercher une ville ou un arrondissement..."
+              appearance="dark"
+              compact
+            />
+          </label>
+        </div>
       ) : null}
       {workActive ? (
-        <label className="block space-y-2">
-          <span className="text-sm font-semibold text-white">Travail — Ville / arrondissement</span>
-          <GreaterParisSelect
-            value={work}
-            onChange={setWork}
-            placeholder="Rechercher une ville ou un arrondissement..."
-            appearance="dark"
-          />
-        </label>
+        <div className={cn("space-y-2", residenceActive && "border-t border-white/10 pt-4")}>
+          <h3 className="text-lg font-bold text-white">Lieu de travail</h3>
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-white">Ville / arrondissement</span>
+            <GreaterParisSelect
+              value={work}
+              onChange={setWork}
+              placeholder="Rechercher une ville ou un arrondissement..."
+              appearance="dark"
+              compact
+            />
+          </label>
+        </div>
       ) : null}
       {error ? <p className="text-sm font-medium text-violet-100">{error}</p> : null}
     </div>

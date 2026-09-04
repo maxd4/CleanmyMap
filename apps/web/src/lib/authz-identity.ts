@@ -38,8 +38,9 @@ import {
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
   getDevAuthBypassUsername,
+  isDevAuthBypassForced,
   isLocalhostHost,
-  isDevAuthBypassEnabled,
+  shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
   extractRole,
@@ -225,7 +226,17 @@ export async function getDevAuthBypassSession() {
     host = null;
   }
 
-  if (!isDevAuthBypassEnabled(host)) {
+  const bypassForced = isDevAuthBypassForced();
+  let clerkUserId: string | null = null;
+  if (!bypassForced && isLocalhostHost(host)) {
+    try {
+      clerkUserId = (await auth()).userId ?? null;
+    } catch {
+      clerkUserId = null;
+    }
+  }
+
+  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId })) {
     return null;
   }
 

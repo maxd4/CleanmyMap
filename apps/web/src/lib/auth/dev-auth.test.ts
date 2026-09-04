@@ -3,6 +3,7 @@ import {
   getDevAuthBypassRole,
   isDevAuthBypassEnabled,
   isLocalhostHost,
+  shouldUseDevAuthBypass,
 } from "./dev-auth";
 
 afterEach(() => {
@@ -30,6 +31,50 @@ describe("dev auth bypass helpers", () => {
 
     expect(isDevAuthBypassEnabled("example.com")).toBe(true);
     expect(getDevAuthBypassRole()).toBe("admin");
+  });
+
+  it("does not use the automatic localhost bypass when Clerk has a session", () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    expect(
+      shouldUseDevAuthBypass({
+        hostname: "localhost:3000",
+        clerkUserId: "user_clerk_123",
+      }),
+    ).toBe(false);
+  });
+
+  it("uses the automatic localhost bypass when Clerk has no session", () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    expect(
+      shouldUseDevAuthBypass({ hostname: "localhost:3000", clerkUserId: null }),
+    ).toBe(true);
+  });
+
+  it("keeps an explicitly forced bypass ahead of a Clerk session", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+
+    expect(
+      shouldUseDevAuthBypass({
+        hostname: "localhost:3000",
+        clerkUserId: "user_clerk_123",
+      }),
+    ).toBe(true);
+  });
+
+  it("disables every bypass when the disable flag is set", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+    vi.stubEnv("CMM_DISABLE_DEV_AUTH_BYPASS", "1");
+
+    expect(
+      shouldUseDevAuthBypass({
+        hostname: "localhost:3000",
+        clerkUserId: null,
+      }),
+    ).toBe(false);
   });
 
   it("defaults the bypass role to the canonical max value", () => {

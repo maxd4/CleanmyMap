@@ -115,6 +115,143 @@ function buildSelectionFromSuggestion(
   };
 }
 
+function getCompactArrondissement(
+  suggestion: GeoAddressSuggestion,
+): { city: ArrondissementCity; arrondissement: number } | null {
+  const sources = [suggestion.subtitle, suggestion.label];
+  for (const source of sources) {
+    const match = source.match(/\b(Paris|Lyon|Marseille)\s+(\d{1,2})(?:er|e|ème|eme)?\b/i);
+    if (match) {
+      const arrondissement = Number.parseInt(match[2], 10);
+      const city = parseSelectedArrondissementCity(match[1]);
+      if (city && arrondissement >= 1 && arrondissement <= getArrondissementCityCount(city)) {
+        return { city, arrondissement };
+      }
+    }
+  }
+
+  const postalMatch = suggestion.label.match(/\b(75|69|13)(\d{3})\b/);
+  if (postalMatch) {
+    const city = postalMatch[1] === "75"
+      ? "Paris"
+      : postalMatch[1] === "69"
+        ? "Lyon"
+        : "Marseille";
+    const arrondissement = Number.parseInt(postalMatch[2].slice(1), 10);
+    if (arrondissement >= 1 && arrondissement <= getArrondissementCityCount(city)) {
+      return { city, arrondissement };
+    }
+  }
+
+  return null;
+}
+
+function buildCompactSelectionFromSuggestion(
+  suggestion: GeoAddressSuggestion,
+): TerritoryLocationSelection {
+  const arrondissement = getCompactArrondissement(suggestion);
+  const inferredCity =
+    arrondissement?.city ??
+    inferArrondissementCityFromLabel(suggestion.subtitle) ??
+    inferArrondissementCityFromLabel(suggestion.label);
+  const subtitleCity = suggestion.subtitle
+    .split("·")[0]
+    ?.split(",")[0]
+    ?.trim();
+  const labelCity = suggestion.label
+    .split(",")
+    .at(-1)
+    ?.replace(/\b\d{5}\b/, "")
+    .trim();
+  const label = arrondissement
+    ? getArrondissementMunicipalLabel(arrondissement.city, arrondissement.arrondissement)
+    : subtitleCity || labelCity || suggestion.label;
+
+  return {
+    country: "France",
+    level: arrondissement ? "arrondissement" : "commune",
+    label,
+    subtitle: inferredCity ?? null,
+    arrondissement: arrondissement?.arrondissement ?? null,
+    arrondissementCity: inferredCity,
+  };
+}
+
+function getSuggestionDisplay(
+  suggestion: GeoAddressSuggestion,
+  compact: boolean,
+): { label: string; subtitle: string | null } {
+  if (!compact) {
+    return { label: suggestion.label, subtitle: suggestion.subtitle || null };
+  }
+
+  const selection = buildCompactSelectionFromSuggestion(suggestion);
+  const detail = suggestion.subtitle.split("·")[1]?.trim() || null;
+  return {
+    label: selection.label,
+    subtitle: selection.arrondissementCity ? selection.subtitle : detail,
+  };
+}
+
+function SuggestionOption({
+  suggestion,
+  compact,
+  isLight,
+  selectedLevelLabel,
+  onPick,
+}: {
+  suggestion: GeoAddressSuggestion;
+  compact: boolean;
+  isLight: boolean;
+  selectedLevelLabel: string;
+  onPick: () => void;
+}) {
+  const display = getSuggestionDisplay(suggestion, compact);
+
+  return (
+    <button
+      type="button"
+      onMouseDown={(event) => {
+        event.preventDefault();
+        onPick();
+      }}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors",
+        isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.07]",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
+          isLight
+            ? "border-slate-200 bg-slate-50 text-emerald-700"
+            : "border-white/10 bg-white/[0.06] text-violet-100/72",
+        )}
+      >
+        <MapPin className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            "block truncate text-sm font-semibold",
+            isLight ? "text-slate-800" : "text-white",
+          )}
+        >
+          {display.label}
+        </span>
+        <span
+          className={cn(
+            "mt-0.5 block text-xs",
+            isLight ? "text-slate-500" : "text-violet-100/64",
+          )}
+        >
+          {display.subtitle ?? selectedLevelLabel}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function filterSuggestionsForLevel(
   items: GeoAddressSuggestion[],
   level: TerritoryLocationLevel,
@@ -230,14 +367,16 @@ export function TerritoryLocationSelector({
   onChange,
   placeholder = "Rechercher un lieu...",
   appearance = "dark",
+  compact = false,
 }: {
   value: TerritoryLocationSelection | null;
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
   appearance?: "dark" | "light";
+  compact?: boolean;
 }) {
   const [selectedLevel, setSelectedLevel] = useState<TerritoryLocationLevel>(
-    value?.level ?? "commune",
+    compact ? "commune" : value?.level ?? "commune",
   );
   const [searchQuery, setSearchQuery] = useState(value?.label ?? "");
   const [arrondissementCity, setArrondissementCity] = useState<ArrondissementCity>(
@@ -253,7 +392,7 @@ export function TerritoryLocationSelector({
   const currentConfig = useMemo(() => levelConfig(selectedLevel), [selectedLevel]);
   const { suggestions, isLoading, errorMessage, trimmedQuery } = useTerritorySuggestions(
     searchQuery,
-    selectedLevel,
+    compact ? "commune" : selectedLevel,
   );
 
   useEffect(() => {
@@ -266,7 +405,7 @@ export function TerritoryLocationSelector({
       if (cancelled) {
         return;
       }
-      setSelectedLevel(value.level);
+      setSelectedLevel(compact ? "commune" : value.level);
       setSearchQuery(value.label);
       setArrondissementCity(
         parseSelectedArrondissementCity(value.arrondissementCity) ??
@@ -279,7 +418,7 @@ export function TerritoryLocationSelector({
     return () => {
       cancelled = true;
     };
-  }, [value]);
+  }, [compact, value]);
 
   const selectedSuggestion = value;
   const hasSelection = Boolean(selectedSuggestion);
@@ -287,7 +426,7 @@ export function TerritoryLocationSelector({
   const commitSelection = (nextSelection: TerritoryLocationSelection | null) => {
     onChange(nextSelection);
     if (nextSelection) {
-      setSelectedLevel(nextSelection.level);
+      setSelectedLevel(compact ? "commune" : nextSelection.level);
       setSearchQuery(nextSelection.label);
       setArrondissementCity(
         parseSelectedArrondissementCity(nextSelection.arrondissementCity) ??
@@ -319,12 +458,14 @@ export function TerritoryLocationSelector({
   };
 
   const handlePickSuggestion = (suggestion: GeoAddressSuggestion) => {
-    const nextSelection = buildSelectionFromSuggestion(
-      selectedLevel,
-      suggestion,
-      arrondissementValue,
-      arrondissementCity,
-    );
+    const nextSelection = compact
+      ? buildCompactSelectionFromSuggestion(suggestion)
+      : buildSelectionFromSuggestion(
+          selectedLevel,
+          suggestion,
+          arrondissementValue,
+          arrondissementCity,
+        );
     commitSelection(nextSelection);
     setIsSearchOpen(false);
   };
@@ -346,12 +487,16 @@ export function TerritoryLocationSelector({
 
   return (
     <div className={cn(
-      "space-y-3 rounded-xl p-3",
-      isLight
-        ? "border border-slate-200 bg-slate-50"
-        : "border border-white/10 bg-white/[0.05] shadow-[0_18px_50px_-38px_rgba(15,23,42,0.62)] backdrop-blur-xl",
+      compact
+        ? "relative"
+        : cn(
+            "space-y-3 rounded-xl border p-3",
+            isLight
+              ? "border-slate-200 bg-slate-50"
+              : "border-white/10 bg-white/[0.05] shadow-[0_18px_50px_-38px_rgba(15,23,42,0.62)] backdrop-blur-xl",
+          ),
     )}>
-      <div className="flex items-start justify-between gap-3">
+      {!compact ? <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className={cn("cmm-text-caption font-bold uppercase tracking-[0.14em]", isLight ? "text-emerald-700" : "text-emerald-200/90")}>
             Territoire
@@ -363,9 +508,9 @@ export function TerritoryLocationSelector({
         <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", isLight ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-white/10 bg-white/[0.08] text-white")}>
           <Globe className="h-5 w-5" />
         </span>
-      </div>
+      </div> : null}
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+      {!compact ? <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
           <label className="block space-y-2">
             <span className={cn("cmm-text-small font-medium", isLight ? "text-slate-800" : "text-white")}>Pays</span>
             <select
@@ -411,14 +556,14 @@ export function TerritoryLocationSelector({
             })}
           </div>
         </fieldset>
-      </div>
+      </div> : null}
 
-      {selectedLevel === "country" ? (
+      {!compact && selectedLevel === "country" ? (
         <div className={cn("rounded-xl border px-4 py-3 text-sm", isLight ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-emerald-300/20 bg-emerald-300/10 text-emerald-50")}>
           La couverture nationale est active. Tu peux enregistrer la France entière ou
           changer de niveau à tout moment.
         </div>
-      ) : selectedLevel === "arrondissement" ? (
+      ) : !compact && selectedLevel === "arrondissement" ? (
         <div className="space-y-3">
           <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
             <label className="block space-y-2">
@@ -520,7 +665,7 @@ export function TerritoryLocationSelector({
                 setIsSearchOpen(true);
               }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder={currentConfig.placeholder || placeholder}
+              placeholder={compact ? placeholder : currentConfig.placeholder || placeholder}
               className={cn(
                 "w-full rounded-lg border py-2.5 pl-10 pr-10 text-sm outline-none focus:ring-2",
                 isLight
@@ -562,27 +707,14 @@ export function TerritoryLocationSelector({
               ) : (
                 <div className="max-h-72 overflow-auto p-2">
                   {suggestions.map((suggestion) => (
-                    <button
+                    <SuggestionOption
                       key={`${suggestion.label}-${suggestion.latitude}-${suggestion.longitude}`}
-                      type="button"
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        handlePickSuggestion(suggestion);
-                      }}
-                      className={cn("flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.07]")}
-                    >
-                      <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border", isLight ? "border-slate-200 bg-slate-50 text-emerald-700" : "border-white/10 bg-white/[0.06] text-violet-100/72")}>
-                        <MapPin className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className={cn("block truncate text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
-                          {suggestion.label}
-                        </span>
-                        <span className={cn("mt-0.5 block text-xs", isLight ? "text-slate-500" : "text-violet-100/64")}>
-                          {suggestion.subtitle || selectedLevelLabel}
-                        </span>
-                      </span>
-                    </button>
+                      suggestion={suggestion}
+                      compact={compact}
+                      isLight={isLight}
+                      selectedLevelLabel={selectedLevelLabel}
+                      onPick={() => handlePickSuggestion(suggestion)}
+                    />
                   ))}
                 </div>
               )}
@@ -591,7 +723,7 @@ export function TerritoryLocationSelector({
         </div>
       )}
 
-      <div className={cn("rounded-xl border px-4 py-3", isLight ? "border-slate-200 bg-white" : "border-white/10 bg-white/[0.06]")}>
+      {!compact ? <div className={cn("rounded-xl border px-4 py-3", isLight ? "border-slate-200 bg-white" : "border-white/10 bg-white/[0.06]")}>
         <p className={cn("text-[10px] font-bold uppercase tracking-[0.22em]", isLight ? "text-slate-500" : "text-violet-100/64")}>
           Lieu retenu
         </p>
@@ -608,7 +740,7 @@ export function TerritoryLocationSelector({
             Sélectionne un lieu dans les suggestions pour l’enregistrer.
           </p>
         )}
-      </div>
+      </div> : null}
     </div>
   );
 }
@@ -618,6 +750,7 @@ export function GreaterParisLocationSelector(props: {
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
   appearance?: "dark" | "light";
+  compact?: boolean;
 }) {
   return <TerritoryLocationSelector {...props} />;
 }
@@ -627,6 +760,7 @@ export function GreaterParisSelect(props: {
   onChange: (value: TerritoryLocationSelection | null) => void;
   placeholder?: string;
   appearance?: "dark" | "light";
+  compact?: boolean;
 }) {
   return <TerritoryLocationSelector {...props} />;
 }
