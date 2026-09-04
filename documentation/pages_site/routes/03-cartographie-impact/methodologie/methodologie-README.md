@@ -36,9 +36,9 @@ La documentation de la page doit également orienter vers la méthodologie spéc
 La page expose la section ancrée `/methodologie#modes-affichage`, qui reprend
 la définition canonique des trois modes :
 
-- **Exhaustif** : expérience visuelle CleanMyMap complète.
-- **Minimaliste** : mêmes données, fonctions et contenus, avec des fonds simplifiés, sans blur ni textures, et moins d’ombres et d’animations.
-- **Sobre** : mêmes données, fonctions et contenus, avec priorité à la lisibilité et à l’accessibilité cognitive : contraste renforcé, surfaces plates, aucune animation décorative, effets supprimés et police système.
+- **Exhaustif** : Expérience CleanMyMap complète.
+- **Minimaliste** : Allez droit au but sans contenu superflu
+- **Sobre** : Adaptez le rendu visuel pour réduire la fatigue visuelle et cognitive sans modification du contenu.
 
 Dans les trois cas, le mode change la présentation, jamais les fonctionnalités,
 permissions ou données. La source normative est

@@ -67,6 +67,20 @@ Le choix `sobre` utilise la préférence existante et est persistant.
 
 ---
 
+## 2 bis. Descriptions canoniques d’interface
+
+Les descriptions courtes utilisées dans les sélecteurs et fiches de l’interface
+sont les suivantes :
+
+- **Exhaustif** : Expérience CleanMyMap complète.
+- **Minimaliste** : Allez droit au but sans contenu superflu
+- **Sobre** : Adaptez le rendu visuel pour réduire la fatigue visuelle et cognitive sans modification du contenu.
+
+Ces formulations complètent la matrice comportementale ci-dessous sans modifier
+le contrat fonctionnel des modes.
+
+---
+
 ## 3. Matrice canonique des trois modes
 
 | Critère | Exhaustif | Minimaliste | Sobre |

@@ -4,8 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Check, Eye, Info, UserRound } from "lucide-react";
-import type { DisplayMode } from "@/lib/ui/preferences";
-import { DISPLAY_MODES } from "@/lib/ui/preferences";
+import {
+  DISPLAY_MODE_DESCRIPTIONS,
+  DISPLAY_MODES,
+  type DisplayMode,
+} from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import {
@@ -89,19 +92,10 @@ function isValidSelection(selection: TerritoryLocationSelection | null): boolean
   );
 }
 
-const DISPLAY_MODE_COPY: Record<DisplayMode, { label: string; description: string }> = {
-  exhaustif: {
-    label: "Exhaustif",
-    description: "L’expérience visuelle CleanMyMap complète.",
-  },
-  minimaliste: {
-    label: "Minimaliste",
-    description: "Les mêmes contenus avec une présentation simplifiée.",
-  },
-  sobre: {
-    label: "Sobre",
-    description: "Les mêmes contenus, avec priorité à la lisibilité.",
-  },
+const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
+  exhaustif: "Exhaustif",
+  minimaliste: "Minimaliste",
+  sobre: "Sobre",
 };
 
 function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
@@ -325,12 +319,13 @@ export function AccountSetupForm({
             <div role="radiogroup" aria-labelledby="account-display-mode-title" className="grid gap-3 sm:grid-cols-3">
               {DISPLAY_MODES.map((mode) => {
                 const selected = selectedDisplayMode === mode;
-                const copy = DISPLAY_MODE_COPY[mode];
+                const label = DISPLAY_MODE_LABELS[mode];
+                const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
                 return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setSelectedDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]" : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60"}`}>
                   {selected ? <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white"><Check className="h-4 w-4" aria-hidden="true" /></span> : null}
                   <Eye className="h-7 w-7" aria-hidden="true" />
-                  <span className="text-sm font-bold">{copy.label}</span>
-                  <span className="text-xs leading-4 opacity-80">{copy.description}</span>
+                  <span className="text-sm font-bold">{label}</span>
+                  <span className="text-xs leading-4 opacity-80">{description}</span>
                 </button>;
               })}
             </div>
