@@ -3,6 +3,7 @@ import {
   ACCOUNT_SETUP_SCHEMA_VERSION,
   ACCOUNT_SETUP_WINDOW_MS,
 } from "@/lib/auth/account-setup-config";
+import { normalizeDisplayNameMode, type DisplayNameMode } from "@/lib/profiles";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -17,8 +18,26 @@ export type AccountSetupRequirement = {
 export function hasRequiredAccountIdentity(
   firstName: string | null | undefined,
   lastName: string | null | undefined,
+  displayNameMode: DisplayNameMode = "full_name",
 ): boolean {
+  if (displayNameMode === "pseudo") {
+    return true;
+  }
   return Boolean(firstName?.trim() && lastName?.trim());
+}
+
+export function hasRequiredAccountPseudo(username: string | null | undefined): boolean {
+  return Boolean(username?.trim());
+}
+
+function extractDisplayNameMode(...metadataSources: ClerkMetadata[]): DisplayNameMode {
+  for (const metadata of metadataSources) {
+    const value = metadata?.["display_name_mode"] ?? metadata?.["displayNameMode"];
+    if (value === "pseudo" || value === "full_name") {
+      return normalizeDisplayNameMode(value);
+    }
+  }
+  return "full_name";
 }
 
 function extractSetupCompletionFlag(metadata: ClerkMetadata): boolean {
@@ -114,18 +133,29 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<AccountSe
       extractSetupVersion(user.unsafeMetadata);
     const needsInitialSetup = shouldRequireAccountSetup(user.createdAt, setupCompleted);
     const needsSchemaUpdate = shouldRequireAccountSetupRefresh(setupVersion);
+    const displayNameMode = extractDisplayNameMode(
+      user.unsafeMetadata,
+      user.publicMetadata,
+      user.privateMetadata,
+    );
     const needsIdentityCompletion = !hasRequiredAccountIdentity(
       user.firstName,
       user.lastName,
+      displayNameMode,
     );
+    const needsPseudoCompletion = !hasRequiredAccountPseudo(user.username);
 
     return {
-      requiresSetup: needsInitialSetup || needsSchemaUpdate || needsIdentityCompletion,
+      requiresSetup:
+        needsInitialSetup ||
+        needsSchemaUpdate ||
+        needsIdentityCompletion ||
+        needsPseudoCompletion,
       setupCompleted,
       createdAt: toCreatedAtTimestamp(user.createdAt),
       setupVersion,
       reason:
-        needsSchemaUpdate || needsIdentityCompletion
+        needsSchemaUpdate || needsIdentityCompletion || needsPseudoCompletion
           ? "schema_update"
           : needsInitialSetup
             ? "initial_setup"

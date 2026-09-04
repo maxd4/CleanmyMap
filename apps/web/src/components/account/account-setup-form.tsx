@@ -3,34 +3,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Briefcase,
-  Building2,
-  Check,
-  Eye,
-  FlaskConical,
-  House,
-  Landmark,
-  LogIn,
-  ShieldCheck,
-  UserRound,
-  UsersRound,
-  WifiOff,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { Locale } from "@/lib/ui/preferences";
+import { Check, Eye, Info, UserRound } from "lucide-react";
+import type { DisplayMode } from "@/lib/ui/preferences";
+import { DISPLAY_MODES } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import {
-  GreaterParisSelect,
-  type TerritoryLocationSelection,
-} from "@/lib/geo/greater-paris-select";
-import {
-  createTerritoryLocationMetadata,
-  extractTerritoryLocationPreferenceFromMetadata,
+  clearLocationPreferenceMetadata,
+  createLocationPreferencesMetadata,
+  extractLocationPreferencesFromMetadata,
 } from "@/lib/user-location-preference";
-import { getProfileLabel, getProfileSubtitle, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
-import { InlineFieldError } from "@/components/ui/inline-field-error";
+import {
+  getSwitchableProfiles,
+  normalizeDisplayNameMode,
+  type AppProfile,
+  type DisplayNameMode,
+} from "@/lib/profiles";
+import type { Role } from "@/lib/domain-language";
+import { AccountSetupLocationFields, AccountSetupProfileGrid } from "@/components/account/account-setup-sections";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
 import {
@@ -43,248 +33,208 @@ import {
 } from "@/components/ui/system-state";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
+import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
-import { cn } from "@/lib/utils";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { logFailure } from "@/lib/logging/failure-log";
 
-function createInitialTerritorySelection(
-  initialArrondissement: number | null | undefined,
-): TerritoryLocationSelection | null {
-  if (!initialArrondissement || initialArrondissement <= 0) {
-    return null;
-  }
-
-  return {
-    country: "France",
-    level: "arrondissement",
-    label: `Paris ${initialArrondissement === 1 ? "1er" : `${initialArrondissement}e`}`,
-    subtitle: "Compatibilité historique",
-    arrondissement: initialArrondissement as TerritoryLocationSelection["arrondissement"],
-    arrondissementCity: "Paris",
-  };
-}
-
 type AccountSetupFormProps = {
   nextPath?: string;
+  initialRole?: Role;
   initialProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
+  initialResidence?: TerritoryLocationSelection | null;
+  initialWork?: TerritoryLocationSelection | null;
+  /** Legacy props remain accepted while older server callers converge. */
   initialArrondissement?: number | null;
   initialLocationType?: "residence" | "work" | null;
   submitMode?: "navigate" | "refresh";
 };
 
-async function updateProfileRole(profile: AppProfile) {
-  const response = await fetch("/api/account/profile-role", {
+type SetupUpdate = Parameters<NonNullable<ReturnType<typeof useUser>["user"]>["update"]>[0];
+
+async function updateActiveProfile(activeProfile: AppProfile) {
+  const response = await fetch("/api/account/active-profile", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ profile }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activeProfile }),
   });
-
-  const payload = (await response.json().catch(() => null)) as
-    | { error?: string }
-    | null;
-
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
   if (!response.ok) {
-    throw new Error(payload?.error ?? "Mutation de rôle refusée.");
+    throw new Error(payload?.error ?? "Mutation de profil refusée.");
   }
 }
 
-const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
-  benevole: UserRound,
-  coordinateur: UsersRound,
-  scientifique: FlaskConical,
-  entreprise: Briefcase,
-  elu: Landmark,
-  admin: ShieldCheck,
-  max: Building2,
+function createLegacySelection(arrondissement: number | null | undefined): TerritoryLocationSelection | null {
+  if (!arrondissement || arrondissement <= 0) {
+    return null;
+  }
+  return {
+    country: "France",
+    level: "arrondissement",
+    label: `Paris ${arrondissement === 1 ? "1er" : `${arrondissement}e`}`,
+    subtitle: "Compatibilité historique",
+    arrondissement: arrondissement as TerritoryLocationSelection["arrondissement"],
+    arrondissementCity: "Paris",
+  };
+}
+
+function isValidSelection(selection: TerritoryLocationSelection | null): boolean {
+  return Boolean(
+    selection?.label.trim() &&
+      (selection.level !== "arrondissement" || selection.arrondissement != null),
+  );
+}
+
+const DISPLAY_MODE_COPY: Record<DisplayMode, { label: string; description: string }> = {
+  exhaustif: {
+    label: "Exhaustif",
+    description: "L’expérience visuelle CleanMyMap complète.",
+  },
+  minimaliste: {
+    label: "Minimaliste",
+    description: "Les mêmes contenus avec une présentation simplifiée.",
+  },
+  sobre: {
+    label: "Sobre",
+    description: "Les mêmes contenus, avec priorité à la lisibilité.",
+  },
 };
 
-const PROFILE_DETAILS: Record<AppProfile, Record<Locale, string>> = {
-  benevole: {
-    fr: "Vous participez à des actions de nettoyage, signalez des déchets et contribuez à améliorer votre environnement.",
-    en: "You take part in clean-up actions, report waste and help improve your environment.",
-  },
-  coordinateur: {
-    fr: "Vous organisez des actions collectives et accompagnez les équipes dans leur réalisation.",
-    en: "You organize collective actions and support teams as they carry them out.",
-  },
-  scientifique: {
-    fr: "Vous collectez, analysez et mettez en perspective les données issues des actions de terrain.",
-    en: "You collect, analyze and contextualize data from field actions.",
-  },
-  entreprise: {
-    fr: "Vous soutenez des actions locales et valorisez l’engagement environnemental de votre entreprise.",
-    en: "You support local actions and highlight your company's environmental commitment.",
-  },
-  elu: {
-    fr: "Vous suivez les actions menées sur votre territoire et facilitez la coordination locale.",
-    en: "You follow actions in your territory and help coordinate local efforts.",
-  },
-  admin: {
-    fr: "Vous coordonnez la modération, la qualité des données et l’accompagnement des utilisateurs.",
-    en: "You coordinate moderation, data quality and user support.",
-  },
-  max: {
-    fr: "Vous supervisez la plateforme et arbitrez les décisions qui nécessitent un accès propriétaire.",
-    en: "You supervise the platform and arbitrate decisions requiring owner access.",
-  },
-};
+function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
+  const value = metadata?.["display_name_mode"] ?? metadata?.["displayNameMode"];
+  return normalizeDisplayNameMode(typeof value === "string" ? value : undefined);
+}
 
 export function AccountSetupForm({
   nextPath,
   initialProfile,
+  initialRole = initialProfile,
   clerkReachable,
+  initialResidence,
+  initialWork,
   initialArrondissement = null,
   initialLocationType = null,
   submitMode = "navigate",
 }: AccountSetupFormProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const { locale, setLocale, setDisplayMode } = useSitePreferences();
+  const { locale, displayMode, setDisplayMode } = useSitePreferences();
+  const legacySelection = useMemo(
+    () => createLegacySelection(initialArrondissement),
+    [initialArrondissement],
+  );
+  const resolvedInitialResidence = initialResidence ??
+    (initialLocationType !== "work" ? legacySelection : null);
+  const resolvedInitialWork = initialWork ??
+    (initialLocationType === "work" ? legacySelection : null);
 
   const profileOptions = useMemo(
-    () => getSwitchableProfiles(initialProfile),
-    [initialProfile],
+    () =>
+      getSwitchableProfiles(initialRole).filter(
+        (profile) => profile !== "max" &&
+          (profile !== "admin" || initialRole === "admin" || initialRole === "max"),
+      ),
+    [initialRole],
   );
-
   const [selectedProfile, setSelectedProfile] = useState<AppProfile>(initialProfile);
+  const [pseudoOverride, setPseudoOverride] = useState<string | null>(null);
   const [firstNameOverride, setFirstNameOverride] = useState<string | null>(null);
   const [lastNameOverride, setLastNameOverride] = useState<string | null>(null);
-  const [locationType, setLocationType] = useState<"residence" | "work">(
-    initialLocationType ?? "residence",
-  );
-  const [territorySelection, setTerritorySelection] = useState<TerritoryLocationSelection | null>(
-    createInitialTerritorySelection(initialArrondissement),
-  );
-  const [isTerritorySkipped, setIsTerritorySkipped] = useState(false);
-  const hasHydratedTerritorySelection = useRef(Boolean(initialArrondissement));
-  const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
+  const [displayNameMode, setDisplayNameMode] = useState<DisplayNameMode>("full_name");
+  const [selectedDisplayMode, setSelectedDisplayMode] = useState<DisplayMode>(displayMode);
+  const [residence, setResidence] = useState<TerritoryLocationSelection | null>(resolvedInitialResidence);
+  const [work, setWork] = useState<TerritoryLocationSelection | null>(resolvedInitialWork);
+  const [residenceEnabled, setResidenceEnabled] = useState(Boolean(resolvedInitialResidence));
+  const [workEnabled, setWorkEnabled] = useState(Boolean(resolvedInitialWork));
+  const [noneSelected, setNoneSelected] = useState(!resolvedInitialResidence && !resolvedInitialWork);
+  const hasHydratedUserState = useRef(Boolean(resolvedInitialResidence || resolvedInitialWork));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
+  const pseudo = pseudoOverride ?? user?.username ?? "";
   const firstName = firstNameOverride ?? user?.firstName ?? "";
   const lastName = lastNameOverride ?? user?.lastName ?? "";
+  const trimmedPseudo = pseudo.trim();
   const trimmedFirstName = firstName.trim();
   const trimmedLastName = lastName.trim();
+  const isPseudonymous = displayNameMode === "pseudo";
 
   useEffect(() => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || hasHydratedUserState.current) {
       return;
     }
-    if (isTerritorySkipped || territorySelection) {
-      hasHydratedTerritorySelection.current = true;
-      return;
-    }
-    if (hasHydratedTerritorySelection.current) {
-      return;
-    }
+    const metadata = user.unsafeMetadata as Record<string, unknown> | undefined;
+    const preferences = extractLocationPreferencesFromMetadata(metadata);
+    setDisplayNameMode(readDisplayNameMode(metadata));
+    setResidence(preferences.residence);
+    setWork(preferences.work);
+    setResidenceEnabled(Boolean(preferences.residence));
+    setWorkEnabled(Boolean(preferences.work));
+    setNoneSelected(!preferences.residence && !preferences.work);
+    hasHydratedUserState.current = true;
+  }, [isLoaded, user]);
 
-    const existingSelection = extractTerritoryLocationPreferenceFromMetadata(
-      user.unsafeMetadata as Record<string, unknown> | undefined,
-    );
-    if (existingSelection) {
-      setTerritorySelection(existingSelection);
-    }
-    hasHydratedTerritorySelection.current = true;
-  }, [isLoaded, isTerritorySkipped, territorySelection, user]);
+  const profileIsValid = profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
+  const pseudoError = !trimmedPseudo ? "Renseignez votre pseudo." : null;
+  const firstNameError = !isPseudonymous && !trimmedFirstName ? "Renseignez votre prénom." : null;
+  const lastNameError = !isPseudonymous && !trimmedLastName ? "Renseignez votre nom." : null;
+  const profileError = !profileIsValid ? "Sélectionnez un profil valide." : null;
+  const activeResidence = !noneSelected && residenceEnabled;
+  const activeWork = !noneSelected && workEnabled;
+  const locationError =
+    (activeResidence && !isValidSelection(residence)) ||
+    (activeWork && !isValidSelection(work))
+      ? "Sélectionnez une ville ou un arrondissement pour chaque lieu activé."
+      : null;
+  const canSubmit = !pseudoError && !firstNameError && !lastNameError && !profileError && !locationError && !isSaving;
 
-  const isProfileValid =
-    profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
-  const territoryIsValid =
-    isTerritorySkipped ||
-    (Boolean(territorySelection?.label.trim()) &&
-      (territorySelection?.level !== "arrondissement" ||
-        territorySelection.arrondissement != null));
-  const profileError = !isProfileValid
-    ? "Sélectionnez un rôle valide."
-    : null;
-  const firstNameError = !trimmedFirstName ? "Renseignez votre prénom." : null;
-  const lastNameError = !trimmedLastName ? "Renseignez votre nom." : null;
-  const territoryError = !territoryIsValid
-    ? "Sélectionnez un territoire (pays, région, département, commune ou arrondissement)."
-    : null;
-  const canSubmit =
-    !firstNameError &&
-    !lastNameError &&
-    !profileError &&
-    !territoryError &&
-    !isSaving;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-
     if (!user) {
-      setError(
-        toAppError("Compte introuvable, reconnectez-vous.", {
-          kind: "permission",
-          message: "Compte introuvable, reconnectez-vous.",
-        }),
-      );
+      setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
       return;
     }
-    if (!isProfileValid) {
-      setError(
-        toAppError("Sélectionnez un rôle valide.", {
-          kind: "validation",
-          message: "Sélectionnez un rôle valide.",
-        }),
-      );
-      return;
-    }
-    if (!trimmedFirstName || !trimmedLastName) {
-      setError(
-        toAppError("Renseignez votre prénom et votre nom.", {
-          kind: "validation",
-          message: "Renseignez votre prénom et votre nom.",
-        }),
-      );
-      return;
-    }
-    if (!territoryIsValid || (!isTerritorySkipped && !territorySelection)) {
-      setError(
-        toAppError("Sélectionnez un territoire (pays, région, département, commune ou arrondissement).", {
-          kind: "validation",
-          message: "Sélectionnez un territoire (pays, région, département, commune ou arrondissement).",
-        }),
-      );
+    if (!canSubmit) {
+      setError(toAppError("Vérifiez les informations obligatoires.", { kind: "validation", message: "Vérifiez les informations obligatoires." }));
       return;
     }
 
     try {
       setIsSaving(true);
       if (selectedProfile !== initialProfile) {
-        await updateProfileRole(selectedProfile);
+        await updateActiveProfile(selectedProfile);
       }
+      setDisplayMode(selectedDisplayMode);
 
-      setLocale(selectedLocale);
-      setDisplayMode("exhaustif");
-
-      const metadata: Record<string, unknown> = {
-        ...(user.unsafeMetadata ?? {}),
+      const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
+      Object.assign(metadata, {
         profileSetupCompleted: true,
         profileSetupVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
         profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
-      };
-
-      if (!isTerritorySkipped && territorySelection) {
-        Object.assign(
-          metadata,
-          createTerritoryLocationMetadata(territorySelection, locationType),
-        );
-      }
-
-      await user.update({
-        firstName: trimmedFirstName,
-        lastName: trimmedLastName,
-        unsafeMetadata: metadata,
+        display_name_mode: displayNameMode,
       });
+      Object.assign(
+        metadata,
+        createLocationPreferencesMetadata({
+          residence: activeResidence ? residence : null,
+          work: activeWork ? work : null,
+        }),
+      );
+
+      const update: SetupUpdate = {
+        username: trimmedPseudo,
+        unsafeMetadata: metadata,
+      };
+      if (!isPseudonymous) {
+        update.firstName = trimmedFirstName;
+        update.lastName = trimmedLastName;
+      }
+      await user.update(update);
 
       if (submitMode === "refresh") {
         router.refresh();
@@ -292,22 +242,13 @@ export function AccountSetupForm({
         router.replace(nextPath ?? PROFIL_ROUTE);
         router.refresh();
       }
-    } catch (error) {
-      logFailure("AccountSetup", "Update failed", error, {
-        profile: selectedProfile,
-      });
-      const appError = isAppError(error)
-        ? error
-        : toAppError(error, {
-            kind: "server",
-            message: "Impossible d'enregistrer les préférences. Réessayez.",
-          });
+    } catch (caughtError) {
+      logFailure("AccountSetup", "Update failed", caughtError, { profile: selectedProfile });
+      const appError = isAppError(caughtError)
+        ? caughtError
+        : toAppError(caughtError, { kind: "server", message: "Impossible d’enregistrer les préférences. Réessayez." });
       if (appError.kind === "network") {
-        notifyNetworkToast({
-          message: appError.message || defaultMessageForKind("network"),
-          onRetry: () => window.location.reload(),
-          onRefresh: () => window.location.reload(),
-        });
+        notifyNetworkToast({ message: appError.message || defaultMessageForKind("network"), onRetry: () => window.location.reload(), onRefresh: () => window.location.reload() });
       }
       setError(appError);
     } finally {
@@ -319,333 +260,89 @@ export function AccountSetupForm({
     if (!clerkReachable) {
       return (
         <SystemStateLayout variant="offline" className="max-w-none">
-          <SystemStateIcon variant="offline">
-            <WifiOff className="h-7 w-7" />
-          </SystemStateIcon>
-          <SystemStateMeta variant="offline" label="Connexion">
-            Clerk n&apos;est pas joignable dans cette session.
-          </SystemStateMeta>
-          <SystemStateTitle variant="offline">
-            Session Clerk indisponible
-          </SystemStateTitle>
-          <SystemStateDescription variant="offline">
-            La configuration initiale nécessite une session Clerk valide.
-            Vérifiez votre connexion puis réessayez.
-          </SystemStateDescription>
+          <SystemStateIcon variant="offline"><Eye className="h-7 w-7" /></SystemStateIcon>
+          <SystemStateMeta variant="offline" label="Connexion">Clerk n’est pas joignable dans cette session.</SystemStateMeta>
+          <SystemStateTitle variant="offline">Session Clerk indisponible</SystemStateTitle>
+          <SystemStateDescription variant="offline">La configuration initiale nécessite une session Clerk valide. Vérifiez votre connexion puis réessayez.</SystemStateDescription>
           <SystemStateAction>
-            <CmmButton href="/" tone="secondary">
-              <ArrowLeft className="h-4 w-4" />
-              Retour à l&apos;accueil
-            </CmmButton>
-            <CmmButton href="/sign-in" tone="primary">
-              <LogIn className="h-4 w-4" />
-              Se reconnecter
-            </CmmButton>
+            <CmmButton href="/sign-in" tone="primary">Se reconnecter</CmmButton>
           </SystemStateAction>
         </SystemStateLayout>
       );
     }
-
-    return (
-      <CmmCard variant="outlined" size="sm" className="max-w-none">
-        <p className="cmm-text-small text-slate-600">Chargement du compte...</p>
-      </CmmCard>
-    );
+    return <CmmCard variant="outlined" size="sm"><p className="text-slate-600">Chargement du compte…</p></CmmCard>;
   }
 
   if (!user) {
-    return (
-      <PermissionErrorState
-        title="Connexion requise"
-        message="Reconnectez-vous pour finaliser votre compte."
-      />
-    );
+    return <PermissionErrorState title="Connexion requise" message="Reconnectez-vous pour finaliser votre compte." />;
   }
 
   return (
-    <form
-      onSubmit={(event) => void handleSubmit(event)}
-      className="flex min-h-0 flex-1 flex-col text-slate-900"
-    >
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="space-y-7 px-5 py-5 sm:px-8 sm:py-7">
-          <header className="flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-              <UserRound className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0 space-y-1">
-              <h2 id="account-completion-modal-title" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-                Mettre à jour votre compte
-              </h2>
-              <p id="account-completion-modal-description" className="cmm-text-small text-slate-600">
-                Une information supplémentaire est nécessaire pour continuer.
-              </p>
-            </div>
-          </header>
+    <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto flex min-h-full w-full max-w-7xl flex-col text-white">
+      <header className="mb-6 flex items-start gap-4 sm:mb-8">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-300/50 bg-violet-300/20 text-violet-50 shadow-[0_0_24px_-8px_rgba(139,92,246,0.9)]">
+          <UserRound className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-emerald-950 sm:text-4xl">Complétez votre profil en une seule étape</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
+        </div>
+      </header>
 
-          <section aria-labelledby="account-identity-title" className="space-y-3">
-            <div>
-              <h3 id="account-identity-title" className="text-sm font-bold text-slate-950">
-                Votre identité
-              </h3>
-              <p className="mt-1 cmm-text-caption text-slate-500">
-                Ces informations complètent votre identité CleanMyMap.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <CmmField
-                label="Prénom"
-                required
-                error={firstNameError}
-                className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500"
-              >
-                <CmmInput
-                  value={firstName}
-                  onChange={(event) => setFirstNameOverride(event.target.value)}
-                  autoComplete="given-name"
-                  placeholder="Votre prénom"
-                  className="w-full bg-white text-slate-900"
-                />
+      <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <div className="space-y-4">
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Qui êtes-vous ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">1</span><div><h2 id="account-identity-title" className="text-xl font-bold">Qui êtes-vous&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez l’identité affichée dans CleanMyMap.</p></div></div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <CmmField label="Pseudo" required error={pseudoError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100">
+                <CmmInput value={pseudo} onChange={(event) => setPseudoOverride(event.target.value)} autoComplete="username" placeholder="Vert_Tige" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" />
               </CmmField>
-              <CmmField
-                label="Nom"
-                required
-                error={lastNameError}
-                className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500"
-              >
-                <CmmInput
-                  value={lastName}
-                  onChange={(event) => setLastNameOverride(event.target.value)}
-                  autoComplete="family-name"
-                  placeholder="Votre nom"
-                  className="w-full bg-white text-slate-900"
-                />
-              </CmmField>
+              {!isPseudonymous ? <>
+                <CmmField label="Prénom" required error={firstNameError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100"><CmmInput value={firstName} onChange={(event) => setFirstNameOverride(event.target.value)} autoComplete="given-name" placeholder="Marie" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" /></CmmField>
+                <CmmField label="Nom" required error={lastNameError} className="[&_.cmm-field-label]:text-white [&_.cmm-field-required]:text-violet-100 [&_.cmm-field-error]:text-violet-100"><CmmInput value={lastName} onChange={(event) => setLastNameOverride(event.target.value)} autoComplete="family-name" placeholder="Curie" className="w-full border-emerald-100/35 bg-emerald-950/30 text-white placeholder:text-emerald-50/50" /></CmmField>
+              </> : null}
             </div>
-          </section>
+            <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm font-semibold text-white">
+              <input type="checkbox" checked={isPseudonymous} onChange={(event) => setDisplayNameMode(event.target.checked ? "pseudo" : "full_name")} className="mt-0.5 h-5 w-5 rounded border-emerald-100/50 accent-violet-500" />
+              <span>Je reste pseudonyme<span className="mt-1 block text-sm font-normal text-emerald-50/80">Seul votre pseudo sera affiché</span></span>
+            </label>
+          </CmmCard>
 
-          <section aria-labelledby="account-role-title" className="space-y-3">
-            <div>
-              <h3 id="account-role-title" className="text-sm font-bold text-slate-950">
-                1. Quel est votre rôle ?
-              </h3>
-              <p className="mt-1 cmm-text-caption text-slate-500">
-                Cela nous aide à vous proposer l&apos;expérience la plus adaptée.
-              </p>
-            </div>
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Quel profil vous correspond le mieux ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">2</span><div><h2 id="account-profile-title" className="text-xl font-bold">Quel profil vous correspond le mieux&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Ce choix modifie votre parcours, jamais vos permissions.</p></div></div>
+            <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={setSelectedProfile} error={profileError} />
+          </CmmCard>
+        </div>
 
-            <div role="radiogroup" aria-labelledby="account-role-title" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-              {profileOptions.map((profile) => {
-                const isSelected = selectedProfile === profile;
-                const isPromotionOnlyProfile = profile === "admin";
-                const Icon = PROFILE_ICONS[profile];
-                return (
-                  <button
-                    key={profile}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    aria-disabled={isPromotionOnlyProfile}
-                    disabled={isPromotionOnlyProfile}
-                    onClick={() => {
-                      if (!isPromotionOnlyProfile) {
-                        setSelectedProfile(profile);
-                      }
-                    }}
-                    className={cn(
-                      "group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors",
-                      isSelected
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm"
-                        : isPromotionOnlyProfile
-                          ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-75"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40",
-                    )}
-                  >
-                    <span className={cn("flex h-9 w-9 items-center justify-center rounded-full", isSelected ? "bg-emerald-100 text-emerald-700" : isPromotionOnlyProfile ? "bg-slate-100 text-slate-400" : "bg-slate-50 text-emerald-600")}>
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="text-sm font-semibold leading-tight">
-                      {getProfileLabel(profile, selectedLocale)}
-                    </span>
-                    <span className="line-clamp-2 text-[11px] leading-4 text-slate-500">
-                      {isPromotionOnlyProfile
-                        ? "Rôle acquis par promotion"
-                        : getProfileSubtitle(profile, selectedLocale)}
-                    </span>
-                  </button>
-                );
+        <div className="space-y-4">
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Où agissez-vous principalement ?" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">3</span><div><h2 id="account-location-title" className="text-xl font-bold">Où agissez-vous principalement&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez votre domicile et votre lieu de travail, séparément.</p></div></div>
+            <AccountSetupLocationFields residence={residence} work={work} residenceEnabled={residenceEnabled} workEnabled={workEnabled} noneSelected={noneSelected} setResidence={setResidence} setWork={setWork} setResidenceEnabled={setResidenceEnabled} setWorkEnabled={setWorkEnabled} setNoneSelected={setNoneSelected} error={locationError} />
+          </CmmCard>
+
+          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Mode d’affichage initial" className="border-emerald-100/45 bg-emerald-950/25 p-5 text-white shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-6">
+            <div className="mb-5 flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white">4</span><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-xl font-bold">Mode d’affichage initial</h2><p className="mt-1 text-sm text-emerald-50/80">Le mode change la présentation, jamais les fonctionnalités, permissions ou données.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-200/80 text-sm font-black text-violet-100 transition hover:bg-violet-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
+            <div role="radiogroup" aria-labelledby="account-display-mode-title" className="grid gap-3 sm:grid-cols-3">
+              {DISPLAY_MODES.map((mode) => {
+                const selected = selectedDisplayMode === mode;
+                const copy = DISPLAY_MODE_COPY[mode];
+                return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setSelectedDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700" : "border-emerald-100/40 bg-emerald-950/20 text-white hover:border-violet-200/70"}`}>
+                  {selected ? <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white"><Check className="h-4 w-4" aria-hidden="true" /></span> : null}
+                  <Eye className="h-7 w-7" aria-hidden="true" />
+                  <span className="text-sm font-bold">{copy.label}</span>
+                  <span className="text-xs leading-4 opacity-80">{copy.description}</span>
+                </button>;
               })}
             </div>
-
-            {profileError ? <InlineFieldError message={profileError} /> : null}
-
-            <CmmCard tone="emerald" variant="outlined" size="sm" className="flex items-start gap-3 border-emerald-200 bg-emerald-50/70 p-3">
-              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                <Check className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className="cmm-text-caption font-bold text-emerald-700">
-                  Rôle sélectionné : {getProfileLabel(selectedProfile, selectedLocale)}
-                </p>
-                <p className="mt-1 cmm-text-small text-slate-600">
-                  {PROFILE_DETAILS[selectedProfile][selectedLocale]}
-                </p>
-              </div>
-            </CmmCard>
-          </section>
-
-          <div className="grid gap-7 lg:grid-cols-[1.08fr_0.92fr] lg:divide-x lg:divide-slate-200">
-            <section aria-labelledby="account-territory-title" className="space-y-4 lg:pr-7">
-              <div>
-                <h3 id="account-territory-title" className="text-sm font-bold text-slate-950">
-                  2. Quel est votre territoire d&apos;action principal ?
-                </h3>
-                <p className="mt-1 cmm-text-caption text-slate-500">
-                  Choisissez votre lieu de résidence ou d&apos;activité principale.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="Type de territoire">
-                {([
-                  ["residence", "Résidence", House],
-                  ["work", "Travail", Briefcase],
-                ] as const).map(([value, label, Icon]) => {
-                  const isSelected = locationType === value;
-                  return (
-                    <label key={value} className={cn("flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 cmm-text-small transition-colors", isSelected ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300")}>
-                      <input
-                        type="radio"
-                        name="locationType"
-                        value={value}
-                        checked={isSelected}
-                        onChange={() => setLocationType(value)}
-                        className="accent-emerald-600"
-                      />
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                      {label}
-                    </label>
-                  );
-                })}
-              </div>
-
-              <label className="block space-y-2">
-                <span className="cmm-text-small font-medium text-slate-800">
-                  Pays, région, département, commune ou arrondissement
-                </span>
-                <GreaterParisSelect
-                  value={territorySelection}
-                  onChange={(selection) => {
-                    setTerritorySelection(selection);
-                    setIsTerritorySkipped(false);
-                  }}
-                  placeholder="Rechercher une commune, une région..."
-                  appearance="light"
-                />
-                {territoryError ? <InlineFieldError message={territoryError} /> : null}
-              </label>
-              <div className="space-y-2">
-                <p className="cmm-text-caption text-slate-500">
-                  Cette information sert à vous présenter les actions proches de chez vous.
-                </p>
-                <CmmButton
-                  type="button"
-                  tone={isTerritorySkipped ? "primary" : "secondary"}
-                  variant="ghost"
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={() => {
-                    setTerritorySelection(null);
-                    setIsTerritorySkipped(true);
-                    hasHydratedTerritorySelection.current = true;
-                  }}
-                  className="justify-start px-0 text-left"
-                >
-                  Je ne veux pas renseigner ces informations
-                </CmmButton>
-                {isTerritorySkipped ? (
-                  <p className="cmm-text-caption text-emerald-700">
-                    Vous pourrez renseigner votre territoire plus tard dans les paramètres de votre compte.
-                  </p>
-                ) : null}
-              </div>
-            </section>
-
-            <div className="grid content-start gap-7 lg:pl-7">
-              <section aria-labelledby="account-language-title" className="space-y-3">
-                <div>
-                  <h3 id="account-language-title" className="text-sm font-bold text-slate-950">
-                    3. Langue
-                  </h3>
-                  <p className="mt-1 cmm-text-caption text-slate-500">
-                    Choisissez votre langue de préférence.
-                  </p>
-                </div>
-                <CmmField label="Langue" className="[&_.cmm-field-label]:text-slate-800 [&_.cmm-field-hint]:text-slate-500">
-                  <CmmSelect
-                    value={selectedLocale}
-                    onChange={(event) => setSelectedLocale(event.target.value === "en" ? "en" : "fr")}
-                    className="w-full bg-white text-slate-900"
-                  >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                  </CmmSelect>
-                </CmmField>
-              </section>
-
-              <section aria-labelledby="account-display-mode-title" className="space-y-3">
-                <div>
-                  <h3 id="account-display-mode-title" className="text-sm font-bold text-slate-950">
-                    4. Mode d&apos;affichage initial
-                  </h3>
-                  <p className="mt-1 cmm-text-caption text-slate-500">
-                    Vous pourrez le modifier à tout moment dans Réglages.
-                  </p>
-                </div>
-                <CmmCard tone="emerald" variant="outlined" size="sm" className="flex items-start gap-3 border-emerald-200 bg-emerald-50/70 p-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                    <Eye className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="cmm-text-small font-semibold text-slate-900">Exhaustif</p>
-                    <p className="cmm-text-caption text-slate-600">
-                      Toutes les informations et options sont activées par défaut.
-                    </p>
-                  </div>
-                </CmmCard>
-              </section>
-            </div>
-          </div>
-
-          {error ? (
-            error.kind === "permission" ? (
-              <PermissionErrorState
-                title="Connexion requise"
-                message={error.message}
-              />
-            ) : (
-              <ErrorMessage
-                kind={error.kind}
-                title="Les réglages n'ont pas pu être enregistrés"
-                message={error.message}
-                actions={
-                  <CmmButton type="button" tone="secondary" size="sm" onClick={() => window.location.reload()}>
-                    Réessayer
-                  </CmmButton>
-                }
-              />
-            )
-          ) : null}
+          </CmmCard>
         </div>
       </div>
 
-      <div className="sticky bottom-0 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
-        <p className="cmm-text-caption max-w-md text-slate-500">
-          Vos préférences restent modifiables à tout moment dans les paramètres de votre compte.
-        </p>
-        <CmmButton type="submit" tone="primary" size="md" disabled={!canSubmit} loading={isSaving}>
-          {isSaving ? "Enregistrement..." : "Valider et continuer"}
-        </CmmButton>
-      </div>
+      {error ? <div className="mt-4"><ErrorMessage kind={error.kind} title="Les réglages n’ont pas pu être enregistrés" message={error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => window.location.reload()}>Réessayer</CmmButton>} /></div> : null}
+      <footer className="sticky bottom-0 z-10 mt-5 flex flex-col gap-3 rounded-2xl border border-emerald-100/35 bg-emerald-950/65 px-4 py-4 shadow-[0_-16px_35px_-30px_rgba(6,78,59,0.9)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p className="max-w-xl text-sm text-emerald-50/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
+        <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving}>{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
+      </footer>
     </form>
   );
 }

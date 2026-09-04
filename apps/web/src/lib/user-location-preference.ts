@@ -1,7 +1,6 @@
 import {
   extractArrondissementFromLabel,
   inferArrondissementCityFromLabel,
-  parseParisArrondissement,
   parseTerritoryArrondissement as parseTerritoryArrondissementValue,
   type ArrondissementCity,
   type ParisArrondissement,
@@ -37,7 +36,39 @@ export type UserLocationPreference = {
   locationType: UserLocationType;
 };
 
+/** Canonical independent onboarding preferences stored in Clerk unsafeMetadata. */
+export type UserLocationPreferences = {
+  residence: TerritoryLocationSelection | null;
+  work: TerritoryLocationSelection | null;
+};
+
 export type GreaterParisLocationPreference = TerritoryLocationPreference;
+
+export const TERRITORY_PREFERENCES_METADATA_KEY = "territoryPreferences";
+
+const LEGACY_TERRITORY_METADATA_KEYS = [
+  "territoryCountry",
+  "territoryLevel",
+  "territoryLabel",
+  "territorySubtitle",
+  "territoryArrondissement",
+  "territoryArrondissementCity",
+  "territoryLocationType",
+  "territoryRegion",
+  "territoryDepartment",
+  "parisArrondissement",
+  "parisLocationType",
+  "zoneName",
+  "zoneDepartment",
+  "zoneAreaType",
+  "zoneLocationType",
+  "zoneLevel",
+  "zoneCity",
+] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function parseLocationType(value: unknown): UserLocationType | null {
   if (value === "residence" || value === "work") {
@@ -85,6 +116,45 @@ function parseTerritoryArrondissement(value: unknown): ParisArrondissement | nul
   return null;
 }
 
+function parseCanonicalSelection(value: unknown): TerritoryLocationSelection | null {
+  if (!isRecord(value) || value.country !== "France") {
+    return null;
+  }
+
+  const label = normalizeLabel(value.label);
+  const level = parseTerritoryLevel(value.level);
+  if (!label || !level) {
+    return null;
+  }
+
+  return {
+    country: "France",
+    level,
+    label,
+    subtitle: normalizeLabel(value.subtitle) || null,
+    arrondissement:
+      parseTerritoryArrondissement(value.arrondissement) ??
+      parseTerritoryArrondissement(label),
+    arrondissementCity:
+      parseTerritoryArrondissementCity(value.arrondissementCity) ??
+      inferArrondissementCityFromLabel(label),
+  };
+}
+
+function readCanonicalLocationPreferences(
+  metadata: ClerkMetadata,
+): UserLocationPreferences | null {
+  const raw = metadata?.[TERRITORY_PREFERENCES_METADATA_KEY];
+  if (!isRecord(raw) || !("residence" in raw) || !("work" in raw)) {
+    return null;
+  }
+
+  return {
+    residence: parseCanonicalSelection(raw.residence),
+    work: parseCanonicalSelection(raw.work),
+  };
+}
+
 function inferTerritoryLevel(metadata: ClerkMetadata, label: string): TerritoryLocationLevel {
   const explicitLevel =
     parseTerritoryLevel(metadata?.["territoryLevel"]) ??
@@ -130,16 +200,7 @@ function buildTerritorySelectionFromMetadata(
     return null;
   }
 
-  const arrondissementCity =
-    parseTerritoryArrondissementCity(metadata["territoryArrondissementCity"]) ??
-    parseTerritoryArrondissementCity(metadata["zoneCity"]) ??
-    inferArrondissementCityFromLabel(label) ??
-    inferArrondissementCityFromLabel(
-      normalizeLabel(metadata["zoneName"]),
-    ) ??
-    (parseTerritoryArrondissement(metadata["parisArrondissement"]) ? "Paris" : null);
-
-  const territorySelection: TerritoryLocationSelection = {
+  return {
     country: "France",
     level: inferTerritoryLevel(metadata, label),
     label,
@@ -152,71 +213,123 @@ function buildTerritorySelectionFromMetadata(
       parseTerritoryArrondissement(metadata["territoryArrondissement"]) ??
       parseTerritoryArrondissement(metadata["parisArrondissement"]) ??
       parseTerritoryArrondissement(label),
-    arrondissementCity,
-  };
-
-  return {
-    ...territorySelection,
+    arrondissementCity:
+      parseTerritoryArrondissementCity(metadata["territoryArrondissementCity"]) ??
+      parseTerritoryArrondissementCity(metadata["zoneCity"]) ??
+      inferArrondissementCityFromLabel(label) ??
+      inferArrondissementCityFromLabel(normalizeLabel(metadata["zoneName"])) ??
+      (parseTerritoryArrondissement(metadata["parisArrondissement"]) ? "Paris" : null),
     locationType,
   };
 }
 
-export function extractUserLocationPreferenceFromMetadata(
-  metadata: ClerkMetadata,
-): UserLocationPreference | null {
+function readLegacyLocationPreferences(metadata: ClerkMetadata): UserLocationPreferences {
   if (!metadata) {
-    return null;
-  }
-
-  const territoryLocationType =
-    parseLocationType(metadata["territoryLocationType"]) ??
-    parseLocationType(metadata["zoneLocationType"]) ??
-    parseLocationType(metadata["parisLocationType"]);
-  const territorySelection = buildTerritorySelectionFromMetadata(
-    metadata,
-    territoryLocationType ?? "residence",
-  );
-  if (territorySelection?.arrondissement && territoryLocationType) {
-    return {
-      arrondissement: territorySelection.arrondissement,
-      locationType: territoryLocationType,
-    };
-  }
-
-  const arrondissement = parseParisArrondissement(metadata["parisArrondissement"]);
-  const locationType = parseLocationType(metadata["parisLocationType"]);
-  if (!arrondissement || !locationType) {
-    return null;
-  }
-  return { arrondissement, locationType };
-}
-
-export function extractTerritoryLocationPreferenceFromMetadata(
-  metadata: ClerkMetadata,
-): TerritoryLocationPreference | null {
-  if (!metadata) {
-    return null;
+    return { residence: null, work: null };
   }
 
   const locationType =
     parseLocationType(metadata["territoryLocationType"]) ??
     parseLocationType(metadata["zoneLocationType"]) ??
     parseLocationType(metadata["parisLocationType"]);
+  const selection = locationType
+    ? buildTerritorySelectionFromMetadata(metadata, locationType)
+    : null;
 
-  if (!locationType) {
-    return null;
+  if (!selection && locationType) {
+    const arrondissement = parseTerritoryArrondissement(metadata["parisArrondissement"]);
+    if (arrondissement) {
+      const parisSelection: TerritoryLocationSelection = {
+        country: "France",
+        level: "arrondissement",
+        label: `Paris ${arrondissement === 1 ? "1er" : `${arrondissement}e`}`,
+        subtitle: null,
+        arrondissement,
+        arrondissementCity: "Paris",
+      };
+      return {
+        residence: locationType === "residence" ? parisSelection : null,
+        work: locationType === "work" ? parisSelection : null,
+      };
+    }
   }
 
-  return buildTerritorySelectionFromMetadata(metadata, locationType);
+  if (!selection) {
+    return { residence: null, work: null };
+  }
+
+  const { locationType: selectedLocationType, ...territorySelection } = selection;
+  return {
+    residence: selectedLocationType === "residence" ? territorySelection : null,
+    work: selectedLocationType === "work" ? territorySelection : null,
+  };
+}
+
+export function extractLocationPreferencesFromMetadata(
+  metadata: ClerkMetadata,
+): UserLocationPreferences {
+  return readCanonicalLocationPreferences(metadata) ?? readLegacyLocationPreferences(metadata);
+}
+
+export function extractUserLocationPreferenceFromMetadata(
+  metadata: ClerkMetadata,
+): UserLocationPreference | null {
+  const preferences = extractLocationPreferencesFromMetadata(metadata);
+  for (const [locationType, selection] of [
+    ["residence", preferences.residence],
+    ["work", preferences.work],
+  ] as const) {
+    if (selection?.arrondissement) {
+      return { arrondissement: selection.arrondissement, locationType };
+    }
+  }
+  return null;
+}
+
+export function extractTerritoryLocationPreferenceFromMetadata(
+  metadata: ClerkMetadata,
+): TerritoryLocationPreference | null {
+  const preferences = extractLocationPreferencesFromMetadata(metadata);
+  if (preferences.residence) {
+    return { ...preferences.residence, locationType: "residence" };
+  }
+  if (preferences.work) {
+    return { ...preferences.work, locationType: "work" };
+  }
+  return null;
 }
 
 export function extractResidenceLocationPreferenceFromMetadata(
   metadata: ClerkMetadata,
 ): TerritoryLocationPreference | null {
-  const preference = extractTerritoryLocationPreferenceFromMetadata(metadata);
-  return preference?.locationType === "residence" ? preference : null;
+  const selection = extractLocationPreferencesFromMetadata(metadata).residence;
+  return selection ? { ...selection, locationType: "residence" } : null;
 }
 
+export function createLocationPreferencesMetadata(
+  preferences: UserLocationPreferences,
+): Record<string, unknown> {
+  return {
+    [TERRITORY_PREFERENCES_METADATA_KEY]: {
+      residence: preferences.residence,
+      work: preferences.work,
+    },
+  };
+}
+
+/** Remove both the canonical object and all legacy Clerk location fields. */
+export function clearLocationPreferenceMetadata(
+  metadata: Record<string, unknown>,
+): Record<string, unknown> {
+  const cleaned = { ...metadata };
+  delete cleaned[TERRITORY_PREFERENCES_METADATA_KEY];
+  for (const key of LEGACY_TERRITORY_METADATA_KEYS) {
+    delete cleaned[key];
+  }
+  return cleaned;
+}
+
+/** Legacy writer retained for non-onboarding consumers until their contracts migrate. */
 export function createTerritoryLocationMetadata(
   selection: TerritoryLocationSelection,
   locationType: UserLocationType,
