@@ -95,6 +95,11 @@ function SelectionDetail({
         </span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-300">{selection.reason}</p>
+      {selection.parisPressure ? (
+        <p className="mt-2 text-xs leading-relaxed text-sky-100/80">
+          Zone IRIS {selection.parisPressure.zoneId} : pression humaine structurelle {formatNumber(selection.parisPressure.humanPressure ?? 0, 3)} à {formatDistance(selection.parisPressure.distanceToZoneKm)} du centroïde. Ce signal est un prior de contexte, pas une mesure de fréquentation en temps réel.
+        </p>
+      ) : null}
       <dl className="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
         <div>
           <dt className="text-slate-500">Priorité normalisée</dt>

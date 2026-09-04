@@ -148,6 +148,7 @@ function dataWithEvents(): RouteResponse {
         maxScoreBoost: 20,
       },
       eventCentered: null,
+      spatialPrior: null,
     },
   };
 }

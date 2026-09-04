@@ -55,6 +55,8 @@ import {
 } from "@/lib/route/route-event-centered";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
+import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
 
 export const runtime ="nodejs";
 
@@ -261,12 +263,27 @@ export async function POST(request: Request) {
  new Date(),
  eventSignalContext.candidatePressureById,
  );
+ const parisPressureSnapshot = loadParisPressureSnapshot();
+ const spatialPrior = parisPressureSnapshot
+   ? {
+       snapshotId: parisPressureSnapshot.snapshotId,
+       schemaVersion: parisPressureSnapshot.schemaVersion,
+       geographicLevel: parisPressureSnapshot.geographicLevel,
+       sourceStatus: Object.fromEntries(
+         parisPressureSnapshot.sources.map((source) => [source.family, source.status]),
+       ),
+       note: "Signal structurel versionné ; aucune source externe n'est appelée pendant le calcul.",
+     }
+   : null;
+ const spatialCandidates = parisPressureSnapshot
+   ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
+   : candidates;
  const eventCenteredCandidates = eventAnchor
-   ? buildEventCenteredCandidates(candidates, eventAnchor)
+   ? buildEventCenteredCandidates(spatialCandidates, eventAnchor)
    : null;
  const planningCandidates = eventCenteredCandidates
    ? eventCenteredCandidates.candidates
-   : candidates;
+   : spatialCandidates;
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
    isTruncated,
@@ -343,6 +360,7 @@ export async function POST(request: Request) {
               [],
             )
           : null,
+        spatialPrior,
       }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
@@ -459,6 +477,7 @@ export async function POST(request: Request) {
          plannedStops.map(({ candidate }) => candidate.id),
        )
      : null,
+   spatialPrior,
  });
 
  try {

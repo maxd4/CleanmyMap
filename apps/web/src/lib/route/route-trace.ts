@@ -19,6 +19,8 @@ import type {
   RouteEventCenteredContext,
 } from "./route-event-centered";
 import type { RoutePlanningMode } from "./route-planning-mode";
+import type { ParisPressureAtPoint } from "@/lib/geo/paris-pressure-lookup";
+import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -53,6 +55,7 @@ export type RouteTraceSelectedStop = {
   reason: string;
   eventContributions: RouteEventPressureContribution[];
   eventScoreContribution: number;
+  parisPressure?: ParisPressureAtPoint | null;
 };
 
 export type RouteTraceSegment = {
@@ -127,6 +130,13 @@ export type RouteRecommendationTrace = {
     maxScoreBoost: number;
   };
   eventCentered: RouteEventCenteredContext | null;
+  spatialPrior: {
+    snapshotId: string;
+    schemaVersion: ParisPressureSnapshot["schemaVersion"];
+    geographicLevel: ParisPressureSnapshot["geographicLevel"];
+    sourceStatus: Record<string, ParisPressureSnapshot["sources"][number]["status"]>;
+    note: string;
+  } | null;
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -145,6 +155,7 @@ export type BuildRouteRecommendationTraceInput = {
   sourceHealth: UnifiedSourceHealth;
   eventSignalContext?: RouteEventSignalContext;
   eventCenteredContext?: RouteEventCenteredContext | null;
+  spatialPrior?: RouteRecommendationTrace["spatialPrior"];
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -254,6 +265,9 @@ function selectionForStop(
             .eventScoreContribution
         : eventSignalContext.candidatePressureById.get(stop.candidate.id)
               ?.scoreBoost ?? 0,
+    parisPressure:
+      ((stop.candidate as { parisPressure?: ParisPressureAtPoint | null })
+        .parisPressure ?? null),
   };
 }
 
@@ -392,5 +406,6 @@ export function buildRouteRecommendationTrace(
       maxScoreBoost: 20,
     },
     eventCentered: input.eventCenteredContext ?? null,
+    spatialPrior: input.spatialPrior ?? null,
   };
 }
