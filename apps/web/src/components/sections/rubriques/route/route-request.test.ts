@@ -10,6 +10,7 @@ import {
 
 const responsePayload = {
   status: "ok",
+  planningMode: { type: "free" },
   dataStatus: "empty",
   isTruncated: false,
   sourceHealth: {
@@ -79,7 +80,7 @@ describe("route recommendation request gate", () => {
 
     expect(transport).toHaveBeenCalledOnce();
     expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual(
-      DEFAULT_ROUTE_OPTIONS,
+      { ...DEFAULT_ROUTE_OPTIONS, planningMode: { type: "free" } },
     );
     expect(submitted.options).not.toBe(editedOptions);
     expect(submitted.options).toEqual(DEFAULT_ROUTE_OPTIONS);
@@ -119,6 +120,31 @@ describe("route recommendation request gate", () => {
     expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual({
       ...DEFAULT_ROUTE_OPTIONS,
       origin,
+      planningMode: { type: "free" },
+    });
+  });
+
+  it("transports event-centered planning without persisting it in options", async () => {
+    const planningMode = {
+      type: "event-centered",
+      eventId: "11111111-1111-4111-8111-111111111111",
+    } as const;
+    const request = createRouteRecommendationRequest(
+      5,
+      DEFAULT_ROUTE_OPTIONS,
+      undefined,
+      planningMode,
+    );
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(request, transport);
+
+    expect(request.options).toEqual(DEFAULT_ROUTE_OPTIONS);
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual({
+      ...DEFAULT_ROUTE_OPTIONS,
+      planningMode,
     });
   });
 

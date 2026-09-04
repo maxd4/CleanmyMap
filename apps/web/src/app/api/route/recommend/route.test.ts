@@ -16,6 +16,7 @@ const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
 const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn());
 const loadCachedRouteEventSignalContextMock = vi.hoisted(() => vi.fn());
+const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
@@ -71,6 +72,9 @@ vi.mock("@/lib/route/recommendation-assistant", () => ({
 }));
 vi.mock("@/lib/route/route-event-pressure-loader", () => ({
   loadCachedRouteEventSignalContext: loadCachedRouteEventSignalContextMock,
+}));
+vi.mock("@/lib/route/route-event-centered-loader", () => ({
+  loadRouteEventCenteredAnchor: loadRouteEventCenteredAnchorMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -190,6 +194,7 @@ describe("POST /api/route/recommend", () => {
       sourceAvailable: true,
       warnings: [],
     });
+    loadRouteEventCenteredAnchorMock.mockResolvedValue(null);
     loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
       isTruncated: false,
@@ -356,6 +361,92 @@ describe("POST /api/route/recommend", () => {
       priorityVsTravel: 25,
     });
     expect((await response.json()).origin).toEqual(explicitOrigin);
+  });
+
+  it("passes event-centered planning through the canonical scoring and trace", async () => {
+    const eventId = "11111111-1111-4111-8111-111111111111";
+    const eventAnchor = {
+      id: eventId,
+      title: "Fête de quartier",
+      eventDate: "2026-09-03",
+      locationLabel: "Place de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+    } as const;
+    const farCandidate = { ...candidate, id: "far", score: 100, latitude: 48.91 };
+    const nearCandidate = { ...candidate, id: "near", score: 40, latitude: 48.857 };
+    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce(eventAnchor);
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([
+      farCandidate,
+      nearCandidate,
+    ]);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      planningMode: { type: "event-centered", eventId },
+      maxStops: 1,
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(loadRouteEventCenteredAnchorMock).toHaveBeenCalledWith({}, eventId);
+    expect(planRouteMock).toHaveBeenCalledWith(expect.objectContaining({
+      candidates: expect.arrayContaining([
+        expect.objectContaining({ id: "near", eventCenteredInfluence: expect.any(Object) }),
+      ]),
+    }));
+    expect(planRouteMock.mock.calls[0]?.[0].candidates[0].id).toBe("near");
+    expect(payload.planningMode).toEqual({ type: "event-centered", eventId });
+    expect(payload.trace.eventCentered).toEqual(expect.objectContaining({
+      event: eventAnchor,
+      role: "post_event_anchor",
+      selectedCandidateIds: ["near"],
+    }));
+  });
+
+  it("refuses event-centered calculation when the selected event has no precise location", async () => {
+    const eventId = "22222222-2222-4222-8222-222222222222";
+    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce(null);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      planningMode: { type: "event-centered", eventId },
+    }));
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: "A geolocated event is required for event-centered planning.",
+    });
+    expect(loadRouteRecommendationSourceMock).not.toHaveBeenCalled();
+    expect(planRouteMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a future event explicit as an anticipation anchor", async () => {
+    const eventId = "33333333-3333-4333-8333-333333333333";
+    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce({
+      id: eventId,
+      title: "Événement à venir",
+      eventDate: "2026-09-06",
+      locationLabel: "Parc de test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      planningMode: { type: "event-centered", eventId },
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.trace.eventCentered).toEqual(expect.objectContaining({
+      temporalStatus: "future",
+      role: "anticipation_anchor",
+      ageDays: null,
+    }));
   });
 
   it("forwards geospatial event pressure to the route candidate scoring step", async () => {

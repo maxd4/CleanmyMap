@@ -15,6 +15,10 @@ import type {
   RouteEventPressureContribution,
   RouteEventSignalContext,
 } from "./route-event-pressure";
+import type {
+  RouteEventCenteredContext,
+} from "./route-event-centered";
+import type { RoutePlanningMode } from "./route-planning-mode";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -62,6 +66,7 @@ export type RouteTraceSegment = {
 
 export type RouteRecommendationTrace = {
   engineVersion: string;
+  planningMode: RoutePlanningMode;
   parameters: {
     travelBudgetMinutes: number;
     maxStops: number;
@@ -121,10 +126,12 @@ export type RouteRecommendationTrace = {
     spatialRadiusKm: number;
     maxScoreBoost: number;
   };
+  eventCentered: RouteEventCenteredContext | null;
 };
 
 export type BuildRouteRecommendationTraceInput = {
   engineVersion: string;
+  planningMode?: RoutePlanningMode;
   origin: RoutePlannerOrigin;
   travelBudgetMinutes: number;
   maxStops: number;
@@ -137,6 +144,7 @@ export type BuildRouteRecommendationTraceInput = {
   budgetPrefixApplied: boolean;
   sourceHealth: UnifiedSourceHealth;
   eventSignalContext?: RouteEventSignalContext;
+  eventCenteredContext?: RouteEventCenteredContext | null;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -317,6 +325,7 @@ export function buildRouteRecommendationTrace(
 
   return {
     engineVersion: input.engineVersion,
+    planningMode: input.planningMode ?? { type: "free" },
     parameters: {
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,
@@ -382,5 +391,6 @@ export function buildRouteRecommendationTrace(
       spatialRadiusKm: 2,
       maxScoreBoost: 20,
     },
+    eventCentered: input.eventCenteredContext ?? null,
   };
 }

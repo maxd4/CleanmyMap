@@ -28,6 +28,7 @@ vi.mock("@/components/ui/cmm-pill", () => ({
 function dataWithEvents(): RouteResponse {
   return {
     status: "ok",
+    planningMode: { type: "free" },
     dataStatus: "complete",
     isTruncated: false,
     sourceHealth: { partial: false, failedSources: [], availableSources: ["spots"], warnings: [] },
@@ -82,6 +83,7 @@ function dataWithEvents(): RouteResponse {
     },
     trace: {
       engineVersion: "route-planner-v1",
+      planningMode: { type: "free" },
       parameters: { travelBudgetMinutes: 60, maxStops: 6, priorityVsTravel: 65 },
       origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
       candidates: { loaded: 2, admissible: 2, excluded: 0, excludedByReason: {} },
@@ -145,6 +147,7 @@ function dataWithEvents(): RouteResponse {
         spatialRadiusKm: 2,
         maxScoreBoost: 20,
       },
+      eventCentered: null,
     },
   };
 }
@@ -161,6 +164,8 @@ describe("RouteEventOpportunities", () => {
     expect(markup).toContain("Pression 53,6 %");
     expect(markup).toContain("Créer une action");
     expect(markup).toContain("/actions/new?fromEventId=event-1");
+    expect(markup).toContain("Créer un itinéraire autour de cet événement");
+    expect(markup).toContain("planningMode=event-centered");
     expect(markup).toContain("pas un constat de déchets");
   });
 

@@ -2,6 +2,7 @@ import { clerk } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 
 const routeResponse = {
+  planningMode: { type: "free" },
   status: "ok",
   dataStatus: "complete",
   isTruncated: false,
@@ -77,6 +78,7 @@ const routeResponse = {
   },
   trace: {
     engineVersion: "route-planner-v1",
+    planningMode: { type: "free" },
     parameters: { travelBudgetMinutes: 60, maxStops: 6, priorityVsTravel: 65 },
     origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
     candidates: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
@@ -92,6 +94,8 @@ const routeResponse = {
       budgetBeforeMinutes: 60,
       budgetAfterMinutes: 44,
       reason: "Étape 1: meilleur candidat dans le budget.",
+      eventContributions: [],
+      eventScoreContribution: 0,
     }],
     ordering: {
       stopIds: ["spot-1"],
@@ -120,6 +124,7 @@ const routeResponse = {
     warnings: [],
     approximations: [],
     fallbacks: [],
+    eventCentered: null,
   },
 };
 
@@ -147,4 +152,98 @@ test("un itinéraire calculé peut être ouvert et expliqué jusqu’à un segme
   await page.getByText("Détail du trajet").click();
   await expect(page.getByText("Rue des Tests")).toBeVisible();
   await expect(page.getByText("Mesure réseau").last()).toBeVisible();
+});
+
+test("un événement peut être sélectionné puis utilisé pour calculer et expliquer un trajet", async ({ page }) => {
+  const email = process.env.E2E_CLERK_USER_EMAIL;
+  if (!email) throw new Error("The official Clerk E2E user email was not provisioned.");
+
+  const eventId = "11111111-1111-4111-8111-111111111111";
+  const eventMode = { type: "event-centered", eventId } as const;
+  const event = {
+    id: eventId,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    organizerClerkId: null,
+    title: "Fête de quartier",
+    eventDate: "2026-09-03",
+    locationLabel: "Place de test",
+    location: { label: "Place de test", latitude: 48.8566, longitude: 2.3522, source: "manual" },
+    description: null,
+    capacityTarget: 50,
+    attendanceCount: null,
+    postMortem: null,
+    cleanupObjective: null,
+    cleanupZone: null,
+    cleanupLogisticsNeeds: null,
+    cleanupSupportLevel: "moyen",
+    cleanupWasteTypesExpected: ["mixte"],
+    rsvpCounts: { yes: 4, maybe: 1, no: 0, total: 5 },
+    myRsvpStatus: null,
+  };
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await clerk.signIn({ page, emailAddress: email });
+  await page.waitForFunction(() => Boolean(window.Clerk?.user && window.Clerk?.session));
+  await page.route("**/api/community/events?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "ok", count: 1, items: [event] }),
+    });
+  });
+  await page.goto("/sections/route", { waitUntil: "domcontentloaded" });
+
+  const recommendationRequests: string[] = [];
+  await page.route("**/api/route/recommend", async (route) => {
+    recommendationRequests.push(route.request().postData() ?? "");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...routeResponse,
+        planningMode: eventMode,
+        trace: {
+          ...routeResponse.trace,
+          planningMode: eventMode,
+          eventCentered: {
+            event: {
+              id: eventId,
+              title: event.title,
+              eventDate: event.eventDate,
+              locationLabel: event.locationLabel,
+              latitude: 48.8566,
+              longitude: 2.3522,
+            },
+            temporalStatus: "past",
+            ageDays: 1,
+            distanceFromOriginKm: 0.4,
+            role: "post_event_anchor",
+            radiusKm: 2,
+            anchorWeight: 0.55,
+            favoredCandidateIds: ["spot-1"],
+            outsideAnchorRadiusCandidateIds: [],
+            selectedCandidateIds: ["spot-1"],
+            candidateImpacts: [],
+          },
+        },
+      }),
+    });
+  });
+
+  await expect(page.getByRole("button", { name: "Itinéraire autour d’un événement" })).toBeVisible();
+  expect(recommendationRequests).toHaveLength(0);
+  await page.getByRole("button", { name: "Utiliser un itinéraire autour d’un événement" }).click();
+  await expect(page.getByText("Fête de quartier")).toBeVisible();
+  await expect(page.getByText("Localisation précise disponible pour l’ancrage.")).toBeVisible();
+  expect(recommendationRequests).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Calculer la recommandation" }).click();
+  await expect.poll(() => recommendationRequests).toHaveLength(1);
+  expect(JSON.parse(recommendationRequests[0]!)).toEqual(expect.objectContaining({
+    planningMode: eventMode,
+  }));
+  await expect(page.getByText("Itinéraire construit autour de cet événement")).toBeVisible();
+  await page.getByText("Comprendre cet itinéraire").click();
+  await page.getByText("Détail du trajet").click();
+  await expect(page.getByText("Rue des Tests")).toBeVisible();
 });

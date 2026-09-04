@@ -48,6 +48,13 @@ import {
 import { buildRouteRecommendationTrace } from "@/lib/route/route-trace";
 import { loadCachedRouteEventSignalContext } from "@/lib/route/route-event-pressure-loader";
 import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
+import {
+  buildEventCenteredCandidates,
+  buildRouteEventCenteredContext,
+  type RouteEventCenteredAnchor,
+} from "@/lib/route/route-event-centered";
+import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
+import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
 export const runtime ="nodejs";
 
@@ -63,6 +70,13 @@ const requestSchema = z.object({
  maxStops: z.number().int().min(1).max(12).default(6),
  priorityVsTravel: z.number().finite().min(0).max(100).optional(),
  priorityVsDistance: z.number().finite().min(0).max(100).optional(),
+ planningMode: z.discriminatedUnion("type", [
+   z.object({ type: z.literal("free") }),
+   z.object({
+     type: z.literal("event-centered"),
+     eventId: z.string().uuid(),
+   }),
+ ]).default({ type: "free" }),
 }).strip();
 
 const ROUTE_RECOMMENDATION_RATE_LIMIT = {
@@ -196,6 +210,7 @@ export async function POST(request: Request) {
  const options = parsed.data;
  const priorityVsTravel =
    options.priorityVsTravel ?? options.priorityVsDistance ?? 65;
+ const planningMode = options.planningMode as RoutePlanningMode;
 
  try {
  const supabase = getSupabaseServerClient();
@@ -209,6 +224,17 @@ export async function POST(request: Request) {
      { error: "A route origin is required." },
      { status: 422 },
    );
+ }
+
+ let eventAnchor: RouteEventCenteredAnchor | null = null;
+ if (planningMode.type === "event-centered") {
+   eventAnchor = await loadRouteEventCenteredAnchor(supabase, planningMode.eventId);
+   if (!eventAnchor) {
+     return NextResponse.json(
+       { error: "A geolocated event is required for event-centered planning." },
+       { status: 422 },
+     );
+   }
  }
 
  const { items: contracts, isTruncated, sourceHealth } =
@@ -235,13 +261,19 @@ export async function POST(request: Request) {
  new Date(),
  eventSignalContext.candidatePressureById,
  );
+ const eventCenteredCandidates = eventAnchor
+   ? buildEventCenteredCandidates(candidates, eventAnchor)
+   : null;
+ const planningCandidates = eventCenteredCandidates
+   ? eventCenteredCandidates.candidates
+   : candidates;
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
    isTruncated,
    sourceHealth,
  });
 
-  const selected = candidates.slice(0, Math.max(options.maxStops * 2, 8));
+  const selected = planningCandidates.slice(0, Math.max(options.maxStops * 2, 8));
   const plannerResult = planRoute({
     origin,
     candidates: selected,
@@ -267,6 +299,7 @@ export async function POST(request: Request) {
       routeGeometryMode: routeGeometry.mode,
     });
     return NextResponse.json({
+      planningMode,
       status,
       dataStatus,
       isTruncated,
@@ -301,6 +334,15 @@ export async function POST(request: Request) {
         budgetPrefixApplied,
         sourceHealth,
         eventSignalContext,
+        planningMode,
+        eventCenteredContext: eventAnchor
+          ? buildRouteEventCenteredContext(
+              eventAnchor,
+              origin,
+              eventCenteredCandidates?.impacts ?? [],
+              [],
+            )
+          : null,
       }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
@@ -408,6 +450,15 @@ export async function POST(request: Request) {
    budgetPrefixApplied,
    sourceHealth,
    eventSignalContext,
+   planningMode,
+   eventCenteredContext: eventAnchor
+     ? buildRouteEventCenteredContext(
+         eventAnchor,
+         origin,
+         eventCenteredCandidates?.impacts ?? [],
+         plannedStops.map(({ candidate }) => candidate.id),
+       )
+     : null,
  });
 
  try {
@@ -423,6 +474,7 @@ export async function POST(request: Request) {
  }
 
  return NextResponse.json({
+ planningMode,
  status,
  dataStatus,
  isTruncated,
