@@ -2,6 +2,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 function run(title, command, args, cwd) {
   console.log(`[backend] ${title}`);
@@ -16,27 +17,44 @@ function hasFlag(flag) {
   return process.argv.slice(2).includes(flag);
 }
 
-const cwd = process.cwd();
-const skipSupabase = hasFlag("--skip-supabase");
-const skipVercelLink = hasFlag("--skip-vercel-link");
-const skipVercelEnv = hasFlag("--skip-vercel-env");
-
-if (!skipVercelLink && !existsSync(resolve(cwd, ".vercel", "project.json"))) {
-  run("Vercel link", "npx", ["vercel", "link", "--yes"], cwd);
+export function getVercelEnvSyncArgs() {
+  return [
+    "scripts/vercel-sync-env.mjs",
+    "--file=.env.local",
+    "--environments=development",
+  ];
 }
 
-if (!skipSupabase) {
-  run("Supabase migrations push", "npx", ["supabase", "db", "push", "--workdir", ".", "--yes"], cwd);
-  run("Supabase preview branch ensure", "node", ["scripts/supabase-preview-branch.mjs"], cwd);
+export function main() {
+  const cwd = process.cwd();
+  const skipSupabase = hasFlag("--skip-supabase");
+  const skipVercelLink = hasFlag("--skip-vercel-link");
+  const skipVercelEnv = hasFlag("--skip-vercel-env");
+
+  if (!skipVercelLink && !existsSync(resolve(cwd, ".vercel", "project.json"))) {
+    run("Vercel link", "npx", ["vercel", "link", "--yes"], cwd);
+  }
+
+  if (!skipSupabase) {
+    run("Supabase migrations push", "npx", ["supabase", "db", "push", "--workdir", ".", "--yes"], cwd);
+    run("Supabase preview branch ensure", "node", ["scripts/supabase-preview-branch.mjs"], cwd);
+  }
+
+  if (!skipVercelEnv) {
+    run(
+      "Vercel env sync (development)",
+      "node",
+      getVercelEnvSyncArgs(),
+      cwd,
+    );
+  }
+
+  console.log("[backend] Bootstrap completed.");
 }
 
-if (!skipVercelEnv) {
-  run(
-    "Vercel env sync (development, production)",
-    "node",
-    ["scripts/vercel-sync-env.mjs", "--file=.env.local", "--environments=development,production"],
-    cwd,
-  );
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  main();
 }
-
-console.log("[backend] Bootstrap completed.");
