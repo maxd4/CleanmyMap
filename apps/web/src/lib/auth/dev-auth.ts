@@ -5,6 +5,10 @@ function readEnvFlag(name: string): boolean {
   return process.env[name] === "1" || process.env[name] === "true";
 }
 
+export function isDevAuthBypassForced(): boolean {
+  return readEnvFlag("CMM_DEV_AUTH_BYPASS");
+}
+
 function readEnvValue(name: string, fallback: string): string {
   const value = process.env[name]?.trim();
   return value && value.length > 0 ? value : fallback;
@@ -27,11 +31,26 @@ export function isDevAuthBypassEnabled(hostname: string | null | undefined): boo
     return false;
   }
 
-  if (readEnvFlag("CMM_DEV_AUTH_BYPASS")) {
+  if (isDevAuthBypassForced()) {
     return true;
   }
 
   return isLocalhostHost(hostname);
+}
+
+export function shouldUseDevAuthBypass(params: {
+  hostname: string | null | undefined;
+  clerkUserId: string | null | undefined;
+}): boolean {
+  if (!isDevAuthBypassEnabled(params.hostname)) {
+    return false;
+  }
+
+  if (isDevAuthBypassForced()) {
+    return true;
+  }
+
+  return !params.clerkUserId;
 }
 
 export function getDevAuthBypassRole(): string {

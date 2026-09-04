@@ -1,10 +1,11 @@
 import "server-only";
 
+import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import {
   getDevAuthBypassRole,
-  isDevAuthBypassEnabled,
-  isLocalhostHost,
+  isDevAuthBypassForced,
+  shouldUseDevAuthBypass,
 } from "./dev-auth";
 import {
   INACTIVE_LOCAL_DEV_AUTH,
@@ -24,7 +25,16 @@ export async function getLocalDevAuthState(): Promise<LocalDevAuthState> {
     return INACTIVE_LOCAL_DEV_AUTH;
   }
 
-  if (!isLocalhostHost(host) || !isDevAuthBypassEnabled(host)) {
+  let clerkUserId: string | null = null;
+  if (!isDevAuthBypassForced()) {
+    try {
+      clerkUserId = (await auth()).userId ?? null;
+    } catch {
+      clerkUserId = null;
+    }
+  }
+
+  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId })) {
     return INACTIVE_LOCAL_DEV_AUTH;
   }
 
