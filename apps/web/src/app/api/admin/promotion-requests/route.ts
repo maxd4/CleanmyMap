@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { parseAdminUserIds, resolveClerkRole } from "@/lib/auth/role-resolution";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
 import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
@@ -32,7 +32,6 @@ function resolveCanonicalTargetRole(user: {
 }): AppProfile {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
     ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
     ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
@@ -203,6 +202,36 @@ export async function POST(request: Request) {
     const client = await clerkClient();
     const targetUser = await client.users.getUser(requestRecord.submittedByUserId);
     previousRole = resolveCanonicalTargetRole(targetUser);
+
+    if (previousRole === "max") {
+      await appendAdminOperationAudit({
+        operationId,
+        at: new Date().toISOString(),
+        actorUserId: identity.userId,
+        operationType: "role_management",
+        outcome: "error",
+        targetId: requestRecord.id,
+        details: {
+          operation: "accept_promotion_request",
+          reason: parsed.data.reason,
+          targetUserId: requestRecord.submittedByUserId,
+          requestedRole: requestRecord.requestedRole,
+          previousValue: {
+            role: previousRole,
+            requestStatus: "pending_owner_review",
+          },
+          newValue: {
+            role: requestRecord.requestedRole,
+            requestStatus: "accepted",
+          },
+          stage: "clerk_lookup",
+        },
+      });
+      return NextResponse.json(
+        { error: "Le compte IMU owner ne peut pas être modifié ici." },
+        { status: 403 },
+      );
+    }
 
     stage = "clerk_update";
     const updatedUser = await client.users.updateUser(requestRecord.submittedByUserId, {

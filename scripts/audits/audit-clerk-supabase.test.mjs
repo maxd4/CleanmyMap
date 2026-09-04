@@ -35,7 +35,7 @@ describe("audit-clerk-supabase role contract", () => {
     assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max", email: "owner@example.test" }), "benevole");
   });
 
-  it("keeps admin allowlist separate from the owner identity", () => {
+  it("does not let an admin allowlist grant a role", () => {
     assert.equal(resolveStoredRoleLabel({
       metadataRole: null,
       userId: "secondary",
@@ -44,6 +44,6 @@ describe("audit-clerk-supabase role contract", () => {
       adminUserIds: parseAdminUserIds("secondary"),
       ownerUserId: "owner",
       ownerEmail: "owner@example.test",
-    }), "admin");
+    }), "benevole");
   });
 });

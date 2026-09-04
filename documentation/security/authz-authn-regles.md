@@ -112,6 +112,28 @@ Preview, Production ou un hôte distant.
 
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
+## Attribution des rôles privilégiés
+
+`elu` et `admin` sont des `GRANTED_ROLE` obtenus. Ils ne sont jamais proposés
+comme rôles ouverts et ne sont jamais modifiables par le menu utilisateur.
+`activeRole` ne persiste qu'une vue d'utilisation et ne peut pas augmenter le
+niveau obtenu.
+
+Deux parcours applicatifs sont autorisés :
+
+1. un compte authentifié soumet une demande `elu` ou `admin`; son statut initial
+   est `pending_owner_review` et cette demande n'ajoute aucun droit;
+2. l'IMU actif, c'est-à-dire `ACTIVE_ROLE=max`, accepte ou refuse la demande,
+   ou attribue/révoque directement `elu` ou `admin` depuis la surface dédiée.
+
+Une acceptation ou attribution directe écrit le rôle Clerk, synchronise la
+projection Supabase et produit un audit après l'effet. Aucun compte `admin` ou
+`elu` ne peut effectuer l'attribution directe, et `max` ne peut jamais être
+attribué par une API. `CLERK_ADMIN_USER_IDS` est conservée pour diagnostic et
+contrôle de configuration; elle ne constitue pas une source de
+`GRANTED_ROLE=admin`. Seuls les flux applicatifs ci-dessus peuvent écrire les
+métadonnées de rôle privilégié.
+
 ## Règles durables pour les tests authentifiés
 
 - Clerk reste l'AuthN canonique en production. Un test de surface protégée en

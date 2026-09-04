@@ -109,8 +109,8 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_IS_SATELLITE` | Clerk | CONFIG | O | O | O | O | Vercel / template local | configuration Clerk |
 | `CLERK_SATELLITE_AUTO_SYNC` | Clerk | CONFIG | O | O | O | O | Vercel / template local | synchronisation Clerk |
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
-| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
-| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
+| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic de configuration, aucune attribution |
+| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic historique, jamais une autorité |
 | `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | owner IMU exact par instance |
 | `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | email principal owner vérifié |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
@@ -192,10 +192,12 @@ au contrat.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
 - `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` restent des listes opératoires
-  indépendantes et disjointes, mais aucune liste, métadonnée, email creator ou
-  ligne Supabase ne peut accorder IMU. Le rôle `max` exige le couple owner
-  exact de l’instance et l’email principal Clerk `verified`. Production et
-  Development ont chacun leur propre ID owner.
+  indépendantes et disjointes pour les audits de configuration; elles ne
+  résolvent aucun `GRANTED_ROLE`. Le rôle `admin` provient uniquement d'une
+  écriture Clerk issue d'une décision IMU (demande acceptée ou attribution
+  directe), et `max` exige le couple owner exact de l'instance ainsi que
+  l'email principal Clerk `verified`. Production et Development ont chacun
+  leur propre ID owner.
 
 ### Supabase
 

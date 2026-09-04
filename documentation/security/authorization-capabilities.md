@@ -346,7 +346,7 @@ community.moderate_global
 admin.view_backoffice
 admin.run_operational_tools
 admin.view_audit
-roles.assign_self_service
+roles.request_promotion
 roles.assign_privileged
 platform.admin
 ```
@@ -506,7 +506,9 @@ motif si requis
 + targetUserId si pertinent
 ```
 
-Un admin ne doit pas pouvoir attribuer `max` sauf contrat explicite distinct.
+Un admin ne peut pas attribuer `elu` ou `admin` : la capacité
+`roles.assign_privileged` est réservée à l'IMU actif (`ACTIVE_ROLE=max`) et à
+la surface dédiée. Il ne peut jamais attribuer `max`.
 
 ### Max
 
@@ -523,6 +525,22 @@ platform.admin
 `max` ne remplace pas `service_role`.
 
 Même `max` passe par les contrats métier, validations, audits et garde-fous applicables. Éviter les chemins spéciaux non testés de type « god mode » qui court-circuitent le domaine.
+
+### Attribution des rôles obtenus
+
+`elu` et `admin` sont des `GRANTED_ROLE` obtenus; ils ne figurent pas dans les
+rôles ouverts et ne sont jamais modifiables par le menu utilisateur. Les deux
+seuls parcours applicatifs sont :
+
+1. une demande authentifiée `elu` ou `admin`, enregistrée avec le statut
+   `pending_owner_review` et sans changement de droits;
+2. une décision de l'IMU actif, qui accepte/refuse la demande ou attribue/
+   révoque directement `elu` ou `admin` via `/api/admin/role-accounts`.
+
+Chaque acceptation ou attribution directe met à jour Clerk, synchronise la
+projection `profiles.role_label` de Supabase et écrit un audit. La projection
+Supabase, `activeRole`, `activeProfile`, `CREATOR_INBOX_EMAIL` et
+`CLERK_ADMIN_USER_IDS` ne sont jamais une preuve autonome d'attribution.
 
 ## 8. Permissions sur les données
 

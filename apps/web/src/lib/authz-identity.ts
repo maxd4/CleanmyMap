@@ -39,7 +39,6 @@ import {
   shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
-  parseAdminUserIds,
   resolveClerkRole,
   type ClerkMetadata,
 } from "@/lib/auth/role-resolution";
@@ -343,9 +342,8 @@ function buildResolvedIdentity(params: {
   fetchedUser: User;
   currentLevel: number;
   storedProfile: StoredProfileRow | null;
-  adminUserIds: Set<string>;
 }): UserIdentity {
-  const { userId, fetchedUser, currentLevel, storedProfile, adminUserIds } = params;
+  const { userId, fetchedUser, currentLevel, storedProfile } = params;
   const user = fetchedUser;
   const {
     firstName,
@@ -358,7 +356,6 @@ function buildResolvedIdentity(params: {
   } = resolveIdentityNames(user, userId, storedProfile);
   const resolvedRole = resolveClerkRole({
     user,
-    adminUserIds,
     ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
     ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
@@ -386,7 +383,6 @@ function buildResolvedIdentity(params: {
 
 async function buildAuthenticatedIdentity(
   userId: string,
-  adminUserIds: Set<string>,
 ): Promise<UserIdentity | null> {
   try {
     const client = await clerkClient();
@@ -404,7 +400,6 @@ async function buildAuthenticatedIdentity(
       fetchedUser,
       currentLevel,
       storedProfile,
-      adminUserIds,
     });
   } catch (error) {
     console.error("Current user identity resolution failed", error);
@@ -428,8 +423,7 @@ export async function getCurrentUserIdentity(
     return null;
   }
 
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  return buildAuthenticatedIdentity(userId, adminUserIds);
+  return buildAuthenticatedIdentity(userId);
 }
 
 export function pickTraceableActorName(

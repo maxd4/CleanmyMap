@@ -3,9 +3,8 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { getCurrentUserIdentity, requireAdminAccess } from "@/lib/authz";
+import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import {
-  parseAdminUserIds,
   resolveClerkRole,
   type ClerkUserForRole,
 } from "@/lib/auth/role-resolution";
@@ -40,14 +39,13 @@ function resolveCanonicalTargetRole(user: {
 }): RoleAccountRecord["roleLabel"] {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
     ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
     ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
 }
 
 export async function GET(request: Request) {
-  const access = await requireAdminAccess();
+  const access = await requireCreatorAccess();
   if (!access.ok) {
     return adminAccessErrorJsonResponse(access);
   }
@@ -65,7 +63,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const access = await requireAdminAccess();
+  const access = await requireCreatorAccess();
   if (!access.ok) {
     return adminAccessErrorJsonResponse(access);
   }

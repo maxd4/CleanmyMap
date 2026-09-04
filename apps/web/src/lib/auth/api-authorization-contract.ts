@@ -343,16 +343,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/role-accounts": {
     GET: {
-      expected: "ACTIVE_ROLE=admin or max",
+      expected: "ACTIVE_ROLE=max for the dedicated privileged-role management surface",
       dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess checks ACTIVE_ROLE",
-      evidence: ["requireAdminAccess"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max",
+      evidence: ["requireCreatorAccess"],
     },
     POST: {
-      expected: "ACTIVE_ROLE=admin or max plus operation audit and self-target protection",
+      expected: "ACTIVE_ROLE=max plus operation audit and self-target protection; target role is elu or admin only",
       dimensions: ["admin/creator role", "ownership", "audit"],
-      actual: "requireAdminAccess checks ACTIVE_ROLE + appendAdminOperationAudit",
-      evidence: ["requireAdminAccess", "appendAdminOperationAudit"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max + appendAdminOperationAudit",
+      evidence: ["requireCreatorAccess", "appendAdminOperationAudit"],
     },
   },
   "admin/storage-usage": {
