@@ -4,26 +4,22 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 
 type DropdownPlacement = {
   openUp: boolean;
-  alignRight: boolean;
   triggerRect: Pick<DOMRect, "top" | "bottom"> | null;
 };
 
 type UseDropdownPlacementOptions = {
   isOpen: boolean;
   triggerRef: RefObject<HTMLElement | null>;
-  minPanelWidth?: number;
   verticalGap?: number;
 };
 
 export function useDropdownPlacement({
   isOpen,
   triggerRef,
-  minPanelWidth = 320,
   verticalGap = 12,
 }: UseDropdownPlacementOptions): DropdownPlacement {
   const [placement, setPlacement] = useState<DropdownPlacement>({
     openUp: false,
-    alignRight: false,
     triggerRect: null,
   });
 
@@ -37,17 +33,15 @@ export function useDropdownPlacement({
     const spaceAbove = rect.top - verticalGap;
     const spaceBelow = window.innerHeight - rect.bottom - verticalGap;
     const openUp = spaceBelow < 260 && spaceAbove > spaceBelow;
-    const alignRight = rect.right + minPanelWidth > window.innerWidth - 16;
 
     setPlacement({
       openUp,
-      alignRight,
       triggerRect: {
         top: rect.top,
         bottom: rect.bottom,
       },
     });
-  }, [minPanelWidth, triggerRef, verticalGap]);
+  }, [triggerRef, verticalGap]);
 
   useEffect(() => {
     if (!isOpen) {
