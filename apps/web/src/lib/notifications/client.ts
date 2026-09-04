@@ -1,7 +1,7 @@
 "use client";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
+import { buildRequiredClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type AppNotification = {
@@ -17,19 +17,22 @@ export type AppNotification = {
 const notificationColumns =
   "id, type, title, content, read_at, created_at, payload" as const;
 
-function getNotificationsClient(
+async function getNotificationsClient(
   getToken: () => Promise<string | null>,
-): SupabaseClient {
-  return getSupabaseBrowserClient(
-    buildClerkSupabaseAccessTokenProvider(getToken),
-  );
+): Promise<SupabaseClient> {
+  const token = await buildRequiredClerkSupabaseAccessTokenProvider(getToken)();
+
+  // Do not let a missing Clerk token fall back to the anon role. The table
+  // intentionally revokes anon access, and an anonymous request would turn
+  // a session-readiness race into a misleading RLS/PostgREST error.
+  return getSupabaseBrowserClient(async () => token);
 }
 
 export async function loadNotificationsForCurrentUser(
   userId: string,
   getToken: () => Promise<string | null>,
 ): Promise<AppNotification[]> {
-  const supabase = getNotificationsClient(getToken);
+  const supabase = await getNotificationsClient(getToken);
   const { data, error } = await supabase
     .from("app_notifications")
     .select(notificationColumns)
@@ -49,7 +52,7 @@ export async function markNotificationAsReadForCurrentUser(
   notificationId: string,
   getToken: () => Promise<string | null>,
 ): Promise<void> {
-  const supabase = getNotificationsClient(getToken);
+  const supabase = await getNotificationsClient(getToken);
   const { error } = await supabase
     .from("app_notifications")
     .update({ read_at: new Date().toISOString() })
