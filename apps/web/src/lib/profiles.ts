@@ -179,32 +179,18 @@ export function isAdminLikeProfile(profile: AppProfile): boolean {
 }
 
 export function getSwitchableProfiles(
-  role: Role,
+  profile: AppProfile,
 ): AppProfile[] {
-  if (role === "max") {
+  if (profile === "max") {
     return [...PROFILE_ORDER];
   }
-  if (role === "admin") {
+  if (profile === "admin") {
     return PROFILE_ORDER.filter((item) => item !== "max");
   }
-  if (isSelfServiceProfile(role)) {
+  if (isSelfServiceProfile(profile)) {
     return [...SELF_SERVICE_PROFILE_ORDER];
   }
-  return [role];
-}
-
-/**
- * Resolves the UX persona independently from the authorization role.
- * Invalid or non-switchable persisted values fail closed to the real role.
- */
-export function resolveActiveProfile(params: {
-  metadataActiveProfile: string | null | undefined;
-  role: Role;
-}): AppProfile {
-  const candidate = normalizeProfileRole(params.metadataActiveProfile);
-  return candidate && getSwitchableProfiles(params.role).includes(candidate)
-    ? candidate
-    : params.role;
+  return [profile];
 }
 
 export function getProfileEntryPath(profile: AppProfile): string {
@@ -270,4 +256,3 @@ export function getProfileSpacePriority(
 export function isAppProfile(value: string): value is AppProfile {
   return PROFILE_ORDER.includes(value as AppProfile);
 }
-

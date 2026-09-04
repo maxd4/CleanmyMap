@@ -27,11 +27,7 @@ import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
 } from "@/lib/navigation";
-import {
-  resolveActiveProfile,
-  type AppProfile,
-} from "@/lib/profiles";
-import type { Role } from "@/lib/domain-language";
+import { type AppProfile, toProfile } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
 import {
@@ -71,7 +67,7 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   showAccountActions: boolean;
 };
 
-function readProfileRole(metadata: unknown): Role | null {
+function readProfileRole(metadata: unknown): AppProfile | null {
   if (!metadata || typeof metadata !== "object") {
     return null;
   }
@@ -87,18 +83,6 @@ function readProfileRole(metadata: unknown): Role | null {
         : null;
 
   return rawValue ? normalizeProfileRole(rawValue) : null;
-}
-
-function readActiveProfile(metadata: unknown, role: Role): AppProfile {
-  if (!metadata || typeof metadata !== "object") {
-    return role;
-  }
-
-  const value = (metadata as Record<string, unknown>)["activeProfile"];
-  return resolveActiveProfile({
-    metadataActiveProfile: typeof value === "string" ? value : null,
-    role,
-  });
 }
 
 function readProfileBadges(metadata: unknown): string[] {
@@ -134,8 +118,7 @@ function buildProfileBadge(profile: AppProfile, locale: Locale) {
 
 function buildIdentityFromUser(
   user: ClerkUserLike,
-  role: Role,
-  activeProfile: AppProfile,
+  effectiveProfile: AppProfile,
   locale: Locale,
 ): UserIdentity {
   const firstName = user.firstName?.trim() ?? null;
@@ -145,8 +128,8 @@ function buildIdentityFromUser(
     user.primaryEmailAddress?.emailAddress?.trim() ||
     user.id;
   const displayName = `${firstName ?? ""} ${lastName}`.trim() || username;
-  const roleBadge = buildRoleBadge(role, locale);
-  const profileBadge = buildProfileBadge(activeProfile, locale);
+  const roleBadge = buildRoleBadge(effectiveProfile, locale);
+  const profileBadge = buildProfileBadge(effectiveProfile, locale);
   const publicBadges = readProfileBadges(user.publicMetadata);
   const mergedBadges = Array.from(
     new Set([...publicBadges, roleBadge.id, profileBadge.id]),
@@ -161,8 +144,7 @@ function buildIdentityFromUser(
     email: user.primaryEmailAddress?.emailAddress?.trim() ?? null,
     currentLevel: 1,
     actorNameOptions: [displayName, username, user.id],
-    role,
-    activeProfile,
+    role: effectiveProfile,
     badges: mergedBadges.map((badgeId) =>
       badgeId === roleBadge.id
         ? roleBadge
@@ -269,7 +251,7 @@ function AppNavigationRibbonShell({
   const [activityStatusError, setActivityStatusError] = useState<string | null>(null);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(user?.publicMetadata);
-  const effectiveProfile = identity?.activeProfile ?? (userRole ? readActiveProfile(user?.publicMetadata, userRole) : fallbackProfile);
+  const effectiveProfile = identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
   const effectiveProfileLabel =
     profileLabel ?? getProfileLabel(effectiveProfile, locale);
   const effectiveIdentity: UserIdentity | null = identity
@@ -277,7 +259,6 @@ function AppNavigationRibbonShell({
     : showAccountActions && isLoaded && isSignedIn && user
       ? buildIdentityFromUser(
           user,
-          userRole ?? fallbackProfile,
           effectiveProfile,
           locale,
         )
@@ -301,7 +282,6 @@ function AppNavigationRibbonShell({
     (user
       ? buildIdentityFromUser(
           user,
-          userRole ?? fallbackProfile,
           effectiveProfile,
           locale,
         )
@@ -516,7 +496,7 @@ function AppNavigationRibbonShell({
       >
         <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:px-7 xl:py-3">
           <p className="sr-only">
-            {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
+            {locale === "fr" ? "Rôle actif" : "Active role"}: {effectiveProfileLabel}
           </p>
 
           <Link
@@ -832,11 +812,10 @@ function AppNavigationRibbonPublic({
   const authSignedIn = Boolean(isSignedIn);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
-  const effectiveRole = userRole ?? fallbackProfile;
-  const effectiveProfile = readActiveProfile(userResource?.publicMetadata, effectiveRole);
+  const effectiveProfile = userRole ? toProfile(userRole) : fallbackProfile;
   const effectiveIdentity =
     authLoaded && authSignedIn && userResource
-      ? buildIdentityFromUser(userResource, effectiveRole, effectiveProfile, locale)
+      ? buildIdentityFromUser(userResource, effectiveProfile, locale)
       : null;
 
   return (
@@ -866,15 +845,12 @@ function AppNavigationRibbonProtected({
   const authSignedIn = Boolean(isSignedIn);
   const fallbackProfile = currentProfile ?? "benevole";
   const userRole = readProfileRole(userResource?.publicMetadata);
-  const effectiveProfile =
-    identity?.activeProfile ??
-    (userRole ? readActiveProfile(user?.publicMetadata, userRole) : fallbackProfile);
+  const effectiveProfile = identity?.role ?? (userRole ? toProfile(userRole) : fallbackProfile);
   const effectiveIdentity =
     identity ??
     (authLoaded && authSignedIn && userResource
       ? buildIdentityFromUser(
           userResource,
-          userRole ?? fallbackProfile,
           effectiveProfile,
           locale,
         )
