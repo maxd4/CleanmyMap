@@ -283,6 +283,43 @@ export async function listPromotionRequests(
   return store.records.slice(0, normalizedLimit);
 }
 
+/**
+ * Current-user projection source. The user id is always bound at the store
+ * boundary so callers cannot accidentally turn a global admin read into a
+ * user-facing read.
+ */
+export async function listPromotionRequestsForUser(
+  submittedByUserId: string,
+  limit = 100,
+): Promise<PromotionRequestRecord[]> {
+  assertPersistenceAvailable("promotion_requests");
+  const normalizedUserId = submittedByUserId.trim();
+  if (!normalizedUserId) {
+    return [];
+  }
+  const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+
+  if (canUseSupabaseServerPersistence()) {
+    const result = await getSupabaseServerClient()
+      .from("promotion_requests")
+      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+      .eq("submitted_by_user_id", normalizedUserId)
+      .order("created_at", { ascending: false })
+      .limit(normalizedLimit);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    return (result.data ?? [])
+      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+      .filter((record): record is PromotionRequestRecord => Boolean(record));
+  }
+
+  const store = await readStore();
+  return store.records
+    .filter((record) => record.submittedByUserId === normalizedUserId)
+    .slice(0, normalizedLimit);
+}
+
 export async function updatePromotionRequestStatus(params: {
   requestId: string;
   status: "accepted" | "rejected";

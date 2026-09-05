@@ -51,6 +51,7 @@ npm run check:pages-site-drift
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/dashboard` | [Dashboard](./routes/01-accueil-pilotage/dashboard/dashboard-README.md) | `protected` | amber / pilotage | `apps/web/src/app/(app)/dashboard/page.tsx` |
+| `/compte/evolution` | [Évolution du compte](./routes/01-accueil-pilotage/compte-evolution/compte-evolution-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/compte/evolution/page.tsx` |
 | `/explorer` | [Sommaire](./routes/01-accueil-pilotage/explorer/explorer-README.md) | `public-visible` | yellow, exception nommée | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
 | `/parcours/[profile]` | [Parcours par profil](./routes/01-accueil-pilotage/parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |

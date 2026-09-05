@@ -2,6 +2,7 @@ import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
 import {
   ADMIN_ROUTE,
+  ACCOUNT_EVOLUTION_ROUTE,
   DASHBOARD_ROUTE,
   EXPLORER_ROUTE,
   PARCOURS_ROUTE,
@@ -35,6 +36,7 @@ export const PRIVATE_APP_ROUTE_PREFIXES = [
   "/declaration",
   "/form-comparison",
   "/onboarding",
+  ACCOUNT_EVOLUTION_ROUTE,
   DASHBOARD_ROUTE,
   PARCOURS_ROUTE,
   "/partners/dashboard",

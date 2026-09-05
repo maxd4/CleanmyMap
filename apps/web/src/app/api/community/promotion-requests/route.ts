@@ -4,7 +4,11 @@ import { z } from "zod";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { appendPromotionRequest } from "@/lib/admin/promotion-requests-store";
+import {
+  appendPromotionRequest,
+  listPromotionRequestsForUser,
+} from "@/lib/admin/promotion-requests-store";
+import { canRequestPromotionRole } from "@/lib/account/promotion-request-contract";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import {
   createPublicRateLimitResponse,
@@ -78,15 +82,33 @@ export async function POST(request: Request) {
     return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
   }
 
-  if (
-    currentRole === "elu" &&
-    parsed.data.requestedRole === "elu"
-  ) {
+  if (!canRequestPromotionRole(identity.role, parsed.data.requestedRole)) {
     return NextResponse.json(
       {
-        error: "Vous êtes déjà au rôle demandé.",
+        error: "Ce rôle ne peut pas être demandé depuis votre niveau actuel.",
       },
-      { status: 400 },
+      { status: 403 },
+    );
+  }
+
+  const ownRequests = await listPromotionRequestsForUser(userId, 50);
+  const latestRequest = ownRequests[0];
+  if (latestRequest?.status === "pending_owner_review") {
+    return NextResponse.json(
+      {
+        error: "Demande en cours d'examen.",
+        code: "pending_owner_review",
+      },
+      { status: 409 },
+    );
+  }
+  if (latestRequest?.status === "accepted" && latestRequest.requestedRole !== identity.role) {
+    return NextResponse.json(
+      {
+        error: "La synchronisation de votre niveau est encore en cours.",
+        code: "accepted_sync_pending",
+      },
+      { status: 409 },
     );
   }
 

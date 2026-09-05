@@ -3,6 +3,7 @@ export const EXPLORER_ROUTE = "/explorer";
 export const PARCOURS_ROUTE = "/parcours";
 export const PILOTAGE_ROUTE = "/pilotage";
 export const PROFIL_ROUTE = "/profil";
+export const ACCOUNT_EVOLUTION_ROUTE = "/compte/evolution";
 export const ADMIN_ROUTE = "/admin";
 export const ADMIN_GODMODE_ROUTE = "/admin/godmode";
 export const SPONSOR_PORTAL_ROUTE = "/sponsor-portal";

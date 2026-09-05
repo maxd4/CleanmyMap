@@ -136,6 +136,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
 
   if (
     base === "dashboard" ||
+    base === "compte" ||
     base === "profil" ||
     base === "parcours" ||
     base === "pilotage" ||

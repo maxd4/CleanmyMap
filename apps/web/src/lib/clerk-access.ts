@@ -23,6 +23,7 @@ const ROUTE_ACCESS_RULES: Array<{
   mode: ClerkAccessMode;
 }> = [
   { pattern: /^\/dashboard$/, mode: "blur" },
+  { pattern: /^\/compte\/evolution$/, mode: "blur" },
   { pattern: /^\/actions\/new$/, mode: "blur" },
   { pattern: /^\/actions\/history$/, mode: "blur" },
   { pattern: /^\/signalement$/, mode: "blur" },

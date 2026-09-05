@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
 import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
-import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
+import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
@@ -400,7 +400,7 @@ export default async function DashboardPage() {
               }
               className="p-8 sm:p-10"
             >
-              <PromotionRequestForm currentRole={profile} />
+              <AccountEvolutionCta />
             </FamilyRubriqueCard>
 
             <FamilyRubriqueCard

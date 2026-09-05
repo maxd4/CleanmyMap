@@ -1,12 +1,14 @@
 import {
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
+  ACCOUNT_EVOLUTION_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 
 export const PROTECTED_ROUTE_PATTERNS = [
   `${ADMIN_ROUTE}(.*)`,
   `${DASHBOARD_ROUTE}(.*)`,
+  `${ACCOUNT_EVOLUTION_ROUTE}(.*)`,
   "/actions(.*)",
   "/missions(.*)",
   "/form-comparison(.*)",

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
+import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -177,7 +177,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           topBarContent="Évolution du Compte"
           className="p-12"
         >
-          <PromotionRequestForm currentRole={activeProfile} />
+          <AccountEvolutionCta />
         </FamilyRubriqueCard>
 
         {/* ── Changer de profil ── */}
