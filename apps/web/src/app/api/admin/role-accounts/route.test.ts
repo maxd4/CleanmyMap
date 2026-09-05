@@ -13,6 +13,13 @@ vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
 }));
 
+vi.mock("@/lib/env", () => ({
+  env: {
+    CLERK_ADMIN_USER_IDS: "",
+    CLERK_MAX_USER_IDS: "owner-1",
+  },
+}));
+
 vi.mock("@/lib/authz", async () => {
   const actual = await vi.importActual<typeof import("@/lib/authz")>(
     "@/lib/authz",

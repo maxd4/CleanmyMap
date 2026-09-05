@@ -16,8 +16,6 @@ vi.mock("./env", () => ({
     CLERK_ADMIN_USER_IDS: "",
     CLERK_MAX_USER_IDS: "",
     CREATOR_INBOX_EMAIL: creatorEmail,
-    CLERK_IMU_OWNER_USER_ID: "owner-only",
-    CLERK_IMU_OWNER_EMAIL: "owner-at-example",
   },
 }));
 
@@ -42,6 +40,9 @@ describe("authz creator email isolation", () => {
           primaryEmailAddress: {
             emailAddress: creatorEmail,
           },
+          secondaryEmailAddresses: [
+            { emailAddress: "owner-at-example" },
+          ],
           primaryPhoneNumber: null,
           publicMetadata: {},
           privateMetadata: {},
@@ -74,27 +75,6 @@ describe("authz creator email isolation", () => {
       email: creatorEmail,
       currentLevel: 4,
     });
-  });
-
-  it("requires the exact owner id and verified primary email for max", async () => {
-    authMock.mockResolvedValue({ userId: "owner-only" });
-    clerkClientMock.mockResolvedValue({
-      users: {
-        getUser: vi.fn().mockResolvedValue({
-          id: "owner-only",
-          primaryEmailAddress: {
-            emailAddress: "owner-at-example",
-            verification: { status: "verified" },
-          },
-          publicMetadata: { role: "max" },
-          privateMetadata: {},
-        }),
-      },
-    });
-
-    const { getCurrentUserRoleLabel } = await import("./authz");
-
-    await expect(getCurrentUserRoleLabel()).resolves.toBe("max");
   });
 
   it("fails closed when Clerk cannot resolve the user", async () => {
