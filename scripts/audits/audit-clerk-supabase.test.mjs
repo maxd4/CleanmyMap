@@ -7,43 +7,32 @@ import {
 } from "./audit-clerk-supabase.mjs";
 
 describe("audit-clerk-supabase role contract", () => {
-  it("uses only the configured owner identity for max", () => {
-    const adminIds = parseAdminUserIds("secondary");
-
+  it("uses only the configured max user id for max", () => {
     assert.equal(resolveStoredRoleLabel({
       metadataRole: null,
-      userId: "owner",
-      email: "owner-at-example",
-      primaryEmailVerified: true,
-      adminUserIds: adminIds,
-      ownerUserId: "owner",
-      ownerEmail: "owner-at-example",
+      userId: "max-user",
+      adminUserIds: parseAdminUserIds("admin-user"),
+      maxUserIds: parseAdminUserIds("max-user"),
     }), "max");
   });
 
-  it("rejects metadata, creator email and Supabase-shaped identity as IMU", () => {
+  it("accepts canonical max metadata but ignores email-shaped identity", () => {
     const context = {
       userId: "other",
-      email: "creator-at-example",
-      primaryEmailVerified: true,
       adminUserIds: parseAdminUserIds("secondary"),
-      ownerUserId: "owner",
-      ownerEmail: "owner-at-example",
+      maxUserIds: parseAdminUserIds("max-user"),
     };
 
-    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max" }), "benevole");
-    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max", email: "owner-at-example" }), "benevole");
+    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: null }), "benevole");
+    assert.equal(resolveStoredRoleLabel({ ...context, metadataRole: "max" }), "max");
   });
 
-  it("does not let an admin allowlist grant a role", () => {
+  it("uses the configured admin user id for admin", () => {
     assert.equal(resolveStoredRoleLabel({
       metadataRole: null,
-      userId: "secondary",
-      email: null,
-      primaryEmailVerified: false,
-      adminUserIds: parseAdminUserIds("secondary"),
-      ownerUserId: "owner",
-      ownerEmail: "owner-at-example",
-    }), "benevole");
+      userId: "admin-user",
+      adminUserIds: parseAdminUserIds("admin-user"),
+      maxUserIds: parseAdminUserIds("max-user"),
+    }), "admin");
   });
 });

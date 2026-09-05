@@ -92,16 +92,15 @@ retour vers le rôle obtenu reste autorisé par le même ensemble commutable.
 accorder un privilège.
 
 Le vocabulaire du rôle privilégié est unifié : **IMU = rôle interne `max`**.
-L'autorité d'IMU est toutefois une identité Clerk canonique, pas une valeur de
-rôle. Chaque instance Clerk configure un couple serveur distinct
-`CLERK_IMU_OWNER_USER_ID` / `CLERK_IMU_OWNER_EMAIL`; l'accès `max` exige l'ID
-exact et l'email principal exactement correspondant avec le statut
-`verified`. Une erreur Clerk, une absence de configuration ou un mismatch
-refuse le privilège. Les métadonnées Clerk, `profiles.role_label` dans
-Supabase, `CREATOR_INBOX_EMAIL`, `CLERK_ADMIN_USER_IDS` et les alias historiques
-(`owner`, `godmode`, `creator`, `super_admin`, etc.) ne sont jamais des preuves
-suffisantes. Les alias restent uniquement acceptés à la frontière de lecture
-legacy pour les rôles non privilégiés.
+L'autorité d'IMU est une identité Clerk canonique, jamais une adresse email :
+`CLERK_MAX_USER_IDS` ou une metadata serveur canonique `role=max`. `admin`
+provient de `CLERK_ADMIN_USER_IDS` ou d'une metadata serveur canonique
+`role=admin`. Une erreur Clerk ou une absence de configuration refuse le
+privilège. `profiles.role_label` dans Supabase, `CREATOR_INBOX_EMAIL`, les
+adresses email primaire ou secondaires, `activeRole`, `activeProfile` et les
+alias historiques (`owner`, `godmode`, `creator`, `super_admin`, etc.) ne
+constituent jamais une autorité. Les alias restent uniquement acceptés à la
+frontière de lecture legacy pour les rôles non privilégiés.
 
 Le bypass `CMM_DEV_AUTH_BYPASS` est accepté seulement avec
 `NODE_ENV=development` et un hostname strictement local (`localhost`,
@@ -129,9 +128,9 @@ Deux parcours applicatifs sont autorisés :
 Une acceptation ou attribution directe écrit le rôle Clerk, synchronise la
 projection Supabase et produit un audit après l'effet. Aucun compte `admin` ou
 `elu` ne peut effectuer l'attribution directe, et `max` ne peut jamais être
-attribué par une API. `CLERK_ADMIN_USER_IDS` est conservée pour diagnostic et
-contrôle de configuration; elle ne constitue pas une source de
-`GRANTED_ROLE=admin`. Seuls les flux applicatifs ci-dessus peuvent écrire les
+attribué par une API. `CLERK_ADMIN_USER_IDS` constitue une source canonique de
+résolution du rôle `admin`, tandis que seuls les flux applicatifs ci-dessus
+peuvent écrire les
 métadonnées de rôle privilégié.
 
 ## Règles durables pour les tests authentifiés

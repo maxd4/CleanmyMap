@@ -177,8 +177,7 @@ Un `Parcours` ne constitue jamais une permission serveur.
 
 ### Identité canonique du rôle IMU
 
-La règle de nommage est : **IMU = rôle interne `max`**, accordé uniquement à
-l'identité owner Clerk canonique de l'instance.
+La règle de nommage est : **IMU = rôle interne `max`**.
 
 - `max` est l'identifiant technique canonique utilisé par le code et les
   données ;
@@ -186,11 +185,13 @@ l'identité owner Clerk canonique de l'instance.
 - les alias `super-admin`, `super_admin`, `superadmin`, `owner`, `godmode` et
   `creator` sont uniquement des valeurs legacy ; ils ne constituent jamais une
   preuve d'autorisation IMU ;
-- l'accès `max` exige `CLERK_IMU_OWNER_USER_ID` et
-  `CLERK_IMU_OWNER_EMAIL`, avec l'email principal Clerk vérifié et exactement
-  correspondant ;
-- `ACTIVE_ROLE=max`, `activeProfile=max`, `profiles.role_label=max`, une allowlist admin ou
-  `CREATOR_INBOX_EMAIL` ne peuvent pas accorder `max`.
+- l'accès `max` exige l'identité Clerk présente dans `CLERK_MAX_USER_IDS` ou
+  une metadata serveur canonique `role=max` ;
+- `admin` exige l'identité Clerk présente dans `CLERK_ADMIN_USER_IDS` ou une
+  metadata serveur canonique `role=admin` ;
+- `ACTIVE_ROLE=max`, `activeProfile=max`, `profiles.role_label=max`, une
+  adresse email primaire ou secondaire et `CREATOR_INBOX_EMAIL` ne peuvent pas
+  accorder de privilège.
 
 Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont
 conservés pour compatibilité documentaire et de navigation. Leur nom ne définit
