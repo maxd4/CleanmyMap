@@ -16,6 +16,13 @@ vi.mock("@clerk/nextjs/server", () => ({
   clerkClient: clerkClientMock,
 }));
 
+vi.mock("@/lib/env", () => ({
+  env: {
+    CLERK_ADMIN_USER_IDS: "",
+    CLERK_MAX_USER_IDS: "reviewer-1",
+  },
+}));
+
 vi.mock("@/lib/authz", () => ({
   getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
   getCurrentUserIdentity: getCurrentUserIdentityMock,
