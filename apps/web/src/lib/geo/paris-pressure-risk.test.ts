@@ -4,6 +4,7 @@ import type {
   ParisPressureSnapshot,
   ParisPressureZone,
 } from "./paris-pressure-contract";
+import type { ParisPressureContextProvenance } from "./paris-pressure-risk-contract";
 import {
   estimateCigaretteButtRisk,
   estimateParisPressureRisk,
@@ -106,6 +107,24 @@ function buildZone(overrides: {
 
 function withZone(zone: ParisPressureZone): ParisPressureSnapshot {
   return { ...snapshot, zones: [zone], coverage: { ...snapshot.coverage, zoneCount: 1 } };
+}
+
+function contextSource(
+  factor: ParisPressureContextProvenance["factor"],
+  status: ParisPressureContextProvenance["status"] = "available",
+): ParisPressureContextProvenance {
+  return {
+    factor,
+    publisher: "Test context publisher",
+    dataset: `Context ${factor}`,
+    url: "https://example.test/context",
+    license: "Licence de test",
+    datasetVersion: "2026-context-test",
+    observedAt: "2026-09-04",
+    refreshedAt: "2026-09-04T00:00:00.000Z",
+    status,
+    notes: [],
+  };
 }
 
 describe("Paris pressure risk model", () => {
@@ -224,7 +243,7 @@ describe("Paris pressure risk model", () => {
   });
 
   it("reste déterministe et entièrement traçable", () => {
-    const zone = buildZone({ resident: 0.8, transport: 0.7, tourism: 0.6, places: 0.5, cleanliness: 0.2 });
+    const zone = buildZone({ resident: 0.8, transport: 0.7, tourism: 0.6, places: 0.5, cleanliness: 0.2, cleanlinessResolution: "iris" });
     const first = estimateParisPressureRisk(zone, withZone(zone), { eventPressure: 0.4 });
     const second = estimateParisPressureRisk(zone, withZone(zone), { eventPressure: 0.4 });
 
@@ -260,5 +279,120 @@ describe("Paris pressure risk model", () => {
     const second = { ...buildZone({ resident: 0.5 }), id: "zone-b" };
     const results = estimateParisPressureRiskByZone({ ...snapshot, zones: [second, first] });
     expect(results.map((result) => result.zoneId)).toEqual(["zone-a", "zone-b"]);
+  });
+
+  it("isole la provenance événementielle de l'historique déchets", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      validatedWasteReports: 3,
+      contextProvenance: {
+        eventPressure: [contextSource("eventPressure")],
+      },
+    });
+
+    expect(result.waste.contributions.find((item) => item.key === "eventPressure")?.sourceReliability).toBe(1);
+    expect(result.waste.contributions.find((item) => item.key === "validatedWastePressure")?.sourceReliability).toBe(0.5);
+    expect(result.contextProvenance.map((source) => source.factor)).toEqual(["eventPressure"]);
+    expect(result.provenanceGaps).toEqual([{ factor: "validatedWastePressure", message: "Provenance contextuelle absente" }]);
+  });
+
+  it("n'utilise pas la provenance historique pour valider un événement", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      validatedWasteReports: 3,
+      contextProvenance: {
+        validatedWastePressure: [contextSource("validatedWastePressure")],
+      },
+    });
+
+    expect(result.waste.contributions.find((item) => item.key === "eventPressure")?.sourceReliability).toBe(0.5);
+    expect(result.waste.contributions.find((item) => item.key === "validatedWastePressure")?.sourceReliability).toBe(1);
+    expect(result.provenanceGaps).toEqual([{ factor: "eventPressure", message: "Provenance contextuelle absente" }]);
+  });
+
+  it("déduplique le gap d'un événement partagé par les deux scores", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      validatedWasteReports: 3,
+      validatedCigaretteButts: 3,
+    });
+
+    expect(result.provenanceGaps.filter((gap) => gap.factor === "eventPressure")).toHaveLength(1);
+    expect(result.provenanceGaps.map((gap) => gap.factor)).toEqual([
+      "eventPressure",
+      "validatedWastePressure",
+      "validatedCigarettePressure",
+    ]);
+  });
+
+  it("ignore une provenance non utilisée dans la provenance pertinente", () => {
+    const zone = buildZone({ resident: 0.8, cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      contextProvenance: {
+        eventPressure: [contextSource("eventPressure")],
+      },
+    });
+
+    expect(result.contextProvenance).toEqual([]);
+    expect(result.provenanceGaps).toEqual([]);
+  });
+
+  it("refuse une correction de propreté dont la résolution est inconnue", () => {
+    const zone = buildZone({ resident: 0.8, cleanliness: 0.1, cleanlinessResolution: null });
+    const result = estimateParisPressureRisk(zone, withZone(zone));
+
+    expect(result.waste.cleanlinessCorrection).toMatchObject({
+      points: 0,
+      available: false,
+      resolution: "unknown",
+      resolutionReason: "unknown_resolution",
+    });
+    expect(result.waste.finalRisk).toBe(result.waste.baseRisk);
+    expect(result.confidence.waste.cleanlinessCorrectionCompleteness).toBe(0);
+    expect(result.confidence.waste.score).toBe(0);
+  });
+
+  it("distingue prior absent et source de propreté partielle", () => {
+    const missing = buildZone({ resident: 0.8 });
+    const partial = buildZone({ resident: 0.8, transport: 0.8, tourism: 0.8, places: 0.8, markets: 4, cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const missingResult = estimateParisPressureRisk(missing, withZone(missing));
+    const partialSnapshot = {
+      ...withZone(partial),
+      sources: sources.map((source) => source.family === "cleanliness" ? { ...source, status: "partial" as const } : source),
+    };
+    const context = {
+      eventPressure: 0.2,
+      validatedWasteReports: 1,
+      contextProvenance: {
+        eventPressure: [contextSource("eventPressure")],
+        validatedWastePressure: [contextSource("validatedWastePressure")],
+      },
+    };
+    const partialResult = estimateParisPressureRisk(partial, partialSnapshot, context);
+    const reliableResult = estimateParisPressureRisk(partial, withZone(partial), context);
+
+    expect(missingResult.waste.cleanlinessCorrection.resolutionReason).toBe("missing_prior");
+    expect(partialResult.waste.cleanlinessCorrection).toMatchObject({ available: true, sourceReliability: 0.7 });
+    expect(partialResult.confidence.waste.cleanlinessCorrectionCompleteness).toBe(1);
+    expect(partialResult.confidence.waste.cleanlinessCorrectionSourceReliability).toBe(0.7);
+    expect(partialResult.confidence.waste.score).toBeLessThan(reliableResult.confidence.waste.score);
+  });
+
+  it("ne modifie pas les scores métier quand seules les provenances changent", () => {
+    const zone = buildZone({ resident: 0.8, tourism: 0.6, cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const withoutContext = estimateParisPressureRisk(zone, withZone(zone), { eventPressure: 0.4 });
+    const withContext = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.4,
+      contextProvenance: { eventPressure: [contextSource("eventPressure")] },
+    });
+
+    expect(withContext.wasteRisk).toBe(withoutContext.wasteRisk);
+    expect(withContext.cigaretteButtRisk).toBe(withoutContext.cigaretteButtRisk);
+    expect(withContext.waste.contributions.map(({ key, normalized, points }) => ({ key, normalized, points }))).toEqual(
+      withoutContext.waste.contributions.map(({ key, normalized, points }) => ({ key, normalized, points })),
+    );
   });
 });

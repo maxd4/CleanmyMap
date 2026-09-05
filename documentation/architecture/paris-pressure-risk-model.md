@@ -20,9 +20,11 @@ provenance). Il n'effectue aucun appel réseau.
 ## Version et configuration
 
 La configuration versionnée est `predictionModelVersion =
-"paris-pressure-risk-v1"` dans `paris-pressure-risk-contract.ts`. Toute
-évolution d'un poids, d'une échelle, d'un seuil ou d'une correction doit
-incrémenter cette version.
+"paris-pressure-risk-v2"` dans `paris-pressure-risk-contract.ts`. Cette
+version ne modifie aucun poids, aucune échelle et aucune formule de risque.
+Elle durcit la portée de la provenance contextuelle, rend une résolution de
+propreté inconnue fail-closed et intègre la fiabilité de la correction dans la
+confiance finale.
 
 ### Poids de base
 
@@ -100,6 +102,23 @@ Un événement non valide ne contribue pas. L'absence complète d'événements
 reste `null`; un appelant qui sait qu'il n'y a aucun événement peut transmettre
 `eventPressure: 0`.
 
+La provenance du contexte est portée par le facteur qu'elle peut réellement
+justifier, et non par un tableau global :
+
+```ts
+contextProvenance: {
+  eventPressure?: ParisPressureContextProvenance[];
+  validatedWastePressure?: ParisPressureContextProvenance[];
+  validatedCigarettePressure?: ParisPressureContextProvenance[];
+}
+```
+
+Une provenance événementielle ne renforce donc jamais l'historique déchets ou
+mégots. Sans provenance propre au facteur, la fiabilité explicite
+`contextWithoutProvenance = 0,5` est appliquée et un gap est conservé. Une
+provenance `partial` reste utilisable avec `0,7`; une provenance `unavailable`
+ne valide pas le facteur.
+
 ## Formules des deux scores
 
 Pour un facteur `i`, la contribution traçable est :
@@ -139,7 +158,11 @@ finalRisk = clamp01((baseRisk + correction) / 100) × 100
 pression basse produit donc une correction négative ; une pression haute
 produit une correction positive. Si le prior est absent, la correction est
 `0`, marquée `available: false` et expliquée comme indisponible : cette absence
-n'est pas assimilée à une zone propre ou sale.
+n'est pas assimilée à une zone propre ou sale. Si `normalized` existe mais que
+`resolution` vaut `null`, la résolution devient explicitement `unknown`, la
+correction n'est pas appliquée et `resolutionReason` vaut
+`unknown_resolution`. Le modèle ne promeut jamais implicitement cette valeur
+en IRIS.
 
 La correction ne remplace jamais l'historique local validé. Un hotspot peut
 donc conserver un risque élevé malgré une correction de propreté favorable.
@@ -154,17 +177,28 @@ donc conserver un risque élevé malgré une correction de propreté favorable.
   de sa source ;
 - `cleanlinessCorrection` séparée, avec sa valeur, sa résolution et son
   explication ;
-- `confidence` par score : `dataCompleteness`, `sourceCompleteness`, score,
+- `confidence` par score : complétude des facteurs de base, fiabilité de leurs
+  sources, disponibilité et fiabilité de la correction de propreté, score,
   niveau et facteurs manquants ;
 - `snapshotId`, `schemaVersion`, `generatedAt` et `refreshedAt` ;
-- les entrées `provenance` réellement utilisées et les `provenanceGaps` pour
-  les signaux de contexte fournis sans métadonnées de source.
+- les entrées `provenance` spatiales réellement utilisées, les entrées
+  `contextProvenance` réellement utilisées et les `provenanceGaps` structurés
+  par facteur.
 
-La complétude est la somme des poids des facteurs disponibles. La couverture
-de source applique `1` à une source disponible, `0,7` à une source partielle,
-`0` à une source indisponible et `0,5` à un signal de contexte fourni sans
-provenance. Le niveau est `unknown` à `0`, `low` sous `0,4`, `medium` de `0,4`
-à moins de `0,75`, et `high` à partir de `0,75`.
+La confiance expose quatre composantes :
+
+- `dataCompleteness` : complétude pondérée des facteurs de base ;
+- `sourceCompleteness` : fiabilité pondérée des sources de ces facteurs ;
+- `cleanlinessCorrectionCompleteness` : `1` si la correction est appliquée,
+  sinon `0` ;
+- `cleanlinessCorrectionSourceReliability` : fiabilité de la source de
+  propreté utilisée, avec `1`, `0,7` ou `0` selon son statut.
+
+La confiance finale est la borne minimale de ces quatre indicateurs. Ainsi une
+correction inconnue ou sans source fiable ne peut pas conserver la même
+confiance qu'un `finalRisk` dont la correction de propreté est documentée. Le
+niveau est `unknown` à `0`, `low` sous `0,4`, `medium` de `0,4` à moins de
+`0,75`, et `high` à partir de `0,75`.
 
 Le tri de `estimateParisPressureRiskByZone` est déterministe :
 `wasteRisk` décroissant, puis `cigaretteButtRisk` décroissant, puis `zoneId`
@@ -181,6 +215,10 @@ croissant.
 - Les historiques `validatedWasteReports` et `validatedCigaretteButts` sont
   optionnels et doivent être accompagnés d'une provenance dans les appels
   métier qui veulent une confiance complète.
+- `RoutePredictedEvidence` transporte `contextProvenance`, `provenanceGaps`,
+  les sous-indicateurs de confiance et la correction de propreté sans
+  recalcul frontend. La trace conserve donc les limites de provenance tout en
+  gardant la prédiction distincte de l'observation.
 - Aucun facteur socio-économique n'est utilisé.
 - Les noms de sortie restent `risk`, `pressure` et `predicted`; aucune sortie
   n'est présentée comme `observed`.

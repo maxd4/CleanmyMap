@@ -2,11 +2,11 @@ import type {
   ParisPressureProvenance,
   ParisPressureSignalFamily,
   ParisPressureSnapshot,
-  ParisPressureZone,
+  ParisPressureSourceStatus,
 } from "./paris-pressure-contract";
 
 export const PARIS_PRESSURE_RISK_MODEL_CONFIG = {
-  predictionModelVersion: "paris-pressure-risk-v1",
+  predictionModelVersion: "paris-pressure-risk-v2",
   weights: {
     waste: {
       residentialPressure: 0.22,
@@ -75,6 +75,25 @@ export type ParisPressureRiskFactor =
   | "validatedWastePressure"
   | "validatedCigarettePressure";
 
+export type ParisPressureContextFactor =
+  | "eventPressure"
+  | "validatedWastePressure"
+  | "validatedCigarettePressure";
+
+/** Provenance for context prepared outside the spatial snapshot. */
+export type ParisPressureContextProvenance = {
+  factor: ParisPressureContextFactor;
+  publisher: string;
+  dataset: string;
+  url: string;
+  license: string;
+  datasetVersion: string;
+  observedAt: string | null;
+  refreshedAt: string;
+  status: ParisPressureSourceStatus;
+  notes: string[];
+};
+
 export type ParisPressureRiskEvent = {
   distanceKm: number;
   ageDays: number;
@@ -88,8 +107,10 @@ export type ParisPressureRiskContext = {
   recentEvents?: ParisPressureRiskEvent[];
   validatedWasteReports?: number | null;
   validatedCigaretteButts?: number | null;
-  /** Provenance for event/history inputs not carried by the spatial snapshot. */
-  provenance?: ParisPressureProvenance[];
+  /** Provenance is scoped to the context factor it can actually support. */
+  contextProvenance?: Partial<
+    Record<ParisPressureContextFactor, ParisPressureContextProvenance[]>
+  >;
 };
 
 export type ParisPressureRiskContribution = {
@@ -108,7 +129,9 @@ export type ParisPressureCleanlinessCorrection = {
   normalizedPressure: number | null;
   points: number;
   available: boolean;
-  resolution: ParisPressureZone["signals"]["cleanlinessPrior"]["resolution"];
+  resolution: "iris" | "arrondissement" | "unknown";
+  resolutionReason: "resolved" | "missing_prior" | "unknown_resolution";
+  sourceReliability: number;
   explanation: string;
 };
 
@@ -120,8 +143,12 @@ export type ParisPressureRiskScore = {
 };
 
 export type ParisPressureRiskConfidence = {
+  /** Completeness and source reliability of the base risk factors only. */
   dataCompleteness: number;
   sourceCompleteness: number;
+  /** Completeness and source reliability of the correction applied to finalRisk. */
+  cleanlinessCorrectionCompleteness: number;
+  cleanlinessCorrectionSourceReliability: number;
   score: number;
   level: "unknown" | "low" | "medium" | "high";
   availableFactors: number;
@@ -146,5 +173,9 @@ export type ParisPressureRiskEstimate = {
     cigaretteButts: ParisPressureRiskConfidence;
   };
   provenance: ParisPressureProvenance[];
-  provenanceGaps: string[];
+  contextProvenance: ParisPressureContextProvenance[];
+  provenanceGaps: Array<{
+    factor: ParisPressureContextFactor;
+    message: string;
+  }>;
 };
