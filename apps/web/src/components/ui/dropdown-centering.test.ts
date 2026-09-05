@@ -16,7 +16,7 @@ function readSource(relativePath: string): string {
 describe("dropdown centering contract", () => {
   it("centers every floating dropdown on its trigger axis", () => {
     const dropdownSources = [
-      readSource("navigation/app-navigation-ribbon.tsx"),
+      readSource("navigation/app-navigation-ribbon-menus.tsx"),
       readSource("navigation/app-navigation-tree-menu.tsx"),
       `${readSource("navigation/app-navigation-block-dropdown.tsx")}\n${readSource("navigation/navigation-dropdown-size-theme.ts")}`,
       readSource("navigation/notification-bell.tsx"),
