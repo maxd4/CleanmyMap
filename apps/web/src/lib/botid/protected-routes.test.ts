@@ -26,7 +26,7 @@ describe("BotID protected route contract", () => {
 
   it("keeps BotID out of authenticated writes while retaining server AuthN", () => {
     const routes = [
-      ["../../app/api/chat/route.ts", "auth()"],
+      ["../../app/api/chat/route.post.ts", "auth()"],
       ["../../app/api/community/bug-reports/route.ts", "auth()"],
       ["../../app/api/community/promotion-requests/route.ts", "auth()"],
       ["../../app/api/partners/onboarding-requests/route.ts", "auth()"],

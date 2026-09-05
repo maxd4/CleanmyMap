@@ -20,6 +20,7 @@ import {
 export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
+  "/compte",
   "/missions",
   "/actions/history",
   "/declaration",
