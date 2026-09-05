@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -9,6 +9,10 @@ import { toAppError, isAppError, defaultMessageForKind } from "@/lib/errors/app-
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import type { AppError } from "@/lib/errors/app-errors";
 import type { AppProfile } from "@/lib/profiles";
+import {
+  getRequestablePromotionRoles,
+  type PromotionRequestTargetRole,
+} from "@/lib/account/promotion-request-contract";
 import { ShieldCheck, Send, Sparkles, UserPlus, Info, ArrowUpRight, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -19,52 +23,32 @@ type SubmitState = "idle" | "submitting" | "success" | "error";
 
 type PromotionRequestFormProps = {
   currentRole: AppProfile;
+  onSubmitted?: () => void | Promise<void>;
 };
 
-const REQUESTABLE_ROLES: Record<
-  AppProfile,
-  { requestedRole: "elu" | "admin"; label: string }[]
-> = {
-  benevole: [
-    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
-    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
-  ],
-  coordinateur: [
-    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
-    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
-  ],
-  scientifique: [
-    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
-    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
-  ],
-  entreprise: [
-    { requestedRole: "elu", label: "Demander le rôle Élu·e" },
-    { requestedRole: "admin", label: "Demander le rôle Administrateur" },
-  ],
-  elu: [{ requestedRole: "admin", label: "Demander le rôle Administrateur" }],
-  admin: [],
-  max: [],
+const ROLE_LABELS: Record<PromotionRequestTargetRole, string> = {
+  elu: "Demander le rôle Élu·e",
+  admin: "Demander le rôle Administrateur",
 };
 
-export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps) {
+export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequestFormProps) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-  const options = REQUESTABLE_ROLES[currentRole];
+  const options = getRequestablePromotionRoles(currentRole).map((requestedRole) => ({
+    requestedRole,
+    label: ROLE_LABELS[requestedRole],
+  }));
   const [requestedRole, setRequestedRole] = useState<"elu" | "admin">(
     options[0]?.requestedRole ?? "elu",
   );
   const [motivation, setMotivation] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const [formStartedAt] = useState<number>(() => Date.now());
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [error, setError] = useState<AppError | null>(null);
   const [motivationTouched, setMotivationTouched] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const { acquire, release } = useSubmissionLock();
-
-  useEffect(() => {
-    setFormStartedAt(Date.now());
-  }, []);
 
   const motivationError =
     (motivationTouched || submitAttempted) && motivation.trim().length < 10
@@ -126,6 +110,7 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
       setMotivationTouched(false);
       setSubmitAttempted(false);
       setError(null);
+      await onSubmitted?.();
     } catch (error) {
       const appError = isAppError(error)
         ? error

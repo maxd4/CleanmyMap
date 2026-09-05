@@ -45,9 +45,6 @@ vi.mock("@/components/account/account-settings-section", () => ({
   AccountSettingsSection: () => React.createElement("div"),
 }));
 
-vi.mock("@/components/sections/rubriques/promotion-request-form", () => ({
-  PromotionRequestForm: () => React.createElement("div"),
-}));
 
 vi.mock("@/components/ui/clerk-required-gate", () => ({
   ClerkRequiredGate: ({ children, isAuthenticated }: { children: React.ReactNode; isAuthenticated: boolean }) =>

@@ -250,6 +250,7 @@ export const config = {
   matcher: [
     "/admin(.*)",
     "/dashboard(.*)",
+    "/compte(.*)",
     "/missions(.*)",
     "/actions/history(.*)",
     "/declaration(.*)",
