@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { useUser } from "@clerk/nextjs";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -32,6 +33,7 @@ import {
   PilotageMetricGrid,
 } from "@/components/pilotage/pilotage-cluster-panels";
 import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
+import { isPromotionEligibleEluAccessDenied } from "./elus-section-access";
 
 type PilotageOverviewResponse = {
   status: "ok";
@@ -100,11 +102,15 @@ type PilotageOverviewResponse = {
   }>;
 };
 
+type OverviewFetchError = Error & { status?: number };
+
 const fetchOverview = async (url: string): Promise<PilotageOverviewResponse> => {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(body || "overview_unavailable");
+    const error = new Error(body || "overview_unavailable") as OverviewFetchError;
+    error.status = response.status;
+    throw error;
   }
   return (await response.json()) as PilotageOverviewResponse;
 };
@@ -115,6 +121,7 @@ function signedPercent(value: number): string {
 
 export function ElusSection() {
   const { locale } = useSitePreferences();
+  const { user, isSignedIn } = useUser();
   const fr = locale === "fr";
   const [activeTab, setActiveTab] = useState<"overview" | "zones" | "methods">("overview");
 
@@ -127,6 +134,15 @@ export function ElusSection() {
       revalidateOnReconnect: false,
     }
   );
+  const grantedRoleValue =
+    typeof user?.publicMetadata?.role === "string"
+      ? user.publicMetadata.role
+      : undefined;
+  const showPromotionCta = isPromotionEligibleEluAccessDenied(
+    error,
+    Boolean(isSignedIn),
+    grantedRoleValue,
+  );
 
   if (error) {
     return (
@@ -137,11 +153,20 @@ export function ElusSection() {
           </div>
           <h3 className="text-3xl font-black text-white tracking-tighter mb-4">Accès restreint ou indisponible</h3>
           <p className="text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
-            Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l&apos;objet d&apos;une maintenance technique périodique.
+            {showPromotionCta
+              ? "Le niveau Élu doit être obtenu avant d’accéder à cet espace. Vous pouvez découvrir le parcours de demande depuis votre compte."
+              : "Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l’objet d’une maintenance technique périodique."}
           </p>
-          <CmmButton type="button" tone="secondary" variant="pill" className="mt-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform">
-             Demander un accès
-          </CmmButton>
+          {showPromotionCta ? (
+            <CmmButton
+              href="/compte/evolution"
+              tone="secondary"
+              variant="pill"
+              className="mt-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform"
+            >
+              Découvrir le niveau Élu
+            </CmmButton>
+          ) : null}
         </div>
       </SectionShell>
     );

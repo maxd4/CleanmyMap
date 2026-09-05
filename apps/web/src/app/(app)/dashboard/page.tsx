@@ -3,6 +3,7 @@ import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overv
 import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
+import { AccountEvolutionStatusLink } from "@/components/account/account-evolution-status-link";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
@@ -10,6 +11,7 @@ import { RolePrimaryActions } from "@/components/navigation/role-primary-actions
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import {
   getProfileLabel,
@@ -197,6 +199,8 @@ export default async function DashboardPage() {
     referralSummary,
     overviewPromise,
   } = await loadDashboardPageData({ userId, clerkReachable, locale });
+  const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
+  const grantedRole = identity?.role ?? profile;
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
@@ -215,8 +219,15 @@ export default async function DashboardPage() {
         <DashboardEntrance className="relative z-10">
           <CmmPageLayout>
           {/* ── Configuration active ── */}
-          <div data-gsap-reveal>
+          <div data-gsap-reveal className="space-y-3">
             <IdentityProfileBanner profile={profile} />
+            <div className="flex justify-end">
+              <AccountEvolutionStatusLink
+                label="Faire évoluer mon compte"
+                pendingLabel="Voir ma demande"
+                className="border-amber-900/20 bg-amber-950/10 text-amber-950 hover:bg-amber-950/16"
+              />
+            </div>
           </div>
 
           {/* ── Header ── */}
@@ -400,7 +411,7 @@ export default async function DashboardPage() {
               }
               className="p-8 sm:p-10"
             >
-              <AccountEvolutionCta />
+              <AccountEvolutionCta currentRole={grantedRole} />
             </FamilyRubriqueCard>
 
             <FamilyRubriqueCard

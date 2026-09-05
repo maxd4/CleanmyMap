@@ -1,9 +1,18 @@
-import { ArrowUpRight, Sparkles } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { Sparkles } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
-import { ACCOUNT_EVOLUTION_ROUTE } from "@/lib/accueil-pilotage-routes";
+import type { AppProfile } from "@/lib/profiles";
+import { getProfileLabel } from "@/lib/profiles";
+import { AccountEvolutionStatusLink } from "./account-evolution-status-link";
 
-export function AccountEvolutionCta() {
+type AccountEvolutionCtaProps = {
+  currentRole?: AppProfile;
+  pendingInitially?: boolean;
+};
+
+export function AccountEvolutionCta({
+  currentRole,
+  pendingInitially = false,
+}: AccountEvolutionCtaProps) {
   return (
     <CmmCard tone="amber" variant="muted" className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
@@ -13,12 +22,19 @@ export function AccountEvolutionCta() {
           <p className="mt-1 text-sm text-amber-50/72">
             Consultez votre niveau et votre demande depuis la page dédiée.
           </p>
+          {currentRole ? (
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-amber-100/70">
+              Niveau actuel : {getProfileLabel(currentRole, "fr")}
+            </p>
+          ) : null}
         </div>
       </div>
-      <CmmButton href={ACCOUNT_EVOLUTION_ROUTE} tone="primary" variant="pill" className="shrink-0">
-        Ouvrir l&apos;évolution
-        <ArrowUpRight className="ml-2 inline h-4 w-4" aria-hidden="true" />
-      </CmmButton>
+      <AccountEvolutionStatusLink
+        label="Évolution du compte"
+        pendingLabel="Voir ma demande"
+        pendingInitially={pendingInitially}
+        className="shrink-0 border-amber-200/40 bg-amber-100/18 text-white hover:bg-amber-100/26"
+      />
     </CmmCard>
   );
 }

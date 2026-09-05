@@ -137,6 +137,8 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
     >
       <div className="space-y-12 pt-8">
+        <AccountEvolutionCta currentRole={grantedRole} />
+
         {/* ── Actions recommandées ── */}
         <FamilyRubriqueCard
           withTopBar={true}
@@ -169,15 +171,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
             lineageError={referralLineageError}
             emptyCtaHref={referralInviteHref}
           />
-        </FamilyRubriqueCard>
-
-        {/* ── Promotion & Évolution ── */}
-        <FamilyRubriqueCard
-          withTopBar={true}
-          topBarContent="Évolution du Compte"
-          className="p-12"
-        >
-          <AccountEvolutionCta />
         </FamilyRubriqueCard>
 
         {/* ── Changer de profil ── */}

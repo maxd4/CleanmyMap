@@ -15,9 +15,13 @@ import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
   getProfileEntryPath,
   getProfileLabel,
-  getSwitchableProfiles,
   type AppProfile,
 } from "@/lib/profiles";
+import {
+  getAccountEvolutionLabel,
+  getRoleMenuGroups,
+} from "./account-identity-chip.helpers";
+import { AccountEvolutionStatusLink } from "./account-evolution-status-link";
 import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
@@ -33,6 +37,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
+  const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
   const gamificationBadges = identity.badges.filter(
     (badge) =>
       badge.id !== "admin" &&
@@ -40,9 +45,14 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       !badge.id.startsWith("profile_"),
   );
 
-  const profileOptions = useMemo(() => {
-    return getSwitchableProfiles(identity.role);
-  }, [identity.role]);
+  const profileMenuGroups = useMemo(
+    () => getRoleMenuGroups(identity.role),
+    [identity.role],
+  );
+  const profileOptions = useMemo(
+    () => [...profileMenuGroups.openProfiles, ...profileMenuGroups.obtainedProfiles],
+    [profileMenuGroups],
+  );
   const roleMenuRef = useRef<HTMLDetailsElement | null>(null);
   const roleCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roleMenuPlacement = useDropdownPlacement({
@@ -93,7 +103,30 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    void fetch("/api/account/promotion-requests", {
+      headers: { Accept: "application/json" },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        return (await response.json()) as {
+          items?: Array<{ status?: unknown }>;
+        };
+      })
+      .then((payload) => {
+        if (isMounted && payload) {
+          setHasPendingPromotionRequest(
+            payload.items?.[0]?.status === "pending_owner_review",
+          );
+        }
+      })
+      .catch(() => undefined);
+
     return () => {
+      isMounted = false;
       if (roleCloseTimerRef.current) {
         clearTimeout(roleCloseTimerRef.current);
       }
@@ -201,11 +234,11 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               "left-1/2 -translate-x-1/2",
             )}
           >
-            <p className="px-2 pb-2 text-sm font-semibold text-slate-200">
-              {locale === "fr" ? "Je représente un/une :" : "I represent:"}
+            <p className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
+              {locale === "fr" ? "UTILISER LE SITE COMME" : "USE THE SITE AS"}
             </p>
             <ul className="space-y-1" role="none">
-              {profileOptions.map((profile) => {
+              {profileMenuGroups.openProfiles.map((profile) => {
                 const isActive = profile === identity.activeRole;
                 return (
                   <li key={profile} role="none">
@@ -247,6 +280,70 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                 );
               })}
             </ul>
+
+            <div role="separator" className="my-3 border-t border-white/12" />
+            <div className="space-y-2 px-2">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
+                {locale === "fr" ? "NIVEAU DE COMPTE" : "ACCOUNT LEVEL"}
+              </p>
+              <p className="text-sm font-bold text-white">
+                {locale === "fr" ? "Niveau obtenu" : "Granted level"} : {getProfileLabel(identity.role, locale)}
+              </p>
+            </div>
+            {profileMenuGroups.obtainedProfiles.length > 0 ? (
+              <ul className="mt-2 space-y-1" role="none">
+                {profileMenuGroups.obtainedProfiles.map((profile) => {
+                  const isActive = profile === identity.activeRole;
+                  return (
+                    <li key={profile} role="none">
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={isActive}
+                        disabled={isUpdatingProfile}
+                        onClick={() => {
+                          if (isActive) {
+                            setIsRoleMenuOpen(false);
+                            return;
+                          }
+                          void handleActiveRoleMutation(profile);
+                        }}
+                        className={cn(
+                          "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",
+                          isActive
+                            ? "bg-emerald-400/12 text-white ring-1 ring-emerald-300/30"
+                            : "text-slate-100 hover:bg-white/10 hover:text-white",
+                        )}
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-emerald-200">
+                          <BadgePictogram
+                            name={getAccountBadgeIconName(`role_${profile}`)}
+                            size={17}
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {getProfileLabel(profile, locale)}
+                        </span>
+                        {isActive ? (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/80 text-slate-950" aria-hidden="true">
+                            ✓
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            <div className="mt-3 border-t border-white/12 pt-3">
+              <AccountEvolutionStatusLink
+                label={getAccountEvolutionLabel(locale, false)}
+                pendingLabel={getAccountEvolutionLabel(locale, true)}
+                pendingInitially={hasPendingPromotionRequest}
+                onClick={() => setIsRoleMenuOpen(false)}
+                className="w-full border-white/18 bg-white/[0.08] text-sm text-white hover:bg-white/[0.14]"
+              />
+            </div>
           </div>
         </details>
       ) : null}
