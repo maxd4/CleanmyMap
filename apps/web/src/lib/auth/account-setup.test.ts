@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   hasRequiredAccountIdentity,
   hasRequiredAccountPseudo,
+  hasCurrentAccountSetupDeferral,
+  extractAccountSetupDeferredVersion,
   shouldRequireAccountSetup,
   shouldRequireAccountSetupRefresh,
 } from "@/lib/auth/account-setup";
@@ -57,5 +59,37 @@ describe("hasRequiredAccountPseudo", () => {
     expect(hasRequiredAccountPseudo(" Vert_Tige ")).toBe(true);
     expect(hasRequiredAccountPseudo("  ")).toBe(false);
     expect(hasRequiredAccountPseudo(null)).toBe(false);
+  });
+});
+
+describe("account setup deferral", () => {
+  it("accepts a current or newer deferral without marking setup complete", () => {
+    expect(
+      hasCurrentAccountSetupDeferral({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
+      }),
+    ).toBe(true);
+    expect(
+      extractAccountSetupDeferredVersion({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
+      }),
+    ).toBe(ACCOUNT_SETUP_SCHEMA_VERSION);
+  });
+
+  it("does not accept an older or malformed deferral", () => {
+    expect(
+      hasCurrentAccountSetupDeferral({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: ACCOUNT_SETUP_SCHEMA_VERSION - 1,
+      }),
+    ).toBe(false);
+    expect(
+      hasCurrentAccountSetupDeferral({
+        profileSetupDeferred: true,
+        profileSetupDeferredVersion: "invalid",
+      }),
+    ).toBe(false);
   });
 });

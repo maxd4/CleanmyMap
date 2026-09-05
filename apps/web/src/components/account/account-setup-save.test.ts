@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildAccountSetupIdentityUpdate,
+  clearAccountSetupDeferralMetadata,
+  createAccountSetupDeferralMetadata,
   persistAccountSetupChanges,
 } from "./account-setup-save";
 
@@ -110,5 +112,24 @@ describe("account setup persistence", () => {
 
     expect(result.update).toEqual({});
     expect(result.usernameChanged).toBe(false);
+  });
+
+  it("preserves unrelated metadata when deferring and clears it on completion", () => {
+    const deferred = createAccountSetupDeferralMetadata(
+      { activeProfile: "benevole", display_name_mode: "full_name" },
+      3,
+      "2026-09-05T12:00:00.000Z",
+    );
+
+    expect(deferred).toMatchObject({
+      activeProfile: "benevole",
+      profileSetupDeferred: true,
+      profileSetupDeferredVersion: 3,
+      profileSetupDeferredAt: "2026-09-05T12:00:00.000Z",
+    });
+    expect(clearAccountSetupDeferralMetadata(deferred)).toEqual({
+      activeProfile: "benevole",
+      display_name_mode: "full_name",
+    });
   });
 });

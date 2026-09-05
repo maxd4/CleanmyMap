@@ -7,6 +7,35 @@ export type AccountSetupUserUpdate = {
   unsafeMetadata?: Record<string, unknown>;
 };
 
+export const ACCOUNT_SETUP_DEFERRED_METADATA_KEYS = [
+  "profileSetupDeferred",
+  "profileSetupDeferredVersion",
+  "profileSetupDeferredAt",
+] as const;
+
+export function clearAccountSetupDeferralMetadata(
+  metadata: Record<string, unknown>,
+): Record<string, unknown> {
+  const cleaned = { ...metadata };
+  for (const key of ACCOUNT_SETUP_DEFERRED_METADATA_KEYS) {
+    delete cleaned[key];
+  }
+  return cleaned;
+}
+
+export function createAccountSetupDeferralMetadata(
+  metadata: Record<string, unknown>,
+  version: number,
+  deferredAt: string,
+): Record<string, unknown> {
+  return {
+    ...metadata,
+    profileSetupDeferred: true,
+    profileSetupDeferredVersion: version,
+    profileSetupDeferredAt: deferredAt,
+  };
+}
+
 export function normalizeAccountSetupUsername(
   value: string | null | undefined,
 ): string {
