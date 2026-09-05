@@ -70,6 +70,34 @@ function extractSetupVersion(metadata: ClerkMetadata): number | null {
   return null;
 }
 
+export function extractAccountSetupDeferredVersion(
+  metadata: ClerkMetadata,
+): number | null {
+  if (!metadata || metadata["profileSetupDeferred"] !== true) {
+    return null;
+  }
+
+  const rawValue = metadata["profileSetupDeferredVersion"];
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return Math.max(0, Math.trunc(rawValue));
+  }
+
+  if (typeof rawValue === "string" && rawValue.trim().length > 0) {
+    const parsed = Number.parseInt(rawValue, 10);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+  }
+
+  return null;
+}
+
+export function hasCurrentAccountSetupDeferral(
+  metadata: ClerkMetadata,
+  requiredVersion: number = ACCOUNT_SETUP_SCHEMA_VERSION,
+): boolean {
+  const deferredVersion = extractAccountSetupDeferredVersion(metadata);
+  return deferredVersion !== null && deferredVersion >= requiredVersion;
+}
+
 function toCreatedAtTimestamp(createdAt: Date | string | number | null | undefined): number | null {
   if (!createdAt) {
     return null;
@@ -123,10 +151,12 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<AccountSe
   try {
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    const setupCompleted =
-      extractSetupCompletionFlag(user.publicMetadata) ||
-      extractSetupCompletionFlag(user.privateMetadata) ||
-      extractSetupCompletionFlag(user.unsafeMetadata);
+    const hasCurrentDeferral = hasCurrentAccountSetupDeferral(user.unsafeMetadata);
+    const setupCompleted = hasCurrentDeferral
+      ? false
+      : extractSetupCompletionFlag(user.publicMetadata) ||
+        extractSetupCompletionFlag(user.privateMetadata) ||
+        extractSetupCompletionFlag(user.unsafeMetadata);
     const setupVersion =
       extractSetupVersion(user.publicMetadata) ??
       extractSetupVersion(user.privateMetadata) ??
@@ -146,11 +176,12 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<AccountSe
     const needsPseudoCompletion = !hasRequiredAccountPseudo(user.username);
 
     return {
-      requiresSetup:
-        needsInitialSetup ||
-        needsSchemaUpdate ||
-        needsIdentityCompletion ||
-        needsPseudoCompletion,
+      requiresSetup: hasCurrentDeferral
+        ? false
+        : needsInitialSetup ||
+          needsSchemaUpdate ||
+          needsIdentityCompletion ||
+          needsPseudoCompletion,
       setupCompleted,
       createdAt: toCreatedAtTimestamp(user.createdAt),
       setupVersion,

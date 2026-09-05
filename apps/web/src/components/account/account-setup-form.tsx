@@ -45,6 +45,8 @@ import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
+  clearAccountSetupDeferralMetadata,
+  createAccountSetupDeferralMetadata,
   persistAccountSetupChanges,
   type AccountSetupUserUpdate,
 } from "@/components/account/account-setup-save";
@@ -169,6 +171,16 @@ export function AccountSetupForm({
   const trimmedLastName = lastName.trim();
   const isPseudonymous = displayNameMode === "pseudo";
 
+  function navigateAfterSetup() {
+    if (submitMode === "refresh") {
+      router.refresh();
+      return;
+    }
+
+    router.replace(nextPath ?? PROFIL_ROUTE);
+    router.refresh();
+  }
+
   useEffect(() => {
     if (!isLoaded || !user || hasHydratedUserState.current) {
       return;
@@ -198,6 +210,39 @@ export function AccountSetupForm({
       : null;
   const canSubmit = !pseudoError && !firstNameError && !lastNameError && !profileError && !locationError && !isSaving;
 
+  async function handleDefer() {
+    setError(null);
+    if (!user) {
+      setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const metadata = createAccountSetupDeferralMetadata(
+        { ...(user.unsafeMetadata ?? {}) },
+        ACCOUNT_SETUP_SCHEMA_VERSION,
+        new Date().toISOString(),
+      );
+      await user.updateMetadata({
+        unsafeMetadata: {
+          profileSetupDeferred: metadata.profileSetupDeferred,
+          profileSetupDeferredVersion: metadata.profileSetupDeferredVersion,
+          profileSetupDeferredAt: metadata.profileSetupDeferredAt,
+        },
+      });
+      navigateAfterSetup();
+    } catch (caughtError) {
+      logFailure("AccountSetup", "Deferral failed", caughtError);
+      const appError = isAppError(caughtError)
+        ? caughtError
+        : toAppError(caughtError, { kind: "server", message: "Impossible de différer la configuration. Réessayez." });
+      setError(appError);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -213,14 +258,15 @@ export function AccountSetupForm({
     try {
       setIsSaving(true);
       const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
-      Object.assign(metadata, {
+      const completedMetadata = clearAccountSetupDeferralMetadata(metadata);
+      Object.assign(completedMetadata, {
         profileSetupCompleted: true,
         profileSetupVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
         profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
         display_name_mode: displayNameMode,
       });
       Object.assign(
-        metadata,
+        completedMetadata,
         createLocationPreferencesMetadata({
           residence: activeResidence ? residence : null,
           work: activeWork ? work : null,
@@ -233,7 +279,7 @@ export function AccountSetupForm({
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
         displayNameMode,
-        metadata,
+        metadata: completedMetadata,
         initialProfile,
         selectedProfile,
         updateUser: (update) => user.update(update),
@@ -242,12 +288,7 @@ export function AccountSetupForm({
         saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
       });
 
-      if (submitMode === "refresh") {
-        router.refresh();
-      } else {
-        router.replace(nextPath ?? PROFIL_ROUTE);
-        router.refresh();
-      }
+      navigateAfterSetup();
     } catch (caughtError) {
       logFailure("AccountSetup", "Update failed", caughtError, { profile: selectedProfile });
       const appError = isReverificationCancelledError(caughtError)
@@ -366,7 +407,12 @@ export function AccountSetupForm({
             Vous représentez une collectivité&nbsp;?
           </Link>
         </div>
-        <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving} className="!border-violet-300 !bg-violet-500 !bg-none !text-white hover:!bg-violet-600">{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
+        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <CmmButton type="button" tone="secondary" size="lg" disabled={isSaving} onClick={() => void handleDefer()}>
+            Configurer plus tard
+          </CmmButton>
+          <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving} className="!border-violet-300 !bg-violet-500 !bg-none !text-white hover:!bg-violet-600">{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
+        </div>
       </footer>
     </form>
   );
