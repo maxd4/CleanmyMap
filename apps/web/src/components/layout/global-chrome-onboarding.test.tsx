@@ -8,6 +8,10 @@ vi.mock("next/dynamic", () => ({
   },
 }));
 
+vi.mock("@/lib/authz", () => ({
+  getCurrentUserIdentity: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/components/navigation/app-navigation-ribbon", () => ({
   AppNavigationRibbon: () => <div data-testid="global-ribbon" />,
 }));
@@ -25,8 +29,8 @@ import { DeferredGlobalFooter } from "./deferred-global-chrome";
 import { RootLayoutChrome } from "./root-layout-chrome";
 
 describe("global chrome on onboarding", () => {
-  it("keeps the global ribbon mounted", () => {
-    const markup = renderToStaticMarkup(<RootLayoutChrome />);
+  it("keeps the global ribbon mounted", async () => {
+    const markup = renderToStaticMarkup(await RootLayoutChrome());
 
     expect(markup).toContain('data-testid="global-ribbon"');
   });
