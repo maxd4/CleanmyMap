@@ -3,6 +3,7 @@ import {
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry, RouteGeometryLeg } from "./route-contract";
+import type { RoutePredictedCandidate } from "./route-predicted-targets";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v1" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -13,10 +14,14 @@ export type RoutePlannerOrigin = {
   source: "browser" | "map" | "approximate_saved_area";
 };
 
-export type RoutePlannerCandidate = TrashSpotterActionableCandidate & {
-  score: number;
-  reason: string;
-};
+export type RoutePlannerCandidate =
+  | (TrashSpotterActionableCandidate & {
+      score: number;
+      reason: string;
+      family?: "observed";
+      evidence?: import("./route-predicted-targets").RouteObservedEvidence;
+    })
+  | RoutePredictedCandidate;
 
 export type PlannedRouteStop = {
   candidate: RoutePlannerCandidate;
@@ -31,6 +36,34 @@ export type RoutePlannerResult = {
     excludedUnsafe: number;
     excludedByTravelBudget: number;
   };
+  audit: {
+    evaluations: RoutePlannerCandidateEvaluation[];
+    selections: RoutePlannerSelection[];
+    orderingCriteria: [
+      "combined_score_desc",
+      "priority_desc",
+      "incremental_travel_asc",
+      "id_lexicographic",
+    ];
+  };
+};
+
+export type RoutePlannerCandidateEvaluation = {
+  candidateId: string;
+  step: number;
+  incrementalDistanceKm: number;
+  incrementalTravelMinutes: number;
+  cumulativeTravelMinutes: number;
+  normalizedPriority: number;
+  normalizedTravel: number;
+  combinedScore: number;
+  feasible: boolean;
+};
+
+export type RoutePlannerSelection = RoutePlannerCandidateEvaluation & {
+  budgetBeforeMinutes: number;
+  budgetAfterMinutes: number;
+  selectionReason: string;
 };
 
 export type RoutePlannerInput = {
@@ -95,6 +128,11 @@ function compareCandidates(
   if (Math.abs(leftCombined - rightCombined) > Number.EPSILON) {
     return rightCombined - leftCombined;
   }
+  const leftIsObserved = left.candidate.family !== "predicted";
+  const rightIsObserved = right.candidate.family !== "predicted";
+  if (leftIsObserved !== rightIsObserved) {
+    return leftIsObserved ? -1 : 1;
+  }
   if (Math.abs(leftPriority - rightPriority) > Number.EPSILON) {
     return rightPriority - leftPriority;
   }
@@ -112,19 +150,30 @@ function compareCandidates(
 export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const budgetMinutes = Math.max(0, input.travelBudgetMinutes);
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
-  const safeCandidates = input.candidates.filter(isVolunteerRouteEligible);
+  const safeCandidates = input.candidates.filter(
+    (candidate) =>
+      candidate.family === "predicted" || isVolunteerRouteEligible(candidate),
+  );
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
   let current: { latitude: number; longitude: number } = input.origin;
   let cumulativeTravelMinutes = 0;
   let excludedByTravelBudget = 0;
+  const evaluations: RoutePlannerCandidateEvaluation[] = [];
+  const selections: RoutePlannerSelection[] = [];
 
   while (stops.length < input.maxStops && remaining.length > 0) {
-    const feasible = remaining
+    const evaluated = remaining
       .map((candidate) => {
         const incrementalDistanceKm = routeDistanceKm(current, candidate);
         const incrementalTravelMinutes = travelMinutesForDistance(
           incrementalDistanceKm,
+        );
+        const normalizedPriority = clamp(candidate.score / 100, 0, 1);
+        const normalizedTravel = clamp(
+          1 - incrementalTravelMinutes / Math.max(1, budgetMinutes),
+          0,
+          1,
         );
         return {
           candidate,
@@ -132,11 +181,25 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           incrementalTravelMinutes,
           cumulativeTravelMinutes:
             cumulativeTravelMinutes + incrementalTravelMinutes,
+          normalizedPriority,
+          normalizedTravel,
+          combinedScore:
+            priorityWeight * normalizedPriority +
+            (1 - priorityWeight) * normalizedTravel,
+          feasible:
+            cumulativeTravelMinutes + incrementalTravelMinutes <=
+            budgetMinutes + 1e-9,
         };
-      })
-      .filter(
-        (stop) => stop.cumulativeTravelMinutes <= budgetMinutes + 1e-9,
-      )
+      });
+    evaluations.push(
+      ...evaluated.map(({ candidate, ...evaluation }) => ({
+        candidateId: candidate.id,
+        step: stops.length + 1,
+        ...evaluation,
+      })),
+    );
+    const feasible = evaluated
+      .filter((stop) => stop.feasible)
       .sort((left, right) =>
         compareCandidates(left, right, priorityWeight, Math.max(1, budgetMinutes)),
       );
@@ -149,6 +212,24 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
     const next = feasible[0];
     if (!next) break;
     stops.push(next);
+    selections.push({
+      candidateId: next.candidate.id,
+      step: stops.length,
+      incrementalDistanceKm: next.incrementalDistanceKm,
+      incrementalTravelMinutes: next.incrementalTravelMinutes,
+      cumulativeTravelMinutes: next.cumulativeTravelMinutes,
+      normalizedPriority: next.normalizedPriority,
+      normalizedTravel: next.normalizedTravel,
+      combinedScore: next.combinedScore,
+      feasible: true,
+      budgetBeforeMinutes: Math.max(
+        0,
+        budgetMinutes -
+          (next.cumulativeTravelMinutes - next.incrementalTravelMinutes),
+      ),
+      budgetAfterMinutes: Math.max(0, budgetMinutes - next.cumulativeTravelMinutes),
+      selectionReason: "score_combine_priorite_deplacement",
+    });
     const nextIndex = remaining.findIndex(
       (candidate) => candidate.id === next.candidate.id,
     );
@@ -162,6 +243,16 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
     diagnostics: {
       excludedUnsafe: input.candidates.length - safeCandidates.length,
       excludedByTravelBudget,
+    },
+    audit: {
+      evaluations,
+      selections,
+      orderingCriteria: [
+        "combined_score_desc",
+        "priority_desc",
+        "incremental_travel_asc",
+        "id_lexicographic",
+      ],
     },
   };
 }
