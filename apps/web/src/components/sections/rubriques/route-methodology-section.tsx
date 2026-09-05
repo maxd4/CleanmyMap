@@ -105,7 +105,7 @@ export function RouteMethodologySection() {
             {t("routeMethodology.cta")}
           </CmmButton>
           <CmmButton
-            href="/docs/product/methodologie-itineraire.md"
+            href="/docs/architecture/methodologie-creation-itineraire.md"
             tone="secondary"
             variant="pill"
             className="justify-center px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em]"

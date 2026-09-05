@@ -34,7 +34,7 @@ describe("RouteMethodologySection", () => {
     }
     expect(markup).toContain('href="/sections/route"');
     expect(markup).toContain("Créer un itinéraire");
-    expect(markup).toContain('href="/docs/product/methodologie-itineraire.md"');
+    expect(markup).toContain('href="/docs/architecture/methodologie-creation-itineraire.md"');
 
     const section = markup.slice(markup.indexOf('id="methodologie-itineraire"'));
     expect(section).not.toMatch(/coefficient|pondération|formule|\b\d+\s*%/i);
