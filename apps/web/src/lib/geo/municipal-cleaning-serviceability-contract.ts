@@ -7,9 +7,9 @@
  */
 
 export const MUNICIPAL_CLEANING_SERVICEABILITY_SCHEMA_VERSION =
-  "paris-municipal-cleaning-serviceability-v1" as const;
+  "paris-municipal-cleaning-serviceability-v2" as const;
 export const MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_VERSION =
-  "municipal-cleaning-serviceability-v1" as const;
+  "municipal-cleaning-serviceability-v2" as const;
 
 export type CleaningSurfaceClass =
   | "standard_sidewalk"
@@ -30,6 +30,8 @@ export type CleaningEvidenceType =
   | "municipal_coverage"
   | "cleaning_frequency"
   | "scheduled_operation"
+  | "mechanized_accessibility"
+  | "manual_cleaning"
   | "geometry_proxy"
   | "unknown";
 
@@ -59,6 +61,14 @@ export type CleaningFrequency = {
   sourceEvidenceIds: string[];
 };
 
+export type CleaningSignalResolution = "resolved" | "conflict" | "unknown";
+
+export type CleaningSignalEvidence = {
+  sourceEvidenceIds: string[];
+  resolution: CleaningSignalResolution;
+  confidence: number;
+};
+
 export type CleaningSurfaceObservation = {
   surfaceClass: CleaningSurfaceClass;
   featureCount: number;
@@ -72,6 +82,12 @@ export type ServiceabilityConfidence = {
   sourceCompleteness: number;
   availableSignals: string[];
   missingSignals: string[];
+  signalConfidence: {
+    municipalCleaningServiceLevel: CleaningSignalEvidence;
+    geometryServiceabilityProxy: CleaningSignalEvidence;
+    mechanizedCleaningAccessibility: CleaningSignalEvidence;
+    manualCleaning: CleaningSignalEvidence;
+  };
 };
 
 export type MunicipalCleaningServiceabilityZone = {
@@ -84,9 +100,17 @@ export type MunicipalCleaningServiceabilityZone = {
     radiusM: number | null;
     radiusBasis: "equivalent_circle" | "unknown";
   };
-  /** Relative 0–100 score; it is not a frequency or a probability. */
-  municipalCleaningServiceability: number | null;
-  serviceabilityBasis: "documented_frequency" | "geometry_proxy" | "unknown";
+  /** Direct municipal evidence only; never populated by geometry alone. */
+  municipalCleaningServiceLevel: number | null;
+  municipalCleaningServiceLevelBasis:
+    | "documented_frequency"
+    | "documented_coverage"
+    | "unknown"
+    | "conflict";
+  municipalCleaningServiceLevelEvidence: CleaningSignalEvidence;
+  /** Relative 0–100 geometry proxy; not municipal coverage or frequency. */
+  geometryServiceabilityProxy: number | null;
+  geometryServiceabilityProxyEvidence: CleaningSignalEvidence;
   /** Relative 0–100 score; it is not proof of a cleaning route. */
   mechanizedCleaningAccessibility: number | null;
   mechanizedAccessibilityBasis:
@@ -95,9 +119,11 @@ export type MunicipalCleaningServiceabilityZone = {
     | "unknown";
   manualCleaningLikely: {
     value: boolean | null;
-    basis: "documented" | "geometric_inference" | "unknown";
+    basis: "documented" | "geometric_inference" | "unknown" | "conflict";
+    evidence: CleaningSignalEvidence;
   };
   documentedCleaningFrequency: CleaningFrequency | null;
+  documentedCleaningFrequencyResolution: CleaningSignalResolution;
   surfaceClasses: CleaningSurfaceObservation[];
   sourceEvidence: CleaningSourceEvidence[];
   observedAt: string | null;
@@ -138,11 +164,20 @@ export type MunicipalCleaningRawZone = MunicipalCleaningZoneSeed & {
   surfaceFeatureCounts?: Partial<Record<CleaningSurfaceClass, number | null>>;
   /** Optional score supplied by a documented accessibility source, 0–1. */
   mechanizedCleaningAccessibility?: number | null;
+  mechanizedCleaningAccessibilityEvidenceIds?: string[];
+  mechanizedCleaningAccessibilityResolution?: CleaningSignalResolution;
+  /** Direct municipal level, 0–100; never inferred from geometry. */
+  documentedMunicipalCleaningServiceLevel?: number | null;
+  documentedMunicipalCleaningServiceLevelEvidenceIds?: string[];
+  documentedMunicipalCleaningServiceLevelResolution?: CleaningSignalResolution;
   /** Optional obstacle count from the same preloaded geometry snapshot. */
   obstacleCount?: number | null;
   documentedCleaningFrequency?: CleaningFrequency | null;
   documentedManualCleaning?: boolean | null;
   documentedManualCleaningEvidenceIds?: string[];
+  documentedCleaningFrequencyResolution?: CleaningSignalResolution;
+  documentedManualCleaningResolution?: CleaningSignalResolution;
+  obstacleCountResolution?: CleaningSignalResolution;
   observedAt?: string | null;
   sourceEvidence?: CleaningSourceEvidence[];
 };

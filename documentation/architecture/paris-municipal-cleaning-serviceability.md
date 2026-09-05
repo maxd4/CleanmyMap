@@ -8,14 +8,14 @@ servir à raisonner sur l'additionnalité potentielle d'une intervention
 bénévole, mais ne mesure pas la pollution, ne mesure pas un résultat de
 nettoyage et ne permet jamais d'affirmer qu'une zone est « non nettoyée ».
 
-Le contrat sépare explicitement :
+Le contrat v2 sépare explicitement :
 
 - `municipal_coverage` et `cleaning_frequency` : preuve municipale directe
   lorsqu'elle est jointe à la zone ;
 - `scheduled_operation` : opération documentée et datée, sans implication de
   tournée permanente ;
 - `geometry_proxy` : inférence à partir des surfaces et obstacles du Plan de
-  Voirie de Paris (PVP) ;
+  Voirie de Paris (PVP), sans valeur de couverture municipale ;
 - `unknown` : information absente ou non exploitable.
 
 Le snapshot est chargé localement par
@@ -78,11 +78,11 @@ type CleaningSurfaceClass =
 Une zone peut avoir plusieurs classes. Elles sont normalisées en parts de
 features, triées par classe, sans double comptage de la zone.
 
-## Formules versionnées
+## Contrat v2 et formules versionnées
 
 La configuration est centralisée dans
 `MUNICIPAL_CLEANING_SERVICEABILITY_MODEL_CONFIG` et sa version est
-`municipal-cleaning-serviceability-v1`.
+`municipal-cleaning-serviceability-v2`.
 Cette version est également portée explicitement par le snapshot via
 `predictionModelVersion`; toute évolution des coefficients doit donc créer
 une nouvelle version.
@@ -113,7 +113,7 @@ mechanizedAccessibility =
     surfaceAccessibility × 0,75,
     obstacleAccessibility × 0,25
   )
-municipalCleaningServiceability = 100 × mechanizedAccessibility
+geometryServiceabilityProxy = 100 × mechanizedAccessibility
 ```
 
 Une accessibilité fournie par une source municipale explicite jointe à la
@@ -126,30 +126,55 @@ preuve `cleaning_frequency`, elle prévaut sur le proxy :
 ```text
 documentedFrequencyScore =
   100 × clamp(visitsPerWeek / 14, 0, 1)
-municipalCleaningServiceability = documentedFrequencyScore
+municipalCleaningServiceLevel = documentedFrequencyScore
 ```
 
 Le nombre 14 est une borne de normalisation du score relatif ; le résultat
 n'est ni une fréquence ni une probabilité. Une fréquence de zéro est une
 valeur documentée ; une fréquence absente reste `null`.
 
-Les champs `municipalCleaningServiceability` et
+`geometryServiceabilityProxy`, `municipalCleaningServiceLevel` et
 `mechanizedCleaningAccessibility` exposent des scores relatifs bornés sur
-0–100. Ils ne sont pas des pourcentages de chance et ne doivent pas être
-présentés comme une mesure réelle du nettoiement.
+0–100. Le premier est une facilité opérationnelle géométrique ; le deuxième
+existe uniquement avec une preuve municipale directe ; le troisième décrit
+l'accessibilité mécanisée, pas la couverture. Aucun de ces scores n'est une
+fréquence, une probabilité ou une mesure réelle du nettoiement.
 
-`manualCleaningLikely` vaut explicitement `true` si une preuve municipale
-jointe le documente. Sinon, il vaut une inférence géométrique lorsque
-l'accessibilité mécanique est au plus 0,30 ou lorsque la pression d'obstacles
-atteint 0,65. Sans géométrie exploitable, il vaut `{ value: null, basis:
-"unknown" }`.
+La règle contractuelle est :
 
-La confiance combine complétude des cinq signaux (`surfaceClasses`,
-`obstacleCount`, fréquence, couverture municipale, opération programmée) et
-présence de la preuve de zone. Un proxy géométrique est plafonné par une
-fiabilité de 0,55 ; une fréquence documentée peut atteindre 1,00. Sans
-provenance de zone, la complétude de source est zéro et le niveau reste
-`unknown`, même si une valeur technique a été fournie.
+```text
+municipalCleaningServiceLevel != geometryServiceabilityProxy
+lower municipal coverage ne peut jamais être déduit de
+mechanizedCleaningAccessibility ou geometryServiceabilityProxy seuls
+```
+
+Une preuve `municipal_coverage` ou `cleaning_frequency` doit référencer des
+preuves existantes, du bon `evidenceType`, et dont le statut n'est pas
+`unavailable`. Une preuve `partial` reste exploitable mais sa confiance est
+réduite. Les confidences sont conservées séparément dans
+`serviceabilityConfidence.signalConfidence` pour éviter qu'une bonne
+provenance géométrique ne renforce une fréquence absente.
+
+`manualCleaningLikely` vaut `true` ou `false` avec `basis: "documented"`
+uniquement si une preuve `manual_cleaning` valide le documente. Il vaut
+`true` avec `basis: "geometric_inference"` lorsque la géométrie est fortement
+compatible avec une intervention manuelle (accessibilité mécanique au plus
+0,30 ou pression d'obstacles au moins 0,65). Une bonne accessibilité ne
+produit jamais `false` par inférence : le résultat reste
+`{ value: null, basis: "unknown" }`. Des preuves manuelles contradictoires
+produisent `basis: "conflict"`, jamais une sélection selon l'ordre d'entrée.
+
+`documentedCleaningFrequencyResolution` et les résolutions de signal peuvent
+valoir `resolved`, `conflict` ou `unknown`. Une fréquence contradictoire est
+donc conservée comme conflit explicite et n'est pas transformée en fréquence
+documentée.
+
+La confiance combine les signaux présents et leurs preuves propres. Un proxy
+géométrique est plafonné par une fiabilité de 0,55 ; une preuve directe
+`available` peut atteindre 1,00 et une preuve `partial` 0,70. Sans preuve
+adaptée, le signal reste `unknown`, même si une valeur technique a été
+fournie. Une preuve géométrique ne peut donc pas augmenter la confiance d'une
+fréquence municipale absente.
 
 ## Rafraîchissement
 
@@ -176,15 +201,24 @@ node --experimental-strip-types scripts/refresh-paris-municipal-cleaning-service
   --sources-json <export-preuves>
 ```
 
-La préparation des exports se fait hors requête. Les lignes inconnues, sans
+La préparation des exports se fait hors requête. L'agrégateur déduplique les
+lignes par identifiant d'objet (`sourceObjectId`, `objectId` ou `featureId`)
+ou, à défaut, par signature stable de leurs valeurs. Les comptes ne sont
+additionnés que pour des lignes distinctes ; les inventaires non marqués
+`aggregationMode: "additive"` deviennent conflictuels lorsqu'ils portent des
+valeurs différentes. Les fréquences et booléens concurrents sont résolus par
+égalité exacte ou exposés comme `conflict`, jamais par première ligne.
+`observedAt` retient la date valide la plus récente. Les lignes inconnues, sans
 preuve ou sans géométrie ne sont pas transformées en couverture municipale.
 
 ## Validation couverte
 
 `municipal-cleaning-serviceability.test.ts` couvre le trottoir standard, les
-escaliers, les classes superposées, les obstacles, la fréquence documentée,
-l'absence de données, la provenance manquante et l'alignement de toutes les
-zones. Les assertions vérifient notamment qu'un accès mécanique faible ne
-devient jamais « non nettoyé », qu'une preuve documentée prévaut sur un proxy
-et qu'une zone absente du snapshot devient `unknown` sans créer de point
-artificiel.
+escaliers, les obstacles, la fréquence documentée, les preuves `unavailable`
+et `partial`, les preuves manuelles, les conflits, l'absence de données et
+l'alignement de toutes les zones. Le test Node du générateur vérifie la
+déduplication, l'agrégation additive explicite, l'indépendance à l'ordre des
+lignes et les conflits. Les assertions vérifient notamment qu'un accès
+mécanique faible ne devient jamais une couverture faible, qu'une bonne
+accessibilité ne devient jamais `manualCleaningLikely=false`, et qu'une zone
+absente du snapshot reste `unknown`.
