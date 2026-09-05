@@ -13,6 +13,7 @@ import {
 } from "@/lib/route/route-contract";
 import { ROUTE_PLANNER_ENGINE_VERSION } from "@/lib/route/route-planner";
 import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
+import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
 
@@ -73,7 +74,7 @@ export function buildRouteRecommendationResponse(input: {
   });
 
   if (plannedStops.length === 0) {
-    return NextResponse.json({
+    const responsePayload = {
       status: dataLayers.recommendation,
       dataStatus,
       dataLayers,
@@ -107,7 +108,9 @@ export function buildRouteRecommendationResponse(input: {
       proactiveAssistant: {
         ...defaultRouteAssistantPayload(),
       },
-    });
+    } satisfies RouteRecommendationResponse;
+
+    return NextResponse.json(responsePayload);
   }
 
   const stops = applyOriginRouteGeometryLegs(
@@ -137,9 +140,10 @@ export function buildRouteRecommendationResponse(input: {
     eventSignals: eventPressureContext.eventSignals,
   });
 
-  return NextResponse.json({
+  const responsePayload = {
     status: dataLayers.recommendation,
     dataStatus,
+    dataLayers,
     isTruncated,
     sourceHealth,
     origin,
@@ -171,5 +175,7 @@ export function buildRouteRecommendationResponse(input: {
       `Pondération opérationnelle: ${priorityVsTravel}% priorité / ${100 - priorityVsTravel}% déplacement.`,
     ],
     proactiveAssistant,
-  });
+  } satisfies RouteRecommendationResponse;
+
+  return NextResponse.json(responsePayload);
 }
