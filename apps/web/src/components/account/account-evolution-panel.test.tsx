@@ -13,9 +13,12 @@ vi.mock("@/components/sections/rubriques/promotion-request-form", () => ({
   PromotionRequestForm: () => <div data-testid="promotion-form">FORMULAIRE</div>,
 }));
 
-const request = (status: AccountEvolutionRequest["status"]): AccountEvolutionRequest => ({
+const request = (
+  status: AccountEvolutionRequest["status"],
+  requestedRole: AccountEvolutionRequest["requestedRole"] = "admin",
+): AccountEvolutionRequest => ({
   createdAt: "2026-09-04T10:00:00.000Z",
-  requestedRole: "admin",
+  requestedRole,
   status,
   reviewedAt: status === "pending_owner_review" ? null : "2026-09-05T10:00:00.000Z",
 });
@@ -24,7 +27,7 @@ function renderPanel(latestRequest: AccountEvolutionRequest | null, currentRole:
   return renderToStaticMarkup(
     <AccountEvolutionPanel
       currentRole={currentRole}
-      activeProfile={currentRole}
+      activeRole={currentRole}
       initialRequest={latestRequest}
       initialStatusAvailable={true}
     />,
@@ -42,9 +45,26 @@ describe("AccountEvolutionPanel", () => {
     const markup = renderPanel(request(status));
     expect(markup).toContain(status === "accepted" ? "Demande acceptée" : "Demande refusée");
     expect(markup).toContain("Rôle demandé");
-    if (status === "accepted") {
-      expect(markup).not.toContain("data-testid=\"promotion-form\"");
-    }
+    expect(markup).toContain(status === "rejected" ? 'data-testid="promotion-form"' : "");
+  });
+
+  it("reopens the form for the next level after an accepted role is synchronized", () => {
+    const markup = renderPanel(request("accepted", "elu"), "elu");
+
+    expect(markup).toContain('data-testid="promotion-form"');
+  });
+
+  it("keeps the form closed while an accepted role is not synchronized", () => {
+    const markup = renderPanel(request("accepted", "elu"), "benevole");
+
+    expect(markup).toContain("synchronisation de votre niveau est encore en cours");
+    expect(markup).not.toContain('data-testid="promotion-form"');
+  });
+
+  it("does not render a form after an accepted admin level", () => {
+    const markup = renderPanel(request("accepted", "admin"), "admin");
+
+    expect(markup).not.toContain('data-testid="promotion-form"');
   });
 
   it("does not render a promotion form for admin or max", () => {

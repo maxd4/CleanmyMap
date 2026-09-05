@@ -1,4 +1,4 @@
-import { getCurrentUserRoleLabel, requireAuthenticatedAccess } from "@/lib/authz";
+import { getCurrentUserActiveRole, requireAuthenticatedAccess } from "@/lib/authz";
 import { isAdminLikeProfile, toProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { MissionStatus } from "@/components/missions/mission-page-contract";
@@ -43,7 +43,7 @@ export async function readAuthorizedMission(
     };
   }
 
-  const role = await getCurrentUserRoleLabel();
+  const role = await getCurrentUserActiveRole();
   const isPrivileged =
     role !== "anonymous" && isAdminLikeProfile(toProfile(role));
   const supabase = getSupabaseServerClient(true);

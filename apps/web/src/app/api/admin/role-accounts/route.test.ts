@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const requireCreatorAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const syncClerkUserToSupabaseMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
@@ -19,7 +19,7 @@ vi.mock("@/lib/authz", async () => {
   );
   return {
     ...actual,
-    getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
+    requireCreatorAccess: requireCreatorAccessMock,
     getCurrentUserIdentity: getCurrentUserIdentityMock,
   };
 });
@@ -40,11 +40,13 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 
 describe("GET/POST /api/admin/role-accounts", () => {
   beforeEach(() => {
-    getCurrentUserRoleLabelMock.mockResolvedValue("max");
+    requireCreatorAccessMock.mockResolvedValue({ ok: true, userId: "owner-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "owner-1",
       displayName: "Owner",
       role: "max",
+      activeRole: "max",
+      activeProfile: "max",
     });
     syncClerkUserToSupabaseMock.mockResolvedValue({ id: "user-2", role_label: "admin" });
     appendAdminOperationAuditMock.mockResolvedValue(null);
@@ -108,6 +110,72 @@ describe("GET/POST /api/admin/role-accounts", () => {
     expect(body.count).toBe(1);
     expect(body.accounts).toHaveLength(1);
     expect(listManagedRoleAccountsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an active admin from direct role management", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "Admin manages an assigned role",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an active elected role from direct role management", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+    });
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "Elected role denial",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(syncClerkUserToSupabaseMock).not.toHaveBeenCalled();
+    expect(clerkClientMock).not.toHaveBeenCalled();
+  });
+
+  it("allows only an active IMU to reach direct role management", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "admin",
+          reason: "IMU direct assignment",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
   });
 
   it("searches accounts by query", async () => {
@@ -199,6 +267,25 @@ describe("GET/POST /api/admin/role-accounts", () => {
         }),
       }),
     );
+  });
+
+  it("rejects max as an assignable target", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/role-accounts", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: "user-2",
+          action: "assign",
+          role: "max",
+          reason: "The owner role is never assigned here",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(clerkClientMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
   });
 
   it.each([undefined, "nope"]) (

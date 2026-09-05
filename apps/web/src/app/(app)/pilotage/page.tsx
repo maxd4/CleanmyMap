@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserActiveRole, getCurrentUserEffectiveAccess } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerLocale } from "@/lib/server-preferences";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -26,13 +27,15 @@ export default async function PilotageAccessPage() {
     return <PilotageLockedPage locale={locale} isAuthenticated={false} authUnavailable />;
   }
 
-  const identity = userId
-    ? await getCurrentUserIdentity({ userId }).catch(() => null)
+  const role = userId
+    ? await getCurrentUserActiveRole().catch(() => "anonymous" as const)
+    : ("anonymous" as const);
+  const profile = toProfile(role);
+  const effectiveAccess = userId
+    ? await getCurrentUserEffectiveAccess().catch(() => null)
     : null;
-  const role = identity?.role ?? "anonymous";
-  const profile = identity?.activeProfile ?? "benevole";
 
-  if (userId && (role === "admin" || role === "max" && profile === "admin")) {
+  if (userId && profile === "admin") {
     redirect(ADMIN_ROUTE);
   }
 
@@ -40,7 +43,7 @@ export default async function PilotageAccessPage() {
     return <PilotageLockedPage locale={locale} isAuthenticated={false} />;
   }
 
-  if (!(role === "coordinateur" || role === "max")) {
+  if (!effectiveAccess?.canAccessPilotage) {
     return <PilotageRestrictedPage locale={locale} profile={profile} />;
   }
 

@@ -1,4 +1,5 @@
 import type { ActionPhase, ActionStatus } from "@/lib/actions/types";
+import { getEffectiveAccessForSessionRole } from "@/lib/domain-language";
 import type { AppProfile } from "@/lib/profiles";
 
 export const ACTION_MODERATION_ROLES = ["admin", "elu", "max"] as const;
@@ -7,7 +8,10 @@ export type ActionModerationRole = (typeof ACTION_MODERATION_ROLES)[number];
 
 export type ActionPermissionIdentity = {
   userId: string;
+  /** GRANTED_ROLE, retained for audit and attribution only. */
   role: AppProfile | null | undefined;
+  /** ACTIVE_ROLE, the only role used for capability decisions. */
+  activeRole: AppProfile | null | undefined;
 };
 
 export type ActionPermissionTarget = {
@@ -24,17 +28,17 @@ function normalizeUserId(value: string | null | undefined): string | null {
 export function isActionModerationRole(
   role: AppProfile | null | undefined,
 ): role is ActionModerationRole {
-  return role === "admin" || role === "elu" || role === "max";
+  return role != null && getEffectiveAccessForSessionRole(role).canModerate;
 }
 
 export function canUseAdminOverride(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return Boolean(identity && isActionModerationRole(identity.role));
+  return Boolean(identity && isActionModerationRole(identity.activeRole));
 }
 
 export function canModerateAnyAction(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canUseAdminOverride(identity);
 }
@@ -94,13 +98,13 @@ export function canEditValidatedImpact(
 }
 
 export function canChangeActionStatus(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canModerateAnyAction(identity);
 }
 
 export function canViewModerationAudit(
-  identity: Pick<ActionPermissionIdentity, "role"> | null | undefined,
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
   return canModerateAnyAction(identity);
 }

@@ -9,7 +9,6 @@ import {
   getProfileLabel,
   getProfileSubtitle,
   getSwitchableProfiles,
-  isAdminLikeProfile,
   isAppProfile,
 } from "@/lib/profiles";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -61,19 +60,16 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     );
   }
 
-  const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
-  const activeRole = identity?.role ?? "benevole";
-  const activeProfile = identity?.activeProfile ?? activeRole;
-  const isAdmin = isAdminLikeProfile(activeRole);
+  const identity = await getCurrentUserIdentity().catch(() => null);
+  const grantedRole = identity?.role ?? "benevole";
+  const activeProfile = identity?.activeRole ?? "benevole";
 
-  if (!isAdmin && normalized !== activeProfile)
+  if (normalized !== activeProfile)
     redirect(buildProfileRoute(activeProfile));
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const switchableProfiles = isAdmin
-    ? getSwitchableProfiles(activeRole)
-    : [activeProfile];
+  const switchableProfiles = getSwitchableProfiles(grantedRole);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -141,7 +137,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
     >
       <div className="space-y-12 pt-8">
-        <AccountEvolutionCta currentRole={activeRole} />
+        <AccountEvolutionCta currentRole={grantedRole} />
 
         {/* ── Actions recommandées ── */}
         <FamilyRubriqueCard
@@ -182,7 +178,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           <FamilyRubriqueCard
             withTopBar={true}
             topBarContent={
-              isAdmin ? "Switch de Profil (Admin)" : "Identité Active"
+              "Rôles actifs autorisés"
             }
             className="p-12"
           >

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserActiveRole } from "@/lib/authz";
 
 export default async function GodModeAdminPage() {
   const [identity, role] = await Promise.all([
     getCurrentUserIdentity().catch(() => null),
-    getCurrentUserRoleLabel().catch(() => "anonymous"),
+    getCurrentUserActiveRole().catch(() => "anonymous"),
   ]);
 
   if (role !== "max") {

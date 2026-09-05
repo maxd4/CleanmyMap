@@ -2,13 +2,12 @@ import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { env } from "./env";
 import {
-  normalizeProfileRole,
-  resolveActiveProfile,
+  resolveActiveRole,
   resolveProfile,
   type AppProfile,
   type DisplayNameMode,
 } from "./profiles";
-import type { Role } from "@/lib/domain-language";
+import type { ActiveRole, Role } from "@/lib/domain-language";
 import {
   getProfileBadgeId,
   getRoleBadgeId,
@@ -24,7 +23,6 @@ import {
 } from "./authz-identity-names";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
-import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import {
   getDisplayNameModeCookieOverride,
   getDisplayNameModeOverride,
@@ -38,14 +36,10 @@ import {
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
   getDevAuthBypassUsername,
-  isDevAuthBypassForced,
-  isLocalhostHost,
   shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
-  extractRole,
-  parseAdminUserIds,
-  parseMaxUserIds,
+  resolveClerkRole,
   type ClerkMetadata,
 } from "@/lib/auth/role-resolution";
 
@@ -61,7 +55,9 @@ export type UserIdentity = {
   actorNameOptions: string[];
   /** Real authorization role. Never derived from activeProfile. */
   role: Role;
-  /** UX persona/navigation lens. Never grants permissions. */
+  /** Role used for effective capabilities. Always allowed by `role`. */
+  activeRole: ActiveRole;
+  /** Navigation lens derived from activeRole. Never grants permissions. */
   activeProfile: AppProfile;
   badges: AccountBadge[];
   locationPreference?: UserLocationPreference | null;
@@ -174,49 +170,6 @@ export async function loadStoredProfile(userId: string): Promise<StoredProfileRo
   }
 }
 
-export async function normalizeLegacyOwnerMetadata(
-  client: Awaited<ReturnType<typeof clerkClient>>,
-  user: User,
-): Promise<User> {
-  const publicRole = extractRole(user.publicMetadata);
-  const privateRole = extractRole(user.privateMetadata);
-  if (publicRole !== "max" && privateRole !== "max") {
-    return user;
-  }
-
-  const hasLegacyMaxValue = (metadata: ClerkMetadata): boolean =>
-    [metadata?.["role"], metadata?.["profile"]].some(
-      (value) =>
-        typeof value === "string" &&
-        normalizeProfileRole(value) === "max" &&
-        value.trim().toLowerCase() !== "max",
-    );
-
-  if (!hasLegacyMaxValue(user.publicMetadata) && !hasLegacyMaxValue(user.privateMetadata)) {
-    return user;
-  }
-
-  try {
-    return await client.users.updateUser(user.id, {
-      publicMetadata: {
-        ...(user.publicMetadata as Record<string, unknown>),
-        role: "max",
-        profile: "max",
-      },
-      privateMetadata: {
-        ...(user.privateMetadata as Record<string, unknown>),
-        role: "max",
-        profile: "max",
-      },
-    });
-  } catch (error) {
-    console.warn(
-      `[Authz] Legacy IMU metadata normalization skipped for ${user.id}: ${describeBackgroundSyncError(error)}`,
-    );
-    return user;
-  }
-}
-
 export async function getDevAuthBypassSession() {
   let host: string | null = null;
   try {
@@ -226,28 +179,13 @@ export async function getDevAuthBypassSession() {
     host = null;
   }
 
-  const bypassForced = isDevAuthBypassForced();
-  let clerkUserId: string | null = null;
-  if (!bypassForced && isLocalhostHost(host)) {
-    try {
-      clerkUserId = (await auth()).userId ?? null;
-    } catch {
-      clerkUserId = null;
-    }
-  }
-
-  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId })) {
+  if (!shouldUseDevAuthBypass({ hostname: host, clerkUserId: null })) {
     return null;
   }
 
-  const bypassRole =
-    isLocalhostHost(host) && !process.env["CMM_DEV_AUTH_BYPASS_ROLE"]?.trim()
-      ? "max"
-      : getDevAuthBypassRole();
-
   return {
     userId: getDevAuthBypassUserId(),
-    role: bypassRole,
+    role: getDevAuthBypassRole(),
     displayName: getDevAuthBypassDisplayName(),
     username: getDevAuthBypassUsername(),
   };
@@ -280,22 +218,15 @@ async function buildDevBypassIdentity(devBypass: {
     currentLevel: 1,
     actorNameOptions: [devBypass.displayName, devBypass.username, devBypass.userId],
     role,
+    activeRole: role,
     activeProfile: role,
     badges: mapBadgeIdsToBadges([getRoleBadgeId(role), getProfileBadgeId(role)]),
     locationPreference: null,
   };
 }
 
-function buildFallbackIdentity(
-  userId: string,
-  adminUserIds: Set<string>,
-  maxUserIds: Set<string>,
-): UserIdentity {
-  const resolvedRole = resolveProfile({
-    metadataRole: null,
-    isAdmin: adminUserIds.has(userId),
-    isMax: maxUserIds.has(userId),
-  });
+function buildFallbackIdentity(userId: string): UserIdentity {
+  const resolvedRole = "benevole" as const;
 
   return {
     userId,
@@ -308,38 +239,10 @@ function buildFallbackIdentity(
     currentLevel: 1,
     actorNameOptions: [userId],
     role: resolvedRole,
+    activeRole: resolvedRole,
     activeProfile: resolvedRole,
-    badges: mapBadgeIdsToBadges([
-      ...(maxUserIds.has(userId) ? ["max"] : adminUserIds.has(userId) ? ["admin"] : []),
-      getRoleBadgeId(resolvedRole),
-      getProfileBadgeId(resolvedRole),
-    ]),
+    badges: mapBadgeIdsToBadges([getRoleBadgeId(resolvedRole), getProfileBadgeId(resolvedRole)]),
     locationPreference: null,
-  };
-}
-
-function hasAnyRole(metadata: ClerkMetadata, roles: string[]): boolean {
-  const role = extractRole(metadata);
-  return role !== null && roles.includes(role);
-}
-
-function resolveIdentityFlags(
-  user: User,
-  userId: string,
-  adminUserIds: Set<string>,
-  maxUserIds: Set<string>,
-): { isAdmin: boolean; isMax: boolean } {
-  const creatorInbox = isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress);
-  const metadataSources = [user.publicMetadata, user.privateMetadata];
-  return {
-    isAdmin:
-      adminUserIds.has(userId) ||
-      creatorInbox ||
-      metadataSources.some((metadata) => hasAnyRole(metadata, ["admin", "max"])),
-    isMax:
-      maxUserIds.has(userId) ||
-      creatorInbox ||
-      metadataSources.some((metadata) => hasAnyRole(metadata, ["max"])),
   };
 }
 
@@ -376,19 +279,6 @@ function resolveIdentityNames(
   };
 }
 
-function resolveIdentityRole(
-  user: User,
-  isAdmin: boolean,
-  isMax: boolean,
-): Role {
-  const metadataRole = extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
-  return resolveProfile({
-    metadataRole,
-    isAdmin,
-    isMax,
-  });
-}
-
 function resolveIdentityBadges(
   user: User,
   isAdmin: boolean,
@@ -409,16 +299,34 @@ function resolveIdentityBadges(
   ]);
 }
 
-export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
-  const metadataActiveProfile =
-    (typeof user.publicMetadata?.["activeProfile"] === "string"
-      ? user.publicMetadata["activeProfile"]
+export function resolveIdentityActiveRole(user: User, role: Role): ActiveRole {
+  const publicMetadata = user.publicMetadata as Record<string, unknown> | null | undefined;
+  const privateMetadata = user.privateMetadata as Record<string, unknown> | null | undefined;
+  const metadataActiveRole =
+    (typeof publicMetadata?.["activeRole"] === "string"
+      ? publicMetadata["activeRole"]
       : null) ??
-    (typeof user.privateMetadata?.["activeProfile"] === "string"
-      ? user.privateMetadata["activeProfile"]
+    // Read the previous UX key only as a compatibility input. New writes use
+    // activeRole, so there is one canonical active-role mutation.
+    (typeof publicMetadata?.["activeProfile"] === "string"
+      ? publicMetadata["activeProfile"]
+      : null) ??
+    (typeof privateMetadata?.["activeRole"] === "string"
+      ? privateMetadata["activeRole"]
+      : null) ??
+    (typeof privateMetadata?.["activeProfile"] === "string"
+      ? privateMetadata["activeProfile"]
       : null);
 
-  return resolveActiveProfile({ metadataActiveProfile, role });
+  return resolveActiveRole({
+    metadataActiveRole,
+    grantedRole: role,
+  });
+}
+
+/** @deprecated Navigation now follows ACTIVE_ROLE. */
+export function resolveIdentityActiveProfile(user: User, role: Role): AppProfile {
+  return resolveIdentityActiveRole(user, role);
 }
 
 function resolveIdentityLocationPreference(user: User) {
@@ -434,12 +342,9 @@ function buildResolvedIdentity(params: {
   fetchedUser: User;
   currentLevel: number;
   storedProfile: StoredProfileRow | null;
-  adminUserIds: Set<string>;
-  maxUserIds: Set<string>;
 }): UserIdentity {
-  const { userId, fetchedUser, currentLevel, storedProfile, adminUserIds, maxUserIds } = params;
+  const { userId, fetchedUser, currentLevel, storedProfile } = params;
   const user = fetchedUser;
-  const { isAdmin, isMax } = resolveIdentityFlags(user, userId, adminUserIds, maxUserIds);
   const {
     firstName,
     username,
@@ -449,8 +354,14 @@ function buildResolvedIdentity(params: {
     handle,
     actorNameOptions,
   } = resolveIdentityNames(user, userId, storedProfile);
-  const resolvedRole = resolveIdentityRole(user, isAdmin, isMax);
-  const activeProfile = resolveIdentityActiveProfile(user, resolvedRole);
+  const resolvedRole = resolveClerkRole({
+    user,
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+  });
+  const isMax = resolvedRole === "max";
+  const isAdmin = resolvedRole === "admin" || isMax;
+  const activeRole = resolveIdentityActiveRole(user, resolvedRole);
 
   return {
     userId,
@@ -463,16 +374,15 @@ function buildResolvedIdentity(params: {
     currentLevel,
     actorNameOptions,
     role: resolvedRole,
-    activeProfile,
-    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole, activeProfile),
+    activeRole,
+    activeProfile: activeRole,
+    badges: resolveIdentityBadges(user, isAdmin, isMax, resolvedRole, activeRole),
     locationPreference: resolveIdentityLocationPreference(user),
   };
 }
 
 async function buildAuthenticatedIdentity(
   userId: string,
-  adminUserIds: Set<string>,
-  maxUserIds: Set<string>,
 ): Promise<UserIdentity | null> {
   try {
     const client = await clerkClient();
@@ -481,23 +391,19 @@ async function buildAuthenticatedIdentity(
       loadUserCurrentLevel(userId),
       loadStoredProfile(userId),
     ]);
-    const user = await normalizeLegacyOwnerMetadata(client, fetchedUser);
-
-    syncClerkUserToSupabase(user, { allowServiceRoleFallback: false }).catch((err) => {
+    syncClerkUserToSupabase(fetchedUser, { allowServiceRoleFallback: false }).catch((err) => {
       console.warn(`[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`);
     });
 
     return buildResolvedIdentity({
       userId,
-      fetchedUser: user,
+      fetchedUser,
       currentLevel,
       storedProfile,
-      adminUserIds,
-      maxUserIds,
     });
   } catch (error) {
     console.error("Current user identity resolution failed", error);
-    return buildFallbackIdentity(userId, adminUserIds, maxUserIds);
+    return buildFallbackIdentity(userId);
   }
 }
 
@@ -517,9 +423,7 @@ export async function getCurrentUserIdentity(
     return null;
   }
 
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
-  return buildAuthenticatedIdentity(userId, adminUserIds, maxUserIds);
+  return buildAuthenticatedIdentity(userId);
 }
 
 export function pickTraceableActorName(

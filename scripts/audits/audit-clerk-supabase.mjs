@@ -122,6 +122,13 @@ function extractRole(metadata) {
   return normalizeRole(value);
 }
 
+function extractActiveProfile(metadata) {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+  return normalizeRole(metadata.activeProfile);
+}
+
 function extractBadgeIds(metadata) {
   if (!metadata || typeof metadata !== "object") {
     return [];
@@ -150,6 +157,15 @@ function getPrimaryEmail(user) {
   );
 }
 
+function isPrimaryEmailVerified(user) {
+  const primaryId = user?.primary_email_address_id ?? user?.primaryEmailAddressId ?? null;
+  const addresses = user?.email_addresses ?? user?.emailAddresses ?? [];
+  const primary = primaryId
+    ? addresses.find((address) => address?.id === primaryId)
+    : user?.primaryEmailAddress ?? user?.primary_email_address ?? addresses[0];
+  return primary?.verification?.status === "verified";
+}
+
 function asIso(value) {
   if (value == null || value === "") {
     return "";
@@ -173,7 +189,7 @@ function csvEscape(value) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
-function parseUserIds(raw) {
+export function parseUserIds(raw) {
   if (!raw) {
     return new Set();
   }
@@ -186,16 +202,12 @@ function parseUserIds(raw) {
   );
 }
 
-function parseMaxUserIds(raw, fallbackRaw) {
-  const parsed = parseUserIds(raw);
-  if (parsed.size > 0) {
-    return parsed;
-  }
-  return parseUserIds(fallbackRaw);
+export function parseAdminUserIds(raw) {
+  return parseUserIds(raw);
 }
 
-function isCreatorInboxEmail(value, creatorInboxEmail) {
-  return normalizeEmail(value) === normalizeEmail(creatorInboxEmail);
+export function parseMaxUserIds(raw) {
+  return parseUserIds(raw);
 }
 
 function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
@@ -208,30 +220,32 @@ function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
   return normalizeRole(metadataRole) ?? "benevole";
 }
 
-function resolveStoredRoleLabel({
+export function resolveStoredRoleLabel({
   metadataRole,
   userId,
   email,
+  primaryEmailVerified,
   adminUserIds,
-  maxUserIds,
-  creatorInboxEmail,
+  ownerUserId,
+  ownerEmail,
 }) {
-  const isMaxByAllowlist =
-    isCreatorInboxEmail(email, creatorInboxEmail) ||
-    maxUserIds.has(userId) ||
-    (maxUserIds.size === 0 && adminUserIds.has(userId));
-
-  const isMaxByMetadata = normalizeRole(metadataRole) === "max";
-  const isMax = isMaxByAllowlist || isMaxByMetadata;
-  if (isMax) {
+  const isOwner =
+    typeof userId === "string" &&
+    userId.trim() === (ownerUserId ?? "").trim() &&
+    normalizeEmail(email) === normalizeEmail(ownerEmail) &&
+    primaryEmailVerified === true;
+  if (isOwner) {
     return "max";
   }
 
-  if (metadataRole === "admin") {
+  // CLERK_ADMIN_USER_IDS is retained as an audit input only. It must not
+  // create a GRANTED_ROLE outside the application attribution workflows.
+  if (normalizeRole(metadataRole) === "admin") {
     return "admin";
   }
 
-  return normalizeRole(metadataRole) ?? "benevole";
+  const normalizedRole = normalizeRole(metadataRole);
+  return normalizedRole === "max" ? "benevole" : normalizedRole ?? "benevole";
 }
 
 function collectUserIdsFromRows(rows, key) {
@@ -324,6 +338,9 @@ async function fetchClerkUsers(secretKey, limit) {
           unsafeMetadata,
           metadataRole:
             extractRole(publicMetadata) ?? extractRole(privateMetadata),
+          primaryEmailVerified: isPrimaryEmailVerified(user),
+          metadataActiveProfile:
+            extractActiveProfile(publicMetadata) ?? extractActiveProfile(privateMetadata),
           metadataBadgeIds: Array.from(
             new Set([
               ...extractBadgeIds(publicMetadata),
@@ -389,9 +406,10 @@ function buildRowSummary({
         metadataRole,
         userId: id,
         email: clerkUser.primaryEmail,
+        primaryEmailVerified: clerkUser.primaryEmailVerified,
         adminUserIds: context.adminUserIds,
-        maxUserIds: context.maxUserIds,
-        creatorInboxEmail: context.creatorInboxEmail,
+        ownerUserId: context.ownerUserId,
+        ownerEmail: context.ownerEmail,
       })
     : null;
   const expectedAppProfile = expectedStoredRoleLabel ?? (clerkUser
@@ -399,10 +417,15 @@ function buildRowSummary({
           metadataRole,
           isAdmin: metadataRole === "admin",
           isMax:
-            normalizeRole(metadataRole) === "max" ||
-            isCreatorInboxEmail(clerkUser.primaryEmail, context.creatorInboxEmail) ||
-            context.maxUserIds.has(id) ||
-            (context.maxUserIds.size === 0 && context.adminUserIds.has(id)),
+            resolveStoredRoleLabel({
+              metadataRole,
+              userId: id,
+              email: clerkUser.primaryEmail,
+              primaryEmailVerified: clerkUser.primaryEmailVerified,
+              adminUserIds: context.adminUserIds,
+              ownerUserId: context.ownerUserId,
+              ownerEmail: context.ownerEmail,
+            }) === "max",
         })
       : null);
 
@@ -439,6 +462,7 @@ function buildRowSummary({
     clerk_display_name:
       clerkUser && `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim(),
     clerk_metadata_role: metadataRole ?? "",
+    clerk_active_profile: clerkUser?.metadataActiveProfile ?? "",
     clerk_metadata_badges: metadataBadgeIds,
     derived_badges: derivedBadgeIds,
     expected_app_profile: expectedAppProfile ?? "",
@@ -473,6 +497,7 @@ function toCsv(rows) {
     "clerk_username",
     "clerk_display_name",
     "clerk_metadata_role",
+    "clerk_active_profile",
     "clerk_metadata_badges",
     "derived_badges",
     "expected_app_profile",
@@ -519,11 +544,17 @@ async function main() {
   const supabaseUrl = resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL", envFiles);
   const serviceRoleKey = resolveEnvValue("SUPABASE_SERVICE_ROLE_KEY", envFiles);
   const adminUserIds = parseUserIds(resolveEnvValue("CLERK_ADMIN_USER_IDS", envFiles));
-  const maxUserIds = parseMaxUserIds(
-    resolveEnvValue("CLERK_MAX_USER_IDS", envFiles),
-    resolveEnvValue("CLERK_ADMIN_USER_IDS", envFiles),
-  );
-  const creatorInboxEmail = resolveEnvValue("CREATOR_INBOX_EMAIL", envFiles);
+  const maxUserIds = parseMaxUserIds(resolveEnvValue("CLERK_MAX_USER_IDS", envFiles));
+  const allowlistOverlapCount = Array.from(adminUserIds).filter((id) =>
+    maxUserIds.has(id),
+  ).length;
+  const ownerUserId = resolveEnvValue("CLERK_IMU_OWNER_USER_ID", envFiles);
+  const ownerEmail = resolveEnvValue("CLERK_IMU_OWNER_EMAIL", envFiles);
+  const maxAllowlistUnexpectedCount = ownerUserId
+    ? Array.from(maxUserIds).filter((id) => id !== ownerUserId).length
+    : maxUserIds.size;
+  const ownerAllowlistMissing = Boolean(ownerUserId && !maxUserIds.has(ownerUserId));
+  const ownerAllowlistOverlap = Boolean(ownerUserId && adminUserIds.has(ownerUserId));
 
   if (!clerkSecretKey) {
     throw new Error("Missing CLERK_SECRET_KEY.");
@@ -602,8 +633,8 @@ async function main() {
         funnelCount: funnelCounts.get(id) ?? 0,
         context: {
           adminUserIds,
-          maxUserIds,
-          creatorInboxEmail,
+          ownerUserId,
+          ownerEmail,
         },
       }),
     );
@@ -635,6 +666,10 @@ async function main() {
       orphanProfiles: findings.orphanProfiles.length,
       roleMismatches: findings.roleMismatches.length,
       legacyActivityOnly: findings.legacyActivityOnly.length,
+      allowlistOverlap: allowlistOverlapCount,
+      maxAllowlistUnexpected: maxAllowlistUnexpectedCount,
+      ownerAllowlistMissing,
+      ownerAllowlistOverlap,
     },
   };
 
@@ -659,10 +694,12 @@ async function main() {
   console.log(`CSV:  ${resolve(`${outputBase}.csv`)}`);
 }
 
-main().catch((error) => {
-  console.error(
-    "clerk-supabase-audit failed:",
-    error instanceof Error ? error.message : String(error),
-  );
-  process.exit(1);
-});
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error) => {
+    console.error(
+      "clerk-supabase-audit failed:",
+      error instanceof Error ? error.message : String(error),
+    );
+    process.exit(1);
+  });
+}

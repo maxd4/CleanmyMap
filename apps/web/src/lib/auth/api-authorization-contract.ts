@@ -39,27 +39,26 @@ type ApiAuthorizationContract = Record<
  * made by each handler.
  */
 export const API_AUTHORIZATION_CONTRACT = {
-  "account/profile-role": {
-    POST: {
-      expected: "Retired legacy selector; no self-service role mutation",
-      dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess then HTTP 410; role remains server-owned",
-      evidence: ["requireAuthenticatedAccess"],
-    },
-  },
   "account/active-profile": {
     POST: {
-      expected: "Authenticated current account may select an allowed UX profile without changing role",
-      dimensions: ["authentication", "ownership", "business permission"],
+      expected: "Authenticated current account; ACTIVE_ROLE is limited by GRANTED_ROLE and never changes authorization level",
+      dimensions: ["authentication", "ownership"],
       actual:
-        "requireAuthenticatedAccess + getCurrentUserRoleLabel + getSwitchableProfiles(role); Clerk update writes activeProfile only and then syncs",
+        "requireAuthenticatedAccess + getCurrentUserIdentity + getSwitchableProfiles; Clerk update writes only publicMetadata.activeRole",
       evidence: [
         "requireAuthenticatedAccess",
-        "getCurrentUserRoleLabel",
+        "getCurrentUserIdentity",
         "getSwitchableProfiles",
-        "activeProfile",
-        "syncClerkUserToSupabase",
+        "activeRole",
       ],
+    },
+  },
+  "account/activity-status": {
+    PATCH: {
+      expected: "Authenticated current account updates only its own activity status",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + Clerk update scoped to access.userId",
+      evidence: ["requireAuthenticatedAccess", "access.userId", "updateUser"],
     },
   },
   "analytics/funnel": {
@@ -322,16 +321,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/promotion-requests": {
     GET: {
-      expected: "Max role",
+      expected: "ACTIVE_ROLE=max",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserRoleLabel must resolve max",
-      evidence: ["getCurrentUserRoleLabel"],
+      actual: "getCurrentUserActiveRole must resolve max",
+      evidence: ["getCurrentUserActiveRole"],
     },
     POST: {
-      expected: "Max role plus operation audit",
+      expected: "ACTIVE_ROLE=max plus operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
+      evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
     },
   },
   "admin/referrals.csv": {
@@ -344,16 +343,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/role-accounts": {
     GET: {
-      expected: "Max role",
+      expected: "ACTIVE_ROLE=max for the dedicated privileged-role management surface",
       dimensions: ["admin/creator role"],
-      actual: "getCurrentUserRoleLabel must resolve max",
-      evidence: ["getCurrentUserRoleLabel"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max",
+      evidence: ["requireCreatorAccess"],
     },
     POST: {
-      expected: "Max role plus operation audit and self-target protection",
+      expected: "ACTIVE_ROLE=max plus operation audit and self-target protection; target role is elu or admin only",
       dimensions: ["admin/creator role", "ownership", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "requireCreatorAccess checks ACTIVE_ROLE=max + appendAdminOperationAudit",
+      evidence: ["requireCreatorAccess", "appendAdminOperationAudit"],
     },
   },
   "admin/storage-usage": {
@@ -380,8 +379,8 @@ export const API_AUTHORIZATION_CONTRACT = {
     PATCH: {
       expected: "Max role plus operation audit for status moderation",
       dimensions: ["admin/creator role", "audit"],
-      actual: "getCurrentUserRoleLabel must resolve max + appendAdminOperationAudit",
-      evidence: ["getCurrentUserRoleLabel", "appendAdminOperationAudit"],
+      actual: "getCurrentUserActiveRole must resolve max + appendAdminOperationAudit",
+      evidence: ["getCurrentUserActiveRole", "appendAdminOperationAudit"],
     },
   },
   "community/events/ops": {
@@ -605,10 +604,10 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "pilotage/overview": {
     GET: {
-      expected: "Authenticated coordinateur/max pilotage access",
+      expected: "Authenticated coordinateur/admin-like pilotage access",
       dimensions: ["authentication", "business permission"],
-      actual: "auth() + getCurrentUserRoleLabel restricted to coordinateur or max",
-      evidence: ["auth()", "getCurrentUserRoleLabel", "forbiddenJsonResponse"],
+      actual: "auth() + getCurrentUserEffectiveAccess().canAccessPilotage",
+      evidence: ["auth()", "getCurrentUserEffectiveAccess", "canAccessPilotage", "forbiddenJsonResponse"],
     },
   },
   "reports/actions.csv": {
@@ -629,18 +628,18 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "reports/generations": {
     POST: {
-      expected: "Authenticated user may persist their own Reports generation snapshot",
-      dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess before validating and persisting the generation metadata",
-      evidence: ["requireAuthenticatedAccess", "persistReportGeneration"],
+      expected: "Admin-like role for persisting a successful Reports generation snapshot",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess before validating and persisting the generation metadata",
+      evidence: ["requireAdminAccess", "persistReportGeneration"],
     },
   },
   "reports/generations/[id]": {
     GET: {
-      expected: "Authenticated user may load an authorized Reports generation snapshot",
-      dimensions: ["authentication", "ownership"],
-      actual: "requireAuthenticatedAccess before loading the requested generation snapshot",
-      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById"],
+      expected: "Admin-like role for loading a persisted Reports generation snapshot",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess before loading the requested generation snapshot",
+      evidence: ["requireAdminAccess", "getReportGenerationSnapshotById"],
     },
   },
   "reports/elus-dossier": {
