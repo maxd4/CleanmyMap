@@ -23,6 +23,7 @@
 - CTA principal
 - validation
 - liens de bascule auth
+- lien secondaire « Vous représentez une collectivité ? » vers `/compte/evolution`
 - **Textes à réduire ou supprimer** :
 - Marketing de contexte
 - explications répétées

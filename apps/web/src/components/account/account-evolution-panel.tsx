@@ -10,6 +10,7 @@ import {
   type PromotionRequestTargetRole,
 } from "@/lib/account/promotion-request-contract";
 import { getProfileLabel, type AppProfile } from "@/lib/profiles";
+import { ACCOUNT_EVOLUTION_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export type AccountEvolutionRequest = {
   createdAt: string;
@@ -144,6 +145,31 @@ export function AccountEvolutionPanel({
           <p className="text-sm leading-relaxed text-amber-50/60">
             Une demande ne modifie jamais votre niveau obtenu. Seule l’acceptation par IMU déclenche la synchronisation du compte.
           </p>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Guide des niveaux obtenus">
+          {(["elu", "admin"] as const).map((role) => {
+            const canRequest = getRequestablePromotionRoles(currentRole).includes(role);
+            return (
+              <div key={role} className="rounded-2xl border border-amber-200/16 bg-white/[0.05] p-4">
+                <p className="text-sm font-bold text-white">{getProfileLabel(role, "fr")}</p>
+                <p className="mt-1 text-sm leading-relaxed text-amber-50/65">
+                  {role === "elu"
+                    ? "Niveau obtenu après examen pour les besoins de gouvernance territoriale."
+                    : "Niveau obtenu après examen pour les besoins de supervision et de modération."}
+                </p>
+                {canRequest ? (
+                  <CmmButton
+                    href={ACCOUNT_EVOLUTION_ROUTE}
+                    tone={role === "elu" ? "secondary" : "tertiary"}
+                    variant="pill"
+                    className="mt-3 min-h-10 px-3 text-xs"
+                  >
+                    Demander ce niveau
+                  </CmmButton>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
         {isRefreshing ? (
           <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/70" role="status">

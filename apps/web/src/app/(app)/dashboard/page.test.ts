@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   getServerDisplayMode: vi.fn(),
   loadAccountCompletionGateState: vi.fn(),
   getCurrentUserRoleLabel: vi.fn(),
+  getCurrentUserIdentity: vi.fn(),
   loadPilotageOverview: vi.fn(),
   fetchCachedReferralSummary: vi.fn(),
   loadUserLevelRankingSummary: vi.fn(),
@@ -103,6 +104,7 @@ vi.mock("@/lib/auth/safe-session", () => ({
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserRoleLabel: mocks.getCurrentUserRoleLabel,
+  getCurrentUserIdentity: mocks.getCurrentUserIdentity,
 }));
 
 vi.mock("@/lib/auth/account-completion-gate", () => ({
@@ -151,6 +153,7 @@ describe("/dashboard page contract", () => {
     mocks.getServerDisplayMode.mockResolvedValue("sobre");
     mocks.getTranslation.mockReturnValue({ t: (key: string) => key });
     mocks.getCurrentUserRoleLabel.mockResolvedValue("benevole");
+    mocks.getCurrentUserIdentity.mockResolvedValue(null);
     mocks.loadAccountCompletionGateState.mockResolvedValue(completeAccountState);
     mocks.loadPilotageOverview.mockResolvedValue({
       summary: { kpis: [], recommendedAction: profileAction, alert: null },

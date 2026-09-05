@@ -6,7 +6,8 @@ vi.mock("@/components/ui/family-rubrique-card", () => ({
   FamilyRubriqueCard: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
 }));
 vi.mock("@/components/ui/cmm-button", () => ({
-  CmmButton: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+  CmmButton: ({ children, href }: { children: React.ReactNode; href?: string }) =>
+    href ? <a href={href}>{children}</a> : <button>{children}</button>,
 }));
 vi.mock("@/components/sections/rubriques/promotion-request-form", () => ({
   PromotionRequestForm: () => <div data-testid="promotion-form">FORMULAIRE</div>,
@@ -49,5 +50,12 @@ describe("AccountEvolutionPanel", () => {
   it("does not render a promotion form for admin or max", () => {
     expect(renderPanel(null, "admin")).not.toContain("data-testid=\"promotion-form\"");
     expect(renderPanel(null, "max")).not.toContain("data-testid=\"promotion-form\"");
+  });
+
+  it("keeps role-guide CTAs on the canonical route and omits IMU promotion", () => {
+    const markup = renderPanel(null, "benevole");
+
+    expect(markup.match(/href="\/compte\/evolution"/g)).toHaveLength(2);
+    expect(markup).not.toContain("href=\"/imu");
   });
 });

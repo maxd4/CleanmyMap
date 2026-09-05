@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Check, Eye, Info, UserRound } from "lucide-react";
 import {
   DISPLAY_MODE_DESCRIPTIONS,
@@ -335,7 +336,16 @@ export function AccountSetupForm({
 
       {error ? <div className="mt-4"><ErrorMessage kind={error.kind} title="Les réglages n’ont pas pu être enregistrés" message={error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => window.location.reload()}>Réessayer</CmmButton>} /></div> : null}
       <footer className="sticky bottom-0 z-10 mt-5 flex flex-col gap-3 rounded-2xl border border-emerald-100/35 bg-emerald-950/65 px-4 py-4 shadow-[0_-16px_35px_-30px_rgba(6,78,59,0.9)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="max-w-xl text-sm text-emerald-50/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
+        <div className="max-w-xl space-y-2">
+          <p className="text-sm text-emerald-50/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
+          <Link
+            href="/compte/evolution"
+            prefetch={false}
+            className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 underline decoration-violet-200/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+          >
+            Vous représentez une collectivité&nbsp;?
+          </Link>
+        </div>
         <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving} className="!border-violet-300 !bg-violet-500 !bg-none !text-white hover:!bg-violet-600">{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
       </footer>
     </form>
