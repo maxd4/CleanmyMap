@@ -32,6 +32,7 @@ import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/s
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
 import { MonthlyImpactHistoryChart } from "./monthly-impact-history-chart";
+import { RouteMethodologySection } from "./route-methodology-section";
 import {
   ActionMapMethodologySection as ActionMapMethodologySectionImpl,
   ReferenceDocCard,
@@ -251,6 +252,8 @@ export function MethodologiePageClient({
         />
 
         <ActionMapMethodologySection isFrench={isFrench} />
+
+        <RouteMethodologySection />
 
         <section
           id="modes-affichage"

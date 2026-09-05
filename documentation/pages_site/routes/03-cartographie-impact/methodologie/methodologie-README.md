@@ -21,6 +21,7 @@ La page publique présente :
 - comment les coûts techniques et quotas sont suivis ;
 - quelles limites accompagnent les chiffres ;
 - comment lire la carte d’actions, sa pollution constatée, sa pollution projetée et ses sources.
+- comment CleanMyMap transforme ses données disponibles en itinéraire proposé, sans confondre observations, prédictions, décision du planner et résultat de routage.
 - comment les modes d’affichage modifient la présentation sans modifier les fonctionnalités, permissions ou données.
 
 La page ne présente pas de comparaison cartographique expérimentale, de fonctionnalité en cours
@@ -85,6 +86,20 @@ La page est accessible depuis les surfaces de Cartographie & Impact, notamment l
 La méthodologie de la carte distingue le score de pollution constatée avant l'action de la pollution projetée par vieillissement non linéaire. Elle documente aussi la séparation Actions / Trash Spotter, le fallback `S_post = 0`, les mesures post-action réelles, la calibration locale et la grammaire géométrique.
 
 La fiche détaillée est [la méthodologie produit de la carte d'actions](../../../../product/methodologie-carte-actions.md).
+
+
+## Méthodologie de création d’itinéraire
+
+La page expose aussi la section ancrée
+`/methodologie#methodologie-itineraire`, distincte de la méthodologie de la
+carte d’actions. Elle présente les cinq étapes pédagogiques : données
+d’entrée, candidats, priorisation, contraintes du planner, puis itinéraire
+final et explicabilité.
+
+La première documentation associée est
+[la méthodologie de création d’itinéraire](../../../../product/methodologie-itineraire.md).
+Elle ne détaille pas encore les formules, pondérations ou coefficients du
+moteur.
 
 
 ## Blocs fonctionnels

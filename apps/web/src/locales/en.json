@@ -3,6 +3,53 @@
     "header_suptitle": "Method and data",
     "header_title": "Impact calculation",
     "header_desc": "Short, readable metrics based on documented sources.",
+    "routeMethodology": {
+      "eyebrow": "From signal to proposal",
+      "title": "How an itinerary is created",
+      "intro": "This overview explains how CleanMyMap turns available data into a proposed itinerary. It presents the teaching architecture without detailing the engine’s calculation rules.",
+      "steps": {
+        "inputs": {
+          "title": "Input data",
+          "description": "The planner brings together the starting point, available time or budget, preferences, possible events, and available field or contextual data.",
+          "item1": "Starting point and available time or budget",
+          "item2": "User preferences and possible event",
+          "item3": "Available field and contextual data"
+        },
+        "candidates": {
+          "title": "Candidates",
+          "description": "It reviews zones and reports that may be considered, then excludes anything that does not meet eligibility or safety requirements.",
+          "item1": "Observed report: field evidence is available",
+          "item2": "Predicted zone: estimated risk or pressure, never an observation",
+          "item3": "Eligibility and safety exclusions"
+        },
+        "prioritization": {
+          "title": "Prioritization",
+          "description": "Several signals can change priority. Waste and cigarette butts can therefore lead to different priorities.",
+          "item1": "The planner decision stays distinct from input data",
+          "item2": "Observations remain different evidence from predictions",
+          "item3": "Predicted scores are not a real pollution measurement"
+        },
+        "constraints": {
+          "title": "Planner constraints",
+          "description": "Budget, maximum stops, safety, origin, free or event-centered mode, and network constraints bound the proposal.",
+          "item1": "Budget, stops, and origin",
+          "item2": "Safety and planning mode",
+          "item3": "Available network and acceptable detour"
+        },
+        "result": {
+          "title": "Final itinerary and explainability",
+          "description": "The result shows the selected stop order and network route, with any fallbacks and a reading in “Understand this itinerary”.",
+          "item1": "Routing provider result kept distinct",
+          "item2": "Estimate or fallback identified when used",
+          "item3": "Deterministic for identical inputs; the frontend does not recalculate the engine"
+        }
+      },
+      "observedLabel": "Observed",
+      "predictedLabel": "Predicted",
+      "decisionLabel": "Planner decision",
+      "cta": "Create an itinerary",
+      "documentation": "Detailed documentation"
+    },
     "cards": {
       "waste": {
         "title": "Waste kg: retained value",

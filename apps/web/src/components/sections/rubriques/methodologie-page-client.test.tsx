@@ -11,6 +11,49 @@ import {
   MethodologiePageClient,
 } from "./methodologie-page-client";
 
+import { RouteMethodologySection } from "./route-methodology-section";
+
+describe("RouteMethodologySection", () => {
+  it("présente les cinq étapes sans exposer les détails de calcul", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider initialLocale="fr">
+        <RouteMethodologySection />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain('id="methodologie-itineraire"');
+    expect(markup).toContain("Méthodologie de création d’itinéraire");
+    for (const title of [
+      "Données d’entrée",
+      "Candidats",
+      "Priorisation",
+      "Contraintes du planner",
+      "Itinéraire final et explicabilité",
+    ]) {
+      expect(markup).toContain(title);
+    }
+    expect(markup).toContain('href="/sections/route"');
+    expect(markup).toContain("Créer un itinéraire");
+    expect(markup).toContain('href="/docs/product/methodologie-itineraire.md"');
+
+    const section = markup.slice(markup.indexOf('id="methodologie-itineraire"'));
+    expect(section).not.toMatch(/coefficient|pondération|formule|\b\d+\s*%/i);
+  });
+
+  it("publie le même contrat pédagogique en anglais", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider initialLocale="en">
+        <RouteMethodologySection />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain("How an itinerary is created");
+    expect(markup).toContain("Input data");
+    expect(markup).toContain("Final itinerary and explainability");
+    expect(markup).toContain("Create an itinerary");
+  });
+});
+
 describe("ActionMapMethodologySection", () => {
   it("publishes the action history/projection distinction and methodology anchor", () => {
     const markup = renderToStaticMarkup(
@@ -88,6 +131,8 @@ describe("ActionMapMethodologySection", () => {
     );
 
     expect(markup).toContain("Méthode de calcul");
+    expect(markup).toContain('id="methodologie-carte-actions"');
+    expect(markup).toContain('id="methodologie-itineraire"');
     expect(markup).toContain('id="modes-affichage"');
     expect(markup).toContain("Modes d’affichage");
     expect(markup).toContain("Expérience CleanMyMap complète.");

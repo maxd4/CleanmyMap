@@ -56,6 +56,53 @@
     "header_suptitle": "Méthode et données",
     "header_title": "Calcul de l'impact",
     "header_desc": "Des métriques courtes, lisibles et fondées sur des sources documentées.",
+    "routeMethodology": {
+      "eyebrow": "Du signal à la proposition",
+      "title": "Méthodologie de création d’itinéraire",
+      "intro": "Cette lecture explique comment CleanMyMap transforme des données disponibles en itinéraire proposé. Elle présente l’architecture pédagogique, sans détailler les règles de calcul du moteur.",
+      "steps": {
+        "inputs": {
+          "title": "Données d’entrée",
+          "description": "Le planner rassemble le point de départ, le temps ou budget disponible, les préférences, les événements éventuels et les données terrain ou contextuelles accessibles.",
+          "item1": "Origine et temps ou budget disponibles",
+          "item2": "Préférences utilisateur et événement éventuel",
+          "item3": "Données terrain et contextuelles disponibles"
+        },
+        "candidates": {
+          "title": "Candidats",
+          "description": "Il examine les zones et signalements qui peuvent être considérés, puis écarte ce qui ne respecte pas l’éligibilité ou la sécurité.",
+          "item1": "Signalement observé : preuve terrain disponible",
+          "item2": "Zone prédite : risque ou pression estimée, jamais observation",
+          "item3": "Exclusions liées à l’éligibilité et à la sécurité"
+        },
+        "prioritization": {
+          "title": "Priorisation",
+          "description": "Plusieurs signaux peuvent modifier la priorité. Les déchets et les mégots peuvent donc conduire à des priorités différentes.",
+          "item1": "La décision du planner reste distincte des données d’entrée",
+          "item2": "Les observations restent une preuve différente des prédictions",
+          "item3": "Les scores prédits ne sont pas une mesure réelle de pollution"
+        },
+        "constraints": {
+          "title": "Contraintes du planner",
+          "description": "Le budget, le nombre maximal d’arrêts, la sécurité, l’origine, le mode libre ou autour d’un événement et les contraintes du réseau bornent la proposition.",
+          "item1": "Budget, arrêts et origine",
+          "item2": "Sécurité et mode de planification",
+          "item3": "Réseau disponible et détour acceptable"
+        },
+        "result": {
+          "title": "Itinéraire final et explicabilité",
+          "description": "Le résultat présente l’ordre des arrêts et le trajet réseau retenu, avec les éventuels fallbacks et une lecture dans « Comprendre cet itinéraire ».",
+          "item1": "Résultat du fournisseur de routage clairement distingué",
+          "item2": "Estimation ou fallback signalé lorsqu’il intervient",
+          "item3": "Résultat déterministe à entrées identiques ; le frontend ne recalcule pas le moteur"
+        }
+      },
+      "observedLabel": "Observé",
+      "predictedLabel": "Prédit",
+      "decisionLabel": "Décision du planner",
+      "cta": "Créer un itinéraire",
+      "documentation": "Documentation détaillée"
+    },
     "cards": {
       "waste": {
         "title": "Déchets kg : valeur retenue",
