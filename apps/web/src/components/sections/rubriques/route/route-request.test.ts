@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_ROUTE_OPTIONS } from "./route-draft-storage";
 import {
   createRouteRequestGate,
-  createRouteRecommendationRequest,
+  createRouteRecommendationSubmission,
   fetchRouteRecommendation,
   isRouteOriginUnavailableError,
   resolveRouteRequestOrigin,
@@ -66,7 +66,7 @@ const responsePayload = {
 
 describe("route recommendation request gate", () => {
   it("keeps the submitted snapshot stable while the draft is edited", async () => {
-    const submitted = createRouteRecommendationRequest(1, DEFAULT_ROUTE_OPTIONS);
+    const submitted = createRouteRecommendationSubmission(1, DEFAULT_ROUTE_OPTIONS);
     const editedOptions = {
       ...DEFAULT_ROUTE_OPTIONS,
       priorityVsTravel: 20,
@@ -85,17 +85,38 @@ describe("route recommendation request gate", () => {
     expect(submitted.options).toEqual(DEFAULT_ROUTE_OPTIONS);
   });
 
+  it("serializes only the shared HTTP fields, never the UI snapshot wrapper", async () => {
+    const submitted = createRouteRecommendationSubmission(
+      11,
+      { priorityVsTravel: 23, travelBudgetMinutes: 42, maxStops: 4 },
+    );
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(submitted, transport);
+
+    const payload = JSON.parse(transport.mock.calls[0]?.[1]?.body as string);
+    expect(payload).toEqual({
+      priorityVsTravel: 23,
+      travelBudgetMinutes: 42,
+      maxStops: 4,
+    });
+    expect(payload).not.toHaveProperty("id");
+    expect(payload).not.toHaveProperty("options");
+  });
+
   it("performs one POST for each explicit calculation request", async () => {
     const transport = vi.fn().mockImplementation(
       async () => new Response(JSON.stringify(responsePayload), { status: 200 }),
     );
 
     await fetchRouteRecommendation(
-      createRouteRecommendationRequest(1, DEFAULT_ROUTE_OPTIONS),
+      createRouteRecommendationSubmission(1, DEFAULT_ROUTE_OPTIONS),
       transport,
     );
     await fetchRouteRecommendation(
-      createRouteRecommendationRequest(
+      createRouteRecommendationSubmission(
         2,
         { ...DEFAULT_ROUTE_OPTIONS, maxStops: 8 },
       ),
@@ -107,7 +128,7 @@ describe("route recommendation request gate", () => {
 
   it("transports an ephemeral browser origin alongside, not inside, the options", async () => {
     const origin = { latitude: 48.861, longitude: 2.361, source: "browser" } as const;
-    const request = createRouteRecommendationRequest(3, DEFAULT_ROUTE_OPTIONS, origin);
+    const request = createRouteRecommendationSubmission(3, DEFAULT_ROUTE_OPTIONS, origin);
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(responsePayload), { status: 200 }),
     );
@@ -122,6 +143,19 @@ describe("route recommendation request gate", () => {
     });
   });
 
+  it("omits origin from the HTTP payload when the submission has no origin", async () => {
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(
+      createRouteRecommendationSubmission(12, DEFAULT_ROUTE_OPTIONS),
+      transport,
+    );
+
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).not.toHaveProperty("origin");
+  });
+
   it("maps HTTP 422 to the origin-unavailable error", async () => {
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "A route origin is required." }), { status: 422 }),
@@ -129,7 +163,7 @@ describe("route recommendation request gate", () => {
 
     await expect(
       fetchRouteRecommendation(
-        createRouteRecommendationRequest(4, DEFAULT_ROUTE_OPTIONS),
+        createRouteRecommendationSubmission(4, DEFAULT_ROUTE_OPTIONS),
         transport,
       ),
     ).rejects.toSatisfy((error: unknown) => isRouteOriginUnavailableError(error));

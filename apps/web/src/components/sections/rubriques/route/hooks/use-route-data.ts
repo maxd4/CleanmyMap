@@ -15,11 +15,11 @@ import {
   writeRouteDraftOptions,
 } from "../route-draft-storage";
 import {
-  createRouteRecommendationRequest,
+  createRouteRecommendationSubmission,
   createRouteRequestGate,
   fetchRouteRecommendation,
   resolveRouteRequestOrigin,
-  type RouteRecommendationRequest,
+  type RouteRecommendationSubmission,
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
 
@@ -32,7 +32,7 @@ export function useRouteData() {
   }));
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequest, setRecommendationRequest] =
-    useState<RouteRecommendationRequest | null>(null);
+    useState<RouteRecommendationSubmission | null>(null);
   const [originMode, setOriginModeState] = useState<RouteOriginMode>("browser");
   const [mapOrigin, setMapOriginState] =
     useState<RouteRecommendationOrigin | null>(null);
@@ -92,7 +92,7 @@ export function useRouteData() {
     recommendationRequest
       ? ["section-route", recommendationRequest]
       : null,
-    ([, request]: readonly [string, RouteRecommendationRequest]) =>
+    ([, request]: readonly [string, RouteRecommendationSubmission]) =>
       fetchRouteRecommendation(request),
     {
       revalidateOnFocus: false,
@@ -165,7 +165,7 @@ export function useRouteData() {
 
       requestSequence.current += 1;
       setRecommendationRequest(
-        createRouteRecommendationRequest(requestSequence.current, options, origin),
+        createRouteRecommendationSubmission(requestSequence.current, options, origin),
       );
     },
   };
