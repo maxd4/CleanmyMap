@@ -1,6 +1,6 @@
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
-import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
+import { applyParisPressureToCandidates } from "@/lib/route/paris-pressure-route-adapter";
 import {
   defaultRouteRecommendationFloorDate,
   loadCachedEventPressureByArrondissement,

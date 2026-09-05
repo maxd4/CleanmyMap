@@ -5,15 +5,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useEffectiveAuthState } from "@/lib/auth/use-effective-auth-state";
-import { useRouteData } from "./route/hooks/use-route-data";
-import { RouteSummaryCards } from "./route/components/route-summary-cards";
-import { RouteOptionsForm } from "./route/components/route-constraints-form";
-import { RouteAssistant } from "./route/components/route-assistant";
-import { RouteList } from "./route/components/route-list";
+import { useRouteData } from "./hooks/use-route-data";
+import { RouteSummaryCards } from "./components/route-summary-cards";
+import { RouteOptionsForm } from "./components/route-constraints-form";
+import { RouteAssistant } from "./components/route-assistant";
+import { RouteList } from "./components/route-list";
 import {
   getRouteOriginLabel,
   getRouteRecommendationErrorMessage,
-} from "./route/route-origin";
+} from "./route-origin";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +31,7 @@ const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
 };
 
 const RouteMap = dynamic(
-  () => import("./route/components/route-map").then((module) => module.RouteMap),
+  () => import("./components/route-map").then((module) => module.RouteMap),
   { ssr: false },
 );
 

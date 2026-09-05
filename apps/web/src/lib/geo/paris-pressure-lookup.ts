@@ -9,10 +9,8 @@ import {
   isValidParisPressureGeometry,
   pointInParisPressureGeometry,
 } from "./paris-pressure-geometry";
-import { routeDistanceKm } from "@/lib/route/route-planner";
 
 export const PARIS_PRESSURE_LOOKUP_RADIUS_KM = 1.5;
-export const PARIS_PRESSURE_MAX_ROUTE_SCORE_BOOST = 8;
 
 export type ParisPressureAtPoint = {
   zoneId: string;
@@ -72,7 +70,7 @@ export function findNearestParisPressureZone(
 
   let nearest: { zone: ParisPressureZone; distanceKm: number } | null = null;
   for (const zone of snapshot.zones.filter((candidate) => !usableGeometry(candidate))) {
-    const distanceKm = routeDistanceKm(point, zone.centroid);
+    const distanceKm = parisPressureDistanceKm(point, zone.centroid);
     if (
       nearest === null ||
       distanceKm < nearest.distanceKm ||
@@ -98,33 +96,4 @@ export function findNearestParisPressureZone(
     cleanlinessPrior: nearest.zone.signals.cleanlinessPrior,
     signals: nearest.zone.signals,
   };
-}
-
-export type ParisPressureCandidate = ParisPressurePoint & {
-  id: string;
-  score: number;
-  reason: string;
-};
-
-export function applyParisPressureToCandidates<
-  T extends ParisPressureCandidate,
->(candidates: T[], snapshot: ParisPressureSnapshot): T[] {
-  return candidates
-    .map((candidate) => {
-      const pressure = findNearestParisPressureZone(candidate, snapshot);
-      if (pressure?.humanPressure === null || pressure?.humanPressure === undefined) {
-        return candidate;
-      }
-      const scoreContribution =
-        pressure.humanPressure * PARIS_PRESSURE_MAX_ROUTE_SCORE_BOOST;
-      return {
-        ...candidate,
-        score: Math.min(100, candidate.score + scoreContribution),
-        reason:
-          `${candidate.reason} Pression humaine structurelle=${pressure.humanPressure.toFixed(3)}` +
-          ` (zone ${pressure.zoneId}, contribution=${scoreContribution.toFixed(2)}).`,
-        parisPressure: pressure,
-      } as T;
-    })
-    .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
 }

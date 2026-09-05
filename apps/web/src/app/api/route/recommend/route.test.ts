@@ -80,7 +80,7 @@ vi.mock("@/lib/route/route-planner", () => ({
 vi.mock("@/lib/geo/paris-pressure-loader", () => ({
   loadParisPressureSnapshot: loadParisPressureSnapshotMock,
 }));
-vi.mock("@/lib/geo/paris-pressure-lookup", () => ({
+vi.mock("@/lib/route/paris-pressure-route-adapter", () => ({
   applyParisPressureToCandidates: applyParisPressureToCandidatesMock,
 }));
 vi.mock("@/lib/route/route-predicted-targets", () => ({
