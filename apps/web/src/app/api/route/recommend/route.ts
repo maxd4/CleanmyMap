@@ -1,448 +1,122 @@
-import { z } from"zod";
-import { NextResponse } from"next/server";
-import { buildTrashSpotterActionableCandidates } from"@/lib/actions/trash-spotter-actionable-candidates";
+import { NextResponse } from "next/server";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
-import { trackRouteRecommendationUse } from"@/lib/gamification/progression";
-import {
-  buildTrashSpotterRouteCandidates,
-  type TrashSpotterRouteCandidate,
-} from"@/lib/route/trash-spotter-recommendation";
-import {
-  applyOriginRouteGeometryLegs,
-  type RouteStop,
-} from "@/lib/route/route-contract";
-import {
-  getTerritoryArrondissementCenter,
-  type TerritoryArrondissement,
-} from "@/lib/geo/paris-arrondissements";
-import {
-  createFallbackRouteGeometry,
-} from "@/lib/geo/osrm-routing";
-import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
-import {
-  buildHotspots,
-  buildProactiveAssistant,
-  defaultRouteAssistantPayload,
-  defaultRouteRecommendationFloorDate,
-  loadCachedEventPressureByArrondissement,
-} from"@/lib/route/recommendation-assistant";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError } from"@/lib/http/api-errors";
+import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
+import { trackRouteRecommendationUse } from "@/lib/gamification/progression";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { handleApiError } from "@/lib/http/api-errors";
 import {
   createServerRateLimitResponse,
   verifyRateLimit,
 } from "@/lib/rate-limit/server";
 import {
-  resolveRouteDataLayers,
-  resolveRouteDataStatus,
-} from "@/lib/route/route-data-status";
-import { loadRouteRecommendationSource } from "@/lib/route/route-recommendation-loader";
+  loadRouteCandidateData,
+  loadRouteEventPressure,
+} from "./route.candidates";
+import { resolveRouteOrigin } from "./route.origin";
+import { planRouteRecommendation } from "./route.planning";
+import { buildRouteRecommendationResponse } from "./route.response";
 import {
-  fallbackRoutePrefixWithinBudget,
-  longestNetworkPrefixWithinBudget,
-  planRoute,
-  ROUTE_PLANNER_ENGINE_VERSION,
-  type RoutePlannerCandidate,
-  type RoutePlannerOrigin,
-} from "@/lib/route/route-planner";
-import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
-import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
-import {
-  applyRoutePredictionPlannerBudgetAudit,
-  applyRoutePredictionPoolAudit,
-  buildPredictedRouteCandidates,
-  buildRoutePlannerCandidatePool,
-} from "@/lib/route/route-predicted-targets";
+  parseRouteRecommendationRequest,
+  resolvePriorityVsTravel,
+  ROUTE_RECOMMENDATION_RATE_LIMIT,
+} from "./route.schema";
 
-export const runtime ="nodejs";
-
-const requestSchema = z.object({
- origin: z
-   .object({
-     latitude: z.number().finite().min(-90).max(90),
-     longitude: z.number().finite().min(-180).max(180),
-     source: z.enum(["browser", "map"]),
-   })
-   .optional(),
- travelBudgetMinutes: z.number().finite().min(0).default(60),
- maxStops: z.number().int().min(1).max(12).default(6),
- priorityVsTravel: z.number().finite().min(0).max(100).optional(),
- priorityVsDistance: z.number().finite().min(0).max(100).optional(),
-}).strip();
-
-const ROUTE_RECOMMENDATION_RATE_LIMIT = {
-  limit: 6,
-  window: 60,
-} as const;
-
-const EMPTY_EVENT_PRESSURE_CONTEXT = {
-  pressureByArrondissement: new Map<number, number>(),
-  eventSignals: [],
-};
-
-function resolveRouteOrigin(
-  explicitOrigin: RoutePlannerOrigin | undefined,
-  arrondissement: TerritoryArrondissement | undefined,
-): RoutePlannerOrigin | null {
-  if (explicitOrigin) {
-    return explicitOrigin;
-  }
-
-  if (arrondissement === undefined) {
-    return null;
-  }
-
-  const center = getTerritoryArrondissementCenter(arrondissement);
-  if (!Number.isFinite(center.lat) || !Number.isFinite(center.lng)) {
-    return null;
-  }
-
-  return {
-    latitude: center.lat,
-    longitude: center.lng,
-    source: "approximate_saved_area",
-  };
-}
-
-function fallbackGeometryForPrefix(
-  origin: RoutePlannerOrigin,
-  stops: Array<{ latitude: number; longitude: number }>,
-): ReturnType<typeof createFallbackRouteGeometry> {
-  return createFallbackRouteGeometry([
-    [origin.latitude, origin.longitude],
-    ...stops.map(
-      (stop) => [stop.latitude, stop.longitude] as [number, number],
-    ),
-  ]);
-}
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
- const session = await getSafeAuthSession();
- const userId = session.userId;
- if (!userId) {
- return unauthorizedJsonResponse();
- }
-
- const rateLimit = await verifyRateLimit(request, ROUTE_RECOMMENDATION_RATE_LIMIT);
- const rateLimitResponse = createServerRateLimitResponse(
-   rateLimit.allowed,
-   rateLimit.retryAfter,
-   rateLimit,
- );
- if (rateLimitResponse) {
-   return rateLimitResponse;
- }
-
- let rawPayload: unknown;
- try {
- rawPayload = await request.json();
- } catch {
- return NextResponse.json(
- { error:"Invalid JSON payload" },
- { status: 400 },
- );
- }
-
- const parsed = requestSchema.safeParse(rawPayload);
- if (!parsed.success) {
- return NextResponse.json(
- { error:"Invalid payload", details: parsed.error.flatten().fieldErrors },
- { status: 400 },
- );
- }
-
- const options = parsed.data;
- const priorityVsTravel =
-   options.priorityVsTravel ?? options.priorityVsDistance ?? 65;
-
- try {
- const supabase = getSupabaseServerClient();
- const eventPressurePromise = loadCachedEventPressureByArrondissement(() => supabase).catch(
-   (eventPressureError: unknown) => {
-     console.warn("Route recommendation event pressure unavailable; continuing without it", {
-       message:
-         eventPressureError instanceof Error
-           ? eventPressureError.message
-           : String(eventPressureError),
-     });
-     return EMPTY_EVENT_PRESSURE_CONTEXT;
-   },
- );
- const [locationPreference, eventPressureContext] = await Promise.all([
-   getCurrentUserLocationPreference(),
-   eventPressurePromise,
- ]);
- const origin = resolveRouteOrigin(
-   options.origin,
-   locationPreference?.arrondissement,
- );
- if (!origin) {
-   return NextResponse.json(
-     { error: "A route origin is required." },
-     { status: 422 },
-   );
- }
-
- const { items: contracts, isTruncated, sourceHealth } =
-   await loadRouteRecommendationSource(supabase, {
- limit: 600,
-  floorDate: defaultRouteRecommendationFloorDate(),
- });
-
- const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
- const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
- actionableCandidates,
- );
- const parisPressureSnapshot = loadParisPressureSnapshot();
- const spatialCandidates = parisPressureSnapshot
-   ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
-   : candidates;
- const baselinePlannerResult = planRoute({
-   origin,
-   candidates: spatialCandidates,
-   travelBudgetMinutes: options.travelBudgetMinutes,
-   maxStops: options.maxStops,
-   priorityVsTravel,
- });
- const predictionBuild = buildPredictedRouteCandidates({
-   snapshot: parisPressureSnapshot,
-   origin,
-   corridor: {
-     points: [
-       origin,
-       ...baselinePlannerResult.stops.map(({ candidate }) => ({
-         latitude: candidate.latitude,
-         longitude: candidate.longitude,
-       })),
-     ],
-     source: "ordered_baseline",
-   },
-   travelBudgetMinutes: options.travelBudgetMinutes,
- });
- const comparableCandidates = [
-   ...spatialCandidates,
-   ...predictionBuild.candidates,
- ] as RoutePlannerCandidate[];
- const candidatePool = buildRoutePlannerCandidatePool({
-   observedCandidates: comparableCandidates.filter(
-     (candidate) => candidate.family !== "predicted",
-   ),
-   predictedCandidates: comparableCandidates.filter(
-     (candidate) => candidate.family === "predicted",
-   ),
-   maxCandidates: Math.max(options.maxStops * 2, 8),
- });
- const dataStatus = resolveRouteDataStatus({
-   candidateCount: candidates.length,
-   isTruncated,
-   sourceHealth,
- });
-
-  const plannerResult = planRoute({
-    origin,
-    candidates: candidatePool.candidates,
-    travelBudgetMinutes: options.travelBudgetMinutes,
-    maxStops: options.maxStops,
-    priorityVsTravel,
-  });
-  let predictionSummary = applyRoutePredictionPoolAudit(
-    predictionBuild.summary,
-    candidatePool.audit,
-  );
-  predictionSummary = applyRoutePredictionPlannerBudgetAudit(
-    predictionSummary,
-    {
-      passedCandidateIds: candidatePool.audit.passedToPlannerCandidateIds,
-      evaluations: plannerResult.audit.evaluations,
-    },
-  );
-  let plannedStops = plannerResult.stops;
-  let routeGeometry = createFallbackRouteGeometry([]);
-
- if (plannedStops.length === 0) {
-    const dataLayers = resolveRouteDataLayers({
-      observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
-      prediction: { status: predictionSummary.status, selectedCount: 0 },
-      selectedCount: 0,
-      routeGeometryMode: routeGeometry.mode,
-    });
-    return NextResponse.json({
-      status: dataLayers.recommendation,
-      dataStatus,
-      dataLayers,
-      isTruncated,
-      sourceHealth,
-      origin,
-      travelDistanceKm: 0,
-      travelMinutes: 0,
-      travelBudgetMinutes: options.travelBudgetMinutes,
-      withinBudget: true,
-      serviceMinutesEstimate: null,
-      totalMinutesEstimate: null,
-      diagnostics: {
-        loaded: contracts.length,
-        eligible: candidates.length,
-        excluded: Math.max(0, contracts.length - candidates.length),
-        selected: 0,
-        sourcePartial: sourceHealth.partial,
-        truncated: isTruncated,
-        ...plannerResult.diagnostics,
-      },
-      generatedAt: new Date().toISOString(),
-      engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-      stops: [],
-      prediction: predictionSummary,
-      routeGeometry,
-      scoreBreakdown: { priority: 0, distance: 0 },
-      tradeoffs: [
-        "Aucun point géolocalisé disponible dans la source consultée.",
-      ],
-      proactiveAssistant: {
-        ...defaultRouteAssistantPayload(),
-      },
-    });
+  const session = await getSafeAuthSession();
+  const userId = session.userId;
+  if (!userId) {
+    return unauthorizedJsonResponse();
   }
 
-  const routeCoordinates: [number, number][] = [
-    [origin.latitude, origin.longitude],
-    ...plannedStops.map(
-      ({ candidate }) =>
-        [candidate.latitude, candidate.longitude] as [number, number],
-    ),
-  ];
-  routeGeometry = await routePolylineThroughFossgisFoot(
-    routeCoordinates,
-    {},
+  const rateLimit = await verifyRateLimit(
+    request,
+    ROUTE_RECOMMENDATION_RATE_LIMIT,
   );
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
-  if (routeGeometry.durationMinutes > options.travelBudgetMinutes) {
-    if (routeGeometry.mode === "network") {
-      const prefixLength = longestNetworkPrefixWithinBudget(
-        routeGeometry.legs,
-        options.travelBudgetMinutes,
-      );
-      plannedStops = plannedStops.slice(0, prefixLength);
-    } else {
-      const fallbackPrefix = fallbackRoutePrefixWithinBudget(
-        origin,
-        plannedStops.map(({ candidate }) => candidate),
-        options.travelBudgetMinutes,
-        (coordinates) => createFallbackRouteGeometry(coordinates),
-      );
-      plannedStops = plannedStops.slice(0, fallbackPrefix.length);
-    }
-    routeGeometry = fallbackGeometryForPrefix(
-      origin,
-      plannedStops.map(({ candidate }) => candidate),
+  let rawPayload: unknown;
+  try {
+    rawPayload = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON payload" },
+      { status: 400 },
     );
   }
 
- const estimatedStops: RouteStop[] = plannedStops.map(
-   ({ candidate, incrementalDistanceKm, incrementalTravelMinutes }) => ({
-     id: candidate.id,
-     label: candidate.label,
-     latitude: candidate.latitude,
-     longitude: candidate.longitude,
-     segmentKm: Number(incrementalDistanceKm.toFixed(2)),
-     estimatedMinutes: Math.max(0, Math.round(incrementalTravelMinutes)),
-     priorityReason: candidate.reason,
-     score: Number(candidate.score.toFixed(2)),
-   }),
- );
- const stops = applyOriginRouteGeometryLegs(estimatedStops, routeGeometry);
- const totalDistance = routeGeometry.distanceKm;
- const travelMinutes = Math.min(
-   Math.max(0, routeGeometry.durationMinutes),
-   options.travelBudgetMinutes,
- );
- const averagePriority =
- plannedStops.length > 0
-   ? plannedStops.reduce((acc, { candidate }) => acc + candidate.score, 0) /
-     plannedStops.length
-   : 0;
- const distanceScore = Math.max(0, 100 - totalDistance * 5);
- const hotspots = buildHotspots({
- candidates,
- pressureByArrondissement: eventPressureContext.pressureByArrondissement,
- userArrondissement: locationPreference?.arrondissement ?? null,
- });
- const proactiveAssistant = buildProactiveAssistant({
- stops: plannedStops.map(({ candidate }) => ({
-   label: candidate.label,
-   score: candidate.score,
- })),
- hotspots,
- eventSignals: eventPressureContext.eventSignals,
- });
- const predictedSelectedIds = plannedStops
-   .filter(({ candidate }) => candidate.family === "predicted")
-   .map(({ candidate }) => candidate.id);
- predictionSummary = {
-   ...predictionSummary,
-   selected: predictedSelectedIds.length,
-   selectedCandidateIds: predictedSelectedIds,
- };
- const dataLayers = resolveRouteDataLayers({
-   observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
-   prediction: {
-     status: predictionSummary.status,
-     selectedCount: predictedSelectedIds.length,
-   },
-   selectedCount: plannedStops.length,
-   routeGeometryMode: routeGeometry.mode,
- });
+  const parsed = parseRouteRecommendationRequest(rawPayload);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
 
- try {
- await trackRouteRecommendationUse(supabase, { userId });
- } catch (progressionError) {
- console.error("Progression tracking failed for route recommendation", {
- userId,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
- });
- }
+  const options = parsed.data;
+  const priorityVsTravel = resolvePriorityVsTravel(options);
 
- return NextResponse.json({
- status: dataLayers.recommendation,
- dataStatus,
- dataLayers,
- isTruncated,
- sourceHealth,
- origin,
- travelDistanceKm: totalDistance,
- travelMinutes,
- travelBudgetMinutes: options.travelBudgetMinutes,
- withinBudget: travelMinutes <= options.travelBudgetMinutes,
- serviceMinutesEstimate: null,
- totalMinutesEstimate: null,
- diagnostics: {
-   loaded: contracts.length,
-   eligible: candidates.length,
-   excluded: Math.max(0, contracts.length - candidates.length),
-   selected: plannedStops.length,
-   sourcePartial: sourceHealth.partial,
-   truncated: isTruncated,
-   ...plannerResult.diagnostics,
- },
- generatedAt: new Date().toISOString(),
- engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
- stops,
- prediction: predictionSummary,
- routeGeometry,
- scoreBreakdown: {
- priority: Number(averagePriority.toFixed(1)),
- distance: Number(distanceScore.toFixed(1)),
- },
- tradeoffs: [
-   `Pondération opérationnelle: ${priorityVsTravel}% priorité / ${100 - priorityVsTravel}% déplacement.`,
- ],
- proactiveAssistant,
- });
- } catch (error) {
- return handleApiError(error, "POST /api/route/recommend");
- }
+  try {
+    const supabase = getSupabaseServerClient();
+    const eventPressurePromise = loadRouteEventPressure(supabase);
+    const [locationPreference, eventPressureContext] = await Promise.all([
+      getCurrentUserLocationPreference(),
+      eventPressurePromise,
+    ]);
+    const origin = resolveRouteOrigin(
+      options.origin,
+      locationPreference?.arrondissement,
+    );
+
+    if (!origin) {
+      return NextResponse.json(
+        { error: "A route origin is required." },
+        { status: 422 },
+      );
+    }
+
+    const candidateData = await loadRouteCandidateData(supabase);
+    const planning = await planRouteRecommendation({
+      origin,
+      spatialCandidates: candidateData.spatialCandidates,
+      parisPressureSnapshot: candidateData.parisPressureSnapshot,
+      travelBudgetMinutes: options.travelBudgetMinutes,
+      maxStops: options.maxStops,
+      priorityVsTravel,
+    });
+    const response = buildRouteRecommendationResponse({
+      origin,
+      locationPreference,
+      eventPressureContext,
+      candidateData,
+      planning,
+      travelBudgetMinutes: options.travelBudgetMinutes,
+      priorityVsTravel,
+    });
+
+    try {
+      await trackRouteRecommendationUse(supabase, { userId });
+    } catch (progressionError) {
+      console.error("Progression tracking failed for route recommendation", {
+        userId,
+        message:
+          progressionError instanceof Error
+            ? progressionError.message
+            : String(progressionError),
+      });
+    }
+
+    return response;
+  } catch (error) {
+    return handleApiError(error, "POST /api/route/recommend");
+  }
 }
