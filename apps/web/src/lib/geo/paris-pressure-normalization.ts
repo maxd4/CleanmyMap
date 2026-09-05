@@ -107,7 +107,13 @@ export function buildParisPressureSnapshot(input: {
         geographicLevel: rawZone.geographicLevel,
         arrondissementCode: rawZone.arrondissementCode ?? null,
         centroid: rawZone.centroid,
+        geometry: rawZone.geometry ?? null,
         areaKm2,
+        spatialJoin: {
+          pointInPolygonMatches: rawZone.spatialJoin?.pointInPolygonMatches ?? 0,
+          nearestCentroidFallbackMatches:
+            rawZone.spatialJoin?.nearestCentroidFallbackMatches ?? 0,
+        },
         signals: {
           residentPopulation: {
             population: populationValue,

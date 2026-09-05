@@ -155,7 +155,7 @@ function SelectionDetail({
       <p className="mt-2 text-sm leading-relaxed text-slate-300">{selection.reason}</p>
       {selection.parisPressure ? (
         <p className="mt-2 text-xs leading-relaxed text-sky-100/80">
-          Zone IRIS {selection.parisPressure.zoneId} : pression humaine structurelle {formatNumber(selection.parisPressure.humanPressure ?? 0, 3)} à {formatDistance(selection.parisPressure.distanceToZoneKm)} du centroïde. Ce signal est un prior de contexte, pas une mesure de fréquentation en temps réel.
+          Zone IRIS {selection.parisPressure.zoneId} : pression humaine structurelle {formatNumber(selection.parisPressure.humanPressure ?? 0, 3)} ; {selection.parisPressure.matchMethod === "point-in-polygon" ? "point rattaché au polygone IRIS" : `approximation par centroïde à ${formatDistance(selection.parisPressure.distanceToCentroidKm)}`}. {selection.parisPressure.approximationWarning ? `${selection.parisPressure.approximationWarning} ` : ""}Ce signal est un prior de contexte, pas une mesure de fréquentation en temps réel.
         </p>
       ) : null}
       {selection.evidence?.family === "predicted" ? (
