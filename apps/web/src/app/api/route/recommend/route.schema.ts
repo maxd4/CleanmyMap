@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
+import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
 export const routeRecommendationRequestSchema: z.ZodType<RouteRecommendationRequest> = z
   .object({
@@ -14,6 +15,13 @@ export const routeRecommendationRequestSchema: z.ZodType<RouteRecommendationRequ
     maxStops: z.number().int().min(1).max(12).default(6),
     priorityVsTravel: z.number().finite().min(0).max(100).optional(),
     priorityVsDistance: z.number().finite().min(0).max(100).optional(),
+    planningMode: z
+      .discriminatedUnion("type", [
+        z.object({ type: z.literal("free") }),
+        z.object({ type: z.literal("event-centered"), eventId: z.string().uuid() }),
+      ])
+      .default({ type: "free" }),
+    riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
   })
   .strip();
 
@@ -25,6 +33,8 @@ export const ROUTE_RECOMMENDATION_RATE_LIMIT = {
 export type RouteRecommendationOptions = z.infer<
   typeof routeRecommendationRequestSchema
 >;
+
+export type { RoutePlanningMode };
 
 export function parseRouteRecommendationRequest(rawPayload: unknown) {
   return routeRecommendationRequestSchema.safeParse(rawPayload);

@@ -7,6 +7,7 @@ import type {
   RouteRecommendationOrigin,
   RouteResponse,
   RouteOriginMode,
+  RoutePlanningMode,
 } from "../route-types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -33,6 +34,7 @@ export function useRouteData() {
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [recommendationRequest, setRecommendationRequest] =
     useState<RouteRecommendationSubmission | null>(null);
+  const [planningMode, setPlanningModeState] = useState<RoutePlanningMode>({ type: "free" });
   const [originMode, setOriginModeState] = useState<RouteOriginMode>("browser");
   const [mapOrigin, setMapOriginState] =
     useState<RouteRecommendationOrigin | null>(null);
@@ -51,6 +53,10 @@ export function useRouteData() {
   const setOriginMode = useCallback((mode: RouteOriginMode) => {
     setOriginModeState(mode);
     setOriginSelectionError(false);
+  }, []);
+
+  const setPlanningMode = useCallback((mode: RoutePlanningMode) => {
+    setPlanningModeState(mode.type === "event-centered" ? { ...mode } : { type: "free" });
   }, []);
 
   const setMapOrigin = useCallback((origin: RouteRecommendationOrigin) => {
@@ -131,6 +137,8 @@ export function useRouteData() {
     hasRoute,
     fr,
     recommendationRequested: recommendationRequest !== null,
+    planningMode,
+    setPlanningMode,
     originMode,
     setOriginMode,
     mapOrigin,
@@ -165,7 +173,12 @@ export function useRouteData() {
 
       requestSequence.current += 1;
       setRecommendationRequest(
-        createRouteRecommendationSubmission(requestSequence.current, options, origin),
+        createRouteRecommendationSubmission(
+          requestSequence.current,
+          options,
+          origin,
+          planningMode,
+        ),
       );
     },
   };

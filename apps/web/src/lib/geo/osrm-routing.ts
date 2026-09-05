@@ -29,6 +29,14 @@ export type RoutePolylineOptions = {
 type OsrmLeg = {
   distance?: unknown;
   duration?: unknown;
+  steps?: unknown;
+};
+
+type OsrmStep = {
+  name?: unknown;
+  distance?: unknown;
+  duration?: unknown;
+  maneuver?: { type?: unknown; modifier?: unknown };
 };
 
 type OsrmRoute = {
@@ -128,7 +136,7 @@ export function buildOsrmRouteUrl(
     .join(";");
   const baseUrl = (options.baseUrl ?? OSRM_BASE_URL).replace(/\/+$/, "");
   const profileSegment = options.profileSegment ?? OSRM_PROFILE;
-  return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=false`;
+  return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=true`;
 }
 
 export function createFallbackRouteGeometry(
@@ -184,11 +192,37 @@ function parseNetworkRoute(
         parsedLegs.length = 0;
         break;
       }
+      const rawSteps = Array.isArray(rawLeg.steps)
+        ? (rawLeg.steps as OsrmStep[])
+        : undefined;
+      const steps = rawSteps
+        ?.filter(
+          (step) =>
+            isFiniteNumber(step.distance) &&
+            step.distance >= 0 &&
+            isFiniteNumber(step.duration) &&
+            step.duration >= 0,
+        )
+        .map((step) => {
+          const distance = step.distance as number;
+          const duration = step.duration as number;
+          const maneuverType = typeof step.maneuver?.type === "string" ? step.maneuver.type : null;
+          const maneuverModifier = typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : null;
+          return {
+            name: typeof step.name === "string" && step.name.length > 0 ? step.name : null,
+            distanceKm: Number((distance / 1000).toFixed(2)),
+            durationMinutes: Math.max(0, Math.round(duration / 60)),
+            maneuver: maneuverType && maneuverModifier
+              ? `${maneuverType} ${maneuverModifier}`
+              : maneuverType ?? maneuverModifier,
+          };
+        });
       parsedLegs.push({
         fromStopIndex: index,
         toStopIndex: index + 1,
         distanceKm: Number((rawLeg.distance / 1000).toFixed(2)),
         estimatedMinutes: Math.max(0, Math.round(rawLeg.duration / 60)),
+        ...(steps ? { steps } : {}),
       });
     }
     legs = parsedLegs;

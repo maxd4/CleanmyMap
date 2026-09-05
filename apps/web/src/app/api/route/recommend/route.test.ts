@@ -36,6 +36,8 @@ const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn());
 const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn());
 const resolveRouteDataStatusMock = vi.hoisted(() => vi.fn());
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
+const routeEventSignalContextMock = vi.hoisted(() => vi.fn());
+const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
@@ -76,6 +78,14 @@ vi.mock("@/lib/route/route-planner", () => ({
   longestNetworkPrefixWithinBudget: longestNetworkPrefixWithinBudgetMock,
   planRoute: planRouteMock,
   ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v1",
+  routeDistanceKm: vi.fn(() => 1),
+  travelMinutesForDistance: vi.fn(() => 5),
+}));
+vi.mock("@/lib/route/route-event-pressure-loader", () => ({
+  loadCachedRouteEventSignalContext: routeEventSignalContextMock,
+}));
+vi.mock("@/lib/route/route-event-centered-loader", () => ({
+  loadRouteEventCenteredAnchor: loadRouteEventCenteredAnchorMock,
 }));
 vi.mock("@/lib/geo/paris-pressure-loader", () => ({
   loadParisPressureSnapshot: loadParisPressureSnapshotMock,
@@ -110,6 +120,32 @@ vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: (error: unknown) =>
     new Response(error instanceof Error ? error.message : "error", { status: 500 }),
 }));
+
+function plannerAudit(stops: Array<ReturnType<typeof plannedStop>>) {
+  return {
+    evaluations: [],
+    selections: stops.map(({ candidate: selectedCandidate, incrementalDistanceKm, incrementalTravelMinutes, cumulativeTravelMinutes }, index) => ({
+      candidateId: selectedCandidate.id,
+      step: index + 1,
+      incrementalDistanceKm,
+      incrementalTravelMinutes,
+      cumulativeTravelMinutes,
+      normalizedPriority: selectedCandidate.score / 100,
+      normalizedTravel: 0.9,
+      combinedScore: selectedCandidate.score / 100,
+      feasible: true,
+      budgetBeforeMinutes: 60 - index * incrementalTravelMinutes,
+      budgetAfterMinutes: Math.max(0, 60 - cumulativeTravelMinutes),
+      selectionReason: "Sélectionné dans le budget.",
+    })),
+    orderingCriteria: [
+      "combined_score_desc",
+      "priority_desc",
+      "incremental_travel_asc",
+      "id_lexicographic",
+    ] as const,
+  };
+}
 
 
 describe("POST /api/route/recommend", () => {
@@ -170,6 +206,16 @@ describe("POST /api/route/recommend", () => {
       pressureByArrondissement: new Map(),
       eventSignals: [],
     });
+    routeEventSignalContextMock.mockResolvedValue({
+      candidatePressureById: new Map(),
+      completedEventsConsidered: 0,
+      geolocatedCompletedEvents: 0,
+      eventsWithoutCoordinates: 0,
+      futureEventSignals: [],
+      sourceAvailable: true,
+      warnings: [],
+    });
+    loadRouteEventCenteredAnchorMock.mockResolvedValue(null);
     loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
       isTruncated: false,
@@ -190,12 +236,16 @@ describe("POST /api/route/recommend", () => {
       upcomingEvents: [],
       hotspots: [],
     });
-    planRouteMock.mockImplementation((input) => ({
-      stops: input.candidates
+    planRouteMock.mockImplementation((input) => {
+      const stops = input.candidates
         .slice(0, input.maxStops)
-        .map((item: typeof candidate, index: number) => plannedStop(item, index)),
-      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-    }));
+        .map((item: typeof candidate, index: number) => plannedStop(item, index));
+      return {
+        stops,
+        diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+        audit: plannerAudit(stops),
+      };
+    });
     longestNetworkPrefixWithinBudgetMock.mockReturnValue(0);
     fallbackRoutePrefixWithinBudgetMock.mockImplementation(
       (_origin, stops) => stops,
@@ -302,7 +352,11 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(payload.constraintsApplied).toBeUndefined();
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
-    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith([]);
+    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
+      [],
+      expect.any(Date),
+      expect.any(Map),
+    );
   });
 
   it("passes an explicit origin and all planner options to planRoute", async () => {
@@ -413,6 +467,7 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(plannedStops),
     });
     const networkGeometry = {
       ...fallbackGeometry(),
@@ -455,6 +510,7 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(plannedStops),
     });
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
     fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
@@ -501,6 +557,7 @@ describe("POST /api/route/recommend", () => {
     const diagnosticPlannerResult = {
       stops: [plannedStop()],
       diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
+      audit: plannerAudit([plannedStop()]),
     };
     planRouteMock
       .mockReturnValueOnce(diagnosticPlannerResult)

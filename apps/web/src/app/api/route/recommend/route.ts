@@ -16,6 +16,7 @@ import {
 import { resolveRouteOrigin } from "./route.origin";
 import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
+import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -84,6 +85,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const planningMode = options.planningMode;
+    const eventCenteredAnchor =
+      planningMode.type === "event-centered"
+        ? await loadRouteEventCenteredAnchor(supabase, planningMode.eventId)
+        : null;
+    if (planningMode.type === "event-centered" && !eventCenteredAnchor) {
+      return NextResponse.json(
+        { error: "A geolocated event is required for event-centered planning." },
+        { status: 422 },
+      );
+    }
+
     const candidateData = await loadRouteCandidateData(supabase);
     const planning = await planRouteRecommendation({
       origin,
@@ -92,6 +105,9 @@ export async function POST(request: Request) {
       travelBudgetMinutes: options.travelBudgetMinutes,
       maxStops: options.maxStops,
       priorityVsTravel,
+      planningMode,
+      eventCenteredAnchor,
+      eventSignalContext: candidateData.routeEventSignalContext,
     });
     const response = buildRouteRecommendationResponse({
       origin,
@@ -99,6 +115,8 @@ export async function POST(request: Request) {
       eventPressureContext,
       candidateData,
       planning,
+      planningMode,
+      maxStops: options.maxStops,
       travelBudgetMinutes: options.travelBudgetMinutes,
       priorityVsTravel,
     });

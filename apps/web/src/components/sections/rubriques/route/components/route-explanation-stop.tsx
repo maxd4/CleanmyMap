@@ -63,9 +63,13 @@ export function SelectionDetail({
       ) : null}
       {selection.evidence?.family === "predicted" ? (
         <PredictionEvidence evidence={selection.evidence} />
-      ) : (
+      ) : selection.evidence?.family === "observed" ? (
         <p className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
           Signalement observé validé : la preuve terrain reste prioritaire sur une prédiction de risque équivalente.
+        </p>
+      ) : (
+        <p className="mt-3 rounded-xl border border-slate-300/20 bg-slate-500/10 p-3 text-xs text-slate-200">
+          Preuve terrain indisponible : ce stop ne peut pas être présenté comme un signalement observé validé.
         </p>
       )}
       <dl className="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">

@@ -14,6 +14,8 @@ import {
 import { ROUTE_PLANNER_ENGINE_VERSION } from "@/lib/route/route-planner";
 import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
+import { buildRouteRecommendationTrace, type RouteTraceCandidateSummary } from "@/lib/route/route-trace";
+import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
 
@@ -30,9 +32,52 @@ function buildStops(
       estimatedMinutes: Math.max(0, Math.round(incrementalTravelMinutes)),
       priorityReason: candidate.reason,
       score: Number(candidate.score.toFixed(2)),
+      evidence: candidate.evidence,
     }),
   );
 }
+
+function buildTraceCandidateSummary(
+  candidateData: RouteCandidateData,
+  plannerResult: RoutePlanningResult["plannerResult"],
+): RouteTraceCandidateSummary {
+  const actionableCandidates = candidateData.actionableCandidates ?? candidateData.candidates;
+  const excludedByReason: Record<string, number> = {
+    not_admissible: Math.max(0, candidateData.contracts.length - actionableCandidates.length),
+    unsafe_trained_only: 0,
+    unsafe_no_pickup: 0,
+    unsafe_missing_categories: 0,
+    unsafe_unknown_categories: 0,
+    travel_budget: plannerResult.diagnostics.excludedByTravelBudget,
+  };
+  for (const candidate of actionableCandidates) {
+    const reason = candidate.safety.specializationReason;
+    if (reason) {
+      const key = `unsafe_${reason}`;
+      excludedByReason[key] = (excludedByReason[key] ?? 0) + 1;
+    }
+  }
+  if (candidateData.sourceHealth.partial) excludedByReason.source_unavailable = 1;
+  return {
+    loaded: candidateData.contracts.length,
+    admissible: candidateData.candidates.length,
+    excluded: Object.entries(excludedByReason).reduce(
+      (total, [reason, count]) => total + (reason === "source_unavailable" ? 0 : count),
+      0,
+    ),
+    excludedByReason,
+  };
+}
+
+const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT = {
+  candidatePressureById: new Map(),
+  completedEventsConsidered: 0,
+  geolocatedCompletedEvents: 0,
+  eventsWithoutCoordinates: 0,
+  futureEventSignals: [],
+  sourceAvailable: false,
+  warnings: ["Le signal événementiel est indisponible pour ce calcul."],
+};
 
 export function buildRouteRecommendationResponse(input: {
   origin: RoutePlannerOrigin;
@@ -40,6 +85,8 @@ export function buildRouteRecommendationResponse(input: {
   eventPressureContext: RouteEventPressureContext;
   candidateData: RouteCandidateData;
   planning: RoutePlanningResult;
+  planningMode?: RoutePlanningMode;
+  maxStops: number;
   travelBudgetMinutes: number;
   priorityVsTravel: number;
 }): NextResponse {
@@ -49,6 +96,8 @@ export function buildRouteRecommendationResponse(input: {
     eventPressureContext,
     candidateData,
     planning,
+    planningMode = { type: "free" },
+    maxStops,
     travelBudgetMinutes,
     priorityVsTravel,
   } = input;
@@ -63,6 +112,26 @@ export function buildRouteRecommendationResponse(input: {
       .filter(({ candidate }) => candidate.family === "predicted")
       .map(({ candidate }) => candidate.id),
   };
+  const trace = buildRouteRecommendationTrace({
+    engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+    planningMode,
+    origin,
+    travelBudgetMinutes,
+    maxStops,
+    priorityVsTravel,
+    candidateSummary: buildTraceCandidateSummary(candidateData, plannerResult),
+    plannerResult,
+    selectedStops: plannedStops,
+    routeGeometry,
+    consumedTravelMinutes: plannedStops.length === 0
+      ? 0
+      : Math.min(Math.max(routeGeometry.durationMinutes, 0), travelBudgetMinutes),
+    budgetPrefixApplied: planning.budgetPrefixApplied,
+    sourceHealth,
+    eventSignalContext: candidateData.routeEventSignalContext ?? EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT,
+    eventCenteredContext: planning.eventCenteredContext,
+    predictionSummary,
+  });
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
     prediction: {
@@ -76,6 +145,7 @@ export function buildRouteRecommendationResponse(input: {
   if (plannedStops.length === 0) {
     const responsePayload = {
       status: dataLayers.recommendation,
+      planningMode,
       dataStatus,
       dataLayers,
       isTruncated,
@@ -100,6 +170,7 @@ export function buildRouteRecommendationResponse(input: {
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
       prediction: predictionSummary,
+      trace,
       routeGeometry,
       scoreBreakdown: { priority: 0, distance: 0 },
       tradeoffs: [
@@ -142,6 +213,7 @@ export function buildRouteRecommendationResponse(input: {
 
   const responsePayload = {
     status: dataLayers.recommendation,
+    planningMode,
     dataStatus,
     dataLayers,
     isTruncated,
@@ -166,6 +238,7 @@ export function buildRouteRecommendationResponse(input: {
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     stops,
     prediction: predictionSummary,
+    trace,
     routeGeometry,
     scoreBreakdown: {
       priority: Number(averagePriority.toFixed(1)),
