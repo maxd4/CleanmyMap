@@ -3,11 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import {
-  parseAdminUserIds,
-  parseMaxUserIds,
-  resolveClerkRole,
-} from "@/lib/auth/role-resolution";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
 import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
@@ -36,8 +32,8 @@ function resolveCanonicalTargetRole(user: {
 }): AppProfile {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
 }
 

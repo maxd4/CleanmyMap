@@ -211,7 +211,7 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it("promotes canonical max metadata", async () => {
+  it("does not promote a non-owner from max metadata", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,
     });
@@ -233,7 +233,7 @@ describe("syncClerkUserToSupabase", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        role_label: "max",
+        role_label: "benevole",
         display_name: "Max Owner",
         display_name_mode: "full_name",
       }),
