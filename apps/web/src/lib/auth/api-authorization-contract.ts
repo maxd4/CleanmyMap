@@ -604,10 +604,10 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "pilotage/overview": {
     GET: {
-      expected: "Authenticated coordinateur/max pilotage access",
+      expected: "Authenticated coordinateur/admin-like pilotage access",
       dimensions: ["authentication", "business permission"],
-      actual: "auth() + getCurrentUserActiveRole restricted to coordinateur or max",
-      evidence: ["auth()", "getCurrentUserActiveRole", "forbiddenJsonResponse"],
+      actual: "auth() + getCurrentUserEffectiveAccess().canAccessPilotage",
+      evidence: ["auth()", "getCurrentUserEffectiveAccess", "canAccessPilotage", "forbiddenJsonResponse"],
     },
   },
   "reports/actions.csv": {

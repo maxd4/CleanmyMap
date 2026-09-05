@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
-const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
+const getCurrentUserEffectiveAccessMock = vi.hoisted(() => vi.fn());
 const loadPilotageOverviewMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -9,7 +9,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
+  getCurrentUserEffectiveAccess: getCurrentUserEffectiveAccessMock,
 }));
 
 vi.mock("@/lib/actions/unified-source", () => ({
@@ -25,7 +25,9 @@ describe("GET /api/pilotage/overview authorization", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
-    getCurrentUserActiveRoleMock.mockResolvedValue("coordinateur");
+    getCurrentUserEffectiveAccessMock.mockResolvedValue({
+      canAccessPilotage: true,
+    });
     loadPilotageOverviewMock.mockResolvedValue({ generatedAt: "2026-08-26T00:00:00.000Z" });
   });
 
@@ -40,7 +42,9 @@ describe("GET /api/pilotage/overview authorization", () => {
   });
 
   it("rejects authenticated roles outside the pilotage contract", async () => {
-    getCurrentUserActiveRoleMock.mockResolvedValueOnce("benevole");
+    getCurrentUserEffectiveAccessMock.mockResolvedValueOnce({
+      canAccessPilotage: false,
+    });
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview"));
@@ -49,8 +53,10 @@ describe("GET /api/pilotage/overview authorization", () => {
     expect(loadPilotageOverviewMock).not.toHaveBeenCalled();
   });
 
-  it.each(["coordinateur", "max"])("allows the %s pilotage role", async (role) => {
-    getCurrentUserActiveRoleMock.mockResolvedValueOnce(role);
+  it.each(["coordinateur", "admin", "max"])("allows %s through the pilotage capability", async () => {
+    getCurrentUserEffectiveAccessMock.mockResolvedValueOnce({
+      canAccessPilotage: true,
+    });
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview?days=30"));

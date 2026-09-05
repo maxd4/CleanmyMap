@@ -6,7 +6,7 @@ import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
-import { getCurrentUserActiveRole } from"@/lib/authz";
+import { getCurrentUserEffectiveAccess } from "@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { listGovernanceMonthlyReports } from"@/lib/governance/governance-monthly-report-store";
 import { formatStorageBytes } from"@/lib/supabase/storage-usage";
@@ -26,11 +26,11 @@ export default async function AdminServicesPage() {
  );
  }
 
- const role = await getCurrentUserActiveRole();
+ const access = await getCurrentUserEffectiveAccess();
  const governanceReports = await listGovernanceMonthlyReports(3).catch(() => []);
  const latestGovernanceReport = governanceReports[0] ?? null;
 
- if (role !=="admin") {
+ if (!access.canAccessAdminPage) {
  return (
  <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
   <div className="mx-auto flex max-w-4xl items-center justify-center">

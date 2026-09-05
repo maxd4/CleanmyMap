@@ -1,4 +1,5 @@
 import type { ActionPhase, ActionStatus } from "@/lib/actions/types";
+import { getEffectiveAccessForSessionRole } from "@/lib/domain-language";
 import type { AppProfile } from "@/lib/profiles";
 
 export const ACTION_MODERATION_ROLES = ["admin", "elu", "max"] as const;
@@ -27,7 +28,7 @@ function normalizeUserId(value: string | null | undefined): string | null {
 export function isActionModerationRole(
   role: AppProfile | null | undefined,
 ): role is ActionModerationRole {
-  return role === "admin" || role === "elu" || role === "max";
+  return role != null && getEffectiveAccessForSessionRole(role).canModerate;
 }
 
 export function canUseAdminOverride(

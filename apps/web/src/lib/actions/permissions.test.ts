@@ -13,6 +13,9 @@ describe("action permissions", () => {
     expect(isActionModerationRole("elu")).toBe(true);
     expect(isActionModerationRole("max")).toBe(true);
     expect(isActionModerationRole("benevole")).toBe(false);
+    expect(isActionModerationRole("coordinateur")).toBe(false);
+    expect(isActionModerationRole("scientifique")).toBe(false);
+    expect(isActionModerationRole("entreprise")).toBe(false);
   });
 
   it("allows admin-like users to auto-approve their own actions", () => {

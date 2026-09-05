@@ -1,6 +1,9 @@
 import { notFound, redirect } from"next/navigation";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
-import { getCurrentUserActiveRole } from"@/lib/authz";
+import {
+ getCurrentUserActiveRole,
+ getCurrentUserEffectiveAccess,
+} from "@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { isAppProfile, toProfile } from"@/lib/profiles";
 import {
@@ -66,10 +69,11 @@ export default async function ParcoursProfilePage({
  const activeRole = await getCurrentUserActiveRole().catch(
  () =>"anonymous" as const,
  );
+ const effectiveAccess = await getCurrentUserEffectiveAccess().catch(() => null);
  const activeProfile = toProfile(activeRole);
- const isAdmin = activeRole ==="admin";
+ const canSelectAnyProfile = effectiveAccess?.canAccessAdminPage ?? false;
 
- if (!isAdmin && normalized !== activeProfile) {
+ if (!canSelectAnyProfile && normalized !== activeProfile) {
  redirect(buildParcoursRoute(activeProfile));
 }
 
