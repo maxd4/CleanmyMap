@@ -1,13 +1,8 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
-import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
-import {
-  extractRole,
-  parseAdminUserIds,
-  parseMaxUserIds,
-} from "@/lib/auth/role-resolution";
-import { resolveProfile, type AppProfile } from "@/lib/profiles";
-import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
+import { getRoleBadge, getProfileBadge } from "@/lib/authz";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
+import type { AppProfile } from "@/lib/profiles";
 
 export type ClerkUserIdentity = {
   userId: string | null;
@@ -26,34 +21,19 @@ export type ClerkUserIdentity = {
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
-function resolveClerkRole(params: {
+function resolveClerkServiceRole(params: {
   id: string;
   user: {
     publicMetadata: ClerkMetadata;
     privateMetadata: ClerkMetadata;
     primaryEmailAddress?: { emailAddress?: string | null } | null;
   };
-  adminUserIds: Set<string>;
-  maxUserIds: Set<string>;
 }): AppProfile {
-  const isAdmin =
-    params.adminUserIds.has(params.id) ||
-    isAdminRole({
-      publicMetadata: params.user.publicMetadata,
-      privateMetadata: params.user.privateMetadata,
-    });
-  const isMax =
-    params.maxUserIds.has(params.id) ||
-    isCreatorInboxEmail(params.user.primaryEmailAddress?.emailAddress) ||
-    isMaxRole({
-      publicMetadata: params.user.publicMetadata,
-      privateMetadata: params.user.privateMetadata,
-    });
-  const metadataRole =
-    extractRole(params.user.publicMetadata as ClerkMetadata) ??
-    extractRole(params.user.privateMetadata as ClerkMetadata);
-
-  return resolveProfile({ metadataRole, isAdmin, isMax });
+  return resolveClerkRole({
+    user: { ...params.user, id: params.id },
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+  });
 }
 
 function buildClerkDisplayName(user: {
@@ -71,8 +51,6 @@ function buildClerkDisplayName(user: {
  */
 export async function getClerkService() {
   const client = await clerkClient();
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const maxUserIds = parseMaxUserIds(env.CLERK_MAX_USER_IDS);
 
   return {
     /**
@@ -86,11 +64,9 @@ export async function getClerkService() {
         userIds.map(async (id) => {
           try {
             const user = await client.users.getUser(id);
-            const profile = resolveClerkRole({
+            const profile = resolveClerkServiceRole({
               id,
               user,
-              adminUserIds,
-              maxUserIds,
             });
             const displayName = buildClerkDisplayName(user);
 

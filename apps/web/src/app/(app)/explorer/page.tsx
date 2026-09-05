@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, ChevronRight } from "lucide-react";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getNavigationSpacesForProfile,
   type NavigationItem,
   type NavigationBlockId,
 } from "@/lib/navigation";
+import { toProfile } from "@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
 import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
@@ -172,10 +173,10 @@ export default async function ExplorerPage() {
     getServerDisplayModePreference(),
     getSafeAuthSession(),
   ]);
-  const identity = session.state === "authenticated"
-    ? await getCurrentUserIdentity({ userId: session.userId })
-    : null;
-  const currentProfile = identity?.activeProfile ?? "benevole";
+  const role = session.state === "authenticated"
+    ? await getCurrentUserActiveRole()
+    : "anonymous" as const;
+  const currentProfile = toProfile(role);
   const spaces = getNavigationSpacesForProfile(currentProfile, displayModePreference.displayMode, locale);
   const visibleSpaces = spaces.map((space) => ({
     ...space,

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "legacy": {
+    "generatedCandidates": [],
+    "unknownCanonicalEntries": [],
+    "adHocEntries": [
+      {
+        "path": ".artifacts/validation/chrome-onboarding-publication-20260904",
+        "reason": "Preuve historique d'une publication UI conservée pour traçabilité; aucun run actif."
+      },
+      {
+        "path": ".artifacts/validation/governance-candidate-20260903.index",
+        "reason": "Index historique d'un candidat de gouvernance conservé pour traçabilité."
+      },
+      {
+        "path": ".artifacts/validation/ribbon-home-logo-publication-20260905",
+        "reason": "Preuve historique d'une publication UI conservée pour traçabilité; aucun run actif."
+      }
+    ]
+  }
+}

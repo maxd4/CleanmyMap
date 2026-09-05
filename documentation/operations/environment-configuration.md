@@ -41,6 +41,28 @@ noms de variables.
 | Tests | Fixtures, mocks et variables injectées par le runner | Pas de lecture implicite de secrets locaux; les tests doivent utiliser des valeurs fictives non sensibles. |
 | Expo mobile | Configuration Expo du projet mobile, uniquement variables publiques nécessaires au bundle | Les secrets restent côté API web; aucune clé serveur dans `EXPO_PUBLIC_*`. Le checkout courant ne contient pas de consommateur Expo d’environnement versionné. |
 
+### Localhost humain et Codex
+
+Ces deux usages localhost sont volontairement distincts :
+
+- `HUMAN_LOCAL` : session Clerk réelle, `CMM_DEV_AUTH_BYPASS` absent ou à `0`.
+  Aucun rôle privilégié n’est déduit de l’hôte `localhost` et l’absence de
+  session reste une absence d’authentification.
+- `CODEX` : lanceur local explicite avec `CMM_DEV_AUTH_BYPASS=1` et une
+  identité synthétique (`dev-max`, `dev-admin` ou `dev-benevole`). Cette
+  identité sert aux validations locales uniquement et ne modifie aucune
+  allowlist Clerk ni métadonnée distante.
+
+Dans les deux cas, `GRANTED_ROLE` reste l'identité réellement obtenue et
+`ACTIVE_ROLE` est le seul rôle courant utilisé pour calculer les capacités.
+Le menu peut écrire uniquement `activeRole` via
+`/api/account/active-profile`; il ne peut jamais modifier le niveau obtenu.
+`dev-max` n'est donc qu'un bypass synthétique de localhost, et ne représente
+aucun compte Clerk ou profil Supabase.
+
+Changer `CMM_DEV_AUTH_BYPASS_ROLE` à la main ne donne pas de rôle en
+Production : le bypass est refusé hors développement.
+
 ### Commandes de contrôle
 
 Depuis la racine :
@@ -87,8 +109,10 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_IS_SATELLITE` | Clerk | CONFIG | O | O | O | O | Vercel / template local | configuration Clerk |
 | `CLERK_SATELLITE_AUTO_SYNC` | Clerk | CONFIG | O | O | O | O | Vercel / template local | synchronisation Clerk |
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
-| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
-| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
+| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic de configuration, aucune attribution |
+| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic historique, jamais une autorité |
+| `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | owner IMU exact par instance |
+| `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | email principal owner vérifié |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
 | `RESEND_FROM_EMAIL` | Resend | CONFIG | O | O | O | O | Resend / Vercel | expéditeur email |
 | `RESEND_REPLY_TO` | Resend | CONFIG | O | O | O | O | Resend / Vercel | réponse email |
@@ -167,8 +191,13 @@ au contrat.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
-- Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
-  contrôles AuthZ opératoires; elles ne sont pas des personas UX.
+- `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` restent des listes opératoires
+  indépendantes et disjointes pour les audits de configuration; elles ne
+  résolvent aucun `GRANTED_ROLE`. Le rôle `admin` provient uniquement d'une
+  écriture Clerk issue d'une décision IMU (demande acceptée ou attribution
+  directe), et `max` exige le couple owner exact de l'instance ainsi que
+  l'email principal Clerk `verified`. Production et Development ont chacun
+  leur propre ID owner.
 
 ### Supabase
 

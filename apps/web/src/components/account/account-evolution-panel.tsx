@@ -21,7 +21,7 @@ export type AccountEvolutionRequest = {
 
 type AccountEvolutionPanelProps = {
   currentRole: AppProfile;
-  activeProfile: AppProfile;
+  activeRole: AppProfile;
   initialRequest: AccountEvolutionRequest | null;
   initialStatusAvailable: boolean;
 };
@@ -68,7 +68,7 @@ function StatusIcon({ status }: { status: AccountEvolutionRequest["status"] }) {
 
 export function AccountEvolutionPanel({
   currentRole,
-  activeProfile,
+  activeRole,
   initialRequest,
   initialStatusAvailable,
 }: AccountEvolutionPanelProps) {
@@ -101,11 +101,15 @@ export function AccountEvolutionPanel({
 
   const statusCopy = latestRequest ? STATUS_COPY[latestRequest.status] : null;
   const canRequest = getRequestablePromotionRoles(currentRole).length > 0;
+  const isAcceptedSynchronized =
+    latestRequest?.status === "accepted" && latestRequest.requestedRole === currentRole;
+  const isAcceptedAwaitingSynchronization =
+    latestRequest?.status === "accepted" && !isAcceptedSynchronized;
   const showForm =
     statusAvailable &&
     !isRefreshing &&
     canRequest &&
-    (!latestRequest || latestRequest.status === "rejected");
+    (!latestRequest || latestRequest.status === "rejected" || isAcceptedSynchronized);
 
   return (
     <div className="space-y-6">
@@ -128,7 +132,7 @@ export function AccountEvolutionPanel({
             <FileClock className="h-6 w-6 text-orange-300" aria-hidden="true" />
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-100/60">Identité active</p>
-              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(activeProfile, "fr")}</p>
+              <p className="mt-1 text-2xl font-black text-white">{getProfileLabel(activeRole, "fr")}</p>
             </div>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-amber-50/72">
@@ -190,13 +194,17 @@ export function AccountEvolutionPanel({
               <p className="mt-1 text-sm opacity-80">{statusCopy?.description}</p>
             </div>
           </div>
-        ) : latestRequest?.status === "accepted" ? (
-          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm text-emerald-50">
-            Le niveau affiché ci-dessus est la source d’autorité du compte après synchronisation.
+        ) : isAcceptedAwaitingSynchronization ? (
+          <div className="mt-6 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm text-amber-50">
+            Demande acceptée. La synchronisation de votre niveau est encore en cours ; le formulaire reste fermé.
           </div>
         ) : showForm ? (
           <div className="mt-6">
             <PromotionRequestForm currentRole={currentRole} onSubmitted={refreshStatus} />
+          </div>
+        ) : latestRequest?.status === "accepted" ? (
+          <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 p-5 text-sm text-emerald-50">
+            Le niveau affiché ci-dessus est la source d’autorité du compte après synchronisation.
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-amber-50/70">

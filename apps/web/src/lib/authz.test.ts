@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { __authz_testables, isAdminRole } from "./authz";
-import { resolveIdentityActiveProfile } from "./authz-identity";
+import { resolveIdentityActiveRole } from "./authz-identity";
 
 describe("authz helpers", () => {
   it.each([
@@ -10,10 +10,10 @@ describe("authz helpers", () => {
     ["admin", undefined, "admin"],
     ["max", "invalid-profile", "max"],
   ] as const)(
-    "resolves activeProfile independently from role (%s, %s)",
+    "resolves ACTIVE_ROLE independently from GRANTED_ROLE (%s, %s)",
     (role, activeProfile, expected) => {
       expect(
-        resolveIdentityActiveProfile(
+        resolveIdentityActiveRole(
           {
             publicMetadata: activeProfile === undefined ? {} : { activeProfile },
             privateMetadata: {},
@@ -26,7 +26,7 @@ describe("authz helpers", () => {
 
   it("falls back to the real role when the public activeProfile is invalid", () => {
     expect(
-      resolveIdentityActiveProfile(
+      resolveIdentityActiveRole(
         {
           publicMetadata: { activeProfile: "not-a-profile" },
           privateMetadata: { activeProfile: "scientifique" },
@@ -56,44 +56,13 @@ describe("authz helpers", () => {
     ).toBe(true);
   });
 
-  it("accepts max role as admin-like", () => {
-    expect(
-      isAdminRole({
-        publicMetadata: { role: "max" },
-        privateMetadata: {},
-      }),
-    ).toBe(true);
-  });
-
-  it("accepts super admin aliases as max", () => {
+  it("does not treat IMU metadata as admin authorization", () => {
     expect(
       isAdminRole({
         publicMetadata: { role: "super_admin" },
         privateMetadata: {},
       }),
-    ).toBe(true);
-  });
-
-  it("rewrites legacy IMU metadata to canonical max storage", async () => {
-    const updateUser = vi.fn().mockResolvedValue({ id: "user-1" });
-
-    await __authz_testables.normalizeLegacyOwnerMetadata(
-      { users: { updateUser } } as never,
-      {
-        id: "user-1",
-        publicMetadata: { role: "super_admin", badge: "pioneer" },
-        privateMetadata: { profile: "IMU" },
-      } as never,
-    );
-
-    expect(updateUser).toHaveBeenCalledWith("user-1", {
-      publicMetadata: {
-        role: "max",
-        profile: "max",
-        badge: "pioneer",
-      },
-      privateMetadata: { profile: "max", role: "max" },
-    });
+    ).toBe(false);
   });
 
   it("rejects non admin role", () => {

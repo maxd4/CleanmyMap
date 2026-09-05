@@ -1,7 +1,8 @@
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { redirect } from "next/navigation";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { toProfile } from "@/lib/profiles";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { buildParcoursRoute } from "@/lib/accueil-pilotage-routes";
@@ -50,7 +51,7 @@ export default async function ParcoursRootPage() {
     );
   }
 
-  const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
-  const profile = identity?.activeProfile ?? "benevole";
+  const role = await getCurrentUserActiveRole().catch(() => "anonymous" as const);
+  const profile = toProfile(role);
   redirect(buildParcoursRoute(profile));
 }

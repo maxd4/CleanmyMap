@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   extractRole,
+  isCanonicalImuOwner,
   isAdminRole,
-  isMaxRole,
   parseAdminUserIds,
   parseMaxUserIds,
+  resolveClerkRole,
 } from "./role-resolution";
 
 describe("role resolution", () => {
@@ -15,7 +16,7 @@ describe("role resolution", () => {
     expect(parseAdminUserIds(undefined)).toEqual(new Set());
   });
 
-  it("does not promote admin ids to max when the max allowlist is empty", () => {
+  it("keeps max ids independent from admin ids", () => {
     expect(parseMaxUserIds("")).toEqual(new Set());
     expect(parseMaxUserIds("max_1")).toEqual(new Set(["max_1"]));
   });
@@ -35,11 +36,83 @@ describe("role resolution", () => {
     },
   );
 
-  it("resolves admin and max roles from public or private metadata", () => {
+  it("resolves admin metadata without treating max metadata as IMU", () => {
     expect(isAdminRole({ publicMetadata: { role: "admin" } })).toBe(true);
-    expect(isAdminRole({ privateMetadata: { profile: "max" } })).toBe(true);
+    expect(isAdminRole({ privateMetadata: { profile: "max" } })).toBe(false);
     expect(isAdminRole({ publicMetadata: { role: "member" } })).toBe(false);
-    expect(isMaxRole({ publicMetadata: { role: "super_admin" } })).toBe(true);
-    expect(isMaxRole({ privateMetadata: { role: "admin" } })).toBe(false);
+    expect(isAdminRole({ privateMetadata: { role: "admin" } })).toBe(true);
+  });
+
+  it.each([
+    ["owner-prod", "owner.prod-at-example"],
+    ["owner-dev", "owner.dev-at-example"],
+  ])("requires the exact %s owner id and verified primary email for IMU", (ownerId, ownerEmail) => {
+    const owner = {
+      id: ownerId,
+      primaryEmailAddress: {
+        emailAddress: ownerEmail,
+        verification: { status: "verified" },
+      },
+      publicMetadata: { role: "max" },
+      privateMetadata: {},
+    };
+
+    expect(
+      resolveClerkRole({
+        user: owner,
+        ownerUserId: ownerId,
+        ownerEmail,
+      }),
+    ).toBe("max");
+    expect(
+      resolveClerkRole({
+        user: {
+          ...owner,
+          id: "secondary",
+          publicMetadata: {},
+          privateMetadata: {},
+        },
+        ownerUserId: ownerId,
+        ownerEmail,
+      }),
+    ).toBe("benevole");
+    expect(
+      resolveClerkRole({
+        user: owner,
+        ownerUserId: ownerId,
+        ownerEmail: "other-at-example",
+      }),
+    ).toBe("benevole");
+  });
+
+  it("fails closed when Clerk returns no verified owner email", () => {
+    expect(
+      isCanonicalImuOwner({
+        userId: "owner",
+        ownerUserId: "owner",
+        ownerEmail: "owner-at-example",
+        primaryEmailAddress: {
+          emailAddress: "owner-at-example",
+          verification: { status: "unverified" },
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("does not let an admin allowlist grant a role", () => {
+    const user = {
+      id: "secondary",
+      primaryEmailAddress: null,
+      publicMetadata: {},
+      privateMetadata: {},
+    };
+
+    expect(
+      resolveClerkRole({
+        user,
+        ownerUserId: "owner",
+        ownerEmail: "owner-at-example",
+      }),
+    ).toBe("benevole");
   });
 });
