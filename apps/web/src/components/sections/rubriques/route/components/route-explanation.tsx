@@ -1,197 +1,19 @@
 "use client";
 
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
-import type {
-  RouteTraceExclusionReason,
-  RouteTraceSelectedStop,
-} from "@/lib/route/route-trace";
-import type { RouteResponse } from "../route-types";
+import type { RouteTraceExclusionReason } from "@/lib/route/route-trace";
 import { getRouteOriginLabel } from "../route-origin";
-import { routeEventStatusLabel } from "./route-event-selector.model";
-
-type RouteExplanationProps = {
-  data: RouteResponse;
-  fr: boolean;
-};
-
-const exclusionLabels: Record<RouteTraceExclusionReason, string> = {
-  not_admissible: "non admissible",
-  unsafe_trained_only: "réservé à un bénévole formé",
-  unsafe_no_pickup: "ramassage non autorisé",
-  unsafe_missing_categories: "catégories de déchets absentes",
-  unsafe_unknown_categories: "catégories de déchets inconnues",
-  travel_budget: "hors budget de déplacement",
-  source_unavailable: "source indisponible",
-};
-
-function formatNumber(value: number, maximumFractionDigits = 2): string {
-  return new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits,
-  }).format(value);
-}
-
-function formatDistance(value: number | null): string {
-  return value === null ? "Inconnue" : `${formatNumber(value)} km`;
-}
-
-function formatDuration(value: number | null): string {
-  return value === null ? "Inconnue" : `${formatNumber(value)} min`;
-}
-
-function riskLabel(value: number): string {
-  return `${formatNumber(value, 1)}/100`;
-}
-
-function PredictionEvidence({
-  evidence,
-}: {
-  evidence: Extract<NonNullable<RouteTraceSelectedStop["evidence"]>, { family: "predicted" }>;
-}) {
-  const wasteFactors = evidence.contributions.waste.filter(
-    (item) => item.available && item.points > 0,
-  );
-  const buttFactors = evidence.contributions.cigaretteButts.filter(
-    (item) => item.available && item.points > 0,
-  );
-  const factors = [...wasteFactors, ...buttFactors]
-    .sort((left, right) => right.points - left.points || left.key.localeCompare(right.key))
-    .filter((item, index, all) => all.findIndex((candidate) => candidate.key === item.key) === index)
-    .slice(0, 6);
-  const cleanlinessCorrections = [
-    ["Déchets", evidence.cleanlinessCorrection.waste],
-    ["Mégots", evidence.cleanlinessCorrection.cigaretteButts],
-  ] as const;
-  return (
-    <section data-route-prediction-details className="mt-3 rounded-2xl border border-amber-300/25 bg-amber-500/10 p-4 text-sm text-amber-50">
-      <h6 className="font-black text-white">Zone prédite · pas un signalement observé</h6>
-      <p className="mt-2 text-xs text-amber-100/85">
-        Source {evidence.source} · modèle {evidence.modelVersion} · snapshot {evidence.snapshot.snapshotId} ({evidence.snapshot.generatedAt}).
-      </p>
-      <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-        <div><dt className="text-amber-100/65">Risque déchets</dt><dd className="font-bold">{riskLabel(evidence.wasteRisk)} · confiance {evidence.confidence.waste.level} ({formatNumber(evidence.confidence.waste.score * 100, 0)} %)</dd></div>
-        <div><dt className="text-amber-100/65">Risque mégots</dt><dd className="font-bold">{riskLabel(evidence.cigaretteButtRisk)} · confiance {evidence.confidence.cigaretteButts.level} ({formatNumber(evidence.confidence.cigaretteButts.score * 100, 0)} %)</dd></div>
-        <div><dt className="text-amber-100/65">Distance au corridor</dt><dd className="font-bold">{formatDistance(evidence.distanceToCorridorKm)}</dd></div>
-        <div><dt className="text-amber-100/65">Détour évalué</dt><dd className="font-bold">{formatDistance(evidence.detourDistanceKm)} · {formatDuration(evidence.detourMinutes)}</dd></div>
-      </dl>
-      {evidence.admission ? (
-        <p className="mt-3 text-xs text-amber-100/85">
-          Décision d’admission : {evidence.admission.reason === "corridor" ? "proximité raisonnable du corridor" : `opportunité forte (seuil ${riskLabel(evidence.admission.riskThreshold)}, détour maximal ${formatDuration(evidence.admission.detourLimitMinutes)})`}.
-        </p>
-      ) : null}
-      {factors.length > 0 ? (
-        <div className="mt-3">
-          <p className="text-xs font-bold text-white">Facteurs disponibles ayant contribué</p>
-          <ul className="mt-1 grid gap-1 text-xs sm:grid-cols-2">
-            {factors.map((factor) => <li key={factor.key}>{factor.label} : +{formatNumber(factor.points, 2)} points</li>)}
-          </ul>
-        </div>
-      ) : null}
-      {cleanlinessCorrections.some(([, correction]) => correction.available && correction.points < 0) ? (
-        <p className="mt-3 text-xs text-emerald-100">
-          Correction de propreté appliquée : {cleanlinessCorrections.filter(([, correction]) => correction.available && correction.points < 0).map(([label, correction]) => `${label} ${formatNumber(correction.points, 2)} points`).join(" ; ")}. Une zone très fréquentée peut donc rester moins prioritaire lorsqu’elle est historiquement propre.
-        </p>
-      ) : null}
-      {cleanlinessCorrections.some(([, correction]) => !correction.available) ? (
-        <p className="mt-3 text-xs text-amber-100/80">
-          Correction de propreté non appliquée pour les signaux indisponibles : la résolution ou le prior ne permet pas une correction fiable.
-        </p>
-      ) : null}
-      {evidence.provenanceGaps.length > 0 ? (
-        <p className="mt-3 text-xs text-amber-100/80">
-          Provenance contextuelle manquante ou indisponible pour : {evidence.provenanceGaps.map((gap) => gap.factor).join(", ")}. La confiance reflète cette limite.
-        </p>
-      ) : null}
-      <p className="mt-3 text-xs text-amber-100/75">Ces scores sont des niveaux internes de risque/pression bornés, pas des probabilités calibrées ni une mesure réelle de pollution.</p>
-    </section>
-  );
-}
-
-function MetricValue({
-  value,
-  kind,
-  measured = false,
-}: {
-  value: number | null;
-  kind: "distance" | "duration";
-  measured?: boolean;
-}) {
-  const formatted = kind === "distance" ? formatDistance(value) : formatDuration(value);
-  return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <span>{formatted}</span>
-      <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-          measured
-            ? "bg-emerald-400/15 text-emerald-200"
-            : value === null
-              ? "bg-slate-400/15 text-slate-300"
-              : "bg-amber-400/15 text-amber-200"
-        }`}
-      >
-        {measured ? "mesure réseau" : value === null ? "inconnu" : "estimé"}
-      </span>
-    </span>
-  );
-}
-
-function stopLabel(
-  stopId: string,
-  data: RouteResponse,
-  originLabel: string,
-): string {
-  if (stopId === "origin") return originLabel;
-  return data.stops.find((stop) => stop.id === stopId)?.label ?? stopId;
-}
-
-function SelectionDetail({
-  selection,
-  data,
-  originLabel,
-}: {
-  selection: RouteTraceSelectedStop;
-  data: RouteResponse;
-  originLabel: string;
-}) {
-  return (
-    <li className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h5 className="font-bold text-white">
-          Étape {selection.step} · {stopLabel(selection.id, data, originLabel)}
-        </h5>
-        <span className="text-xs font-semibold text-slate-300">
-          Score final {formatNumber(selection.combinedScore, 3)}
-        </span>
-      </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-300">{selection.reason}</p>
-      {selection.parisPressure ? (
-        <p className="mt-2 text-xs leading-relaxed text-sky-100/80">
-          Zone IRIS {selection.parisPressure.zoneId} : pression humaine structurelle {formatNumber(selection.parisPressure.humanPressure ?? 0, 3)} ; {selection.parisPressure.matchMethod === "point-in-polygon" ? "point rattaché au polygone IRIS" : `approximation par centroïde à ${formatDistance(selection.parisPressure.distanceToCentroidKm)}`}. {selection.parisPressure.approximationWarning ? `${selection.parisPressure.approximationWarning} ` : ""}Ce signal est un prior de contexte, pas une mesure de fréquentation en temps réel.
-        </p>
-      ) : null}
-      {selection.evidence?.family === "predicted" ? (
-        <PredictionEvidence evidence={selection.evidence} />
-      ) : (
-        <p className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
-          Signalement observé validé : la preuve terrain reste prioritaire sur une prédiction de risque équivalente.
-        </p>
-      )}
-      <dl className="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
-        <div>
-          <dt className="text-slate-500">Priorité normalisée</dt>
-          <dd className="font-semibold text-white">
-            {formatNumber(selection.normalizedScoreComponents.priority, 3)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">Déplacement normalisé</dt>
-          <dd className="font-semibold text-white">
-            {formatNumber(selection.normalizedScoreComponents.travel, 3)}
-          </dd>
-        </div>
-      </dl>
-    </li>
-  );
-}
+import { EventExplanation } from "./route-explanation-events";
+import {
+  exclusionLabels,
+  formatDistance,
+  formatDuration,
+  formatNumber,
+  stopLabel,
+  type RouteExplanationProps,
+} from "./route-explanation.model";
+import { PredictionSummary } from "./route-explanation-prediction";
+import { MetricValue, SelectionDetail } from "./route-explanation-stop";
 
 export function RouteExplanation({ data, fr }: RouteExplanationProps) {
   const trace = data.trace;
@@ -266,52 +88,9 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
                 ? "Événement ayant influencé un itinéraire libre"
                 : "Itinéraire libre"}
           </div>
-          {trace.eventCentered ? (
-            <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-50">
-              <h4 className="font-bold text-white">Événement choisi comme ancre</h4>
-              <p className="mt-2">
-                {trace.eventCentered.event.title} · {trace.eventCentered.event.locationLabel} · {trace.eventCentered.event.eventDate} · {routeEventStatusLabel(trace.eventCentered.temporalStatus, fr)}.
-              </p>
-              <p className="mt-1 text-xs text-amber-100/80">
-                Distance origine → événement : {formatDistance(trace.eventCentered.distanceFromOriginKm)}. Rayon d’ancrage : {formatDistance(trace.eventCentered.radiusKm)} ; poids d’ancrage : {formatNumber(trace.eventCentered.anchorWeight * 100, 0)} %.
-              </p>
-              <p className="mt-1 text-xs text-amber-100/80">
-                {trace.eventCentered.temporalStatus === "future"
-                  ? "Rôle : anticipation autour d’un événement futur ; aucune pollution n’est présentée comme observée."
-                  : trace.eventCentered.temporalStatus === "today"
-                    ? "Rôle : ancrage le jour de l’événement ; ce n’est pas un signalement de déchet."
-                    : `Rôle : ancrage post-événement${trace.eventCentered.ageDays === null ? "" : `, âge ${formatNumber(trace.eventCentered.ageDays, 1)} jour(s)`}.`}
-              </p>
-              <p className="mt-1 text-xs text-amber-100/80">
-                {trace.eventCentered.favoredCandidateIds.length} candidat(s) dans le rayon favorisé ; {trace.eventCentered.outsideAnchorRadiusCandidateIds.length} hors rayon d’ancrage. Le budget reste une contrainte dure : {formatDuration(trace.budget.consumedMinutes)} utilisé(s), {formatDuration(trace.budget.remainingMinutes)} restant(s).
-              </p>
-              {trace.eventCentered.candidateImpacts.filter((impact) =>
-                trace.eventCentered?.selectedCandidateIds.includes(impact.candidateId),
-              ).length > 0 ? (
-                <ul className="mt-2 space-y-1 text-xs text-amber-100/80">
-                  {trace.eventCentered.candidateImpacts
-                    .filter((impact) => trace.eventCentered?.selectedCandidateIds.includes(impact.candidateId))
-                    .map((impact) => (
-                      <li key={impact.candidateId}>
-                        {stopLabel(impact.candidateId, data, originLabel)} : distance événement {formatDistance(impact.distanceKm)}, contribution d’ancrage {formatNumber(impact.scoreContribution, 2)} points.
-                      </li>
-                    ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : trace.selectedStops.some((selection) => selection.eventContributions.length > 0) ? (
-            <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
-              Un ou plusieurs événements récents ont influencé la priorité d’un itinéraire libre. Leur pression reste un signal prédictif, distinct d’une observation terrain.
-            </p>
-          ) : null}
+          <EventExplanation trace={trace} data={data} originLabel={originLabel} fr={fr} />
           {trace.prediction ? (
-            <div data-route-prediction-summary className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-50">
-              <h4 className="font-bold text-white">Couche prédictive</h4>
-              <p className="mt-1 text-xs">
-                {trace.prediction.status === "unavailable" ? "Indisponible : l’itinéraire observé reste utilisable." : `${trace.prediction.zonesConsidered} zone(s) évaluée(s), ${trace.prediction.candidatesConsidered} zone(s) admissible(s), ${trace.prediction.selectedCandidateIds.length} retenue(s)`} · source {trace.prediction.source} · modèle {trace.prediction.modelVersion ?? "non disponible"}.
-              </p>
-              {trace.prediction.warnings.map((warning) => <p key={warning} className="mt-1 text-xs text-amber-100/80">État dégradé : {warning}</p>)}
-            </div>
+            <PredictionSummary prediction={trace.prediction} />
           ) : null}
         </section>
 

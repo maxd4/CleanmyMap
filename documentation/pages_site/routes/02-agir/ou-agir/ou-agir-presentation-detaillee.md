@@ -1,104 +1,84 @@
 # Où agir — Présentation détaillée
 
-## Rôle et parcours
+## Rôle et déclenchement
 
-`/sections/route` est une surface protégée du bloc Agir. Elle aide un bénévole
-à choisir où agir à partir de signalements Trash Spotter validés. Le calcul est
-toujours explicite : l'utilisateur ajuste ses préférences puis active le CTA.
-Il n'y a aucun calcul automatique au chargement.
+`/sections/route` est la surface protégée qui transforme une demande explicite
+en proposition d'itinéraire. L'utilisateur choisit ses contraintes puis active
+le calcul ; aucune recommandation automatique n'est lancée au chargement.
 
-Le contrat V1 utilisateur contient uniquement :
+Deux contextes fonctionnels sont documentés :
 
-```ts
-{
-  travelBudgetMinutes: number;
-  maxStops: number;
-  priorityVsTravel: number;
-}
-```
+- **Itinéraire libre** : l'origine sert de point de départ et les candidats
+  disponibles sont comparés dans le périmètre du calcul ;
+- **Itinéraire autour d'un événement** : lorsqu'un événement exploitable est
+  fourni, il peut servir de contexte ou d'ancre, sans devenir pour autant un
+  signalement de déchets.
 
-Les valeurs par défaut sont `60` minutes, `6` arrêts et `65` pour l'arbitrage
-priorité / déplacement. `maxStops` est borné de 1 à 12 et
-`priorityVsTravel` de 0 à 100. Le draft de `sessionStorage` ne contient que ces
-préférences ; il ne contient aucune coordonnée précise.
+## Entrées et contraintes
 
-## Origines
+Le calcul prend en compte l'origine, le temps ou budget de déplacement,
+`maxStops`, les préférences disponibles et les données terrain/contextuelles
+accessibles au moment de la demande. L'origine peut être :
 
-Le calcul peut utiliser :
+1. `browser`, demandée après l'action explicite de l'utilisateur ;
+2. `map`, choisie et modifiable sur la carte ;
+3. `approximate_saved_area`, centre approximatif résolu côté serveur.
 
-1. la position actuelle du navigateur (`browser`), demandée seulement après le
-   clic de calcul ;
-2. un point choisi sur la carte (`map`), conservé uniquement en mémoire et
-   modifiable ou réinitialisable ;
-3. le centre approximatif de la zone enregistrée (`approximate_saved_area`),
-   résolu côté serveur lorsque l'origine explicite n'est pas disponible.
+Le budget, `maxStops`, l'éligibilité et la sécurité sont des contraintes dures.
+Elles peuvent empêcher la sélection d'une zone pourtant prioritaire. Une
+origine approximative, une source indisponible ou une réponse partielle reste
+identifiée comme telle.
 
-Un refus ou une indisponibilité GPS n'empêche pas l'envoi de la requête. Si
-aucune origine de secours n'est disponible, l'API répond `422` avec l'erreur
-`A route origin is required.`. Les coordonnées précises ne sont pas écrites
-dans `sessionStorage`, `localStorage`, l'URL, le hash ou un cookie de route.
+Lorsque le contrat le propose, l'orientation de la demande peut distinguer les
+déchets et les mégots. Les deux risques restent distincts dans la couche
+prédictive et ne sont pas présentés comme une mesure réelle de pollution.
 
-## Sélection et routage
+## Candidats et priorisation
 
-Le planner part réellement de l'origine et compte origine → premier arrêt. Il
-estime la marche à 4,5 km/h, respecte strictement le budget et sélectionne au
-plus `maxStops`. Priorité et déplacement sont comparés après normalisation sur
-`[0, 1]`. Le résultat reste déterministe grâce à un ordre de départage stable.
+Un candidat **observé** correspond à une preuve terrain disponible et éligible.
+Un candidat **prédit** correspond à une zone ou cellule issue de la pression
+géospatiale ; son modèle, son millésime, sa provenance et sa confiance doivent
+rester visibles. Le centroïde d'une zone sert aux calculs de proximité ou de
+corridor et ne crée pas un spot observé artificiel.
 
-Les candidats proviennent de Trash Spotter avec statut `validated`, type
-`spot`, coordonnées présentes et hard gate bénévole conservé. Les candidats
-dangereux sont exclus fail-closed.
+La priorité peut combiner plusieurs signaux, dont le contexte urbain, les
+événements, l'historique et la proximité. Les détails de formules et de poids
+ne sont pas reproduits ici : ils sont maintenus dans la documentation
+d'architecture liée ci-dessous.
 
-FOSSGIS reçoit `[origin, stop1, stop2, ...]`. Le premier segment représente donc
-origine → premier arrêt. Si le réseau dépasse le budget, le plus long préfixe
-compatible est conservé et la géométrie fallback est reconstruite sans second
-appel FOSSGIS. Un fallback réseau déjà trop long est lui aussi réduit.
+Les exclusions pour sécurité, éligibilité, corridor, budget ou disponibilité
+sont des décisions du planner. Elles ne décrivent pas l'état réel du lieu.
 
-La géométrie `network` indique le provider et le profil piéton configuré. La
-géométrie `fallback` est explicitement estimée et ne doit pas être présentée
-comme une précision réseau.
+## Trajet et états dégradés
 
-## Réponse serveur
+Le résultat de sélection est distinct du résultat du fournisseur de routage.
+Une géométrie `network` correspond aux mesures et au tracé fournis par le
+provider. Une géométrie `fallback` ou estimée est signalée comme telle et ne
+doit pas être lue comme une précision réseau.
 
-Chaque réponse exploitable expose :
+Les états `ok`, `empty` et `degraded` rendent visibles les cas nominaux, les
+absences démontrées et les sources ou routages incomplets. `null` n'est pas
+interprété comme zéro ; l'absence d'une donnée n'est pas une preuve d'absence
+de pollution.
 
-- `status: "ok" | "empty" | "degraded"` ;
-- `origin`, `travelDistanceKm`, `travelMinutes`, `travelBudgetMinutes` et
-  `withinBudget` ;
-- `serviceMinutesEstimate: null` et `totalMinutesEstimate: null` ;
-- `generatedAt` et `engineVersion` ;
-- `diagnostics.loaded`, `eligible`, `excluded`, `selected`,
-  `sourcePartial` et `truncated` ;
-- les diagnostics détaillés du planner, le cas échéant.
+## Explicabilité et confidentialité
 
-`selected` est égal au nombre réel d'arrêts dans `stops`. `travelMinutes` ne
-peut pas dépasser `travelBudgetMinutes`.
+`Comprendre cet itinéraire` doit relier la proposition à ses éléments réels :
+origine utilisée, arrêts, budget, contraintes, statut observé/prédit,
+pression géospatiale, source et millésime prédictifs, routage réseau ou fallback
+et éventuelles approximations. Le frontend affiche la décision et ne recalcule
+pas la géographie ni le planner.
 
-Le statut vaut `ok` pour une réponse nominale, `empty` lorsque l'absence de
-point exploitable est démontrée, et `degraded` lorsque la source est partielle,
-tronquée ou que le routage repose sur un fallback significatif. Les champs
-`dataStatus`, `sourceHealth`, `isTruncated`, `scoreBreakdown`, `tradeoffs` et
-`proactiveAssistant` restent disponibles pour la compatibilité et le contexte
-opérationnel.
+Les coordonnées précises de l'origine ne sont pas persistées dans le draft de
+route, l'URL, le hash ou un cookie de route. Le refus de géolocalisation ne
+déclenche pas une recommandation implicite ; le serveur peut répondre avec une
+erreur d'origine si aucun fallback n'est disponible.
 
-## Authentification et états UX
-
-La route est protégée côté serveur. En localhost de développement, le bypass
-officiel peut fournir l'état d'authentification effectif à l'UI sans session ou
-token Clerk artificiel. Le runtime Clerk Development reste néanmoins requis
-pour initialiser l'application ; aucune clé de production n'est utilisée en
-local.
-
-La page présente un état de chargement, un état vide, une erreur d'origine et un
-état dégradé. Elle affiche sobrement l'origine effectivement utilisée, mais
-jamais ses coordonnées.
-
-## Composants et sources
+## Sources et documentation canonique
 
 - page : `apps/web/src/app/(app)/sections/route/page.tsx` ;
-- surface : `apps/web/src/components/sections/rubriques/route-section.tsx` ;
-- formulaire : `route/components/route-constraints-form.tsx` ;
-- carte et origine : `route/components/route-map.tsx` ;
-- requête et garde anti-double : `route/route-request.ts` ;
-- draft non sensible : `route/route-draft-storage.ts` ;
-- source API : `apps/web/src/app/api/route/recommend/route.ts`.
+- surface : `apps/web/src/components/sections/rubriques/route/` ;
+- API : `apps/web/src/app/api/route/recommend/` ;
+- domaine : `apps/web/src/lib/route/` ;
+- [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md) ;
+- [Créer un itinéraire](/sections/route).
