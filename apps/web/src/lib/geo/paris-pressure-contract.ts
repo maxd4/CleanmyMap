@@ -37,9 +37,17 @@ export type ParisPressureProvenance = {
   status: ParisPressureSourceStatus;
   notes: string[];
 };
+
 export type ParisPressurePoint = {
   latitude: number;
   longitude: number;
+};
+
+import type { ParisPressureGeometry } from "./paris-pressure-geometry";
+
+export type ParisPressureSpatialJoin = {
+  pointInPolygonMatches: number;
+  nearestCentroidFallbackMatches: number;
 };
 
 export type ParisPressureZone = {
@@ -48,7 +56,9 @@ export type ParisPressureZone = {
   geographicLevel: "iris" | "grid";
   arrondissementCode: string | null;
   centroid: ParisPressurePoint;
+  geometry?: ParisPressureGeometry | null;
   areaKm2: number | null;
+  spatialJoin?: ParisPressureSpatialJoin;
   signals: {
     residentPopulation: {
       population: number | null;
@@ -105,7 +115,9 @@ export type ParisPressureRawZone = {
   geographicLevel: "iris" | "grid";
   arrondissementCode?: string | null;
   centroid: ParisPressurePoint;
+  geometry?: ParisPressureGeometry | null;
   areaKm2?: number | null;
+  spatialJoin?: Partial<ParisPressureSpatialJoin>;
   residentPopulation?: number | null;
   transportStationCount?: number | null;
   transportAnnualEntrants?: number | null;

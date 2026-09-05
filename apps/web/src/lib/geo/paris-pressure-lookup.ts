@@ -3,6 +3,10 @@ import type {
   ParisPressureSnapshot,
   ParisPressureZone,
 } from "./paris-pressure-contract";
+import {
+  parisPressureDistanceKm,
+  pointInParisPressureGeometry,
+} from "./paris-pressure-geometry";
 import { routeDistanceKm } from "@/lib/route/route-planner";
 
 export const PARIS_PRESSURE_LOOKUP_RADIUS_KM = 1.5;
@@ -11,6 +15,11 @@ export const PARIS_PRESSURE_MAX_ROUTE_SCORE_BOOST = 8;
 export type ParisPressureAtPoint = {
   zoneId: string;
   zoneLabel: string;
+  geographicLevel: ParisPressureZone["geographicLevel"];
+  matchMethod: "point-in-polygon" | "nearest-centroid-fallback";
+  distanceToCentroidKm: number;
+  approximationWarning: string | null;
+  /** Kept for the existing route trace contract; this is centroid distance. */
   distanceToZoneKm: number;
   humanPressure: number | null;
   cleanlinessPrior: ParisPressureZone["signals"]["cleanlinessPrior"];
@@ -33,6 +42,26 @@ export function findNearestParisPressureZone(
 ): ParisPressureAtPoint | null {
   if (!isPointInParis(point) || snapshot.zones.length === 0) return null;
 
+  const containing = snapshot.zones
+    .filter((zone) => pointInParisPressureGeometry(point, zone.geometry))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const containingZone = containing[0];
+  if (containingZone) {
+    const distanceToCentroidKm = parisPressureDistanceKm(point, containingZone.centroid);
+    return {
+      zoneId: containingZone.id,
+      zoneLabel: containingZone.label,
+      geographicLevel: containingZone.geographicLevel,
+      matchMethod: "point-in-polygon",
+      distanceToCentroidKm,
+      approximationWarning: null,
+      distanceToZoneKm: distanceToCentroidKm,
+      humanPressure: containingZone.humanPressure,
+      cleanlinessPrior: containingZone.signals.cleanlinessPrior,
+      signals: containingZone.signals,
+    };
+  }
+
   let nearest: { zone: ParisPressureZone; distanceKm: number } | null = null;
   for (const zone of snapshot.zones) {
     const distanceKm = routeDistanceKm(point, zone.centroid);
@@ -51,6 +80,11 @@ export function findNearestParisPressureZone(
   return {
     zoneId: nearest.zone.id,
     zoneLabel: nearest.zone.label,
+    geographicLevel: nearest.zone.geographicLevel,
+    matchMethod: "nearest-centroid-fallback",
+    distanceToCentroidKm: nearest.distanceKm,
+    approximationWarning:
+      "Approximation : aucune géométrie IRIS exploitable ne contient ce point ; rattachement au centroïde dans le rayon borné.",
     distanceToZoneKm: nearest.distanceKm,
     humanPressure: nearest.zone.humanPressure,
     cleanlinessPrior: nearest.zone.signals.cleanlinessPrior,
