@@ -64,7 +64,16 @@ describe("Trash Spotter route recommendation", () => {
     expect(candidates.map((candidate) => candidate.id)).toEqual(["spot-1"]);
     expect(
       buildTrashSpotterRouteCandidates(candidates, new Date("2026-08-25")),
-    ).toHaveLength(1);
+    ).toMatchObject([{
+      id: "spot-1",
+      family: "observed",
+      evidence: {
+        family: "observed",
+        source: "trash_spotter_spots",
+        proof: "validated",
+        observedAt: "2026-08-20",
+      },
+    }]);
   });
 
   it("excludes specialized and unknown-category points from ordinary volunteer routes", () => {

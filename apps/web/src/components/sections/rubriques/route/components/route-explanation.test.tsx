@@ -5,6 +5,12 @@ import type { RouteExplanationData } from "./route-explanation.model";
 import { RouteExplanation } from "./route-explanation";
 
 function dataFor(mode: "network" | "fallback"): RouteExplanationData {
+  const observedEvidence = {
+    family: "observed" as const,
+    source: "trash_spotter_spots" as const,
+    proof: "validated" as const,
+    observedAt: "2026-08-20T10:00:00.000Z",
+  };
   return {
     planningMode: { type: "free" },
     origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
@@ -34,6 +40,8 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
         budgetBeforeMinutes: 60,
         budgetAfterMinutes: 44,
         reason: "Étape 1: sélection dans le budget.",
+        targetFamily: "observed",
+        evidence: observedEvidence,
         eventContributions: [],
         eventScoreContribution: 0,
       }] : [],
@@ -92,6 +100,22 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("aucune liste fictive de rues");
     expect(markup).not.toContain("Rue de Test");
     expect(markup).toContain("estimé");
+  });
+
+  it("shows validated observed evidence when it is available", () => {
+    const markup = renderToStaticMarkup(<RouteExplanation data={dataFor("network")} fr />);
+
+    expect(markup).toContain("Signalement observé validé");
+    expect(markup).not.toContain("Preuve terrain indisponible");
+  });
+
+  it("keeps the observed explanation fail-closed without evidence", () => {
+    const data = dataFor("network");
+    Reflect.deleteProperty(data.trace.selectedStops[0]!, "evidence");
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Preuve terrain indisponible");
+    expect(markup).not.toContain("Signalement observé validé");
   });
 
   it("distinguishes an event-centered route from a free route", () => {
