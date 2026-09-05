@@ -4,8 +4,9 @@ import type {
   RouteRecommendationOrigin,
   RouteResponse,
 } from "./route-types";
+import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
 
-export type RouteRecommendationRequest = {
+export type RouteRecommendationSubmission = {
   id: number;
   options: RouteOptions;
   origin?: RouteRecommendationOrigin;
@@ -31,11 +32,11 @@ export function createRouteRequestGate(): RouteRequestGate {
   };
 }
 
-export function createRouteRecommendationRequest(
+export function createRouteRecommendationSubmission(
   id: number,
   options: RouteOptions,
   origin?: RouteRecommendationOrigin,
-): RouteRecommendationRequest {
+): RouteRecommendationSubmission {
   return {
     id,
     options: { ...options },
@@ -70,16 +71,18 @@ export function isRouteOriginUnavailableError(error: unknown): boolean {
 }
 
 export async function fetchRouteRecommendation(
-  request: RouteRecommendationRequest,
+  request: RouteRecommendationSubmission,
   transport: typeof fetch = fetch,
 ): Promise<RouteResponse> {
+  const payload = {
+    ...request.options,
+    ...(request.origin ? { origin: request.origin } : {}),
+  } satisfies RouteRecommendationRequest;
+
   const response = await transport("/api/route/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...request.options,
-      ...(request.origin ? { origin: request.origin } : {}),
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

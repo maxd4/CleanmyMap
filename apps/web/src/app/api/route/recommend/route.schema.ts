@@ -1,6 +1,7 @@
 import { z } from "zod";
+import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
 
-export const routeRecommendationRequestSchema = z
+export const routeRecommendationRequestSchema: z.ZodType<RouteRecommendationRequest> = z
   .object({
     origin: z
       .object({
