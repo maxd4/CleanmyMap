@@ -3,6 +3,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
+import {
+  CANDIDATE_FAMILIES,
+  createCandidateMaterialization,
+  installCandidateSignalCleanup,
+} from "./candidate-lifecycle.mjs";
 
 function usage(message) {
   if (message) console.error(message);
@@ -215,39 +220,19 @@ function createCandidateGitDirectory(materialization) {
   materialization.gitDirectory = gitDirectory;
 }
 
-function cleanupMaterialization(materialization) {
-  for (const linkedPath of [...materialization.linkedPaths].reverse()) {
-    if (fs.existsSync(linkedPath)) fs.unlinkSync(linkedPath);
-  }
-  fs.rmSync(materialization.materializedRoot, { recursive: true, force: true });
-  const candidateRoot = materialization.candidateRoot || path.dirname(materialization.materializedRoot);
-  if (fs.existsSync(candidateRoot) && fs.readdirSync(candidateRoot).length === 0) {
-    fs.rmdirSync(candidateRoot);
-  }
-  const prepushRoot = path.dirname(candidateRoot);
-  if (fs.existsSync(prepushRoot) && fs.readdirSync(prepushRoot).length === 0) {
-    fs.rmdirSync(prepushRoot);
-  }
-  const validationRoot = path.dirname(prepushRoot);
-  if (fs.existsSync(validationRoot) && fs.readdirSync(validationRoot).length === 0) {
-    fs.rmdirSync(validationRoot);
-  }
-}
-
 function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDependencies = false } = {}) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", candidateRef + "^{commit}"]);
-  const candidateRoot = path.join(
+  const lifecycle = createCandidateMaterialization({
     repositoryRoot,
-    ".artifacts",
-    "validation",
-    "prepush-candidate",
-    candidateSha,
-  );
-  fs.mkdirSync(candidateRoot, { recursive: true });
-  const materializedRoot = fs.mkdtempSync(path.join(candidateRoot, ".run-"));
+    family: CANDIDATE_FAMILIES.PREPUSH,
+    key: candidateSha,
+    purpose: "dynamic-validation",
+  });
+  const { candidateRoot, materializedRoot } = lifecycle;
   const candidateTreeRoot = path.join(materializedRoot, "tree");
   const candidateIndexPath = path.join(materializedRoot, "candidate.index");
   const linkedPaths = [];
+  lifecycle.linkedPaths = linkedPaths;
   fs.mkdirSync(candidateTreeRoot);
 
   try {
@@ -297,6 +282,7 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
       env: gitEnvironment,
     });
     const materialization = {
+      ...lifecycle,
       repositoryRoot,
       candidateSha,
       candidateTreeRoot,
@@ -310,7 +296,7 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     createGitShim(materialization);
     return materialization;
   } catch (error) {
-    cleanupMaterialization({ candidateRoot, materializedRoot, linkedPaths });
+    lifecycle.cleanup(linkedPaths);
     throw error;
   }
 }
@@ -336,6 +322,7 @@ function run() {
     (command === "npm" && commandArguments.some((argument) => argument === "build")) ||
     (command === "npx" && commandArguments.includes("vercel") && commandArguments.includes("build"));
   const materialization = materializeCandidate(repositoryRoot, ref, { materializeRootDependencies });
+  const detachSignalCleanup = installCandidateSignalCleanup(materialization);
   try {
     const invocation = resolveInvocation(command);
     if (!invocation.executable) {
@@ -375,7 +362,8 @@ function run() {
     }
     return typeof result.status === "number" ? result.status : 1;
   } finally {
-    cleanupMaterialization(materialization);
+    detachSignalCleanup();
+    materialization.cleanup(materialization.linkedPaths);
   }
 }
 

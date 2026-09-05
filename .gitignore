@@ -29,6 +29,7 @@ tmp/
 output/
 # CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
 /.artifacts/validation/prepush-candidate/
+/.artifacts/validation/publication-candidate/
 /artifacts/
 **/artifacts/
 **/backups/

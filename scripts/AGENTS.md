@@ -34,6 +34,19 @@ médias et rapports présents sous `scripts/`.
   lire le WORKTREE ni ses fichiers étrangers ; les dépendances locales peuvent
     être reliées ou matérialisées temporairement sous cette racine sans modifier
     le dépôt, et l'index normal doit rester inchangé ;
+- les lifecycle de candidates doivent réutiliser le helper
+  `scripts/ci/candidate-lifecycle.mjs` et les seules racines
+  `.artifacts/validation/prepush-candidate/<sha>/` ou
+  `.artifacts/validation/publication-candidate/<run-id>/`. Toute candidate
+  porte un marqueur généré, est supprimée dans `finally` sur succès comme sur
+  erreur, détache ses junctions/liens avant la racine et vérifie son absence ;
+- `publication-candidate` est réservé aux races/divergences ou à une
+  resynchronisation de publication réellement nécessaire. Aucun nom ad hoc,
+  clone, worktree ou copie persistante n'est autorisé ; le check read-only
+  `check:candidate-lifecycle` signale les résidus sans les supprimer ;
+- un rapport de script qui crée une candidate doit indiquer
+  `CANDIDATE_CREATED`, `CANDIDATE_PATH` et `CANDIDATE_CLEANUP`. Un cleanup en
+  échec est bloquant pour un verdict final `terminé` ;
 - un outil ou une dépendance absente est un blocage `HOST_ENVIRONMENT` explicite,
   jamais un `SKIPPED_PARALLEL_CHANTIER`. Le fallback manuel matérialise `HEAD`
   comme candidat dynamique ;

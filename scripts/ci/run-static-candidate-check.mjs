@@ -3,6 +3,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
+import {
+  CANDIDATE_FAMILIES,
+  createCandidateMaterialization,
+  installCandidateSignalCleanup,
+} from "./candidate-lifecycle.mjs";
 
 function usage(message) {
   if (message) console.error(message);
@@ -114,13 +119,13 @@ function materializeGitTree(candidateTreeRoot, entries, blobs) {
 
 function materializeCandidate(repositoryRoot, candidateRef, script) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", `${candidateRef}^{commit}`]);
-  const candidateScriptRoot = path.join(repositoryRoot, ".artifacts");
-  const hadArtifactsRoot = fs.existsSync(candidateScriptRoot);
-  fs.mkdirSync(candidateScriptRoot, { recursive: true });
-
-  const materializedRoot = fs.mkdtempSync(
-    path.join(candidateScriptRoot, ".static-candidate-"),
-  );
+  const lifecycle = createCandidateMaterialization({
+    repositoryRoot,
+    family: CANDIDATE_FAMILIES.PREPUSH,
+    key: candidateSha,
+    purpose: "static-validation",
+  });
+  const { materializedRoot } = lifecycle;
   const candidateTreeRoot = path.join(materializedRoot, "tree");
   fs.mkdirSync(candidateTreeRoot);
 
@@ -135,25 +140,14 @@ function materializeCandidate(repositoryRoot, candidateRef, script) {
     materializeGitTree(candidateTreeRoot, entries, blobs);
 
     return {
+      ...lifecycle,
       candidateSha,
       candidateTreeRoot,
       materializedRoot,
-      hadArtifactsRoot,
     };
   } catch (error) {
-    fs.rmSync(materializedRoot, { recursive: true, force: true });
-    if (!hadArtifactsRoot && fs.readdirSync(candidateScriptRoot).length === 0) {
-      fs.rmdirSync(candidateScriptRoot);
-    }
+    lifecycle.cleanup();
     throw error;
-  }
-}
-
-function cleanupMaterialization(materialization) {
-  fs.rmSync(materialization.materializedRoot, { recursive: true, force: true });
-  const artifactsRoot = path.dirname(materialization.materializedRoot);
-  if (!materialization.hadArtifactsRoot && fs.readdirSync(artifactsRoot).length === 0) {
-    fs.rmdirSync(artifactsRoot);
   }
 }
 
@@ -161,6 +155,7 @@ function run() {
   const { ref, script, checkerArguments } = parseArguments();
   const repositoryRoot = path.resolve(process.cwd());
   const materialization = materializeCandidate(repositoryRoot, ref, script);
+  const detachSignalCleanup = installCandidateSignalCleanup(materialization);
 
   try {
     const candidateScriptPath = path.join(materialization.candidateTreeRoot, ...script.split("/"));
@@ -183,7 +178,8 @@ function run() {
     if (typeof result.status === "number") return result.status;
     return 1;
   } finally {
-    cleanupMaterialization(materialization);
+    detachSignalCleanup();
+    materialization.cleanup();
   }
 }
 

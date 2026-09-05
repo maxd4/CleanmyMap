@@ -109,7 +109,7 @@ test("candidate runner ignores a dirty checker and its dependency comes from the
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /candidate-check: PASS/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts")), false);
+    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -130,7 +130,7 @@ test("candidate runner fails when the candidate checker itself fails", () => {
 
     assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /candidate-check: PASS/);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts")), false);
+    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -154,7 +154,7 @@ test("candidate documentation checker scans ai-guides while a dirty checker cann
     const result = runRunner(fixtureRoot, candidateRef, checkerRelativePath);
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-    assert.equal(existsSync(join(fixtureRoot, ".artifacts")), false);
+    assert.equal(existsSync(join(fixtureRoot, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }

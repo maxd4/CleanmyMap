@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -17,7 +18,7 @@ const envTs = `const envSchema = z.object({\n  NEXT_PUBLIC_APP_URL: optionalUrl,
 const envDts = `interface ProcessEnv {\n    NEXT_PUBLIC_APP_URL?: string;\n    CLEANMYMAP_SHEET_URL?: string;\n    NODE_ENV?: string;\n}`;
 
 function createFixture(processSource) {
-  const root = mkdtempSync(path.join(repoRoot, ".artifacts", "validation", "env-contract-fixture-"));
+  const root = mkdtempSync(path.join(os.tmpdir(), "cleanmymap-env-contract-fixture-"));
   fixtureRoots.push(root);
   mkdirSync(path.join(root, "apps", "web", "src", "lib"), { recursive: true });
   writeFileSync(path.join(root, "apps", "web", ".env.local.example"), `${template}\n`, "utf8");
