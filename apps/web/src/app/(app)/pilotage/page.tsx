@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserActiveRole } from "@/lib/authz";
+import { getCurrentUserActiveRole, getCurrentUserEffectiveAccess } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -31,6 +31,9 @@ export default async function PilotageAccessPage() {
     ? await getCurrentUserActiveRole().catch(() => "anonymous" as const)
     : ("anonymous" as const);
   const profile = toProfile(role);
+  const effectiveAccess = userId
+    ? await getCurrentUserEffectiveAccess().catch(() => null)
+    : null;
 
   if (userId && profile === "admin") {
     redirect(ADMIN_ROUTE);
@@ -40,7 +43,7 @@ export default async function PilotageAccessPage() {
     return <PilotageLockedPage locale={locale} isAuthenticated={false} />;
   }
 
-  if (!["coordinateur", "max"].includes(profile)) {
+  if (!effectiveAccess?.canAccessPilotage) {
     return <PilotageRestrictedPage locale={locale} profile={profile} />;
   }
 

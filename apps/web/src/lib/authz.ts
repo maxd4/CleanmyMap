@@ -9,6 +9,7 @@ import {
 import {
   getEffectiveAccessForSessionRole,
   type EffectiveAccess,
+  type SessionRole,
 } from "./domain-language";
 import { mapBadgeIdsToBadges } from "./authz-badges";
 import {
@@ -63,7 +64,7 @@ function extractBadgeIds(metadata: ClerkMetadata): string[] {
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
-    return devBypass.role === "admin" || devBypass.role === "max"
+    return getEffectiveAccessForSessionRole(devBypass.role as SessionRole).canAccessAdminPage
       ? { ok: true, userId: devBypass.userId }
       : { ok: false, status: 403, error: "Forbidden" };
   }
@@ -73,8 +74,8 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const activeRole = await getCurrentUserActiveRole();
-  return activeRole === "admin" || activeRole === "max"
+  const access = await getCurrentUserEffectiveAccess();
+  return access.canAccessAdminPage
     ? { ok: true, userId }
     : { ok: false, status: 403, error: "Forbidden" };
 }

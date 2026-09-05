@@ -48,6 +48,7 @@ export type CtaSlot = "primary" | "secondary" | "additional";
 export type EffectiveAccess = {
   canAccessProtectedApp: boolean;
   canAccessAdminPage: boolean;
+  canAccessPilotage: boolean;
   canModerate: boolean;
   canImportActions: boolean;
   canExportActionsCsvJson: boolean;
@@ -89,11 +90,13 @@ export function getEffectiveAccessForSessionRole(
 ): EffectiveAccess {
   const isAuthenticated = activeRole !== "anonymous";
   const isAdmin = activeRole === "admin" || activeRole === "max";
+  const canAccessPilotage = activeRole === "coordinateur" || isAdmin;
   const canModerate = activeRole === "elu" || isAdmin;
 
   return {
     canAccessProtectedApp: isAuthenticated,
     canAccessAdminPage: isAdmin,
+    canAccessPilotage,
     canModerate,
     canImportActions: isAdmin,
     canExportActionsCsvJson: isAdmin,
