@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
-export const routeRecommendationRequestSchema: z.ZodType<RouteRecommendationRequest> = z
+export const routeRecommendationRequestSchema = z
   .object({
     origin: z
       .object({
@@ -23,14 +23,14 @@ export const routeRecommendationRequestSchema: z.ZodType<RouteRecommendationRequ
       .default({ type: "free" }),
     riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
   })
-  .strip();
+  .strip() satisfies z.ZodType<RouteRecommendationRequest>;
 
 export const ROUTE_RECOMMENDATION_RATE_LIMIT = {
   limit: 6,
   window: 60,
 } as const;
 
-export type RouteRecommendationOptions = z.infer<
+export type RouteRecommendationOptions = z.output<
   typeof routeRecommendationRequestSchema
 >;
 
