@@ -4,6 +4,7 @@ import type {
   ParisPressureZone,
 } from "@/lib/geo/paris-pressure-contract";
 import {
+  applyRoutePredictionFinalRoutingBudgetAudit,
   applyRoutePredictionPlannerBudgetAudit,
   applyRoutePredictionPoolAudit,
   buildRoutePlannerCandidatePool,
@@ -284,5 +285,49 @@ describe("predicted route targets", () => {
     });
     expect(withBudget.excludedByPreselection).toBe(0);
     expect(withBudget.excludedByPlannerBudget).toBe(1);
+  });
+
+  it("audite séparément une prédiction retirée par la réconciliation réseau finale", () => {
+    const summary = {
+      ...buildPredictedRouteCandidates({
+        snapshot: withZones([zone("final-budget", 48.8568, 2.3522)]),
+        origin: { latitude: 48.8566, longitude: 2.3522 },
+        travelBudgetMinutes: 60,
+      }).summary,
+      passedToPlanner: 1,
+      excludedByPreselection: 0,
+      excludedByPlannerBudget: 0,
+      preselectionExcludedCandidateIds: [],
+      finalRoutingBudgetExcludedCandidateIds: [],
+      excludedByFinalRoutingBudget: 0,
+    };
+    const audited = applyRoutePredictionFinalRoutingBudgetAudit(summary, [
+      "predicted:final-budget",
+    ]);
+
+    expect(audited.selected).toBe(0);
+    expect(audited.excludedByPreselection).toBe(0);
+    expect(audited.excludedByPlannerBudget).toBe(0);
+    expect(audited.excludedByFinalRoutingBudget).toBe(1);
+    expect(audited.finalRoutingBudgetExcludedCandidateIds).toEqual([
+      "predicted:final-budget",
+    ]);
+  });
+
+  it("ignore un candidat déjà exclu avant le routage final", () => {
+    const summary = {
+      ...buildPredictedRouteCandidates({
+        snapshot: withZones([zone("preselection", 48.8568, 2.3522)]),
+        origin: { latitude: 48.8566, longitude: 2.3522 },
+        travelBudgetMinutes: 60,
+      }).summary,
+      preselectionExcludedCandidateIds: ["predicted:preselection"],
+    };
+    const audited = applyRoutePredictionFinalRoutingBudgetAudit(summary, [
+      "predicted:preselection",
+    ]);
+
+    expect(audited.excludedByFinalRoutingBudget).toBe(0);
+    expect(audited.finalRoutingBudgetExcludedCandidateIds).toEqual([]);
   });
 });

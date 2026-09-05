@@ -107,8 +107,10 @@ export type RoutePredictionAvailability = {
   passedToPlanner: number;
   excludedByPreselection: number;
   excludedByPlannerBudget: number;
+  excludedByFinalRoutingBudget: number;
   preselectionExcludedCandidateIds: string[];
   preselectionExclusionReasons: Record<string, "preselection_bound">;
+  finalRoutingBudgetExcludedCandidateIds: string[];
   selected: number;
   selectedCandidateIds: string[];
   excludedByCorridor: number;
@@ -205,6 +207,28 @@ export function applyRoutePredictionPlannerBudgetAudit(
         .filter((evaluation) => passed.has(evaluation.candidateId) && !evaluation.feasible)
         .map((evaluation) => evaluation.candidateId),
     ).size,
+  };
+}
+
+/** Records candidates removed only after the provider measured the final route. */
+export function applyRoutePredictionFinalRoutingBudgetAudit(
+  summary: RoutePredictionSummary,
+  excludedCandidateIds: readonly string[],
+): RoutePredictionSummary {
+  const admitted = new Set(summary.admittedCandidateIds);
+  const preselectionExcluded = new Set(summary.preselectionExcludedCandidateIds);
+  const finalRoutingBudgetExcludedCandidateIds = [
+    ...new Set(
+      excludedCandidateIds.filter(
+        (candidateId) =>
+          admitted.has(candidateId) && !preselectionExcluded.has(candidateId),
+      ),
+    ),
+  ];
+  return {
+    ...summary,
+    excludedByFinalRoutingBudget: finalRoutingBudgetExcludedCandidateIds.length,
+    finalRoutingBudgetExcludedCandidateIds,
   };
 }
 
@@ -342,8 +366,10 @@ function emptySummary(
     passedToPlanner: 0,
     excludedByPreselection: 0,
     excludedByPlannerBudget: 0,
+    excludedByFinalRoutingBudget: 0,
     preselectionExcludedCandidateIds: [],
     preselectionExclusionReasons: {},
+    finalRoutingBudgetExcludedCandidateIds: [],
     selected: 0,
     selectedCandidateIds: [],
     excludedByCorridor: 0,
@@ -572,8 +598,10 @@ export function buildPredictedRouteCandidates(input: {
       passedToPlanner: 0,
       excludedByPreselection: 0,
       excludedByPlannerBudget: 0,
+      excludedByFinalRoutingBudget: 0,
       preselectionExcludedCandidateIds: [],
       preselectionExclusionReasons: {},
+      finalRoutingBudgetExcludedCandidateIds: [],
       selected: 0,
       selectedCandidateIds: [],
       excludedByCorridor,

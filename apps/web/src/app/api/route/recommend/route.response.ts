@@ -131,6 +131,7 @@ export function buildRouteRecommendationResponse(input: {
     eventSignalContext: candidateData.routeEventSignalContext ?? EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT,
     eventCenteredContext: planning.eventCenteredContext,
     predictionSummary,
+    finalRoutingReconciliation: planning.finalRoutingReconciliation,
   });
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },

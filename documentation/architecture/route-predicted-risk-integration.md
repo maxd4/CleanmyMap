@@ -44,6 +44,29 @@ Chaque identifiant écarté par la borne porte aussi la raison
 
 Une exclusion de pré-sélection n'est jamais comptée comme exclusion de budget.
 
+## Réconciliation du budget après le provider
+
+Le cycle de sélection est tracé séparément :
+
+```text
+admitted → passedToPlanner → résultat du planner → réconciliation réseau finale → selected
+```
+
+Le planner peut retenir localement un préfixe que la géométrie réseau mesure
+ensuite au-delà du budget. Les candidats retirés uniquement à cette dernière
+étape sont exposés dans `excludedByFinalRoutingBudget` et
+`finalRoutingBudgetExcludedCandidateIds`. Ils ne sont ajoutés ni à
+`excludedByPreselection`, ni à `excludedByPlannerBudget`.
+
+Lorsque le premier résultat réseau dépasse le budget et qu'un préfixe non vide
+reste possible, le provider est rappelé avec l'origine et les seuls arrêts
+conservés. Cette seconde géométrie réseau est la géométrie finale affichée.
+Elle est réservée à cette réconciliation post-provider ; elle ne sert pas à
+construire le corridor prédictif. Si cette mesure échoue, la sortie passe en
+`degraded`, utilise un fallback local explicitement signalé et conserve dans la
+trace le nombre d'appels, les arrêts avant/après et les identifiants retirés.
+Un préfixe vide n'entraîne pas de second appel.
+
 ## Statuts de données
 
 La réponse contient `dataLayers` :

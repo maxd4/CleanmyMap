@@ -73,6 +73,17 @@ export type RouteTraceSegment = {
   streetSteps: RouteGeometryStep[];
 };
 
+export type RouteFinalRoutingReconciliation = {
+  stopsBefore: number;
+  stopsAfter: number;
+  excludedCandidateIds: string[];
+  providerCalls: number;
+  firstProviderMode: RouteGeometry["mode"] | null;
+  finalGeometryMode: RouteGeometry["mode"];
+  degraded: boolean;
+  warning: string | null;
+};
+
 export type RouteRecommendationTrace = {
   engineVersion: string;
   planningMode: RoutePlanningMode;
@@ -144,6 +155,7 @@ export type RouteRecommendationTrace = {
     note: string;
   } | null;
   prediction?: RoutePredictionSummary | null;
+  finalRoutingReconciliation: RouteFinalRoutingReconciliation;
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -164,6 +176,7 @@ export type BuildRouteRecommendationTraceInput = {
   eventCenteredContext?: RouteEventCenteredContext | null;
   spatialPrior?: RouteRecommendationTrace["spatialPrior"];
   predictionSummary?: RoutePredictionSummary | null;
+  finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -308,6 +321,17 @@ export function buildRouteRecommendationTrace(
     ...eventSignalContext.warnings,
   ];
   const eventSignalUnavailable = !eventSignalContext.sourceAvailable;
+  const finalRoutingReconciliation =
+    input.finalRoutingReconciliation ?? {
+      stopsBefore: input.selectedStops.length,
+      stopsAfter: input.selectedStops.length,
+      excludedCandidateIds: [],
+      providerCalls: input.routeGeometry.mode === "network" ? 1 : 0,
+      firstProviderMode: input.routeGeometry.mode,
+      finalGeometryMode: input.routeGeometry.mode,
+      degraded: false,
+      warning: null,
+    };
 
   if (input.origin.source === "approximate_saved_area") {
     approximations.push("origine = centre approximatif de la zone enregistrée");
@@ -319,6 +343,12 @@ export function buildRouteRecommendationTrace(
   if (input.budgetPrefixApplied) {
     fallbacks.push("budget_compatible_prefix");
     warnings.push("La route initiale a été réduite au préfixe compatible avec le budget.");
+  }
+  if (finalRoutingReconciliation.degraded) {
+    fallbacks.push("final_routing_reconciliation_degraded");
+    if (finalRoutingReconciliation.warning) {
+      warnings.push(finalRoutingReconciliation.warning);
+    }
   }
   if (input.routeGeometry.mode === "network") {
     warnings.push(
@@ -419,5 +449,6 @@ export function buildRouteRecommendationTrace(
     eventCentered: input.eventCenteredContext ?? null,
     spatialPrior: input.spatialPrior ?? null,
     prediction: input.predictionSummary ?? null,
+    finalRoutingReconciliation,
   };
 }
