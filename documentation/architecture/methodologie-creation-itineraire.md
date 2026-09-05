@@ -207,24 +207,65 @@ Un fallback permet de continuer avec une information moins précise lorsque le
 contrat le prévoit. Il n’autorise pas à inventer une source, une preuve terrain
 ou une couverture réseau.
 
-## 9. Évolutions prévues
+## 9. Capacités actuelles
 
-Les sujets suivants disposent d’un emplacement architectural réservé. Ils ne
-sont pas détaillés dans cette première version et aucun calcul futur ne doit
-être présenté comme déjà disponible :
+Le socle actuellement présent sur `main` comprend :
 
-- modèle de risque séparé pour les déchets diffus et les mégots ;
-- signal et traitement des événements ;
-- couverture du nettoiement municipal et additionalité bénévole ;
-- morphologie urbaine et typologie des surfaces ;
-- météo et conditions contextuelles ;
-- durée d’intervention et estimation du temps de nettoyage ;
-- groupes, équipes et génération de plusieurs itinéraires.
+- les candidats observés et les candidats prédits, conservés dans des familles
+  distinctes ;
+- le modèle `urban-pressure-model`, qui produit séparément un risque prédit de
+  déchets diffus et un risque prédit de mégots, avec leur provenance,
+  explicabilité et état de confiance lorsqu’ils sont disponibles ;
+- l’intégration bornée de ces zones prédites au pool du planner, sans créer de
+  signalement observé artificiel ;
+- la pression événementielle chargée lorsqu’un snapshot contextuel est
+  disponible pour l’assistance de recommandation ;
+- le routage réseau et les fallbacks explicitement identifiés.
 
-Chaque évolution devra conserver la séparation entre observation, prédiction,
+Les risques et pressions restent des estimations. Ils ne sont ni des
+observations de terrain ni des probabilités calibrées de trouver des déchets.
+La pression événementielle actuellement disponible ne signifie pas qu’un mode
+de planification centré sur un événement est exposé par le contrat courant.
+
+## 10. Fondations et intégrations en cours
+
+Certaines briques sont présentes sans constituer encore une capacité de
+planification complète :
+
+- la couche `municipal-cleaning-serviceability` fournit un snapshot, un
+  contrat de preuve et des proxies de serviceabilité géométrique ; elle ne
+  mesure pas une fréquence réelle rue par rue et n’est pas encore branchée sur
+  une politique `volunteerAdditionality` du planner ;
+- les données événementielles sont chargées par l’orchestration API et peuvent
+  alimenter le contexte d’assistance, mais le contrat de requête et la
+  sélection d’un itinéraire véritablement event-centered restent à intégrer ;
+- les contrats d’explicabilité continuent d’être consolidés autour des états
+  observé, prédit, estimé et fallback.
+
+Une difficulté d’accès mécanique ou une inférence géométrique ne peut donc pas
+être lue comme une absence de nettoiement municipal.
+
+## 11. Évolutions futures
+
+Les extensions suivantes restent explicitement futures dans le périmètre
+actuel :
+
+- l’utilisation de la serviceabilité municipale pour calculer une
+  additionnalité bénévole et modifier la priorisation du planner ;
+- un mode event-centered complet, avec contrat de demande, sélection et trace
+  dédiés ;
+- la météo et les conditions dépendantes de la date ou de l’heure ;
+- la durée d’intervention et l’estimation du temps de nettoyage ;
+- les groupes, équipes et la génération de plusieurs itinéraires.
+
+Ces évolutions devront conserver la séparation entre observation, prédiction,
 décision du planner et résultat du routage. Toute modification de contrat ou
 de sémantique publique devra être documentée et versionnée avant d’être
 exposée comme une capacité disponible.
+
+Références détaillées : [modèle de risque parisien](paris-pressure-risk-model.md),
+[intégration des risques prédits](route-predicted-risk-integration.md) et
+[serviceabilité du nettoiement municipal](paris-municipal-cleaning-serviceability.md).
 
 ## Références de navigation
 
