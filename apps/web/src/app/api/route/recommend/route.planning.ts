@@ -17,12 +17,22 @@ import {
 } from "@/lib/route/route-planner";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
+import {
+  buildEventCenteredCandidates,
+  buildRouteEventCenteredContext,
+  type RouteEventCenteredAnchor,
+  type RouteEventCenteredContext,
+} from "@/lib/route/route-event-centered";
+import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
+import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
   predictionSummary: ReturnType<typeof applyRoutePredictionPoolAudit>;
   plannedStops: RoutePlannerResult["stops"];
   routeGeometry: RouteGeometry;
+  eventCenteredContext: RouteEventCenteredContext | null;
+  budgetPrefixApplied: boolean;
 };
 
 function fallbackGeometryForPrefix(
@@ -44,6 +54,9 @@ export async function planRouteRecommendation(input: {
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
+  planningMode: RoutePlanningMode;
+  eventCenteredAnchor: RouteEventCenteredAnchor | null;
+  eventSignalContext: RouteEventSignalContext;
 }): Promise<RoutePlanningResult> {
   const baselinePlannerResult = planRoute({
     origin: input.origin,
@@ -66,16 +79,28 @@ export async function planRouteRecommendation(input: {
       source: "ordered_baseline",
     },
     travelBudgetMinutes: input.travelBudgetMinutes,
+    recentEvents: [...input.eventSignalContext.candidatePressureById.values()]
+      .flatMap((pressure) => pressure.contributions)
+      .map((event) => ({
+        latitude: event.latitude,
+        longitude: event.longitude,
+        ageDays: event.ageDays,
+        attendancePressure: event.attendanceFactor,
+      })),
   });
   const comparableCandidates = [
     ...input.spatialCandidates,
     ...predictionBuild.candidates,
   ] as RoutePlannerCandidate[];
+  const eventCenteredBuild = input.eventCenteredAnchor
+    ? buildEventCenteredCandidates(comparableCandidates, input.eventCenteredAnchor)
+    : null;
+  const candidatesForPool = eventCenteredBuild?.candidates ?? comparableCandidates;
   const candidatePool = buildRoutePlannerCandidatePool({
-    observedCandidates: comparableCandidates.filter(
+    observedCandidates: candidatesForPool.filter(
       (candidate) => candidate.family !== "predicted",
     ),
-    predictedCandidates: comparableCandidates.filter(
+    predictedCandidates: candidatesForPool.filter(
       (candidate) => candidate.family === "predicted",
     ),
     maxCandidates: Math.max(input.maxStops * 2, 8),
@@ -100,6 +125,7 @@ export async function planRouteRecommendation(input: {
   );
   let plannedStops = plannerResult.stops;
   let routeGeometry = createFallbackRouteGeometry([]);
+  let budgetPrefixApplied = false;
 
   if (plannedStops.length > 0) {
     const routeCoordinates: [number, number][] = [
@@ -115,6 +141,7 @@ export async function planRouteRecommendation(input: {
     );
 
     if (routeGeometry.durationMinutes > input.travelBudgetMinutes) {
+      budgetPrefixApplied = true;
       if (routeGeometry.mode === "network") {
         const prefixLength = longestNetworkPrefixWithinBudget(
           routeGeometry.legs,
@@ -137,5 +164,20 @@ export async function planRouteRecommendation(input: {
     }
   }
 
-  return { plannerResult, predictionSummary, plannedStops, routeGeometry };
+  const eventCenteredContext = input.eventCenteredAnchor
+    ? buildRouteEventCenteredContext(
+        input.eventCenteredAnchor,
+        input.origin,
+        eventCenteredBuild?.impacts ?? [],
+        plannedStops.map(({ candidate }) => candidate.id),
+      )
+    : null;
+  return {
+    plannerResult,
+    predictionSummary,
+    plannedStops,
+    routeGeometry,
+    eventCenteredContext,
+    budgetPrefixApplied,
+  };
 }

@@ -9,11 +9,19 @@ export type RouteNetworkGeometryProvider = Exclude<
 
 export type RouteGeometryProfile = "foot" | null;
 
+export type RouteGeometryStep = {
+  name: string | null;
+  distanceKm: number;
+  durationMinutes: number;
+  maneuver: string | null;
+};
+
 export type RouteGeometryLeg = {
   fromStopIndex: number;
   toStopIndex: number;
   distanceKm: number;
   estimatedMinutes: number;
+  steps?: RouteGeometryStep[];
 };
 
 export type RouteGeometry = {
@@ -36,6 +44,7 @@ export type RouteStop = {
   estimatedMinutes: number;
   priorityReason: string;
   score: number;
+  evidence?: import("./route-predicted-targets").RouteTargetEvidence;
 };
 
 /** Applies provider legs without ever changing the stop count or order. */

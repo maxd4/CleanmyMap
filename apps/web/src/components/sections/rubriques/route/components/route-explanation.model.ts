@@ -1,16 +1,10 @@
 import type {
   RouteTraceExclusionReason,
   RouteTraceSelectedStop,
-  RouteRecommendationTrace,
 } from "@/lib/route/route-trace";
-import type { RouteResponse } from "../route-types";
+import type { RouteResponse } from "@/lib/route/route-response-contract";
 
-export type RouteExplanationData = RouteResponse & {
-  planningMode:
-    | { type: "free" }
-    | { type: "event-centered"; eventId: string };
-  trace: RouteRecommendationTrace;
-};
+export type RouteExplanationData = RouteResponse;
 
 export type RouteExplanationProps = {
   data: RouteExplanationData;

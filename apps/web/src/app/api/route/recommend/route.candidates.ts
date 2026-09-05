@@ -8,11 +8,23 @@ import {
 import { resolveRouteDataStatus } from "@/lib/route/route-data-status";
 import { loadRouteRecommendationSource } from "@/lib/route/route-recommendation-loader";
 import { buildTrashSpotterRouteCandidates } from "@/lib/route/trash-spotter-recommendation";
+import { loadCachedRouteEventSignalContext } from "@/lib/route/route-event-pressure-loader";
+import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const EMPTY_EVENT_PRESSURE_CONTEXT = {
   pressureByArrondissement: new Map<number, number>(),
   eventSignals: [],
+};
+
+export const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
+  candidatePressureById: new Map(),
+  completedEventsConsidered: 0,
+  geolocatedCompletedEvents: 0,
+  eventsWithoutCoordinates: 0,
+  futureEventSignals: [],
+  sourceAvailable: false,
+  warnings: ["Le signal événementiel est indisponible pour ce calcul."],
 };
 
 export type RouteEventPressureContext = Awaited<
@@ -52,8 +64,10 @@ export async function loadRouteCandidateData(
   >["sourceHealth"];
   candidates: ReturnType<typeof buildTrashSpotterRouteCandidates>;
   spatialCandidates: ReturnType<typeof buildTrashSpotterRouteCandidates>;
+  actionableCandidates: ReturnType<typeof buildTrashSpotterActionableCandidates>;
   parisPressureSnapshot: ReturnType<typeof loadParisPressureSnapshot>;
   dataStatus: ReturnType<typeof resolveRouteDataStatus>;
+  routeEventSignalContext: RouteEventSignalContext;
 }> {
   const { items: contracts, isTruncated, sourceHealth } =
     await loadRouteRecommendationSource(supabase, {
@@ -62,7 +76,23 @@ export async function loadRouteCandidateData(
     });
 
   const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
-  const candidates = buildTrashSpotterRouteCandidates(actionableCandidates);
+  const routeEventSignalContext = await loadCachedRouteEventSignalContext(
+    () => supabase,
+    actionableCandidates,
+  ).catch((eventSignalError: unknown) => {
+    console.warn(
+      "Route recommendation event signal unavailable; continuing without it",
+      {
+        message: eventSignalError instanceof Error ? eventSignalError.message : String(eventSignalError),
+      },
+    );
+    return EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT;
+  });
+  const candidates = buildTrashSpotterRouteCandidates(
+    actionableCandidates,
+    new Date(),
+    routeEventSignalContext.candidatePressureById,
+  );
   const parisPressureSnapshot = loadParisPressureSnapshot();
   const spatialCandidates = parisPressureSnapshot
     ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
@@ -79,7 +109,9 @@ export async function loadRouteCandidateData(
     sourceHealth,
     candidates,
     spatialCandidates,
+    actionableCandidates,
     parisPressureSnapshot,
     dataStatus,
+    routeEventSignalContext,
   };
 }

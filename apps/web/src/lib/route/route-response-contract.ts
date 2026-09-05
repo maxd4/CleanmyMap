@@ -6,6 +6,8 @@ import type {
 } from "./route-data-status";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RouteGeometry, RouteStop } from "./route-contract";
+import type { RouteRecommendationTrace } from "./route-trace";
+import type { RoutePlanningMode } from "./route-planning-mode";
 
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
@@ -14,6 +16,8 @@ export type RouteRecommendationRequest = {
   maxStops?: number;
   priorityVsTravel?: number;
   priorityVsDistance?: number;
+  planningMode?: RoutePlanningMode;
+  riskFocus?: "all" | "waste" | "cigaretteButts";
 };
 
 export type RouteOptions = {
@@ -37,6 +41,7 @@ export type RouteRecommendationOrigin = {
 export type RouteOriginMode = "browser" | "map";
 
 export type RouteRecommendationResponse = {
+  planningMode: RoutePlanningMode;
   status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
   dataLayers: RouteDataLayers;
@@ -63,6 +68,7 @@ export type RouteRecommendationResponse = {
   engineVersion: string;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
+  trace: RouteRecommendationTrace;
   routeGeometry: RouteGeometry;
   scoreBreakdown: {
     priority: number;

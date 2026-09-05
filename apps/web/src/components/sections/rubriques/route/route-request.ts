@@ -3,12 +3,14 @@ import type {
   RouteOriginMode,
   RouteRecommendationOrigin,
   RouteResponse,
+  RoutePlanningMode,
 } from "./route-types";
 import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
 
 export type RouteRecommendationSubmission = {
   id: number;
   options: RouteOptions;
+  planningMode: RoutePlanningMode;
   origin?: RouteRecommendationOrigin;
 };
 
@@ -36,10 +38,13 @@ export function createRouteRecommendationSubmission(
   id: number,
   options: RouteOptions,
   origin?: RouteRecommendationOrigin,
+  planningMode: RoutePlanningMode = { type: "free" },
 ): RouteRecommendationSubmission {
   return {
     id,
     options: { ...options },
+    planningMode:
+      planningMode.type === "event-centered" ? { ...planningMode } : { type: "free" },
     ...(origin ? { origin: { ...origin } } : {}),
   };
 }
@@ -76,6 +81,7 @@ export async function fetchRouteRecommendation(
 ): Promise<RouteResponse> {
   const payload = {
     ...request.options,
+    planningMode: request.planningMode,
     ...(request.origin ? { origin: request.origin } : {}),
   } satisfies RouteRecommendationRequest;
 
