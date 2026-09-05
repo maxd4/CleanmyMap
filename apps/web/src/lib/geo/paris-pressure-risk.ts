@@ -49,13 +49,22 @@ function round(value: number): number {
   return Number(value.toFixed(3));
 }
 
+function contextSourcesForFactor(
+  context: ParisPressureRiskContext,
+  factor: ParisPressureContextFactor,
+): ParisPressureContextProvenance[] {
+  return (context.contextProvenance?.[factor] ?? []).filter(
+    (source) => source.factor === factor,
+  );
+}
+
 function sourceReliability(
   snapshot: ParisPressureSnapshot,
   factor: Factor,
   context: ParisPressureRiskContext,
 ): number {
   if (factor.contextFactor) {
-    const sources = context.contextProvenance?.[factor.contextFactor] ?? [];
+    const sources = contextSourcesForFactor(context, factor.contextFactor);
     return sources.length > 0
       ? Math.max(...sources.map((source) =>
           PARIS_PRESSURE_RISK_MODEL_CONFIG.confidence.sourceReliability[source.status],
@@ -249,8 +258,8 @@ function relevantProvenance(
       if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
     }
   }
-  const contextSources = [...contextFactors].flatMap(
-    (factor) => context.contextProvenance?.[factor] ?? [],
+  const contextSources = [...contextFactors].flatMap((factor) =>
+    contextSourcesForFactor(context, factor),
   );
   const seenSnapshot = new Set<string>();
   const relevantSnapshot = sources.filter((source) => {
@@ -290,7 +299,7 @@ function provenanceGaps(
   return factorOrder
     .filter((factor) => contextFactors.has(factor))
     .flatMap((factor) => {
-      const sources = context.contextProvenance?.[factor] ?? [];
+      const sources = contextSourcesForFactor(context, factor);
       if (sources.some((source) => source.status === "available" || source.status === "partial")) {
         return [];
       }

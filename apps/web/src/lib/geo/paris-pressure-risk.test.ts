@@ -312,6 +312,75 @@ describe("Paris pressure risk model", () => {
     expect(result.provenanceGaps).toEqual([{ factor: "eventPressure", message: "Provenance contextuelle absente" }]);
   });
 
+  it("refuse une provenance déchets placée dans le bucket événementiel", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      contextProvenance: {
+        eventPressure: [contextSource("validatedWastePressure")],
+      },
+    });
+
+    expect(result.waste.contributions.find((item) => item.key === "eventPressure")?.sourceReliability).toBe(0.5);
+    expect(result.contextProvenance).toEqual([]);
+    expect(result.provenanceGaps).toEqual([{ factor: "eventPressure", message: "Provenance contextuelle absente" }]);
+  });
+
+  it("refuse une provenance événementielle placée dans le bucket déchets", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      validatedWasteReports: 3,
+      contextProvenance: {
+        validatedWastePressure: [contextSource("eventPressure")],
+      },
+    });
+
+    expect(result.waste.contributions.find((item) => item.key === "validatedWastePressure")?.sourceReliability).toBe(0.5);
+    expect(result.contextProvenance).toEqual([]);
+    expect(result.provenanceGaps).toEqual([{ factor: "validatedWastePressure", message: "Provenance contextuelle absente" }]);
+  });
+
+  it("ne conserve dans un bucket mixte que la provenance du facteur correspondant", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const result = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      validatedWasteReports: 3,
+      contextProvenance: {
+        eventPressure: [
+          contextSource("validatedWastePressure"),
+          contextSource("eventPressure"),
+        ],
+        validatedWastePressure: [
+          contextSource("eventPressure"),
+          contextSource("validatedWastePressure"),
+        ],
+      },
+    });
+
+    expect(result.waste.contributions.find((item) => item.key === "eventPressure")?.sourceReliability).toBe(1);
+    expect(result.waste.contributions.find((item) => item.key === "validatedWastePressure")?.sourceReliability).toBe(1);
+    expect(result.contextProvenance.map((source) => source.factor)).toEqual([
+      "eventPressure",
+      "validatedWastePressure",
+    ]);
+    expect(result.provenanceGaps).toEqual([]);
+  });
+
+  it("traite un bucket composé uniquement de facteurs incorrects comme une absence de provenance", () => {
+    const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
+    const withoutProvenance = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+    });
+    const withMisplacedProvenance = estimateParisPressureRisk(zone, withZone(zone), {
+      eventPressure: 0.8,
+      contextProvenance: {
+        eventPressure: [contextSource("validatedWastePressure")],
+      },
+    });
+
+    expect(withMisplacedProvenance).toEqual(withoutProvenance);
+  });
+
   it("déduplique le gap d'un événement partagé par les deux scores", () => {
     const zone = buildZone({ cleanliness: 0.5, cleanlinessResolution: "iris" });
     const result = estimateParisPressureRisk(zone, withZone(zone), {
