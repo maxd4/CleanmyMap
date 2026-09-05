@@ -12,8 +12,6 @@ declare namespace NodeJS {
     CLERK_ALLOWED_PARTIES?: string;
     CLERK_ADMIN_USER_IDS?: string;
     CLERK_DOMAIN?: string;
-    CLERK_IMU_OWNER_EMAIL?: string;
-    CLERK_IMU_OWNER_USER_ID?: string;
     CLERK_IS_SATELLITE?: string;
     CLERK_MAX_USER_IDS?: string;
     CLERK_SATELLITE_AUTO_SYNC?: string;

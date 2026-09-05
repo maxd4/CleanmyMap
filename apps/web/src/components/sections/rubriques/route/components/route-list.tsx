@@ -44,16 +44,6 @@ export function RouteList({
                 <p className="inline-flex rounded-full border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-2.5 py-1 text-[11px] font-semibold text-emerald-50/86">
                   {item.priorityReason}
                 </p>
-                <p
-                  data-route-target-family={item.evidence?.family ?? "observed"}
-                  className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${item.evidence?.family === "predicted" ? "border border-amber-300/30 bg-amber-400/10 text-amber-100" : "border border-emerald-300/25 bg-emerald-400/10 text-emerald-100"}`}
-                >
-                  {item.evidence?.family === "predicted"
-                    ? item.evidence.dominantRisk === "cigaretteButts"
-                      ? "Zone prédite · mégots"
-                      : "Zone prédite · déchets"
-                    : "Signalement observé · validé"}
-                </p>
               </div>
               <div className="shrink-0 space-y-2 sm:text-right">
                 <p className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-3 py-2 text-sm font-medium text-emerald-100/80">

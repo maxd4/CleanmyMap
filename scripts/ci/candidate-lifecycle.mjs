@@ -204,12 +204,7 @@ export function findCandidateResidues(repositoryRoot) {
         unknown.push(keyPath);
         continue;
       }
-      const runEntries = fs.readdirSync(keyPath, { withFileTypes: true });
-      if (runEntries.length === 0) {
-        unknown.push(keyPath);
-        continue;
-      }
-      for (const runEntry of runEntries) {
+      for (const runEntry of fs.readdirSync(keyPath, { withFileTypes: true })) {
         const runPath = path.join(keyPath, runEntry.name);
         if (!runEntry.isDirectory()) {
           unknown.push(runPath);

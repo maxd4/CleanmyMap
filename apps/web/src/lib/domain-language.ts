@@ -6,32 +6,21 @@
  * - Eviter les glissements de sens entre "role", "parcours", "rubrique" et "page".
  */
 
-// Rôles ouverts, sélectionnables par tous les comptes authentifiés.
-export type OpenRole =
+// Role metier attribue a un utilisateur authentifie.
+export type Role =
   | "benevole"
   | "coordinateur"
   | "scientifique"
-  | "entreprise";
-
-// Niveau de privilège obtenu. Cette valeur est l'autorité persistée côté
-// serveur et ne doit jamais être remplacée par le rôle actif.
-export type GrantedRole =
-  | OpenRole
+  | "entreprise"
   | "elu"
   | "admin"
   | "max";
-
-// Rôle actuellement utilisé pour calculer les capabilities effectives.
-export type ActiveRole = GrantedRole;
-
-// Alias public historique : `role` signifie désormais GRANTED_ROLE.
-export type Role = GrantedRole;
 
 // Role de session (inclut l'etat non connecte).
 export type SessionRole = Role | "anonymous";
 
 // Parcours produit: lens de navigation appliquee a un role.
-export type Parcours = ActiveRole;
+export type Parcours = Role;
 
 // Espace stable de navigation transverse.
 export type Espace = "execute" | "supervise" | "decide" | "prepare";
@@ -48,7 +37,6 @@ export type CtaSlot = "primary" | "secondary" | "additional";
 export type EffectiveAccess = {
   canAccessProtectedApp: boolean;
   canAccessAdminPage: boolean;
-  canAccessPilotage: boolean;
   canModerate: boolean;
   canImportActions: boolean;
   canExportActionsCsvJson: boolean;
@@ -86,18 +74,15 @@ export const DOMAIN_GLOSSARY: Record<
  * Attention: ce mapping decrit l'etat reel d'implementation, pas l'intention produit cible.
  */
 export function getEffectiveAccessForSessionRole(
-  activeRole: SessionRole,
+  role: SessionRole,
 ): EffectiveAccess {
-  const isAuthenticated = activeRole !== "anonymous";
-  const isAdmin = activeRole === "admin" || activeRole === "max";
-  const canAccessPilotage = activeRole === "coordinateur" || isAdmin;
-  const canModerate = activeRole === "elu" || isAdmin;
+  const isAuthenticated = role !== "anonymous";
+  const isAdmin = role === "admin" || role === "max";
 
   return {
     canAccessProtectedApp: isAuthenticated,
     canAccessAdminPage: isAdmin,
-    canAccessPilotage,
-    canModerate,
+    canModerate: isAdmin,
     canImportActions: isAdmin,
     canExportActionsCsvJson: isAdmin,
     canExportCommunityFunnelCsv: isAdmin,

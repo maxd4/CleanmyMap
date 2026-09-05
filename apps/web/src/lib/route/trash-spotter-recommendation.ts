@@ -1,18 +1,11 @@
 import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { isVolunteerRouteEligible } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { formatScorePercent } from "@/lib/formatters/score";
-import type { RouteEventCandidatePressure } from "./route-event-pressure";
-import type { RouteObservedEvidence } from "./route-predicted-targets";
 
 export type TrashSpotterRouteCandidate =
   TrashSpotterActionableCandidate & {
     score: number;
     reason: string;
-    baseScore: number;
-  eventPressure: RouteEventCandidatePressure | null;
-  eventScoreContribution: number;
-  family?: "observed";
-  evidence?: RouteObservedEvidence;
   };
 
 export function distanceKm(
@@ -40,10 +33,6 @@ export function freshnessScore(
 export function buildTrashSpotterRouteCandidates(
   candidates: TrashSpotterActionableCandidate[],
   now = new Date(),
-  eventPressureByCandidateId: ReadonlyMap<
-    string,
-    RouteEventCandidatePressure
-  > = new Map(),
 ): TrashSpotterRouteCandidate[] {
   return candidates
     .filter(isVolunteerRouteEligible)
@@ -60,26 +49,11 @@ export function buildTrashSpotterRouteCandidates(
         candidate.wasteCategories.length > 0
           ? candidate.wasteCategories.join(", ")
           : "catégories non renseignées";
-      const eventPressure = eventPressureByCandidateId.get(candidate.id) ?? null;
-      const score = Math.min(100, freshness + (eventPressure?.scoreBoost ?? 0));
-      const eventReason = eventPressure
-        ? ` pression post-événement=${eventPressure.combinedPressure.toFixed(3)} (${eventPressure.contributions.length} événement(s), contribution=${eventPressure.scoreBoost.toFixed(2)}).`
-        : "";
 
       return {
         ...candidate,
-        score,
-        baseScore: freshness,
-        eventPressure,
-        eventScoreContribution: score - freshness,
-        family: "observed" as const,
-        evidence: {
-          family: "observed" as const,
-          source: "trash_spotter_spots" as const,
-          proof: "validated" as const,
-          observedAt: candidate.observedAt,
-        },
-        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}.${eventReason}`,
+        score: freshness,
+        reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}.`,
       };
     })
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));

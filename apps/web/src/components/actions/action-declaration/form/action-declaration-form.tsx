@@ -28,7 +28,6 @@ import {
   formatDraftDate,
 } from "./action-declaration-form.summary";
 import { useActionDeclarationForm } from "./use-action-declaration-form";
-import type { ActionEventPrefill } from "@/lib/actions/action-event-prefill";
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -42,7 +41,6 @@ type ActionDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
-  eventPrefill?: ActionEventPrefill | null;
   initialRecordType?: "action";
   initialActionId?: string | null;
   onReturnToChoice?: () => void;

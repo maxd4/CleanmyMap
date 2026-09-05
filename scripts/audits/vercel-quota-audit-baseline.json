@@ -2,6 +2,7 @@
   "generatedAt": "2026-08-28T11:53:41.252Z",
   "routeHandlers": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
+    "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",

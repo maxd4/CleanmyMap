@@ -25,16 +25,18 @@ describe("getDevAuthBypassSession", () => {
     vi.clearAllMocks();
   });
 
-  it("does not consult Clerk or bypass automatically on human localhost", async () => {
+  it("does not use the automatic localhost bypass when Clerk has a session", async () => {
     mocks.auth.mockResolvedValue({ userId: "user_clerk_123" });
 
     await expect(getDevAuthBypassSession()).resolves.toBeNull();
-    expect(mocks.auth).not.toHaveBeenCalled();
+    expect(mocks.auth).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps a missing human localhost session unauthenticated", async () => {
-    await expect(getDevAuthBypassSession()).resolves.toBeNull();
-    expect(mocks.auth).not.toHaveBeenCalled();
+  it("uses the automatic localhost bypass without a Clerk session", async () => {
+    await expect(getDevAuthBypassSession()).resolves.toMatchObject({
+      userId: "dev-localhost",
+    });
+    expect(mocks.auth).toHaveBeenCalledTimes(1);
   });
 
   it("uses a forced bypass even when Clerk has a session", async () => {
@@ -44,14 +46,6 @@ describe("getDevAuthBypassSession", () => {
     await expect(getDevAuthBypassSession()).resolves.toMatchObject({
       userId: "dev-localhost",
     });
-    expect(mocks.auth).not.toHaveBeenCalled();
-  });
-
-  it("does not expose a synthetic bypass on a remote host", async () => {
-    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
-    mocks.headers.mockResolvedValue(new Headers({ host: "preview.example.com" }));
-
-    await expect(getDevAuthBypassSession()).resolves.toBeNull();
     expect(mocks.auth).not.toHaveBeenCalled();
   });
 

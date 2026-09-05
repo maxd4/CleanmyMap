@@ -35,6 +35,8 @@ type DisplayNameModeResponse = {
   username: string;
   firstName: string | null;
   email: string | null;
+  role: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max";
+  activeProfile: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max";
 };
 
 function buildDisplayNameModeCacheKey(userId: string): string {
@@ -59,6 +61,8 @@ async function loadCachedDisplayNameMode(
         username: identity.username,
         firstName: identity.firstName,
         email: identity.email,
+        role: identity.role,
+        activeProfile: identity.activeProfile,
       } satisfies DisplayNameModeResponse;
     },
     ["display-name-mode", buildDisplayNameModeCacheKey(userId)],

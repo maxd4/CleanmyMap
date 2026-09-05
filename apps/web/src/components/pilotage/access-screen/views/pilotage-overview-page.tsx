@@ -1,8 +1,7 @@
 import { PAGE_COPY, buildAccessLinks } from "../access-screen-constants";
 import type { PilotageLocale } from "../access-screen-constants";
 import type { AppProfile } from "@/lib/profiles";
-import { getProfileLabel } from "@/lib/profiles";
-import { getEffectiveAccessForSessionRole } from "@/lib/domain-language";
+import { getProfileLabel, isAdminLikeProfile } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { PageHeader } from "@/components/ui/page-header";
 import { PilotageOverviewContent } from "./pilotage-overview-content";
@@ -20,7 +19,7 @@ export function PilotageOverviewPage({
 }) {
   const copy = PAGE_COPY[locale];
   const overviewLinks = buildAccessLinks(profile, locale);
-  const accessAllowed = getEffectiveAccessForSessionRole(profile).canAccessPilotage;
+  const accessAllowed = isAdminLikeProfile(profile) || profile === "coordinateur" || profile === "max";
   const pageFamily = getPageFamilyById("accueil-pilotage");
 
   return (

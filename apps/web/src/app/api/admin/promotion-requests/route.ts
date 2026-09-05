@@ -2,14 +2,13 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { env } from "@/lib/env";
-import { resolveClerkRole } from "@/lib/auth/role-resolution";
-import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
+import { extractRole } from "@/lib/auth/role-resolution";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import type { AppProfile } from "@/lib/profiles";
+import { normalizeProfileRole, type AppProfile } from "@/lib/profiles";
 import {
   getPromotionRequestById,
   listPromotionRequests,
@@ -25,20 +24,18 @@ const reviewSchema = z.object({
 });
 
 function resolveCanonicalTargetRole(user: {
-  id: string;
-  primaryEmailAddress?: { emailAddress?: string | null; verification?: { status?: string | null } | null } | null;
   publicMetadata?: Record<string, unknown> | null;
   privateMetadata?: Record<string, unknown> | null;
 }): AppProfile {
-  return resolveClerkRole({
-    user,
-    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
-    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
-  });
+  return (
+    normalizeProfileRole(extractRole(user.publicMetadata)) ??
+    normalizeProfileRole(extractRole(user.privateMetadata)) ??
+    "benevole"
+  );
 }
 
 export async function GET() {
-  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
+  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
   if (role !== "max") {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
@@ -52,7 +49,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const role = await getCurrentUserActiveRole().catch(() => "anonymous");
+  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
   if (role !== "max") {
     return adminAccessErrorJsonResponse({ ok: false, status: 403, error: "Forbidden" });
   }
@@ -109,7 +106,7 @@ export async function POST(request: Request) {
         requestId: requestRecord.id,
         status: "rejected",
         reviewedByUserId: identity.userId,
-        reviewedByRole: identity.activeRole,
+        reviewedByRole: identity.role,
       });
       if (!updated) {
         throw new Error("Promotion request status was not persisted.");
@@ -203,36 +200,6 @@ export async function POST(request: Request) {
     const targetUser = await client.users.getUser(requestRecord.submittedByUserId);
     previousRole = resolveCanonicalTargetRole(targetUser);
 
-    if (previousRole === "max") {
-      await appendAdminOperationAudit({
-        operationId,
-        at: new Date().toISOString(),
-        actorUserId: identity.userId,
-        operationType: "role_management",
-        outcome: "error",
-        targetId: requestRecord.id,
-        details: {
-          operation: "accept_promotion_request",
-          reason: parsed.data.reason,
-          targetUserId: requestRecord.submittedByUserId,
-          requestedRole: requestRecord.requestedRole,
-          previousValue: {
-            role: previousRole,
-            requestStatus: "pending_owner_review",
-          },
-          newValue: {
-            role: requestRecord.requestedRole,
-            requestStatus: "accepted",
-          },
-          stage: "clerk_lookup",
-        },
-      });
-      return NextResponse.json(
-        { error: "Le compte IMU owner ne peut pas être modifié ici." },
-        { status: 403 },
-      );
-    }
-
     stage = "clerk_update";
     const updatedUser = await client.users.updateUser(requestRecord.submittedByUserId, {
       publicMetadata: {
@@ -258,7 +225,7 @@ export async function POST(request: Request) {
       requestId: requestRecord.id,
       status: "accepted",
       reviewedByUserId: identity.userId,
-      reviewedByRole: identity.activeRole,
+      reviewedByRole: identity.role,
     });
     if (!updated) {
       throw new Error("Promotion request status was not persisted.");

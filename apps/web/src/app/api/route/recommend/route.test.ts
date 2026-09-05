@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
-
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
@@ -17,14 +15,12 @@ const buildHotspotsMock = vi.hoisted(() => vi.fn());
 const buildProactiveAssistantMock = vi.hoisted(() => vi.fn());
 const defaultRouteAssistantPayloadMock = vi.hoisted(() => vi.fn());
 const defaultRouteRecommendationFloorDateMock = vi.hoisted(() => vi.fn());
-const loadCachedRouteEventSignalContextMock = vi.hoisted(() => vi.fn());
-const loadRouteEventCenteredAnchorMock = vi.hoisted(() => vi.fn());
+const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
 const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
-const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
@@ -54,17 +50,13 @@ vi.mock("@/lib/route/route-contract", () => ({
 vi.mock("@/lib/geo/osrm-routing", () => ({
   createFallbackRouteGeometry: createFallbackRouteGeometryMock,
 }));
-vi.mock("@/lib/geo/paris-pressure-loader", () => ({
-  loadParisPressureSnapshot: loadParisPressureSnapshotMock,
-}));
 vi.mock("@/lib/route/fossgis-foot-routing", () => ({
   routePolylineThroughFossgisFoot: routePolylineThroughFossgisFootMock,
 }));
 vi.mock("@/lib/geo/paris-arrondissements", () => ({
   getTerritoryArrondissementCenter: getTerritoryArrondissementCenterMock,
 }));
-vi.mock("@/lib/route/route-planner", async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock("@/lib/route/route-planner", () => ({
   fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
   longestNetworkPrefixWithinBudget: longestNetworkPrefixWithinBudgetMock,
   planRoute: planRouteMock,
@@ -75,12 +67,7 @@ vi.mock("@/lib/route/recommendation-assistant", () => ({
   buildProactiveAssistant: buildProactiveAssistantMock,
   defaultRouteAssistantPayload: defaultRouteAssistantPayloadMock,
   defaultRouteRecommendationFloorDate: defaultRouteRecommendationFloorDateMock,
-}));
-vi.mock("@/lib/route/route-event-pressure-loader", () => ({
-  loadCachedRouteEventSignalContext: loadCachedRouteEventSignalContextMock,
-}));
-vi.mock("@/lib/route/route-event-centered-loader", () => ({
-  loadRouteEventCenteredAnchor: loadRouteEventCenteredAnchorMock,
+  loadCachedEventPressureByArrondissement: loadCachedEventPressureByArrondissementMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -140,30 +127,6 @@ function plannedStop(candidateValue = candidate, index = 0) {
   };
 }
 
-function plannerAudit(stops: ReturnType<typeof plannedStop>[]) {
-  return {
-    evaluations: [],
-    selections: stops.map((stop, index) => ({
-      candidateId: stop.candidate.id,
-      step: index + 1,
-      incrementalDistanceKm: stop.incrementalDistanceKm,
-      incrementalTravelMinutes: stop.incrementalTravelMinutes,
-      cumulativeTravelMinutes: stop.cumulativeTravelMinutes,
-      normalizedPriority: stop.candidate.score / 100,
-      normalizedTravel: 0.5,
-      combinedScore: 0.5,
-      feasible: true,
-      selectionReason: `Étape ${index + 1}: test planner`,
-    })),
-    orderingCriteria: [
-      "combined_score_desc",
-      "priority_desc",
-      "incremental_travel_asc",
-      "id_lexicographic",
-    ],
-  } as const;
-}
-
 describe("POST /api/route/recommend", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -191,17 +154,10 @@ describe("POST /api/route/recommend", () => {
     });
     getTerritoryArrondissementCenterMock.mockReturnValue({ lat: 48.86, lng: 2.36 });
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
-    loadCachedRouteEventSignalContextMock.mockResolvedValue({
-      candidatePressureById: new Map(),
-      completedEventsConsidered: 0,
-      geolocatedCompletedEvents: 0,
-      eventsWithoutCoordinates: 0,
-      futureEventSignals: [],
-      sourceAvailable: true,
-      warnings: [],
+    loadCachedEventPressureByArrondissementMock.mockResolvedValue({
+      pressureByArrondissement: new Map(),
+      eventSignals: [],
     });
-    loadRouteEventCenteredAnchorMock.mockResolvedValue(null);
-    loadParisPressureSnapshotMock.mockReturnValue(null);
     loadRouteRecommendationSourceMock.mockResolvedValue({
       items: [],
       isTruncated: false,
@@ -222,16 +178,12 @@ describe("POST /api/route/recommend", () => {
       upcomingEvents: [],
       hotspots: [],
     });
-    planRouteMock.mockImplementation((input) => {
-      const stops = input.candidates
+    planRouteMock.mockImplementation((input) => ({
+      stops: input.candidates
         .slice(0, input.maxStops)
-        .map((item: typeof candidate, index: number) => plannedStop(item, index));
-      return {
-        stops,
-        diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-        audit: plannerAudit(stops),
-      };
-    });
+        .map((item: typeof candidate, index: number) => plannedStop(item, index)),
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+    }));
     longestNetworkPrefixWithinBudgetMock.mockReturnValue(0);
     fallbackRoutePrefixWithinBudgetMock.mockImplementation(
       (_origin, stops) => stops,
@@ -338,11 +290,7 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(payload.constraintsApplied).toBeUndefined();
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
-    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
-      [],
-      expect.any(Date),
-      expect.any(Map),
-    );
+    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith([]);
   });
 
   it("passes an explicit origin and all planner options to planRoute", async () => {
@@ -362,140 +310,12 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(planRouteMock).toHaveBeenCalledWith({
       origin: explicitOrigin,
-      candidates: [
-        expect.objectContaining({
-        id: candidate.id,
-      }),
-      ],
+      candidates: [candidate],
       travelBudgetMinutes: 42,
       maxStops: 1,
       priorityVsTravel: 25,
     });
     expect((await response.json()).origin).toEqual(explicitOrigin);
-  });
-
-  it("passes event-centered planning through the canonical scoring and trace", async () => {
-    const eventId = "11111111-1111-4111-8111-111111111111";
-    const eventAnchor = {
-      id: eventId,
-      title: "Fête de quartier",
-      eventDate: "2026-09-03",
-      locationLabel: "Place de test",
-      latitude: 48.8566,
-      longitude: 2.3522,
-    } as const;
-    const farCandidate = { ...candidate, id: "far", score: 100, latitude: 48.91 };
-    const nearCandidate = { ...candidate, id: "near", score: 40, latitude: 48.857 };
-    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce(eventAnchor);
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([
-      farCandidate,
-      nearCandidate,
-    ]);
-
-    const { POST } = await import("./route");
-    const response = await POST(request({
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      planningMode: { type: "event-centered", eventId },
-      maxStops: 1,
-    }));
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(loadRouteEventCenteredAnchorMock).toHaveBeenCalledWith({}, eventId);
-    expect(planRouteMock).toHaveBeenCalledWith(expect.objectContaining({
-      candidates: expect.arrayContaining([
-        expect.objectContaining({ id: "near", eventCenteredInfluence: expect.any(Object) }),
-      ]),
-    }));
-    expect(planRouteMock.mock.calls[0]?.[0].candidates[0].id).toBe("near");
-    expect(payload.planningMode).toEqual({ type: "event-centered", eventId });
-    expect(payload.trace.eventCentered).toEqual(expect.objectContaining({
-      event: eventAnchor,
-      role: "post_event_anchor",
-      selectedCandidateIds: ["near"],
-    }));
-  });
-
-  it("refuses event-centered calculation when the selected event has no precise location", async () => {
-    const eventId = "22222222-2222-4222-8222-222222222222";
-    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce(null);
-
-    const { POST } = await import("./route");
-    const response = await POST(request({
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      planningMode: { type: "event-centered", eventId },
-    }));
-
-    expect(response.status).toBe(422);
-    expect(await response.json()).toEqual({
-      error: "A geolocated event is required for event-centered planning.",
-    });
-    expect(loadRouteRecommendationSourceMock).not.toHaveBeenCalled();
-    expect(planRouteMock).not.toHaveBeenCalled();
-  });
-
-  it("keeps a future event explicit as an anticipation anchor", async () => {
-    const eventId = "33333333-3333-4333-8333-333333333333";
-    loadRouteEventCenteredAnchorMock.mockResolvedValueOnce({
-      id: eventId,
-      title: "Événement à venir",
-      eventDate: "2026-09-06",
-      locationLabel: "Parc de test",
-      latitude: 48.8566,
-      longitude: 2.3522,
-    });
-
-    const { POST } = await import("./route");
-    const response = await POST(request({
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      planningMode: { type: "event-centered", eventId },
-    }));
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(payload.trace.eventCentered).toEqual(expect.objectContaining({
-      temporalStatus: "future",
-      role: "anticipation_anchor",
-      ageDays: null,
-    }));
-  });
-
-  it("forwards geospatial event pressure to the route candidate scoring step", async () => {
-    const eventPressure = {
-      combinedPressure: 0.75,
-      scoreBoost: 15,
-      contributions: [],
-    };
-    const pressureByCandidateId = new Map([[candidate.id, eventPressure]]);
-    const actionableCandidate = {
-      ...candidate,
-      safety: { specializationReason: null },
-    };
-    buildTrashSpotterActionableCandidatesMock.mockReturnValueOnce([
-      actionableCandidate,
-    ]);
-    loadCachedRouteEventSignalContextMock.mockResolvedValueOnce({
-      candidatePressureById: pressureByCandidateId,
-      completedEventsConsidered: 1,
-      geolocatedCompletedEvents: 1,
-      eventsWithoutCoordinates: 0,
-      futureEventSignals: [],
-      sourceAvailable: true,
-      warnings: [],
-    });
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
-
-    const { POST } = await import("./route");
-    const response = await POST(request({
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-    }));
-
-    expect(response.status).toBe(200);
-    expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
-      [actionableCandidate],
-      expect.any(Date),
-      pressureByCandidateId,
-    );
   });
 
   it("falls back to the saved arrondissement center", async () => {
@@ -529,7 +349,7 @@ describe("POST /api/route/recommend", () => {
   });
 
   it("continues the main calculation when event pressure fails", async () => {
-    loadCachedRouteEventSignalContextMock.mockRejectedValueOnce(
+    loadCachedEventPressureByArrondissementMock.mockRejectedValueOnce(
       new Error("event source unavailable"),
     );
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
@@ -541,10 +361,6 @@ describe("POST /api/route/recommend", () => {
     expect(response.status).toBe(200);
     expect(payload.dataStatus).toBe("complete");
     expect(payload.proactiveAssistant.upcomingEvents).toEqual([]);
-    expect(payload.trace.eventSignal).toEqual(expect.objectContaining({
-      sourceAvailable: false,
-    }));
-    expect(payload.trace.fallbacks).toContain("event_signal_unavailable");
     expect(trackRouteRecommendationUseMock).toHaveBeenCalledOnce();
   });
 
@@ -585,7 +401,6 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(plannedStops),
     });
     const networkGeometry = {
       ...fallbackGeometry(),
@@ -628,7 +443,6 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
-      audit: plannerAudit(plannedStops),
     });
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 70));
     fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
@@ -675,7 +489,6 @@ describe("POST /api/route/recommend", () => {
     planRouteMock.mockReturnValueOnce({
       stops: [plannedStop()],
       diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
-      audit: plannerAudit([plannedStop()]),
     });
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 8));
 
@@ -697,16 +510,6 @@ describe("POST /api/route/recommend", () => {
       totalMinutesEstimate: null,
       engineVersion: "route-planner-v1",
       generatedAt: expect.any(String),
-      trace: expect.objectContaining({
-        engineVersion: "route-planner-v1",
-        parameters: expect.objectContaining({
-          travelBudgetMinutes: 10,
-          maxStops: 6,
-          priorityVsTravel: 65,
-        }),
-        origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-        selectedStops: expect.any(Array),
-      }),
     }));
     expect(payload.diagnostics).toEqual(expect.objectContaining({
       loaded: 0,
@@ -757,8 +560,5 @@ describe("POST /api/route/recommend", () => {
     expect(unavailablePayload.status).toBe("degraded");
     expect(unavailablePayload.dataStatus).toBe("unavailable");
     expect(unavailablePayload.sourceHealth.failedSources).toEqual(["spots"]);
-    expect(unavailablePayload.trace.candidates.excludedByReason).toEqual(
-      expect.objectContaining({ source_unavailable: 1 }),
-    );
   });
 });

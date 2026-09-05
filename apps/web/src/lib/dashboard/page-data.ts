@@ -1,4 +1,4 @@
-import { getCurrentUserActiveRole } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 import { loadUserLevelRankingSummary } from "@/lib/gamification/progression-data";
@@ -50,10 +50,13 @@ export async function loadDashboardPageData({
     clerkReachable,
   }).catch(() => null);
 
-  const [role, displayMode] = await Promise.all([
+  const [identity, role, displayMode] = await Promise.all([
+    accountCompletion
+      ? Promise.resolve(null)
+      : getCurrentUserIdentity({ userId }).catch(() => null),
     accountCompletion
       ? Promise.resolve(accountCompletion.role)
-      : getCurrentUserActiveRole().catch(() => "benevole" as const),
+      : getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
   const [userLevelRanking, referralSummary] = await Promise.all([
@@ -64,7 +67,7 @@ export async function loadDashboardPageData({
   return {
     accountCompletion,
     displayMode,
-    profile: accountCompletion?.currentProfile ?? toProfile(role),
+    profile: accountCompletion?.currentProfile ?? identity?.activeProfile ?? toProfile(role),
     userLevelRanking,
     referralSummary,
     overviewPromise: loadDashboardOverviewResult(locale),

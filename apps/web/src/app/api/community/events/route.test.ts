@@ -208,13 +208,16 @@ describe("POST /api/community/events", () => {
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
-  it("creates a geolocated event without deriving coordinates from its label", async () => {
+  it("creates and reads a geolocated event without deriving coordinates from its label", async () => {
     authMock.mockResolvedValue({ userId: "organizer-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       displayName: "Organisateur",
-      email: "not-provided",
+      email: "organizer [at] example.test",
     });
-    const createdEvent = { ...event };
+    const createdEvent = {
+      ...event,
+      location_source: "manual",
+    };
     const single = vi.fn().mockResolvedValue({ data: createdEvent, error: null });
     const insert = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({ single }),

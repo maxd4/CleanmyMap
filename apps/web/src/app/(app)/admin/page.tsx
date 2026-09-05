@@ -17,7 +17,7 @@ import {
   ModerationByBlockPanel,
 } from "@/components/admin/moderation-by-block-panel";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import {
@@ -80,13 +80,12 @@ export default async function AdminPage({
     clerkReachable,
   }).catch(() => null);
 
+  const role = await getCurrentUserRoleLabel();
+  const authorizationRole = role === "anonymous" ? "benevole" : role;
   const identity = await getCurrentUserIdentity().catch(() => null);
-  const role = identity?.activeRole ?? "benevole";
-  const grantedRole = identity?.role ?? "benevole";
-  const profile = toProfile(role);
+  const profile = identity?.activeProfile ?? toProfile(authorizationRole);
   const pageFamily = resolvePageFamily("/admin");
-  const creatorIdentity =
-    role === "max" ? identity : null;
+  const creatorIdentity = role === "max" ? identity : null;
   const creatorDisplayName =
     creatorIdentity?.displayName?.trim() ||
     creatorIdentity?.firstName?.trim() ||
@@ -94,7 +93,7 @@ export default async function AdminPage({
     creatorIdentity?.handle ||
     "Administration avancée";
 
-  if (!isAdminLikeProfile(profile)) {
+  if (!isAdminLikeProfile(authorizationRole)) {
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-4xl items-center justify-center">
@@ -107,7 +106,7 @@ export default async function AdminPage({
   const adminSources = await loadAdminSources();
   const adminAlert = buildAdminAlert(adminSources);
   const metricItems = buildAdminMetricItems(adminSources);
-  const switchableProfiles = getSwitchableProfiles(grantedRole);
+  const switchableProfiles = getSwitchableProfiles(authorizationRole);
   const profileLink = buildProfileRoute(profile);
   const profileCountLabel =
     switchableProfiles.length > 1

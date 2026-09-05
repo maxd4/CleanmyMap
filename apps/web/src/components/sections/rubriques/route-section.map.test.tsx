@@ -30,8 +30,6 @@ vi.mock("./route/hooks/use-route-data", () => ({
   useRouteData: () => ({
     options: { priorityVsTravel: 65, travelBudgetMinutes: 60, maxStops: 6 },
     setOptions: vi.fn(),
-    planningMode: { type: "free" },
-    setPlanningMode: vi.fn(),
     data: undefined,
     isLoading: false,
     error: null,
@@ -54,9 +52,6 @@ vi.mock("./route/hooks/use-route-data", () => ({
   }),
 }));
 vi.mock("./route/components/route-summary-cards", () => ({ RouteSummaryCards: () => null }));
-vi.mock("./route/components/route-event-selector", () => ({
-  RouteEventSelector: () => null,
-}));
 vi.mock("./route/components/route-constraints-form", () => ({ RouteOptionsForm: () => null }));
 vi.mock("./route/components/route-assistant", () => ({ RouteAssistant: () => null }));
 vi.mock("./route/components/route-list", () => ({ RouteList: () => null }));

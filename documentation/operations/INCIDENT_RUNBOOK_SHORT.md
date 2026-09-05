@@ -14,7 +14,7 @@ Last update: 2026-04-09
 2. Confirm active deployment is `Ready` on `main` and correct project root (`apps/web`).
 3. Verify user state:
    - signed-in user exists in Clerk Live
-   - admin user has `publicMetadata.role = "admin"` after an audited IMU decision
+   - admin user has `publicMetadata.role = "admin"` or is in `CLERK_ADMIN_USER_IDS`
 
 ## 2) Auth/session incident
 Symptoms:
@@ -44,21 +44,21 @@ Symptoms:
 
 Checks:
 1. Role resolution:
-   - Clerk user metadata (`role=admin`) written by an audited IMU decision
+   - Clerk user metadata (`role=admin`) or `CLERK_ADMIN_USER_IDS`
 2. API access:
    - `POST /api/admin/moderation` should return JSON, not HTML fallback.
 3. Middleware protection:
    - `/admin` and `/api/admin/*` are protected.
 
 Immediate remediation:
-1. Re-run the IMU promotion/direct-assignment workflow; do not edit role metadata manually.
-2. Verify the corresponding audit event and Clerk metadata.
+1. Reapply admin role in Clerk Live.
+2. Ensure `CLERK_ADMIN_USER_IDS` is correct in Production env.
 3. Redeploy and retest `/admin` + moderation action.
 
 ## 3.1) Clerk Live migration note (admin continuity)
 When switching from test to live Clerk instance:
 1. Re-check admin users in Clerk Live (`publicMetadata.role = "admin"`).
-2. Re-check the audited admin metadata in Clerk Live; the allowlist is diagnostic only.
+2. Re-check `CLERK_ADMIN_USER_IDS` in Vercel Production env.
 3. Re-test admin access on a fresh browser session.
 4. If user profile fields were recreated, confirm UI fallback still resolves identity from Clerk account data.
 

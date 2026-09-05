@@ -63,12 +63,6 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      name: "route explanation",
-      testMatch: /route-explanation\.spec\.ts/,
-      dependencies: ["global setup"],
-      use: { ...devices["Desktop Chrome"] },
-    },
-    {
       name: "global teardown",
       testMatch: /global\.teardown\.ts/,
     },

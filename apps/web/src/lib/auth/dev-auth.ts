@@ -1,5 +1,5 @@
 const LOCALHOST_HOSTNAME_RE =
-  /^(localhost|127\.0\.0\.1|\[::1\]|::1)(?::\d+)?$/i;
+  /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\]|::1)(?::\d+)?$/i;
 
 function readEnvFlag(name: string): boolean {
   return process.env[name] === "1" || process.env[name] === "true";
@@ -27,16 +27,15 @@ export function isDevAuthBypassEnabled(hostname: string | null | undefined): boo
     return false;
   }
 
-  if (!isLocalhostHost(hostname)) {
-    return false;
-  }
-
   if (readEnvFlag("CMM_DISABLE_DEV_AUTH_BYPASS")) {
     return false;
   }
 
-  // Human localhost sessions use real Clerk. Codex launchers opt in explicitly.
-  return isDevAuthBypassForced();
+  if (isDevAuthBypassForced()) {
+    return true;
+  }
+
+  return isLocalhostHost(hostname);
 }
 
 export function shouldUseDevAuthBypass(params: {
@@ -55,8 +54,7 @@ export function shouldUseDevAuthBypass(params: {
 }
 
 export function getDevAuthBypassRole(): string {
-  const role = readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
-  return role === "benevole" || role === "admin" || role === "max" ? role : "benevole";
+  return readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
 }
 
 export function getDevAuthBypassUserId(): string {

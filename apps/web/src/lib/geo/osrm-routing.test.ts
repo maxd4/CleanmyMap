@@ -30,16 +30,7 @@ describe("OSRM routing capability", () => {
                 ],
               },
               legs: [
-                {
-                  distance: 1200,
-                  duration: 600,
-                  steps: [{
-                    distance: 500,
-                    duration: 240,
-                    name: "Rue de Test",
-                    maneuver: { type: "turn", modifier: "right" },
-                  }],
-                },
+                { distance: 1200, duration: 600 },
                 { distance: 600, duration: 300 },
               ],
             },
@@ -72,12 +63,6 @@ describe("OSRM routing capability", () => {
         toStopIndex: 1,
         distanceKm: 1.2,
         estimatedMinutes: 10,
-        steps: [{
-          name: "Rue de Test",
-          distanceKm: 0.5,
-          durationMinutes: 4,
-          maneuver: "turn right",
-        }],
       },
       {
         fromStopIndex: 1,
@@ -87,35 +72,6 @@ describe("OSRM routing capability", () => {
       },
     ]);
     expect(transport).toHaveBeenCalledTimes(1);
-  });
-
-  it("requests and preserves provider street steps when explicitly enabled", async () => {
-    const transport = vi.fn(async () => new Response(JSON.stringify({
-      code: "Ok",
-      routes: [{
-        distance: 100,
-        duration: 60,
-        geometry: { coordinates: [[2.3522, 48.8566], [2.3532, 48.8576]] },
-        legs: [{
-          distance: 100,
-          duration: 60,
-          steps: [{ distance: 100, duration: 60, name: "Rue des Tests" }],
-        }],
-      }],
-    }), { status: 200 }));
-
-    const result = await routePolylineThroughStreetNetwork(stops.slice(0, 2), {
-      transport,
-      steps: true,
-    });
-
-    expect(String((transport.mock.calls[0] as unknown as [RequestInfo | URL] | undefined)?.[0])).toContain("steps=true");
-    expect(result.legs[0]?.steps).toEqual([{
-      name: "Rue des Tests",
-      distanceKm: 0.1,
-      durationMinutes: 1,
-      maneuver: null,
-    }]);
   });
 
   it("supports per-call endpoint and semantic metadata without changing the default", async () => {

@@ -187,7 +187,7 @@ export async function GET(request: Request) {
 
     if (
       !canAccessChatChannel(channelType, {
-        roleLabel: identity.activeRole,
+        roleLabel: identity.role,
         hasArrondissement,
         hasGreaterParisZone,
         zoneContext,

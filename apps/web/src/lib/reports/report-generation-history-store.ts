@@ -73,11 +73,13 @@ function toHistoryRow(
 }
 
 export async function listReportGenerationHistory(
+  createdByClerkId: string,
   limit = REPORT_GENERATION_HISTORY_LIMIT,
 ): Promise<ReportGenerationHistoryRow[]> {
   const { data, error } = await getSupabaseAdminClient()
     .from("report_generations")
     .select(REPORT_GENERATION_HISTORY_METADATA_SELECT)
+    .eq("created_by_clerk_id", createdByClerkId)
     .order("generated_at", { ascending: false })
     .limit(normalizeLimit(limit));
 
@@ -92,6 +94,7 @@ export async function listReportGenerationHistory(
 
 export async function getReportGenerationSnapshotById(
   id: string,
+  createdByClerkId: string,
 ): Promise<ReportGenerationSnapshotRecord | null> {
   if (!isUuid(id)) {
     throw new InvalidReportGenerationIdError();
@@ -101,6 +104,7 @@ export async function getReportGenerationSnapshotById(
     .from("report_generations")
     .select(REPORT_GENERATION_SNAPSHOT_SELECT)
     .eq("id", id)
+    .eq("created_by_clerk_id", createdByClerkId)
     .maybeSingle();
 
   if (error) {

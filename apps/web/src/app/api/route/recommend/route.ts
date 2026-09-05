@@ -25,6 +25,7 @@ import {
   buildProactiveAssistant,
   defaultRouteAssistantPayload,
   defaultRouteRecommendationFloorDate,
+  loadCachedEventPressureByArrondissement,
 } from"@/lib/route/recommendation-assistant";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -45,22 +46,6 @@ import {
   ROUTE_PLANNER_ENGINE_VERSION,
   type RoutePlannerOrigin,
 } from "@/lib/route/route-planner";
-import { buildRouteRecommendationTrace } from "@/lib/route/route-trace";
-import { loadCachedRouteEventSignalContext } from "@/lib/route/route-event-pressure-loader";
-import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
-import {
-  buildEventCenteredCandidates,
-  buildRouteEventCenteredContext,
-  type RouteEventCenteredAnchor,
-} from "@/lib/route/route-event-centered";
-import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
-import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
-import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
-import {
-  buildPredictedRouteCandidates,
-  type RouteRiskFocus,
-} from "@/lib/route/route-predicted-targets";
 
 export const runtime ="nodejs";
 
@@ -76,14 +61,6 @@ const requestSchema = z.object({
  maxStops: z.number().int().min(1).max(12).default(6),
  priorityVsTravel: z.number().finite().min(0).max(100).optional(),
  priorityVsDistance: z.number().finite().min(0).max(100).optional(),
- planningMode: z.discriminatedUnion("type", [
-   z.object({ type: z.literal("free") }),
-   z.object({
-     type: z.literal("event-centered"),
-     eventId: z.string().uuid(),
-   }),
- ]).default({ type: "free" }),
- riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
 }).strip();
 
 const ROUTE_RECOMMENDATION_RATE_LIMIT = {
@@ -91,14 +68,9 @@ const ROUTE_RECOMMENDATION_RATE_LIMIT = {
   window: 60,
 } as const;
 
-const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
-  candidatePressureById: new Map(),
-  completedEventsConsidered: 0,
-  geolocatedCompletedEvents: 0,
-  eventsWithoutCoordinates: 0,
-  futureEventSignals: [],
-  sourceAvailable: false,
-  warnings: ["Le signal événementiel est indisponible pour ce calcul."],
+const EMPTY_EVENT_PRESSURE_CONTEXT = {
+  pressureByArrondissement: new Map<number, number>(),
+  eventSignals: [],
 };
 
 function resolveRouteOrigin(
@@ -135,48 +107,6 @@ function fallbackGeometryForPrefix(
       (stop) => [stop.latitude, stop.longitude] as [number, number],
     ),
   ]);
-}
-
-function buildRouteTraceCandidateSummary(
-  loaded: number,
-  actionableCandidates: Array<{
-    safety: { specializationReason: string | null };
-  }>,
-  admissible: number,
-  plannerResult: { diagnostics: { excludedByTravelBudget: number } },
-  sourceHealth: { partial: boolean },
-) {
-  const excludedByReason: Record<string, number> = {
-    not_admissible: Math.max(0, loaded - actionableCandidates.length),
-    unsafe_trained_only: 0,
-    unsafe_no_pickup: 0,
-    unsafe_missing_categories: 0,
-    unsafe_unknown_categories: 0,
-    travel_budget: plannerResult.diagnostics.excludedByTravelBudget,
-  };
-
-  for (const candidate of actionableCandidates) {
-    const reason = candidate.safety.specializationReason;
-    if (reason) {
-      const key = `unsafe_${reason}`;
-      excludedByReason[key] = (excludedByReason[key] ?? 0) + 1;
-    }
-  }
-
-  if (sourceHealth.partial) {
-    excludedByReason.source_unavailable = 1;
-  }
-
-  return {
-    loaded,
-    admissible,
-    excluded: Object.entries(excludedByReason).reduce(
-      (total, [reason, count]) =>
-        total + (reason === "source_unavailable" ? 0 : count),
-      0,
-    ),
-    excludedByReason,
-  };
 }
 
 export async function POST(request: Request) {
@@ -217,12 +147,24 @@ export async function POST(request: Request) {
  const options = parsed.data;
  const priorityVsTravel =
    options.priorityVsTravel ?? options.priorityVsDistance ?? 65;
- const planningMode = options.planningMode as RoutePlanningMode;
- const riskFocus = options.riskFocus as RouteRiskFocus;
 
  try {
  const supabase = getSupabaseServerClient();
- const locationPreference = await getCurrentUserLocationPreference();
+ const eventPressurePromise = loadCachedEventPressureByArrondissement(() => supabase).catch(
+   (eventPressureError: unknown) => {
+     console.warn("Route recommendation event pressure unavailable; continuing without it", {
+       message:
+         eventPressureError instanceof Error
+           ? eventPressureError.message
+           : String(eventPressureError),
+     });
+     return EMPTY_EVENT_PRESSURE_CONTEXT;
+   },
+ );
+ const [locationPreference, eventPressureContext] = await Promise.all([
+   getCurrentUserLocationPreference(),
+   eventPressurePromise,
+ ]);
  const origin = resolveRouteOrigin(
    options.origin,
    locationPreference?.arrondissement,
@@ -234,17 +176,6 @@ export async function POST(request: Request) {
    );
  }
 
- let eventAnchor: RouteEventCenteredAnchor | null = null;
- if (planningMode.type === "event-centered") {
-   eventAnchor = await loadRouteEventCenteredAnchor(supabase, planningMode.eventId);
-   if (!eventAnchor) {
-     return NextResponse.json(
-       { error: "A geolocated event is required for event-centered planning." },
-       { status: 422 },
-     );
-   }
- }
-
  const { items: contracts, isTruncated, sourceHealth } =
    await loadRouteRecommendationSource(supabase, {
  limit: 600,
@@ -252,80 +183,16 @@ export async function POST(request: Request) {
  });
 
  const actionableCandidates = buildTrashSpotterActionableCandidates(contracts);
- const eventSignalContext = await loadCachedRouteEventSignalContext(
-   () => supabase,
-   actionableCandidates,
- ).catch((eventSignalError: unknown) => {
-   console.warn("Route recommendation event signal unavailable; continuing without it", {
-     message:
-       eventSignalError instanceof Error
-         ? eventSignalError.message
-         : String(eventSignalError),
-   });
-   return EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT;
- });
  const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
  actionableCandidates,
- new Date(),
- eventSignalContext.candidatePressureById,
  );
- const parisPressureSnapshot = loadParisPressureSnapshot();
- const spatialPrior = parisPressureSnapshot
-   ? {
-       snapshotId: parisPressureSnapshot.snapshotId,
-       schemaVersion: parisPressureSnapshot.schemaVersion,
-       geographicLevel: parisPressureSnapshot.geographicLevel,
-       sourceStatus: Object.fromEntries(
-         parisPressureSnapshot.sources.map((source) => [source.family, source.status]),
-       ),
-       note: "Signal structurel versionné ; aucune source externe n'est appelée pendant le calcul.",
-     }
-   : null;
- const spatialCandidates = parisPressureSnapshot
-   ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
-   : candidates;
- const predictionEvents = new Map<string, {
-   latitude: number;
-   longitude: number;
-   ageDays: number;
-   attendancePressure: number | null;
- }>();
- for (const pressure of eventSignalContext.candidatePressureById.values()) {
-   for (const contribution of pressure.contributions) {
-     if (!predictionEvents.has(contribution.eventId)) {
-       predictionEvents.set(contribution.eventId, {
-         latitude: contribution.latitude,
-         longitude: contribution.longitude,
-         ageDays: contribution.ageDays,
-         attendancePressure: contribution.attendanceFactor,
-       });
-     }
-   }
- }
- const predictionBuild = buildPredictedRouteCandidates({
-   snapshot: parisPressureSnapshot,
-   origin,
-   observedCandidates: spatialCandidates,
-   travelBudgetMinutes: options.travelBudgetMinutes,
-   riskFocus,
-   recentEvents: [...predictionEvents.values()],
- });
- const eventCenteredCandidates = eventAnchor
-   ? buildEventCenteredCandidates(
-       [...spatialCandidates, ...predictionBuild.candidates],
-       eventAnchor,
-     )
-   : null;
- const planningCandidates = eventCenteredCandidates
-   ? eventCenteredCandidates.candidates
-   : [...spatialCandidates, ...predictionBuild.candidates];
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
    isTruncated,
    sourceHealth,
  });
 
-  const selected = planningCandidates.slice(0, Math.max(options.maxStops * 2, 8));
+  const selected = candidates.slice(0, Math.max(options.maxStops * 2, 8));
   const plannerResult = planRoute({
     origin,
     candidates: selected,
@@ -334,24 +201,7 @@ export async function POST(request: Request) {
     priorityVsTravel,
   });
   let plannedStops = plannerResult.stops;
-  let predictionSummary = {
-    ...predictionBuild.summary,
-    excludedByBudget: predictionBuild.candidates.filter((candidate) =>
-      plannerResult.audit.evaluations.some(
-        (evaluation) =>
-          evaluation.candidateId === candidate.id && !evaluation.feasible,
-      ),
-    ).length,
-  };
   let routeGeometry = createFallbackRouteGeometry([]);
-  let budgetPrefixApplied = false;
-  const candidateSummary = buildRouteTraceCandidateSummary(
-    contracts.length,
-    actionableCandidates,
-    candidates.length,
-    plannerResult,
-    sourceHealth,
-  );
 
  if (plannedStops.length === 0) {
     const status = resolveRouteRecommendationStatus({
@@ -360,7 +210,6 @@ export async function POST(request: Request) {
       routeGeometryMode: routeGeometry.mode,
     });
     return NextResponse.json({
-      planningMode,
       status,
       dataStatus,
       isTruncated,
@@ -379,38 +228,11 @@ export async function POST(request: Request) {
         selected: 0,
         sourcePartial: sourceHealth.partial,
         truncated: isTruncated,
-      ...plannerResult.diagnostics,
+        ...plannerResult.diagnostics,
       },
-      trace: buildRouteRecommendationTrace({
-        engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-        origin,
-        travelBudgetMinutes: options.travelBudgetMinutes,
-        maxStops: options.maxStops,
-        priorityVsTravel,
-        candidateSummary,
-        plannerResult,
-        selectedStops: [],
-        routeGeometry,
-        consumedTravelMinutes: 0,
-        budgetPrefixApplied,
-        sourceHealth,
-        eventSignalContext,
-        planningMode,
-        eventCenteredContext: eventAnchor
-          ? buildRouteEventCenteredContext(
-              eventAnchor,
-              origin,
-              eventCenteredCandidates?.impacts ?? [],
-              [],
-            )
-          : null,
-        spatialPrior,
-        predictionSummary,
-      }),
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
-      prediction: predictionSummary,
       routeGeometry,
       scoreBreakdown: { priority: 0, distance: 0 },
       tradeoffs: [
@@ -435,7 +257,6 @@ export async function POST(request: Request) {
   );
 
   if (routeGeometry.durationMinutes > options.travelBudgetMinutes) {
-    budgetPrefixApplied = true;
     if (routeGeometry.mode === "network") {
       const prefixLength = longestNetworkPrefixWithinBudget(
         routeGeometry.legs,
@@ -465,9 +286,8 @@ export async function POST(request: Request) {
      longitude: candidate.longitude,
      segmentKm: Number(incrementalDistanceKm.toFixed(2)),
      estimatedMinutes: Math.max(0, Math.round(incrementalTravelMinutes)),
-    priorityReason: candidate.reason,
-    score: Number(candidate.score.toFixed(2)),
-    evidence: candidate.evidence,
+     priorityReason: candidate.reason,
+     score: Number(candidate.score.toFixed(2)),
    }),
  );
  const stops = applyOriginRouteGeometryLegs(estimatedStops, routeGeometry);
@@ -483,9 +303,9 @@ export async function POST(request: Request) {
    : 0;
  const distanceScore = Math.max(0, 100 - totalDistance * 5);
  const hotspots = buildHotspots({
-   candidates,
-   pressureByArrondissement: new Map(),
-   userArrondissement: locationPreference?.arrondissement ?? null,
+ candidates,
+ pressureByArrondissement: eventPressureContext.pressureByArrondissement,
+ userArrondissement: locationPreference?.arrondissement ?? null,
  });
  const proactiveAssistant = buildProactiveAssistant({
  stops: plannedStops.map(({ candidate }) => ({
@@ -493,45 +313,12 @@ export async function POST(request: Request) {
    score: candidate.score,
  })),
  hotspots,
- eventSignals: eventSignalContext.futureEventSignals,
+ eventSignals: eventPressureContext.eventSignals,
  });
  const status = resolveRouteRecommendationStatus({
    dataStatus,
    selectedCount: plannedStops.length,
    routeGeometryMode: routeGeometry.mode,
- });
- predictionSummary = {
-   ...predictionSummary,
-   selectedCandidateIds: plannedStops
-     .filter(({ candidate }) => candidate.family === "predicted")
-     .map(({ candidate }) => candidate.id),
- };
-
- const trace = buildRouteRecommendationTrace({
-   engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-   origin,
-   travelBudgetMinutes: options.travelBudgetMinutes,
-   maxStops: options.maxStops,
-   priorityVsTravel,
-   candidateSummary,
-   plannerResult,
-   selectedStops: plannedStops,
-   routeGeometry,
-   consumedTravelMinutes: travelMinutes,
-   budgetPrefixApplied,
-   sourceHealth,
-   eventSignalContext,
-   planningMode,
-   eventCenteredContext: eventAnchor
-     ? buildRouteEventCenteredContext(
-         eventAnchor,
-         origin,
-         eventCenteredCandidates?.impacts ?? [],
-         plannedStops.map(({ candidate }) => candidate.id),
-       )
-     : null,
-   spatialPrior,
-   predictionSummary,
  });
 
  try {
@@ -547,7 +334,6 @@ export async function POST(request: Request) {
  }
 
  return NextResponse.json({
- planningMode,
  status,
  dataStatus,
  isTruncated,
@@ -559,8 +345,6 @@ export async function POST(request: Request) {
  withinBudget: travelMinutes <= options.travelBudgetMinutes,
  serviceMinutesEstimate: null,
  totalMinutesEstimate: null,
- trace,
- prediction: predictionSummary,
  diagnostics: {
    loaded: contracts.length,
    eligible: candidates.length,

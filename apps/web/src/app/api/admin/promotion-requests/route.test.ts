@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
+const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getPromotionRequestByIdMock = vi.hoisted(() => vi.fn());
 const listPromotionRequestsMock = vi.hoisted(() => vi.fn());
@@ -17,7 +17,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
+  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
   getCurrentUserIdentity: getCurrentUserIdentityMock,
 }));
 
@@ -71,13 +71,11 @@ describe("GET/POST /api/admin/promotion-requests", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    getCurrentUserActiveRoleMock.mockResolvedValue("max");
+    getCurrentUserRoleLabelMock.mockResolvedValue("max");
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "reviewer-1",
       displayName: "Reviewer",
       role: "max",
-      activeRole: "max",
-      activeProfile: "max",
     });
     getPromotionRequestByIdMock.mockResolvedValue(requestRecord);
     listPromotionRequestsMock.mockResolvedValue([requestRecord]);

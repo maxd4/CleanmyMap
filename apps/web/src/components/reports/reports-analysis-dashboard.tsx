@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
-import { DeferredAnalyticsCockpit } from "@/components/reports/deferred-analytics-cockpit";
+import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { MethodDefinition } from "@/lib/pilotage/overview.types";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
@@ -283,7 +283,7 @@ export function ReportsAnalysisDashboard({
                 <h3 className="text-sm font-black text-slate-900">Évolution de la collecte</h3>
                 <span className="text-xs text-slate-500">(12 derniers mois glissants)</span>
               </div>
-              <div className="mt-2"><DeferredAnalyticsCockpit data={monthlyData} /></div>
+              <div className="mt-2"><AnalyticsCockpit data={monthlyData} /></div>
             </div>
             <ComparisonTable kpis={summaryKpis} periodDays={periodDays} />
           </div>

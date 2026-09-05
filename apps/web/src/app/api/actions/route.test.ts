@@ -9,14 +9,14 @@ const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
 const resolveReportQueryMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
+const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
 const canModerateAnyActionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   canAutoApproveOwnAction: vi.fn(),
   canUseAdminOverride: vi.fn(),
   getCurrentUserIdentity: vi.fn(),
-  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
+  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
   pickTraceableActorName: vi.fn(),
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
@@ -153,7 +153,7 @@ describe("GET /api/actions", () => {
       status: 401,
       error: "Unauthorized",
     });
-    getCurrentUserActiveRoleMock.mockResolvedValue("benevole");
+    getCurrentUserRoleLabelMock.mockResolvedValue("benevole");
     canModerateAnyActionMock.mockReturnValue(false);
   });
 
@@ -263,7 +263,7 @@ describe("GET /api/actions", () => {
       ok: true,
       userId: "user-1",
     });
-    getCurrentUserActiveRoleMock.mockResolvedValue("benevole");
+    getCurrentUserRoleLabelMock.mockResolvedValue("benevole");
     canModerateAnyActionMock.mockReturnValue(false);
     const { GET } = await import("./route");
 
@@ -283,7 +283,7 @@ describe("GET /api/actions", () => {
         ok: true,
         userId: `${role}-1`,
       });
-      getCurrentUserActiveRoleMock.mockResolvedValue(role);
+      getCurrentUserRoleLabelMock.mockResolvedValue(role);
       canModerateAnyActionMock.mockReturnValue(true);
       const { GET } = await import("./route");
 
@@ -308,7 +308,7 @@ describe("GET /api/actions", () => {
       ok: true,
       userId: "admin-1",
     });
-      getCurrentUserActiveRoleMock.mockResolvedValue("admin");
+    getCurrentUserRoleLabelMock.mockResolvedValue("admin");
     canModerateAnyActionMock.mockReturnValue(true);
     const { GET } = await import("./route");
 

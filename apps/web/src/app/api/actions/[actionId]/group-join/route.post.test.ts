@@ -20,7 +20,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
     authMock.mockResolvedValue({ userId: "elu-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "elu", activeRole: "elu" });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "elu" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
@@ -337,7 +337,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
     authMock.mockResolvedValue({ userId: "user-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
@@ -408,7 +408,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
   it("lets an action organizer accept a pending request without admin audit", async () => {
     authMock.mockResolvedValueOnce({ userId: "organizer-1" });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
     const participants = [
       createGroupJoinParticipant({
         id: "participant-1",
@@ -466,7 +466,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
   it("lets an action organizer add a participant directly without admin audit", async () => {
     authMock.mockResolvedValueOnce({ userId: "organizer-1" });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
     groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([
       "organizer-1",
     ]);
@@ -517,7 +517,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
   it("rejects users that are not organizers or admin-like moderators", async () => {
     authMock.mockResolvedValueOnce({ userId: "user-9" });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole" });
     groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([
       "organizer-1",
     ]);

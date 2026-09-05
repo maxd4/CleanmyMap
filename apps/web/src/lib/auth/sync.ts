@@ -2,13 +2,19 @@ import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
-import { resolveClerkRole } from "@/lib/auth/role-resolution";
+import {
+  isAdminRole,
+  isMaxRole,
+  parseUserIds,
+} from "@/lib/auth/role-resolution";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
+  resolveProfile,
   type AppProfile,
   type DisplayNameMode,
 } from "@/lib/profiles";
+import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
 import {
   extractParisArrondissementFromLabel,
@@ -36,7 +42,9 @@ type ProfileRow = {
 type ProfileMetadata = Record<string, unknown> | null;
 type MetadataSource = Record<string, unknown> | null | undefined;
 type SyncRoleContext = {
-  role: ReturnType<typeof resolveClerkRole>;
+  metadataRole: string | null;
+  isAdmin: boolean;
+  isMax: boolean;
 };
 type SyncedProfileRow = Record<string, unknown> & { id: string };
 
@@ -137,14 +145,27 @@ function extractProfileMetadata(user: User): Record<string, unknown> {
 
 function resolveSyncRoleContext(
   user: User,
+  adminUserIds: Set<string>,
+  maxUserIds: Set<string>,
 ): SyncRoleContext {
-  return {
-    role: resolveClerkRole({
-      user,
-      ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
-      ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
-    }),
-  };
+  const metadataRole =
+    readMetadataString(user.publicMetadata as MetadataSource, "role") ??
+    readMetadataString(user.publicMetadata as MetadataSource, "profile") ??
+    readMetadataString(user.privateMetadata as MetadataSource, "role") ??
+    readMetadataString(user.privateMetadata as MetadataSource, "profile");
+  const isAdmin = isAdminRole({
+    publicMetadata: user.publicMetadata,
+    privateMetadata: user.privateMetadata,
+  });
+  const isMax =
+    isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
+    isMaxRole({
+      publicMetadata: user.publicMetadata,
+      privateMetadata: user.privateMetadata,
+    }) ||
+    (maxUserIds.size > 0 ? maxUserIds.has(user.id) : adminUserIds.has(user.id));
+
+  return { metadataRole, isAdmin, isMax };
 }
 
 function resolveProfileArrondissement(
@@ -502,7 +523,14 @@ export async function syncClerkUserToSupabase(
   if (!supabase) {
     return null;
   }
-  const { role: profile } = resolveSyncRoleContext(user);
+  const adminUserIds = parseUserIds(env.CLERK_ADMIN_USER_IDS);
+  const maxUserIds = parseUserIds(env.CLERK_MAX_USER_IDS);
+  const { metadataRole, isAdmin, isMax } = resolveSyncRoleContext(
+    user,
+    adminUserIds,
+    maxUserIds,
+  );
+  const profile = resolveProfile({ metadataRole, isAdmin, isMax });
   const persistedProfile = resolvePersistedProfileLabel(profile);
   const profileMetadata = extractProfileMetadata(user);
   const existingProfile = await loadExistingProfile(supabase, user.id);

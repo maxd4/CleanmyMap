@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
@@ -41,7 +41,7 @@ const validPayload = {
 describe("POST /api/reports/generations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "user-admin" });
+    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     persistReportGenerationMock.mockResolvedValue({
       id: "generation-1",
       report: validPayload.payload.title,
@@ -53,8 +53,8 @@ describe("POST /api/reports/generations", () => {
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
   });
 
-  it("denies anonymous and non-admin callers before persistence", async () => {
-    requireAdminAccessMock.mockResolvedValueOnce({
+  it("denies anonymous callers before persistence", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
       ok: false,
       status: 401,
       error: "Unauthorized",
@@ -83,7 +83,7 @@ describe("POST /api/reports/generations", () => {
 
     expect(response.status).toBe(200);
     expect(persistReportGenerationMock).toHaveBeenCalledWith({
-      createdByClerkId: "user-admin",
+      createdByClerkId: "user-1",
       input: validPayload,
     });
     await expect(response.json()).resolves.toMatchObject({
@@ -92,7 +92,7 @@ describe("POST /api/reports/generations", () => {
     });
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
     expect(appendAdminOperationAuditMock.mock.calls[0]?.[0]).toMatchObject({
-      actorUserId: "user-admin",
+      actorUserId: "user-1",
       operationType: "admin_operation",
       outcome: "success",
       targetId: "generation-1",

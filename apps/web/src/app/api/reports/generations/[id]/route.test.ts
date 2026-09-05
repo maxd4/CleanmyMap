@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
+const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
+  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
 vi.mock("@/lib/reports/report-generation-history-store", () => ({
@@ -45,12 +45,12 @@ function request() {
 describe("GET /api/reports/generations/[id]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "user-admin" });
+    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "user-1" });
     getSnapshotMock.mockResolvedValue(generation);
   });
 
   it("requires admin access before loading a snapshot", async () => {
-    requireAdminAccessMock.mockResolvedValueOnce({
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
       ok: false,
       status: 401,
       error: "Unauthorized",
@@ -66,7 +66,7 @@ describe("GET /api/reports/generations/[id]", () => {
     const response = await GET(request(), { params: Promise.resolve({ id }) });
 
     expect(response.status).toBe(200);
-    expect(getSnapshotMock).toHaveBeenCalledWith(id);
+    expect(getSnapshotMock).toHaveBeenCalledWith(id, "user-1");
     await expect(response.json()).resolves.toEqual({ generation });
   });
 

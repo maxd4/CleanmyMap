@@ -161,7 +161,7 @@ export async function POST(request: Request) {
 
     if (
       !canAccessChatChannel(parsed.data.channelType, {
-        roleLabel: identity.activeRole,
+        roleLabel: identity.role,
         hasArrondissement,
         hasGreaterParisZone,
         zoneContext,
@@ -233,7 +233,7 @@ export async function POST(request: Request) {
         recipientId = await resolveBugReportRecipientId(
           supabase,
           userId,
-          identity.activeRole,
+          identity.role,
         );
         if (!recipientId) {
           return NextResponse.json(

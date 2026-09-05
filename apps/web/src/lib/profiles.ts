@@ -1,15 +1,14 @@
 import type { Locale } from "@/lib/ui/preferences";
 import type { RubriqueSpaceId } from "@/lib/sections-registry";
-import type { ActiveRole, GrantedRole, Parcours, Role, SessionRole } from "@/lib/domain-language";
+import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { PROFILE_CTA_CONFIG, type ProfileAction } from "./profiles-cta";
 import roleAliases from "./auth/role-aliases.json";
 export type { ProfileAction, ProfileCtaConfig } from "./profiles-cta";
 
 // Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
-export type AppProfile = ActiveRole;
+export type AppProfile = Parcours;
 export type AppRoleLabel = SessionRole;
-export type AppGrantedRole = GrantedRole;
 export type DisplayNameMode = "full_name" | "pseudo";
 
 type Localized = Record<Locale, string>;
@@ -57,16 +56,15 @@ export const PROFILE_ORDER: AppProfile[] = [
   "max",
 ];
 
-export const OPEN_PROFILE_ORDER = [
+export const SELF_SERVICE_PROFILE_ORDER = [
   "benevole",
   "coordinateur",
   "scientifique",
   "entreprise",
+  "elu",
 ] as const satisfies readonly AppProfile[];
 
-export const SELF_SERVICE_PROFILE_ORDER = OPEN_PROFILE_ORDER;
-
-export type SelfServiceProfile = (typeof OPEN_PROFILE_ORDER)[number];
+export type SelfServiceProfile = (typeof SELF_SERVICE_PROFILE_ORDER)[number];
 
 export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   benevole: {
@@ -167,8 +165,7 @@ export function resolveProfile(params: {
   if (params.isAdmin) {
     return "admin";
   }
-  const normalizedRole = normalizeProfileRole(params.metadataRole);
-  return normalizedRole === "max" ? "benevole" : normalizedRole ?? "benevole";
+  return normalizeProfileRole(params.metadataRole) ?? "benevole";
 }
 
 export function toProfile(role: AppRoleLabel): AppProfile {
@@ -182,42 +179,33 @@ export function isAdminLikeProfile(profile: AppProfile): boolean {
   return profile === "admin" || profile === "max";
 }
 
-export function getSwitchableProfiles(grantedRole: Role): AppProfile[] {
-  switch (grantedRole) {
-    case "max":
-      return [...PROFILE_ORDER];
-    case "admin":
-      return [...OPEN_PROFILE_ORDER, "elu", "admin"];
-    case "elu":
-      return [...OPEN_PROFILE_ORDER, "elu"];
-    default:
-      return [...OPEN_PROFILE_ORDER];
+export function getSwitchableProfiles(
+  role: Role,
+): AppProfile[] {
+  if (role === "max") {
+    return [...PROFILE_ORDER];
   }
+  if (role === "admin") {
+    return PROFILE_ORDER.filter((item) => item !== "max");
+  }
+  if (isSelfServiceProfile(role)) {
+    return [...SELF_SERVICE_PROFILE_ORDER];
+  }
+  return [role];
 }
 
 /**
- * Resolves ACTIVE_ROLE independently from GRANTED_ROLE. Invalid or
- * non-switchable persisted values fail closed to the granted open role.
+ * Resolves the UX persona independently from the authorization role.
+ * Invalid or non-switchable persisted values fail closed to the real role.
  */
-export function resolveActiveRole(params: {
-  metadataActiveRole: string | null | undefined;
-  grantedRole: Role;
-}): AppProfile {
-  const candidate = normalizeProfileRole(params.metadataActiveRole);
-  return candidate && getSwitchableProfiles(params.grantedRole).includes(candidate)
-    ? candidate
-    : params.grantedRole;
-}
-
-/** @deprecated Use resolveActiveRole; retained for callers during migration. */
 export function resolveActiveProfile(params: {
   metadataActiveProfile: string | null | undefined;
   role: Role;
 }): AppProfile {
-  return resolveActiveRole({
-    metadataActiveRole: params.metadataActiveProfile,
-    grantedRole: params.role,
-  });
+  const candidate = normalizeProfileRole(params.metadataActiveProfile);
+  return candidate && getSwitchableProfiles(params.role).includes(candidate)
+    ? candidate
+    : params.role;
 }
 
 export function getProfileEntryPath(profile: AppProfile): string {

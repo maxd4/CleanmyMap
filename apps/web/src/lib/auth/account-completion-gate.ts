@@ -49,7 +49,7 @@ export async function loadAccountCompletionGateState(
   const role = identity?.role ?? (resolvedSession.clerkReachable
     ? await getCurrentUserRoleLabel().catch(() => ("anonymous" as const))
     : ("anonymous" as const));
-  const currentProfile = identity?.activeRole ?? toProfile(role);
+  const currentProfile = identity?.activeProfile ?? toProfile(role);
 
   if (!resolvedSession.clerkReachable) {
     return {

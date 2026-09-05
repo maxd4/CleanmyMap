@@ -6,7 +6,7 @@ import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { getCurrentUserActiveRole } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { getServerLocale } from "@/lib/server-preferences";
@@ -144,11 +144,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : null;
   const role =
     userId && clerkReachable
-      ? await getCurrentUserActiveRole().catch(() => "anonymous" as const)
+      ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
       : ("anonymous" as const);
-  const profile = toProfile(role);
-  const canAccessReportsPage = Boolean(userId);
-  const canAccessDetailedReports = isAdminLikeProfile(profile);
+  const identity = accountCompletion || !userId
+    ? null
+    : await getCurrentUserIdentity({ userId }).catch(() => null);
+  const authorizationRole = role === "anonymous" ? "benevole" : role;
+  const profile = accountCompletion?.currentProfile ?? identity?.activeProfile ?? toProfile(authorizationRole);
+  const canAccessDetailedReports = isAdminLikeProfile(authorizationRole);
   const activeTab = resolveReportsTab(
     resolvedSearchParams.tab,
     canAccessDetailedReports,
@@ -161,7 +164,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       ? "Visiteur"
       : "Visitor";
 
-  if (!canAccessReportsPage) {
+  if (!userId) {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
@@ -185,66 +188,42 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   }
 
   if (activeTab === "generation") {
-    if (canAccessDetailedReports) {
-      const [generationData, historyResult] = await Promise.all([
-        loadReportsGenerationData().catch(() => null),
-        listReportGenerationHistory()
-          .then((rows) => ({ rows, availability: "available" as const }))
-          .catch(() => ({ rows: [], availability: "unavailable" as const })),
-      ]);
+    const [generationData, historyResult] = await Promise.all([
+      loadReportsGenerationData().catch(() => null),
+      listReportGenerationHistory(userId)
+        .then((rows) => ({ rows, availability: "available" as const }))
+        .catch(() => ({ rows: [], availability: "unavailable" as const })),
+    ]);
 
-      const generationContent = generationData ? (
-        <DeferredReportsWebDocument
-          contracts={generationData.contracts}
-          isTruncated={generationData.isTruncated}
-          sourceHealth={generationData.sourceHealth}
-          communityEvents={generationData.communityEvents}
-          communityEventsAvailability={generationData.communityEventsAvailability}
-          initialRecentRows={historyResult.rows}
-          initialHistoryAvailability={historyResult.availability}
-        />
-      ) : (
-        <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
-          <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
-            Génération indisponible
-          </p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-            Le document détaillé n&apos;a pas pu être chargé
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Réessayez dans un instant. Le chargement serveur des contrats a échoué.
-          </p>
-        </section>
-      );
-
-      return (
-        <AccountCompletionGate state={accountCompletion}>
-          <ReportsPageV2Layout
-            activeTab={activeTab}
-            generationContent={generationContent}
-          />
-        </AccountCompletionGate>
-      );
-    }
+    const generationContent = generationData ? (
+      <DeferredReportsWebDocument
+        contracts={generationData.contracts}
+        isTruncated={generationData.isTruncated}
+        sourceHealth={generationData.sourceHealth}
+        communityEvents={generationData.communityEvents}
+        communityEventsAvailability={generationData.communityEventsAvailability}
+        initialRecentRows={historyResult.rows}
+        initialHistoryAvailability={historyResult.availability}
+      />
+    ) : (
+      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+        <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
+          Génération indisponible
+        </p>
+        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+          Le document détaillé n&apos;a pas pu être chargé
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Réessayez dans un instant. Le chargement serveur des contrats a échoué.
+        </p>
+      </section>
+    );
 
     return (
       <AccountCompletionGate state={accountCompletion}>
         <ReportsPageV2Layout
           activeTab={activeTab}
-          generationContent={
-            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
-                Génération réservée
-              </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-                Aperçu détaillé verrouillé
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Le document complet, les exports et les vues de génération restent réservés aux
-                profils administratifs.
-              </p>
-            </section>
-          }
+          generationContent={generationContent}
         />
       </AccountCompletionGate>
     );
@@ -282,9 +261,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         report,
         monthlyData,
         canAccessExports: canAccessDetailedReports,
-        exportRows: canAccessDetailedReports
-          ? overview.contracts.map(toReportsExportRow)
-          : null,
+        exportRows: overview.contracts.map(toReportsExportRow),
       });
     })()
   );

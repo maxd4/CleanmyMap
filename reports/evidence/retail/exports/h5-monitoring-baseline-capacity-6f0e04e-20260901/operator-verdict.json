@@ -1,0 +1,33 @@
+{
+  "schema_version": "h5-baseline-operator-export-v1",
+  "run_id": "h5-monitoring-baseline-capacity-6f0e04e-20260901",
+  "git_head": "36a1351bb5c8ad15ec35985d3381294c858840de",
+  "run_status": null,
+  "run_exit_code": 1,
+  "runner_error": "CommandNotFoundException: The term 'C:\\Users\\sophi\\Desktop\\MAXENCE\\business\\CleanmyMap-main\\scripts\\execute_retail_process.ps1' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.",
+  "runtime_status": null,
+  "runtime_read_error": null,
+  "started_at": "2026-09-01T14:29:58.8057868Z",
+  "completed_at": "2026-09-01T14:29:58.9176605Z",
+  "expected_source_count": 23,
+  "configured_workers": 6,
+  "retailer_timeout_seconds": 900,
+  "progress_interval_seconds": 30,
+  "expected_wave_count": 4,
+  "expected_scheduling_grace_seconds": 150,
+  "expected_queue_bound_seconds": 3750,
+  "expected_global_bound_seconds": 4650,
+  "included_artifacts": [],
+  "missing_optional_artifacts": [
+    "retail-alerts-baseline.json",
+    "retail-alerts-catalog-health.json",
+    "retail-alerts-source-health.json",
+    "retail-dry-run-runtime.json",
+    "retail-alerts-baseline.log"
+  ],
+  "copy_errors": [],
+  "database_included": false,
+  "secrets_included": false,
+  "notification_policy": "Telegram and Retail notifications disabled",
+  "network_policy": "canonical local Retail baseline only"
+}

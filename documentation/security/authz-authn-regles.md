@@ -66,73 +66,60 @@ Scope
 
 Ne pas créer une seconde identité canonique indépendante sans ADR.
 
-Le contrat courant sépare explicitement le niveau obtenu du rôle utilisé :
-
-```txt
-GRANTED_ROLE = identity.role       // niveau obtenu, non modifiable par le menu
-ACTIVE_ROLE  = identity.activeRole // rôle courant, source des capacités effectives
-```
-
-Les rôles ouverts sont `benevole`, `coordinateur`, `scientifique` et
-`entreprise`. Les rôles obtenus `elu`, `admin` et `max` n'ajoutent que les
-profils suivants à la liste commutable :
-
-| GRANTED_ROLE | ACTIVE_ROLE commutables |
-|---|---|
-| standard / ouvert | les quatre rôles ouverts |
-| `elu` | ouverts + `elu` |
-| `admin` | ouverts + `elu` + `admin` |
-| `max` | ouverts + `elu` + `admin` + `max` |
-
-Chaque API sensible doit évaluer `ACTIVE_ROLE` et ses capabilities effectives.
-Passer d'`admin` à `benevole`, ou d'`elu` à `scientifique`, retire
-immédiatement les capacités privilégiées sans modifier le niveau obtenu. Le
-retour vers le rôle obtenu reste autorisé par le même ensemble commutable.
-`activeProfile` est uniquement un alias UX de compatibilité et ne peut jamais
-accorder un privilège.
-
-Le vocabulaire du rôle privilégié est unifié : **IMU = rôle interne `max`**.
-L'autorité d'IMU est toutefois une identité Clerk canonique, pas une valeur de
-rôle. Chaque instance Clerk configure un couple serveur distinct
-`CLERK_IMU_OWNER_USER_ID` / `CLERK_IMU_OWNER_EMAIL`; l'accès `max` exige l'ID
-exact et l'email principal exactement correspondant avec le statut
-`verified`. Une erreur Clerk, une absence de configuration ou un mismatch
-refuse le privilège. Les métadonnées Clerk, `profiles.role_label` dans
-Supabase, `CREATOR_INBOX_EMAIL`, `CLERK_ADMIN_USER_IDS` et les alias historiques
-(`owner`, `godmode`, `creator`, `super_admin`, etc.) ne sont jamais des preuves
-suffisantes. Les alias restent uniquement acceptés à la frontière de lecture
-legacy pour les rôles non privilégiés.
-
-Le bypass `CMM_DEV_AUTH_BYPASS` est accepté seulement avec
-`NODE_ENV=development` et un hostname strictement local (`localhost`,
-`127.0.0.1` ou `[::1]`). `dev-max` est synthétique et local; `dev-admin` sert
-à tester l'administration sans réutiliser l'identité IMU. Aucun de ces comptes
-ne représente un utilisateur Clerk ou Supabase et aucun n'est accepté sur
-Preview, Production ou un hôte distant.
+Le vocabulaire du rôle privilégié est unifié : **IMU = super-admin = rôle
+interne `max`**. `max` est la valeur technique canonique, `IMU` le libellé
+produit, et `super-admin` (ainsi que `super_admin` et `superadmin`) un alias
+entrant normalisé vers `max`. Aucun de ces termes ne représente un niveau de
+permission différent. Les alias historiques `owner`, `godmode` et `creator`
+restent limités à la compatibilité d'entrée.
 
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
-## Attribution des rôles privilégiés
+### Séparation obligatoire du rôle et du profil actif
 
-`elu` et `admin` sont des `GRANTED_ROLE` obtenus. Ils ne sont jamais proposés
-comme rôles ouverts et ne sont jamais modifiables par le menu utilisateur.
-`activeRole` ne persiste qu'une vue d'utilisation et ne peut pas augmenter le
-niveau obtenu.
+L'identité courante doit exposer le contrat suivant :
 
-Deux parcours applicatifs sont autorisés :
+```ts
+role: Role                 // autorisation réelle
+activeProfile: AppProfile  // persona/navigation UX
+```
 
-1. un compte authentifié soumet une demande `elu` ou `admin`; son statut initial
-   est `pending_owner_review` et cette demande n'ajoute aucun droit;
-2. l'IMU actif, c'est-à-dire `ACTIVE_ROLE=max`, accepte ou refuse la demande,
-   ou attribue/révoque directement `elu` ou `admin` depuis la surface dédiée.
+`role` est la seule entrée autoritative pour les gardes et décisions AuthZ,
+notamment `requireAdminAccess`, `requireCreatorAccess`, `EffectiveAccess` et
+les APIs sensibles. `activeProfile` sert uniquement à choisir la navigation,
+les CTA, les libellés et les priorités de parcours.
 
-Une acceptation ou attribution directe écrit le rôle Clerk, synchronise la
-projection Supabase et produit un audit après l'effet. Aucun compte `admin` ou
-`elu` ne peut effectuer l'attribution directe, et `max` ne peut jamais être
-attribué par une API. `CLERK_ADMIN_USER_IDS` est conservée pour diagnostic et
-contrôle de configuration; elle ne constitue pas une source de
-`GRANTED_ROLE=admin`. Seuls les flux applicatifs ci-dessus peuvent écrire les
-métadonnées de rôle privilégié.
+Le profil actif est résolu après le rôle réel :
+
+```txt
+role = résolution Clerk + allowlists d'identifiants + règles d'identité
+activeProfile = activeProfile persisté si valide pour role, sinon role
+```
+
+Une valeur persistée ne peut être retenue que si elle appartient à
+`getSwitchableProfiles(role)`. Toute absence, valeur inconnue ou combinaison
+incompatible utilise `activeProfile = role`. Ce fallback protège à la fois les
+anciens comptes et les métadonnées partiellement migrées.
+
+La mutation UX canonique est `POST /api/account/active-profile`. Elle doit
+valider la session, résoudre le `role` côté serveur, vérifier la cible avec
+`getSwitchableProfiles(role)`, écrire uniquement `activeProfile` dans Clerk et
+déclencher la synchronisation canonique vers Supabase. Elle ne doit jamais
+accepter ou réécrire `role` depuis le payload client.
+
+`POST /api/account/profile-role` est une route historique retirée du parcours
+UX. Elle ne doit plus servir de sélecteur de persona ; les sessions
+authentifiées reçoivent `410` et doivent migrer vers la route dédiée.
+
+Invariants de non-régression :
+
+- aucun `benevole → admin` ou `admin → max` automatique ;
+- aucun refresh ou onboarding ne rétrograde silencieusement `admin` ou `max` ;
+- `role=max` est conservé lorsque `activeProfile=benevole` ;
+- `role=admin` est conservé lorsque `activeProfile=scientifique` ;
+- une persona UX ne constitue jamais une preuve de permission ;
+- les privilèges sont portés par les identifiants/allowlists et métadonnées
+  vérifiées, pas par une adresse email codée en dur.
 
 ## Règles durables pour les tests authentifiés
 
@@ -571,6 +558,17 @@ apps/web/src/lib/seo/indexability.test.ts
 ```
 
 Le fait qu'une route soit protégée ne prouve pas que chaque capacité interne de cette route est autorisée correctement.
+
+La frontière account/profile suit en plus ce tableau :
+
+| Route | But | Écriture autorisée | Autorité AuthZ |
+|---|---|---|---|
+| `POST /api/account/active-profile` | Changer la persona UX | `activeProfile` uniquement | session + `role` réel + `getSwitchableProfiles(role)` |
+| `POST /api/account/profile-role` | Ancien sélecteur de rôle | aucune ; route retirée (`410`) | session seulement pour retourner le retrait |
+
+Une réponse positive de la mutation de profil doit retourner le `role` résolu
+et l'`activeProfile` appliqué afin que le client puisse se réaligner sans
+réinterpréter les métadonnées Clerk.
 
 ## Checklist avant modification sensible
 

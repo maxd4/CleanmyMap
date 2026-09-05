@@ -116,32 +116,6 @@ commissioning actuel.
 
 ## 2. Vocabulaire canonique
 
-### Niveau obtenu et rôle actif
-
-Le contrat d'identité est volontairement non linéaire :
-
-```txt
-GRANTED_ROLE = identity.role       // privilège maximal obtenu, immuable par le menu
-ACTIVE_ROLE  = identity.activeRole // rôle courant, source des capacités effectives
-```
-
-Les rôles librement sélectionnables sont `benevole`, `coordinateur`,
-`scientifique` et `entreprise`. Les niveaux obtenus `elu`, `admin` et `max`
-ouvrent respectivement les ensembles suivants :
-
-| GRANTED_ROLE | ACTIVE_ROLE autorisés |
-|---|---|
-| standard / rôle ouvert | les quatre rôles ouverts |
-| `elu` | rôles ouverts + `elu` |
-| `admin` | rôles ouverts + `elu` + `admin` |
-| `max` | rôles ouverts + `elu` + `admin` + `max` |
-
-Les capacités privilégiées sont calculées sur `ACTIVE_ROLE`. Ainsi un compte
-`admin` actuellement `benevole` n'a aucune capacité admin/élu pendant cette
-session, mais conserve `GRANTED_ROLE=admin` et peut réactiver `admin`. Le champ
-UX historique `activeProfile` est un alias de lecture/migration et ne donne
-aucun droit.
-
 Les rôles métier sont définis dans :
 
 ```txt
@@ -164,9 +138,8 @@ max
 Conserver la distinction :
 
 ```txt
-Role        = GRANTED_ROLE, attribution métier réellement obtenue
-ACTIVE_ROLE = rôle actuellement utilisé pour les capacités
-Parcours    = projection UX de l'ACTIVE_ROLE
+Role        = attribution métier
+Parcours    = projection UX du rôle
 Capability  = action métier autorisable
 Scope       = périmètre dans lequel cette capacité peut s'exercer
 Ownership   = relation directe utilisateur ↔ ressource
@@ -177,20 +150,18 @@ Un `Parcours` ne constitue jamais une permission serveur.
 
 ### Identité canonique du rôle IMU
 
-La règle de nommage est : **IMU = rôle interne `max`**, accordé uniquement à
-l'identité owner Clerk canonique de l'instance.
+La règle de nommage est : **IMU = super-admin = rôle interne `max`**.
 
 - `max` est l'identifiant technique canonique utilisé par le code et les
   données ;
 - `IMU` est l'appellation produit officielle affichée dans l'interface ;
-- les alias `super-admin`, `super_admin`, `superadmin`, `owner`, `godmode` et
-  `creator` sont uniquement des valeurs legacy ; ils ne constituent jamais une
-  preuve d'autorisation IMU ;
-- l'accès `max` exige `CLERK_IMU_OWNER_USER_ID` et
-  `CLERK_IMU_OWNER_EMAIL`, avec l'email principal Clerk vérifié et exactement
-  correspondant ;
-- `ACTIVE_ROLE=max`, `activeProfile=max`, `profiles.role_label=max`, une allowlist admin ou
-  `CREATOR_INBOX_EMAIL` ne peuvent pas accorder `max`.
+- `super-admin`, `super_admin` et `superadmin` sont des alias entrants
+  acceptés et normalisés vers `max` ;
+- ces trois termes désignent strictement le même rôle et ne créent aucune
+  différence de permissions ;
+- `owner`, `godmode` et `creator` restent uniquement des alias de
+  compatibilité lorsqu'une donnée legacy les fournit, jamais des rôles ou des
+  libellés canoniques.
 
 Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont
 conservés pour compatibilité documentaire et de navigation. Leur nom ne définit
@@ -346,7 +317,7 @@ community.moderate_global
 admin.view_backoffice
 admin.run_operational_tools
 admin.view_audit
-roles.request_promotion
+roles.assign_self_service
 roles.assign_privileged
 platform.admin
 ```
@@ -506,9 +477,7 @@ motif si requis
 + targetUserId si pertinent
 ```
 
-Un admin ne peut pas attribuer `elu` ou `admin` : la capacité
-`roles.assign_privileged` est réservée à l'IMU actif (`ACTIVE_ROLE=max`) et à
-la surface dédiée. Il ne peut jamais attribuer `max`.
+Un admin ne doit pas pouvoir attribuer `max` sauf contrat explicite distinct.
 
 ### Max
 
@@ -525,22 +494,6 @@ platform.admin
 `max` ne remplace pas `service_role`.
 
 Même `max` passe par les contrats métier, validations, audits et garde-fous applicables. Éviter les chemins spéciaux non testés de type « god mode » qui court-circuitent le domaine.
-
-### Attribution des rôles obtenus
-
-`elu` et `admin` sont des `GRANTED_ROLE` obtenus; ils ne figurent pas dans les
-rôles ouverts et ne sont jamais modifiables par le menu utilisateur. Les deux
-seuls parcours applicatifs sont :
-
-1. une demande authentifiée `elu` ou `admin`, enregistrée avec le statut
-   `pending_owner_review` et sans changement de droits;
-2. une décision de l'IMU actif, qui accepte/refuse la demande ou attribue/
-   révoque directement `elu` ou `admin` via `/api/admin/role-accounts`.
-
-Chaque acceptation ou attribution directe met à jour Clerk, synchronise la
-projection `profiles.role_label` de Supabase et écrit un audit. La projection
-Supabase, `activeRole`, `activeProfile`, `CREATOR_INBOX_EMAIL` et
-`CLERK_ADMIN_USER_IDS` ne sont jamais une preuve autonome d'attribution.
 
 ## 8. Permissions sur les données
 

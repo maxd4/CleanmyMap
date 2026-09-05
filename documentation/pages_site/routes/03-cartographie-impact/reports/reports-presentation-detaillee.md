@@ -10,7 +10,7 @@
   événements, génération et exports autorisés. La météo et la logistique sont
   hors du contrat Reports.
 - **États à documenter** : visiteur anonyme avec aperçu flouté, compte connecté,
-  profil incomplet, accès génération réservé, indisponibilité explicite
+  profil incomplet, génération accessible au compte connecté, indisponibilité explicite
   d'Analyse ou de l'historique, et données optionnelles indisponibles.
 - **Composants concernés** : `ReportsAnalysisDashboard`, `AnalyticsCockpit`,
   `KpiMethodBlock`, `ReportsPageTabs` et les flux de génération/export
@@ -41,8 +41,9 @@
   placeholder. Le niveau de détail fournit les defaults et conserve les
   règles de verrouillage pour un module activé mais trop peu détaillé.
 
-  L'historique « Rapports récents » ne contient que des générations réellement
-  persistées dans `public.report_generations`, au maximum les 12 plus récentes.
+  L'historique « Rapports récents » ne contient que les générations réellement
+  persistées par le compte connecté dans `public.report_generations`, au maximum
+  les 12 plus récentes de ce compte.
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
   et les modules sont stockés sans binaire PDF ; une erreur de persistance est
@@ -56,4 +57,5 @@
   `id`, `generated_at`, `title`, `period_id`, `scope_label` et `detail_level`.
   Le snapshot et les modules ne sont pas lus dans cette liste ; la route
   `GET /api/reports/generations/[id]` les charge uniquement pour l'action
-  historique demandée par l'utilisateur.
+  historique demandée par l'utilisateur et vérifie l'ownership par
+  `created_by_clerk_id`.

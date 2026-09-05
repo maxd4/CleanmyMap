@@ -7,27 +7,8 @@ import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
-type RoutePageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-function singleSearchParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function resolveInitialPlanningMode(
-  params: Record<string, string | string[] | undefined> | undefined,
-): RoutePlanningMode {
-  const eventId = singleSearchParam(params?.eventId)?.trim();
-  return singleSearchParam(params?.planningMode) === "event-centered" && eventId
-    ? { type: "event-centered", eventId }
-    : { type: "free" };
-}
-
-export default async function RoutePage({ searchParams }: RoutePageProps) {
-  const params = searchParams ? await searchParams : undefined;
+export default async function RoutePage() {
   const localDevAuth = await getLocalDevAuthState();
   const classes = getBlockClasses("act");
 
@@ -109,7 +90,7 @@ export default async function RoutePage({ searchParams }: RoutePageProps) {
 
         <div className={cn("rounded-[3rem] p-1 border overflow-hidden", classes.surface, classes.shadow)}>
           <EffectiveAuthStateProvider localDevAuth={localDevAuth}>
-            <RouteSection initialPlanningMode={resolveInitialPlanningMode(params)} />
+            <RouteSection />
           </EffectiveAuthStateProvider>
         </div>
       </CmmSectionGroup>
