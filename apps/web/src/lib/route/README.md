@@ -16,8 +16,9 @@ pour produire une décision de planner contrainte et explicable.
   par le contrat courant.
 - `route-recommendation-loader.ts`, `recommendation-assistant.ts` et
   `trash-spotter-recommendation.ts` : chargement et enrichissements de la
-  recommandation ; les événements restent un signal d’entrée de l’orchestration
-  API tant qu’un sous-domaine dédié n’est pas publié.
+  recommandation ; la pression événementielle peut être chargée comme signal
+  d’entrée de l’orchestration API et du contexte d’assistance, mais le mode
+  `event-centered`/`planningMode` n’est pas un contrat courant.
 - `route-trace.ts` : contrat de trace et d’explicabilité lorsqu’il est fourni
   par le pipeline courant.
 - `paris-pressure-route-adapter.ts` : politique d’utilisation du prior
@@ -28,7 +29,9 @@ La structure reste volontairement plate dans l’état actuel de `main`. Les
 groupes événements, prédiction, providers et trace ne constituent pas encore
 des sous-domaines publiés dans ce checkout ; aucun déplacement cosmétique n’est
 justifié par ce seul classement. Une extraction ultérieure devra réduire un
-couplage réel et préserver les imports publics.
+couplage réel et préserver les imports publics. La couche de serviceabilité
+municipale est une fondation de données distincte ; elle ne constitue pas
+encore une politique d’additionalité branchée au planner.
 
 La frontière suit le flux `API → domaine route → UI` : l’API valide et orchestre,
 le domaine calcule et trace, l’UI affiche sans recalculer la géographie ni le

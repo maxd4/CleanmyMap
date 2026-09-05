@@ -31,7 +31,7 @@
         },
         "constraints": {
           "title": "Planner constraints",
-          "description": "Budget, maximum stops, safety, origin, free or event-centered mode, and network constraints bound the proposal.",
+          "description": "Budget, maximum stops, safety, origin, free mode and, when the contract supports it, event context, plus network constraints bound the proposal.",
           "item1": "Budget, stops, and origin",
           "item2": "Safety and planning mode",
           "item3": "Available network and acceptable detour"

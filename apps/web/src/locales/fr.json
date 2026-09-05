@@ -84,7 +84,7 @@
         },
         "constraints": {
           "title": "Contraintes du planner",
-          "description": "Le budget, le nombre maximal d’arrêts, la sécurité, l’origine, le mode libre ou autour d’un événement et les contraintes du réseau bornent la proposition.",
+          "description": "Le budget, le nombre maximal d’arrêts, la sécurité, l’origine, le mode libre et, lorsque le contrat le permet, le contexte d’un événement, ainsi que les contraintes du réseau bornent la proposition.",
           "item1": "Budget, arrêts et origine",
           "item2": "Sécurité et mode de planification",
           "item3": "Réseau disponible et détour acceptable"
