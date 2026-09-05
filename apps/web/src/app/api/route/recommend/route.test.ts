@@ -1,4 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  availableSourceHealth,
+  candidate,
+  fallbackGeometry,
+  plannedStop,
+  request,
+} from "./route.test.fixtures";
 
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
@@ -21,6 +28,14 @@ const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
 const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
+const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
+const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn());
+const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn());
+const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn());
+const applyRoutePredictionPoolAuditMock = vi.hoisted(() => vi.fn());
+const applyRoutePredictionPlannerBudgetAuditMock = vi.hoisted(() => vi.fn());
+const resolveRouteDataStatusMock = vi.hoisted(() => vi.fn());
+const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: getSafeAuthSessionMock,
@@ -62,6 +77,22 @@ vi.mock("@/lib/route/route-planner", () => ({
   planRoute: planRouteMock,
   ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v1",
 }));
+vi.mock("@/lib/geo/paris-pressure-loader", () => ({
+  loadParisPressureSnapshot: loadParisPressureSnapshotMock,
+}));
+vi.mock("@/lib/geo/paris-pressure-lookup", () => ({
+  applyParisPressureToCandidates: applyParisPressureToCandidatesMock,
+}));
+vi.mock("@/lib/route/route-predicted-targets", () => ({
+  buildPredictedRouteCandidates: buildPredictedRouteCandidatesMock,
+  buildRoutePlannerCandidatePool: buildRoutePlannerCandidatePoolMock,
+  applyRoutePredictionPoolAudit: applyRoutePredictionPoolAuditMock,
+  applyRoutePredictionPlannerBudgetAudit: applyRoutePredictionPlannerBudgetAuditMock,
+}));
+vi.mock("@/lib/route/route-data-status", () => ({
+  resolveRouteDataStatus: resolveRouteDataStatusMock,
+  resolveRouteDataLayers: resolveRouteDataLayersMock,
+}));
 vi.mock("@/lib/route/recommendation-assistant", () => ({
   buildHotspots: buildHotspotsMock,
   buildProactiveAssistant: buildProactiveAssistantMock,
@@ -80,52 +111,6 @@ vi.mock("@/lib/http/api-errors", () => ({
     new Response(error instanceof Error ? error.message : "error", { status: 500 }),
 }));
 
-const availableSourceHealth = {
-  partial: false,
-  failedSources: [],
-  availableSources: ["spots"],
-  warnings: [],
-};
-
-const candidate = {
-  id: "spot-1",
-  label: "Paris 4e",
-  latitude: 48.85,
-  longitude: 2.35,
-  score: 80,
-  reason: "Signalement récent",
-};
-
-const fallbackGeometry = (
-  coordinates: [number, number][] = [],
-  durationMinutes = 0,
-) => ({
-  coordinates,
-  distanceKm: 1,
-  durationMinutes,
-  legs: [],
-  provider: "none",
-  profile: null,
-  mode: "fallback",
-  estimated: true,
-});
-
-function request(payload: unknown = {}) {
-  return new Request("http://localhost/api/route/recommend", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-}
-
-function plannedStop(candidateValue = candidate, index = 0) {
-  return {
-    candidate: candidateValue,
-    incrementalDistanceKm: index + 1,
-    incrementalTravelMinutes: index + 5,
-    cumulativeTravelMinutes: (index + 1) * 5,
-  };
-}
 
 describe("POST /api/route/recommend", () => {
   beforeEach(() => {
@@ -154,6 +139,33 @@ describe("POST /api/route/recommend", () => {
     });
     getTerritoryArrondissementCenterMock.mockReturnValue({ lat: 48.86, lng: 2.36 });
     defaultRouteRecommendationFloorDateMock.mockReturnValue("2026-01-01");
+    loadParisPressureSnapshotMock.mockReturnValue(null);
+    applyParisPressureToCandidatesMock.mockImplementation((values) => values);
+    const emptyPredictionSummary = { status: "unavailable", selected: 0, selectedCandidateIds: [] };
+    buildPredictedRouteCandidatesMock.mockReturnValue({ candidates: [], summary: emptyPredictionSummary });
+    buildRoutePlannerCandidatePoolMock.mockImplementation(({ observedCandidates, predictedCandidates, maxCandidates }) => {
+      const candidates = [...observedCandidates, ...predictedCandidates].slice(0, maxCandidates);
+      return {
+        candidates,
+        audit: {
+          admittedCandidateIds: candidates.map((item) => item.id),
+          passedToPlannerCandidateIds: candidates.map((item) => item.id),
+          excludedByPreselectionCandidateIds: [],
+        },
+      };
+    });
+    applyRoutePredictionPoolAuditMock.mockImplementation((summary) => summary);
+    applyRoutePredictionPlannerBudgetAuditMock.mockImplementation((summary) => summary);
+    resolveRouteDataStatusMock.mockImplementation(({ candidateCount, isTruncated, sourceHealth }) => {
+      if (sourceHealth.failedSources.length > 0 || sourceHealth.availableSources.length === 0) return "unavailable";
+      if (isTruncated || sourceHealth.partial) return "partial";
+      return candidateCount === 0 ? "empty" : "complete";
+    });
+    resolveRouteDataLayersMock.mockImplementation(({ observed, prediction, routeGeometryMode }) => ({
+      observed: observed.candidateCount === 0 ? "empty" : "complete",
+      prediction: prediction.status,
+      recommendation: observed.sourceHealth.failedSources.length > 0 || observed.sourceHealth.partial || observed.isTruncated || routeGeometryMode === "fallback" || prediction.status !== "available" ? (observed.candidateCount === 0 && observed.sourceHealth.failedSources.length === 0 && !observed.sourceHealth.partial && !observed.isTruncated && prediction.status === "unavailable" ? "empty" : "degraded") : "ok",
+    }));
     loadCachedEventPressureByArrondissementMock.mockResolvedValue({
       pressureByArrondissement: new Map(),
       eventSignals: [],
@@ -486,10 +498,13 @@ describe("POST /api/route/recommend", () => {
 
   it("returns the planner diagnostics and budget-safe output fields", async () => {
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
-    planRouteMock.mockReturnValueOnce({
+    const diagnosticPlannerResult = {
       stops: [plannedStop()],
       diagnostics: { excludedUnsafe: 1, excludedByTravelBudget: 2 },
-    });
+    };
+    planRouteMock
+      .mockReturnValueOnce(diagnosticPlannerResult)
+      .mockReturnValueOnce(diagnosticPlannerResult);
     routePolylineThroughFossgisFootMock.mockResolvedValueOnce(fallbackGeometry([], 8));
 
     const { POST } = await import("./route");
