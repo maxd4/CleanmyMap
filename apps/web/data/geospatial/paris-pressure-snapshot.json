@@ -9,6 +9,12 @@
     "department": "75",
     "commune": "75056",
     "zoneCount": 992,
+    "expectedZoneCount": 992,
+    "geometryZoneCount": 992,
+    "geometryComplete": true,
+    "missingGeometryZoneCount": 0,
+    "invalidGeometryZoneCount": 0,
+    "invalidSurfaceZoneCount": 0,
     "complete": true,
     "notes": [
       "Population et densité à l'IRIS ; les signaux non renseignés restent null.",

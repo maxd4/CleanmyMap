@@ -17,6 +17,29 @@ Le modèle est pur : il consomme une `ParisPressureZone`, le
 préparé par les contrats existants (événements, historique validé et
 provenance). Il n'effectue aucun appel réseau.
 
+## Rattachement IRIS et couverture géométrique
+
+Le snapshot canonique est `paris-iris-2024-pop-2021-r2-polygon`. Les points
+sont d'abord rattachés par appartenance réelle au polygone IRIS, avec prise en
+charge des trous et des `MultiPolygon`. La même primitive déterministe est
+partagée par le runtime et le générateur (`paris-pressure-geometry-core.mjs`) :
+une géométrie non finie, mal structurée, non fermée ou de surface invalide est
+inexploitable et n'est jamais utilisée pour une appartenance.
+
+Le centroïde n'est utilisé qu'en `nearest-centroid-fallback`, uniquement pour
+une zone dont la géométrie est manquante ou invalide, dans un rayon maximal de
+`1,5 km`. Quand la couverture géométrique est complète, un point hors de tous
+les polygones reste sans rattachement, y compris s'il est proche d'un
+centroïde : être dans l'emprise historique ou proche d'un IRIS ne prouve pas
+l'appartenance à Paris.
+
+La couverture expose `expectedZoneCount`, `geometryZoneCount`,
+`geometryComplete`, `missingGeometryZoneCount`, `invalidGeometryZoneCount` et
+`invalidSurfaceZoneCount`. `complete` exige le nombre IRIS attendu, une
+géométrie exploitable pour chaque zone et une surface positive ; il ne signifie
+pas que tous les signaux métier sont disponibles. Le snapshot actuel contient
+992/992 géométries exploitables et 0 géométrie ou surface invalide.
+
 ## Version et configuration
 
 La configuration versionnée est `predictionModelVersion =

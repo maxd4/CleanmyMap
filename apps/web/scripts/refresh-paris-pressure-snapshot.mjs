@@ -3,8 +3,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  isValidParisPressureGeometry,
+  parisPressureGeometryAreaKm2,
+  pointInParisPressureGeometry,
+} from "../src/lib/geo/paris-pressure-geometry-core.mjs";
 
 const DEFAULT_OUTPUT = path.resolve("data/geospatial/paris-pressure-snapshot.json");
+const FALLBACK_RADIUS_KM = 1.5;
 
 function argument(name, fallback = null) {
   const index = process.argv.indexOf(name);
@@ -35,10 +41,12 @@ function normaliseGeometry(value) {
     }
     return [Number.NaN, Number.NaN];
   };
-  const mapRing = (ring) => ring.map(coordinate);
-  return geometry.type === "Polygon"
+  const mapRing = (ring) => Array.isArray(ring) ? ring.map(coordinate) : [];
+  if (!Array.isArray(geometry.coordinates)) return null;
+  const candidate = geometry.type === "Polygon"
     ? { type: geometry.type, coordinates: geometry.coordinates.map(mapRing) }
-    : { type: geometry.type, coordinates: geometry.coordinates.map((polygon) => polygon.map(mapRing)) };
+    : { type: geometry.type, coordinates: geometry.coordinates.map((polygon) => Array.isArray(polygon) ? polygon.map(mapRing) : []) };
+  return isValidParisPressureGeometry(candidate) ? candidate : null;
 }
 
 function normalise(values, logarithmic = false) {
@@ -67,96 +75,28 @@ function parseCsv(file) {
   });
 }
 
-function ringAreaKm2(ring) {
-  if (!Array.isArray(ring) || ring.length < 3) return 0;
-  const origin = ring[0];
-  let area = 0;
-  for (let index = 1; index < ring.length - 1; index += 1) {
-    const a = ring[index];
-    const b = ring[index + 1];
-    const ax = (a[0] - origin[0]) * 73;
-    const ay = (a[1] - origin[1]) * 111;
-    const bx = (b[0] - origin[0]) * 73;
-    const by = (b[1] - origin[1]) * 111;
-    area += (ax * by - bx * ay) / 2;
-  }
-  return Math.abs(area);
-}
-
-function geometryAreaKm2(geometry) {
-  if (!geometry) return null;
-  const polygonArea = (rings) => {
-    const [outer, ...holes] = rings;
-    if (!outer) return 0;
-    return Math.max(0, ringAreaKm2(outer) - holes.reduce((sum, hole) => sum + ringAreaKm2(hole), 0));
-  };
-  const area = geometry.type === "Polygon"
-    ? polygonArea(geometry.coordinates)
-    : geometry.type === "MultiPolygon"
-      ? geometry.coordinates.reduce((sum, polygon) => sum + polygonArea(polygon), 0)
-      : 0;
-  return area > 0 && Number.isFinite(area) ? area : null;
-}
-
 function distanceKm(left, right) {
   const latitudeKm = (left.latitude - right.latitude) * 111;
   const longitudeKm = (left.longitude - right.longitude) * 73;
   return Math.sqrt(latitudeKm ** 2 + longitudeKm ** 2);
 }
 
-function pointOnSegment(point, start, end) {
-  const cross = (point.longitude - start[0]) * (end[1] - start[1]) -
-    (point.latitude - start[1]) * (end[0] - start[0]);
-  if (Math.abs(cross) > 1e-10) return false;
-  return point.longitude >= Math.min(start[0], end[0]) - 1e-10 &&
-    point.longitude <= Math.max(start[0], end[0]) + 1e-10 &&
-    point.latitude >= Math.min(start[1], end[1]) - 1e-10 &&
-    point.latitude <= Math.max(start[1], end[1]) + 1e-10;
-}
-
-function ringContains(point, ring) {
-  if (!Array.isArray(ring) || ring.length < 3) return "outside";
-  let inside = false;
-  for (let index = 0; index < ring.length; index += 1) {
-    const start = ring[index];
-    const end = ring[(index + 1) % ring.length];
-    if (pointOnSegment(point, start, end)) return "boundary";
-    const crosses = (start[1] > point.latitude) !== (end[1] > point.latitude) &&
-      point.longitude < ((end[0] - start[0]) * (point.latitude - start[1])) /
-        (end[1] - start[1]) + start[0];
-    if (crosses) inside = !inside;
-  }
-  return inside ? "inside" : "outside";
-}
-
-function geometryContains(point, geometry) {
-  if (!geometry) return false;
-  const polygonContains = (rings) => {
-    const [outer, ...holes] = rings;
-    if (ringContains(point, outer) === "outside") return false;
-    return !holes.some((hole) => ringContains(point, hole) === "inside");
-  };
-  return geometry.type === "Polygon"
-    ? polygonContains(geometry.coordinates)
-    : geometry.type === "MultiPolygon"
-      ? geometry.coordinates.some(polygonContains)
-      : false;
-}
-
-function nearestZone(zones, point) {
+function nearestZone(zones, point, geometryComplete) {
   const containing = zones
-    .filter((zone) => geometryContains(point, zone.geometry))
+    .filter((zone) => pointInParisPressureGeometry(point, zone.geometry))
     .sort((left, right) => left.id.localeCompare(right.id));
   if (containing[0]) {
-    return { zone: containing[0], distance: distanceKm(containing[0].centroid, point), matchMethod: "point-in-polygon" };
+      return { zone: containing[0], distance: distanceKm(containing[0].centroid, point), matchMethod: "point-in-polygon" };
   }
-  return zones.reduce((best, zone) => {
+  if (geometryComplete) return null;
+  const nearest = zones.filter((zone) => zone.geometryStatus !== "valid").reduce((best, zone) => {
     const distance = distanceKm(zone.centroid, point);
     return !best || distance < best.distance ||
       (distance === best.distance && zone.id < best.zone.id)
       ? { zone, distance, matchMethod: "nearest-centroid-fallback" }
       : best;
   }, null);
+  return nearest && nearest.distance <= FALLBACK_RADIUS_KM ? nearest : null;
 }
 
 function source(family, dataset, url, license, datasetVersion, geographicLevel, status, refreshedAt, notes = [], publisher = null, observedAt = null) {
@@ -179,14 +119,21 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
   const populationByIris = new Map(populationRows.map((row) => [row.iris, row.population]));
   const zones = iris.results
     .filter((row) => row.dep === "75" && row.geo_point_2d)
-    .map((row) => ({
+    .map((row) => {
+      const geometry = normaliseGeometry(row.geo_shape);
+      const geometryStatus = geometry === null
+        ? row.geo_shape == null ? "missing" : "invalid"
+        : "valid";
+      const areaKm2 = parisPressureGeometryAreaKm2(geometry);
+      return {
       id: row.code_iris,
       label: row.nom_iris,
       geographicLevel: "iris",
       arrondissementCode: String(row.insee_com),
       centroid: { latitude: row.geo_point_2d.lat, longitude: row.geo_point_2d.lon },
-      geometry: normaliseGeometry(row.geo_shape),
-      areaKm2: geometryAreaKm2(normaliseGeometry(row.geo_shape)),
+      geometry,
+      areaKm2,
+      geometryStatus: geometryStatus === "valid" && areaKm2 !== null ? "valid" : geometryStatus === "missing" ? "missing" : "invalid",
       spatialJoin: { pointInPolygonMatches: 0, nearestCentroidFallbackMatches: 0 },
       residentPopulation: populationByIris.get(row.code_iris) ?? null,
       transportStationCount: null,
@@ -200,12 +147,20 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
       cleanlinessRawObservations: null,
       cleanlinessResolution: null,
       cleanlinessMeasuredAt: null,
-    }));
+      };
+    });
+  const expectedZoneCount = 992;
+  const geometryZoneCount = zones.filter((zone) => zone.geometryStatus === "valid").length;
+  const missingGeometryZoneCount = zones.filter((zone) => zone.geometryStatus === "missing").length;
+  const invalidGeometryZoneCount = zones.filter((zone) => zone.geometryStatus === "invalid").length;
+  const geometryComplete = zones.length === expectedZoneCount &&
+    geometryZoneCount === zones.length &&
+    zones.every((zone) => zone.areaKm2 !== null && zone.areaKm2 > 0);
 
   for (const row of transportRows) {
     const point = { latitude: finite(row.latitude), longitude: finite(row.longitude) };
     if (point.latitude === null || point.longitude === null) continue;
-    const match = nearestZone(zones, point);
+    const match = nearestZone(zones, point, geometryComplete);
     if (!match) continue;
     const { zone } = match;
     zone.spatialJoin[match.matchMethod === "point-in-polygon" ? "pointInPolygonMatches" : "nearestCentroidFallbackMatches"] += 1;
@@ -215,7 +170,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
   for (const row of activityRows) {
     const point = { latitude: finite(row.latitude), longitude: finite(row.longitude) };
     if (point.latitude === null || point.longitude === null) continue;
-    const match = nearestZone(zones, point);
+    const match = nearestZone(zones, point, geometryComplete);
     if (!match) continue;
     const { zone } = match;
     zone.spatialJoin[match.matchMethod === "point-in-polygon" ? "pointInPolygonMatches" : "nearestCentroidFallbackMatches"] += 1;
@@ -226,7 +181,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
   for (const row of tourismRows) {
     const point = { latitude: finite(row.latitude), longitude: finite(row.longitude) };
     if (point.latitude === null || point.longitude === null) continue;
-    const match = nearestZone(zones, point);
+    const match = nearestZone(zones, point, geometryComplete);
     if (!match) continue;
     const { zone } = match;
     zone.spatialJoin[match.matchMethod === "point-in-polygon" ? "pointInPolygonMatches" : "nearestCentroidFallbackMatches"] += 1;
@@ -300,7 +255,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
   const now = refreshedAt;
   return {
     schemaVersion: "paris-pressure-v1",
-    snapshotId: "paris-iris-2024-pop-2021-r1",
+    snapshotId: "paris-iris-2024-pop-2021-r2-polygon",
     generatedAt: now,
     refreshedAt: now,
     geographicLevel: "iris",
@@ -309,11 +264,19 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
       department: "75",
       commune: "75056",
       zoneCount: finalZones.length,
-      complete: finalZones.length === 992,
+      expectedZoneCount,
+      geometryZoneCount,
+      geometryComplete,
+      missingGeometryZoneCount,
+      invalidGeometryZoneCount,
+      invalidSurfaceZoneCount: zones.filter((zone) => zone.geometryStatus === "invalid" && zone.geometry !== null).length,
+      complete: finalZones.length === expectedZoneCount && geometryComplete,
       notes: [
         "Population et densité à l'IRIS ; les signaux non renseignés restent null.",
         "Les rattachements ponctuels utilisent d'abord l'appartenance au polygone IRIS ; le centroïde est un fallback borné explicitement marqué comme approximation.",
-        "Couverture géométrique IRIS complète ; la disponibilité des signaux reste partielle et est portée par chaque source.",
+        geometryComplete
+          ? "Couverture géométrique IRIS complète et exploitable ; la disponibilité des signaux reste partielle et est portée par chaque source."
+          : `Couverture géométrique IRIS partielle : ${geometryZoneCount}/${expectedZoneCount} géométries exploitables ; les rattachements de secours restent bornés et explicitement approximatifs.`,
       ],
     },
     sources: [
