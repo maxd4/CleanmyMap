@@ -102,6 +102,12 @@ export type ParisPressureSnapshot = {
     department: "75";
     commune: "75056";
     zoneCount: number;
+    expectedZoneCount?: number;
+    geometryZoneCount?: number;
+    geometryComplete?: boolean;
+    missingGeometryZoneCount?: number;
+    invalidGeometryZoneCount?: number;
+    invalidSurfaceZoneCount?: number;
     complete: boolean;
     notes: string[];
   };

@@ -16,7 +16,12 @@ const snapshot = {
     department: "75",
     commune: "75056",
     zoneCount: 1,
-    complete: true,
+    expectedZoneCount: 1,
+    geometryZoneCount: 0,
+    geometryComplete: false,
+    missingGeometryZoneCount: 1,
+    invalidGeometryZoneCount: 0,
+    complete: false,
     notes: [],
   },
   sources: [],
@@ -103,6 +108,38 @@ describe("Paris pressure lookup", () => {
       snapshot,
     );
     expect(candidates[0]?.score).toBe(100);
+  });
+
+  it("ne rattache pas un point hors des polygones lorsque leur couverture est complète", () => {
+    const completeSnapshot = {
+      ...snapshot,
+      coverage: {
+        ...snapshot.coverage,
+        geometryZoneCount: 1,
+        geometryComplete: true,
+        missingGeometryZoneCount: 0,
+        complete: true,
+      },
+      zones: [{
+        ...snapshot.zones[0],
+        geometry: {
+          type: "Polygon" as const,
+          coordinates: [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86], [2.35, 48.86], [2.35, 48.85]]],
+        },
+      }],
+    } satisfies ParisPressureSnapshot;
+    expect(findNearestParisPressureZone({ latitude: 48.865, longitude: 2.355 }, completeSnapshot)).toBeNull();
+    expect(findNearestParisPressureZone({ latitude: 48.80, longitude: 2.355 }, completeSnapshot)).toBeNull();
+  });
+
+  it("utilise le fallback uniquement pour une géométrie manquante et dans le rayon borné", () => {
+    const partialSnapshot = {
+      ...snapshot,
+      coverage: { ...snapshot.coverage, geometryComplete: false, complete: false },
+    } satisfies ParisPressureSnapshot;
+    expect(findNearestParisPressureZone({ latitude: 48.8566, longitude: 2.3522 }, partialSnapshot)?.matchMethod)
+      .toBe("nearest-centroid-fallback");
+    expect(findNearestParisPressureZone({ latitude: 48.90, longitude: 2.3522 }, partialSnapshot)).toBeNull();
   });
 
   it("n'effectue aucun appel réseau", () => {

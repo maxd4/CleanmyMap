@@ -5,6 +5,8 @@ import type {
 } from "./paris-pressure-contract";
 import {
   parisPressureDistanceKm,
+  parisPressureGeometryAreaKm2,
+  isValidParisPressureGeometry,
   pointInParisPressureGeometry,
 } from "./paris-pressure-geometry";
 import { routeDistanceKm } from "@/lib/route/route-planner";
@@ -26,21 +28,25 @@ export type ParisPressureAtPoint = {
   signals: ParisPressureZone["signals"];
 };
 
-function isPointInParis(point: ParisPressurePoint): boolean {
-  return (
-    Number.isFinite(point.latitude) &&
-    point.latitude >= 48.80 &&
-    point.latitude <= 48.91 &&
-    Number.isFinite(point.longitude) &&
-    point.longitude >= 2.20 &&
-    point.longitude <= 2.48
-  );
-}
 export function findNearestParisPressureZone(
   point: ParisPressurePoint,
   snapshot: ParisPressureSnapshot,
 ): ParisPressureAtPoint | null {
-  if (!isPointInParis(point) || snapshot.zones.length === 0) return null;
+  if (
+    !Number.isFinite(point.latitude) ||
+    !Number.isFinite(point.longitude) ||
+    snapshot.zones.length === 0
+  ) return null;
+
+  const usableGeometry = (zone: ParisPressureZone) =>
+    isValidParisPressureGeometry(zone.geometry) &&
+    parisPressureGeometryAreaKm2(zone.geometry) !== null;
+  const usableGeometryCount = snapshot.zones.filter(usableGeometry).length;
+  const geometryComplete = snapshot.coverage.geometryComplete === true ||
+    (snapshot.coverage.geometryComplete === undefined &&
+      snapshot.coverage.complete &&
+      snapshot.coverage.zoneCount === snapshot.zones.length &&
+      usableGeometryCount === snapshot.zones.length);
 
   const containing = snapshot.zones
     .filter((zone) => pointInParisPressureGeometry(point, zone.geometry))
@@ -62,8 +68,10 @@ export function findNearestParisPressureZone(
     };
   }
 
+  if (geometryComplete) return null;
+
   let nearest: { zone: ParisPressureZone; distanceKm: number } | null = null;
-  for (const zone of snapshot.zones) {
+  for (const zone of snapshot.zones.filter((candidate) => !usableGeometry(candidate))) {
     const distanceKm = routeDistanceKm(point, zone.centroid);
     if (
       nearest === null ||
