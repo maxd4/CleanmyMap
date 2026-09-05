@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
-import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type {
+  RouteRecommendationOrigin,
+  RouteRecommendationRequest,
+} from "@/lib/route/route-response-contract";
 import {
   parseRouteRecommendationRequest,
+  type RouteRecommendationOptions,
   resolvePriorityVsTravel,
   routeRecommendationRequestSchema,
 } from "./route.schema";
@@ -19,7 +23,13 @@ describe("route recommendation HTTP request schema", () => {
 
     expect(parsed.success).toBe(true);
     if (parsed.success) {
-      expect(parsed.data).toEqual(payload);
+      expect(parsed.data).toEqual({
+        ...payload,
+        planningMode: { type: "free" },
+        riskFocus: "all",
+      });
+      expectTypeOf(parsed.data.travelBudgetMinutes).toEqualTypeOf<number>();
+      expectTypeOf(parsed.data.maxStops).toEqualTypeOf<number>();
     }
 
     const legacyAlias = parseRouteRecommendationRequest({
@@ -30,6 +40,41 @@ describe("route recommendation HTTP request schema", () => {
     if (legacyAlias.success) {
       expect(resolvePriorityVsTravel(legacyAlias.data)).toBe(31);
     }
+  });
+
+  it("normalizes defaulted fields while preserving optional input fields", () => {
+    const parsed = parseRouteRecommendationRequest({});
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.travelBudgetMinutes).toBe(60);
+      expect(parsed.data.maxStops).toBe(6);
+      expect(parsed.data.origin).toBeUndefined();
+      expect(parsed.data.priorityVsTravel).toBeUndefined();
+      expect(parsed.data.priorityVsDistance).toBeUndefined();
+    }
+
+    expectTypeOf<RouteRecommendationOptions["travelBudgetMinutes"]>().toEqualTypeOf<number>();
+    expectTypeOf<RouteRecommendationOptions["maxStops"]>().toEqualTypeOf<number>();
+    expectTypeOf<RouteRecommendationOptions["origin"]>().toEqualTypeOf<
+      RouteRecommendationOrigin | undefined
+    >();
+    expectTypeOf<RouteRecommendationOptions["priorityVsTravel"]>().toEqualTypeOf<
+      number | undefined
+    >();
+    expectTypeOf<RouteRecommendationOptions["priorityVsDistance"]>().toEqualTypeOf<
+      number | undefined
+    >();
+  });
+
+  it("uses explicit values instead of defaults", () => {
+    const parsed = routeRecommendationRequestSchema.parse({
+      travelBudgetMinutes: 42,
+      maxStops: 3,
+    });
+
+    expect(parsed.travelBudgetMinutes).toBe(42);
+    expect(parsed.maxStops).toBe(3);
   });
 
   it("rejects invalid HTTP values while stripping non-contract fields", () => {
