@@ -9,6 +9,10 @@ Documentation des fonctionnalités pour agents IA.
 ### Participation de groupe
 - **group-action.md** - Guide utilisateur du flux d'action de groupe
 
+### Création d'itinéraire
+- **[Méthodologie de création d'itinéraire](../architecture/methodologie-creation-itineraire.md)** - Architecture fonctionnelle du planner, de ses contraintes et de sa trace
+- **[Fiche fonctionnelle Où agir](../pages_site/routes/02-agir/ou-agir/ou-agir-README.md)** - Entrée produit de la création d'itinéraire
+
 ### Gamification
 - **GAMIFICATION_ENGINE.md** - Point d'entrée technique du moteur et de ses
   frontières

@@ -51,6 +51,9 @@ maintenance/python/    maintenance Python hors runtime principal
 documentation/         documentation structurée
 ```
 
+Document fonctionnel de référence :
+[méthodologie de création d'itinéraire](methodologie-creation-itineraire.md).
+
 ## Règles de modification
 
 Avant une décision d'architecture :

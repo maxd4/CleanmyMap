@@ -5,75 +5,57 @@
 - **Route** : `/sections/route`
 - **Fichier source** : `apps/web/src/app/(app)/sections/route/page.tsx`
 - **Type fonctionnel** : page protégée du bloc Agir
-- **Objectif** : proposer une liste déterministe de points Trash Spotter validés
-  à parcourir selon la priorité, le déplacement et le nombre d'arrêts.
+- **Objectif** : proposer un itinéraire de nettoyage priorisé et contraint à
+  partir des données disponibles.
 - **Action principale** : cliquer explicitement sur `Calculer la recommandation`.
-- **Statut V1** : livré et validé
 
-## Contrat V1
+La page propose une décision du planner. Elle ne mesure pas directement la
+pollution et ne lance aucune recommandation automatiquement au chargement.
 
-Les seules préférences persistables sont :
+## Fonctionnement au niveau utilisateur
 
-- `travelBudgetMinutes` : budget strict de déplacement, en minutes ;
-- `maxStops` : nombre maximal d'arrêts, borné de 1 à 12 ;
-- `priorityVsTravel` : arbitrage priorité / déplacement, de 0 à 100.
+Le mode **Itinéraire libre** part de l'origine choisie et compose un parcours
+selon les candidats disponibles. Le mode **Itinéraire autour d'un événement**
+peut utiliser un événement comme contexte ou ancre lorsque ce contrat est
+disponible. Dans les deux cas, le budget de déplacement et `maxStops` restent
+des contraintes dures : une zone prioritaire peut donc être exclue si elle est
+hors budget, non éligible ou incompatible avec la sécurité.
 
-Le planner est déterministe. Il part de l'origine, compte le déplacement vers
-le premier arrêt, estime la marche à 4,5 km/h et ne renvoie jamais une route au-
-delà du budget demandé. L'algorithme compare priorité et coût de déplacement
-sur des valeurs normalisées, puis applique des départages stables.
+L'origine peut venir :
 
-## Origine et confidentialité
+- du navigateur (`browser`) après une action explicite ;
+- d'un point choisi sur la carte (`map`) ;
+- d'une zone enregistrée représentée par un centre approximatif
+  (`approximate_saved_area`) lorsque l'origine précise n'est pas disponible.
 
-L'origine est un contexte ponctuel du calcul, jamais une préférence enregistrée.
-Trois sources sont supportées dans la réponse :
+Lorsque le contrat le permet, l'utilisateur peut orienter la priorité vers les
+déchets, les mégots ou l'ensemble des signaux. Ces choix ne transforment pas
+une estimation en observation.
 
-- `browser` : position actuelle, demandée uniquement après clic explicite ;
-- `map` : point choisi et modifiable sur la carte ;
-- `approximate_saved_area` : centre approximatif de la zone enregistrée, utilisé
-  par le serveur en l'absence d'origine explicite.
+## Statuts et limites
 
-La route ne demande pas la géolocalisation au chargement. Une position précise
-n'est conservée ni dans le draft `sessionStorage`, ni dans `localStorage`, ni
-dans l'URL, le hash ou un cookie de route.
+Les signalements terrain validés sont des données **observées**. Les zones de
+risque issues de la pression géospatiale sont **prédites** : elles portent leur
+source, leur millésime, leur version de modèle et leur niveau de confiance.
+Une zone prédite n'est jamais affichée comme un signalement observé.
 
-## Données, sécurité et routage
+Le trajet peut être fourni par un routage réseau (`network`) ou par une
+géométrie de repli (`fallback`) explicitement estimée. Les données partielles,
+une source indisponible, une origine approximative ou un résultat estimé sont
+présentés comme des états dégradés ; `null` ne signifie pas zéro.
 
-La source de candidats est constituée de données Trash Spotter validées, avec
-coordonnées obligatoires et hard gate de sécurité bénévole. Les points
-dangereux sont exclus fail-closed.
+La pression géospatiale est un contexte de priorisation. Elle ne constitue pas
+une mesure en temps réel de fréquentation ou de pollution.
 
-Le routage piéton FOSSGIS est best-effort. Une géométrie `network` expose son
-provider et son profil ; lorsque le réseau est indisponible ou que le préfixe
-compatible avec le budget doit être réduit, la géométrie `fallback` est
-explicitement indiquée comme estimée. Aucune précision réseau n'est promise
-dans ce cas.
-
-Les réponses exposent `status: ok | empty | degraded` :
-
-- `ok` pour une réponse nominale ;
-- `empty` lorsqu'aucun arrêt exploitable n'est disponible ;
-- `degraded` pour une source partielle, tronquée ou un routage dégradé.
-
-Les diagnostics incluent notamment `loaded`, `eligible`, `excluded`,
-`selected`, `sourcePartial` et `truncated`. `selected` correspond toujours au
-nombre réel d'arrêts retournés. Les champs `serviceMinutesEstimate` et
-`totalMinutesEstimate` restent volontairement `null` : aucun temps de collecte
-ou de service n'est inventé.
-
-## Authentification et états
-
-La page et l'API de recommandation sont protégées. En développement local,
-l'identité de bypass officielle peut rendre le CTA disponible sans fabriquer de
-session ou de token Clerk ; en production, Clerk reste l'autorité d'identité.
-
-La page distingue les états de chargement, vide, erreur d'origine et réponse
-dégradée. Le calcul est toujours déclenché par l'utilisateur ; aucune
-recommandation automatique n'est lancée.
+La surface `Comprendre cet itinéraire` expose la trace disponible : origine,
+arrêts retenus, budget, exclusions, statut observé/prédit, sources, routage et
+éventuels fallbacks. Le frontend affiche cette décision et ne recalcule pas le
+moteur.
 
 ## Références
 
 - [Présentation détaillée](./ou-agir-presentation-detaillee.md)
+- [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md)
+- [Créer un itinéraire](/sections/route)
 - [Propositions à traiter](./ou-agir-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./ou-agir-objectifs-non-pertinents.md)
-- [Itinéraire historique](../../../../2-BLOC-AGIR/itineraire_ia.md)

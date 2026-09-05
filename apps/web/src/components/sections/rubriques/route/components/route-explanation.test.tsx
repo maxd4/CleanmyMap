@@ -1,10 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { RouteResponse } from "../route-types";
+import type { RouteExplanationData } from "./route-explanation.model";
 import { RouteExplanation } from "./route-explanation";
 
-function dataFor(mode: "network" | "fallback"): RouteResponse {
+function dataFor(mode: "network" | "fallback"): RouteExplanationData {
   return {
     planningMode: { type: "free" },
     origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
@@ -72,7 +72,7 @@ function dataFor(mode: "network" | "fallback"): RouteResponse {
       approximations: mode === "fallback" ? ["distance estimée"] : [],
       fallbacks: mode === "fallback" ? ["fallback_route_geometry"] : [],
     },
-  } as unknown as RouteResponse;
+  } as unknown as RouteExplanationData;
 }
 
 describe("RouteExplanation", () => {
