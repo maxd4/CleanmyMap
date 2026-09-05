@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useReverification, useUser } from "@clerk/nextjs";
+import { isReverificationCancelledError } from "@clerk/nextjs/errors";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Eye, Info, UserRound } from "lucide-react";
@@ -43,6 +44,10 @@ import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 import { logFailure } from "@/lib/logging/failure-log";
+import {
+  persistAccountSetupChanges,
+  type AccountSetupUserUpdate,
+} from "@/components/account/account-setup-save";
 
 type AccountSetupFormProps = {
   nextPath?: string;
@@ -57,8 +62,6 @@ type AccountSetupFormProps = {
   initialLocationType?: "residence" | "work" | null;
   submitMode?: "navigate" | "refresh";
 };
-
-type SetupUpdate = Parameters<NonNullable<ReturnType<typeof useUser>["user"]>["update"]>[0];
 
 async function updateActiveProfile(activeProfile: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
@@ -117,6 +120,14 @@ export function AccountSetupForm({
 }: AccountSetupFormProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
+  const updateUserWithReverification = useReverification(
+    async (update: AccountSetupUserUpdate) => {
+      if (!user) {
+        throw new Error("Compte introuvable, reconnectez-vous.");
+      }
+      return user.update(update);
+    },
+  );
   const { locale, displayMode, setDisplayMode } = useSitePreferences();
   const legacySelection = useMemo(
     () => createLegacySelection(initialArrondissement),
@@ -201,11 +212,6 @@ export function AccountSetupForm({
 
     try {
       setIsSaving(true);
-      if (selectedProfile !== initialProfile) {
-        await updateActiveProfile(selectedProfile);
-      }
-      setDisplayMode(selectedDisplayMode);
-
       const metadata = clearLocationPreferenceMetadata({ ...(user.unsafeMetadata ?? {}) });
       Object.assign(metadata, {
         profileSetupCompleted: true,
@@ -221,15 +227,20 @@ export function AccountSetupForm({
         }),
       );
 
-      const update: SetupUpdate = {
-        username: trimmedPseudo,
-        unsafeMetadata: metadata,
-      };
-      if (!isPseudonymous) {
-        update.firstName = trimmedFirstName;
-        update.lastName = trimmedLastName;
-      }
-      await user.update(update);
+      await persistAccountSetupChanges({
+        currentUsername: user.username,
+        pseudo: trimmedPseudo,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        displayNameMode,
+        metadata,
+        initialProfile,
+        selectedProfile,
+        updateUser: (update) => user.update(update),
+        updateUserWithReverification,
+        updateActiveProfile,
+        saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
+      });
 
       if (submitMode === "refresh") {
         router.refresh();
@@ -239,7 +250,16 @@ export function AccountSetupForm({
       }
     } catch (caughtError) {
       logFailure("AccountSetup", "Update failed", caughtError, { profile: selectedProfile });
-      const appError = isAppError(caughtError)
+      const appError = isReverificationCancelledError(caughtError)
+        ? toAppError(
+            "Vérification de sécurité annulée. Aucune modification n’a été enregistrée.",
+            {
+              kind: "permission",
+              message:
+                "Vérification de sécurité annulée. Aucune modification n’a été enregistrée.",
+            },
+          )
+        : isAppError(caughtError)
         ? caughtError
         : toAppError(caughtError, { kind: "server", message: "Impossible d’enregistrer les préférences. Réessayez." });
       if (appError.kind === "network") {
