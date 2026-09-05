@@ -9,8 +9,6 @@ const envMock = vi.hoisted(() => ({
   CLERK_ADMIN_USER_IDS: "",
   CLERK_MAX_USER_IDS: "",
   CREATOR_INBOX_EMAIL: "creator-at-example",
-  CLERK_IMU_OWNER_USER_ID: "owner-only",
-  CLERK_IMU_OWNER_EMAIL: "owner-at-example",
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -75,28 +73,7 @@ describe("authz creator email isolation", () => {
     });
   });
 
-  it("requires the exact owner id and verified primary email for max", async () => {
-    authMock.mockResolvedValue({ userId: "owner-only" });
-    clerkClientMock.mockResolvedValue({
-      users: {
-        getUser: vi.fn().mockResolvedValue({
-          id: "owner-only",
-          primaryEmailAddress: {
-            emailAddress: "owner-at-example",
-            verification: { status: "verified" },
-          },
-          publicMetadata: { role: "max" },
-          privateMetadata: {},
-        }),
-      },
-    });
-
-    const { getCurrentUserRoleLabel } = await import("./authz");
-
-    await expect(getCurrentUserRoleLabel()).resolves.toBe("max");
-  });
-
-  it("does not grant max from CLERK_MAX_USER_IDS alone", async () => {
+  it("grants max from CLERK_MAX_USER_IDS regardless of email", async () => {
     envMock.CLERK_MAX_USER_IDS = "user_max";
     authMock.mockResolvedValue({ userId: "user_max" });
     clerkClientMock.mockResolvedValue({
@@ -115,10 +92,10 @@ describe("authz creator email isolation", () => {
 
     const { getCurrentUserRoleLabel } = await import("./authz");
 
-    await expect(getCurrentUserRoleLabel()).resolves.toBe("benevole");
+    await expect(getCurrentUserRoleLabel()).resolves.toBe("max");
   });
 
-  it("does not grant admin from CLERK_ADMIN_USER_IDS alone", async () => {
+  it("grants admin from CLERK_ADMIN_USER_IDS regardless of email", async () => {
     envMock.CLERK_ADMIN_USER_IDS = "user_admin";
     authMock.mockResolvedValue({ userId: "user_admin" });
     clerkClientMock.mockResolvedValue({
@@ -137,7 +114,7 @@ describe("authz creator email isolation", () => {
 
     const { getCurrentUserRoleLabel } = await import("./authz");
 
-    await expect(getCurrentUserRoleLabel()).resolves.toBe("benevole");
+    await expect(getCurrentUserRoleLabel()).resolves.toBe("admin");
   });
 
   it("fails closed when Clerk cannot resolve the user", async () => {

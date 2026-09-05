@@ -39,6 +39,8 @@ import {
   shouldUseDevAuthBypass,
 } from "@/lib/auth/dev-auth";
 import {
+  parseAdminUserIds,
+  parseMaxUserIds,
   resolveClerkRole,
   type ClerkMetadata,
 } from "@/lib/auth/role-resolution";
@@ -356,8 +358,8 @@ function buildResolvedIdentity(params: {
   } = resolveIdentityNames(user, userId, storedProfile);
   const resolvedRole = resolveClerkRole({
     user,
-    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
-    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
   });
   const isMax = resolvedRole === "max";
   const isAdmin = resolvedRole === "admin" || isMax;

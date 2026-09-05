@@ -26,13 +26,13 @@ cache distincts. Une réponse contenant un état RSVP personnel est privée et n
 doit jamais être servie par un cache partagé ; la lecture anonyme ne contient
 aucune donnée Clerk privée.
 
-Règle de vocabulaire : **IMU = rôle interne `max`**, mais `max` n'est pas une
-preuve d'identité. En production et en développement Clerk, l'IMU réel est
-uniquement l'utilisateur dont l'ID propriétaire et l'email principal vérifié
-correspondent aux variables serveur `CLERK_IMU_OWNER_USER_ID` et
-`CLERK_IMU_OWNER_EMAIL` de l'instance concernée. Les métadonnées Clerk, la
-ligne Supabase `profiles.role_label`, `CREATOR_INBOX_EMAIL` et les allowlists
-générales ne peuvent pas accorder ce rôle.
+Règle de vocabulaire : **IMU = rôle interne `max`**. Le rôle `max` est accordé
+uniquement par l'identité Clerk immuable présente dans `CLERK_MAX_USER_IDS` ou
+par une metadata serveur canonique `role=max`. Le rôle `admin` provient de
+`CLERK_ADMIN_USER_IDS` ou d'une metadata serveur canonique `role=admin`.
+L'adresse primaire ou secondaire, `CREATOR_INBOX_EMAIL`, `activeRole`,
+`activeProfile` et la ligne Supabase `profiles.role_label` ne peuvent jamais
+accorder un privilège.
 
 Les alias historiques (`owner`, `godmode`, `creator`, `super_admin`, etc.) sont
 acceptés seulement comme valeurs d'entrée legacy et sont ignorés pour
@@ -59,8 +59,8 @@ Les seuls parcours d'attribution sont :
 Les deux décisions synchronisent Clerk vers Supabase et sont auditées. La
 surface directe exige `ACTIVE_ROLE=max`; un `admin` ou un `elu` ne peut donc pas
 attribuer ces rôles. Aucune route ne peut attribuer `max`. `CLERK_ADMIN_USER_IDS`
-reste une donnée de diagnostic/configuration et ne confère pas `admin` à elle
-seule; les écritures Clerk `role`/`profile` sont limitées à ces parcours.
+reste une source canonique de résolution du rôle `admin`, tandis que les
+écritures Clerk `role`/`profile` sont limitées à ces parcours.
 
 ## 1. Glossaire Technique
 

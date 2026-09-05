@@ -101,11 +101,6 @@ function resolveEnvValue(key, fileEnv) {
   return null;
 }
 
-function normalizeEmail(value) {
-  const trimmed = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function normalizeRole(input) {
   const normalized = typeof input === "string" ? input.trim().toLowerCase() : "";
   if (!normalized) {
@@ -223,29 +218,27 @@ function resolveAppProfile({ metadataRole, isAdmin, isMax }) {
 export function resolveStoredRoleLabel({
   metadataRole,
   userId,
-  email,
-  primaryEmailVerified,
   adminUserIds,
-  ownerUserId,
-  ownerEmail,
+  maxUserIds,
 }) {
-  const isOwner =
-    typeof userId === "string" &&
-    userId.trim() === (ownerUserId ?? "").trim() &&
-    normalizeEmail(email) === normalizeEmail(ownerEmail) &&
-    primaryEmailVerified === true;
-  if (isOwner) {
+  if (typeof userId === "string" && maxUserIds.has(userId.trim())) {
     return "max";
   }
 
-  // CLERK_ADMIN_USER_IDS is retained as an audit input only. It must not
-  // create a GRANTED_ROLE outside the application attribution workflows.
+  const normalizedRole = normalizeRole(metadataRole);
+  if (normalizedRole === "max") {
+    return "max";
+  }
+
+  if (typeof userId === "string" && adminUserIds.has(userId.trim())) {
+    return "admin";
+  }
+
   if (normalizeRole(metadataRole) === "admin") {
     return "admin";
   }
 
-  const normalizedRole = normalizeRole(metadataRole);
-  return normalizedRole === "max" ? "benevole" : normalizedRole ?? "benevole";
+  return normalizedRole ?? "benevole";
 }
 
 function collectUserIdsFromRows(rows, key) {
@@ -403,13 +396,10 @@ function buildRowSummary({
   const metadataRole = clerkUser?.metadataRole ?? null;
   const expectedStoredRoleLabel = clerkUser
     ? resolveStoredRoleLabel({
-        metadataRole,
-        userId: id,
-        email: clerkUser.primaryEmail,
-        primaryEmailVerified: clerkUser.primaryEmailVerified,
-        adminUserIds: context.adminUserIds,
-        ownerUserId: context.ownerUserId,
-        ownerEmail: context.ownerEmail,
+      metadataRole,
+      userId: id,
+      adminUserIds: context.adminUserIds,
+      maxUserIds: context.maxUserIds,
       })
     : null;
   const expectedAppProfile = expectedStoredRoleLabel ?? (clerkUser
@@ -420,11 +410,8 @@ function buildRowSummary({
             resolveStoredRoleLabel({
               metadataRole,
               userId: id,
-              email: clerkUser.primaryEmail,
-              primaryEmailVerified: clerkUser.primaryEmailVerified,
               adminUserIds: context.adminUserIds,
-              ownerUserId: context.ownerUserId,
-              ownerEmail: context.ownerEmail,
+              maxUserIds: context.maxUserIds,
             }) === "max",
         })
       : null);
@@ -548,13 +535,6 @@ async function main() {
   const allowlistOverlapCount = Array.from(adminUserIds).filter((id) =>
     maxUserIds.has(id),
   ).length;
-  const ownerUserId = resolveEnvValue("CLERK_IMU_OWNER_USER_ID", envFiles);
-  const ownerEmail = resolveEnvValue("CLERK_IMU_OWNER_EMAIL", envFiles);
-  const maxAllowlistUnexpectedCount = ownerUserId
-    ? Array.from(maxUserIds).filter((id) => id !== ownerUserId).length
-    : maxUserIds.size;
-  const ownerAllowlistMissing = Boolean(ownerUserId && !maxUserIds.has(ownerUserId));
-  const ownerAllowlistOverlap = Boolean(ownerUserId && adminUserIds.has(ownerUserId));
 
   if (!clerkSecretKey) {
     throw new Error("Missing CLERK_SECRET_KEY.");
@@ -633,8 +613,7 @@ async function main() {
         funnelCount: funnelCounts.get(id) ?? 0,
         context: {
           adminUserIds,
-          ownerUserId,
-          ownerEmail,
+          maxUserIds,
         },
       }),
     );
@@ -667,9 +646,7 @@ async function main() {
       roleMismatches: findings.roleMismatches.length,
       legacyActivityOnly: findings.legacyActivityOnly.length,
       allowlistOverlap: allowlistOverlapCount,
-      maxAllowlistUnexpected: maxAllowlistUnexpectedCount,
-      ownerAllowlistMissing,
-      ownerAllowlistOverlap,
+      maxAllowlistCount: maxUserIds.size,
     },
   };
 

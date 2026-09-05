@@ -211,7 +211,7 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it("does not promote a non-owner from max metadata", async () => {
+  it("syncs canonical max metadata without using email", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,
     });
@@ -233,7 +233,7 @@ describe("syncClerkUserToSupabase", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        role_label: "benevole",
+        role_label: "max",
         display_name: "Max Owner",
         display_name_mode: "full_name",
       }),
@@ -241,6 +241,30 @@ describe("syncClerkUserToSupabase", () => {
     );
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not promote a normal user from a privileged email", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase({
+      id: "user_email_only",
+      username: "email_only",
+      emailAddresses: [{ emailAddress: "owner@example" }],
+      primaryEmailAddress: { emailAddress: "creator@example" },
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: {},
+      privateMetadata: {},
+      firstName: "Email",
+      lastName: "Only",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ role_label: "benevole" }),
+      { onConflict: "id" },
+    );
   });
 
   it("derives the arrondissement from a district zone name during sync", async () => {

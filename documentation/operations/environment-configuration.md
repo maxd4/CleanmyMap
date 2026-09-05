@@ -109,10 +109,10 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_IS_SATELLITE` | Clerk | CONFIG | O | O | O | O | Vercel / template local | configuration Clerk |
 | `CLERK_SATELLITE_AUTO_SYNC` | Clerk | CONFIG | O | O | O | O | Vercel / template local | synchronisation Clerk |
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
-| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic de configuration, aucune attribution |
-| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | diagnostic historique, jamais une autorité |
-| `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | owner IMU exact par instance |
-| `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | email principal owner vérifié |
+| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | allowlist serveur canonique `admin` |
+| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | allowlist serveur canonique `max` |
+| `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | destinataire de contact interne, sans AuthZ |
+| `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | configuration de contact interne, sans AuthZ |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
 | `RESEND_FROM_EMAIL` | Resend | CONFIG | O | O | O | O | Resend / Vercel | expéditeur email |
 | `RESEND_REPLY_TO` | Resend | CONFIG | O | O | O | O | Resend / Vercel | réponse email |
@@ -191,13 +191,13 @@ au contrat.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
-- `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` restent des listes opératoires
-  indépendantes et disjointes pour les audits de configuration; elles ne
-  résolvent aucun `GRANTED_ROLE`. Le rôle `admin` provient uniquement d'une
-  écriture Clerk issue d'une décision IMU (demande acceptée ou attribution
-  directe), et `max` exige le couple owner exact de l'instance ainsi que
-  l'email principal Clerk `verified`. Production et Development ont chacun
-  leur propre ID owner.
+- `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des allowlists serveur
+  indépendantes pour la résolution des rôles. Les metadata serveur canoniques
+  `role=admin` et `role=max` sont également acceptées. Les adresses email,
+  primaire ou secondaire, et `CREATOR_INBOX_EMAIL` ne participent jamais à la
+  résolution AuthZ. Les variables `CLERK_IMU_OWNER_USER_ID` et
+  `CLERK_IMU_OWNER_EMAIL` peuvent servir au routage de contact interne, mais
+  ne confèrent aucun rôle.
 
 ### Supabase
 

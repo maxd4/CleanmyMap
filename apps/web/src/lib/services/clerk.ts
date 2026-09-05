@@ -1,7 +1,11 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getRoleBadge, getProfileBadge } from "@/lib/authz";
-import { resolveClerkRole } from "@/lib/auth/role-resolution";
+import {
+  parseAdminUserIds,
+  parseMaxUserIds,
+  resolveClerkRole,
+} from "@/lib/auth/role-resolution";
 import type { AppProfile } from "@/lib/profiles";
 
 export type ClerkUserIdentity = {
@@ -31,8 +35,8 @@ function resolveClerkServiceRole(params: {
 }): AppProfile {
   return resolveClerkRole({
     user: { ...params.user, id: params.id },
-    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
-    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
   });
 }
 

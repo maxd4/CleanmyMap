@@ -3,7 +3,11 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { resolveClerkRole } from "@/lib/auth/role-resolution";
+import {
+  parseAdminUserIds,
+  parseMaxUserIds,
+  resolveClerkRole,
+} from "@/lib/auth/role-resolution";
 import { getCurrentUserActiveRole, getCurrentUserIdentity } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
@@ -26,14 +30,13 @@ const reviewSchema = z.object({
 
 function resolveCanonicalTargetRole(user: {
   id: string;
-  primaryEmailAddress?: { emailAddress?: string | null; verification?: { status?: string | null } | null } | null;
   publicMetadata?: Record<string, unknown> | null;
   privateMetadata?: Record<string, unknown> | null;
 }): AppProfile {
   return resolveClerkRole({
     user,
-    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
-    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
+    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
+    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
   });
 }
 
