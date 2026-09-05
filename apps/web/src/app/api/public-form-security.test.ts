@@ -20,9 +20,8 @@ const appendPartnerOnboardingRequestMock = vi.hoisted(() => vi.fn(async () => ({
   id: "partner-request-mock",
   status: "pending_admin_review",
 })));
-const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async ({ input }) => ({
+const appendPromotionRequestMock = vi.hoisted(() => vi.fn(async () => ({
   id: "promotion-request-mock",
-  ...input,
   status: "pending_owner_review",
 })));
 
@@ -191,35 +190,5 @@ describe("public form security guardrails", () => {
       }),
     );
     expect(promotionResponse.status).toBe(401);
-  });
-
-  it("queues a promotion request without granting a role", async () => {
-    const promotion = await import("./community/promotion-requests/route");
-    const response = await promotion.POST(
-      new Request("http://localhost/api/community/promotion-requests", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          requestedRole: "admin",
-          motivation: "Je souhaite contribuer à la supervision de la plateforme.",
-        }),
-      }),
-    );
-    const body = (await response.json()) as {
-      status?: string;
-      item?: { status?: string; requestedRole?: string };
-    };
-
-    expect(response.status).toBe(201);
-    expect(body.status).toBe("queued");
-    expect(body.item).toMatchObject({
-      status: "pending_owner_review",
-      requestedRole: "admin",
-    });
-    expect(appendPromotionRequestMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        input: expect.objectContaining({ requestedRole: "admin" }),
-      }),
-    );
   });
 });

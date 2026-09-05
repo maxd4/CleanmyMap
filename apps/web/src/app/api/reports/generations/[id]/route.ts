@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAdminAccess } from "@/lib/authz";
-import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import { requireAuthenticatedAccess } from "@/lib/authz";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   getReportGenerationSnapshotById,
   InvalidReportGenerationIdError,
@@ -17,14 +17,14 @@ export async function GET(
   _request: Request,
   { params }: ReportGenerationRouteContext,
 ) {
-  const access = await requireAdminAccess();
+  const access = await requireAuthenticatedAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
+    return unauthorizedJsonResponse({ hint: access.error });
   }
 
   const { id } = await params;
   try {
-    const generation = await getReportGenerationSnapshotById(id);
+    const generation = await getReportGenerationSnapshotById(id, access.userId);
     if (!generation) {
       return NextResponse.json({ error: "Rapport historique introuvable." }, { status: 404 });
     }

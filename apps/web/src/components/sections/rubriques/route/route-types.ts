@@ -7,14 +7,6 @@ import type {
   RouteDataStatus,
   RouteRecommendationStatus,
 } from "@/lib/route/route-data-status";
-import type { RouteRecommendationTrace } from "@/lib/route/route-trace";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
-import type {
-  RoutePredictionSummary,
-  RouteRiskFocus,
-} from "@/lib/route/route-predicted-targets";
-
-export type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
 export type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 
@@ -22,7 +14,6 @@ export type RouteOptions = {
   priorityVsTravel: number;
   travelBudgetMinutes: number;
   maxStops: number;
-  riskFocus?: RouteRiskFocus;
 };
 
 export type RouteResponseOrigin = {
@@ -40,7 +31,6 @@ export type RouteRecommendationOrigin = {
 export type RouteOriginMode = "browser" | "map";
 
 export type RouteResponse = {
-  planningMode: RoutePlanningMode;
   status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
   isTruncated: boolean;
@@ -52,9 +42,6 @@ export type RouteResponse = {
   withinBudget: boolean;
   serviceMinutesEstimate: null;
   totalMinutesEstimate: null;
-  trace: RouteRecommendationTrace;
-  /** Present on responses produced by the current API; optional for legacy cached payloads. */
-  prediction?: RoutePredictionSummary;
   diagnostics: {
     loaded: number;
     eligible: number;

@@ -41,13 +41,6 @@ function readProfileRole(metadata: unknown): string | null {
   return typeof roleValue === "string" ? roleValue : null;
 }
 
-function readActiveRole(metadata: unknown): string | null {
-  if (!metadata || typeof metadata !== "object") return null;
-  const candidate = metadata as Record<string, unknown>;
-  const value = candidate["activeRole"] ?? candidate["activeProfile"];
-  return typeof value === "string" ? value : null;
-}
-
 export function ActionsHistoryList() {
  const { user } = useUser();
  const { locale } = useSitePreferences();
@@ -71,7 +64,7 @@ export function ActionsHistoryList() {
  const [pendingGroupJoinLoading, setPendingGroupJoinLoading] = useState(false);
  const [pendingGroupJoinError, setPendingGroupJoinError] = useState<string | null>(null);
  const [reviewingParticipantId, setReviewingParticipantId] = useState<string | null>(null);
- const currentProfileRole = normalizeProfileRole(readActiveRole(user?.publicMetadata) ?? readProfileRole(user?.publicMetadata));
+ const currentProfileRole = normalizeProfileRole(readProfileRole(user?.publicMetadata));
  const isAdminLikeUser = currentProfileRole ? isAdminLikeProfile(currentProfileRole) : false;
 
  const swrKey = useMemo(

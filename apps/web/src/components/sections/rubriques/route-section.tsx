@@ -10,8 +10,6 @@ import { RouteSummaryCards } from "./route/components/route-summary-cards";
 import { RouteOptionsForm } from "./route/components/route-constraints-form";
 import { RouteAssistant } from "./route/components/route-assistant";
 import { RouteList } from "./route/components/route-list";
-import { RouteExplanation } from "./route/components/route-explanation";
-import { RouteEventOpportunities } from "./route/components/route-event-opportunities";
 import {
   getRouteOriginLabel,
   getRouteRecommendationErrorMessage,
@@ -20,8 +18,6 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
-import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
-import { RouteEventSelector } from "./route/components/route-event-selector";
 
 const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
   coordinates: [],
@@ -39,11 +35,7 @@ const RouteMap = dynamic(
   { ssr: false },
 );
 
-export function RouteSection({
-  initialPlanningMode,
-}: {
-  initialPlanningMode?: RoutePlanningMode;
-}) {
+export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const { isLoaded, isSignedIn } = useEffectiveAuthState();
   const {
@@ -68,9 +60,7 @@ export function RouteSection({
     isResolvingOrigin,
     isRequestInFlight,
     requestRecommendation,
-    planningMode,
-    setPlanningMode,
-  } = useRouteData(initialPlanningMode);
+  } = useRouteData();
 
   const dataStatusMessage = data
     ? data.status === "empty"
@@ -114,11 +104,6 @@ export function RouteSection({
              </div>
              
              <RouteSummaryCards options={options} fr={fr} />
-             <RouteEventSelector
-               planningMode={planningMode}
-               setPlanningMode={setPlanningMode}
-               fr={fr}
-             />
              <fieldset className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5">
                <legend className="px-1 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
                  {fr ? "Point de départ" : "Starting point"}
@@ -296,10 +281,6 @@ export function RouteSection({
               {getRouteOriginLabel(data.origin.source, fr)}
             </p>
           )}
-
-          {data && <RouteExplanation data={data} fr={fr} />}
-
-          {data && <RouteEventOpportunities data={data} fr={fr} />}
 
           <AnimatePresence mode="wait">
             {hasRoute && data && (

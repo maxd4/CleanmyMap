@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { normalizeProfileRole, resolveActiveRole, toProfile, type AppProfile } from "@/lib/profiles";
+import { normalizeProfileRole, toProfile, type AppProfile } from "@/lib/profiles";
 
 type AppShellSurfaceProps = {
   children: ReactNode;
@@ -32,12 +32,7 @@ function resolveProfileFromUser(
         : null;
   const normalizedRole = normalizeProfileRole(rawRole);
 
-  if (!normalizedRole) return fallback;
-  const activeRole = metadata?.["activeRole"] ?? metadata?.["activeProfile"];
-  return resolveActiveRole({
-    metadataActiveRole: typeof activeRole === "string" ? activeRole : null,
-    grantedRole: normalizedRole,
-  }) ?? toProfile(normalizedRole);
+  return normalizedRole ? toProfile(normalizedRole) : fallback;
 }
 
 export function AppShellSurface({ children }: AppShellSurfaceProps) {

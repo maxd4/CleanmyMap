@@ -36,7 +36,7 @@ Fallback statique:
 ```mermaid
 flowchart TD
   A[Symptome admin] --> B{Role admin present ?}
-  B -- Non --> B1[Verifier une decision IMU auditee et le role metadata]
+  B -- Non --> B1[Appliquer role metadata ou CLERK_ADMIN_USER_IDS]
   B -- Oui --> C{Route /api/admin/* retourne JSON ?}
   C -- Non --> C1[Verifier middleware/proxy protection]
   C -- Oui --> D[Retester action moderation]

@@ -1,4 +1,10 @@
-import { normalizeDisplayNameMode, type DisplayNameMode } from "@/lib/profiles";
+import {
+  normalizeDisplayNameMode,
+  resolveActiveProfile,
+  type AppProfile,
+  type DisplayNameMode,
+} from "@/lib/profiles";
+import type { Role } from "@/lib/domain-language";
 
 export type CurrentAccountIdentity = {
   userId: string;
@@ -8,6 +14,8 @@ export type CurrentAccountIdentity = {
   username: string;
   firstName: string | null;
   email: string | null;
+  role: Role;
+  activeProfile: AppProfile;
 };
 
 type CurrentAccountIdentityResponse = Partial<CurrentAccountIdentity> & {
@@ -29,6 +37,17 @@ function buildCurrentAccountIdentity(
   payload: CurrentAccountIdentityResponse & { userId: string; displayName: string },
 ): CurrentAccountIdentity {
   const username = trimOrNull(payload.username) ?? trimOrNull(payload.handle) ?? payload.userId;
+  const role = payload.role && [
+    "benevole",
+    "coordinateur",
+    "scientifique",
+    "entreprise",
+    "elu",
+    "admin",
+    "max",
+  ].includes(payload.role)
+    ? payload.role as Role
+    : "benevole";
   return {
     userId: payload.userId,
     displayName: payload.displayName,
@@ -37,6 +56,11 @@ function buildCurrentAccountIdentity(
     username,
     firstName: trimOrNull(payload.firstName),
     email: trimOrNull(payload.email),
+    role,
+    activeProfile: resolveActiveProfile({
+      metadataActiveProfile: payload.activeProfile,
+      role,
+    }),
   };
 }
 

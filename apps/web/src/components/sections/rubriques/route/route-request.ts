@@ -3,13 +3,11 @@ import type {
   RouteOriginMode,
   RouteRecommendationOrigin,
   RouteResponse,
-  RoutePlanningMode,
 } from "./route-types";
 
 export type RouteRecommendationRequest = {
   id: number;
   options: RouteOptions;
-  planningMode: RoutePlanningMode;
   origin?: RouteRecommendationOrigin;
 };
 
@@ -37,15 +35,10 @@ export function createRouteRecommendationRequest(
   id: number,
   options: RouteOptions,
   origin?: RouteRecommendationOrigin,
-  planningMode: RoutePlanningMode = { type: "free" },
 ): RouteRecommendationRequest {
   return {
     id,
     options: { ...options },
-    planningMode:
-      planningMode.type === "event-centered"
-        ? { ...planningMode }
-        : { type: "free" },
     ...(origin ? { origin: { ...origin } } : {}),
   };
 }
@@ -85,7 +78,6 @@ export async function fetchRouteRecommendation(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...request.options,
-      planningMode: request.planningMode,
       ...(request.origin ? { origin: request.origin } : {}),
     }),
   });

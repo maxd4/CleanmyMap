@@ -7,7 +7,7 @@ import {
   unauthorizedJsonResponse,
 } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
-import { getCurrentUserEffectiveAccess } from "@/lib/authz";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 
 export const runtime ="nodejs";
 
@@ -33,8 +33,8 @@ export async function GET(request: Request) {
  return unauthorizedJsonResponse();
  }
 
- const access = await getCurrentUserEffectiveAccess().catch(() => null);
- if (!access?.canAccessPilotage) {
+ const role = await getCurrentUserRoleLabel().catch(() => "anonymous" as const);
+ if (role !== "coordinateur" && role !== "max") {
   return forbiddenJsonResponse();
  }
 

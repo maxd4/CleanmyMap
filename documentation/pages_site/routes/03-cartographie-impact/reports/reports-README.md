@@ -7,7 +7,8 @@
 - **Palette runtime** : red
 - **Accès visiteur** : `auth-blur-gate`
 - **Accès page complète** : compte connecté
-- **Exports et génération détaillée** : profils admin-like
+- **Génération et historique** : compte connecté, sur son propre historique
+- **Exports détaillés de l'analyse** : profils admin-like
 - **Source principale** : `apps/web/src/app/(app)/reports/page.tsx`
 
 ## Contrat d'accès
@@ -29,7 +30,15 @@ Avec compte connecté :
 accès à la page de rapports
 ```
 
-Pour la génération complète et les exports :
+Pour la génération de document et son historique :
+
+```txt
+requireAuthenticatedAccess()
+historique filtré par created_by_clerk_id = userId courant
+```
+
+Les exports détaillés de l'onglet Analyse restent réservés aux profils
+admin-like :
 
 ```txt
 isAdminLikeProfile(profile) = true
@@ -149,12 +158,12 @@ la fenêtre fixe de l'onglet Analyse.
 
 ## Historique des générations
 
-« Rapports récents » lit les générations réellement persistées dans
-`public.report_generations`, triées par `generated_at` décroissant et limitées
-aux 12 dernières entrées. Une ligne contient le titre, la période, le
-périmètre, le niveau de détail et la date de génération. Aucun rapport
-synthétique n'est créé lorsque la base est vide, auquel cas l'interface affiche
-« Aucun rapport généré ».
+« Rapports récents » lit les générations réellement persistées par le compte
+connecté dans `public.report_generations`, triées par `generated_at` décroissant
+et limitées aux 12 dernières entrées de ce compte. Une ligne contient le titre,
+la période, le périmètre, le niveau de détail et la date de génération. Aucun
+rapport synthétique n'est créé lorsque la base est vide, auquel cas l'interface
+affiche « Aucun rapport généré ».
 
 La lecture de cette liste ne sélectionne que les métadonnées nécessaires à ces
 colonnes (`id`, `generated_at`, `title`, `period_id`, `scope_label` et
@@ -173,9 +182,10 @@ métadonnées de configuration sont persistés ; le binaire PDF ne l'est pas.
 L'échec de cette persistance conserve le succès du PDF et affiche un
 avertissement non bloquant. Aucune politique de rétention n'est promise par
 cette page.
-La génération et la lecture de cet historique sont réservées aux profils
-admin-like via `requireAdminAccess`; la table Supabase n'accorde aucun accès
-direct à `anon` ou `authenticated`.
+La génération et la lecture de cet historique exigent une session via
+`requireAuthenticatedAccess`. Les handlers utilisent le client serveur et
+filtrent chaque lecture par l'identifiant Clerk du compte courant ; la table
+Supabase n'accorde toujours aucun accès direct à `anon` ou `authenticated`.
 
 ## Performance
 
@@ -193,8 +203,8 @@ Règles :
 
 ```txt
 visiteur anonyme → gate flouté
-compte connecté standard → rapports sans génération admin
-profil admin-like → génération et exports
+compte connecté standard → rapports, génération et historique de son compte
+profil admin-like → mêmes capacités, plus exports détaillés de l'analyse
 Analyse indisponible → erreur explicite, sans faux modèle zéro
 historique indisponible → erreur explicite, sans faux état vide
 ```

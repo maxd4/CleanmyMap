@@ -2,7 +2,6 @@ import { logFailure, logWarning } from "@/lib/logging/failure-log";
 import type {
   RouteGeometry,
   RouteGeometryLeg,
-  RouteGeometryStep,
   RouteNetworkGeometryProvider,
   RouteGeometryProfile,
 } from "@/lib/route/route-contract";
@@ -25,23 +24,11 @@ export type RoutePolylineOptions = {
   provider?: RouteNetworkGeometryProvider;
   profile?: Exclude<RouteGeometryProfile, null>;
   headers?: HeadersInit;
-  steps?: boolean;
 };
 
 type OsrmLeg = {
   distance?: unknown;
   duration?: unknown;
-  steps?: unknown;
-};
-
-type OsrmStep = {
-  distance?: unknown;
-  duration?: unknown;
-  name?: unknown;
-  maneuver?: {
-    type?: unknown;
-    modifier?: unknown;
-  };
 };
 
 type OsrmRoute = {
@@ -134,14 +121,14 @@ function fallbackDistanceKm(coordinates: [number, number][]): number {
 
 export function buildOsrmRouteUrl(
   coordinates: [number, number][],
-  options: Pick<RoutePolylineOptions, "baseUrl" | "profileSegment" | "steps"> = {},
+  options: Pick<RoutePolylineOptions, "baseUrl" | "profileSegment"> = {},
 ): string {
   const coordString = coordinates
     .map((point) => `${point[1].toFixed(6)},${point[0].toFixed(6)}`)
     .join(";");
   const baseUrl = (options.baseUrl ?? OSRM_BASE_URL).replace(/\/+$/, "");
   const profileSegment = options.profileSegment ?? OSRM_PROFILE;
-  return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=${options.steps === true ? "true" : "false"}`;
+  return `${baseUrl}/route/v1/${profileSegment}/${coordString}?geometries=geojson&overview=full&steps=false`;
 }
 
 export function createFallbackRouteGeometry(
@@ -161,45 +148,6 @@ export function createFallbackRouteGeometry(
     mode: "fallback",
     estimated: true,
   };
-}
-
-function parseRouteSteps(value: unknown): RouteGeometryStep[] | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-
-  const steps: RouteGeometryStep[] = [];
-  for (const rawStep of value as OsrmStep[]) {
-    if (
-      !rawStep ||
-      !isFiniteNumber(rawStep.distance) ||
-      rawStep.distance < 0 ||
-      !isFiniteNumber(rawStep.duration) ||
-      rawStep.duration < 0
-    ) {
-      return undefined;
-    }
-
-    const name =
-      typeof rawStep.name === "string" && rawStep.name.trim().length > 0
-        ? rawStep.name.trim()
-        : null;
-    const maneuverParts = [
-      rawStep.maneuver?.type,
-      rawStep.maneuver?.modifier,
-    ].filter(
-      (part): part is string => typeof part === "string" && part.length > 0,
-    );
-
-    steps.push({
-      name,
-      distanceKm: Number((rawStep.distance / 1000).toFixed(2)),
-      durationMinutes: Number((rawStep.duration / 60).toFixed(2)),
-      maneuver: maneuverParts.length > 0 ? maneuverParts.join(" ") : null,
-    });
-  }
-
-  return steps;
 }
 
 function parseNetworkRoute(
@@ -236,13 +184,11 @@ function parseNetworkRoute(
         parsedLegs.length = 0;
         break;
       }
-      const steps = parseRouteSteps(rawLeg.steps);
       parsedLegs.push({
         fromStopIndex: index,
         toStopIndex: index + 1,
         distanceKm: Number((rawLeg.distance / 1000).toFixed(2)),
         estimatedMinutes: Math.max(0, Math.round(rawLeg.duration / 60)),
-        ...(steps ? { steps } : {}),
       });
     }
     legs = parsedLegs;

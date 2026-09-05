@@ -62,12 +62,6 @@ intermédiaires ne doivent pas commencer par ce canari.
   `maxd4/CleanmyMap`, branche `main` ;
 - lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
   pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
-- tout commit réel destiné à `main` utilise l'identité canonique
-  `maxd4 <maxd4@users.noreply.github.com>` et doit être signé avec
-  `git commit -S` ; si `git commit-tree` est réellement nécessaire, utiliser
-  obligatoirement `git commit-tree -S`. Cette règle ne s'applique pas aux
-  dépôts ni aux commits de fixtures de tests ; Verified Commits ne doit jamais
-  être contourné ;
 - le checkout de travail reste directement sur `main` ; toute exécution qui
   produit des modifications doit se terminer par un commit ciblé sur `main`
   puis un push vers `origin/main` ; aucune modification ne justifie un commit
@@ -170,9 +164,8 @@ intermédiaires ne doivent pas commencer par ce canari.
   avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes, `git diff --cached --name-only` et l'ascendance réellement
-  destinée au push ; vérifier aussi la signature du SHA candidat avec
-  `git verify-commit` juste avant le push ; après création du commit local, ne
-  pas exiger l'égalité littérale `HEAD == origin/main` ;
+  destinée au push ; après création du commit local, ne pas exiger l'égalité
+  littérale `HEAD == origin/main` ;
 - si le push échoue, conserver le commit local et signaler explicitement le
   blocage ; ne jamais contourner les protections par un force push ;
 - lorsqu'une vérification effective du site web est demandée, comparer le

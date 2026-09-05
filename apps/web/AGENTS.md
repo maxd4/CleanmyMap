@@ -129,7 +129,7 @@ frontières sont déjà prévisibles.
   à la ligne décoratifs, et traiter les états de chargement, vide, erreur,
   accès refusé, succès, mobile et accessibilité lorsque c'est pertinent ;
 - la règle complète des scores et ses exceptions techniques sont documentées
-  dans `documentation/design-system/ui-score-formatting.md`.
+   dans `documentation/design-system/ui-score-formatting.md`.
 
 ## Validation web ciblée
 

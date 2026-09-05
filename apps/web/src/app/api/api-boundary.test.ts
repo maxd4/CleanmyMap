@@ -64,12 +64,8 @@ function walk(directory: string): string[] {
 }
 
 function readRouteInventory() {
-  const entries = walk(apiRoot)
-    .filter(
-      (path) =>
-        path.endsWith("route.ts") ||
-        /route\.(get|post|put|patch|delete|head|options)\.ts$/i.test(path),
-    )
+  return walk(apiRoot)
+    .filter((path) => path.endsWith("route.ts"))
     .map((path) => {
       const route = relative(apiRoot, dirname(path)).replaceAll("\\", "/");
       const family = route.split("/")[0] ?? "";
@@ -91,20 +87,6 @@ function readRouteInventory() {
       return { path, route, source, methods };
     })
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-
-  const merged = new Map<string, (typeof entries)[number]>();
-  for (const entry of entries) {
-    const existing = merged.get(entry.route);
-    if (!existing) {
-      merged.set(entry.route, entry);
-      continue;
-    }
-    for (const [method, source] of entry.methods) {
-      existing.methods.set(method, source);
-    }
-    existing.source += `\n${entry.source}`;
-  }
-  return [...merged.values()];
 }
 
 function contractEntries() {

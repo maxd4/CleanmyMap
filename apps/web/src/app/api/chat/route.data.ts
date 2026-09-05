@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { MAX_ROLE_STORAGE_VALUES } from "@/lib/profiles";
 import {
   normalizeChatPollVoteSummaryRows,
   type ChatPollVoteSummary,
@@ -167,9 +167,20 @@ export async function resolveBugReportRecipientId(
   senderId: string,
   senderRole: string,
 ): Promise<string | null> {
-  const ownerId = env.CLERK_IMU_OWNER_USER_ID?.trim();
-  if (ownerId) {
-    return ownerId;
+  const { data: maxData, error: maxError } = await supabase
+    .from("profiles")
+    .select("id")
+    .in("role_label", MAX_ROLE_STORAGE_VALUES)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (maxError) {
+    throw maxError;
+  }
+
+  if (maxData?.id) {
+    return maxData.id;
   }
 
   const { data, error } = await supabase

@@ -21,18 +21,12 @@ export const LOCAL_ROLE_CONFIGS = Object.freeze({
     displayName: "Dev Benevole",
     username: "dev-benevole",
   }),
-  admin: Object.freeze({
-    role: "admin",
-    userId: "dev-admin",
-    displayName: "Dev Admin",
-    username: "dev-admin",
-  }),
 });
 
 export function getRoleConfig(role) {
   const config = LOCAL_ROLE_CONFIGS[role];
   if (!config) {
-    throw new Error(`[launcher] Rôle local inconnu: ${role}. Utilise max, admin ou benevole.`);
+    throw new Error(`[launcher] Rôle local inconnu: ${role}. Utilise max ou benevole.`);
   }
   return config;
 }

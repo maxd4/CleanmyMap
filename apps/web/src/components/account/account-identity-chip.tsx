@@ -136,8 +136,8 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     };
   }, []);
 
-  const handleActiveRoleMutation = async (targetRole: AppProfile | null) => {
-    if (!targetRole || isUpdatingProfile) {
+  const handleActiveProfileMutation = async (targetProfile: AppProfile | null) => {
+    if (!targetProfile || isUpdatingProfile) {
       return;
     }
     setIsUpdatingProfile(true);
@@ -149,11 +149,11 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ activeRole: targetRole }),
+        body: JSON.stringify({ activeProfile: targetProfile }),
       });
 
       const payload = (await response.json().catch(() => null)) as
-        | { role?: string; activeRole?: string; profilePath?: string; error?: string }
+        | { role?: string; activeProfile?: string; profilePath?: string; error?: string }
         | null;
 
       if (!response.ok) {
@@ -165,7 +165,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       }
 
       const profilePath =
-        payload?.profilePath ?? getProfileEntryPath(targetRole);
+        payload?.profilePath ?? getProfileEntryPath(targetProfile);
       const targetPath = getRoleSwitchTargetPath(pathname, profilePath);
       if (targetPath) {
         router.replace(targetPath);
@@ -174,7 +174,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Mutation de rôle refusée.";
-      setProfileError(message);
+        setProfileError(message);
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -199,12 +199,12 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
               <BadgePictogram
-                name={getAccountBadgeIconName(`role_${identity.activeRole}`)}
+                name={getAccountBadgeIconName(`role_${identity.activeProfile}`)}
                 size={16}
               />
             </span>
             <span className="hidden truncate text-sm font-bold sm:inline">
-              {getProfileLabel(identity.activeRole, locale)}
+              {getProfileLabel(identity.activeProfile, locale)}
             </span>
             <ChevronDown
               className={cn(
@@ -239,7 +239,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             </p>
             <ul className="space-y-1" role="none">
               {profileMenuGroups.openProfiles.map((profile) => {
-                const isActive = profile === identity.activeRole;
+                const isActive = profile === identity.activeProfile;
                 return (
                   <li key={profile} role="none">
                     <button
@@ -252,7 +252,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                           setIsRoleMenuOpen(false);
                           return;
                         }
-                        void handleActiveRoleMutation(profile);
+                        void handleActiveProfileMutation(profile);
                       }}
                       className={cn(
                         "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",
@@ -293,7 +293,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             {profileMenuGroups.obtainedProfiles.length > 0 ? (
               <ul className="mt-2 space-y-1" role="none">
                 {profileMenuGroups.obtainedProfiles.map((profile) => {
-                  const isActive = profile === identity.activeRole;
+                  const isActive = profile === identity.activeProfile;
                   return (
                     <li key={profile} role="none">
                       <button
@@ -306,7 +306,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                             setIsRoleMenuOpen(false);
                             return;
                           }
-                          void handleActiveRoleMutation(profile);
+                          void handleActiveProfileMutation(profile);
                         }}
                         className={cn(
                           "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-50",

@@ -39,11 +39,10 @@ Supabase assure la persistance et l'autorisation au niveau données lorsque le f
 
 Ne pas introduire une seconde identité canonique pour le même utilisateur sans décision d'architecture explicite.
 
-Le rôle privilégié reste unique : **IMU = rôle interne `max`**. L'attribution
-exige l'identité owner Clerk exacte de l'instance (`CLERK_IMU_OWNER_USER_ID`)
-et son email principal vérifié (`CLERK_IMU_OWNER_EMAIL`). Les métadonnées,
-`profiles.role_label`, `CREATOR_INBOX_EMAIL`, les allowlists admin et les
-alias legacy ne suffisent jamais à accorder IMU.
+Le rôle privilégié reste unique : **IMU = super-admin = rôle interne `max`**.
+`max` est la valeur technique canonique, `IMU` le libellé produit et
+`super-admin` un alias entrant ; aucune différence de permissions ne doit être
+déduite de ces appellations.
 
 ## Autorisation
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { requireAdminAccess } from "@/lib/authz";
-import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import { requireAuthenticatedAccess } from "@/lib/authz";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
@@ -35,9 +35,9 @@ const createPayloadSchema = z.object({
 const MAX_SNAPSHOT_BYTES = 2_000_000;
 
 export async function POST(request: Request) {
-  const access = await requireAdminAccess();
+  const access = await requireAuthenticatedAccess();
   if (!access.ok) {
-    return adminAccessErrorJsonResponse(access);
+    return unauthorizedJsonResponse({ hint: access.error });
   }
 
   const operationId = `report-generation-${randomUUID()}`;

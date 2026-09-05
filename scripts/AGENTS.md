@@ -44,13 +44,6 @@ médias et rapports présents sous `scripts/`.
   resynchronisation de publication réellement nécessaire. Aucun nom ad hoc,
   clone, worktree ou copie persistante n'est autorisé ; le check read-only
   `check:candidate-lifecycle` signale les résidus sans les supprimer ;
-- `npm run check:candidate-lifecycle -- --strict` applique le ratchet contre
-  `scripts/checks/candidate-lifecycle-baseline.json` : les trois preuves
-  historiques qui y sont documentées restent tolérées, tandis que toute
-  nouvelle candidate générée, entrée canonique inconnue ou entrée ad hoc est
-  bloquante. La baseline est une exception historique explicite, pas une
-  autorisation de créer de nouveaux chemins ; aucune entrée inconnue n'est
-  supprimée automatiquement ;
 - un rapport de script qui crée une candidate doit indiquer
   `CANDIDATE_CREATED`, `CANDIDATE_PATH` et `CANDIDATE_CLEANUP`. Un cleanup en
   échec est bloquant pour un verdict final `terminé` ;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
-const getCurrentUserEffectiveAccessMock = vi.hoisted(() => vi.fn());
+const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
 const loadPilotageOverviewMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -9,7 +9,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserEffectiveAccess: getCurrentUserEffectiveAccessMock,
+  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
 }));
 
 vi.mock("@/lib/actions/unified-source", () => ({
@@ -25,9 +25,7 @@ describe("GET /api/pilotage/overview authorization", () => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
-    getCurrentUserEffectiveAccessMock.mockResolvedValue({
-      canAccessPilotage: true,
-    });
+    getCurrentUserRoleLabelMock.mockResolvedValue("coordinateur");
     loadPilotageOverviewMock.mockResolvedValue({ generatedAt: "2026-08-26T00:00:00.000Z" });
   });
 
@@ -42,9 +40,7 @@ describe("GET /api/pilotage/overview authorization", () => {
   });
 
   it("rejects authenticated roles outside the pilotage contract", async () => {
-    getCurrentUserEffectiveAccessMock.mockResolvedValueOnce({
-      canAccessPilotage: false,
-    });
+    getCurrentUserRoleLabelMock.mockResolvedValueOnce("benevole");
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview"));
@@ -53,10 +49,8 @@ describe("GET /api/pilotage/overview authorization", () => {
     expect(loadPilotageOverviewMock).not.toHaveBeenCalled();
   });
 
-  it.each(["coordinateur", "admin", "max"])("allows %s through the pilotage capability", async () => {
-    getCurrentUserEffectiveAccessMock.mockResolvedValueOnce({
-      canAccessPilotage: true,
-    });
+  it.each(["coordinateur", "max"])("allows the %s pilotage role", async (role) => {
+    getCurrentUserRoleLabelMock.mockResolvedValueOnce(role);
 
     const { GET } = await import("./route");
     const response = await GET(new Request("http://localhost/api/pilotage/overview?days=30"));

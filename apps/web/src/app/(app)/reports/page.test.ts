@@ -285,14 +285,25 @@ describe("/reports page contract", () => {
     expect(markup).toContain('data-testid="report-actions">0</div>');
   });
 
-  it("keeps the generation tab permission-gated for a non-admin profile", async () => {
+  it("makes the generation tab available to any authenticated profile", async () => {
+    mocks.fetchCachedUnifiedActionContracts.mockResolvedValue({
+      items: [contract],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+    });
+
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }));
 
     expect(markup).toContain('data-active-tab="generation"');
-    expect(markup).toContain("Génération réservée");
+    expect(markup).toContain('data-testid="report-generation"');
+    expect(markup).not.toContain("Génération réservée");
     expect(markup).not.toContain('data-testid="csv-export"');
-    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
-    expect(mocks.loadCachedReportCommunityEvents).not.toHaveBeenCalled();
+    expect(mocks.listReportGenerationHistory).toHaveBeenCalledWith("user-1");
   });
 
   it("propagates a truncated generation dataset to the report document", async () => {

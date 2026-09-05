@@ -56,12 +56,13 @@ describe("report generation history store", () => {
   it("lists persisted rows newest first with a bounded limit", async () => {
     const limit = vi.fn().mockResolvedValue({ data: [dbRow], error: null });
     const order = vi.fn(() => ({ limit }));
-    const select = vi.fn(() => ({ order }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
     getSupabaseAdminClientMock.mockReturnValue({
       from: vi.fn(() => ({ select })),
     });
 
-    await expect(listReportGenerationHistory(99)).resolves.toMatchObject([
+    await expect(listReportGenerationHistory("user-1", 99)).resolves.toMatchObject([
       {
         id: "generation-1",
         period: "Six mois",
@@ -72,6 +73,7 @@ describe("report generation history store", () => {
     expect(select).toHaveBeenCalledWith(
       "id, generated_at, title, period_id, scope_label, detail_level",
     );
+    expect(eq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");
     expect(order).toHaveBeenCalledWith("generated_at", { ascending: false });
     expect(limit).toHaveBeenCalledWith(12);
   });
@@ -118,13 +120,14 @@ describe("report generation history store", () => {
 
   it("loads only the requested snapshot by validated UUID", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({ data: historicalRow, error: null });
-    const eq = vi.fn(() => ({ maybeSingle }));
-    const select = vi.fn(() => ({ eq }));
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
     getSupabaseAdminClientMock.mockReturnValue({
       from: vi.fn(() => ({ select })),
     });
 
-    await expect(getReportGenerationSnapshotById(historicalId)).resolves.toMatchObject({
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).resolves.toMatchObject({
       id: historicalId,
       filename: historicalRow.filename,
       generatedAt: historicalRow.generated_at,
@@ -133,12 +136,13 @@ describe("report generation history store", () => {
     expect(select).toHaveBeenCalledWith(
       "id, filename, generated_at, snapshot, scope_label, detail_level",
     );
-    expect(eq).toHaveBeenCalledWith("id", historicalId);
+    expect(idEq).toHaveBeenCalledWith("id", historicalId);
+    expect(ownerEq).toHaveBeenCalledWith("created_by_clerk_id", "user-1");
     expect(maybeSingle).toHaveBeenCalledTimes(1);
   });
 
   it("rejects an invalid UUID before querying Supabase", async () => {
-    await expect(getReportGenerationSnapshotById("not-a-uuid")).rejects.toBeInstanceOf(
+    await expect(getReportGenerationSnapshotById("not-a-uuid", "user-1")).rejects.toBeInstanceOf(
       InvalidReportGenerationIdError,
     );
     expect(getSupabaseAdminClientMock).not.toHaveBeenCalled();
@@ -149,13 +153,14 @@ describe("report generation history store", () => {
       data: { ...historicalRow, generated_at: "2026-08-27T11:30:00.000Z" },
       error: null,
     });
-    const eq = vi.fn(() => ({ maybeSingle }));
-    const select = vi.fn(() => ({ eq }));
+    const ownerEq = vi.fn(() => ({ maybeSingle }));
+    const idEq = vi.fn(() => ({ eq: ownerEq }));
+    const select = vi.fn(() => ({ eq: idEq }));
     getSupabaseAdminClientMock.mockReturnValue({
       from: vi.fn(() => ({ select })),
     });
 
-    await expect(getReportGenerationSnapshotById(historicalId)).rejects.toThrow(
+    await expect(getReportGenerationSnapshotById(historicalId, "user-1")).rejects.toThrow(
       "invalid or incompatible",
     );
   });
