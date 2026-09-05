@@ -39,6 +39,14 @@ type ApiAuthorizationContract = Record<
  * made by each handler.
  */
 export const API_AUTHORIZATION_CONTRACT = {
+  "account/profile-role": {
+    POST: {
+      expected: "Retired legacy selector; no self-service role mutation",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess then HTTP 410; role remains server-owned",
+      evidence: ["requireAuthenticatedAccess"],
+    },
+  },
   "account/active-profile": {
     POST: {
       expected: "Authenticated current account; ACTIVE_ROLE is limited by GRANTED_ROLE and never changes authorization level",
@@ -59,6 +67,14 @@ export const API_AUTHORIZATION_CONTRACT = {
       dimensions: ["authentication", "ownership"],
       actual: "requireAuthenticatedAccess + Clerk update scoped to access.userId",
       evidence: ["requireAuthenticatedAccess", "access.userId", "updateUser"],
+    },
+  },
+  "account/promotion-requests": {
+    GET: {
+      expected: "Authenticated user reads only their own promotion requests",
+      dimensions: ["authentication", "ownership"],
+      actual: "getSafeAuthSession + current userId passed to the user-scoped promotion request store",
+      evidence: ["getSafeAuthSession", "userId", "listPromotionRequestsForUser"],
     },
   },
   "analytics/funnel": {
@@ -628,18 +644,18 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "reports/generations": {
     POST: {
-      expected: "Admin-like role for persisting a successful Reports generation snapshot",
-      dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess before validating and persisting the generation metadata",
-      evidence: ["requireAdminAccess", "persistReportGeneration"],
+      expected: "Authenticated user may persist their own Reports generation snapshot",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess before validating and persisting the generation metadata",
+      evidence: ["requireAuthenticatedAccess", "persistReportGeneration"],
     },
   },
   "reports/generations/[id]": {
     GET: {
-      expected: "Admin-like role for loading a persisted Reports generation snapshot",
-      dimensions: ["admin/creator role"],
-      actual: "requireAdminAccess before loading the requested generation snapshot",
-      evidence: ["requireAdminAccess", "getReportGenerationSnapshotById"],
+      expected: "Authenticated user may load an authorized Reports generation snapshot",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess before loading the requested generation snapshot",
+      evidence: ["requireAuthenticatedAccess", "getReportGenerationSnapshotById"],
     },
   },
   "reports/elus-dossier": {
