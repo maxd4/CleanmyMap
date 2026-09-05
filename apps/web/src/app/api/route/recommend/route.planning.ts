@@ -2,6 +2,7 @@ import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import {
+  applyRoutePredictionFinalRoutingBudgetAudit,
   applyRoutePredictionPlannerBudgetAudit,
   applyRoutePredictionPoolAudit,
   buildPredictedRouteCandidates,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/route/route-event-centered";
 import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import type { RouteFinalRoutingReconciliation } from "@/lib/route/route-trace";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -33,6 +35,7 @@ export type RoutePlanningResult = {
   routeGeometry: RouteGeometry;
   eventCenteredContext: RouteEventCenteredContext | null;
   budgetPrefixApplied: boolean;
+  finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
 };
 
 function fallbackGeometryForPrefix(
@@ -126,6 +129,12 @@ export async function planRouteRecommendation(input: {
   let plannedStops = plannerResult.stops;
   let routeGeometry = createFallbackRouteGeometry([]);
   let budgetPrefixApplied = false;
+  let providerCalls = 0;
+  let firstProviderMode: RouteGeometry["mode"] | null = null;
+  let finalRoutingWarning: string | null = null;
+  let finalRoutingDegraded = false;
+  const stopsBeforeFinalRouting = plannedStops.length;
+  let finalRoutingBudgetExcludedCandidateIds: string[] = [];
 
   if (plannedStops.length > 0) {
     const routeCoordinates: [number, number][] = [
@@ -139,6 +148,8 @@ export async function planRouteRecommendation(input: {
       routeCoordinates,
       {},
     );
+    providerCalls += 1;
+    firstProviderMode = routeGeometry.mode;
 
     if (routeGeometry.durationMinutes > input.travelBudgetMinutes) {
       budgetPrefixApplied = true;
@@ -148,6 +159,64 @@ export async function planRouteRecommendation(input: {
           input.travelBudgetMinutes,
         );
         plannedStops = plannedStops.slice(0, prefixLength);
+
+        if (prefixLength > 0 && prefixLength < stopsBeforeFinalRouting) {
+          const retainedCoordinates: [number, number][] = [
+            [input.origin.latitude, input.origin.longitude],
+            ...plannedStops.map(
+              ({ candidate }) =>
+                [candidate.latitude, candidate.longitude] as [number, number],
+            ),
+          ];
+          try {
+            providerCalls += 1;
+            const reconciledGeometry = await routePolylineThroughFossgisFoot(
+              retainedCoordinates,
+              {},
+            );
+            if (
+              reconciledGeometry.mode === "network" &&
+              reconciledGeometry.durationMinutes <= input.travelBudgetMinutes
+            ) {
+              routeGeometry = reconciledGeometry;
+            } else {
+              finalRoutingDegraded = true;
+              finalRoutingWarning =
+                "La géométrie réseau recalculée n'est pas compatible avec le budget ; un fallback local est utilisé.";
+              const fallbackPrefix = fallbackRoutePrefixWithinBudget(
+                input.origin,
+                plannedStops.map(({ candidate }) => candidate),
+                input.travelBudgetMinutes,
+                (coordinates) => createFallbackRouteGeometry(coordinates),
+              );
+              plannedStops = plannedStops.slice(0, fallbackPrefix.length);
+              routeGeometry = fallbackGeometryForPrefix(
+                input.origin,
+                plannedStops.map(({ candidate }) => candidate),
+              );
+            }
+          } catch {
+            finalRoutingDegraded = true;
+            finalRoutingWarning =
+              "La seconde mesure réseau a échoué après la réduction au budget ; un fallback local est utilisé.";
+            const fallbackPrefix = fallbackRoutePrefixWithinBudget(
+              input.origin,
+              plannedStops.map(({ candidate }) => candidate),
+              input.travelBudgetMinutes,
+              (coordinates) => createFallbackRouteGeometry(coordinates),
+            );
+            plannedStops = plannedStops.slice(0, fallbackPrefix.length);
+            routeGeometry = fallbackGeometryForPrefix(
+              input.origin,
+              plannedStops.map(({ candidate }) => candidate),
+            );
+          }
+        } else {
+          routeGeometry = fallbackGeometryForPrefix(
+            input.origin,
+            plannedStops.map(({ candidate }) => candidate),
+          );
+        }
       } else {
         const fallbackPrefix = fallbackRoutePrefixWithinBudget(
           input.origin,
@@ -156,13 +225,21 @@ export async function planRouteRecommendation(input: {
           (coordinates) => createFallbackRouteGeometry(coordinates),
         );
         plannedStops = plannedStops.slice(0, fallbackPrefix.length);
+        routeGeometry = fallbackGeometryForPrefix(
+          input.origin,
+          plannedStops.map(({ candidate }) => candidate),
+        );
       }
-      routeGeometry = fallbackGeometryForPrefix(
-        input.origin,
-        plannedStops.map(({ candidate }) => candidate),
-      );
     }
   }
+
+  finalRoutingBudgetExcludedCandidateIds = plannerResult.stops
+    .slice(plannedStops.length)
+    .map(({ candidate }) => candidate.id);
+  predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(
+    predictionSummary,
+    finalRoutingBudgetExcludedCandidateIds,
+  );
 
   const eventCenteredContext = input.eventCenteredAnchor
     ? buildRouteEventCenteredContext(
@@ -179,5 +256,15 @@ export async function planRouteRecommendation(input: {
     routeGeometry,
     eventCenteredContext,
     budgetPrefixApplied,
+    finalRoutingReconciliation: {
+      stopsBefore: stopsBeforeFinalRouting,
+      stopsAfter: plannedStops.length,
+      excludedCandidateIds: finalRoutingBudgetExcludedCandidateIds,
+      providerCalls,
+      firstProviderMode,
+      finalGeometryMode: routeGeometry.mode,
+      degraded: finalRoutingDegraded,
+      warning: finalRoutingWarning,
+    },
   };
 }

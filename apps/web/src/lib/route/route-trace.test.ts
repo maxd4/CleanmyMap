@@ -115,6 +115,16 @@ describe("route recommendation trace", () => {
     expect(first.selectedStops.map(({ id }) => id)).toEqual(["final-1"]);
     expect(first.ordering.stopIds).toEqual(["final-1"]);
     expect(first.fallbacks).toEqual(["fallback_route_geometry", "budget_compatible_prefix"]);
+    expect(first.finalRoutingReconciliation).toEqual({
+      stopsBefore: 1,
+      stopsAfter: 1,
+      excludedCandidateIds: [],
+      providerCalls: 0,
+      firstProviderMode: "fallback",
+      finalGeometryMode: "fallback",
+      degraded: false,
+      warning: null,
+    });
   });
 
   it("keeps real provider street steps and does not invent them for fallback", () => {
