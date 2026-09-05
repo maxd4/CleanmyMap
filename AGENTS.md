@@ -124,6 +124,26 @@ intermédiaires ne doivent pas commencer par ce canari.
     le WORKTREE. Les dépendances locales peuvent être reliées ou matérialisées
     temporairement sous cette racine sans modifier le dépôt ;
   l'index normal et les refs Git restent inchangés ;
+- toutes les sandboxes de source temporaires utilisent exclusivement les deux
+  racines `.artifacts/validation/prepush-candidate/<sha>/` et
+  `.artifacts/validation/publication-candidate/<run-id>/`. Les noms ad hoc
+  (`<chantier>-candidate`, `foo-candidate`, copie sous `.artifacts/validation/`)
+  sont interdits ; le lifecycle canonique doit créer un marqueur généré,
+  nettoyer dans `finally`, supprimer ses liens avant sa racine et vérifier que
+  le run n'existe plus après cleanup ;
+- `publication-candidate` est réservé à la sandbox exceptionnelle prévue par
+  cette gouvernance, uniquement en cas de race/divergence ou resynchronisation
+  réellement nécessaire depuis le dernier `origin/main`. Aucun clone, worktree
+  ou copie persistante n'est autorisé ; toute sandbox doit disparaître avant
+  la réponse finale et ne peut jamais être committée ;
+- toute exécution ayant créé une candidate documente obligatoirement
+  `CANDIDATE_CREATED: yes/no`, `CANDIDATE_PATH: <path|none>` et
+  `CANDIDATE_CLEANUP: PASS|FAIL`. Un cleanup en échec interdit le verdict
+  `VERDICT_REVIEW: terminé` ;
+- `node scripts/checks/check-candidate-lifecycle.mjs` est un contrôle
+  read-only : il signale les candidates marquées encore présentes, les entrées
+  inconnues et les chemins ad hoc, sans supprimer aveuglément un artefact
+  étranger ou un chantier parallèle ;
 - un outil ou une dépendance dynamique absente relève de `HOST_ENVIRONMENT` et
   bloque avec un diagnostic explicite ; il ne doit pas être reclassé comme
   chantier parallèle. Le fallback manuel utilise `HEAD` comme candidat
