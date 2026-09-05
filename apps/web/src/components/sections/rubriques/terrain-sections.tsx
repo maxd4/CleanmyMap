@@ -1,5 +1,5 @@
 export { TrashSpotterSection } from"./trash-spotter-section";
-export { RouteSection } from"./route-section";
+export { RouteSection } from"./route";
 export { RecyclingSection } from"./recycling-section";
 export { CompostSection } from"./compost";
 export { ClimateSection } from"./climate";
