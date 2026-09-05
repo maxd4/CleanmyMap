@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   extractRole,
+  isCanonicalImuOwner,
   isAdminRole,
   parseAdminUserIds,
   parseMaxUserIds,
   resolveClerkRole,
+  type ClerkUserForRole,
 } from "./role-resolution";
 
-const emptyIds = new Set<string>();
-
-function user(overrides: Record<string, unknown> = {}) {
+function user(overrides: Partial<ClerkUserForRole> = {}): ClerkUserForRole {
   return {
     id: "user_1",
     primaryEmailAddress: {
-      emailAddress: "user@example.test",
+      emailAddress: "user-at-example",
       verification: { status: "verified" },
     },
     publicMetadata: {},
@@ -50,71 +50,103 @@ describe("role resolution", () => {
     },
   );
 
-  it("resolves admin metadata without treating max metadata as admin", () => {
+  it("resolves admin metadata without treating max metadata as IMU", () => {
     expect(isAdminRole({ publicMetadata: { role: "admin" } })).toBe(true);
     expect(isAdminRole({ privateMetadata: { profile: "max" } })).toBe(false);
     expect(isAdminRole({ publicMetadata: { role: "member" } })).toBe(false);
     expect(isAdminRole({ privateMetadata: { role: "admin" } })).toBe(true);
   });
 
-  it("does not grant a privileged role from a privileged email alone", () => {
+  it("grants max only to the exact owner id and verified primary email", () => {
     expect(
       resolveClerkRole({
         user: user({
-          primaryEmailAddress: { emailAddress: "creator@cleanmymap.fr" },
-          secondaryEmailAddresses: [{ emailAddress: "owner@cleanmymap.fr" }],
+          id: "owner-prod",
+          primaryEmailAddress: {
+            emailAddress: "owner.prod-at-example",
+            verification: { status: "verified" },
+          },
+          publicMetadata: { role: "max" },
         }),
-        adminUserIds: emptyIds,
-        maxUserIds: emptyIds,
+        ownerUserId: "owner-prod",
+        ownerEmail: "owner.prod-at-example",
+      }),
+    ).toBe("max");
+  });
+
+  it.each([
+    ["wrong id", user({ id: "secondary" }), "owner-prod", "owner.prod-at-example"],
+    [
+      "wrong email",
+      user({
+        id: "owner-prod",
+        primaryEmailAddress: {
+          emailAddress: "other-at-example",
+          verification: { status: "verified" },
+        },
+      }),
+      "owner-prod",
+      "owner.prod-at-example",
+    ],
+    [
+      "unverified email",
+      user({
+        id: "owner-prod",
+        primaryEmailAddress: {
+          emailAddress: "owner.prod-at-example",
+          verification: { status: "unverified" },
+        },
+      }),
+      "owner-prod",
+      "owner.prod-at-example",
+    ],
+  ])("does not grant max for %s", (_label, candidate, ownerUserId, ownerEmail) => {
+    expect(
+      resolveClerkRole({
+        user: {
+          ...candidate,
+          publicMetadata: { role: "max" },
+        },
+        ownerUserId,
+        ownerEmail,
       }),
     ).toBe("benevole");
   });
 
-  it("resolves max from the max user id regardless of email", () => {
+  it("fails closed when Clerk returns no verified owner email", () => {
     expect(
-      resolveClerkRole({
-        user: user({ id: "max_user" }),
-        adminUserIds: emptyIds,
-        maxUserIds: new Set(["max_user"]),
+      isCanonicalImuOwner({
+        userId: "owner",
+        ownerUserId: "owner",
+        ownerEmail: "owner-at-example",
+        primaryEmailAddress: {
+          emailAddress: "owner-at-example",
+          verification: { status: "unverified" },
+        },
       }),
-    ).toBe("max");
+    ).toBe(false);
   });
 
-  it("resolves admin from the admin user id regardless of email", () => {
+  it("does not promote a non-owner from max metadata", () => {
     expect(
       resolveClerkRole({
-        user: user({ id: "admin_user" }),
-        adminUserIds: new Set(["admin_user"]),
-        maxUserIds: emptyIds,
+        user: user({
+          id: "secondary",
+          publicMetadata: { role: "max" },
+        }),
+        ownerUserId: "owner",
+        ownerEmail: "owner-at-example",
+      }),
+    ).toBe("benevole");
+  });
+
+  it("keeps canonical admin metadata as the audited admin projection", () => {
+    expect(
+      resolveClerkRole({
+        user: user({ publicMetadata: { role: "admin" } }),
+        ownerUserId: "owner",
+        ownerEmail: "owner-at-example",
       }),
     ).toBe("admin");
-  });
-
-  it("keeps the role unchanged when the email changes", () => {
-    const adminUserIds = new Set(["admin_user"]);
-    const maxUserIds = emptyIds;
-    const before = resolveClerkRole({
-      user: user({ id: "admin_user", primaryEmailAddress: { emailAddress: "old@example.test" } }),
-      adminUserIds,
-      maxUserIds,
-    });
-    const after = resolveClerkRole({
-      user: user({ id: "admin_user", primaryEmailAddress: { emailAddress: "new@example.test" } }),
-      adminUserIds,
-      maxUserIds,
-    });
-
-    expect(before).toBe("admin");
-    expect(after).toBe(before);
-  });
-
-  it("resolves max from canonical metadata", () => {
-    expect(
-      resolveClerkRole({
-        user: user({ publicMetadata: { role: "max" } }),
-        adminUserIds: emptyIds,
-        maxUserIds: emptyIds,
-      }),
-    ).toBe("max");
   });
 });

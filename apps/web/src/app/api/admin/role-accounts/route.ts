@@ -5,9 +5,8 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
 import {
-  parseAdminUserIds,
-  parseMaxUserIds,
   resolveClerkRole,
+  type ClerkUserForRole,
 } from "@/lib/auth/role-resolution";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { adminAccessErrorJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -34,13 +33,14 @@ function isAdminLikeRole(role: RoleAccountRecord["roleLabel"]) {
 
 function resolveCanonicalTargetRole(user: {
   id: string;
+  primaryEmailAddress?: ClerkUserForRole["primaryEmailAddress"];
   publicMetadata?: Record<string, unknown> | null;
   privateMetadata?: Record<string, unknown> | null;
 }): RoleAccountRecord["roleLabel"] {
   return resolveClerkRole({
     user,
-    adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-    maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+    ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+    ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
   });
 }
 

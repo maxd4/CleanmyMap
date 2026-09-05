@@ -2,11 +2,7 @@ import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { prepareProfileAvatarUrl } from "@/lib/supabase/profile-avatar-storage";
-import {
-  parseAdminUserIds,
-  parseMaxUserIds,
-  resolveClerkRole,
-} from "@/lib/auth/role-resolution";
+import { resolveClerkRole } from "@/lib/auth/role-resolution";
 import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
@@ -145,8 +141,8 @@ function resolveSyncRoleContext(
   return {
     role: resolveClerkRole({
       user,
-      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-      maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+      ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+      ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
     }),
   };
 }

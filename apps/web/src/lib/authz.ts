@@ -21,8 +21,7 @@ import {
 } from "./authz-identity";
 import {
   extractRole,
-  parseAdminUserIds,
-  parseMaxUserIds,
+  isCanonicalImuOwner,
   resolveClerkRole,
   type ClerkMetadata,
 } from "./auth/role-resolution";
@@ -135,8 +134,8 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
     const user = await getClerkUser(client, userId);
     return resolveClerkRole({
       user,
-      adminUserIds: parseAdminUserIds(env.CLERK_ADMIN_USER_IDS),
-      maxUserIds: parseMaxUserIds(env.CLERK_MAX_USER_IDS),
+      ownerUserId: env.CLERK_IMU_OWNER_USER_ID,
+      ownerEmail: env.CLERK_IMU_OWNER_EMAIL,
     });
   } catch (error) {
     console.error("Current user role resolution failed", error);
@@ -174,6 +173,7 @@ export const __authz_testables = {
   extractBadgeIds,
   mapBadgeIdsToBadges,
   resolveClerkRole,
+  isCanonicalImuOwner,
   buildActorNameOptions,
   resolveActorNameFromClerk,
   normalizeDisplayNameMode,
