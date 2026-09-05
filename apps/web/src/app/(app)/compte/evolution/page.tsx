@@ -49,7 +49,7 @@ export default async function AccountEvolutionPage() {
         {identity ? (
           <AccountEvolutionPanel
             currentRole={identity.role}
-            activeProfile={identity.activeProfile}
+            activeRole={identity.activeRole}
             initialRequest={initialRequest}
             initialStatusAvailable={initialRecords !== null}
           />
