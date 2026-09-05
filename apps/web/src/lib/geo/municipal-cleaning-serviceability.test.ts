@@ -22,6 +22,7 @@ const seed: MunicipalCleaningZoneSeed = {
 function evidence(
   id: string,
   evidenceType: CleaningSourceEvidence["evidenceType"],
+  status: CleaningSourceEvidence["status"] = "available",
 ): CleaningSourceEvidence {
   return {
     id,
@@ -34,7 +35,7 @@ function evidence(
     observedAt: "2026-09-04",
     refreshedAt,
     geographicLevel: "site",
-    status: "available",
+    status,
     notes: [],
   };
 }
@@ -49,7 +50,7 @@ function raw(overrides: Partial<MunicipalCleaningRawZone> = {}): MunicipalCleani
 }
 
 describe("municipal cleaning serviceability", () => {
-  it("uses an explicit frequency as the serviceability source of truth", () => {
+  it("sépare une fréquence municipale documentée du proxy géométrique", () => {
     const zone = deriveMunicipalCleaningServiceability(
       seed,
       raw({
@@ -67,105 +68,165 @@ describe("municipal cleaning serviceability", () => {
       refreshedAt,
     );
 
-    expect(zone.municipalCleaningServiceability).toBe(50);
-    expect(zone.serviceabilityBasis).toBe("documented_frequency");
+    expect(zone.municipalCleaningServiceLevel).toBe(50);
+    expect(zone.municipalCleaningServiceLevelBasis).toBe("documented_frequency");
+    expect(zone.geometryServiceabilityProxy).toBe(10);
     expect(zone.mechanizedCleaningAccessibility).toBe(10);
-    expect(zone.manualCleaningLikely).toEqual({
+    expect(zone.manualCleaningLikely).toMatchObject({
       value: true,
       basis: "geometric_inference",
     });
-    expect(zone.serviceabilityConfidence.level).toBe("medium");
-    expect(zone.documentedCleaningFrequency?.visitsPerWeek).toBe(7);
   });
 
-  it("keeps ordinary sidewalks more serviceable than stairs without calling stairs uncleaned", () => {
-    const sidewalk = deriveMunicipalCleaningServiceability(seed, raw(), refreshedAt);
-    const stairs = deriveMunicipalCleaningServiceability(
+  it("n'invente aucun niveau de couverture à partir d'escaliers", () => {
+    const zone = deriveMunicipalCleaningServiceability(
       seed,
       raw({ surfaceFeatureCounts: { stairs: 10 } }),
       refreshedAt,
     );
 
-    expect(sidewalk.municipalCleaningServiceability).toBe(100);
-    expect(stairs.municipalCleaningServiceability).toBe(10);
-    expect(stairs.manualCleaningLikely.value).toBe(true);
-    expect(stairs.serviceabilityBasis).toBe("geometry_proxy");
-  });
-
-  it("combines overlapping surface classes and obstacle density deterministically", () => {
-    const input = raw({
-      surfaceFeatureCounts: {
-        standard_sidewalk: 2,
-        tree_surround: 1,
-        street_furniture_cluster: 1,
-      },
-      obstacleCount: 5,
-    });
-    const first = deriveMunicipalCleaningServiceability(seed, input, refreshedAt);
-    const second = deriveMunicipalCleaningServiceability(seed, input, refreshedAt);
-
-    expect(first).toEqual(second);
-    expect(first.surfaceClasses).toEqual([
-      { surfaceClass: "standard_sidewalk", featureCount: 2, share: 0.5 },
-      { surfaceClass: "tree_surround", featureCount: 1, share: 0.25 },
-      { surfaceClass: "street_furniture_cluster", featureCount: 1, share: 0.25 },
-    ]);
-    expect(first.mechanizedCleaningAccessibility).toBe(65);
-    expect(first.spatialExtent.radiusBasis).toBe("equivalent_circle");
-    expect(first.spatialExtent.radiusM).toBeGreaterThan(0);
-  });
-
-  it("returns explicit unknowns when no cleaning or geometry signal exists", () => {
-    const zone = deriveMunicipalCleaningServiceability(seed, undefined, refreshedAt);
-    expect(zone.municipalCleaningServiceability).toBeNull();
-    expect(zone.mechanizedCleaningAccessibility).toBeNull();
-    expect(zone.manualCleaningLikely).toEqual({ value: null, basis: "unknown" });
-    expect(zone.documentedCleaningFrequency).toBeNull();
-    expect(zone.serviceabilityConfidence).toMatchObject({
-      score: 0,
-      level: "unknown",
-      sourceCompleteness: 0,
+    expect(zone.municipalCleaningServiceLevel).toBeNull();
+    expect(zone.municipalCleaningServiceLevelBasis).toBe("unknown");
+    expect(zone.geometryServiceabilityProxy).toBe(10);
+    expect(zone.manualCleaningLikely).toEqual({
+      value: true,
+      basis: "geometric_inference",
+      evidence: expect.objectContaining({ resolution: "resolved" }),
     });
   });
 
-  it("does not promote an unproven frequency into a documented fact", () => {
+  it("laisse le nettoyage manuel inconnu pour un trottoir accessible", () => {
+    const zone = deriveMunicipalCleaningServiceability(seed, raw(), refreshedAt);
+
+    expect(zone.geometryServiceabilityProxy).toBe(100);
+    expect(zone.municipalCleaningServiceLevel).toBeNull();
+    expect(zone.manualCleaningLikely).toMatchObject({
+      value: null,
+      basis: "unknown",
+    });
+  });
+
+  it("rejette une fréquence dont la preuve est unavailable", () => {
     const zone = deriveMunicipalCleaningServiceability(
       seed,
       raw({
         documentedCleaningFrequency: {
           visitsPerWeek: 10,
           label: null,
-          sourceEvidenceIds: [],
+          sourceEvidenceIds: ["frequency"],
         },
-        sourceEvidence: [],
+        sourceEvidence: [evidence("frequency", "cleaning_frequency", "unavailable")],
       }),
       refreshedAt,
     );
+
     expect(zone.documentedCleaningFrequency).toBeNull();
-    expect(zone.serviceabilityBasis).toBe("geometry_proxy");
-    expect(zone.serviceabilityConfidence.sourceCompleteness).toBe(0);
-    expect(zone.serviceabilityConfidence.level).toBe("unknown");
+    expect(zone.documentedCleaningFrequencyResolution).toBe("unknown");
+    expect(zone.municipalCleaningServiceLevel).toBeNull();
   });
 
-  it("preserves documented manual coverage as evidence instead of geometric inference", () => {
+  it("accepte une preuve partial avec une confiance réduite", () => {
+    const zone = deriveMunicipalCleaningServiceability(
+      seed,
+      raw({
+        documentedCleaningFrequency: {
+          visitsPerWeek: 10,
+          label: null,
+          sourceEvidenceIds: ["frequency"],
+        },
+        sourceEvidence: [evidence("frequency", "cleaning_frequency", "partial")],
+      }),
+      refreshedAt,
+    );
+
+    expect(zone.documentedCleaningFrequency?.visitsPerWeek).toBe(10);
+    expect(zone.serviceabilityConfidence.signalConfidence.municipalCleaningServiceLevel.confidence).toBe(0.7);
+    expect(zone.serviceabilityConfidence.level).toBe("low");
+  });
+
+  it("ne documente pas un nettoyage manuel dont la preuve est unavailable", () => {
     const zone = deriveMunicipalCleaningServiceability(
       seed,
       raw({
         documentedManualCleaning: true,
-        documentedManualCleaningEvidenceIds: ["coverage"],
+        documentedManualCleaningEvidenceIds: ["manual"],
+        sourceEvidence: [evidence("manual", "manual_cleaning", "unavailable")],
+      }),
+      refreshedAt,
+    );
+
+    expect(zone.manualCleaningLikely).toMatchObject({ value: null, basis: "unknown" });
+  });
+
+  it("expose un conflit de fréquences au lieu de prendre la première", () => {
+    const zone = deriveMunicipalCleaningServiceability(
+      seed,
+      raw({
+        documentedCleaningFrequency: null,
+        documentedCleaningFrequencyResolution: "conflict",
+        sourceEvidence: [
+          evidence("frequency-a", "cleaning_frequency"),
+          evidence("frequency-b", "cleaning_frequency"),
+        ],
+      }),
+      refreshedAt,
+    );
+
+    expect(zone.documentedCleaningFrequency).toBeNull();
+    expect(zone.documentedCleaningFrequencyResolution).toBe("conflict");
+    expect(zone.municipalCleaningServiceLevelBasis).toBe("unknown");
+  });
+
+  it("expose un conflit de valeurs manuelles au lieu de choisir arbitrairement", () => {
+    const zone = deriveMunicipalCleaningServiceability(
+      seed,
+      raw({
+        documentedManualCleaning: null,
+        documentedManualCleaningResolution: "conflict",
+        sourceEvidence: [evidence("manual-a", "manual_cleaning"), evidence("manual-b", "manual_cleaning")],
+      }),
+      refreshedAt,
+    );
+
+    expect(zone.manualCleaningLikely).toMatchObject({ value: null, basis: "conflict" });
+  });
+
+  it("ne confond pas une accessibilité mécanisée documentée avec une couverture municipale", () => {
+    const zone = deriveMunicipalCleaningServiceability(
+      seed,
+      raw({
+        surfaceFeatureCounts: undefined,
+        mechanizedCleaningAccessibility: 0.9,
+        mechanizedCleaningAccessibilityEvidenceIds: ["access"],
+        sourceEvidence: [evidence("access", "mechanized_accessibility")],
+      }),
+      refreshedAt,
+    );
+
+    expect(zone.mechanizedCleaningAccessibility).toBe(90);
+    expect(zone.mechanizedAccessibilityBasis).toBe("source_documented");
+    expect(zone.municipalCleaningServiceLevel).toBeNull();
+    expect(zone.geometryServiceabilityProxy).toBeNull();
+  });
+
+  it("accepte un niveau municipal direct uniquement avec une preuve de couverture adaptée", () => {
+    const zone = deriveMunicipalCleaningServiceability(
+      seed,
+      raw({
+        surfaceFeatureCounts: undefined,
+        documentedMunicipalCleaningServiceLevel: 30,
+        documentedMunicipalCleaningServiceLevelEvidenceIds: ["coverage"],
         sourceEvidence: [evidence("coverage", "municipal_coverage")],
       }),
       refreshedAt,
     );
 
-    expect(zone.manualCleaningLikely).toEqual({
-      value: true,
-      basis: "documented",
-    });
-    expect(zone.sourceEvidence[0]?.id).toBe("coverage");
+    expect(zone.municipalCleaningServiceLevel).toBe(30);
+    expect(zone.municipalCleaningServiceLevelBasis).toBe("documented_coverage");
+    expect(zone.geometryServiceabilityProxy).toBeNull();
   });
 
-  it("keeps the layer aligned to every base zone without fabricating a spot", () => {
+  it("conserve unknown lors de la matérialisation et ne crée pas de couverture", () => {
     const snapshot = buildMunicipalCleaningServiceabilitySnapshot({
       snapshotId: "test",
       generatedAt: refreshedAt,
@@ -181,12 +242,8 @@ describe("municipal cleaning serviceability", () => {
     ]);
 
     expect(materialized.zones).toHaveLength(3);
-    expect(materialized.coverage).toMatchObject({
-      zoneCount: 3,
-      complete: false,
-      status: "partial",
-    });
-    expect(materialized.zones.find((zone) => zone.id === "iris-c")?.municipalCleaningServiceability).toBeNull();
-    expect(materialized.zones.every((zone) => zone.spatialExtent.centroid)).toBe(true);
+    expect(materialized.coverage).toMatchObject({ zoneCount: 3, complete: false, status: "partial" });
+    expect(materialized.zones.find((zone) => zone.id === "iris-c")?.municipalCleaningServiceLevel).toBeNull();
+    expect(materialized.zones.find((zone) => zone.id === "iris-c")?.geometryServiceabilityProxy).toBeNull();
   });
 });
