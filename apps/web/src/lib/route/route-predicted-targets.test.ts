@@ -4,6 +4,9 @@ import type {
   ParisPressureZone,
 } from "@/lib/geo/paris-pressure-contract";
 import {
+  applyRoutePredictionPlannerBudgetAudit,
+  applyRoutePredictionPoolAudit,
+  buildRoutePlannerCandidatePool,
   buildPredictedRouteCandidates,
   distanceToRouteCorridorKm,
 } from "./route-predicted-targets";
@@ -201,5 +204,85 @@ describe("predicted route targets", () => {
     expect(withProvenance.candidates[0]?.evidence.contextProvenance.map((source) => source.factor)).toEqual(["eventPressure"]);
     expect(withProvenance.candidates[0]?.evidence.provenanceGaps).toEqual([]);
     expect(withProvenance.candidates[0]?.evidence.modelVersion).toBe("paris-pressure-risk-v2");
+  });
+
+  it("n'invente pas un corridor entre l'origine et des observations non sélectionnées", () => {
+    const result = buildPredictedRouteCandidates({
+      snapshot: withZones([zone("between", 48.8566, 2.3572)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      observedCandidates: [{ latitude: 48.8566, longitude: 2.3622 }],
+      travelBudgetMinutes: 60,
+    });
+    expect(result.candidates[0]?.evidence.planningCorridor).toEqual({
+      source: "origin_only",
+      pointCount: 1,
+      isNetworkGeometry: false,
+      note: expect.stringContaining("origine uniquement"),
+    });
+    expect(result.candidates[0]?.evidence.distanceToCorridorKm).toBeGreaterThan(0);
+  });
+
+  it("utilise uniquement le corridor ordonné fourni par le planner de base", () => {
+    const result = buildPredictedRouteCandidates({
+      snapshot: withZones([zone("baseline-stop", 48.8566, 2.3622)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      corridor: {
+        points: [
+          { latitude: 48.8566, longitude: 2.3522 },
+          { latitude: 48.8566, longitude: 2.3622 },
+        ],
+        source: "ordered_baseline",
+      },
+      travelBudgetMinutes: 60,
+    });
+    expect(result.candidates[0]?.evidence.planningCorridor).toEqual(
+      expect.objectContaining({ source: "ordered_baseline", isNetworkGeometry: false }),
+    );
+  });
+
+  it("met en concurrence vingt observés et une prédiction forte avant le planner", () => {
+    const observed = Array.from({ length: 20 }, (_, index) => ({
+      id: `observed:${index}`,
+      score: 40,
+      family: "observed" as const,
+    })) as never[];
+    const predicted = { id: "predicted:strong", score: 92, family: "predicted" as const } as never;
+    const pool = buildRoutePlannerCandidatePool({
+      observedCandidates: observed,
+      predictedCandidates: [predicted],
+      maxCandidates: 8,
+    });
+    expect(pool.candidates[0]?.id).toBe("predicted:strong");
+    expect(pool.audit.passedToPlannerCandidateIds).toContain("predicted:strong");
+    expect(pool.audit.excludedByPreselectionCandidateIds).toHaveLength(13);
+  });
+
+  it("départage un score égal en faveur de l'observé et reste déterministe", () => {
+    const observed = { id: "observed:tie", score: 70, family: "observed" as const } as never;
+    const predicted = { id: "predicted:tie", score: 70, family: "predicted" as const } as never;
+    const first = buildRoutePlannerCandidatePool({ observedCandidates: [observed], predictedCandidates: [predicted], maxCandidates: 1 });
+    const second = buildRoutePlannerCandidatePool({ observedCandidates: [observed], predictedCandidates: [predicted], maxCandidates: 1 });
+    expect(first.candidates[0]?.id).toBe("observed:tie");
+    expect(first).toEqual(second);
+  });
+
+  it("sépare l'exclusion par borne de la contrainte de budget du planner", () => {
+    const summary = buildPredictedRouteCandidates({
+      snapshot: withZones([zone("budget-zone", 48.8568, 2.3522)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      travelBudgetMinutes: 1,
+    }).summary;
+    const pool = buildRoutePlannerCandidatePool({
+      observedCandidates: [],
+      predictedCandidates: [{ id: "predicted:budget-zone", score: 90, family: "predicted" } as never],
+      maxCandidates: 1,
+    });
+    const withPool = applyRoutePredictionPoolAudit(summary, pool.audit);
+    const withBudget = applyRoutePredictionPlannerBudgetAudit(withPool, {
+      passedCandidateIds: pool.audit.passedToPlannerCandidateIds,
+      evaluations: [{ candidateId: "predicted:budget-zone", feasible: false }],
+    });
+    expect(withBudget.excludedByPreselection).toBe(0);
+    expect(withBudget.excludedByPlannerBudget).toBe(1);
   });
 });

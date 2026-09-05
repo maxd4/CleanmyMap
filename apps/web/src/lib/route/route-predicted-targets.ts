@@ -12,6 +12,7 @@ import type {
   ParisPressureRiskScore,
 } from "@/lib/geo/paris-pressure-risk-contract";
 import { routeDistanceKm, travelMinutesForDistance } from "./route-planner";
+import type { RoutePlannerCandidate } from "./route-planner";
 
 export const URBAN_PRESSURE_MODEL_SOURCE = "urban-pressure-model" as const;
 export const PREDICTED_CORRIDOR_RADIUS_KM = 1.5;
@@ -40,6 +41,12 @@ export type RoutePredictedEvidence = {
   radiusKm: number;
   areaKm2: number | null;
   distanceToCorridorKm: number;
+  planningCorridor: {
+    source: "origin_only" | "ordered_baseline";
+    pointCount: number;
+    isNetworkGeometry: false;
+    note: string;
+  };
   detourDistanceKm: number;
   detourMinutes: number;
   admission?: {
@@ -95,10 +102,17 @@ export type RoutePredictionAvailability = {
   riskFocus: RouteRiskFocus;
   zonesConsidered: number;
   candidatesConsidered: number;
+  admitted: number;
+  admittedCandidateIds: string[];
+  passedToPlanner: number;
+  excludedByPreselection: number;
+  excludedByPlannerBudget: number;
+  preselectionExcludedCandidateIds: string[];
+  preselectionExclusionReasons: Record<string, "preselection_bound">;
+  selected: number;
   selectedCandidateIds: string[];
   excludedByCorridor: number;
   deduplicated: number;
-  excludedByBudget: number;
   excludedZoneIds?: string[];
   deduplicatedZoneIds?: string[];
   warnings: string[];
@@ -107,6 +121,92 @@ export type RoutePredictionAvailability = {
 export type RoutePredictionSummary = RoutePredictionAvailability;
 
 type CorridorPoint = { latitude: number; longitude: number };
+
+export type RoutePredictionCorridor = {
+  points: readonly CorridorPoint[];
+  source: "origin_only" | "ordered_baseline";
+};
+
+export type RoutePredictionPoolAudit = {
+  admittedCandidateIds: string[];
+  passedToPlannerCandidateIds: string[];
+  excludedByPreselectionCandidateIds: string[];
+  excludedByPreselectionReasons: Record<string, "preselection_bound">;
+};
+
+export function buildRoutePlannerCandidatePool(input: {
+  observedCandidates: readonly RoutePlannerCandidate[];
+  predictedCandidates: readonly RoutePredictedCandidate[];
+  maxCandidates: number;
+}): {
+  candidates: RoutePlannerCandidate[];
+  audit: RoutePredictionPoolAudit;
+} {
+  const all = [...input.observedCandidates, ...input.predictedCandidates];
+  const ordered = [...all].sort((left, right) => {
+    const leftScore = clamp(left.score, 0, 100);
+    const rightScore = clamp(right.score, 0, 100);
+    if (Math.abs(leftScore - rightScore) > Number.EPSILON) {
+      return rightScore - leftScore;
+    }
+    const leftObserved = left.family !== "predicted";
+    const rightObserved = right.family !== "predicted";
+    if (leftObserved !== rightObserved) return leftObserved ? -1 : 1;
+    return left.id.localeCompare(right.id);
+  });
+  const maxCandidates = Math.max(0, Math.floor(input.maxCandidates));
+  const passed = ordered.slice(0, maxCandidates);
+  const excluded = ordered.slice(maxCandidates);
+  return {
+    candidates: passed,
+    audit: {
+      admittedCandidateIds: ordered.map((candidate) => candidate.id),
+      passedToPlannerCandidateIds: passed.map((candidate) => candidate.id),
+      excludedByPreselectionCandidateIds: excluded.map((candidate) => candidate.id),
+      excludedByPreselectionReasons: Object.fromEntries(
+        excluded.map((candidate) => [candidate.id, "preselection_bound"] as const),
+      ),
+    },
+  };
+}
+
+export function applyRoutePredictionPoolAudit(
+  summary: RoutePredictionSummary,
+  audit: RoutePredictionPoolAudit,
+): RoutePredictionSummary {
+  const predicted = new Set(summary.admittedCandidateIds);
+  const admittedCandidateIds = audit.admittedCandidateIds.filter((id) => predicted.has(id));
+  const passedToPlannerCandidateIds = audit.passedToPlannerCandidateIds.filter((id) => predicted.has(id));
+  const excludedByPreselectionCandidateIds = audit.excludedByPreselectionCandidateIds.filter((id) => predicted.has(id));
+  return {
+    ...summary,
+    admitted: admittedCandidateIds.length,
+    passedToPlanner: passedToPlannerCandidateIds.length,
+    excludedByPreselection: excludedByPreselectionCandidateIds.length,
+    preselectionExcludedCandidateIds: excludedByPreselectionCandidateIds,
+    preselectionExclusionReasons: Object.fromEntries(
+      excludedByPreselectionCandidateIds.map((id) => [id, "preselection_bound"] as const),
+    ),
+  };
+}
+
+export function applyRoutePredictionPlannerBudgetAudit(
+  summary: RoutePredictionSummary,
+  input: {
+    passedCandidateIds: readonly string[];
+    evaluations: readonly { candidateId: string; feasible: boolean }[];
+  },
+): RoutePredictionSummary {
+  const passed = new Set(input.passedCandidateIds);
+  return {
+    ...summary,
+    excludedByPlannerBudget: new Set(
+      input.evaluations
+        .filter((evaluation) => passed.has(evaluation.candidateId) && !evaluation.feasible)
+        .map((evaluation) => evaluation.candidateId),
+    ).size,
+  };
+}
 
 function clamp(value: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, value));
@@ -237,10 +337,17 @@ function emptySummary(
     riskFocus,
     zonesConsidered: 0,
     candidatesConsidered: 0,
+    admitted: 0,
+    admittedCandidateIds: [],
+    passedToPlanner: 0,
+    excludedByPreselection: 0,
+    excludedByPlannerBudget: 0,
+    preselectionExcludedCandidateIds: [],
+    preselectionExclusionReasons: {},
+    selected: 0,
     selectedCandidateIds: [],
     excludedByCorridor: 0,
     deduplicated: 0,
-    excludedByBudget: 0,
     excludedZoneIds: [],
     deduplicatedZoneIds: [],
     warnings: [warning],
@@ -250,7 +357,8 @@ function emptySummary(
 export function buildPredictedRouteCandidates(input: {
   snapshot: ParisPressureSnapshot | null;
   origin: CorridorPoint;
-  observedCandidates: readonly CorridorPoint[];
+  observedCandidates?: readonly CorridorPoint[];
+  corridor?: RoutePredictionCorridor;
   travelBudgetMinutes: number;
   riskFocus?: RouteRiskFocus;
   recentEvents?: readonly (CorridorPoint & {
@@ -278,7 +386,10 @@ export function buildPredictedRouteCandidates(input: {
     input.snapshot.sources.every((source) => source.status === "available")
       ? "available"
       : "partial";
-  const corridor = [input.origin, ...input.observedCandidates];
+  const corridor: RoutePredictionCorridor = input.corridor ?? {
+    points: [input.origin],
+    source: "origin_only",
+  };
   const rawCandidates: Array<RoutePredictedCandidate & { selectedRisk: number }> =
     [];
   let excludedByCorridor = 0;
@@ -299,7 +410,7 @@ export function buildPredictedRouteCandidates(input: {
     const radiusKm = zoneRadiusKm(zone);
     const distanceToCorridorKm = distanceToRouteCorridorKm(
       zone.centroid,
-      corridor,
+      corridor.points,
     );
     const detourDistanceKm = Math.max(0, distanceToCorridorKm - radiusKm);
     const detourMinutes = travelMinutesForDistance(detourDistanceKm);
@@ -359,6 +470,15 @@ export function buildPredictedRouteCandidates(input: {
           ),
           1,
         ),
+      },
+      planningCorridor: {
+        source: corridor.source,
+        pointCount: corridor.points.length,
+        isNetworkGeometry: false,
+        note:
+          corridor.source === "ordered_baseline"
+            ? "Distance calculée sur l'ordre des arrêts retenus par le planner de base ; ce n'est pas une géométrie réseau."
+            : "Aucun corridor d'arrêts de base disponible ; distance calculée depuis l'origine uniquement.",
       },
       riskFocus,
       dominantRisk,
@@ -424,7 +544,7 @@ export function buildPredictedRouteCandidates(input: {
     deduplicated.push(candidate);
   }
 
-  const candidates = deduplicated.slice(0, 32);
+  const candidates = deduplicated;
   const modelVersion =
     candidates[0]?.evidence.modelVersion ??
     (input.snapshot.zones.length > 0
@@ -446,11 +566,18 @@ export function buildPredictedRouteCandidates(input: {
       snapshot,
       riskFocus,
       zonesConsidered: input.snapshot.zones.length,
-      candidatesConsidered: candidates.length,
+      candidatesConsidered: rawCandidates.length,
+      admitted: deduplicated.length,
+      admittedCandidateIds: deduplicated.map((candidate) => candidate.id),
+      passedToPlanner: 0,
+      excludedByPreselection: 0,
+      excludedByPlannerBudget: 0,
+      preselectionExcludedCandidateIds: [],
+      preselectionExclusionReasons: {},
+      selected: 0,
       selectedCandidateIds: [],
       excludedByCorridor,
       deduplicated: deduplicatedCount,
-      excludedByBudget: 0,
       excludedZoneIds,
       deduplicatedZoneIds,
       warnings:

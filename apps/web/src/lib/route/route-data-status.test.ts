@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import {
+  resolveRouteDataLayers,
   resolveRouteDataStatus,
   resolveRouteRecommendationStatus,
 } from "./route-data-status";
@@ -80,5 +81,23 @@ describe("route data status", () => {
         routeGeometryMode: "fallback",
       }),
     ).toBe("degraded");
+  });
+
+  it("distingue une source observée vide d'une prédiction disponible sélectionnée", () => {
+    expect(resolveRouteDataLayers({
+      observed: { candidateCount: 0, isTruncated: false, sourceHealth: sourceHealth() },
+      prediction: { status: "available", selectedCount: 1 },
+      selectedCount: 1,
+      routeGeometryMode: "network",
+    })).toEqual({ observed: "empty", prediction: "available", recommendation: "ok" });
+  });
+
+  it("conserve empty lorsque les deux familles ne produisent aucun stop", () => {
+    expect(resolveRouteDataLayers({
+      observed: { candidateCount: 0, isTruncated: false, sourceHealth: sourceHealth() },
+      prediction: { status: "unavailable", selectedCount: 0 },
+      selectedCount: 0,
+      routeGeometryMode: "fallback",
+    })).toEqual({ observed: "empty", prediction: "unavailable", recommendation: "empty" });
   });
 });

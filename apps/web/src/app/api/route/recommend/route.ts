@@ -35,8 +35,8 @@ import {
   verifyRateLimit,
 } from "@/lib/rate-limit/server";
 import {
+  resolveRouteDataLayers,
   resolveRouteDataStatus,
-  resolveRouteRecommendationStatus,
 } from "@/lib/route/route-data-status";
 import { loadRouteRecommendationSource } from "@/lib/route/route-recommendation-loader";
 import {
@@ -44,8 +44,17 @@ import {
   longestNetworkPrefixWithinBudget,
   planRoute,
   ROUTE_PLANNER_ENGINE_VERSION,
+  type RoutePlannerCandidate,
   type RoutePlannerOrigin,
 } from "@/lib/route/route-planner";
+import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
+import { applyParisPressureToCandidates } from "@/lib/geo/paris-pressure-lookup";
+import {
+  applyRoutePredictionPlannerBudgetAudit,
+  applyRoutePredictionPoolAudit,
+  buildPredictedRouteCandidates,
+  buildRoutePlannerCandidatePool,
+} from "@/lib/route/route-predicted-targets";
 
 export const runtime ="nodejs";
 
@@ -186,32 +195,83 @@ export async function POST(request: Request) {
  const candidates: TrashSpotterRouteCandidate[] = buildTrashSpotterRouteCandidates(
  actionableCandidates,
  );
+ const parisPressureSnapshot = loadParisPressureSnapshot();
+ const spatialCandidates = parisPressureSnapshot
+   ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
+   : candidates;
+ const baselinePlannerResult = planRoute({
+   origin,
+   candidates: spatialCandidates,
+   travelBudgetMinutes: options.travelBudgetMinutes,
+   maxStops: options.maxStops,
+   priorityVsTravel,
+ });
+ const predictionBuild = buildPredictedRouteCandidates({
+   snapshot: parisPressureSnapshot,
+   origin,
+   corridor: {
+     points: [
+       origin,
+       ...baselinePlannerResult.stops.map(({ candidate }) => ({
+         latitude: candidate.latitude,
+         longitude: candidate.longitude,
+       })),
+     ],
+     source: "ordered_baseline",
+   },
+   travelBudgetMinutes: options.travelBudgetMinutes,
+ });
+ const comparableCandidates = [
+   ...spatialCandidates,
+   ...predictionBuild.candidates,
+ ] as RoutePlannerCandidate[];
+ const candidatePool = buildRoutePlannerCandidatePool({
+   observedCandidates: comparableCandidates.filter(
+     (candidate) => candidate.family !== "predicted",
+   ),
+   predictedCandidates: comparableCandidates.filter(
+     (candidate) => candidate.family === "predicted",
+   ),
+   maxCandidates: Math.max(options.maxStops * 2, 8),
+ });
  const dataStatus = resolveRouteDataStatus({
    candidateCount: candidates.length,
    isTruncated,
    sourceHealth,
  });
 
-  const selected = candidates.slice(0, Math.max(options.maxStops * 2, 8));
   const plannerResult = planRoute({
     origin,
-    candidates: selected,
+    candidates: candidatePool.candidates,
     travelBudgetMinutes: options.travelBudgetMinutes,
     maxStops: options.maxStops,
     priorityVsTravel,
   });
+  let predictionSummary = applyRoutePredictionPoolAudit(
+    predictionBuild.summary,
+    candidatePool.audit,
+  );
+  predictionSummary = applyRoutePredictionPlannerBudgetAudit(
+    predictionSummary,
+    {
+      passedCandidateIds: candidatePool.audit.passedToPlannerCandidateIds,
+      evaluations: plannerResult.audit.evaluations,
+    },
+  );
   let plannedStops = plannerResult.stops;
   let routeGeometry = createFallbackRouteGeometry([]);
 
  if (plannedStops.length === 0) {
-    const status = resolveRouteRecommendationStatus({
-      dataStatus,
+    const dataLayers = resolveRouteDataLayers({
+      observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
+      prediction: { status: predictionSummary.status, selectedCount: 0 },
       selectedCount: 0,
       routeGeometryMode: routeGeometry.mode,
     });
     return NextResponse.json({
-      status,
+      status: dataLayers.recommendation,
       dataStatus,
+      dataLayers,
       isTruncated,
       sourceHealth,
       origin,
@@ -233,6 +293,7 @@ export async function POST(request: Request) {
       generatedAt: new Date().toISOString(),
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       stops: [],
+      prediction: predictionSummary,
       routeGeometry,
       scoreBreakdown: { priority: 0, distance: 0 },
       tradeoffs: [
@@ -315,8 +376,20 @@ export async function POST(request: Request) {
  hotspots,
  eventSignals: eventPressureContext.eventSignals,
  });
- const status = resolveRouteRecommendationStatus({
-   dataStatus,
+ const predictedSelectedIds = plannedStops
+   .filter(({ candidate }) => candidate.family === "predicted")
+   .map(({ candidate }) => candidate.id);
+ predictionSummary = {
+   ...predictionSummary,
+   selected: predictedSelectedIds.length,
+   selectedCandidateIds: predictedSelectedIds,
+ };
+ const dataLayers = resolveRouteDataLayers({
+   observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
+   prediction: {
+     status: predictionSummary.status,
+     selectedCount: predictedSelectedIds.length,
+   },
    selectedCount: plannedStops.length,
    routeGeometryMode: routeGeometry.mode,
  });
@@ -334,8 +407,9 @@ export async function POST(request: Request) {
  }
 
  return NextResponse.json({
- status,
+ status: dataLayers.recommendation,
  dataStatus,
+ dataLayers,
  isTruncated,
  sourceHealth,
  origin,
@@ -357,6 +431,7 @@ export async function POST(request: Request) {
  generatedAt: new Date().toISOString(),
  engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
  stops,
+ prediction: predictionSummary,
  routeGeometry,
  scoreBreakdown: {
  priority: Number(averagePriority.toFixed(1)),
