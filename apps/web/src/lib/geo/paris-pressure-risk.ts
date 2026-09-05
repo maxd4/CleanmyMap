@@ -6,6 +6,8 @@ import type {
 } from "./paris-pressure-contract";
 import {
   PARIS_PRESSURE_RISK_MODEL_CONFIG,
+  type ParisPressureContextFactor,
+  type ParisPressureContextProvenance,
   type ParisPressureRiskConfidence,
   type ParisPressureRiskContext,
   type ParisPressureRiskContribution,
@@ -27,7 +29,7 @@ type Factor = {
   normalized: number | null;
   weight: number;
   sourceFamilies: ParisPressureSignalFamily[];
-  contextSignal: boolean;
+  contextFactor?: ParisPressureContextFactor;
 };
 
 const LABELS: Record<ParisPressureRiskFactor, string> = {
@@ -52,9 +54,10 @@ function sourceReliability(
   factor: Factor,
   context: ParisPressureRiskContext,
 ): number {
-  if (factor.contextSignal) {
-    return context.provenance && context.provenance.length > 0
-      ? Math.max(...context.provenance.map((source) =>
+  if (factor.contextFactor) {
+    const sources = context.contextProvenance?.[factor.contextFactor] ?? [];
+    return sources.length > 0
+      ? Math.max(...sources.map((source) =>
           PARIS_PRESSURE_RISK_MODEL_CONFIG.confidence.sourceReliability[source.status],
         ))
       : PARIS_PRESSURE_RISK_MODEL_CONFIG.confidence.sourceReliability.contextWithoutProvenance;
@@ -94,25 +97,25 @@ function buildFactors(
 
   if (kind === "waste") {
     return [
-      { key: "residentialPressure", label: LABELS.residentialPressure, normalized: resident, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.residentialPressure, sourceFamilies: ["resident_population"], contextSignal: false },
-      { key: "transportPressure", label: LABELS.transportPressure, normalized: transport, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.transportPressure, sourceFamilies: ["transport"], contextSignal: false },
-      { key: "tourismPressure", label: LABELS.tourismPressure, normalized: tourism, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.tourismPressure, sourceFamilies: ["tourism"], contextSignal: false },
-      { key: "publicPlacesPressure", label: LABELS.publicPlacesPressure, normalized: places, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.publicPlacesPressure, sourceFamilies: ["public_activity"], contextSignal: false },
-      { key: "marketPressure", label: LABELS.marketPressure, normalized: markets, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.marketPressure, sourceFamilies: ["public_activity"], contextSignal: false },
-      { key: "eventPressure", label: LABELS.eventPressure, normalized: event, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.eventPressure, sourceFamilies: [], contextSignal: true },
-      { key: "validatedWastePressure", label: LABELS.validatedWastePressure, normalized: normalizedCount(context.validatedWasteReports, PARIS_PRESSURE_RISK_MODEL_CONFIG.normalization.validatedWasteCountScale), weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.validatedWastePressure, sourceFamilies: [], contextSignal: true },
+      { key: "residentialPressure", label: LABELS.residentialPressure, normalized: resident, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.residentialPressure, sourceFamilies: ["resident_population"] },
+      { key: "transportPressure", label: LABELS.transportPressure, normalized: transport, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.transportPressure, sourceFamilies: ["transport"] },
+      { key: "tourismPressure", label: LABELS.tourismPressure, normalized: tourism, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.tourismPressure, sourceFamilies: ["tourism"] },
+      { key: "publicPlacesPressure", label: LABELS.publicPlacesPressure, normalized: places, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.publicPlacesPressure, sourceFamilies: ["public_activity"] },
+      { key: "marketPressure", label: LABELS.marketPressure, normalized: markets, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.marketPressure, sourceFamilies: ["public_activity"] },
+      { key: "eventPressure", label: LABELS.eventPressure, normalized: event, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.eventPressure, sourceFamilies: [], contextFactor: "eventPressure" },
+      { key: "validatedWastePressure", label: LABELS.validatedWastePressure, normalized: normalizedCount(context.validatedWasteReports, PARIS_PRESSURE_RISK_MODEL_CONFIG.normalization.validatedWasteCountScale), weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.waste.validatedWastePressure, sourceFamilies: [], contextFactor: "validatedWastePressure" },
     ];
   }
 
   return [
-    { key: "residentialPressure", label: LABELS.residentialPressure, normalized: resident, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.residentialPressure, sourceFamilies: ["resident_population"], contextSignal: false },
-    { key: "transportPressure", label: LABELS.transportPressure, normalized: transport, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.transportPressure, sourceFamilies: ["transport"], contextSignal: false },
-    { key: "stationPressure", label: LABELS.stationPressure, normalized: stations, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.stationPressure, sourceFamilies: ["transport"], contextSignal: false },
-    { key: "tourismPressure", label: LABELS.tourismPressure, normalized: tourism, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.tourismPressure, sourceFamilies: ["tourism"], contextSignal: false },
-    { key: "terracePressure", label: LABELS.terracePressure, normalized: terraces, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.terracePressure, sourceFamilies: ["public_activity"], contextSignal: false },
-    { key: "marketPressure", label: LABELS.marketPressure, normalized: markets, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.marketPressure, sourceFamilies: ["public_activity"], contextSignal: false },
-    { key: "eventPressure", label: LABELS.eventPressure, normalized: event, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.eventPressure, sourceFamilies: [], contextSignal: true },
-    { key: "validatedCigarettePressure", label: LABELS.validatedCigarettePressure, normalized: normalizedCount(context.validatedCigaretteButts, PARIS_PRESSURE_RISK_MODEL_CONFIG.normalization.validatedCigaretteCountScale), weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.validatedCigarettePressure, sourceFamilies: [], contextSignal: true },
+    { key: "residentialPressure", label: LABELS.residentialPressure, normalized: resident, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.residentialPressure, sourceFamilies: ["resident_population"] },
+    { key: "transportPressure", label: LABELS.transportPressure, normalized: transport, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.transportPressure, sourceFamilies: ["transport"] },
+    { key: "stationPressure", label: LABELS.stationPressure, normalized: stations, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.stationPressure, sourceFamilies: ["transport"] },
+    { key: "tourismPressure", label: LABELS.tourismPressure, normalized: tourism, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.tourismPressure, sourceFamilies: ["tourism"] },
+    { key: "terracePressure", label: LABELS.terracePressure, normalized: terraces, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.terracePressure, sourceFamilies: ["public_activity"] },
+    { key: "marketPressure", label: LABELS.marketPressure, normalized: markets, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.marketPressure, sourceFamilies: ["public_activity"] },
+    { key: "eventPressure", label: LABELS.eventPressure, normalized: event, weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.eventPressure, sourceFamilies: [], contextFactor: "eventPressure" },
+    { key: "validatedCigarettePressure", label: LABELS.validatedCigarettePressure, normalized: normalizedCount(context.validatedCigaretteButts, PARIS_PRESSURE_RISK_MODEL_CONFIG.normalization.validatedCigaretteCountScale), weight: PARIS_PRESSURE_RISK_MODEL_CONFIG.weights.cigaretteButts.validatedCigarettePressure, sourceFamilies: [], contextFactor: "validatedCigarettePressure" },
   ];
 }
 
@@ -136,6 +139,20 @@ function score(
   const baseRisk = round(contributions.reduce((sum, contribution) => sum + contribution.points, 0));
   const prior = zone.signals.cleanlinessPrior;
   const correction = cleanlinessCorrection(prior.normalized, prior.resolution);
+  const cleanlinessSources = snapshot.sources.filter(
+    (source) => source.family === "cleanliness",
+  );
+  const cleanlinessSourceReliability =
+    correction.available && cleanlinessSources.length > 0
+      ? Math.max(
+          ...cleanlinessSources.map(
+            (source) =>
+              PARIS_PRESSURE_RISK_MODEL_CONFIG.confidence.sourceReliability[
+                source.status
+              ],
+          ),
+        )
+      : 0;
 
   return {
     baseRisk,
@@ -143,7 +160,9 @@ function score(
       normalizedPressure: normalizedSignal(prior.normalized),
       points: correction.points,
       available: correction.available,
-      resolution: prior.resolution,
+      resolution: correction.resolution,
+      resolutionReason: correction.resolutionReason,
+      sourceReliability: round(cleanlinessSourceReliability),
       explanation: correction.explanation,
     },
     finalRisk: round(Math.min(100, Math.max(0, baseRisk + correction.points))),
@@ -163,7 +182,21 @@ function confidence(
     available.reduce((sum, item) => sum + item.weight * item.sourceReliability, 0) /
       totalWeight,
   );
-  const confidenceScore = round(Math.min(dataCompleteness, sourceCompleteness));
+  const cleanlinessCorrectionCompleteness = score.cleanlinessCorrection.available
+    ? 1
+    : 0;
+  const cleanlinessCorrectionSourceReliability = score.cleanlinessCorrection
+    .available
+    ? score.cleanlinessCorrection.sourceReliability
+    : 0;
+  const confidenceScore = round(
+    Math.min(
+      dataCompleteness,
+      sourceCompleteness,
+      cleanlinessCorrectionCompleteness,
+      cleanlinessCorrectionSourceReliability,
+    ),
+  );
   const thresholds = PARIS_PRESSURE_RISK_MODEL_CONFIG.confidence.levelThresholds;
   const level =
     confidenceScore === 0
@@ -177,6 +210,8 @@ function confidence(
   return {
     dataCompleteness,
     sourceCompleteness,
+    cleanlinessCorrectionCompleteness,
+    cleanlinessCorrectionSourceReliability,
     score: confidenceScore,
     level,
     availableFactors: available.length,
@@ -192,7 +227,10 @@ function relevantProvenance(
   waste: ParisPressureRiskScore,
   cigaretteButts: ParisPressureRiskScore,
   context: ParisPressureRiskContext,
-): ParisPressureProvenance[] {
+): {
+  snapshot: ParisPressureProvenance[];
+  context: ParisPressureContextProvenance[];
+} {
   const families = new Set<ParisPressureSignalFamily>();
   for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
     if (contribution.available) {
@@ -203,27 +241,66 @@ function relevantProvenance(
     families.add("cleanliness");
   }
   const sources = snapshot.sources.filter((source) => families.has(source.family));
-  const contextSources = context.provenance ?? [];
-  const combined = [...sources, ...contextSources];
-  const seen = new Set<string>();
-  return combined.filter((source) => {
+  const contextFactors = new Set<ParisPressureContextFactor>();
+  for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
+    if (contribution.available) {
+      if (contribution.key === "eventPressure") contextFactors.add("eventPressure");
+      if (contribution.key === "validatedWastePressure") contextFactors.add("validatedWastePressure");
+      if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
+    }
+  }
+  const contextSources = [...contextFactors].flatMap(
+    (factor) => context.contextProvenance?.[factor] ?? [],
+  );
+  const seenSnapshot = new Set<string>();
+  const relevantSnapshot = sources.filter((source) => {
     const key = `${source.family}:${source.dataset}:${source.datasetVersion}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (seenSnapshot.has(key)) return false;
+    seenSnapshot.add(key);
     return true;
   });
+  const seenContext = new Set<string>();
+  const relevantContext = contextSources.filter((source) => {
+    const key = `${source.factor}:${source.dataset}:${source.datasetVersion}`;
+    if (seenContext.has(key)) return false;
+    seenContext.add(key);
+    return true;
+  });
+  return { snapshot: relevantSnapshot, context: relevantContext };
 }
 
 function provenanceGaps(
   waste: ParisPressureRiskScore,
   cigaretteButts: ParisPressureRiskScore,
   context: ParisPressureRiskContext,
-): string[] {
-  const contextFactors = [...waste.contributions, ...cigaretteButts.contributions]
-    .filter((item) => item.available && item.sourceFamilies.length === 0)
-    .map((item) => item.label);
-  if (contextFactors.length === 0 || (context.provenance?.length ?? 0) > 0) return [];
-  return contextFactors.map((label) => `${label} : provenance contextuelle absente`);
+): Array<{ factor: ParisPressureContextFactor; message: string }> {
+  const factorOrder: ParisPressureContextFactor[] = [
+    "eventPressure",
+    "validatedWastePressure",
+    "validatedCigarettePressure",
+  ];
+  const contextFactors = new Set<ParisPressureContextFactor>();
+  for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
+    if (contribution.available) {
+      if (contribution.key === "eventPressure") contextFactors.add("eventPressure");
+      if (contribution.key === "validatedWastePressure") contextFactors.add("validatedWastePressure");
+      if (contribution.key === "validatedCigarettePressure") contextFactors.add("validatedCigarettePressure");
+    }
+  }
+  return factorOrder
+    .filter((factor) => contextFactors.has(factor))
+    .flatMap((factor) => {
+      const sources = context.contextProvenance?.[factor] ?? [];
+      if (sources.some((source) => source.status === "available" || source.status === "partial")) {
+        return [];
+      }
+      return [{
+        factor,
+        message: sources.length === 0
+          ? "Provenance contextuelle absente"
+          : "Provenance contextuelle indisponible",
+      }];
+    });
 }
 
 export function estimateWasteRisk(
@@ -249,6 +326,7 @@ export function estimateParisPressureRisk(
 ): ParisPressureRiskEstimate {
   const waste = estimateWasteRisk(zone, snapshot, context);
   const cigaretteButts = estimateCigaretteButtRisk(zone, snapshot, context);
+  const provenance = relevantProvenance(snapshot, waste, cigaretteButts, context);
   return {
     zoneId: zone.id,
     zoneLabel: zone.label,
@@ -267,7 +345,8 @@ export function estimateParisPressureRisk(
       waste: confidence(waste),
       cigaretteButts: confidence(cigaretteButts),
     },
-    provenance: relevantProvenance(snapshot, waste, cigaretteButts, context),
+    provenance: provenance.snapshot,
+    contextProvenance: provenance.context,
     provenanceGaps: provenanceGaps(waste, cigaretteButts, context),
   };
 }

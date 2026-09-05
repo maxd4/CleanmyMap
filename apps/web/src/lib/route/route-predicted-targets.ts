@@ -3,19 +3,15 @@ import type {
   ParisPressureSnapshot,
   ParisPressureZone,
 } from "@/lib/geo/paris-pressure-contract";
-import {
-  estimateParisPressureRisk,
-} from "@/lib/geo/paris-pressure-risk";
+import { estimateParisPressureRisk } from "@/lib/geo/paris-pressure-risk";
 import type {
   ParisPressureRiskConfidence,
   ParisPressureRiskEvent,
   ParisPressureRiskEstimate,
+  ParisPressureRiskContext,
   ParisPressureRiskScore,
 } from "@/lib/geo/paris-pressure-risk-contract";
-import {
-  routeDistanceKm,
-  travelMinutesForDistance,
-} from "./route-planner";
+import { routeDistanceKm, travelMinutesForDistance } from "./route-planner";
 
 export const URBAN_PRESSURE_MODEL_SOURCE = "urban-pressure-model" as const;
 export const PREDICTED_CORRIDOR_RADIUS_KM = 1.5;
@@ -74,6 +70,8 @@ export type RoutePredictedEvidence = {
     "snapshotId" | "schemaVersion" | "generatedAt" | "refreshedAt"
   >;
   provenance: ParisPressureProvenance[];
+  contextProvenance: ParisPressureRiskEstimate["contextProvenance"];
+  provenanceGaps: ParisPressureRiskEstimate["provenanceGaps"];
 };
 
 export type RoutePredictedCandidate = {
@@ -259,6 +257,7 @@ export function buildPredictedRouteCandidates(input: {
     ageDays: number;
     attendancePressure: number | null;
   })[];
+  contextProvenance?: ParisPressureRiskContext["contextProvenance"];
 }): {
   candidates: RoutePredictedCandidate[];
   summary: RoutePredictionSummary;
@@ -286,18 +285,17 @@ export function buildPredictedRouteCandidates(input: {
   const excludedZoneIds: string[] = [];
 
   for (const zone of input.snapshot.zones) {
-    const recentEvents: ParisPressureRiskEvent[] | undefined = input.recentEvents?.map(
-      (event) => ({
+    const recentEvents: ParisPressureRiskEvent[] | undefined =
+      input.recentEvents?.map((event) => ({
         distanceKm: routeDistanceKm(zone.centroid, event),
         ageDays: event.ageDays,
         attendancePressure: event.attendancePressure,
-      }),
-    );
-    const estimate = estimateParisPressureRisk(
-      zone,
-      input.snapshot,
-      recentEvents && recentEvents.length > 0 ? { recentEvents } : undefined,
-    );
+      }));
+    const riskContext: ParisPressureRiskContext = {
+      ...(recentEvents && recentEvents.length > 0 ? { recentEvents } : {}),
+      contextProvenance: input.contextProvenance,
+    };
+    const estimate = estimateParisPressureRisk(zone, input.snapshot, riskContext);
     const radiusKm = zoneRadiusKm(zone);
     const distanceToCorridorKm = distanceToRouteCorridorKm(
       zone.centroid,
@@ -377,6 +375,8 @@ export function buildPredictedRouteCandidates(input: {
       },
       snapshot: estimate.snapshot,
       provenance: estimate.provenance,
+      contextProvenance: estimate.contextProvenance,
+      provenanceGaps: estimate.provenanceGaps,
     };
     rawCandidates.push({
       family: "predicted",
@@ -400,8 +400,7 @@ export function buildPredictedRouteCandidates(input: {
     (left, right) =>
       right.score - left.score ||
       right.selectedRisk - left.selectedRisk ||
-      left.evidence.distanceToCorridorKm -
-        right.evidence.distanceToCorridorKm ||
+      left.evidence.distanceToCorridorKm - right.evidence.distanceToCorridorKm ||
       left.id.localeCompare(right.id),
   );
 

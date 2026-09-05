@@ -162,4 +162,44 @@ describe("predicted route targets", () => {
       [{ latitude: 48.8566, longitude: 2.3522 }, { latitude: 48.8566, longitude: 2.3722 }],
     )).toBeLessThan(1);
   });
+
+  it("propage les gaps et la provenance contextuelle vers l'evidence route", () => {
+    const input = {
+      snapshot: withZones([zone("event-zone", 48.8568, 2.3522)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      observedCandidates: [],
+      travelBudgetMinutes: 60,
+      recentEvents: [{
+        latitude: 48.8568,
+        longitude: 2.3522,
+        ageDays: 0,
+        attendancePressure: 1,
+      }],
+    };
+    const withoutProvenance = buildPredictedRouteCandidates(input);
+    expect(withoutProvenance.candidates[0]?.evidence.provenanceGaps).toEqual([
+      { factor: "eventPressure", message: "Provenance contextuelle absente" },
+    ]);
+
+    const withProvenance = buildPredictedRouteCandidates({
+      ...input,
+      contextProvenance: {
+        eventPressure: [{
+          factor: "eventPressure",
+          publisher: "Test route context",
+          dataset: "Test route events",
+          url: "https://example.test/route-events",
+          license: "Licence de test",
+          datasetVersion: "2026-test",
+          observedAt: "2026-09-05",
+          refreshedAt: "2026-09-05T00:00:00.000Z",
+          status: "available",
+          notes: [],
+        }],
+      },
+    });
+    expect(withProvenance.candidates[0]?.evidence.contextProvenance.map((source) => source.factor)).toEqual(["eventPressure"]);
+    expect(withProvenance.candidates[0]?.evidence.provenanceGaps).toEqual([]);
+    expect(withProvenance.candidates[0]?.evidence.modelVersion).toBe("paris-pressure-risk-v2");
+  });
 });

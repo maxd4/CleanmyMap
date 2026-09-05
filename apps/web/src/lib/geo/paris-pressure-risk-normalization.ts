@@ -85,6 +85,9 @@ export function cleanlinessCorrection(
 ): {
   points: number;
   available: boolean;
+  resolution: "iris" | "arrondissement" | "unknown";
+  resolutionReason: "resolved" | "missing_prior" | "unknown_resolution";
+  sourceReliability: number;
   explanation: string;
 } {
   const pressure = normalizedSignal(normalizedCleanlinessPressure);
@@ -92,7 +95,22 @@ export function cleanlinessCorrection(
     return {
       points: 0,
       available: false,
+      resolution: "unknown",
+      resolutionReason: "missing_prior",
+      sourceReliability: 0,
       explanation: "Prior de propreté indisponible : aucune correction appliquée.",
+    };
+  }
+
+  if (resolution === null) {
+    return {
+      points: 0,
+      available: false,
+      resolution: "unknown",
+      resolutionReason: "unknown_resolution",
+      sourceReliability: 0,
+      explanation:
+        "Résolution géographique du prior de propreté inconnue : aucune correction appliquée.",
     };
   }
 
@@ -111,6 +129,9 @@ export function cleanlinessCorrection(
   return {
     points,
     available: true,
+    resolution,
+    resolutionReason: "resolved",
+    sourceReliability: 1,
     explanation:
       points < 0
         ? "La faible pression d’anomalies documentée réduit le risque."
