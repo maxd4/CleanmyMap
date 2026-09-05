@@ -84,7 +84,16 @@ function candidate(family: "observed" | "predicted") {
     reason: family === "observed" ? "Signalement validé" : "Pression estimée",
     family,
     safety: { isEligible: true, specializationReason: null },
-    ...(family === "predicted" ? { evidence: { family: "predicted" } } : {}),
+    ...(family === "predicted"
+      ? { evidence: { family: "predicted" as const } }
+      : {
+          evidence: {
+            family: "observed" as const,
+            source: "trash_spotter_spots" as const,
+            proof: "validated" as const,
+            observedAt: "2026-08-20T10:00:00.000Z",
+          },
+        }),
   };
 }
 
@@ -98,6 +107,17 @@ function plannedStop(candidateValue: ReturnType<typeof candidate>) {
 }
 
 function plannerResult(candidateId?: string) {
+  const orderingCriteria = [
+    "combined_score_desc",
+    "priority_desc",
+    "incremental_travel_asc",
+    "id_lexicographic",
+  ] satisfies [
+    "combined_score_desc",
+    "priority_desc",
+    "incremental_travel_asc",
+    "id_lexicographic",
+  ];
   return {
     stops: [],
     diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
@@ -119,12 +139,7 @@ function plannerResult(candidateId?: string) {
             selectionReason: "Sélectionné dans le budget.",
           }]
         : [],
-      orderingCriteria: [
-        "combined_score_desc",
-        "priority_desc",
-        "incremental_travel_asc",
-        "id_lexicographic",
-      ] as const,
+      orderingCriteria,
     },
   };
 }
@@ -140,6 +155,15 @@ function responseInput(overrides: Record<string, unknown> = {}) {
       actionableCandidates: [],
       parisPressureSnapshot: null,
       contracts: [],
+      routeEventSignalContext: {
+        candidatePressureById: new Map(),
+        completedEventsConsidered: 0,
+        geolocatedCompletedEvents: 0,
+        eventsWithoutCoordinates: 0,
+        futureEventSignals: [],
+        sourceAvailable: false,
+        warnings: [],
+      },
       dataStatus: "empty",
       isTruncated: false,
       sourceHealth: completeSourceHealth,
@@ -230,6 +254,7 @@ describe("route recommendation response trace contract", () => {
     expect(payload.trace.selectedStops[0]).toMatchObject({
       id: observed.id,
       targetFamily: "observed",
+      evidence: observed.evidence,
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);

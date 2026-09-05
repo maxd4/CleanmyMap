@@ -1,12 +1,18 @@
+import {
+  isVolunteerRouteEligible,
+  TRASH_SPOTTER_SOURCE,
+} from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotter-actionable-candidates";
-import { isVolunteerRouteEligible } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { RouteEventCandidatePressure } from "./route-event-pressure";
+import type { RouteObservedEvidence } from "./route-predicted-targets";
 
 export type TrashSpotterRouteCandidate =
   TrashSpotterActionableCandidate & {
     score: number;
     reason: string;
+    family: "observed";
+    evidence: RouteObservedEvidence;
     baseScore: number;
     eventPressure: RouteEventCandidatePressure | null;
     eventScoreContribution: number;
@@ -40,6 +46,13 @@ export function buildTrashSpotterRouteCandidates(
   eventPressureByCandidateId: ReadonlyMap<string, RouteEventCandidatePressure> = new Map(),
 ): TrashSpotterRouteCandidate[] {
   return candidates
+    .filter(
+      (candidate) =>
+        candidate.source === TRASH_SPOTTER_SOURCE &&
+        candidate.sourceStatus === "validated" &&
+        typeof candidate.observedAt === "string" &&
+        candidate.observedAt.trim().length > 0,
+    )
     .filter(isVolunteerRouteEligible)
     .map((candidate) => {
       const freshness = freshnessScore(candidate.observedAt, now);
@@ -62,12 +75,19 @@ export function buildTrashSpotterRouteCandidates(
 
       return {
         ...candidate,
+        family: "observed",
+        evidence: {
+          family: "observed",
+          source: TRASH_SPOTTER_SOURCE,
+          proof: "validated",
+          observedAt: candidate.observedAt,
+        },
         score,
         baseScore: freshness,
         eventPressure,
         eventScoreContribution: score - freshness,
         reason: `Signalement validé il y a ${ageDays} jour(s), catégories=${categories}; fraîcheur=${formatScorePercent(freshness, 0)}.${eventReason}`,
-      };
+      } satisfies TrashSpotterRouteCandidate;
     })
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
 }

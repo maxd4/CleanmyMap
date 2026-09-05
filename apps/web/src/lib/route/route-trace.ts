@@ -289,8 +289,7 @@ function selectionForStop(
     parisPressure:
       ((stop.candidate as { parisPressure?: ParisPressureAtPoint | null })
         .parisPressure ?? null),
-    targetFamily:
-      stop.candidate.family === "predicted" ? "predicted" : "observed",
+    targetFamily: stop.candidate.evidence?.family,
     evidence: stop.candidate.evidence,
   };
 }

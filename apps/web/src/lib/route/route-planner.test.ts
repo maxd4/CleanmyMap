@@ -43,7 +43,18 @@ function candidate(
   if (!actionable) {
     throw new Error(`Expected actionable candidate: ${id}`);
   }
-  return { ...actionable, score, reason: `Priorité ${id}`, family: "observed" };
+  return {
+    ...actionable,
+    score,
+    reason: `Priorité ${id}`,
+    family: "observed",
+    evidence: {
+      family: "observed",
+      source: "trash_spotter_spots",
+      proof: "validated",
+      observedAt: actionable.observedAt,
+    },
+  };
 }
 
 function plannerInput(overrides: Partial<RoutePlannerInput> = {}): RoutePlannerInput {

@@ -18,8 +18,8 @@ export type RoutePlannerCandidate =
   | (TrashSpotterActionableCandidate & {
       score: number;
       reason: string;
-      family?: "observed";
-      evidence?: import("./route-predicted-targets").RouteObservedEvidence;
+      family: "observed";
+      evidence: import("./route-predicted-targets").RouteObservedEvidence;
     })
   | RoutePredictedCandidate;
 

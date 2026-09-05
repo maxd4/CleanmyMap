@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { buildActionDataContract } from "@/lib/actions/data-contract";
+import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { buildRouteRecommendationTrace } from "./route-trace";
+import type { RouteGeometry } from "./route-contract";
 import type { RoutePlannerResult, PlannedRouteStop } from "./route-planner";
 
 const origin = { latitude: 48.85, longitude: 2.35, source: "browser" as const };
-const sourceHealth = {
+const sourceHealth: UnifiedSourceHealth = {
   partial: false,
   failedSources: [],
   availableSources: ["spots"],
@@ -41,8 +45,25 @@ function plannerResult(ids: string[]): RoutePlannerResult {
 }
 
 function stop(id: string): PlannedRouteStop {
+  const contract = buildActionDataContract({
+    id,
+    type: "spot",
+    status: "approved",
+    source: "trash_spotter_spots",
+    sourceStatus: "validated",
+    observedAt: "2026-08-25T00:00:00.000Z",
+    locationLabel: id,
+    latitude: 48.86,
+    longitude: 2.36,
+    wasteCategories: ["plastic"],
+  });
+  const actionable = buildTrashSpotterActionableCandidates([contract])[0];
+  if (!actionable) {
+    throw new Error(`Expected actionable candidate: ${id}`);
+  }
   return {
     candidate: {
+      ...actionable,
       id,
       label: id,
       latitude: 48.86,
@@ -50,7 +71,13 @@ function stop(id: string): PlannedRouteStop {
       score: 80,
       reason: "Signal priorisé",
       family: "observed",
-      safety: { isEligible: true, specializationReason: null },
+      evidence: {
+        family: "observed",
+        source: "trash_spotter_spots",
+        proof: "validated",
+        observedAt: "2026-08-25T00:00:00.000Z",
+      },
+      safety: { volunteerEligibility: "eligible", specializationReason: null },
     },
     incrementalDistanceKm: 1,
     incrementalTravelMinutes: 5,
@@ -58,7 +85,13 @@ function stop(id: string): PlannedRouteStop {
   };
 }
 
-function geometry(mode: "network" | "fallback" = "fallback") {
+function stopWithoutEvidence(id: string): PlannedRouteStop {
+  const result = stop(id);
+  Reflect.deleteProperty(result.candidate, "evidence");
+  return result;
+}
+
+function geometry(mode: "network" | "fallback" = "fallback"): RouteGeometry {
   return {
     coordinates: [[48.85, 2.35] as [number, number]],
     distanceKm: 1,
@@ -113,6 +146,14 @@ describe("route recommendation trace", () => {
 
     expect(first).toEqual(second);
     expect(first.selectedStops.map(({ id }) => id)).toEqual(["final-1"]);
+    expect(first.selectedStops[0]).toMatchObject({
+      targetFamily: "observed",
+      evidence: {
+        family: "observed",
+        source: "trash_spotter_spots",
+        proof: "validated",
+      },
+    });
     expect(first.ordering.stopIds).toEqual(["final-1"]);
     expect(first.fallbacks).toEqual(["fallback_route_geometry", "budget_compatible_prefix"]);
     expect(first.finalRoutingReconciliation).toEqual({
@@ -166,5 +207,25 @@ describe("route recommendation trace", () => {
     expect(trace.selectedStops).toEqual([]);
     expect(trace.segments).toEqual([]);
     expect(trace.budget.remainingMinutes).toBe(30);
+  });
+
+  it("fails closed when a candidate has no canonical evidence", () => {
+    const trace = buildRouteRecommendationTrace({
+      engineVersion: "route-planner-v1",
+      origin,
+      travelBudgetMinutes: 30,
+      maxStops: 1,
+      priorityVsTravel: 50,
+      candidateSummary: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
+      plannerResult: plannerResult(["synthetic"]),
+      selectedStops: [stopWithoutEvidence("synthetic")],
+      routeGeometry: geometry(),
+      consumedTravelMinutes: 5,
+      budgetPrefixApplied: false,
+      sourceHealth,
+    });
+
+    expect(trace.selectedStops[0]?.targetFamily).toBeUndefined();
+    expect(trace.selectedStops[0]?.evidence).toBeUndefined();
   });
 });
