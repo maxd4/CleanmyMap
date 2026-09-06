@@ -5,6 +5,31 @@ CleanMyMap. Il complète `PAGE_HEADER.md` : la page choisit son contenu métier,
 sa famille de couleur et, si nécessaire, son alignement de header, mais pas sa
 géométrie globale.
 
+## Chrome global obligatoire
+
+Le ruban supérieur de navigation et le ruban inférieur global font partie du
+chrome permanent du site. Ils sont rendus au niveau du layout racine et doivent
+rester présents sur toutes les pages du site, y compris les routes
+d'authentification et d'onboarding.
+
+Une exception au shell de contenu (`CmmPageLayout`) n'est jamais une exception
+au chrome global. En particulier :
+
+- `/sign-in`, `/sign-up` et `/onboarding` conservent le ruban supérieur et le
+  ruban inférieur ;
+- une page à composition dédiée doit rendre son contenu entre ces deux rubans ;
+- une page métier ou un onboarding ne doit pas utiliser un `fixed inset-0`
+  plein viewport avec un `z-index` couvrant le chrome global ;
+- le header/footer ne doivent pas être recréés localement dans la page :
+  `RootLayoutChrome` et `DeferredGlobalFooter` restent les sources canoniques ;
+- les overlays réellement transitoires (dialog, drawer, modal) peuvent passer
+  au-dessus du contenu selon leur contrat propre, mais une page d'onboarding
+  n'est pas un overlay.
+
+Toute modification d'une surface pleine hauteur doit être vérifiée à 100 % de
+zoom sur desktop et mobile afin de confirmer que les deux rubans restent
+visibles, non recouverts et sans débordement horizontal.
+
 ## Primitives runtime
 
 ```tsx
@@ -110,6 +135,12 @@ composition dédiée :
 - modales, drawers, overlays et sous-vues internes ;
 - composants métier qui contrôlent volontairement leur propre grille interne.
 
+Ces exceptions concernent uniquement le shell et le rythme du contenu. Elles ne
+suppriment jamais l'obligation de conserver le chrome global du site.
+
+Ces exceptions concernent uniquement le shell et le rythme du contenu. Elles ne
+suppriment jamais l'obligation de conserver le chrome global du site.
+
 Toute nouvelle exception doit être ajoutée à
 `documentation/design-system/UI_EXCEPTION_PAGES.md` avec sa raison avant de
 contourner le shell canonique.
@@ -119,6 +150,9 @@ contourner le shell canonique.
 Pour une modification de layout :
 
 - vérifier que la page utilise le shell canonique lorsqu'elle y est éligible ;
+- confirmer que le ruban supérieur et le ruban inférieur globaux restent présents et non recouverts ;
+- confirmer que le ruban supérieur et le ruban inférieur globaux restent
+  présents et non recouverts ;
 - contrôler desktop, tablette et mobile selon les breakpoints existants ;
 - vérifier l'absence de débordement horizontal ;
 - vérifier l'alignement des blocs denses sans introduire de nouvelle échelle
