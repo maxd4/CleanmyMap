@@ -11,6 +11,14 @@ import type {
   ParisPressureRiskContext,
   ParisPressureRiskScore,
 } from "@/lib/geo/paris-pressure-risk-contract";
+import type { MunicipalCleaningServiceabilitySnapshot } from "@/lib/geo/municipal-cleaning-serviceability-contract";
+import type { VolunteerAdditionalityResult, VolunteerSafetyAssessment } from "@/lib/geo/volunteer-additionality-contract";
+import {
+  calculateRouteAdditionality,
+  contributionForAdditionality,
+  evidenceWithContribution,
+  serviceabilityByZone,
+} from "./route-additionality";
 import { routeDistanceKm, travelMinutesForDistance } from "./route-planner";
 import type { RoutePlannerCandidate } from "./route-planner";
 
@@ -28,6 +36,12 @@ export type RouteObservedEvidence = {
   source: "trash_spotter_spots";
   proof: "validated";
   observedAt: string;
+  pollutionPriority?: number;
+  volunteerAdditionality?: number | null;
+  finalPlannerContribution?: number;
+  volunteerAdditionalityConfidence?: number | null;
+  additionalityWeight?: number;
+  additionality?: VolunteerAdditionalityResult;
 };
 
 export type RoutePredictedEvidence = {
@@ -79,6 +93,12 @@ export type RoutePredictedEvidence = {
   provenance: ParisPressureProvenance[];
   contextProvenance: ParisPressureRiskEstimate["contextProvenance"];
   provenanceGaps: ParisPressureRiskEstimate["provenanceGaps"];
+  pollutionPriority?: number;
+  volunteerAdditionality?: number | null;
+  finalPlannerContribution?: number;
+  volunteerAdditionalityConfidence?: number | null;
+  additionalityWeight?: number;
+  additionality?: VolunteerAdditionalityResult;
 };
 
 export type RoutePredictedCandidate = {
@@ -90,6 +110,13 @@ export type RoutePredictedCandidate = {
   score: number;
   reason: string;
   evidence: RoutePredictedEvidence;
+  pollutionPriority?: number;
+  volunteerAdditionality?: number | null;
+  finalPlannerContribution?: number;
+  volunteerAdditionalityConfidence?: number | null;
+  additionalityWeight?: number;
+  additionality?: VolunteerAdditionalityResult;
+  volunteerSafety?: VolunteerSafetyAssessment;
 };
 
 export type RouteTargetEvidence = RouteObservedEvidence | RoutePredictedEvidence;
@@ -144,7 +171,14 @@ export function buildRoutePlannerCandidatePool(input: {
   candidates: RoutePlannerCandidate[];
   audit: RoutePredictionPoolAudit;
 } {
-  const all = [...input.observedCandidates, ...input.predictedCandidates];
+  const all = [...input.observedCandidates, ...input.predictedCandidates].filter(
+    (candidate) =>
+      !(
+        candidate.family === "predicted" &&
+        candidate.volunteerSafety !== undefined &&
+        candidate.volunteerSafety.status !== "safe"
+      ),
+  );
   const ordered = [...all].sort((left, right) => {
     const leftScore = clamp(left.score, 0, 100);
     const rightScore = clamp(right.score, 0, 100);
@@ -392,6 +426,9 @@ export function buildPredictedRouteCandidates(input: {
     attendancePressure: number | null;
   })[];
   contextProvenance?: ParisPressureRiskContext["contextProvenance"];
+  municipalCleaningSnapshot?: MunicipalCleaningServiceabilitySnapshot | null;
+  volunteerSafetyByZone?: ReadonlyMap<string, VolunteerSafetyAssessment>;
+  municipalInterventionsByZone?: ReadonlyMap<string, NonNullable<Parameters<typeof calculateRouteAdditionality>[0]["municipalInterventions"]>>;
 }): {
   candidates: RoutePredictedCandidate[];
   summary: RoutePredictionSummary;
@@ -418,6 +455,7 @@ export function buildPredictedRouteCandidates(input: {
   };
   const rawCandidates: Array<RoutePredictedCandidate & { selectedRisk: number }> =
     [];
+  const serviceability = serviceabilityByZone(input.municipalCleaningSnapshot ?? null);
   let excludedByCorridor = 0;
   const excludedZoneIds: string[] = [];
 
@@ -460,18 +498,37 @@ export function buildPredictedRouteCandidates(input: {
     const proximity = clamp(
       1 - distanceToCorridorKm / (PREDICTED_CORRIDOR_RADIUS_KM + radiusKm),
     );
-    const score = clamp(
+    const pollutionPriority = clamp(
       risk * PREDICTED_PRIORITY_FACTOR +
         proximity * 8 -
         Math.min(18, detourMinutes * 0.6),
       0,
       100,
     );
+    const volunteerSafety = input.volunteerSafetyByZone?.get(zone.id) ?? {
+      status: "unknown" as const,
+      suitability: null,
+      confidence: 0,
+      evidenceIds: [],
+    };
+    const additionality = input.volunteerSafetyByZone?.has(zone.id)
+      ? calculateRouteAdditionality({
+          zone,
+          pressureSnapshot: input.snapshot,
+          municipalCleaning: serviceability.get(zone.id) ?? null,
+          volunteerSafety,
+          municipalInterventions: input.municipalInterventionsByZone?.get(zone.id),
+          eventPressure: recentEvents && recentEvents.length > 0
+            ? Math.max(...recentEvents.map((event) => event.attendancePressure ?? 0))
+            : null,
+        })
+      : null;
+    const contribution = contributionForAdditionality(pollutionPriority, additionality);
     const dominantRisk =
       estimate.wasteRisk >= estimate.cigaretteButtRisk
         ? "waste"
         : "cigaretteButts";
-    const evidence: RoutePredictedEvidence = {
+    const evidence: RoutePredictedEvidence = evidenceWithContribution({
       family: "predicted",
       source: URBAN_PRESSURE_MODEL_SOURCE,
       modelVersion: estimate.predictionModelVersion,
@@ -523,14 +580,21 @@ export function buildPredictedRouteCandidates(input: {
       provenance: estimate.provenance,
       contextProvenance: estimate.contextProvenance,
       provenanceGaps: estimate.provenanceGaps,
-    };
+    }, contribution);
     rawCandidates.push({
       family: "predicted",
       id: "predicted:" + zone.id,
       label: "Zone prédite · " + zone.label,
       latitude: zone.centroid.latitude,
       longitude: zone.centroid.longitude,
-      score: round(score, 2),
+      score: contribution.finalPlannerContribution,
+      pollutionPriority: contribution.pollutionPriority,
+      volunteerAdditionality: contribution.volunteerAdditionality,
+      finalPlannerContribution: contribution.finalPlannerContribution,
+      volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
+      additionalityWeight: contribution.additionalityWeight,
+      ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
+      volunteerSafety,
       reason: buildReason(
         estimate,
         riskFocus,
@@ -609,11 +673,18 @@ export function buildPredictedRouteCandidates(input: {
       excludedZoneIds,
       deduplicatedZoneIds,
       warnings:
-        snapshotStatus === "partial"
-          ? [
-              "Le snapshot de pression urbaine est partiel ; la prédiction reste distincte des observations terrain.",
-            ]
-          : [],
+        [
+          ...(snapshotStatus === "partial"
+            ? [
+                "Le snapshot de pression urbaine est partiel ; la prédiction reste distincte des observations terrain.",
+              ]
+            : []),
+          ...(input.volunteerSafetyByZone
+            ? []
+            : [
+                "La sécurité géographique des zones prédites n'est pas documentée ; elles ne sont pas transmises au planner bénévole.",
+              ]),
+        ],
     },
   };
 }

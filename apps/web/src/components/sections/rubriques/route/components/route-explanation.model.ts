@@ -36,7 +36,7 @@ export function formatDuration(value: number | null): string {
 }
 
 export function riskLabel(value: number): string {
-  return `${formatNumber(value, 1)}/100`;
+  return `${formatNumber(value, 1)} sur 100`;
 }
 
 export type RouteEventTemporalStatus = "past" | "today" | "future";
