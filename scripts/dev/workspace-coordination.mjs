@@ -75,7 +75,9 @@ function writeExclusiveMetadata(filePath, value) {
   const temporaryPath = temporaryMetadataPath(filePath);
   try {
     writePayload(temporaryPath, jsonPayload(value));
-    fs.renameSync(temporaryPath, filePath);
+    // A hard-link create is atomic and fails with EEXIST without replacing an
+    // existing metadata file, including on Windows where rename may replace.
+    fs.linkSync(temporaryPath, filePath);
   } finally {
     if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
   }
