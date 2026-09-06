@@ -12,6 +12,7 @@ type MapEmptyStateProps = {
   isValidating: boolean;
   zoneQuery?: string;
   tone?: "sky" | "emerald";
+  compact?: boolean;
 };
 
 export function MapEmptyState({
@@ -24,6 +25,7 @@ export function MapEmptyState({
   isValidating,
   zoneQuery = "",
   tone = "sky",
+  compact = false,
 }: MapEmptyStateProps) {
   const isEmerald = tone === "emerald";
   const hasZoneQuery = zoneQuery.trim().length > 0;
@@ -43,7 +45,8 @@ export function MapEmptyState({
   return (
     <div
       className={cn(
-        "relative flex min-h-[28rem] items-center justify-center overflow-hidden rounded-[1.75rem] px-6 py-10 text-center text-slate-950",
+        "relative flex items-center justify-center overflow-hidden rounded-[1.75rem] px-6 py-10 text-center text-slate-950",
+        compact ? "min-h-[18rem]" : "min-h-[28rem]",
         isEmerald
           ? "border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(244,250,242,0.98),rgba(252,254,250,0.98))]"
           : "border border-sky-200/80 bg-sky-50",

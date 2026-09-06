@@ -18,6 +18,7 @@ export type ActionsMapCanvasComponent = ComponentType<{
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
   fullViewport?: boolean;
+  compact?: boolean;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
   onViewportInteraction?: () => void;
@@ -41,6 +42,7 @@ export type ActionsMapFeedProps = {
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  compact?: boolean;
   visibleCategories?: Record<MarkerCategory, boolean>;
   selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;
