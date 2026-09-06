@@ -365,6 +365,12 @@ export async function POST(request: Request) {
     return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
 
+  if ((parsed.data.recordType ?? "action") === "action" && !parsed.data.organizerType) {
+    return validationErrorResponse({
+      organizerType: ["Sélectionnez un type de structure."],
+    });
+  }
+
   try {
     const supabase = getSupabaseServerClient();
     const identity = await getCurrentUserIdentity();

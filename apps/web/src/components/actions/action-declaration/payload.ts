@@ -52,6 +52,7 @@ export function normalizeParticipantAccounts(
 const BASE_FORM_STATE: FormState = {
  actorName:"",
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
+ organizerType:"",
  enterpriseName:"",
  organizerAccounts:"",
  participantAccounts:[],
@@ -326,6 +327,7 @@ export function buildCreateActionPayload(params: {
  return {
     actorName: form.actorName.trim() || undefined,
     associationName,
+    organizerType: form.organizerType || undefined,
     groupJoinEnabled: form.groupJoinEnabled,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
     preparationData: buildPreparationDataFromForm(form),

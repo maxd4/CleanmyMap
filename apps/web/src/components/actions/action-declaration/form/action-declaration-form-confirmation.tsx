@@ -7,6 +7,7 @@ import {
   summarizeActionDrawingValidation,
 } from "../../map/actions-map-geometry.utils";
 import { formatKg } from "../utils/harvest-utils";
+import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;
@@ -84,6 +85,9 @@ export function ActionDeclarationFormConfirmation({
             </p>
             <p className="text-base font-bold text-emerald-950">
               {form.associationName}
+            </p>
+            <p className="text-sm font-semibold text-emerald-900/75 mt-2">
+              Type de structure : {getOrganizerTypeLabel(payload.organizerType)}
             </p>
             {form.enterpriseName && (
               <p className="text-sm text-emerald-900/65 mt-1">{form.enterpriseName}</p>

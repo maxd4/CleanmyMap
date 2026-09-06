@@ -41,6 +41,7 @@ describe("GET /api/actions/prefill", () => {
         volunteers_count: 8,
         duration_minutes: 90,
         actor_name: "Ada Admin",
+        organizer_type: "association",
       },
     ]);
   });
@@ -55,6 +56,7 @@ describe("GET /api/actions/prefill", () => {
         actorName?: string;
         locationLabel?: string | null;
         associationName?: string | null;
+        organizerType?: string | null;
         volunteersCount?: number;
         durationMinutes?: number;
       };
@@ -67,6 +69,7 @@ describe("GET /api/actions/prefill", () => {
     expect(body.prefill?.actorName).toBe("Ada Admin");
     expect(body.prefill?.locationLabel).toBe("Place de la République");
     expect(body.prefill?.associationName).toBe("Action spontanée");
+    expect(body.prefill?.organizerType).toBe("association");
     expect(body.basedOn?.recentDeclarations).toBe(1);
     expect(fetchRecentActionsByUserMock).toHaveBeenCalledTimes(1);
   }, 10000);

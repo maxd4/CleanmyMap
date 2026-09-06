@@ -151,6 +151,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     durationMinutes: row.duration_minutes,
     actorName: row.actor_name,
     associationName: parsedMetadata.associationName,
+    organizerType: row.organizer_type,
     groupJoinEnabled: parsedMetadata.groupJoinEnabled,
     actionPhase: row.action_phase ?? "post_action_complete",
     preparationData: row.preparation_data ?? {},

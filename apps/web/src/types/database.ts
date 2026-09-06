@@ -4,6 +4,7 @@ import type {
   ActionPreparationData,
 } from "@/lib/actions/types";
 import type { CommunityEventLocationSource } from "@/lib/community/event-location";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 
 /**
  * Raw Row Types from Supabase (matching database schema)
@@ -51,6 +52,7 @@ export type ActionRow = {
   updated_at?: string;
   created_by_clerk_id: string;
   actor_name: string | null;
+  organizer_type?: OrganizerType | null;
   action_date: string;
   location_label: string;
   latitude: number | null;

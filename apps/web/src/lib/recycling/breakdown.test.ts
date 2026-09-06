@@ -6,6 +6,7 @@ function buildContract(overrides: Partial<ActionDataContract>): ActionDataContra
   const metadata: ActionDataContract["metadata"] = {
     actorName: "Maxence",
     associationName: "CleanMyMap",
+    organizerType: null,
     groupJoinEnabled: false,
     placeType: null,
     departureLocationLabel: null,

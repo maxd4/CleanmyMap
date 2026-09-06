@@ -1,9 +1,11 @@
 import type { ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 
 export type FormState = {
  actorName: string;
  associationName: string;
+ organizerType: OrganizerType | "";
  enterpriseName: string;
  organizerAccounts: string;
  participantAccounts: string[];
@@ -59,6 +61,7 @@ export type DeclarationMode = "quick" | "complete";
 export type ValidationIssue = {
  field:
  |"associationName"
+ |"organizerType"
  |"enterpriseName"
  |"actionDate"
  |"locationLabel"

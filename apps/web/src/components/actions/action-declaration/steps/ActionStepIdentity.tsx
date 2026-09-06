@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSOCIATION_SELECTION_OPTIONS, buildEntrepriseAssociationName } from "@/lib/actions/association-options";
+import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
 import type { FormState } from "../form/model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
@@ -106,9 +107,11 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
   const isAutreBénévole = form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE;
   const missingDate = hasAttemptedSubmit && !form.actionDate;
   const missingAssociation = hasAttemptedSubmit && !form.associationName;
+  const missingOrganizerType = hasAttemptedSubmit && isActionMode && !form.organizerType;
   const missingOtherVolunteerName =
     hasAttemptedSubmit && isAutreBénévole && !form.actorName.trim();
   const associationErrorId = "action-association-error";
+  const organizerTypeErrorId = "action-organizer-type-error";
   const dateErrorId = "action-date-error";
   const otherVolunteerErrorId = "action-other-volunteer-error";
 
@@ -142,6 +145,33 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
           <div>
             <SectionTitle color="bg-violet-500">Cadre &amp; calendrier</SectionTitle>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label htmlFor="action-organizer-type" className="pl-1 text-xs font-semibold text-emerald-900/70">
+                  Type de structure <span aria-hidden="true">*</span>
+                </label>
+                <Field icon={Building}>
+                  <select
+                    id="action-organizer-type"
+                    className={cn(inputCls, "appearance-none cursor-pointer", missingOrganizerType && inputErrCls)}
+                    value={form.organizerType}
+                    onChange={(e) => updateField("organizerType", e.target.value as FormState["organizerType"])}
+                    required={isActionMode}
+                    aria-invalid={missingOrganizerType}
+                    aria-describedby={missingOrganizerType ? organizerTypeErrorId : undefined}
+                  >
+                    <option value="">Sélectionnez un type de structure</option>
+                    {ORGANIZER_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                {missingOrganizerType && (
+                  <p id={organizerTypeErrorId} className="pl-1 text-xs font-medium text-rose-700">
+                    Sélectionnez un type de structure.
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-1">
                 <Field icon={ChevronDown}>
                   <select

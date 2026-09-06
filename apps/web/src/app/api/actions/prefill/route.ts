@@ -4,6 +4,7 @@ import {
  ASSOCIATION_SELECTION_OPTIONS,
  normalizeAssociationSelectionForPrefill,
 } from"@/lib/actions/association-options";
+import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import { extractActionMetadataFromNotes } from"@/lib/actions/metadata";
 import {
  getCurrentUserIdentity,
@@ -88,6 +89,7 @@ export async function GET() {
 
  const locationCounts = new Map<string, number>();
  const associationCounts = new Map<string, number>();
+ const organizerTypeCounts = new Map<OrganizerType, number>();
  const volunteersSamples: number[] = [];
  const durationSamples: number[] = [];
 
@@ -108,6 +110,12 @@ export async function GET() {
  (associationCounts.get(normalizedAssociation) ?? 0) + 1,
  );
  }
+ if (isOrganizerType(item.organizer_type)) {
+ organizerTypeCounts.set(
+ item.organizer_type,
+ (organizerTypeCounts.get(item.organizer_type) ?? 0) + 1,
+ );
+ }
  if (typeof item.volunteers_count === "number" && Number.isFinite(item.volunteers_count) && item.volunteers_count > 0) {
  volunteersSamples.push(item.volunteers_count);
  }
@@ -124,6 +132,7 @@ export async function GET() {
   const preferredAssociation =
   pickMostFrequentLabel(associationCounts) ??
   ASSOCIATION_SELECTION_OPTIONS[0];
+  const preferredOrganizerType = pickMostFrequentLabel(organizerTypeCounts) as OrganizerType | null;
   const firstAction = recent[0];
   const locationLabel = preferredLocation ?? firstAction?.location_label?.trim() ?? null;
 
@@ -133,6 +142,7 @@ export async function GET() {
   actionDate: new Date().toISOString().slice(0, 10),
   actorName: identity?.displayName ?? firstAction?.actor_name ?? userId,
   associationName: preferredAssociation,
+  organizerType: preferredOrganizerType,
   locationLabel,
   volunteersCount: median(volunteersSamples, 1),
   durationMinutes: median(durationSamples, 60),

@@ -17,6 +17,7 @@ import {
   type PersistedDerivedGeometry,
 } from "../geometry/derived-geometry";
 import type { WasteCategorySlug } from "@/lib/waste";
+import type { OrganizerType } from "../organizer-type";
 
 export type ActionEntityType = ActionRecordType;
 
@@ -45,6 +46,7 @@ export type ActionDataDates = {
 export type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
+  organizerType: OrganizerType | null;
   groupJoinEnabled: boolean;
   actionPhase: ActionPhase;
   preparationData: ActionPreparationData | null;
@@ -109,6 +111,7 @@ export type BuildActionContractParams = {
   durationMinutes?: number | null;
   actorName?: string | null;
   associationName?: string | null;
+  organizerType?: OrganizerType | null;
   groupJoinEnabled?: boolean | null;
   actionPhase?: ActionPhase | null;
   preparationData?: ActionPreparationData | null;
@@ -197,11 +200,12 @@ function buildActionIdentityMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "actorName" | "associationName" | "groupJoinEnabled" | "actionPhase" | "preparationData"
+  "actorName" | "associationName" | "organizerType" | "groupJoinEnabled" | "actionPhase" | "preparationData"
 > {
   return {
     actorName: params.actorName ?? null,
     associationName: params.associationName ?? null,
+    organizerType: params.organizerType ?? null,
     groupJoinEnabled: params.groupJoinEnabled ?? false,
     actionPhase: params.actionPhase ?? "post_action_complete",
     preparationData: params.preparationData ?? null,

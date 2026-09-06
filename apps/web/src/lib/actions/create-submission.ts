@@ -103,6 +103,13 @@ export async function createActionSubmission(
     };
   }
 
+  if (!payload.organizerType) {
+    throw validationError(
+      "organizerType",
+      "Sélectionnez un type de structure.",
+    );
+  }
+
   const isSpontaneousAction = payload.associationName === "Action spontanée";
   const providedOrganizerAccounts = payload.organizerAccounts ?? [];
   const organizerAccounts =

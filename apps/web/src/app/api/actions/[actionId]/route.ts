@@ -228,6 +228,7 @@ function buildActionEditorPayload(
     notes: metadata.cleanNotes,
     submissionMode: metadata.submissionMode,
     associationName: metadata.associationName,
+    organizerType: row.organizer_type,
     groupJoinEnabled: metadata.groupJoinEnabled,
     placeType: metadata.placeType,
     departureLocationLabel: metadata.departureLocationLabel,
@@ -408,6 +409,7 @@ export async function PATCH(
       ([key, value]) =>
         key !== "actionPhase" &&
         key !== "preparationData" &&
+        key !== "organizerType" &&
         value !== undefined,
     );
 
@@ -452,6 +454,9 @@ export async function PATCH(
     }
     if (body.durationMinutes !== undefined) {
       updateData["duration_minutes"] = body.durationMinutes;
+    }
+    if (body.organizerType !== undefined) {
+      updateData["organizer_type"] = body.organizerType;
     }
     if (shouldRefreshNotes) {
       const persistedPayload = {

@@ -26,6 +26,8 @@ describe("ActionStepIdentity", () => {
     );
 
     expect(html).toContain("Membres de l");
+    expect(html).toContain("Type de structure");
+    expect(html).toContain("Association étudiante");
     expect(html).toContain("user-manual-1");
     expect(html).not.toContain("Ouvrir le formulaire de groupe");
     expect(html).not.toContain("Publier en tant que formulaire de groupe");
