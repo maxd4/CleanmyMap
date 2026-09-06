@@ -55,7 +55,7 @@ export function shouldUseDevAuthBypass(params: {
 }
 
 export function getDevAuthBypassRole(): string {
-  const role = readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "max");
+  const role = readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "benevole");
   return role === "benevole" || role === "admin" || role === "max" ? role : "benevole";
 }
 

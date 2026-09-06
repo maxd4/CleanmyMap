@@ -75,37 +75,44 @@ restent limités à la compatibilité d'entrée.
 
 `service_role` est une identité technique serveur. Ce n'est jamais un rôle utilisateur ni une preuve d'autorisation HTTP.
 
-### Séparation obligatoire du rôle et du profil actif
+### Séparation obligatoire du rôle attribué, du rôle actif et du profil UX
 
 L'identité courante doit exposer le contrat suivant :
 
 ```ts
-role: Role                 // autorisation réelle
-activeProfile: AppProfile  // persona/navigation UX
+role: GrantedRole          // GRANTED_ROLE : attribution réellement obtenue
+activeRole: ActiveRole     // ACTIVE_ROLE : rôle qui pilote les capacités
+activeProfile: AppProfile  // alias UX/legacy, sans permission autonome
 ```
 
-`role` est la seule entrée autoritative pour les gardes et décisions AuthZ,
-notamment `requireAdminAccess`, `requireCreatorAccess`, `EffectiveAccess` et
-les APIs sensibles. `activeProfile` sert uniquement à choisir la navigation,
-les CTA, les libellés et les priorités de parcours.
+`role` reste l'attribution obtenue et ne peut pas être modifié par le menu.
+Les capacités effectives des gardes, de `EffectiveAccess` et des APIs sensibles
+sont calculées depuis `activeRole`, qui doit toujours être autorisé par
+`role`. `activeProfile` est un alias de compatibilité UX/legacy ; il sert à la
+navigation, aux CTA, aux libellés et aux priorités de parcours, mais ne donne
+jamais de permission indépendante.
 
-Le profil actif est résolu après le rôle réel :
+Le rôle actif est résolu après le rôle attribué :
 
 ```txt
 role = résolution Clerk + allowlists d'identifiants + règles d'identité
-activeProfile = activeProfile persisté si valide pour role, sinon role
+activeRole = activeRole persisté si valide pour role, sinon role
+activeProfile = alias de lecture de activeRole
 ```
 
 Une valeur persistée ne peut être retenue que si elle appartient à
 `getSwitchableProfiles(role)`. Toute absence, valeur inconnue ou combinaison
-incompatible utilise `activeProfile = role`. Ce fallback protège à la fois les
-anciens comptes et les métadonnées partiellement migrées.
+incompatible utilise `activeRole = role`, puis `activeProfile = activeRole`.
+Ce fallback protège à la fois les anciens comptes et les métadonnées
+partiellement migrées.
 
 La mutation UX canonique est `POST /api/account/active-profile`. Elle doit
 valider la session, résoudre le `role` côté serveur, vérifier la cible avec
-`getSwitchableProfiles(role)`, écrire uniquement `activeProfile` dans Clerk et
-déclencher la synchronisation canonique vers Supabase. Elle ne doit jamais
-accepter ou réécrire `role` depuis le payload client.
+`getSwitchableProfiles(role)`, écrire uniquement `activeRole` dans Clerk et
+déclencher la synchronisation canonique vers Supabase. L'ancien champ
+`activeProfile` peut être accepté comme entrée de compatibilité puis normalisé
+vers `activeRole`. La route ne doit jamais accepter ou réécrire `role` depuis
+le payload client.
 
 `POST /api/account/profile-role` est une route historique retirée du parcours
 UX. Elle ne doit plus servir de sélecteur de persona ; les sessions
@@ -115,9 +122,9 @@ Invariants de non-régression :
 
 - aucun `benevole → admin` ou `admin → max` automatique ;
 - aucun refresh ou onboarding ne rétrograde silencieusement `admin` ou `max` ;
-- `role=max` est conservé lorsque `activeProfile=benevole` ;
-- `role=admin` est conservé lorsque `activeProfile=scientifique` ;
-- une persona UX ne constitue jamais une preuve de permission ;
+- `role=max` est conservé lorsque `activeRole=benevole` ;
+- `role=admin` est conservé lorsque `activeRole=scientifique` ;
+- `activeProfile` ne constitue jamais une preuve de permission ;
 - les privilèges sont portés par les identifiants/allowlists et métadonnées
   vérifiées, pas par une adresse email codée en dur.
 
@@ -563,12 +570,12 @@ La frontière account/profile suit en plus ce tableau :
 
 | Route | But | Écriture autorisée | Autorité AuthZ |
 |---|---|---|---|
-| `POST /api/account/active-profile` | Changer la persona UX | `activeProfile` uniquement | session + `role` réel + `getSwitchableProfiles(role)` |
+| `POST /api/account/active-profile` | Changer le rôle actif / la persona UX | `activeRole` uniquement ; `activeProfile` accepté comme entrée legacy | session + `role` réel + `getSwitchableProfiles(role)` |
 | `POST /api/account/profile-role` | Ancien sélecteur de rôle | aucune ; route retirée (`410`) | session seulement pour retourner le retrait |
 
-Une réponse positive de la mutation de profil doit retourner le `role` résolu
-et l'`activeProfile` appliqué afin que le client puisse se réaligner sans
-réinterpréter les métadonnées Clerk.
+Une réponse positive de la mutation doit retourner le `role` résolu,
+`activeRole` et l'`activeProfile` appliqué afin que le client puisse se
+réaligner sans réinterpréter les métadonnées Clerk.
 
 ## Checklist avant modification sensible
 

@@ -87,9 +87,9 @@ describe("dev auth bypass helpers", () => {
     ).toBe(false);
   });
 
-  it("defaults the bypass role to the canonical max value", () => {
+  it("defaults the bypass role to the non-privileged benevole value", () => {
     vi.stubEnv("NODE_ENV", "development");
 
-    expect(getDevAuthBypassRole()).toBe("max");
+    expect(getDevAuthBypassRole()).toBe("benevole");
   });
 });
