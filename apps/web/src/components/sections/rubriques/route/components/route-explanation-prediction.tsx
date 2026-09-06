@@ -1,4 +1,5 @@
 import type { RouteRecommendationTrace } from "@/lib/route/route-trace";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   formatDistance,
   formatDuration,
@@ -33,8 +34,8 @@ export function PredictionEvidence({
         Source {evidence.source} · modèle {evidence.modelVersion} · snapshot {evidence.snapshot.snapshotId} ({evidence.snapshot.generatedAt}).
       </p>
       <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-        <div><dt className="text-amber-100/65">Risque déchets</dt><dd className="font-bold">{riskLabel(evidence.wasteRisk)} · confiance {evidence.confidence.waste.level} ({formatNumber(evidence.confidence.waste.score * 100, 0)} %)</dd></div>
-        <div><dt className="text-amber-100/65">Risque mégots</dt><dd className="font-bold">{riskLabel(evidence.cigaretteButtRisk)} · confiance {evidence.confidence.cigaretteButts.level} ({formatNumber(evidence.confidence.cigaretteButts.score * 100, 0)} %)</dd></div>
+        <div><dt className="text-amber-100/65">Risque déchets</dt><dd className="font-bold">{riskLabel(evidence.wasteRisk)} · confiance {evidence.confidence.waste.level} ({formatScorePercent(evidence.confidence.waste.score * 100)})</dd></div>
+        <div><dt className="text-amber-100/65">Risque mégots</dt><dd className="font-bold">{riskLabel(evidence.cigaretteButtRisk)} · confiance {evidence.confidence.cigaretteButts.level} ({formatScorePercent(evidence.confidence.cigaretteButts.score * 100)})</dd></div>
         <div><dt className="text-amber-100/65">Distance au corridor</dt><dd className="font-bold">{formatDistance(evidence.distanceToCorridorKm)}</dd></div>
         <div><dt className="text-amber-100/65">Détour évalué</dt><dd className="font-bold">{formatDistance(evidence.detourDistanceKm)} · {formatDuration(evidence.detourMinutes)}</dd></div>
       </dl>

@@ -3,6 +3,7 @@ import type {
   RouteTraceSelectedStop,
 } from "@/lib/route/route-trace";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
+import { formatScorePercent } from "@/lib/formatters/score";
 
 export type RouteExplanationData = RouteResponse;
 
@@ -36,7 +37,7 @@ export function formatDuration(value: number | null): string {
 }
 
 export function riskLabel(value: number): string {
-  return `${formatNumber(value, 1)} sur 100`;
+  return formatScorePercent(value);
 }
 
 export type RouteEventTemporalStatus = "past" | "today" | "future";

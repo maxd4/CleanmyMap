@@ -41,14 +41,19 @@ describe("route documentation status", () => {
     expect(current).toContain("risque prédit de déchets diffus");
     expect(current).toContain("risque prédit de mégots");
     expect(current).toContain("pression événementielle");
-    expect(current).toContain("ne signifie pas qu’un mode");
+    expect(current).toContain("event-centered");
+    expect(current).toContain("volunteerAdditionality");
+    expect(current).toContain("finalPlannerContribution");
+    expect(current).toContain("sécurité explicite");
+    expect(normalizedMethodology).toContain("geometry proxy ≠ municipal coverage");
 
     expect(foundation).toContain("municipal-cleaning-serviceability");
-    expect(foundation).toContain("event-centered");
-    expect(foundation).toContain("pas encore branchée");
+    expect(foundation).toContain("chargé localement");
+    expect(foundation).not.toContain("pas encore branchée");
 
-    expect(future).toContain("additionnalité bénévole");
     expect(future).toContain("météo");
+    expect(future).not.toContain("mode event-centered");
+    expect(future).not.toContain("calculer une additionnalité bénévole");
     expect(future).not.toContain("modèle de risque séparé");
   });
 

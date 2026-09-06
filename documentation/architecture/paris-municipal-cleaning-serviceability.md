@@ -22,6 +22,28 @@ Le snapshot est chargé localement par
 `municipal-cleaning-serviceability-loader.ts`. Le calcul d'un itinéraire ne
 fait aucun appel à Paris Data.
 
+## Intégration au planner bénévole
+
+Le planner consomme ce snapshot comme une entrée versionnée de
+`volunteerAdditionality`. La décision conserve séparément la priorité de
+pollution, l’additionnalité bénévole et la contribution finale au planner ; la
+serviceabilité ne remplace donc ni les risques déchets/mégots, ni les
+événements, ni le budget, ni la sécurité.
+
+La couverture directe ou la fréquence documentée prévaut lorsqu’elle existe.
+Les proxies géométriques peuvent éclairer la nettoyabilité et la nécessité
+probable d’une intervention manuelle, mais ne prouvent pas une absence de
+nettoyage municipal. Une donnée inconnue reste inconnue : elle limite
+l’influence de l’additionnalité et ne devient pas mécaniquement « pas nettoyé ».
+Une intervention programmée ou une zone documentée comme fortement entretenue
+peut réduire la priorité complémentaire.
+
+Le snapshot est préparé hors requête et aucune donnée municipale temps réel
+n’est appelée à chaque calcul. La trace du planner conserve la version du
+snapshot, la nature du signal, sa confiance et ses limites afin de distinguer
+`geometry proxy` de `municipal coverage` et une décision de planner d’une
+mesure terrain.
+
 ## Données publiques retenues
 
 La page officielle [Propreté : comment la Ville de Paris entretient ses
