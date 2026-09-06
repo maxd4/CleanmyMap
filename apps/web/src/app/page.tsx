@@ -126,7 +126,11 @@ export default async function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
-        <HomeHero metrics={metrics} />
+        <HomeHero
+          metrics={metrics}
+          counters={counters}
+          actionCount={communityActivity.visibleActions}
+        />
         <HomeNavigationSchema />
         <HomeCommunityCredibility
           activity={communityActivity}
