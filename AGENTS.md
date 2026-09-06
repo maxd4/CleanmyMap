@@ -196,6 +196,28 @@ ci-dessus.
   contrat ou régression du lot. Une erreur étrangère est
   `SKIPPED_PARALLEL_CHANTIER` et ne doit pas être corrigée dans ce lot.
 
+## Coordination locale des chantiers
+
+- utiliser `npm run workspace:init` une seule fois pour enregistrer les deltas
+  déjà présents comme `LEGACY_UNOWNED`, sans les lire en détail, modifier ou
+  revendiquer automatiquement ; toute adoption est explicite ;
+- chaque chantier crée un run avec `workspace:start`, revendique uniquement son
+  allowlist avec `workspace:claim`, puis consulte `workspace:status` ou
+  `workspace:stale` ; les chemins sont relatifs au dépôt et protégés contre la
+  traversée ;
+- le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
+  revendiquer en parallèle ; les autres collisions de fichiers sont également
+  bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
+  supprimé automatiquement ;
+- avant toute opération d'index, le run obtient `workspace:publication-acquire`.
+  Le pré-commit exige alors que tous les chemins staged appartiennent à ce run ;
+  après commit, push ou échec, libérer explicitement le verrou et le run ;
+- `workspace:status --compact` n'inspecte que des métadonnées et des chemins,
+  sans lire le contenu source ; `workspace:stale` refetch `origin/main` et ne
+  compare que les chemins possédés depuis le `baseSha` du run ;
+- aucune photographie générale du worktree, aucun `git add -A` et aucune
+  adoption implicite ne sont autorisés par ce mécanisme.
+
 ## Hygiène du dépôt et architecture interne
 
 - conserver par défaut sous la racine du projet tous les fichiers et dossiers

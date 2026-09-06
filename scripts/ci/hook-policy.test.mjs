@@ -17,6 +17,9 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.match(packageJson.scripts["precommit:guard"], /pre_commit_guard\.ps1/);
   assert.match(packageJson.scripts["checks:staged:quick"], /check_changed_quick\.ps1 -StagedOnly/);
   assert.match(guard, /npm run checks:staged:quick/);
+  assert.match(guard, /workspace-coordination\.mjs/);
+  assert.match(guard, /check-staged/);
+  assert.match(guard, /CMM_WORKSPACE_RUN_ID/);
   assert.match(guard, /npm run security:secrets -- --staged-only/);
   assert.match(guard, /git diff --cached --check/);
   assert.doesNotMatch(guard, /npm run checks:changed:quick/);
